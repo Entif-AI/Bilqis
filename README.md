@@ -4,6 +4,19 @@ Bilqis is an experimental semantic-representation and developmental-learning res
 
 This repository currently contains the **initial finite-world reference implementation** extracted from the ETR-2026-05 Stage 2 research package (`CP0008-20260912T115723Z-FULL.zip`, report package v0.4.7). It is an engineering reference, not a completed efficacy trial, a trained Bilqis language model, or a full implementation of New Ithkuil.
 
+
+## Why the name Bilqis?
+
+The name is deliberate, but it is not part of the scientific treatment and carries no evidentiary weight for the representation hypothesis.
+
+**Bilqis** is the name used in later Islamic exegetical and literary tradition for the ruler commonly recognized as the Queen of Sheba. The Hebrew Bible leaves the Queen of Sheba's personal name unstated, the New Testament refers to a Queen of the South, and Ethiopian tradition preserves the name Makeda. Those traditions are distinct. The useful correspondence is that a recognizable referent persists across different names, narratives, and representational surfaces while provenance remains necessary to say which tradition asserted what.
+
+The narrative adds a second resonance. The Queen of Sheba is remembered for testing Solomon's wisdom with difficult questions. In the Qur'anic account of the ruler of Sheba, messages cross political boundaries, counsel mediates decisions, signs require interpretation, a throne moves between contexts, and a glass surface is initially perceived as water. The Qur'an itself does not name the ruler Bilqis. That name comes through later tradition. For a project concerned with representation, interpretation, ambiguity, and semantic continuity, that distinction is part of the point.
+
+The former project name tied the work too closely to its donor language and invited the wrong inference: that this project is simply "machine Ithkuil" or an official New Ithkuil variant. Bilqis gives the experimental object its own identity. New Ithkuil remains a major donor of candidate semantic factors, but those factors remain subject to controls, decomposition, supplementation, rejection, and falsification.
+
+The name also rhymes with the wider Rosetta program. Rosetta is concerned with corresponding meaning across different representations without requiring those representations to become identical. Bilqis names a figure whose identity has crossed languages, traditions, names, and retellings while still requiring provenance to preserve what each source actually says. The metaphor is useful. The experiment still has to earn every scientific claim.
+
 ## What is here
 
 - `bilqis_ref/` — finite-world semantics, independent oracle pair, codecs, small transformer student, teacher policy, checkpoint/recovery, sealing, evaluation, and constrained pedagogue adapter.
@@ -89,7 +102,7 @@ See [`docs/PROVENANCE.md`](docs/PROVENANCE.md) for the extraction boundary, [`do
 The companion working paper is:
 
 **Prepaying Semantics: Bilqis as a Developmental Substrate for Representation-Efficient Relational and Compositional Learning**  
-ETR-2026-05, v0.4.7.
+ETR-2026-05, v0.5.0.
 
 Public research page: https://entif.ai/tags/research/2026/09/12/prepaying-semantics/
 
