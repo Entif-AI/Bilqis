@@ -4,11 +4,11 @@ Status: locally locked study design; not externally registered, not run, and not
 
 ## Research object and estimand
 
-The tested system combines a finite semantic ABI, morpheme-addressed Bithkuil-inspired input, a fixed scratch-trained ternary student, a developmental teacher, rehearsal, competence probes and validated local-pedagogue proposals. The target is the total effect of the declared representational-developmental package relative to a credible constrained-language condition under a matched learning budget. It is not the effect of Ithkuil phonology, an estimate of general intelligence, or a claim that every component independently helps.
+The tested system combines a finite semantic ABI, morpheme-addressed Bilqis-inspired input, a fixed scratch-trained ternary student, a developmental teacher, rehearsal, competence probes and validated local-pedagogue proposals. The target is the total effect of the declared representational-developmental package relative to a credible constrained-language condition under a matched learning budget. It is not the effect of Ithkuil phonology, an estimate of general intelligence, or a claim that every component independently helps.
 
 Both arms use the same student architecture, parameter count, optimizer, semantic target domain, answer head, teacher implementation, intervention privileges and maximum budget. Both use topology-guided development in the primary comparison. The integrated treatment therefore includes the common developmental substrate as an enabling system, but the comparison does not estimate the effect of that shared substrate. Representation-dependent errors may cause different lessons to be selected by the same adaptive teacher; this induced curriculum divergence is part of the total adaptive-system effect. The matched-example replay attribution later removes that divergence. A difficulty-only teacher is a later attribution, not a deliberately weakened primary baseline.
 
-SYS-B uses `representation: bithkuil`; SYS-C uses `representation: cnl`. The CNL codec exposes exactly the same finite world and query through fixed controlled-English templates. It is not a fluent general-language baseline or a TinyStories reproduction. Stronger natural-language and generic symbolic comparators belong to the attribution/extension program and are necessary for broader claims.
+SYS-B uses `representation: bilqis`; SYS-C uses `representation: cnl`. The CNL codec exposes exactly the same finite world and query through fixed controlled-English templates. It is not a fluent general-language baseline or a TinyStories reproduction. Stronger natural-language and generic symbolic comparators belong to the attribution/extension program and are necessary for broader claims.
 
 ## Exact student and budget
 
@@ -20,7 +20,7 @@ Eight paired seeds: 101, 102, 103, 104, 105, 106, 107, 108. Each pair shares ini
 
 ## Developmental procedure
 
-Train in 64-step tranches. The teacher uses a prerequisite DAG, chooses among eligible stages using tranche counts, rehearses mastered prior stages, and evaluates mastery, retention and DEV transfer. Mastery uses a Wilson lower bound of 0.90; retention uses 0.85; DEV-transfer proportion uses 0.75. DEV probes contain 256 cases per evaluated stage. The formal stage graph, selection function and thresholds are executable in `bithkuil_ref/teacher.py` and hashed by the engineering source lock.
+Train in 64-step tranches. The teacher uses a prerequisite DAG, chooses among eligible stages using tranche counts, rehearses mastered prior stages, and evaluates mastery, retention and DEV transfer. Mastery uses a Wilson lower bound of 0.90; retention uses 0.85; DEV-transfer proportion uses 0.75. DEV probes contain 256 cases per evaluated stage. The formal stage graph, selection function and thresholds are executable in `bilqis_ref/teacher.py` and hashed by the engineering source lock.
 
 These repeatedly inspected DEV quantities are curriculum decisions, not simultaneous confidence guarantees. No scientific p-value is derived from a promotion receipt. Fixed-budget final sealed evaluation is the primary outcome, even if no stage is promoted. Competence-based early graduation can be analyzed as a censored secondary endpoint, but cannot remove difficult seeds from the final denominator.
 

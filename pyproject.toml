@@ -1,5 +1,5 @@
 [project]
-name = "bithkuil-reference"
+name = "bilqis-reference"
 version = "0.1.0"
 requires-python = ">=3.13,<3.14"
 description = "ETR-2026-05 finite-world engineering reference, not a full Ithkuil implementation"

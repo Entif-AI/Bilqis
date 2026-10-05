@@ -1,6 +1,6 @@
 # Contributing
 
-Bithkuil is an experimental research repository. Contributions are welcome, especially those that make the hypotheses easier to falsify, the implementation easier to reproduce, or the comparison conditions more credible.
+Bilqis is an experimental research repository. Contributions are welcome, especially those that make the hypotheses easier to falsify, the implementation easier to reproduce, or the comparison conditions more credible.
 
 ## Before changing behavior
 
@@ -26,4 +26,4 @@ Do not commit local run directories, checkpoints, sealed private gold material, 
 
 ## Claims
 
-Keep engineering evidence, scientific results, and hypotheses distinct. Passing the reference suite means the bounded implementation behaved as tested. It does not establish a Bithkuil learning advantage.
+Keep engineering evidence, scientific results, and hypotheses distinct. Passing the reference suite means the bounded implementation behaved as tested. It does not establish a Bilqis learning advantage.

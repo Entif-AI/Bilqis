@@ -1,9 +1,9 @@
 {
-  "manifest_version": "bithkuil-cp0008-import-1",
+  "manifest_version": "bilqis-cp0008-import-1",
   "source_archive": "CP0008-20260912T115723Z-FULL.zip",
   "source_archive_sha256": "d748810a053ab9c4c3bb9f6d91167d71f527f5a801bde0e9a6b412b454d47010",
   "package_root": "ETR-2026-05-STAGE2-v0.4.7",
-  "generated_for_repository": "entif-ai/bithkuil",
+  "generated_for_repository": "entif-ai/bilqis",
   "generated_date": "2026-09-12",
   "scope": "Core Training/ reference implementation import. Broader reference/research documents are described in docs/PROVENANCE.md.",
   "status_definitions": {
@@ -19,8 +19,8 @@
   },
   "files": [
     {
-      "source_path": "Training/bithkuil_ref/__init__.py",
-      "repository_path": "bithkuil_ref/__init__.py",
+      "source_path": "Training/bilqis_ref/__init__.py",
+      "repository_path": "bilqis_ref/__init__.py",
       "source_bytes": 102,
       "source_sha256": "aac9b7b725a2bdf0eca1f3470544cbdcf98f6cf45e20e061403f599d03dede21",
       "source_git_blob_sha1": "5a7a9ffc0274cb1da0abe42afb1af69818ecc6d0",
@@ -29,8 +29,8 @@
       "repository_git_blob_sha1": "5a7a9ffc0274cb1da0abe42afb1af69818ecc6d0"
     },
     {
-      "source_path": "Training/bithkuil_ref/assistance.py",
-      "repository_path": "bithkuil_ref/assistance.py",
+      "source_path": "Training/bilqis_ref/assistance.py",
+      "repository_path": "bilqis_ref/assistance.py",
       "source_bytes": 3921,
       "source_sha256": "ea2998820ea1bc981a1d32098355b60772cae6deaa4938476e5d3a2ae536a1a5",
       "source_git_blob_sha1": "185446ab7cbf4923dbd3375b930a60c2d2b53a6b",
@@ -39,8 +39,8 @@
       "repository_git_blob_sha1": "185446ab7cbf4923dbd3375b930a60c2d2b53a6b"
     },
     {
-      "source_path": "Training/bithkuil_ref/codec.py",
-      "repository_path": "bithkuil_ref/codec.py",
+      "source_path": "Training/bilqis_ref/codec.py",
+      "repository_path": "bilqis_ref/codec.py",
       "source_bytes": 6969,
       "source_sha256": "e2897d695ceb02dc663bb620499431b16393779d5f8fff9de704129b5c2a481a",
       "source_git_blob_sha1": "e9063d92824c09fdde805fe4700ad57e5690c439",
@@ -49,8 +49,8 @@
       "repository_git_blob_sha1": "e9063d92824c09fdde805fe4700ad57e5690c439"
     },
     {
-      "source_path": "Training/bithkuil_ref/evaluate.py",
-      "repository_path": "bithkuil_ref/evaluate.py",
+      "source_path": "Training/bilqis_ref/evaluate.py",
+      "repository_path": "bilqis_ref/evaluate.py",
       "source_bytes": 4271,
       "source_sha256": "60d6e2f185c730ff314918bb25f3c9449668975c17a1571f39054136bdbafd17",
       "source_git_blob_sha1": "e0dce8afcd8a69c0958c9abd59b71918b040e7c7",
@@ -60,8 +60,8 @@
       "note": "Import-time whitespace normalization only; executable semantics are unchanged."
     },
     {
-      "source_path": "Training/bithkuil_ref/fork.py",
-      "repository_path": "bithkuil_ref/fork.py",
+      "source_path": "Training/bilqis_ref/fork.py",
+      "repository_path": "bilqis_ref/fork.py",
       "source_bytes": 2409,
       "source_sha256": "99588d143c6315d44f2e60b3b8953cf2db9d3a302f71a70d3e269d3f3c944777",
       "source_git_blob_sha1": "f6ce72917776ba1235e06b7c408b4b443d7a1d64",
@@ -70,8 +70,8 @@
       "repository_git_blob_sha1": "f6ce72917776ba1235e06b7c408b4b443d7a1d64"
     },
     {
-      "source_path": "Training/bithkuil_ref/model.py",
-      "repository_path": "bithkuil_ref/model.py",
+      "source_path": "Training/bilqis_ref/model.py",
+      "repository_path": "bilqis_ref/model.py",
       "source_bytes": 4213,
       "source_sha256": "ab4b8ed631f892ab43c5563c78282af8e169ae491e27ec026d7bcc1571d2b26b",
       "source_git_blob_sha1": "87e99ae5f30b43b79486e82c6420784a2171528f",
@@ -80,8 +80,8 @@
       "repository_git_blob_sha1": "87e99ae5f30b43b79486e82c6420784a2171528f"
     },
     {
-      "source_path": "Training/bithkuil_ref/pedagogue.py",
-      "repository_path": "bithkuil_ref/pedagogue.py",
+      "source_path": "Training/bilqis_ref/pedagogue.py",
+      "repository_path": "bilqis_ref/pedagogue.py",
       "source_bytes": 1870,
       "source_sha256": "61efb292d1861e769e89c45528181b5b8c357c8c4ad6d114a4dd0b2e91b03fdd",
       "source_git_blob_sha1": "3d457769422952266e2f858af77f0072194920a2",
@@ -90,8 +90,8 @@
       "repository_git_blob_sha1": "3d457769422952266e2f858af77f0072194920a2"
     },
     {
-      "source_path": "Training/bithkuil_ref/run.py",
-      "repository_path": "bithkuil_ref/run.py",
+      "source_path": "Training/bilqis_ref/run.py",
+      "repository_path": "bilqis_ref/run.py",
       "source_bytes": 11861,
       "source_sha256": "2d503ce1da27598421d4c2210a838e37a4f66ff8b97e33cd30b2d5d5f2144399",
       "source_git_blob_sha1": "37b5a046414b96635f09dbea4ce26aeceaf12b7f",
@@ -100,8 +100,8 @@
       "repository_git_blob_sha1": "37b5a046414b96635f09dbea4ce26aeceaf12b7f"
     },
     {
-      "source_path": "Training/bithkuil_ref/sealing.py",
-      "repository_path": "bithkuil_ref/sealing.py",
+      "source_path": "Training/bilqis_ref/sealing.py",
+      "repository_path": "bilqis_ref/sealing.py",
       "source_bytes": 3950,
       "source_sha256": "dd72ff32243868d6fc95a2d376d5dce111bb9d01ae65bbf62a2e19b52ba7256d",
       "source_git_blob_sha1": "7ea73e5882d837c02d1e110e120b39b8d32abbfa",
@@ -110,8 +110,8 @@
       "repository_git_blob_sha1": "7ea73e5882d837c02d1e110e120b39b8d32abbfa"
     },
     {
-      "source_path": "Training/bithkuil_ref/semantics.py",
-      "repository_path": "bithkuil_ref/semantics.py",
+      "source_path": "Training/bilqis_ref/semantics.py",
+      "repository_path": "bilqis_ref/semantics.py",
       "source_bytes": 11255,
       "source_sha256": "c329596afefc41239a15317be8afc4691f0ceb91f6423db736c3022947c960d5",
       "source_git_blob_sha1": "9eef12aededdc9e285fcb9fabae24511bbd014ac",
@@ -120,8 +120,8 @@
       "repository_git_blob_sha1": "9eef12aededdc9e285fcb9fabae24511bbd014ac"
     },
     {
-      "source_path": "Training/bithkuil_ref/statistics.py",
-      "repository_path": "bithkuil_ref/statistics.py",
+      "source_path": "Training/bilqis_ref/statistics.py",
+      "repository_path": "bilqis_ref/statistics.py",
       "source_bytes": 1739,
       "source_sha256": "e1c934d3f71385419aacc86f3f1380fc7d1e228b0206824bfcb558f9115cb6a8",
       "source_git_blob_sha1": "9f2f7c77e5e242d985cd3ca5bb67e37e8866a5af",
@@ -130,8 +130,8 @@
       "repository_git_blob_sha1": "9f2f7c77e5e242d985cd3ca5bb67e37e8866a5af"
     },
     {
-      "source_path": "Training/bithkuil_ref/teacher.py",
-      "repository_path": "bithkuil_ref/teacher.py",
+      "source_path": "Training/bilqis_ref/teacher.py",
+      "repository_path": "bilqis_ref/teacher.py",
       "source_bytes": 2623,
       "source_sha256": "9b2c5039af527ac7edf981ff43fa908dcba65d26950b589ad4ac32ad0f6c5d51",
       "source_git_blob_sha1": "19a805d385ef22ebf36eeed0a4c40777a83a99f2",
@@ -150,8 +150,8 @@
       "repository_git_blob_sha1": "5e57b82cd879159081774c966f255983df98415d"
     },
     {
-      "source_path": "Training/configs/smoke-bithkuil-fp32.json",
-      "repository_path": "configs/smoke-bithkuil-fp32.json",
+      "source_path": "Training/configs/smoke-bilqis-fp32.json",
+      "repository_path": "configs/smoke-bilqis-fp32.json",
       "source_bytes": 675,
       "source_sha256": "59747667d8d506acfc9bc8bb2abdbfce9de1ff8f98d01dbe9a38e2096fbbf85d",
       "source_git_blob_sha1": "8cf51899737f1cedefe0b59725d06dfe5a1e9b40",
@@ -160,8 +160,8 @@
       "repository_git_blob_sha1": "8cf51899737f1cedefe0b59725d06dfe5a1e9b40"
     },
     {
-      "source_path": "Training/configs/smoke-bithkuil-ternary.json",
-      "repository_path": "configs/smoke-bithkuil-ternary.json",
+      "source_path": "Training/configs/smoke-bilqis-ternary.json",
+      "repository_path": "configs/smoke-bilqis-ternary.json",
       "source_bytes": 678,
       "source_sha256": "613147f38447091278e953f74baf81a8bfdf92ef3067266688b943366dfdd07a",
       "source_git_blob_sha1": "9b8b918876576eb7f3a7c0b76a743d08117484f0",

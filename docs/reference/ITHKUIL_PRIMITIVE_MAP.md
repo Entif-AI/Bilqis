@@ -1,4 +1,4 @@
-# New Ithkuil to Bithkuil: source dependencies and implementation coverage
+# New Ithkuil to Bilqis: source dependencies and implementation coverage
 
 This map is a compiler and curriculum plan, not a grammar of New Ithkuil and not evidence of an ML benefit. The official chapters and lexicon establish donor distinctions. `F00` through `F03` are author-defined formal scaffolding. The reference implementation handles a finite, explicitly named subset. The JSON/CSV map in Evidence is authoritative for machine navigation; its dispositions are summarized below.
 

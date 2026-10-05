@@ -2,7 +2,7 @@
 
 ## Student identity
 
-The implemented student is a causal decoder-only transformer with a restricted four-answer readout. It reads the entire serialized world and query and predicts TRUE, FALSE, UNKNOWN or CONFLICT from the final real input position. The output weights are the corresponding four reserved rows of its input embedding table. It is not trained as an open-vocabulary next-token language model. Consequently, the present engineering runs demonstrate a supervised reasoning interface, not general Bithkuil fluency or successful later-English acquisition.
+The implemented student is a causal decoder-only transformer with a restricted four-answer readout. It reads the entire serialized world and query and predicts TRUE, FALSE, UNKNOWN or CONFLICT from the final real input position. The output weights are the corresponding four reserved rows of its input embedding table. It is not trained as an open-vocabulary next-token language model. Consequently, the present engineering runs demonstrate a supervised reasoning interface, not general Bilqis fluency or successful later-English acquisition.
 
 The reference-scale config uses vocabulary 512, context 384, width 192, six layers, six attention heads, expansion factor four and learned absolute position embeddings. There are no linear biases. Each block uses pre-LayerNorm, causal scaled dot-product attention, residual connections and a squared-ReLU feed-forward. Its exact trainable parameter count is 2,828,736. The smoke config uses width 32, two layers and four heads, for exactly 53,408 parameters. The model checks width/head divisibility and rejects context overflow rather than truncating a query silently.
 
@@ -16,7 +16,7 @@ AdamW is fixed in the config: learning rate 0.0003, betas 0.9/0.95, epsilon 1e-8
 
 The default reference run is 4,096 steps, batch size 16, and 64-step tranches. That is at most 65,536 learner example exposures. The smoke run is four steps, batch size four, two-step tranches and eight-case probes. The smoke promotion threshold is deliberately not reachable by eight successes under the chosen Wilson lower-bound gate. It should remain an execution check rather than a misleading graduation ceremony.
 
-The primary comparison is not 'a trained English model versus an untrained Bithkuil model'. Both students start from scratch with the same architecture, full token allocation and initialization policy. Ordinary pretrained-language baselines belong in a separately identified transfer comparison with their upstream cost and knowledge differences acknowledged.
+The primary comparison is not 'a trained English model versus an untrained Bilqis model'. Both students start from scratch with the same architecture, full token allocation and initialization policy. Ordinary pretrained-language baselines belong in a separately identified transfer comparison with their upstream cost and knowledge differences acknowledged.
 
 ## Component dependency sequence
 

@@ -9,7 +9,7 @@
   "additionalProperties": false,
   "properties": {
     "abi": {
-      "const": "bithkuil-finite-world-0.1.0"
+      "const": "bilqis-finite-world-0.1.0"
     },
     "world": {
       "type": "object",

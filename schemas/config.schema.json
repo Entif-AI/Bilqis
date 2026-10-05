@@ -48,7 +48,7 @@
     },
     "representation": {
       "enum": [
-        "bithkuil",
+        "bilqis",
         "cnl",
         "mixed",
         "isomorphic"
@@ -213,7 +213,7 @@
       ]
     },
     "schema_version": {
-      "const": "bithkuil-reference-config-0.1.0"
+      "const": "bilqis-reference-config-0.1.0"
     }
   },
   "additionalProperties": false

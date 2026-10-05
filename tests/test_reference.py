@@ -1,13 +1,13 @@
-"""Engineering acceptance: no test below estimates Bithkuil learning efficacy."""
+"""Engineering acceptance: no test below estimates Bilqis learning efficacy."""
 import unittest,copy,itertools,json,tempfile,hashlib
 from pathlib import Path
 import torch
-from bithkuil_ref.semantics import *
-from bithkuil_ref.codec import *
-from bithkuil_ref.model import *
-from bithkuil_ref.teacher import *
-from bithkuil_ref.pedagogue import accept,request,replay
-from bithkuil_ref.run import train
+from bilqis_ref.semantics import *
+from bilqis_ref.codec import *
+from bilqis_ref.model import *
+from bilqis_ref.teacher import *
+from bilqis_ref.pedagogue import accept,request,replay
+from bilqis_ref.run import train
 
 class FormalTests(unittest.TestCase):
     def test_roundtrips_and_independent_oracles(self):
@@ -17,7 +17,7 @@ class FormalTests(unittest.TestCase):
                     e=example(8192,family,stage,i,"DEV");s=e["semantic"]
                     w=World.from_obj(s["world"])
                     self.assertEqual(oracle(w,s["query"]),independent_oracle(w,s["query"]))
-                    for mode in ("bithkuil","cnl","isomorphic","mixed"):
+                    for mode in ("bilqis","cnl","isomorphic","mixed"):
                         for reverse in (False,True):self.assertEqual(decode(encode(s,mode,reverse),mode),s)
     def test_all_three_node_graphs(self):
         edges=list(itertools.combinations(range(3),2))
@@ -113,7 +113,7 @@ class NumericalTests(unittest.TestCase):
         x,l=batch([s]);a=m(x,l);z=torch.cat([x,torch.full((1,5),42)],1);b=m(z,l)
         torch.testing.assert_close(a,b,atol=2e-7,rtol=2e-6)
     def test_resume_is_bit_identical(self):
-        cfg=json.loads((Path(__file__).parents[1]/"configs/smoke-bithkuil-ternary.json").read_text())
+        cfg=json.loads((Path(__file__).parents[1]/"configs/smoke-bilqis-ternary.json").read_text())
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);a=train(cfg,root/"uninterrupted");train(cfg,root/"partial",stop_after=2)
             cp=root/"partial/checkpoints/CP-0000002";b=train(cfg,root/"resumed",resume=cp)
@@ -121,7 +121,7 @@ class NumericalTests(unittest.TestCase):
             changed=copy.deepcopy(cfg);changed["seed"]+=1
             with self.assertRaises(ValueError):train(changed,root/"bad",resume=cp)
     def test_confirmatory_gate(self):
-        cfg=json.loads((Path(__file__).parents[1]/"configs/smoke-bithkuil-ternary.json").read_text());cfg["run_class"]="CONFIRMATORY"
+        cfg=json.loads((Path(__file__).parents[1]/"configs/smoke-bilqis-ternary.json").read_text());cfg["run_class"]="CONFIRMATORY"
         with tempfile.TemporaryDirectory() as d:
             with self.assertRaises(ValueError):train(cfg,Path(d))
 

@@ -2,7 +2,7 @@
 
 ## Identity and canonical bytes
 
-The semantic ABI is `bithkuil-finite-world-0.1.0`, an experimental package-local identifier. It is not a Rosetta Core type or a New Ithkuil version. A semantic example has exactly `abi`, `world`, and `query`. Gold labels and provenance live outside that object. Canonical JSON uses sorted keys, ASCII escaping, no insignificant whitespace and no NaN/Infinity. SHA-256 of those bytes identifies the semantic object. This canonicalizer is explicitly limited to the integer/string/list/object domain used here; it is not a universal semantic equivalence algorithm.
+The semantic ABI is `bilqis-finite-world-0.1.0`, an experimental package-local identifier. It is not a Rosetta Core type or a New Ithkuil version. A semantic example has exactly `abi`, `world`, and `query`. Gold labels and provenance live outside that object. Canonical JSON uses sorted keys, ASCII escaping, no insignificant whitespace and no NaN/Infinity. SHA-256 of those bytes identifies the semantic object. This canonicalizer is explicitly limited to the integer/string/list/object domain used here; it is not a universal semantic equivalence algorithm.
 
 The world contains `entities`, `edges`, and `reports`. There are two through six entities, but current generators use exactly six. Entity IDs are consecutive exact integers starting at zero; booleans are rejected even though Python treats bool as an int subtype. Each entity has `color`, `intended` and `actual`, each in 0..2. These are synthetic category IDs, not physical quantities, calibrated utility, donor roots or truth values. All fields are mandatory.
 
@@ -18,9 +18,9 @@ The primary oracle is recursive and uses breadth-first connectivity. The second 
 
 ## Codec and token contracts
 
-The token ABI is `bithkuil-token-0.1.0`. `token-abi.json` lists all 512 rows and the exact permutation control. IDs 0..6 are PAD, BOS, TRUE, FALSE, UNKNOWN, CONFLICT and EOS respectively. Remaining rows encode operators, fields, delimiters, finite integer symbols, controlled-language words and reserved slots. Every model allocates all 512 rows at genesis. A stage may expose fewer symbols, but parameter count does not grow with stage vocabulary. No pretrained tokenizer or embeddings are used.
+The token ABI is `bilqis-token-0.1.0`. `token-abi.json` lists all 512 rows and the exact permutation control. IDs 0..6 are PAD, BOS, TRUE, FALSE, UNKNOWN, CONFLICT and EOS respectively. Remaining rows encode operators, fields, delimiters, finite integer symbols, controlled-language words and reserved slots. Every model allocates all 512 rows at genesis. A stage may expose fewer symbols, but parameter count does not grow with stage vocabulary. No pretrained tokenizer or embeddings are used.
 
-Bithkuil serialization is an explicit world section plus a parenthesized query. CNL serialization uses a closed controlled-English rendering of exactly the same object. It is not unconstrained English or a pretrained natural-language capability. The decoder accepts only the declared grammar. No codec inserts a gold answer, an acceptance/rejection attempt number, a split ID, or a provenance hash into learner tokens.
+Bilqis serialization is an explicit world section plus a parenthesized query. CNL serialization uses a closed controlled-English rendering of exactly the same object. It is not unconstrained English or a pretrained natural-language capability. The decoder accepts only the declared grammar. No codec inserts a gold answer, an acceptance/rejection attempt number, a split ID, or a provenance hash into learner tokens.
 
 The `isomorphic` condition applies a fixed bijection to non-special token IDs. All operators, fields and values preserve their roles under decoding. Its scientific purpose is a symmetry null, not a structure-destroying intervention. To obtain pathwise equality, permute embedding rows with the same mapping, preserve the special output rows, and transform any associated optimizer state. The unit test does this and checks two optimizer updates. Independent random initializations give distributional, not pathwise, symmetry.
 

@@ -1,16 +1,16 @@
 import unittest,tempfile,json,hashlib,copy
 from pathlib import Path
 import jsonschema
-from bithkuil_ref.semantics import *
-from bithkuil_ref.run import train
-from bithkuil_ref.fork import fork
-from bithkuil_ref.assistance import read_event,fill
-from bithkuil_ref.sealing import prepare
-from bithkuil_ref.evaluate import evaluate
+from bilqis_ref.semantics import *
+from bilqis_ref.run import train
+from bilqis_ref.fork import fork
+from bilqis_ref.assistance import read_event,fill
+from bilqis_ref.sealing import prepare
+from bilqis_ref.evaluate import evaluate
 
 class ExtensionTests(unittest.TestCase):
     @staticmethod
-    def cfg():return json.loads((Path(__file__).parents[1]/"configs/smoke-bithkuil-ternary.json").read_text())
+    def cfg():return json.loads((Path(__file__).parents[1]/"configs/smoke-bilqis-ternary.json").read_text())
     def test_preprobe_resume(self):
         with tempfile.TemporaryDirectory() as d:
             root=Path(d);cfg=self.cfg();a=train(cfg,root/"a");cp=root/"a/checkpoints/CP-0000002-preprobe";b=train(cfg,root/"b",resume=cp)

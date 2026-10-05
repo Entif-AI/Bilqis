@@ -1,9 +1,9 @@
 {
-  "schema_version": "bithkuil-reference-config-0.1.0",
+  "schema_version": "bilqis-reference-config-0.1.0",
   "run_class": "ENGINEERING",
   "profile": "smoke",
   "seed": 101,
-  "representation": "bithkuil",
+  "representation": "bilqis",
   "teacher_policy": "topology",
   "model": {
     "vocab_size": 512,
@@ -12,7 +12,7 @@
     "layers": 2,
     "heads": 4,
     "expansion": 4,
-    "precision": "fp32"
+    "precision": "ternary"
   },
   "steps": 4,
   "tranche_steps": 2,

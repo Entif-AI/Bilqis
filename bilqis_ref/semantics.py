@@ -4,7 +4,7 @@ from dataclasses import dataclass, asdict
 from typing import Any
 import hashlib, json, random
 
-ABI = "bithkuil-finite-world-0.1.0"
+ABI = "bilqis-finite-world-0.1.0"
 LABELS = ((1,0),(0,1),(0,0),(1,1))
 LABEL_NAMES = ("TRUE","FALSE","UNKNOWN","CONFLICT")
 OPS = ("EQ","SIZE","SAME","CONNECTED","APL","PUR","EVID","NOT","AND","OR")

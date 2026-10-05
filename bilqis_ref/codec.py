@@ -55,9 +55,9 @@ def parse_query(c:Cursor,cnl:bool)->dict:
     else:raise ValueError("operator")
     c.expect(")");return q
 
-def render(semantic:dict, representation:str="bithkuil", reverse_entities:bool=False)->list[str]:
+def render(semantic:dict, representation:str="bilqis", reverse_entities:bool=False)->list[str]:
     if semantic["abi"]!=ABI:raise ValueError("ABI")
-    if representation not in ("bithkuil","cnl","isomorphic","mixed"):raise ValueError("representation")
+    if representation not in ("bilqis","cnl","isomorphic","mixed"):raise ValueError("representation")
     if set(semantic)!={"abi","world","query"}:raise ValueError("semantic keys: labels/provenance forbidden")
     World.from_obj(semantic["world"]);validate_query(semantic["query"],len(semantic["world"]["entities"]))
     if representation=="mixed":
@@ -76,8 +76,8 @@ def render(semantic:dict, representation:str="bithkuil", reverse_entities:bool=F
     t += ["end"] if cnl else ["END"]
     return [TOKENS[PERMUTATION[TOKEN_TO_ID[x]]] for x in t] if representation=="isomorphic" else t
 
-def parse(tokens:list[str],representation:str="bithkuil")->dict:
-    if representation not in ("bithkuil","cnl","isomorphic","mixed"):raise ValueError("representation")
+def parse(tokens:list[str],representation:str="bilqis")->dict:
+    if representation not in ("bilqis","cnl","isomorphic","mixed"):raise ValueError("representation")
     if representation=="isomorphic":
         try:tokens=[TOKENS[INVERSE_PERMUTATION[TOKEN_TO_ID[x]]] for x in tokens]
         except KeyError as exc:raise ValueError("TOKEN_ABI_OOV") from exc
@@ -101,12 +101,12 @@ def parse(tokens:list[str],representation:str="bithkuil")->dict:
     w=World.from_obj({"entities":sorted(entities,key=lambda e:e["id"]),"edges":edges,"reports":reports});validate_query(q,n)
     return {"abi":ABI,"world":w.obj(),"query":q}
 
-def encode(s:dict,representation:str="bithkuil",reverse_entities:bool=False)->list[int]:
+def encode(s:dict,representation:str="bilqis",reverse_entities:bool=False)->list[int]:
     t=render(s,representation,reverse_entities)
     try:return [TOKEN_TO_ID[x] for x in t]
     except KeyError as exc:raise ValueError("TOKEN_ABI_OOV") from exc
 
-def decode(ids:list[int],representation:str="bithkuil")->dict:
+def decode(ids:list[int],representation:str="bilqis")->dict:
     if any(type(x) is not int or not 0<=x<512 for x in ids):raise ValueError("token ID")
     return parse([TOKENS[i] for i in ids],representation)
 

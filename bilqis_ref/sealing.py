@@ -26,7 +26,7 @@ def prepare(out:Path,seed:int,n:int,pool:str,families:list[str],forbidden_hashes
     (public/"cases.jsonl").write_bytes(inputs);(private/"gold.jsonl").write_bytes(targets)
     salt=secrets.token_hex(32);commitment=hashlib.sha256(salt.encode()+targets).hexdigest()
     (private/"opening.json").write_bytes(canonical({"salt":salt,"seed":seed,"gold_sha256":hashlib.sha256(targets).hexdigest()})+b"\n")
-    manifest={"schema":"bithkuil.seal/0.1","pool":pool,"case_count":len(rows),"families":families,"per_family_stage":n,"primary_stages":[1,2,3,4],"primary_inclusion":"one legal world-only intervention changes the answer; stage 0 is diagnostic only",
+    manifest={"schema":"bilqis.seal/0.1","pool":pool,"case_count":len(rows),"families":families,"per_family_stage":n,"primary_stages":[1,2,3,4],"primary_inclusion":"one legal world-only intervention changes the answer; stage 0 is diagnostic only",
               "inputs_sha256":hashlib.sha256(inputs).hexdigest(),"gold_commitment_sha256":commitment,
               "custody":"LOCAL_ENGINEERING_ONLY; move private directory and seed to independent custodian for confirmatory use",
               "leakage_boundary":"evaluator-input is not learner TRAIN or DEV; do not expose before locked milestone"}

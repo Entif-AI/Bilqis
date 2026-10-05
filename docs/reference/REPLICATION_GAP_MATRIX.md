@@ -3,7 +3,7 @@
 | Surface | Delivered state | Exact remaining acceptance |
 |---|---|---|
 | Finite worlds and oracle pair | Executable, property-tested | Independent specification/oracle review |
-| Bithkuil/CNL/mixed/isomorphic codecs | Executable, reversible on tested domains | Full donor morphology is a different extension |
+| Bilqis/CNL/mixed/isomorphic codecs | Executable, reversible on tested domains | Full donor morphology is a different extension |
 | Scratch student and two precisions | Executable, four tiny runs | Reference-scale competence and matched resource frontier |
 | Teacher and promotion policy | Executable deterministic policy | Adaptive local-model interaction under locked identity |
 | Proposal replay and local event adapter | Executable, append-only events and replay/loopback boundary tests | Actual identified Qwen service integration, hardware and token-usage receipts |

@@ -12,7 +12,7 @@
   ],
   "student_reference": "reference-3m.json",
   "conditions": [
-    "SYS-B: Bithkuil + ternary + topology teacher + validated local pedagogue",
+    "SYS-B: Bilqis + ternary + topology teacher + validated local pedagogue",
     "SYS-C: CNL + same ternary student + same topology teacher + same permitted local pedagogue"
   ],
   "pool_counts_per_stage": {

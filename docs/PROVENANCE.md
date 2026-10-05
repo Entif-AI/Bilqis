@@ -20,7 +20,7 @@ The imported code and core reference documents originate from the package's `Tra
 After provenance reconciliation against the uploaded archive:
 
 - 26 of the 29 core files are byte-identical to CP0008 after repository path relocation;
-- two files differ only by import-time formatting/whitespace normalization (`bithkuil_ref/evaluate.py` and `abi/grammar-prerequisite-graph.json`);
+- two files differ only by import-time formatting/whitespace normalization (`bilqis_ref/evaluate.py` and `abi/grammar-prerequisite-graph.json`);
 - one file, `schemas/config.schema.json`, is an explicit repository patch rather than an unmarked rewrite;
 - the manifest records source SHA-256, source Git-blob identity, repository Git-blob identity, byte counts, status, and the reason for every non-exact entry.
 
@@ -32,7 +32,7 @@ Broader documentation imported or adapted from `Technical/`, `Experiments/`, and
 
 The bootstrap imports:
 
-- `Training/bithkuil_ref/*.py`
+- `Training/bilqis_ref/*.py`
 - `Training/tests/*.py`
 - `Training/configs/*.json`
 - `Training/schemas/*.json`
@@ -43,11 +43,11 @@ The bootstrap imports:
 - selected SYS-01 research-design documents
 - the Stage 2 New Ithkuil grammar source map
 
-Paths have been reorganized into repository-native directories. The executable Python reference implementation is source-identical except for a whitespace-only normalization in `bithkuil_ref/evaluate.py`; the grammar prerequisite graph is semantically identical JSON with compacted formatting. The one deliberate semantic/core-source deviation is the config-schema compatibility patch documented above.
+Paths have been reorganized into repository-native directories. The executable Python reference implementation is source-identical except for a whitespace-only normalization in `bilqis_ref/evaluate.py`; the grammar prerequisite graph is semantically identical JSON with compacted formatting. The one deliberate semantic/core-source deviation is the config-schema compatibility patch documented above.
 
 ## Donor-language research boundary
 
-The repository includes independently authored Bithkuil/Ithkuil research mappings and source-location records because they are material to inspecting the semantic-substrate hypothesis. Their presence does not imply that Bithkuil is an official New Ithkuil variant or that the project has blanket redistribution rights over third-party donor material.
+The repository includes independently authored Bilqis/Ithkuil research mappings and source-location records because they are material to inspecting the semantic-substrate hypothesis. Their presence does not imply that Bilqis is an official New Ithkuil variant or that the project has blanket redistribution rights over third-party donor material.
 
 Source, licensing, and redistribution policy remains tracked in issue #35. Any later release of broader donor-derived corpora, copied examples, or lexical material must satisfy that policy separately.
 
