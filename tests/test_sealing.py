@@ -1,7 +1,7 @@
 import unittest,tempfile,json
 from pathlib import Path
-from bithkuil_ref.sealing import prepare,verify_opening
-from bithkuil_ref.statistics import paired,restricted_exposure
+from bilqis_ref.sealing import prepare,verify_opening
+from bilqis_ref.statistics import paired,restricted_exposure
 class SealTests(unittest.TestCase):
     def test_commitment_tamper(self):
         with tempfile.TemporaryDirectory() as d:
