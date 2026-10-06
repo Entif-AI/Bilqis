@@ -21,19 +21,19 @@
     "id": "82344f89-728f-4101-b0dc-4f464defce17",
     "holder": "codex:a702e9eb-133f-49da-a62f-f105efb0f8c6",
     "acquired_at": "2026-10-06T06:21:03.864600Z",
-    "heartbeat_at": "2026-10-06T06:47:23.367802Z",
-    "expires_at": "2026-10-06T07:47:23.367802Z",
+    "heartbeat_at": "2026-10-06T06:50:24.543771Z",
+    "expires_at": "2026-10-06T07:50:24.543771Z",
     "released_at": null
   },
   "focus": {
-    "summary": "Original canonical complete and preserved; fix criteria-order serialization, prove request bytes, rerun a declared matched epoch",
+    "summary": "Declared order-preserving epoch: focused tests green; rerun canonical A then exact-state paired B",
     "acceptance_refs": [
       "#77"
     ]
   },
   "checkpoint": {
-    "sha": "263cbdd6ab0e07c87662a7bc5f30c471b50f8b8d",
-    "pushed_at": "2026-10-06T06:47:23.367802Z"
+    "sha": "4a5eef7d0390f6e4625a051a61fb4a681aac82e3",
+    "pushed_at": "2026-10-06T06:50:24.543771Z"
   },
   "state": {
     "status": "active",
@@ -51,7 +51,7 @@ Execute frozen #77; preserve historical #65 evidence.
 Work Stack: eda542d8-a888-4a35-9191-c6ea0c24b8b8. Private journal and Drive checkpoints are keyed by work epoch e24d1fae-5d1b-40a4-80ed-486087994b70.
 
 ## Current Focus / Next Safe Step
-Original canonical complete and preserved; fix criteria-order serialization, prove request bytes, rerun a declared matched epoch
+Declared order-preserving epoch: focused tests green; rerun canonical A then exact-state paired B
 
 ## Invariants
 No new linguistic questions/gold; exact supplied packet; fixture-local IDs; native Kev-4B; separate epochs; loopback only; no self-merge.

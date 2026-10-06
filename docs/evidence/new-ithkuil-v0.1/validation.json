@@ -8,8 +8,16 @@
   "red_test_evidence": "missing module and malformed bracket observed before green; private failure logs retained",
   "tested_file_sha256": {
     "bilqis_ref/ithkuil_fixture.py": "fe7ece870b30663497c418b845313252a1ffd98f95b856a06ee2e1e90ce6f38c",
-    "bilqis_ref/ithkuil_battery.py": "61164329ba42e7000402bea2b5630834f83181828701681046f362c02116b305",
-    "tests/test_ithkuil_battery.py": "bcea103441d087df11d1d9b65466e9a69a807b853b9cbb13a3b9223cd4740c8b",
-    "fixtures/new-ithkuil-v0.1.json": "66c41a18a98e9b58f0c88f7dc332493a7dec03f3492dc71617a391047f0aaaa9"
+    "bilqis_ref/ithkuil_battery.py": "b9d972d1ab66ea9c5532c0cb6608003df06a27f10526cf5a088a944e53fcb2d5",
+    "tests/test_ithkuil_battery.py": "7d61c0c3903167e3dc1a1dc2b2788be566bf0c97ef3497712610f1384a6641f1",
+    "fixtures/new-ithkuil-v0.1.json": "66c41a18a98e9b58f0c88f7dc332493a7dec03f3492dc71617a391047f0aaaa9",
+    "bilqis_ref/decision.py": "4ee68124e1f4de8c8fb2a56884e5a4a08a635238fcc5fda9456a5737262ab4b8",
+    "bilqis_ref/local_http.py": "12f4cd9d203fccd8d8fb94c3887804c31f5d1e2fcd44f16371157ed8d46fdae7"
+  },
+  "serialization_epoch_focused_tests": {
+    "tests": 8,
+    "result": "PASS",
+    "red_before_green": true,
+    "regression": "Actual request bytes retain D/A/B/C presentation; canonical request bytes remain byte-identical"
   }
 }
