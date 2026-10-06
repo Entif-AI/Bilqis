@@ -1,0 +1,45 @@
+{
+  "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+  "engine": "generative",
+  "mode": "direct",
+  "model_load_seconds": 6.307655707933009,
+  "wall_seconds": 14.398176291026175,
+  "memory": {
+    "active_bytes": 8412018186,
+    "peak_bytes": 8834076266,
+    "cache_bytes": 75890466,
+    "scope": "MLX allocator; not total system unified memory"
+  },
+  "items": 25,
+  "labeled": 23,
+  "correct": 13,
+  "accuracy": 0.5652173913043478,
+  "brier": null,
+  "ece": null,
+  "ece_status": "insufficient_labeled_sample",
+  "confident_wrong": 0,
+  "local_proposals": 0,
+  "review": 25,
+  "false_confident_local_completions": 0,
+  "decision_latency_total_ms": 8032.779292203486,
+  "decisions_per_second": 3.112247839831064,
+  "resource_ms_per_local_proposal": null,
+  "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+  "quality_by_family": {
+    "evidence": {
+      "correct": 5,
+      "labeled": 12
+    },
+    "curriculum": {
+      "correct": 2,
+      "labeled": 5
+    },
+    "relation": {
+      "correct": 6,
+      "labeled": 6
+    }
+  },
+  "generated_output_tokens": 212,
+  "first_state_median_ms": 303.37687488645315,
+  "warm_median_ms": null
+}

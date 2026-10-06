@@ -1,0 +1,41 @@
+{
+  "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+  "engine": "kev",
+  "mode": "direct",
+  "model_load_seconds": null,
+  "wall_seconds": 3.3672655411064625,
+  "memory": null,
+  "items": 25,
+  "labeled": 23,
+  "correct": 11,
+  "accuracy": 0.4782608695652174,
+  "brier": 0.6867011769565218,
+  "ece": null,
+  "ece_status": "insufficient_labeled_sample",
+  "confident_wrong": 0,
+  "local_proposals": 0,
+  "review": 25,
+  "false_confident_local_completions": 0,
+  "decision_latency_total_ms": 3085.933083668351,
+  "decisions_per_second": 8.101277416644974,
+  "resource_ms_per_local_proposal": null,
+  "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+  "quality_by_family": {
+    "evidence": {
+      "correct": 5,
+      "labeled": 12
+    },
+    "curriculum": {
+      "correct": 0,
+      "labeled": 5
+    },
+    "relation": {
+      "correct": 6,
+      "labeled": 6
+    }
+  },
+  "generated_output_tokens": 0,
+  "api_output_tokens_scope": "serialized answer tokens; no model generation",
+  "first_state_median_ms": 149.67335457913578,
+  "warm_median_ms": 81.37537492439151
+}
