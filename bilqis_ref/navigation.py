@@ -24,6 +24,7 @@ def _validate(corpus,case,state):
         or state['corpus_sha256']!=digest(corpus) or state['scope'] not in case['scopes']
         or state['status'] not in STATES):raise ValueError('STATE_FIXTURE_IDENTITY')
     if type(state['revision']) is not int or state['revision']!=len(state['history']):raise ValueError('STATE_REVISION')
+    if state['status']!='resolved' and state['object_id'] is not None:raise ValueError('UNRESOLVED_OBJECT_ASSERTION')
     index=state['evidence_index']
     if type(index) is not int or not 0<=index<=len(case['evidence_schedule']):raise ValueError('STATE_EVIDENCE_INDEX')
     hints=copy.deepcopy(case['hints'])
@@ -32,6 +33,10 @@ def _validate(corpus,case,state):
     for factor,value in state['constraints'].items():
         if factor not in case['factor_path'] or factor not in case['capabilities']:raise ValueError('ILLEGAL_FACTOR')
         if not any(corpus['objects'][i].get(factor)==value for ids in case['scopes'].values() for i in ids):raise ValueError('ILLEGAL_FACTOR_VALUE')
+    if state['status']=='resolved':
+        ids=[i for i in case['scopes'][state['scope']] if all(corpus['objects'][i].get(k)==v for k,v in state['constraints'].items())]
+        if (ids!=[state['object_id']] or set(state['constraints'])!=set(case['factor_path'])
+            or any(state['hints'].get(k)!=v for k,v in state['constraints'].items())):raise ValueError('UNSUPPORTED_OBJECT_RESOLUTION')
 
 
 def live(corpus,case,state):
@@ -79,11 +84,11 @@ def apply(corpus,case,state,offered,candidate_id):
     result=copy.deepcopy(state);effect=candidate['effect_class'];delta=candidate['semantic_delta'];factor=expected['factor']
     if effect=='constrain':result['constraints'][delta['factor']]=delta['value']
     elif effect=='resolve':result.update(status='resolved',object_id=delta['object_id'])
+    elif factor and factor not in case['capabilities']:
+        result['status']='unsupported';result['unsupported_distinctions']=[factor]
     elif effect=='other':
         if state['scope']=='root' and set(case['scopes']['deeper'])!=set(case['scopes']['root']):result['scope']='deeper'
         else:result['status']='absent' if factor and state['hints'].get(factor) not in {corpus['objects'][i].get(factor) for i in expected['live_ids']} else 'insufficient'
-    elif factor and factor not in case['capabilities']:
-        result['status']='unsupported';result['unsupported_distinctions']=[factor]
     elif effect=='clarify' and state['evidence_index']<len(case['evidence_schedule']):
         update=case['evidence_schedule'][state['evidence_index']]
         if any(k not in case['factor_path'] for k in update):raise ValueError('ILLEGAL_CLARIFICATION')
@@ -109,4 +114,5 @@ def expand_view(corpus,value):
     result=copy.deepcopy(value)
     for identity in value['resolved_refs']:
         resolve_object(corpus,identity);result['objects'][identity]=copy.deepcopy(corpus['objects'][identity])
+    for identity in result['objects']:resolve_object({'objects':result['objects']},identity)
     return result
