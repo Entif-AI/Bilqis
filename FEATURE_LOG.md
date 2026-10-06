@@ -21,19 +21,19 @@
     "id": "82344f89-728f-4101-b0dc-4f464defce17",
     "holder": "codex:a702e9eb-133f-49da-a62f-f105efb0f8c6",
     "acquired_at": "2026-10-06T06:21:03.864600Z",
-    "heartbeat_at": "2026-10-06T06:21:03.864600Z",
-    "expires_at": "2026-10-06T07:21:03.864600Z",
+    "heartbeat_at": "2026-10-06T06:26:35.191280Z",
+    "expires_at": "2026-10-06T07:26:35.191280Z",
     "released_at": null
   },
   "focus": {
-    "summary": "Frozen source verification and faithful execution of #77",
+    "summary": "Complete bounded source verification and faithfully encode the 36 frozen cells",
     "acceptance_refs": [
       "#77"
     ]
   },
   "checkpoint": {
-    "sha": null,
-    "pushed_at": null
+    "sha": "cfdaab2b299ab995911f813c46c7c4f70b09a97d",
+    "pushed_at": "2026-10-06T06:26:35.191280Z"
   },
   "state": {
     "status": "active",
@@ -45,16 +45,16 @@
 # Feature Worklog
 
 ## Objective
-Execute the frozen 36-cell v0.1 battery; preserve both orders and expose every failure.
+Execute frozen #77; preserve historical #65 evidence.
 
-## Authority / Publication
-#77 is EXECUTABLE_LEAF; public research proving. #76 is open; stack on its live head. Public/protected authority reviewed. No public semantic or permanent ABI change.
+## Execution / Recovery
+Work Stack: eda542d8-a888-4a35-9191-c6ea0c24b8b8. Private journal and Drive checkpoints are keyed by work epoch e24d1fae-5d1b-40a4-80ed-486087994b70.
+
+## Current Focus / Next Safe Step
+Complete bounded source verification and faithfully encode the 36 frozen cells
+
+## Invariants
+No new linguistic questions/gold; exact supplied packet; fixture-local IDs; native Kev-4B; separate epochs; loopback only; no self-merge.
 
 ## Validation
-Focused fixture/harness tests, 36-cell and atomic coverage, source/gold review, exact runtime identity, report replay, historical receipt bytes, full unittest suite.
-
-## Dependencies
-Reuse #65 harness. #69/#70 are independent.
-
-## Next Safe Step
-Initialize Work Stack, private continuity journal and external persistence; append WORK_ACCEPTED after verified remote ownership.
+Focused behavior tests then full unittest; exact fixture/runtime/coverage/report replay and historical checksums. Executed checks have separate SHA-bound receipts.
