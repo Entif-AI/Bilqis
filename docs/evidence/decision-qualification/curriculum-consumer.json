@@ -1,0 +1,156 @@
+{
+  "owner_issue": 16,
+  "scope": "real #65 scores consumed as research proposals, no training or promotion",
+  "records": [
+    {
+      "fixture_id": "curriculum-0",
+      "engine": "kev",
+      "source_score_row_sha256": "27adb2935213b05b73abc8d55979acd6eabbcdd05cebf0c6f14ebcce9fceb227",
+      "proposal": {
+        "stage": 0,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          0
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-1",
+      "engine": "kev",
+      "source_score_row_sha256": "4361d80560d250f316c03550d3429310d69c3a996fc5e4dd7024f1e9bb21179f",
+      "proposal": {
+        "stage": 4,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          1,
+          2,
+          4
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-2",
+      "engine": "kev",
+      "source_score_row_sha256": "1153a5688a2c46cd54d640781f943fe446e3c3d7f2bac6f51ad1868a0d9608fa",
+      "proposal": {
+        "stage": 4,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          2,
+          4
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-3",
+      "engine": "kev",
+      "source_score_row_sha256": "422ee6b5161cc4d296944cbdcf9cffdb8a68d4e96109779d4b584cfe878e936a",
+      "proposal": {
+        "stage": 3,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          3,
+          4
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-4",
+      "engine": "kev",
+      "source_score_row_sha256": "7e70b81e7be87f24709299080c1bd054c1c5f78c1512d4d6a23b3c88bdf429e3",
+      "proposal": {
+        "stage": 2,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          1,
+          2
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-0",
+      "engine": "semif",
+      "source_score_row_sha256": "e24e9cb440f888e9a27656878d8ac429e01e69259e68cbbcd0eacdd9cfdd74a0",
+      "proposal": {
+        "stage": 0,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          0
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-1",
+      "engine": "semif",
+      "source_score_row_sha256": "a9d7716e6119f25b92b17bcd5e572c6187f626a900ca196be17b05a945553935",
+      "proposal": {
+        "stage": 4,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          1,
+          2,
+          4
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-2",
+      "engine": "semif",
+      "source_score_row_sha256": "c914e789688ae5a7382a9dd0b9bf8791de2a46d63d27b9d9b8aad3326ffaf38c",
+      "proposal": {
+        "stage": 4,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          2,
+          4
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-3",
+      "engine": "semif",
+      "source_score_row_sha256": "a19b9febfe29e568171f2b2a9a8d2c0a4092df0845d0f7efac194306aaf32fc8",
+      "proposal": {
+        "stage": 3,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          3,
+          4
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    },
+    {
+      "fixture_id": "curriculum-4",
+      "engine": "semif",
+      "source_score_row_sha256": "2d9bc986cbd74c7afbeedc2fa12ccb5d4038081639c720d0dafe91a95e771ea1",
+      "proposal": {
+        "stage": 2,
+        "disposition": "deterministic_fallback",
+        "eligible_stages": [
+          1,
+          2
+        ],
+        "promotion_authority": false
+      },
+      "teacher_unchanged": true
+    }
+  ]
+}

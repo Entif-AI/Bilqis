@@ -1,9 +1,10 @@
 """Local-only adaptive assistance events. No call is made unless an operator invokes fill."""
 from __future__ import annotations
-import argparse,json,hashlib,time,urllib.request,urllib.parse
+import argparse,json,hashlib,time,urllib.parse
 from pathlib import Path
 from .semantics import canonical,digest
 from .pedagogue import accept
+from .local_http import local_bytes
 
 def read_event(store:Path,request_id:str,identity:str,eligible:list[int])->tuple[dict,str]:
     path=store/(request_id+".json");raw=path.read_bytes();record=json.loads(raw)
@@ -23,13 +24,7 @@ def fill(request_path:Path,store:Path,identity_path:Path,endpoint:str,system_pro
     if dest.exists():raise FileExistsError("append-only event already exists; inspect instead of replaying call")
     identity=hashlib.sha256(identity_path.read_bytes()).hexdigest();params=manifest["decoding"]
     body={"model":manifest["model_id"],"messages":[{"role":"system","content":system_prompt.read_text()},{"role":"user","content":json.dumps(req)}],**params}
-    t0=time.perf_counter();request=urllib.request.Request(endpoint,data=canonical(body),headers={"Content-Type":"application/json"},method="POST")
-    # Bypass inherited proxy settings: the recipient must remain the explicit local service.
-    class NoRedirect(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self,*args,**kwargs):raise ValueError("LOCAL_SERVICE_REDIRECT_FORBIDDEN")
-    opener=urllib.request.build_opener(urllib.request.ProxyHandler({}),NoRedirect())
-    with opener.open(request,timeout=120) as response:raw=response.read(1000001)
-    if len(raw)>1000000:raise ValueError("LOCAL_RESPONSE_TOO_LARGE")
+    t0=time.perf_counter();raw=local_bytes(endpoint,"/v1/chat/completions",body)
     response=json.loads(raw);text=response["choices"][0]["message"]["content"];proposal=accept(json.loads(text),rid,eligible)
     event={"request_sha256":rid,"model_identity_sha256":identity,"proposal":proposal,"proposal_sha256":digest(proposal),"raw_response_sha256":hashlib.sha256(raw).hexdigest(),"route_ledger_id":"LOCAL-"+rid,"elapsed_seconds":time.perf_counter()-t0,"usage":response.get("usage"),"model_reported":response.get("model"),"endpoint_scope":"loopback only; trusted operator service, not attestation"}
     # Exclusive creation prevents overwriting a successful response on an accidental retry.
