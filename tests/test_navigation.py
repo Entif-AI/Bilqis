@@ -54,6 +54,21 @@ class NavigationTests(unittest.TestCase):
         self.assertEqual(state['unsupported_distinctions'],['purpose'])
         self.assertEqual(len(live(self.corpus,case,state)),2)
         self.assertIsNone(state['object_id'])
+        active=initial(self.corpus,case)
+        for factor in ['kind','color']:
+            offered=panel(self.corpus,case,active)
+            choice=next(x for x in offered['candidates'] if x['semantic_delta'].get('value')==case['hints'][factor])
+            active=apply(self.corpus,case,active,offered,choice['candidate_id'])
+        for effect in ['other','clarify','insufficient','abstain']:
+            offered=panel(self.corpus,case,active);choice=next(x for x in offered['candidates'] if x['effect_class']==effect)
+            stopped=apply(self.corpus,case,active,offered,choice['candidate_id'])
+            self.assertEqual(stopped['status'],'unsupported')
+            self.assertEqual(stopped['unsupported_distinctions'],['purpose'])
+
+    def test_serialized_state_cannot_assert_a_target_while_still_unresolved(self):
+        case=self.corpus['cases'][0];state=initial(self.corpus,case)
+        state['object_id']=case['expected_terminal']['object_id']
+        with self.assertRaises(ValueError):panel(self.corpus,case,state)
 
     def test_ambiguity_and_absence_never_offer_forced_resolution(self):
         for family in ['persistent_ambiguity','absent_object']:
@@ -68,6 +83,9 @@ class NavigationTests(unittest.TestCase):
         full=context(self.corpus,case);compact=reference_view(self.corpus,case,state)
         self.assertLess(len(str(compact)),len(str(full)))
         self.assertEqual(expand_view(self.corpus,compact),full)
+        corrupt=copy.deepcopy(compact);identity=next(iter(corrupt['objects']))
+        corrupt['objects'][identity]['kind']='invented'
+        with self.assertRaises(ValueError):expand_view(self.corpus,corrupt)
 
     def test_structurally_legal_wrong_choice_retains_its_consequence(self):
         case=self.corpus['cases'][0];state=initial(self.corpus,case);p=panel(self.corpus,case,state)
