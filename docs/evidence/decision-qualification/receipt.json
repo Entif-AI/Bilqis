@@ -1,0 +1,757 @@
+{
+  "version": "bilqis-decision-qualification-0.1.0",
+  "owner_issue": 65,
+  "date": "2026-10-05",
+  "publication_posture": "public research evidence; host control and raw inventory remain private",
+  "bilqis_base_commit": "97de3909f11652255de2fa60d932ac71578f0665",
+  "bilqis_harness_source_commit": "86ef74311696f18dfa9b921a831b7c2db500b796",
+  "fixture_version": "bilqis-decision-fixture-0.1.0",
+  "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+  "frozen_policy": {
+    "local_probability": 0.8,
+    "local_margin": 0.2,
+    "confident_wrong_probability": 0.8,
+    "ece_min_labeled": 100,
+    "qualification_accuracy": 0.8,
+    "qualification_min_labeled": 20
+  },
+  "conclusion": "QUALITY_INADEQUATE",
+  "selected_quality_default": null,
+  "runtime_default": "K1 calibrated Kev-4B",
+  "routing": "All outputs are proposals. Low-margin, unsupported or ineligible curriculum choices route to review/deterministic fallback; no graph-edge acceptance, promotion, gold or initialization authority.",
+  "identities": {
+    "kev": {
+      "engine_revision": "6b719c3c3f367295f6ef336f4f751cf5ff970abc",
+      "model": "jaredpalmer/kev-4b",
+      "model_revision": "6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+      "backend": "mlx",
+      "runtime_versions": {
+        "python": "3.13.12 (main, Mar 25 2026, 02:48:22) [Clang 22.1.1 ]",
+        "mlx": "0.32.2",
+        "mlx-lm": "0.31.3",
+        "torch": "2.8.0",
+        "transformers": "5.17.0"
+      },
+      "base_model": "Qwen/Qwen3.5-4B-Base",
+      "base_revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
+      "source_release": "kev-1.0",
+      "dtype": "bfloat16",
+      "typesafe_sdk": "0.6.0"
+    },
+    "semif": {
+      "engine_revision": "23cf1f39fc9534fe81437200959b6dfc7106e45a",
+      "model": "Qwen/Qwen3.5-4B",
+      "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "backend": "mlx",
+      "runtime_versions": {
+        "python": "3.13.12 (main, Mar 25 2026, 02:48:22) [Clang 22.1.1 ]",
+        "mlx": "0.32.2",
+        "mlx-lm": "0.32.0",
+        "torch": "2.10.0",
+        "transformers": "5.17.0"
+      }
+    }
+  },
+  "profiles": {
+    "K1": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "kev",
+      "mode": "direct",
+      "model_load_seconds": null,
+      "wall_seconds": 3.3672655411064625,
+      "memory": null,
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6867011769565218,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 0,
+      "review": 25,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 3085.933083668351,
+      "decisions_per_second": 8.101277416644974,
+      "resource_ms_per_local_proposal": null,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 0,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "api_output_tokens_scope": "serialized answer tokens; no model generation",
+      "first_state_median_ms": 149.67335457913578,
+      "warm_median_ms": 81.37537492439151
+    },
+    "K2": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "kev",
+      "mode": "serial",
+      "model_load_seconds": null,
+      "wall_seconds": 4.679345957934856,
+      "memory": null,
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6867011769565218,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 0,
+      "review": 25,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 4388.700166717172,
+      "decisions_per_second": 5.696447478821607,
+      "resource_ms_per_local_proposal": null,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 0,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "api_output_tokens_scope": "serialized answer tokens; no model generation",
+      "first_state_median_ms": 155.71714588440955,
+      "warm_median_ms": 81.6510422155261
+    },
+    "K3": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "kev",
+      "mode": "direct",
+      "model_load_seconds": null,
+      "wall_seconds": 4.963611084036529,
+      "memory": null,
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6754754756521739,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 3,
+      "review": 22,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 4693.022876046598,
+      "decisions_per_second": 5.327056922650247,
+      "resource_ms_per_local_proposal": 1564.3409586821992,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 0,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "api_output_tokens_scope": "serialized answer tokens; no model generation",
+      "first_state_median_ms": 154.073458397761,
+      "warm_median_ms": 80.7967078872025
+    },
+    "S1": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "semif",
+      "mode": "direct",
+      "model_load_seconds": 70.0710278749466,
+      "wall_seconds": 77.10005120793357,
+      "memory": {
+        "active_bytes": 8411510282,
+        "peak_bytes": 8787378192,
+        "cache_bytes": 269990590,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 12,
+      "accuracy": 0.5217391304347826,
+      "brier": 0.5766373611220936,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 6,
+      "review": 19,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 6977.759998291731,
+      "decisions_per_second": 3.582811676830445,
+      "resource_ms_per_local_proposal": 1162.9599997152884,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 1,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "first_state_median_ms": 206.96429070085287,
+      "warm_median_ms": null
+    },
+    "S2": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "semif",
+      "mode": "serial",
+      "model_load_seconds": 10.528353082947433,
+      "wall_seconds": 16.689157999586314,
+      "memory": {
+        "active_bytes": 8471410186,
+        "peak_bytes": 8872086526,
+        "cache_bytes": 268673608,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 12,
+      "accuracy": 0.5217391304347826,
+      "brier": 0.5713475327074595,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 6,
+      "review": 19,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 6053.399083670229,
+      "decisions_per_second": 4.129911088703949,
+      "resource_ms_per_local_proposal": 1008.8998472783715,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 1,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "first_state_median_ms": 234.4490836840123,
+      "warm_median_ms": 122.84829095005989
+    },
+    "S3": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "semif",
+      "mode": "shared",
+      "model_load_seconds": 7.297680290881544,
+      "wall_seconds": 12.105318957939744,
+      "memory": {
+        "active_bytes": 8411510282,
+        "peak_bytes": 9586722438,
+        "cache_bytes": 269806355,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 12,
+      "accuracy": 0.5217391304347826,
+      "brier": 0.5739669864773507,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 6,
+      "review": 19,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 4711.786288302392,
+      "decisions_per_second": 5.305843361797982,
+      "resource_ms_per_local_proposal": 785.2977147170653,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 1,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "first_state_median_ms": null,
+      "warm_median_ms": null
+    },
+    "S4": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "semif",
+      "mode": "direct",
+      "model_load_seconds": 7.412282708100975,
+      "wall_seconds": 12.047605583909899,
+      "memory": {
+        "active_bytes": 4469536266,
+        "peak_bytes": 8960732680,
+        "cache_bytes": 271718826,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 12,
+      "accuracy": 0.5217391304347826,
+      "brier": 0.5751984630143118,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 6,
+      "review": 19,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 4584.279497619718,
+      "decisions_per_second": 5.453419673250873,
+      "resource_ms_per_local_proposal": 764.0465829366198,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 1,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "first_state_median_ms": 176.8497503362596,
+      "warm_median_ms": null
+    },
+    "S5": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "semif",
+      "mode": "direct",
+      "model_load_seconds": 6.799560375045985,
+      "wall_seconds": 11.317800750024617,
+      "memory": {
+        "active_bytes": 2367534602,
+        "peak_bytes": 8749510152,
+        "cache_bytes": 270702818,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6182368706623723,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 6,
+      "review": 19,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 4471.111998893321,
+      "decisions_per_second": 5.59145018201019,
+      "resource_ms_per_local_proposal": 745.1853331488868,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 0,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "first_state_median_ms": 173.26233396306634,
+      "warm_median_ms": null
+    },
+    "G2": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "generative",
+      "mode": "direct",
+      "model_load_seconds": 6.307655707933009,
+      "wall_seconds": 14.398176291026175,
+      "memory": {
+        "active_bytes": 8412018186,
+        "peak_bytes": 8834076266,
+        "cache_bytes": 75890466,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 13,
+      "accuracy": 0.5652173913043478,
+      "brier": null,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 0,
+      "review": 25,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 8032.779292203486,
+      "decisions_per_second": 3.112247839831064,
+      "resource_ms_per_local_proposal": null,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 2,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 212,
+      "first_state_median_ms": 303.37687488645315,
+      "warm_median_ms": null
+    },
+    "K-order": {
+      "fixture_sha256": "7c602cf56683fe38706932042e49b35e51d048f1d2310ad9d9cfc08558112841",
+      "engine": "kev",
+      "mode": "direct",
+      "model_load_seconds": null,
+      "wall_seconds": 3.2903749998658895,
+      "memory": null,
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6867011769565218,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 0,
+      "review": 25,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 3027.4885846301913,
+      "decisions_per_second": 8.257669451478298,
+      "resource_ms_per_local_proposal": null,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 0,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "api_output_tokens_scope": "serialized answer tokens; no model generation",
+      "first_state_median_ms": 148.8836668431759,
+      "warm_median_ms": 80.12358285486698
+    },
+    "S-order": {
+      "fixture_sha256": "7c602cf56683fe38706932042e49b35e51d048f1d2310ad9d9cfc08558112841",
+      "engine": "semif",
+      "mode": "direct",
+      "model_load_seconds": 9.525898207910359,
+      "wall_seconds": 16.27882424974814,
+      "memory": {
+        "active_bytes": 8411510282,
+        "peak_bytes": 8787656756,
+        "cache_bytes": 268876478,
+        "scope": "MLX allocator; not total system unified memory"
+      },
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6328585337909934,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 6,
+      "review": 19,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 6687.610209453851,
+      "decisions_per_second": 3.7382561508532723,
+      "resource_ms_per_local_proposal": 1114.6017015756418,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+      "quality_by_family": {
+        "evidence": {
+          "correct": 5,
+          "labeled": 12
+        },
+        "curriculum": {
+          "correct": 0,
+          "labeled": 5
+        },
+        "relation": {
+          "correct": 6,
+          "labeled": 6
+        }
+      },
+      "generated_output_tokens": 0,
+      "first_state_median_ms": 204.68574995175004,
+      "warm_median_ms": null
+    }
+  },
+  "comparisons": {
+    "K-order vs K1": {
+      "agreement": 1.0,
+      "changed_fixture_ids": []
+    },
+    "S-order vs S1": {
+      "agreement": 0.76,
+      "changed_fixture_ids": [
+        "curriculum-0",
+        "curriculum-1",
+        "curriculum-2",
+        "curriculum-3",
+        "curriculum-4",
+        "review-ambiguous"
+      ]
+    },
+    "S2 vs S1": {
+      "agreement": 1.0,
+      "changed_fixture_ids": []
+    },
+    "S3 vs S1": {
+      "agreement": 1.0,
+      "changed_fixture_ids": []
+    },
+    "S4 vs S1": {
+      "agreement": 1.0,
+      "changed_fixture_ids": []
+    },
+    "S5 vs S1": {
+      "agreement": 0.72,
+      "changed_fixture_ids": [
+        "curriculum-0",
+        "curriculum-1",
+        "curriculum-2",
+        "curriculum-3",
+        "curriculum-4",
+        "review-ambiguous",
+        "review-absent"
+      ]
+    },
+    "K1 vs S1": {
+      "agreement": 0.68,
+      "changed_fixture_ids": [
+        "evidence-1-1",
+        "evidence-2-1",
+        "curriculum-0",
+        "curriculum-1",
+        "curriculum-2",
+        "curriculum-3",
+        "curriculum-4",
+        "review-absent"
+      ]
+    },
+    "G2 vs S1": {
+      "agreement": 0.84,
+      "changed_fixture_ids": [
+        "curriculum-2",
+        "curriculum-3",
+        "curriculum-4",
+        "review-absent"
+      ]
+    }
+  },
+  "artifacts": [
+    {
+      "path": "K1.rows.jsonl.gz",
+      "sha256": "f0c5e054b66fea0b209ee6ae1d802c6a408df9c39bee7721b32c26e2510c35c3"
+    },
+    {
+      "path": "K1.summary.json",
+      "sha256": "77248338c50e44ab9a3865fd9d9f0d8793d8772f5b68524d778e6aa1b1b109b2"
+    },
+    {
+      "path": "K2.rows.jsonl.gz",
+      "sha256": "639f90061bc0b1db9ad144eced220a202cb3db239f2c4117d70f7852aa846e27"
+    },
+    {
+      "path": "K2.summary.json",
+      "sha256": "af955198b252c1d1b9246cb2c649246a86f2b81609cc1bde65aa8be6750927b0"
+    },
+    {
+      "path": "K3.rows.jsonl.gz",
+      "sha256": "9570d2bc0c8971c051fb3edda647a015a7f22ef4e222f870a8d6b42001fd86c0"
+    },
+    {
+      "path": "K3.summary.json",
+      "sha256": "805b4d5673be962a0fe75656748f86b867cd6839d51e6698d55d80e34c820b06"
+    },
+    {
+      "path": "S1.rows.jsonl.gz",
+      "sha256": "32fd33dfae05d66645c11ffdea86708d2a98dab0c6d3865230ce94eb9a5b9145"
+    },
+    {
+      "path": "S1.summary.json",
+      "sha256": "7b43474b5e742c5e4037a04db3ca1cd535c4fa08c84de258ef3ba7f31fb9dbe3"
+    },
+    {
+      "path": "S2.rows.jsonl.gz",
+      "sha256": "42345a301a9c95926abdbb7d1026b18cb11c05e9ff23aa9000f64f803cb933dd"
+    },
+    {
+      "path": "S2.summary.json",
+      "sha256": "f477afcef45879b0b1b1b35ce48a944674b30200261fda2e0bb5aab924df91d9"
+    },
+    {
+      "path": "S3.rows.jsonl.gz",
+      "sha256": "bfd5b76b29a0b6166b4776f873506f1440e5b85ab58297578fed7148c874511b"
+    },
+    {
+      "path": "S3.summary.json",
+      "sha256": "8912f5fd36c89d9b34371c96a8cfecd160540169d601a7c7d32a48bddde92066"
+    },
+    {
+      "path": "S4.rows.jsonl.gz",
+      "sha256": "1c3920232b9247c43f7fedc2a91d43010a53ec8811b7c570b79f249657a3b753"
+    },
+    {
+      "path": "S4.summary.json",
+      "sha256": "e1cdd81bedd3ea7536a7a53aaddfb0ce08849a5f83e441bad0bfd1b8d0e5ab39"
+    },
+    {
+      "path": "S5.rows.jsonl.gz",
+      "sha256": "30b00ab4ffe22261c89d34364405c6a61d1276dde618d1d081776a4d1438a1c2"
+    },
+    {
+      "path": "S5.summary.json",
+      "sha256": "3379f930f495d43db9a47fcc3450b2ecd7e52575d60042f643faa6cfff5acf96"
+    },
+    {
+      "path": "G2.rows.jsonl.gz",
+      "sha256": "2afcc2cd2c759bf16b842e5b030de0d9afdd6c0bcdbed859142bd3955a89164a"
+    },
+    {
+      "path": "G2.summary.json",
+      "sha256": "f9fc58f5b043427a684b4e0228ce3528722887e73290724bf01430bcf279f5d9"
+    },
+    {
+      "path": "K-order.rows.jsonl.gz",
+      "sha256": "497a2d81aa86273a32f22fc6fa119d9bf0147fc333dfae5f1356cbc39c22ad8d"
+    },
+    {
+      "path": "K-order.summary.json",
+      "sha256": "6ec0f58e3e99b76447beaa9322b9bb0e14c1d147a57f7e89728815052f343f64"
+    },
+    {
+      "path": "S-order.rows.jsonl.gz",
+      "sha256": "33853451a0bd3b89549ac2fc5415ecf9d5a0d57d0794e3e474f17540b3996cd7"
+    },
+    {
+      "path": "S-order.summary.json",
+      "sha256": "afd49c136dc5ebd5db3f9f8c9d1d66637d4d907d320e59d08a64a0c2fdc20b76"
+    },
+    {
+      "path": "curriculum-consumer.json",
+      "sha256": "66e3d1fca1cc014fd6165f6a3e5feb586a8eedff8a2527f36a816097626ce2a4"
+    }
+  ],
+  "host": {
+    "chip": "Apple M3 Ultra",
+    "unified_memory_bytes": 103079215104,
+    "gpu_cores": "60",
+    "macos": "ProductName:\t\tmacOS\nProductVersion:\t\t26.2\nBuildVersion:\t\t25C56",
+    "architecture": "arm64",
+    "local_machine_profile_sha256": "486c7fc430f580ba4fbb09894480e5496a7373f42cdbf5536c06dbf0d226ba59",
+    "student_training_qualification": false
+  },
+  "kev_stability": {
+    "sequential_requests": 24,
+    "questions_per_request": 3,
+    "standalone_permutation_orders": 6,
+    "standalone_permutation_argmax_stable": true,
+    "first_state_ms": 1964.6338326856494,
+    "repeat_state_median_ms": 77.68912520259619,
+    "prefix_cache": {
+      "size": 4,
+      "min_state_tokens": 0,
+      "max_tokens": 65536,
+      "hits": 25,
+      "misses": 7,
+      "cached_states": 4,
+      "oom_retries": 0
+    },
+    "rss_samples_kib": [
+      4591424,
+      4592640,
+      4599792
+    ],
+    "physical_footprint": "10.2G as printed by vmmap; peak 18.7G; process footprint, distinct from MLX allocator",
+    "missing_evidence_distribution": {
+      "adult": 0.002,
+      "minor": 0.0028,
+      "insufficient": 0.9952
+    },
+    "sdk_verified": true,
+    "process_crash": false
+  },
+  "caveats": [
+    "23 labeled diagnostic cases cannot establish general reliability or local calibration; ECE not estimated.",
+    "Both native engines got 6/6 explicit relation cases, but evidence and curriculum decisions failed the frozen aggregate gate.",
+    "Kev release pins MLX-LM 0.31.3; SemIf pins the Qwen normalization fix at a63e24c389382619eb6d9af656e3b46024be217a. This is a recorded runtime difference, not an attributed cause of the observed errors.",
+    "Source-precision S1 includes first download/load and artifact hashing; subsequent load times include hashing but cached downloads.",
+    "Quantized peak allocation includes loading/transforming source weights; active post-quantization memory is separate.",
+    "Shared latency is amortized per batch; shared warm_state is null rather than an invented cache-hit assertion.",
+    "Formal ABI/curriculum decisions are the measured failures, not a license to fabricate labels or retune gates."
+  ],
+  "kev27_gate": {
+    "disposition": "NOT_ADMITTED",
+    "reasons": [
+      "Kev-4B has zero local completions under the frozen calibrated routing gate",
+      "No quality-qualified default on the owned fixture"
+    ],
+    "disk_headroom_sufficient": true,
+    "weights_downloaded": false
+  },
+  "downstream": {
+    "69": "independent frozen corpus implemented in separate branch/PR",
+    "70": "independent deterministic compiler implemented in separate branch/PR",
+    "71": "BLOCKED_DEPENDENCY: no #65 quality-qualified profile under the frozen gate",
+    "72": "BLOCKED_DEPENDENCY: requires #71 proof",
+    "73": "BLOCKED_DEPENDENCY: requires qualified semantic-navigation proof; existing graph not consumed"
+  }
+}
