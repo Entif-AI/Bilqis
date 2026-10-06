@@ -1,0 +1,32 @@
+{
+  "event": "EVIDENCE_EPOCH_DECLARED",
+  "initial_canonical": {
+    "path": "initial-canonical/A",
+    "canonical": {
+      "correct": 29,
+      "total": 36
+    },
+    "atomic": {
+      "correct": 34,
+      "total": 42
+    },
+    "artifact_sha256": {
+      "summary.json": "e1045b6f834fecd318b126de17362b0df3f17a37261e0afe3b5fc04cb00614a2",
+      "rows.jsonl": "5c932410c4d59dad0dcd2583efd20279c13ba41f51e2a4aaf8097f4d8a21d0e9",
+      "START.json": "8d50fc5d35c9c952864b4137a1047a5b791c53f6fb2bae74d0f1eee2be999ace",
+      "RECEIPT.json": "42a155a3fd46a933a6bd984523ad1f429a86adf04c8f74375fec34f59ec132e8"
+    }
+  },
+  "new_epoch": "order-preserving-http-v1",
+  "reason": "Existing #65 HTTP canonical serialization sorts criteria keys, so shuffled candidate presentation would not reach the provider. No permutation inference was executed before finding this bug.",
+  "changed_surface": "choice-criteria HTTP serialization; preserve old canonical request bytes and preserve permuted criterion insertion order",
+  "unchanged": [
+    "frozen fixture",
+    "packet bytes",
+    "question/option/gold semantic content",
+    "engine and calibrated runtime",
+    "canonical state construction"
+  ],
+  "context_packet_sha256": "c178cd133d051cddcca0eae8a69111b4696418425a6a99c27723786a6af898be",
+  "harness_source_before": "263cbdd6ab0e07c87662a7bc5f30c471b50f8b8d"
+}

@@ -1,0 +1,718 @@
+{
+  "canonical": {
+    "correct": 29,
+    "total": 36
+  },
+  "atomic": {
+    "correct": 34,
+    "total": 42
+  },
+  "difficulty": {
+    "SIMPLE": {
+      "correct": 10,
+      "total": 12
+    },
+    "MEDIUM": {
+      "correct": 9,
+      "total": 12
+    },
+    "HARD": {
+      "correct": 10,
+      "total": 12
+    }
+  },
+  "families": {
+    "1": {
+      "correct": 2,
+      "total": 3
+    },
+    "2": {
+      "correct": 3,
+      "total": 3
+    },
+    "3": {
+      "correct": 2,
+      "total": 3
+    },
+    "4": {
+      "correct": 3,
+      "total": 3
+    },
+    "5": {
+      "correct": 3,
+      "total": 3
+    },
+    "6": {
+      "correct": 3,
+      "total": 3
+    },
+    "7": {
+      "correct": 3,
+      "total": 3
+    },
+    "8": {
+      "correct": 3,
+      "total": 3
+    },
+    "9": {
+      "correct": 3,
+      "total": 3
+    },
+    "10": {
+      "correct": 0,
+      "total": 3
+    },
+    "11": {
+      "correct": 3,
+      "total": 3
+    },
+    "12": {
+      "correct": 1,
+      "total": 3
+    }
+  },
+  "dimensions": {
+    "Affiliation": {
+      "correct": 9,
+      "total": 12
+    },
+    "Configuration": {
+      "correct": 10,
+      "total": 14
+    },
+    "Specification": {
+      "correct": 2,
+      "total": 2
+    },
+    "case morphology": {
+      "correct": 9,
+      "total": 11
+    },
+    "holistic composition": {
+      "correct": 4,
+      "total": 6
+    },
+    "reconstruction": {
+      "correct": 0,
+      "total": 3
+    },
+    "root/stem": {
+      "correct": 2,
+      "total": 3
+    },
+    "semantic role": {
+      "correct": 12,
+      "total": 14
+    },
+    "uncertainty/clarification": {
+      "correct": 1,
+      "total": 3
+    }
+  },
+  "sequential": {
+    "atomic": {
+      "correct": 5,
+      "total": 9
+    },
+    "final": {
+      "correct": 2,
+      "total": 3
+    },
+    "joint": {
+      "correct": 0,
+      "total": 3
+    },
+    "wrong_path_right_final": [
+      "F10-MEDIUM",
+      "F10-HARD"
+    ]
+  },
+  "whole_expression": {
+    "English_to_New_Ithkuil": {
+      "correct": 1,
+      "total": 1
+    },
+    "New_Ithkuil_to_English": {
+      "correct": 1,
+      "total": 1
+    },
+    "validation": {
+      "correct": 3,
+      "total": 3
+    }
+  },
+  "atomic_vs_compositional": {
+    "source_exact": {
+      "correct": 15,
+      "total": 16
+    },
+    "source_derived": {
+      "correct": 9,
+      "total": 15
+    },
+    "controlled_mutation": {
+      "correct": 5,
+      "total": 5
+    }
+  },
+  "latency": {
+    "mean_ms": 2943.3395526637987,
+    "median_ms": 165.44662532396615,
+    "min_ms": 134.40370885655284,
+    "max_ms": 11891.613916959614,
+    "total_decision_seconds": 123.62026121187955,
+    "decision_throughput_per_second": 0.33975013147734656,
+    "epoch_wall_seconds": 124.0692962501198,
+    "epoch_throughput_per_second": 0.33852049837801385,
+    "warm_decisions": 32
+  },
+  "cells": [
+    {
+      "cell_id": "F01-SIMPLE",
+      "family": 1,
+      "difficulty": "SIMPLE",
+      "correct": false,
+      "final_correct": false,
+      "selected_description": "COA(-r-) + DDS(-ţs-)",
+      "selected_path": [
+        "F01-SIMPLE.C"
+      ],
+      "top_probability_min": 0.3801,
+      "margin_min": 0.011399999999999966,
+      "latency_ms": 340.64316703006625,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F01-MEDIUM",
+      "family": 1,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "CSV(-e-) + ASO(-l-) + MDS(-ţ-)",
+      "selected_path": [
+        "F01-MEDIUM.A"
+      ],
+      "top_probability_min": 0.308,
+      "margin_min": 0.032399999999999984,
+      "latency_ms": 182.01716616749763,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F01-HARD",
+      "family": 1,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Weţdosmá welo šnaliothe aggwilä.",
+      "selected_path": [
+        "F01-HARD.A"
+      ],
+      "top_probability_min": 0.8009,
+      "margin_min": 0.7105999999999999,
+      "latency_ms": 188.5099159553647,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F02-SIMPLE",
+      "family": 2,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "A pair of similar connected members whose distinct functions complement one another as a unified whole.",
+      "selected_path": [
+        "F02-SIMPLE.A"
+      ],
+      "top_probability_min": 0.8365,
+      "margin_min": 0.7391,
+      "latency_ms": 161.82716703042388,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F02-MEDIUM",
+      "family": 2,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways.",
+      "selected_path": [
+        "F02-MEDIUM.A"
+      ],
+      "top_probability_min": 0.9479,
+      "margin_min": 0.9269,
+      "latency_ms": 191.44241698086262,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F02-HARD",
+      "family": 2,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "The child hit themself on the leg with a rock.",
+      "selected_path": [
+        "F02-HARD.B"
+      ],
+      "top_probability_min": 0.9396,
+      "margin_min": 0.8975,
+      "latency_ms": 156.3089587725699,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F03-SIMPLE",
+      "family": 3,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "-DN- : NAME / DESIGNATION / LABEL",
+      "selected_path": [
+        "F03-SIMPLE.A"
+      ],
+      "top_probability_min": 0.9721,
+      "margin_min": 0.9601999999999999,
+      "latency_ms": 142.67370896413922,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F03-MEDIUM",
+      "family": 3,
+      "difficulty": "MEDIUM",
+      "correct": false,
+      "final_correct": false,
+      "selected_description": "-DN-, Stem 1: name",
+      "selected_path": [
+        "F03-MEDIUM.A"
+      ],
+      "top_probability_min": 0.6917,
+      "margin_min": 0.5287999999999999,
+      "latency_ms": 148.0384161695838,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F03-HARD",
+      "family": 3,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "-ţd-, Stem 2, the forceful-physical-contact base used for hit/strike",
+      "selected_path": [
+        "F03-HARD.A"
+      ],
+      "top_probability_min": 0.9456,
+      "margin_min": 0.9121,
+      "latency_ms": 158.39195903390646,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F04-SIMPLE",
+      "family": 4,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "INSTRUMENT",
+      "selected_path": [
+        "F04-SIMPLE.C"
+      ],
+      "top_probability_min": 0.9939,
+      "margin_min": 0.9912,
+      "latency_ms": 134.40370885655284,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F04-MEDIUM",
+      "family": 4,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "children = RECIPIENT; story = CONTENT",
+      "selected_path": [
+        "F04-MEDIUM.A"
+      ],
+      "top_probability_min": 0.9688,
+      "margin_min": 0.9554,
+      "latency_ms": 150.34900000318885,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F04-HARD",
+      "family": 4,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "child = AGENT; leg = PATIENT; rock = INSTRUMENT",
+      "selected_path": [
+        "F04-HARD.A"
+      ],
+      "top_probability_min": 0.9294,
+      "margin_min": 0.8719,
+      "latency_ms": 152.72037498652935,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F05-SIMPLE",
+      "family": 5,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "MSC",
+      "selected_path": [
+        "F05-SIMPLE.B"
+      ],
+      "top_probability_min": 0.7748,
+      "margin_min": 0.6609,
+      "latency_ms": 138.01816711202264,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F05-MEDIUM",
+      "family": 5,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "MDS + COA",
+      "selected_path": [
+        "F05-MEDIUM.A"
+      ],
+      "top_probability_min": 0.8653,
+      "margin_min": 0.7743,
+      "latency_ms": 146.55245887115598,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F05-HARD",
+      "family": 5,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "ERG / ABS / INS",
+      "selected_path": [
+        "F05-HARD.A"
+      ],
+      "top_probability_min": 0.927,
+      "margin_min": 0.8986000000000001,
+      "latency_ms": 143.695916980505,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F06-SIMPLE",
+      "family": 6,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "-e-",
+      "selected_path": [
+        "F06-SIMPLE.C"
+      ],
+      "top_probability_min": 0.9797,
+      "margin_min": 0.9677,
+      "latency_ms": 139.11295821890235,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F06-MEDIUM",
+      "family": 6,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "-kš-",
+      "selected_path": [
+        "F06-MEDIUM.B"
+      ],
+      "top_probability_min": 0.5824,
+      "margin_min": 0.3133,
+      "latency_ms": 137.68624980002642,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F06-HARD",
+      "family": 6,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "-o- / -e- / -ä-",
+      "selected_path": [
+        "F06-HARD.A"
+      ],
+      "top_probability_min": 0.6457,
+      "margin_min": 0.4469000000000001,
+      "latency_ms": 149.8980838805437,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F07-SIMPLE",
+      "family": 7,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Separability is wrong: separate instead of connected.",
+      "selected_path": [
+        "F07-SIMPLE.B"
+      ],
+      "top_probability_min": 0.5805,
+      "margin_min": 0.2762,
+      "latency_ms": 155.72158293798566,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F07-MEDIUM",
+      "family": 7,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "The candidate says the members share the same subjective function rather than having distinct complementary functions.",
+      "selected_path": [
+        "F07-MEDIUM.A"
+      ],
+      "top_probability_min": 0.8662,
+      "margin_min": 0.7574,
+      "latency_ms": 194.7045000270009,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F07-HARD",
+      "family": 7,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain.",
+      "selected_path": [
+        "F07-HARD.A"
+      ],
+      "top_probability_min": 0.56,
+      "margin_min": 0.34830000000000005,
+      "latency_ms": 203.47099984064698,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F08-SIMPLE",
+      "family": 8,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS).",
+      "selected_path": [
+        "F08-SIMPLE.A"
+      ],
+      "top_probability_min": 0.9579,
+      "margin_min": 0.9278,
+      "latency_ms": 167.08350041881204,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F08-MEDIUM",
+      "family": 8,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary.",
+      "selected_path": [
+        "F08-MEDIUM.A"
+      ],
+      "top_probability_min": 0.5809,
+      "margin_min": 0.2567,
+      "latency_ms": 154.3710003606975,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F08-HARD",
+      "family": 8,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental.",
+      "selected_path": [
+        "F08-HARD.A"
+      ],
+      "top_probability_min": 0.7415,
+      "margin_min": 0.6008,
+      "latency_ms": 189.46266686543822,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F09-SIMPLE",
+      "family": 9,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Yes: INSTRUMENT in both, despite different English syntactic positions.",
+      "selected_path": [
+        "F09-SIMPLE.A"
+      ],
+      "top_probability_min": 0.9651,
+      "margin_min": 0.949,
+      "latency_ms": 181.8724162876606,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F09-MEDIUM",
+      "family": 9,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation.",
+      "selected_path": [
+        "F09-MEDIUM.A"
+      ],
+      "top_probability_min": 0.7946,
+      "margin_min": 0.6998,
+      "latency_ms": 151.58812515437603,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F09-HARD",
+      "family": 9,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit.",
+      "selected_path": [
+        "F09-HARD.A"
+      ],
+      "top_probability_min": 0.7527,
+      "margin_min": 0.6443000000000001,
+      "latency_ms": 207.52962492406368,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F10-SIMPLE",
+      "family": 10,
+      "difficulty": "SIMPLE",
+      "correct": false,
+      "final_correct": false,
+      "selected_description": "COA(-r-) + DPX(-s-)",
+      "selected_path": [
+        "F10-SIMPLE.S1.A",
+        "F10-SIMPLE.S2.C"
+      ],
+      "top_probability_min": 0.2736,
+      "margin_min": 0.01319999999999999,
+      "latency_ms": 23613.138999789953,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F10-MEDIUM",
+      "family": 10,
+      "difficulty": "MEDIUM",
+      "correct": false,
+      "final_correct": true,
+      "selected_description": "čverţa",
+      "selected_path": [
+        "F10-MEDIUM.S1.C",
+        "F10-MEDIUM.S2.A",
+        "F10-MEDIUM.S3.C"
+      ],
+      "top_probability_min": 0.3164,
+      "margin_min": 0.04550000000000004,
+      "latency_ms": 35458.17170897499,
+      "wrong_path_right_final": true
+    },
+    {
+      "cell_id": "F10-HARD",
+      "family": 10,
+      "difficulty": "HARD",
+      "correct": false,
+      "final_correct": true,
+      "selected_description": "Weţdosmá welo šnaliothe aggwilä.",
+      "selected_path": [
+        "F10-HARD.S1.B",
+        "F10-HARD.S2.C",
+        "F10-HARD.S3.A",
+        "F10-HARD.S4.A"
+      ],
+      "top_probability_min": 0.4434,
+      "margin_min": 0.1607,
+      "latency_ms": 47350.1309575513,
+      "wrong_path_right_final": true
+    },
+    {
+      "cell_id": "F11-SIMPLE",
+      "family": 11,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Yes, for the selected Configuration + Affiliation dimensions.",
+      "selected_path": [
+        "F11-SIMPLE.A"
+      ],
+      "top_probability_min": 0.7297,
+      "margin_min": 0.5598000000000001,
+      "latency_ms": 11836.925457697362,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F11-MEDIUM",
+      "family": 11,
+      "difficulty": "MEDIUM",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET.",
+      "selected_path": [
+        "F11-MEDIUM.A"
+      ],
+      "top_probability_min": 0.6136,
+      "margin_min": 0.3229,
+      "latency_ms": 195.09354187175632,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F11-HARD",
+      "family": 11,
+      "difficulty": "HARD",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting.",
+      "selected_path": [
+        "F11-HARD.A"
+      ],
+      "top_probability_min": 0.5055,
+      "margin_min": 0.3208,
+      "latency_ms": 163.80975022912025,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F12-SIMPLE",
+      "family": 12,
+      "difficulty": "SIMPLE",
+      "correct": true,
+      "final_correct": true,
+      "selected_description": "CLARIFY / INSUFFICIENT",
+      "selected_path": [
+        "F12-SIMPLE.D"
+      ],
+      "top_probability_min": 0.6696,
+      "margin_min": 0.5457,
+      "latency_ms": 145.96795896068215,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F12-MEDIUM",
+      "family": 12,
+      "difficulty": "MEDIUM",
+      "correct": false,
+      "final_correct": false,
+      "selected_description": "MSS",
+      "selected_path": [
+        "F12-MEDIUM.A"
+      ],
+      "top_probability_min": 0.3423,
+      "margin_min": 0.0786,
+      "latency_ms": 138.22658406570554,
+      "wrong_path_right_final": false
+    },
+    {
+      "cell_id": "F12-HARD",
+      "family": 12,
+      "difficulty": "HARD",
+      "correct": false,
+      "final_correct": false,
+      "selected_description": "EFF",
+      "selected_path": [
+        "F12-HARD.B"
+      ],
+      "top_probability_min": 0.6945,
+      "margin_min": 0.5045,
+      "latency_ms": 150.7020411081612,
+      "wrong_path_right_final": false
+    }
+  ],
+  "invalid_fixture_cells": []
+}

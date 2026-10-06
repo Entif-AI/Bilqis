@@ -1,0 +1,2118 @@
+{
+  "version": "new-ithkuil-kev-v0.1",
+  "source_issue": "https://github.com/Entif-AI/Bilqis/issues/77",
+  "source_issue_body_sha256": "08cc45c32bf5abe90677799cdf887b6c019565e27641a66628dca6d139309716",
+  "context_packet_sha256": "c178cd133d051cddcca0eae8a69111b4696418425a6a99c27723786a6af898be",
+  "gold_anchor_inventory_verbatim": "Codex should encode these anchors, not invent replacements.\n\nG-01: Chapter-2 root/stem anchor\n- root: -DN-\n- root meaning: NAME / DESIGNATION / LABEL\n- Stem 1: name\n- Stem 2: designation/reference\n- Stem 3: label\n- Stem Zero: deliberately undifferentiated root-level concept\n\nG-02: Chapter-2 Specification anchor\n- BSC = holistic/basic instantiation\n- CTE = semantic content/essence/purposeful function\n- CSV = realized/formal/constitutive manifestation\n- OBJ = salient instrument/object/result/patient as licensed by the stem\n\nG-03: Chapter-3 Configuration anchor\n- use the selected Configuration table above.\n\nG-04: Chapter-3 Affiliation anchor\n- use CSL / ASO / COA / VAR meanings above.\n\nG-05: Chapter-4 semantic-role anchor\n- use the John / key / door distinction:\n  John = AGENT, key = INSTRUMENT, door = PATIENT.\n- important invariant: semantic role can remain constant even when English syntactic subject/object position changes.\n\nG-06: Chapter-4 transfer/content anchor\n- in the source discussion corresponding to “Mary tells the children a story”:\n  children = RECIPIENT;\n  story = CONTENT.\n\nG-07: Chapter-4 anger minimal-pair anchor\n- Wekská welo kšili. = the child directly angers the clown: child ERG, clown AFF.\n- Wekská welö kšili. = what the child has started/caused makes the clown angry: child EFF, clown AFF.\n\nG-08: Chapter-4 hit/rock sentence family\nUse the official worked forms as the sentence-level gold family:\n- Weţdosmá welo šnaliothe aggwilä. = child intentionally hits their leg with a rock; child ERG, leg ABS, rock INS.\n- Weţdosmá welu šnali’othia aggwilä. = child hits themself on the leg with a rock; child IND, leg LOC, rock INS.\n- Weţdosmá wele šnali’othia aggwilä. = child is/gets hit on the leg with a rock; child ABS, leg LOC, rock INS.\n- Weţdosmá welo aggwilä. = child hits something with a rock; child ERG, rock INS.\n- Weţdosmá welu aggwilä. = child hits themself with a rock; child IND, rock INS.\n- Weţdosmá wele aggwilä. = child is/gets hit with a rock; child ABS, rock INS.\n\nWhen punctuation/spacing is normalized by fixture encoding, preserve the source form identity in metadata.",
+  "linguistic_authorship": "human-authored #77; deterministic transcription; no model-generated linguistic fields",
+  "audit_metadata_status": "source/anchor/dimension memberships are review annotations, not new gold",
+  "permutation_seed": 77,
+  "cells": [
+    {
+      "id": "F01-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 1,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.3"
+        },
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        },
+        {
+          "chapter": 3,
+          "section": "3.6"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nA pair consists of two physically separate, similar members. Their individual functions are distinct but complementary and together serve one unified role. Which segmented New Ithkuil Slot-VI semantic bundle best matches?\n\nOptions:\nA. COA(-r-) + DSS(-c-)\nB. ASO(-l-) + DSS(-c-)\nC. COA(-r-) + DDS(-ţs-)\nD. VAR(-ř-) + DSS(-c-)\n\nGold: A\n\nWhy:\nDSS supplies duplex + similar + separate. COA supplies complementary functions.\n\nThis is intentionally a novel combination of two source-defined morphemes/features rather than a copied worked example.",
+      "rationale": "DSS supplies duplex + similar + separate. COA supplies complementary functions.",
+      "rationale_provenance": "verbatim #77 Why",
+      "prompt": "A pair consists of two physically separate, similar members. Their individual functions are distinct but complementary and together serve one unified role. Which segmented New Ithkuil Slot-VI semantic bundle best matches?",
+      "candidates": [
+        {
+          "id": "F01-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "COA(-r-) + DSS(-c-)"
+        },
+        {
+          "id": "F01-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "ASO(-l-) + DSS(-c-)"
+        },
+        {
+          "id": "F01-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "COA(-r-) + DDS(-ţs-)"
+        },
+        {
+          "id": "F01-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "VAR(-ř-) + DSS(-c-)"
+        }
+      ],
+      "gold_candidate": "F01-SIMPLE.A"
+    },
+    {
+      "id": "F01-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 1,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.4"
+        },
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.2"
+        }
+      ],
+      "semantic_dimensions": [
+        "Specification",
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-02",
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhich segmented morphology best fits an entity whose physical realization is foregrounded, which consists of three-or-more physically dissimilar separate members, deliberately organized so the members share the same subjective function?\n\nOptions:\nA. CSV(-e-) + ASO(-l-) + MDS(-ţ-)\nB. CTE(-ä-) + ASO(-l-) + MDS(-ţ-)\nC. CSV(-e-) + CSL(null) + MDS(-ţ-)\nD. CSV(-e-) + VAR(-ř-) + MDS(-ţ-)\n\nGold: A\n\nScored dimensions:\nSpecification + Affiliation + Configuration.\n\nDo not require phonological fusion into a novel surface word in v0.1. This cell tests semantic composition, not allomorphy.",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Which segmented morphology best fits an entity whose physical realization is foregrounded, which consists of three-or-more physically dissimilar separate members, deliberately organized so the members share the same subjective function?",
+      "candidates": [
+        {
+          "id": "F01-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "CSV(-e-) + ASO(-l-) + MDS(-ţ-)"
+        },
+        {
+          "id": "F01-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "CTE(-ä-) + ASO(-l-) + MDS(-ţ-)"
+        },
+        {
+          "id": "F01-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "CSV(-e-) + CSL(null) + MDS(-ţ-)"
+        },
+        {
+          "id": "F01-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "CSV(-e-) + VAR(-ř-) + MDS(-ţ-)"
+        }
+      ],
+      "gold_candidate": "F01-MEDIUM.A"
+    },
+    {
+      "id": "F01-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 1,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology",
+        "holistic composition"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhich complete New Ithkuil sentence matches: “The child intentionally hit their leg with a rock,” where the child is the direct agent, the leg is the affected patient, and the rock is the instrument?\n\nOptions:\nA. Weţdosmá welo šnaliothe aggwilä.\nB. Weţdosmá welu šnali’othia aggwilä.\nC. Weţdosmá wele šnali’othia aggwilä.\nD. Weţdosmá welu aggwilä.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Which complete New Ithkuil sentence matches: “The child intentionally hit their leg with a rock,” where the child is the direct agent, the leg is the affected patient, and the rock is the instrument?",
+      "candidates": [
+        {
+          "id": "F01-HARD.A",
+          "source_candidate_id": "A",
+          "description": "Weţdosmá welo šnaliothe aggwilä."
+        },
+        {
+          "id": "F01-HARD.B",
+          "source_candidate_id": "B",
+          "description": "Weţdosmá welu šnali’othia aggwilä."
+        },
+        {
+          "id": "F01-HARD.C",
+          "source_candidate_id": "C",
+          "description": "Weţdosmá wele šnali’othia aggwilä."
+        },
+        {
+          "id": "F01-HARD.D",
+          "source_candidate_id": "D",
+          "description": "Weţdosmá welu aggwilä."
+        }
+      ],
+      "gold_candidate": "F01-HARD.A"
+    },
+    {
+      "id": "F02-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 2,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        },
+        {
+          "chapter": 3,
+          "section": "3.6"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhat is the best semantic reading of the segmented Slot-VI bundle COA(-r-) + DSC(-ks-)?\n\nOptions:\nA. A pair of similar connected members whose distinct functions complement one another as a unified whole.\nB. A pair of similar connected members that all share the same function.\nC. A pair of dissimilar separate members with complementary functions.\nD. A pair whose members have unrelated or conflicting functions.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "What is the best semantic reading of the segmented Slot-VI bundle COA(-r-) + DSC(-ks-)?",
+      "candidates": [
+        {
+          "id": "F02-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "A pair of similar connected members whose distinct functions complement one another as a unified whole."
+        },
+        {
+          "id": "F02-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "A pair of similar connected members that all share the same function."
+        },
+        {
+          "id": "F02-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "A pair of dissimilar separate members with complementary functions."
+        },
+        {
+          "id": "F02-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "A pair whose members have unrelated or conflicting functions."
+        }
+      ],
+      "gold_candidate": "F02-SIMPLE.A"
+    },
+    {
+      "id": "F02-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 2,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.4"
+        },
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.4"
+        }
+      ],
+      "semantic_dimensions": [
+        "Specification",
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-02",
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhat semantic bundle is best represented by CTE(-ä-) + VAR(-ř-) + MFS(-z-)?\n\nOptions:\nA. Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways.\nB. Focus on physical realization; three-or-more similar connected members sharing one designed function.\nC. Focus on content/purpose; exactly two dissimilar separate members with complementary functions.\nD. Focus on a salient instrument/object; three-or-more fused members with one shared function.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "What semantic bundle is best represented by CTE(-ä-) + VAR(-ř-) + MFS(-z-)?",
+      "candidates": [
+        {
+          "id": "F02-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways."
+        },
+        {
+          "id": "F02-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "Focus on physical realization; three-or-more similar connected members sharing one designed function."
+        },
+        {
+          "id": "F02-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "Focus on content/purpose; exactly two dissimilar separate members with complementary functions."
+        },
+        {
+          "id": "F02-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "Focus on a salient instrument/object; three-or-more fused members with one shared function."
+        }
+      ],
+      "gold_candidate": "F02-MEDIUM.A"
+    },
+    {
+      "id": "F02-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 2,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology",
+        "holistic composition"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nChoose the best English interpretation of:\nWeţdosmá welu šnali’othia aggwilä.\n\nOptions:\nA. The child intentionally hit their leg with a rock.\nB. The child hit themself on the leg with a rock.\nC. The child was hit on the leg with a rock.\nD. The child hit something with a rock.\n\nGold: B",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Choose the best English interpretation of:\nWeţdosmá welu šnali’othia aggwilä.",
+      "candidates": [
+        {
+          "id": "F02-HARD.A",
+          "source_candidate_id": "A",
+          "description": "The child intentionally hit their leg with a rock."
+        },
+        {
+          "id": "F02-HARD.B",
+          "source_candidate_id": "B",
+          "description": "The child hit themself on the leg with a rock."
+        },
+        {
+          "id": "F02-HARD.C",
+          "source_candidate_id": "C",
+          "description": "The child was hit on the leg with a rock."
+        },
+        {
+          "id": "F02-HARD.D",
+          "source_candidate_id": "D",
+          "description": "The child hit something with a rock."
+        }
+      ],
+      "gold_candidate": "F02-HARD.B"
+    },
+    {
+      "id": "F03-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 3,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.1"
+        },
+        {
+          "chapter": 2,
+          "section": "2.4.3"
+        },
+        {
+          "chapter": 2,
+          "section": "2.4.4"
+        }
+      ],
+      "semantic_dimensions": [
+        "root/stem"
+      ],
+      "gold_anchor_ids": [
+        "G-01"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIn the Chapter-2 example adna, which semantic root underlies the formative?\n\nOptions:\nA. -DN- : NAME / DESIGNATION / LABEL\nB. -KSK- : anger\nC. -ŽX- : burn\nD. -GGW- : rock/stone\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "In the Chapter-2 example adna, which semantic root underlies the formative?",
+      "candidates": [
+        {
+          "id": "F03-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "-DN- : NAME / DESIGNATION / LABEL"
+        },
+        {
+          "id": "F03-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "-KSK- : anger"
+        },
+        {
+          "id": "F03-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "-ŽX- : burn"
+        },
+        {
+          "id": "F03-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "-GGW- : rock/stone"
+        }
+      ],
+      "gold_candidate": "F03-SIMPLE.A"
+    },
+    {
+      "id": "F03-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 3,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.3"
+        },
+        {
+          "chapter": 2,
+          "section": "2.4.4"
+        }
+      ],
+      "semantic_dimensions": [
+        "root/stem"
+      ],
+      "gold_anchor_ids": [
+        "G-01"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nFor the form edni, which root/stem identity supplies the lexical-semantic core before other morphology is interpreted?\n\nOptions:\nA. -DN-, Stem 1: name\nB. -DN-, Stem 2: designation/reference\nC. -DN-, Stem 3: label\nD. -DN-, Stem Zero: deliberately undifferentiated calling/reference concept\n\nGold: B",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "For the form edni, which root/stem identity supplies the lexical-semantic core before other morphology is interpreted?",
+      "candidates": [
+        {
+          "id": "F03-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "-DN-, Stem 1: name"
+        },
+        {
+          "id": "F03-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "-DN-, Stem 2: designation/reference"
+        },
+        {
+          "id": "F03-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "-DN-, Stem 3: label"
+        },
+        {
+          "id": "F03-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "-DN-, Stem Zero: deliberately undifferentiated calling/reference concept"
+        }
+      ],
+      "gold_candidate": "F03-MEDIUM.B"
+    },
+    {
+      "id": "F03-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 3,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "root/stem"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIn Weţdosmá welo šnaliothe aggwilä., which root/stem is the source-defined predicate for HIT/STRIKE?\n\nOptions:\nA. -ţd-, Stem 2, the forceful-physical-contact base used for hit/strike\nB. -šn-, Stem 1, leg\nC. -ggw-, Stem 1 OBJ, rock/stone\nD. -žx-, Stem 1, burn\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "In Weţdosmá welo šnaliothe aggwilä., which root/stem is the source-defined predicate for HIT/STRIKE?",
+      "candidates": [
+        {
+          "id": "F03-HARD.A",
+          "source_candidate_id": "A",
+          "description": "-ţd-, Stem 2, the forceful-physical-contact base used for hit/strike"
+        },
+        {
+          "id": "F03-HARD.B",
+          "source_candidate_id": "B",
+          "description": "-šn-, Stem 1, leg"
+        },
+        {
+          "id": "F03-HARD.C",
+          "source_candidate_id": "C",
+          "description": "-ggw-, Stem 1 OBJ, rock/stone"
+        },
+        {
+          "id": "F03-HARD.D",
+          "source_candidate_id": "D",
+          "description": "-žx-, Stem 1, burn"
+        }
+      ],
+      "gold_candidate": "F03-HARD.A"
+    },
+    {
+      "id": "F04-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 4,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role"
+      ],
+      "gold_anchor_ids": [
+        "G-05"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIn “John opened the door with the key,” what is the semantic role of the key?\n\nOptions:\nA. AGENT\nB. FORCE\nC. INSTRUMENT\nD. PATIENT\n\nGold: C",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "In “John opened the door with the key,” what is the semantic role of the key?",
+      "candidates": [
+        {
+          "id": "F04-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "AGENT"
+        },
+        {
+          "id": "F04-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "FORCE"
+        },
+        {
+          "id": "F04-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "INSTRUMENT"
+        },
+        {
+          "id": "F04-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "PATIENT"
+        }
+      ],
+      "gold_candidate": "F04-SIMPLE.C"
+    },
+    {
+      "id": "F04-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 4,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.2"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role"
+      ],
+      "gold_anchor_ids": [
+        "G-06"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIn the Chapter-4 semantic analysis corresponding to “Mary tells the children a story,” which role pair is correct?\n\nOptions:\nA. children = RECIPIENT; story = CONTENT\nB. children = PATIENT; story = INSTRUMENT\nC. children = EXPERIENCER; story = STIMULUS\nD. children = CONTENT; story = RECIPIENT\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "In the Chapter-4 semantic analysis corresponding to “Mary tells the children a story,” which role pair is correct?",
+      "candidates": [
+        {
+          "id": "F04-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "children = RECIPIENT; story = CONTENT"
+        },
+        {
+          "id": "F04-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "children = PATIENT; story = INSTRUMENT"
+        },
+        {
+          "id": "F04-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "children = EXPERIENCER; story = STIMULUS"
+        },
+        {
+          "id": "F04-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "children = CONTENT; story = RECIPIENT"
+        }
+      ],
+      "gold_candidate": "F04-MEDIUM.A"
+    },
+    {
+      "id": "F04-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 4,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nFor “The child intentionally hit their leg with a rock,” choose the correct role assignment.\n\nOptions:\nA. child = AGENT; leg = PATIENT; rock = INSTRUMENT\nB. child = PATIENT; leg = CONTENT; rock = FORCE\nC. child = AGENT+PATIENT; leg = LOCATION; rock = INSTRUMENT\nD. child = ENABLER; leg = PATIENT; rock = STIMULUS\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "For “The child intentionally hit their leg with a rock,” choose the correct role assignment.",
+      "candidates": [
+        {
+          "id": "F04-HARD.A",
+          "source_candidate_id": "A",
+          "description": "child = AGENT; leg = PATIENT; rock = INSTRUMENT"
+        },
+        {
+          "id": "F04-HARD.B",
+          "source_candidate_id": "B",
+          "description": "child = PATIENT; leg = CONTENT; rock = FORCE"
+        },
+        {
+          "id": "F04-HARD.C",
+          "source_candidate_id": "C",
+          "description": "child = AGENT+PATIENT; leg = LOCATION; rock = INSTRUMENT"
+        },
+        {
+          "id": "F04-HARD.D",
+          "source_candidate_id": "D",
+          "description": "child = ENABLER; leg = PATIENT; rock = STIMULUS"
+        }
+      ],
+      "gold_candidate": "F04-HARD.A"
+    },
+    {
+      "id": "F05-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 5,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration"
+      ],
+      "gold_anchor_ids": [
+        "G-03"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nA group contains three-or-more members; the members are physically similar and physically connected/touching. Which Configuration applies?\n\nOptions:\nA. MSS\nB. MSC\nC. MDS\nD. DSC\n\nGold: B",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "A group contains three-or-more members; the members are physically similar and physically connected/touching. Which Configuration applies?",
+      "candidates": [
+        {
+          "id": "F05-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "MSS"
+        },
+        {
+          "id": "F05-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "MSC"
+        },
+        {
+          "id": "F05-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "MDS"
+        },
+        {
+          "id": "F05-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "DSC"
+        }
+      ],
+      "gold_candidate": "F05-SIMPLE.B"
+    },
+    {
+      "id": "F05-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 5,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nA toolset contains multiple physically dissimilar, separate tools. Each tool has a distinct function, but those functions complement one another in service of the set as a whole. Which selected Chapter-3 feature pair matches?\n\nOptions:\nA. MDS + COA\nB. MDS + ASO\nC. MSS + COA\nD. MFS + VAR\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "A toolset contains multiple physically dissimilar, separate tools. Each tool has a distinct function, but those functions complement one another in service of the set as a whole. Which selected Chapter-3 feature pair matches?",
+      "candidates": [
+        {
+          "id": "F05-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "MDS + COA"
+        },
+        {
+          "id": "F05-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "MDS + ASO"
+        },
+        {
+          "id": "F05-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "MSS + COA"
+        },
+        {
+          "id": "F05-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "MFS + VAR"
+        }
+      ],
+      "gold_candidate": "F05-MEDIUM.A"
+    },
+    {
+      "id": "F05-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 5,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "case morphology"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nFor the sentence Weţdosmá welo šnaliothe aggwilä., choose the correct grammatical case tuple in participant order child / leg / rock.\n\nOptions:\nA. ERG / ABS / INS\nB. IND / LOC / INS\nC. ABS / THM / INS\nD. EFF / ABS / STM\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "For the sentence Weţdosmá welo šnaliothe aggwilä., choose the correct grammatical case tuple in participant order child / leg / rock.",
+      "candidates": [
+        {
+          "id": "F05-HARD.A",
+          "source_candidate_id": "A",
+          "description": "ERG / ABS / INS"
+        },
+        {
+          "id": "F05-HARD.B",
+          "source_candidate_id": "B",
+          "description": "IND / LOC / INS"
+        },
+        {
+          "id": "F05-HARD.C",
+          "source_candidate_id": "C",
+          "description": "ABS / THM / INS"
+        },
+        {
+          "id": "F05-HARD.D",
+          "source_candidate_id": "D",
+          "description": "EFF / ABS / STM"
+        }
+      ],
+      "gold_candidate": "F05-HARD.A"
+    },
+    {
+      "id": "F06-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 6,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.3"
+        }
+      ],
+      "semantic_dimensions": [
+        "case morphology"
+      ],
+      "gold_anchor_ids": [
+        "G-05"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhich Slot-IX Transrelative case vowel marks ABS / PATIENT?\n\nOptions:\nA. -a-\nB. -ä-\nC. -e-\nD. -o-\n\nGold: C",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Which Slot-IX Transrelative case vowel marks ABS / PATIENT?",
+      "candidates": [
+        {
+          "id": "F06-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "-a-"
+        },
+        {
+          "id": "F06-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "-ä-"
+        },
+        {
+          "id": "F06-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "-e-"
+        },
+        {
+          "id": "F06-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "-o-"
+        }
+      ],
+      "gold_candidate": "F06-SIMPLE.C"
+    },
+    {
+      "id": "F06-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 6,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration"
+      ],
+      "gold_anchor_ids": [
+        "G-03"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhich Configuration consonantal form marks DFC = duplex / fuzzy / connected?\n\nOptions:\nA. -ks-\nB. -kš-\nC. -č-\nD. -fs-\n\nGold: B",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Which Configuration consonantal form marks DFC = duplex / fuzzy / connected?",
+      "candidates": [
+        {
+          "id": "F06-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "-ks-"
+        },
+        {
+          "id": "F06-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "-kš-"
+        },
+        {
+          "id": "F06-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "-č-"
+        },
+        {
+          "id": "F06-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "-fs-"
+        }
+      ],
+      "gold_candidate": "F06-MEDIUM.B"
+    },
+    {
+      "id": "F06-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 6,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.2"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.3"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology"
+      ],
+      "gold_anchor_ids": [
+        "G-05",
+        "G-08"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nChoose the correct Slot-IX case-vowel sequence for AGENT / PATIENT / INSTRUMENT.\n\nOptions:\nA. -o- / -e- / -ä-\nB. -ö- / -e- / -a-\nC. -u- / -a- / -ä-\nD. -o- / -i- / -ëi-\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Choose the correct Slot-IX case-vowel sequence for AGENT / PATIENT / INSTRUMENT.",
+      "candidates": [
+        {
+          "id": "F06-HARD.A",
+          "source_candidate_id": "A",
+          "description": "-o- / -e- / -ä-"
+        },
+        {
+          "id": "F06-HARD.B",
+          "source_candidate_id": "B",
+          "description": "-ö- / -e- / -a-"
+        },
+        {
+          "id": "F06-HARD.C",
+          "source_candidate_id": "C",
+          "description": "-u- / -a- / -ä-"
+        },
+        {
+          "id": "F06-HARD.D",
+          "source_candidate_id": "D",
+          "description": "-o- / -i- / -ëi-"
+        }
+      ],
+      "gold_candidate": "F06-HARD.A"
+    },
+    {
+      "id": "F07-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 7,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration"
+      ],
+      "gold_anchor_ids": [
+        "G-03"
+      ],
+      "classification": "controlled-mutation",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nTarget meaning: a group of similar spherical objects touching/connected to one another.\nA candidate uses Configuration MSS(-t-) instead of MSC(-k-).\nWhat is the error?\n\nOptions:\nA. Plexity is wrong: duplex instead of multiplex.\nB. Separability is wrong: separate instead of connected.\nC. Similarity is wrong: dissimilar instead of similar.\nD. Affiliation is wrong: variative instead of coalescent.\n\nGold: B",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Target meaning: a group of similar spherical objects touching/connected to one another.\nA candidate uses Configuration MSS(-t-) instead of MSC(-k-).\nWhat is the error?",
+      "candidates": [
+        {
+          "id": "F07-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "Plexity is wrong: duplex instead of multiplex."
+        },
+        {
+          "id": "F07-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "Separability is wrong: separate instead of connected."
+        },
+        {
+          "id": "F07-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "Similarity is wrong: dissimilar instead of similar."
+        },
+        {
+          "id": "F07-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "Affiliation is wrong: variative instead of coalescent."
+        }
+      ],
+      "gold_candidate": "F07-SIMPLE.B"
+    },
+    {
+      "id": "F07-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 7,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.2.2"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        }
+      ],
+      "semantic_dimensions": [
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-04"
+      ],
+      "classification": "controlled-mutation",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nTarget meaning: TOOLSET, i.e. physically dissimilar separate tools whose distinct functions complement one another.\nA candidate uses ASO(-l-) + MDS(-ţ-) instead of COA(-r-) + MDS(-ţ-).\nWhat changed?\n\nOptions:\nA. The candidate says the members share the same subjective function rather than having distinct complementary functions.\nB. The candidate makes the tools physically similar.\nC. The candidate makes the tools connected.\nD. The candidate changes content/purpose focus into physical-form focus.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Target meaning: TOOLSET, i.e. physically dissimilar separate tools whose distinct functions complement one another.\nA candidate uses ASO(-l-) + MDS(-ţ-) instead of COA(-r-) + MDS(-ţ-).\nWhat changed?",
+      "candidates": [
+        {
+          "id": "F07-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "The candidate says the members share the same subjective function rather than having distinct complementary functions."
+        },
+        {
+          "id": "F07-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "The candidate makes the tools physically similar."
+        },
+        {
+          "id": "F07-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "The candidate makes the tools connected."
+        },
+        {
+          "id": "F07-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "The candidate changes content/purpose focus into physical-form focus."
+        }
+      ],
+      "gold_candidate": "F07-MEDIUM.A"
+    },
+    {
+      "id": "F07-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 7,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.6"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology"
+      ],
+      "gold_anchor_ids": [
+        "G-07"
+      ],
+      "classification": "controlled-mutation",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nTarget: Wekská welo kšili. in the source-defined sense “the child angers the clown.”\nCandidate: Wekská welö kšili.\nWhat is the minimal semantic error?\n\nOptions:\nA. ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain.\nB. AFF changed to ABS, so the clown becomes a tangible patient.\nC. ERG changed to IND, so the child becomes both agent and patient.\nD. The lexical root changed from anger to hit.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Target: Wekská welo kšili. in the source-defined sense “the child angers the clown.”\nCandidate: Wekská welö kšili.\nWhat is the minimal semantic error?",
+      "candidates": [
+        {
+          "id": "F07-HARD.A",
+          "source_candidate_id": "A",
+          "description": "ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain."
+        },
+        {
+          "id": "F07-HARD.B",
+          "source_candidate_id": "B",
+          "description": "AFF changed to ABS, so the clown becomes a tangible patient."
+        },
+        {
+          "id": "F07-HARD.C",
+          "source_candidate_id": "C",
+          "description": "ERG changed to IND, so the child becomes both agent and patient."
+        },
+        {
+          "id": "F07-HARD.D",
+          "source_candidate_id": "D",
+          "description": "The lexical root changed from anger to hit."
+        }
+      ],
+      "gold_candidate": "F07-HARD.A"
+    },
+    {
+      "id": "F08-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 8,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration"
+      ],
+      "gold_anchor_ids": [
+        "G-03"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhat semantic distinction separates rrasa from rraca?\n\nOptions:\nA. rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS).\nB. rrasa is a group of similar cats; rraca is a pair of dissimilar cats.\nC. rrasa is a toolset; rraca is a designed set of tools.\nD. The forms are semantically identical.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "What semantic distinction separates rrasa from rraca?",
+      "candidates": [
+        {
+          "id": "F08-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS)."
+        },
+        {
+          "id": "F08-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "rrasa is a group of similar cats; rraca is a pair of dissimilar cats."
+        },
+        {
+          "id": "F08-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "rrasa is a toolset; rraca is a designed set of tools."
+        },
+        {
+          "id": "F08-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "The forms are semantically identical."
+        }
+      ],
+      "gold_candidate": "F08-SIMPLE.A"
+    },
+    {
+      "id": "F08-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 8,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.2.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        }
+      ],
+      "semantic_dimensions": [
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-04"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nWhat is the important semantic distinction between čveţa and čverţa?\n\nOptions:\nA. čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary.\nB. čveţa is a toolset; čverţa is a mish-mash.\nC. čveţa is a pair of tools; čverţa is a group of similar tools.\nD. Only phonology differs; the selected morphology is equivalent.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "What is the important semantic distinction between čveţa and čverţa?",
+      "candidates": [
+        {
+          "id": "F08-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary."
+        },
+        {
+          "id": "F08-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "čveţa is a toolset; čverţa is a mish-mash."
+        },
+        {
+          "id": "F08-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "čveţa is a pair of tools; čverţa is a group of similar tools."
+        },
+        {
+          "id": "F08-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "Only phonology differs; the selected morphology is equivalent."
+        }
+      ],
+      "gold_candidate": "F08-MEDIUM.A"
+    },
+    {
+      "id": "F08-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 8,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.9"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nCompare these source-backed forms:\n1. Weţdosmá welo aggwilä.\n2. Weţdosmá welu aggwilä.\n\nWhat changes?\n\nOptions:\nA. The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental.\nB. The child changes from ABS patient to ERG agent.\nC. The rock changes from INS instrument to THM content.\nD. Only word order changes.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Compare these source-backed forms:\n1. Weţdosmá welo aggwilä.\n2. Weţdosmá welu aggwilä.\n\nWhat changes?",
+      "candidates": [
+        {
+          "id": "F08-HARD.A",
+          "source_candidate_id": "A",
+          "description": "The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental."
+        },
+        {
+          "id": "F08-HARD.B",
+          "source_candidate_id": "B",
+          "description": "The child changes from ABS patient to ERG agent."
+        },
+        {
+          "id": "F08-HARD.C",
+          "source_candidate_id": "C",
+          "description": "The rock changes from INS instrument to THM content."
+        },
+        {
+          "id": "F08-HARD.D",
+          "source_candidate_id": "D",
+          "description": "Only word order changes."
+        }
+      ],
+      "gold_candidate": "F08-HARD.A"
+    },
+    {
+      "id": "F09-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 9,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role"
+      ],
+      "gold_anchor_ids": [
+        "G-05"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nCompare the role of KEY in:\n1. John opened the door with the key.\n2. The key opened the door.\n\nAt the semantic-role level used by Chapter 4, is KEY equivalent?\n\nOptions:\nA. Yes: INSTRUMENT in both, despite different English syntactic positions.\nB. No: AGENT in sentence 2.\nC. No: FORCE in sentence 2.\nD. Insufficient: New Ithkuil does not distinguish instruments.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Compare the role of KEY in:\n1. John opened the door with the key.\n2. The key opened the door.\n\nAt the semantic-role level used by Chapter 4, is KEY equivalent?",
+      "candidates": [
+        {
+          "id": "F09-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "Yes: INSTRUMENT in both, despite different English syntactic positions."
+        },
+        {
+          "id": "F09-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "No: AGENT in sentence 2."
+        },
+        {
+          "id": "F09-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "No: FORCE in sentence 2."
+        },
+        {
+          "id": "F09-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "Insufficient: New Ithkuil does not distinguish instruments."
+        }
+      ],
+      "gold_candidate": "F09-SIMPLE.A"
+    },
+    {
+      "id": "F09-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 9,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.2"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nAre “a group of soldiers” and “a troop/platoon” equivalent under the selected Configuration + Affiliation projection?\n\nOptions:\nA. No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation.\nB. Yes. Affiliation is purely stylistic.\nC. Yes. Both are necessarily COA.\nD. Insufficient because Chapter 3 never discusses soldier groups.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Are “a group of soldiers” and “a troop/platoon” equivalent under the selected Configuration + Affiliation projection?",
+      "candidates": [
+        {
+          "id": "F09-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation."
+        },
+        {
+          "id": "F09-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "Yes. Affiliation is purely stylistic."
+        },
+        {
+          "id": "F09-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "Yes. Both are necessarily COA."
+        },
+        {
+          "id": "F09-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "Insufficient because Chapter 3 never discusses soldier groups."
+        }
+      ],
+      "gold_candidate": "F09-MEDIUM.A"
+    },
+    {
+      "id": "F09-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 9,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.1"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-exact",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nAre these source-backed expressions semantically equivalent?\n1. Weţdosmá wele šnalioth aggwilä.\n2. Weţdosmá wele šnali’othia aggwilä.\n\nOptions:\nA. No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit.\nB. Yes. Both merely mean the child gets hit with a rock.\nC. No. In (1) the rock is an agent; in (2) it is an instrument.\nD. Insufficient because the child case changes.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Are these source-backed expressions semantically equivalent?\n1. Weţdosmá wele šnalioth aggwilä.\n2. Weţdosmá wele šnali’othia aggwilä.",
+      "candidates": [
+        {
+          "id": "F09-HARD.A",
+          "source_candidate_id": "A",
+          "description": "No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit."
+        },
+        {
+          "id": "F09-HARD.B",
+          "source_candidate_id": "B",
+          "description": "Yes. Both merely mean the child gets hit with a rock."
+        },
+        {
+          "id": "F09-HARD.C",
+          "source_candidate_id": "C",
+          "description": "No. In (1) the rock is an agent; in (2) it is an instrument."
+        },
+        {
+          "id": "F09-HARD.D",
+          "source_candidate_id": "D",
+          "description": "Insufficient because the child case changes."
+        }
+      ],
+      "gold_candidate": "F09-HARD.A"
+    },
+    {
+      "id": "F10-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 10,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        },
+        {
+          "chapter": 3,
+          "section": "3.6"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation",
+        "reconstruction"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Target:\na complementary pair of similar, physically separate members.\n\nStep 1 question:\nWhich Configuration?\nOptions: DPX / DSS / DSC / DDS\nGold: DSS\n\nStep 2 question:\nWhich Affiliation?\nOptions: CSL / ASO / COA / VAR\nGold: COA\n\nDeterministic result:\nCOA(-r-) + DSS(-c-)\n\nPass metrics:\n- step accuracy;\n- joint path accuracy;\n- final deterministic bundle correctness.",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "a complementary pair of similar, physically separate members.",
+      "fixed_predicate": null,
+      "steps": [
+        {
+          "id": "F10-SIMPLE.S1",
+          "sequence_id": "F10-SIMPLE",
+          "step_number": 1,
+          "depends_on": null,
+          "prompt": "Which Configuration?",
+          "candidates": [
+            {
+              "id": "F10-SIMPLE.S1.A",
+              "source_candidate_id": "A",
+              "description": "DPX"
+            },
+            {
+              "id": "F10-SIMPLE.S1.B",
+              "source_candidate_id": "B",
+              "description": "DSS"
+            },
+            {
+              "id": "F10-SIMPLE.S1.C",
+              "source_candidate_id": "C",
+              "description": "DSC"
+            },
+            {
+              "id": "F10-SIMPLE.S1.D",
+              "source_candidate_id": "D",
+              "description": "DDS"
+            }
+          ],
+          "gold_candidate": "F10-SIMPLE.S1.B",
+          "source_gold": "DSS"
+        },
+        {
+          "id": "F10-SIMPLE.S2",
+          "sequence_id": "F10-SIMPLE",
+          "step_number": 2,
+          "depends_on": "F10-SIMPLE.S1",
+          "prompt": "Which Affiliation?",
+          "candidates": [
+            {
+              "id": "F10-SIMPLE.S2.A",
+              "source_candidate_id": "A",
+              "description": "CSL"
+            },
+            {
+              "id": "F10-SIMPLE.S2.B",
+              "source_candidate_id": "B",
+              "description": "ASO"
+            },
+            {
+              "id": "F10-SIMPLE.S2.C",
+              "source_candidate_id": "C",
+              "description": "COA"
+            },
+            {
+              "id": "F10-SIMPLE.S2.D",
+              "source_candidate_id": "D",
+              "description": "VAR"
+            }
+          ],
+          "gold_candidate": "F10-SIMPLE.S2.C",
+          "source_gold": "COA"
+        }
+      ],
+      "gold_answer": "COA(-r-) + DSS(-c-)",
+      "gold_path": [
+        "F10-SIMPLE.S1.B",
+        "F10-SIMPLE.S2.C"
+      ]
+    },
+    {
+      "id": "F10-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 10,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation",
+        "holistic composition",
+        "reconstruction"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Target:\nTOOLSET.\n\nStep 1:\nWhich Configuration?\nOptions: MSS / MSC / MDS / MFS\nGold: MDS\n\nStep 2:\nWhich Affiliation?\nOptions: CSL / ASO / COA / VAR\nGold: COA\n\nStep 3:\nWhich source-backed whole form matches the resulting meaning?\nOptions: čveţa / čvelţa / čverţa / čveřţa\nGold: čverţa",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "TOOLSET.",
+      "fixed_predicate": null,
+      "steps": [
+        {
+          "id": "F10-MEDIUM.S1",
+          "sequence_id": "F10-MEDIUM",
+          "step_number": 1,
+          "depends_on": null,
+          "prompt": "Which Configuration?",
+          "candidates": [
+            {
+              "id": "F10-MEDIUM.S1.A",
+              "source_candidate_id": "A",
+              "description": "MSS"
+            },
+            {
+              "id": "F10-MEDIUM.S1.B",
+              "source_candidate_id": "B",
+              "description": "MSC"
+            },
+            {
+              "id": "F10-MEDIUM.S1.C",
+              "source_candidate_id": "C",
+              "description": "MDS"
+            },
+            {
+              "id": "F10-MEDIUM.S1.D",
+              "source_candidate_id": "D",
+              "description": "MFS"
+            }
+          ],
+          "gold_candidate": "F10-MEDIUM.S1.C",
+          "source_gold": "MDS"
+        },
+        {
+          "id": "F10-MEDIUM.S2",
+          "sequence_id": "F10-MEDIUM",
+          "step_number": 2,
+          "depends_on": "F10-MEDIUM.S1",
+          "prompt": "Which Affiliation?",
+          "candidates": [
+            {
+              "id": "F10-MEDIUM.S2.A",
+              "source_candidate_id": "A",
+              "description": "CSL"
+            },
+            {
+              "id": "F10-MEDIUM.S2.B",
+              "source_candidate_id": "B",
+              "description": "ASO"
+            },
+            {
+              "id": "F10-MEDIUM.S2.C",
+              "source_candidate_id": "C",
+              "description": "COA"
+            },
+            {
+              "id": "F10-MEDIUM.S2.D",
+              "source_candidate_id": "D",
+              "description": "VAR"
+            }
+          ],
+          "gold_candidate": "F10-MEDIUM.S2.C",
+          "source_gold": "COA"
+        },
+        {
+          "id": "F10-MEDIUM.S3",
+          "sequence_id": "F10-MEDIUM",
+          "step_number": 3,
+          "depends_on": "F10-MEDIUM.S2",
+          "prompt": "Which source-backed whole form matches the resulting meaning?",
+          "candidates": [
+            {
+              "id": "F10-MEDIUM.S3.A",
+              "source_candidate_id": "A",
+              "description": "čveţa"
+            },
+            {
+              "id": "F10-MEDIUM.S3.B",
+              "source_candidate_id": "B",
+              "description": "čvelţa"
+            },
+            {
+              "id": "F10-MEDIUM.S3.C",
+              "source_candidate_id": "C",
+              "description": "čverţa"
+            },
+            {
+              "id": "F10-MEDIUM.S3.D",
+              "source_candidate_id": "D",
+              "description": "čveřţa"
+            }
+          ],
+          "gold_candidate": "F10-MEDIUM.S3.C",
+          "source_gold": "čverţa"
+        }
+      ],
+      "gold_answer": "čverţa",
+      "gold_path": [
+        "F10-MEDIUM.S1.C",
+        "F10-MEDIUM.S2.C",
+        "F10-MEDIUM.S3.C"
+      ]
+    },
+    {
+      "id": "F10-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 10,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.2"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.3"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology",
+        "holistic composition",
+        "reconstruction"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Target:\n“The child intentionally hit their leg with a rock.”\n\nFixed predicate:\nWeţdosmá\n\nStep 1:\nchild case?\nOptions: ERG / IND / ABS / EFF\nGold: ERG\n\nStep 2:\nleg case?\nOptions: ABS / THM / LOC / DAT\nGold: ABS\n\nStep 3:\nrock case?\nOptions: INS / STM / THM / ERG\nGold: INS\n\nStep 4:\nChoose the source-backed complete sentence consistent with the selected path.\nOptions: use the same four sentences as F01-HARD.\nGold: Weţdosmá welo šnaliothe aggwilä.\n\nRecord intermediate wrong-path/right-final cases separately. A correct final answer must not retroactively validate a wrong semantic decision.",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "“The child intentionally hit their leg with a rock.”",
+      "fixed_predicate": "Weţdosmá",
+      "steps": [
+        {
+          "id": "F10-HARD.S1",
+          "sequence_id": "F10-HARD",
+          "step_number": 1,
+          "depends_on": null,
+          "prompt": "child case?",
+          "candidates": [
+            {
+              "id": "F10-HARD.S1.A",
+              "source_candidate_id": "A",
+              "description": "ERG"
+            },
+            {
+              "id": "F10-HARD.S1.B",
+              "source_candidate_id": "B",
+              "description": "IND"
+            },
+            {
+              "id": "F10-HARD.S1.C",
+              "source_candidate_id": "C",
+              "description": "ABS"
+            },
+            {
+              "id": "F10-HARD.S1.D",
+              "source_candidate_id": "D",
+              "description": "EFF"
+            }
+          ],
+          "gold_candidate": "F10-HARD.S1.A",
+          "source_gold": "ERG"
+        },
+        {
+          "id": "F10-HARD.S2",
+          "sequence_id": "F10-HARD",
+          "step_number": 2,
+          "depends_on": "F10-HARD.S1",
+          "prompt": "leg case?",
+          "candidates": [
+            {
+              "id": "F10-HARD.S2.A",
+              "source_candidate_id": "A",
+              "description": "ABS"
+            },
+            {
+              "id": "F10-HARD.S2.B",
+              "source_candidate_id": "B",
+              "description": "THM"
+            },
+            {
+              "id": "F10-HARD.S2.C",
+              "source_candidate_id": "C",
+              "description": "LOC"
+            },
+            {
+              "id": "F10-HARD.S2.D",
+              "source_candidate_id": "D",
+              "description": "DAT"
+            }
+          ],
+          "gold_candidate": "F10-HARD.S2.A",
+          "source_gold": "ABS"
+        },
+        {
+          "id": "F10-HARD.S3",
+          "sequence_id": "F10-HARD",
+          "step_number": 3,
+          "depends_on": "F10-HARD.S2",
+          "prompt": "rock case?",
+          "candidates": [
+            {
+              "id": "F10-HARD.S3.A",
+              "source_candidate_id": "A",
+              "description": "INS"
+            },
+            {
+              "id": "F10-HARD.S3.B",
+              "source_candidate_id": "B",
+              "description": "STM"
+            },
+            {
+              "id": "F10-HARD.S3.C",
+              "source_candidate_id": "C",
+              "description": "THM"
+            },
+            {
+              "id": "F10-HARD.S3.D",
+              "source_candidate_id": "D",
+              "description": "ERG"
+            }
+          ],
+          "gold_candidate": "F10-HARD.S3.A",
+          "source_gold": "INS"
+        },
+        {
+          "id": "F10-HARD.S4",
+          "sequence_id": "F10-HARD",
+          "step_number": 4,
+          "depends_on": "F10-HARD.S3",
+          "prompt": "Choose the source-backed complete sentence consistent with the selected path.",
+          "candidates": [
+            {
+              "id": "F10-HARD.S4.A",
+              "source_candidate_id": "A",
+              "description": "Weţdosmá welo šnaliothe aggwilä."
+            },
+            {
+              "id": "F10-HARD.S4.B",
+              "source_candidate_id": "B",
+              "description": "Weţdosmá welu šnali’othia aggwilä."
+            },
+            {
+              "id": "F10-HARD.S4.C",
+              "source_candidate_id": "C",
+              "description": "Weţdosmá wele šnali’othia aggwilä."
+            },
+            {
+              "id": "F10-HARD.S4.D",
+              "source_candidate_id": "D",
+              "description": "Weţdosmá welu aggwilä."
+            }
+          ],
+          "gold_candidate": "F10-HARD.S4.A",
+          "source_gold": "Weţdosmá welo šnaliothe aggwilä."
+        }
+      ],
+      "gold_answer": "Weţdosmá welo šnaliothe aggwilä.",
+      "gold_path": [
+        "F10-HARD.S1.A",
+        "F10-HARD.S2.A",
+        "F10-HARD.S3.A",
+        "F10-HARD.S4.A"
+      ]
+    },
+    {
+      "id": "F11-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 11,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.2"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "Affiliation"
+      ],
+      "gold_anchor_ids": [
+        "G-03",
+        "G-04"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIntended meaning: deliberately organized group of similar, physically separate members that share the same subjective function.\nCandidate bundle: ASO(-l-) + MSS(-t-).\nIs it compatible?\n\nOptions:\nA. Yes, for the selected Configuration + Affiliation dimensions.\nB. No: MSS means physically connected.\nC. No: ASO means complementary but distinct functions.\nD. Insufficient because no Perspective is supplied.\n\nGold: A\n\nThe question is explicitly limited to the selected dimensions; do not require unscored morphology.",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Intended meaning: deliberately organized group of similar, physically separate members that share the same subjective function.\nCandidate bundle: ASO(-l-) + MSS(-t-).\nIs it compatible?",
+      "candidates": [
+        {
+          "id": "F11-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "Yes, for the selected Configuration + Affiliation dimensions."
+        },
+        {
+          "id": "F11-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "No: MSS means physically connected."
+        },
+        {
+          "id": "F11-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "No: ASO means complementary but distinct functions."
+        },
+        {
+          "id": "F11-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "Insufficient because no Perspective is supplied."
+        }
+      ],
+      "gold_candidate": "F11-SIMPLE.A"
+    },
+    {
+      "id": "F11-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 11,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.2.2"
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3"
+        }
+      ],
+      "semantic_dimensions": [
+        "Affiliation",
+        "holistic composition"
+      ],
+      "gold_anchor_ids": [
+        "G-04"
+      ],
+      "classification": "controlled-mutation",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIntended meaning: TOOLSET, where physically dissimilar separate tools have distinct complementary functions.\nCandidate: čvelţa.\nWhat is the disposition?\n\nOptions:\nA. Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET.\nB. Valid exact match for TOOLSET.\nC. Mismatch only because the tools are physically connected.\nD. Insufficient because the root is not a tool root.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Intended meaning: TOOLSET, where physically dissimilar separate tools have distinct complementary functions.\nCandidate: čvelţa.\nWhat is the disposition?",
+      "candidates": [
+        {
+          "id": "F11-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET."
+        },
+        {
+          "id": "F11-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "Valid exact match for TOOLSET."
+        },
+        {
+          "id": "F11-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "Mismatch only because the tools are physically connected."
+        },
+        {
+          "id": "F11-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "Insufficient because the root is not a tool root."
+        }
+      ],
+      "gold_candidate": "F11-MEDIUM.A"
+    },
+    {
+      "id": "F11-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 11,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology",
+        "holistic composition"
+      ],
+      "gold_anchor_ids": [
+        "G-08"
+      ],
+      "classification": "controlled-mutation",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nIntended meaning: “The child hit themself on the leg with a rock.”\nCandidate:\nWeţdosmá welo šnaliothe aggwilä.\n\nOptions:\nA. Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting.\nB. Exact match.\nC. Mismatch only because the rock is not instrumental.\nD. Insufficient because the predicate is unknown.\n\nGold: A",
+      "rationale": null,
+      "rationale_provenance": "not supplied separately in #77; see source-verification.json",
+      "prompt": "Intended meaning: “The child hit themself on the leg with a rock.”\nCandidate:\nWeţdosmá welo šnaliothe aggwilä.",
+      "candidates": [
+        {
+          "id": "F11-HARD.A",
+          "source_candidate_id": "A",
+          "description": "Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting."
+        },
+        {
+          "id": "F11-HARD.B",
+          "source_candidate_id": "B",
+          "description": "Exact match."
+        },
+        {
+          "id": "F11-HARD.C",
+          "source_candidate_id": "C",
+          "description": "Mismatch only because the rock is not instrumental."
+        },
+        {
+          "id": "F11-HARD.D",
+          "source_candidate_id": "D",
+          "description": "Insufficient because the predicate is unknown."
+        }
+      ],
+      "gold_candidate": "F11-HARD.A"
+    },
+    {
+      "id": "F12-SIMPLE",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 12,
+      "difficulty": "SIMPLE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.1"
+        },
+        {
+          "chapter": 4,
+          "section": "4.1.2"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "uncertainty/clarification"
+      ],
+      "gold_anchor_ids": [
+        "G-05",
+        "G-06"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\n“Mary ____ the children.”\nWithout knowing the predicate or event semantics, which semantic role/case should Mary receive?\n\nOptions:\nA. ERG / AGENT\nB. AFF / EXPERIENCER\nC. EFF / ENABLER\nD. CLARIFY / INSUFFICIENT\n\nGold: D\n\nWhy:\nChapter 4 explicitly demonstrates that English subject position does not determine semantic role.",
+      "rationale": "Chapter 4 explicitly demonstrates that English subject position does not determine semantic role.",
+      "rationale_provenance": "verbatim #77 Why",
+      "prompt": "“Mary ____ the children.”\nWithout knowing the predicate or event semantics, which semantic role/case should Mary receive?",
+      "candidates": [
+        {
+          "id": "F12-SIMPLE.A",
+          "source_candidate_id": "A",
+          "description": "ERG / AGENT"
+        },
+        {
+          "id": "F12-SIMPLE.B",
+          "source_candidate_id": "B",
+          "description": "AFF / EXPERIENCER"
+        },
+        {
+          "id": "F12-SIMPLE.C",
+          "source_candidate_id": "C",
+          "description": "EFF / ENABLER"
+        },
+        {
+          "id": "F12-SIMPLE.D",
+          "source_candidate_id": "D",
+          "description": "CLARIFY / INSUFFICIENT"
+        }
+      ],
+      "gold_candidate": "F12-SIMPLE.D"
+    },
+    {
+      "id": "F12-MEDIUM",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 12,
+      "difficulty": "MEDIUM",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1"
+        }
+      ],
+      "semantic_dimensions": [
+        "Configuration",
+        "uncertainty/clarification"
+      ],
+      "gold_anchor_ids": [
+        "G-03"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\nEnglish gloss: “a group of cats.”\nWhich exact Configuration should be selected?\n\nOptions:\nA. MSS\nB. MSC\nC. MDS\nD. CLARIFY / INSUFFICIENT\n\nGold: D\n\nWhy:\n“group” supplies multiplicity but does not specify enough about member similarity and separability to choose one exact multiplex Configuration.",
+      "rationale": "“group” supplies multiplicity but does not specify enough about member similarity and separability to choose one exact multiplex Configuration.",
+      "rationale_provenance": "verbatim #77 Why",
+      "prompt": "English gloss: “a group of cats.”\nWhich exact Configuration should be selected?",
+      "candidates": [
+        {
+          "id": "F12-MEDIUM.A",
+          "source_candidate_id": "A",
+          "description": "MSS"
+        },
+        {
+          "id": "F12-MEDIUM.B",
+          "source_candidate_id": "B",
+          "description": "MSC"
+        },
+        {
+          "id": "F12-MEDIUM.C",
+          "source_candidate_id": "C",
+          "description": "MDS"
+        },
+        {
+          "id": "F12-MEDIUM.D",
+          "source_candidate_id": "D",
+          "description": "CLARIFY / INSUFFICIENT"
+        }
+      ],
+      "gold_candidate": "F12-MEDIUM.D"
+    },
+    {
+      "id": "F12-HARD",
+      "fixture_version": "new-ithkuil-kev-v0.1",
+      "family": 12,
+      "difficulty": "HARD",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.6"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7"
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10"
+        }
+      ],
+      "semantic_dimensions": [
+        "semantic role",
+        "case morphology",
+        "uncertainty/clarification"
+      ],
+      "gold_anchor_ids": [
+        "G-07"
+      ],
+      "classification": "source-derived",
+      "permutation_eligible": true,
+      "source_issue_fragment": "Prompt:\n“The child caused the clown to become angry.”\nThe description does NOT state whether the child directly acted on the clown or merely initiated an intermediate causal chain that resulted in the clown's anger.\nWhich case should be selected for the child?\n\nOptions:\nA. ERG\nB. EFF\nC. IND\nD. CLARIFY / INSUFFICIENT\n\nGold: D\n\nWhy:\nThe selected Chapter-4 examples distinguish direct ERG causation from EFF enablement/causal-chain initiation. The English sentence as supplied underdetermines that distinction.",
+      "rationale": "The selected Chapter-4 examples distinguish direct ERG causation from EFF enablement/causal-chain initiation. The English sentence as supplied underdetermines that distinction.",
+      "rationale_provenance": "verbatim #77 Why",
+      "prompt": "“The child caused the clown to become angry.”\nThe description does NOT state whether the child directly acted on the clown or merely initiated an intermediate causal chain that resulted in the clown's anger.\nWhich case should be selected for the child?",
+      "candidates": [
+        {
+          "id": "F12-HARD.A",
+          "source_candidate_id": "A",
+          "description": "ERG"
+        },
+        {
+          "id": "F12-HARD.B",
+          "source_candidate_id": "B",
+          "description": "EFF"
+        },
+        {
+          "id": "F12-HARD.C",
+          "source_candidate_id": "C",
+          "description": "IND"
+        },
+        {
+          "id": "F12-HARD.D",
+          "source_candidate_id": "D",
+          "description": "CLARIFY / INSUFFICIENT"
+        }
+      ],
+      "gold_candidate": "F12-HARD.D"
+    }
+  ]
+}

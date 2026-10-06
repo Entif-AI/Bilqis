@@ -1,0 +1,44 @@
+{
+  "packet_id": "new-ithkuil-kev-v0.1",
+  "issue": "Entif-AI/Bilqis#77",
+  "packet_file": "new-ithkuil-kev-v0.1-source-packet.md",
+  "packet_sha256": "c178cd133d051cddcca0eae8a69111b4696418425a6a99c27723786a6af898be",
+  "sources": [
+    {
+      "chapter": 2,
+      "file": "newithkuil_02_morpho-phonology.htm",
+      "url": "https://www.ithkuil.net/newithkuil_02_morpho-phonology.htm",
+      "sha256": "5ee3a68497ca3bb242ba79cd3c556fa790a9407413b75242380b4cc1ecd2ffc6",
+      "included": "full substantive Chapter 2 context"
+    },
+    {
+      "chapter": 3,
+      "file": "newithkuil_03_morphology.htm",
+      "url": "https://www.ithkuil.net/newithkuil_03_morphology.htm",
+      "sha256": "93d9d61682fa2d051fc667cf2952a0e521b07ec42629e2788f57b0b2f4c34c0f",
+      "included": [
+        "3.1 Configuration",
+        "3.2 Affiliation",
+        "3.6 introductory CA-affix composition context (before 3.6.1)"
+      ]
+    },
+    {
+      "chapter": 4,
+      "file": "newithkuil_04_case.htm",
+      "url": "https://www.ithkuil.net/newithkuil_04_case.htm",
+      "sha256": "d9e322e731a1df0fa6ed6213e15dc039ce7f27839fa06275e66764ff4dea0825",
+      "included": [
+        "4.1 Semantic Role versus Positional Slot",
+        "4.1.1 Case as Indicator of Semantic Role",
+        "4.1.2 Additional Semantic Roles",
+        "4.2 Transrelative Cases through 4.2.10 Examples"
+      ]
+    }
+  ],
+  "rules": {
+    "source_authority": "user-supplied official New Ithkuil HTML chapters",
+    "epoch": "v0.1",
+    "mutation": "packet must remain byte-identical during the evaluation epoch",
+    "answer_key_separation": "test prompts/options/gold remain in Bilqis issue #77, not in this source packet"
+  }
+}
