@@ -1,0 +1,15 @@
+{
+  "focused_tests": {
+    "command": "python3 -m unittest discover -s tests -p test_ithkuil_battery.py -v",
+    "tests": 7,
+    "result": "PASS",
+    "observed_runner_result": "Validation passed (exit 0)."
+  },
+  "red_test_evidence": "missing module and malformed bracket observed before green; private failure logs retained",
+  "tested_file_sha256": {
+    "bilqis_ref/ithkuil_fixture.py": "fe7ece870b30663497c418b845313252a1ffd98f95b856a06ee2e1e90ce6f38c",
+    "bilqis_ref/ithkuil_battery.py": "61164329ba42e7000402bea2b5630834f83181828701681046f362c02116b305",
+    "tests/test_ithkuil_battery.py": "bcea103441d087df11d1d9b65466e9a69a807b853b9cbb13a3b9223cd4740c8b",
+    "fixtures/new-ithkuil-v0.1.json": "66c41a18a98e9b58f0c88f7dc332493a7dec03f3492dc71617a391047f0aaaa9"
+  }
+}
