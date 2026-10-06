@@ -50,3 +50,10 @@ Public qualification evidence lives under `docs/evidence/decision-qualification`
 Machine paths, process controls, launcher state, and raw host inventory remain
 host-local. This setup does not authorize SYS-01 use; #22 must freeze identity,
 privileges, fallback and budget before any such trial.
+
+The separately recorded [MLX-LM runtime diagnostic](../evidence/decision-runtime-epochs/kev-mlx-lm-a63e24c/README.md)
+changes only that library to SemIf's pinned source revision. It changes native
+probabilities without changing any of the 25 choices, so accuracy remains 11/23.
+The experimental dependency override does not replace the released runtime or
+its qualification receipt, and it does not admit the downstream navigation
+proof or a larger Kev model.

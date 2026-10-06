@@ -1,0 +1,23 @@
+{
+  "fixture_sha256": "7c602cf56683fe38706932042e49b35e51d048f1d2310ad9d9cfc08558112841",
+  "engine": "kev",
+  "mode": "direct",
+  "model_load_seconds": null,
+  "wall_seconds": 3.273606250062585,
+  "memory": null,
+  "items": 25,
+  "labeled": 23,
+  "correct": 11,
+  "accuracy": 0.4782608695652174,
+  "brier": 0.6867905465217391,
+  "ece": null,
+  "ece_status": "insufficient_labeled_sample",
+  "confident_wrong": 0,
+  "local_proposals": 0,
+  "review": 25,
+  "false_confident_local_completions": 0,
+  "decision_latency_total_ms": 2996.149876154959,
+  "decisions_per_second": 8.344041864849292,
+  "resource_ms_per_local_proposal": null,
+  "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim"
+}

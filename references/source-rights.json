@@ -81,6 +81,20 @@
       "rights": "independently project-authored diagnostic",
       "disposition": "public reference fixture; no third-party corpus copied",
       "label_authority": "existing independent deterministic oracles, TeacherState.choose, and explicit fixture-local relation map; two rows unlabeled"
+    },
+    {
+      "id": "mlx-lm-code",
+      "canonical_url": "https://github.com/ml-explore/mlx-lm",
+      "revision": "a63e24c389382619eb6d9af656e3b46024be217a",
+      "license": "MIT",
+      "evidence": "upstream LICENSE at pinned source; copyright Apple Inc.",
+      "access_date": "2026-10-05",
+      "disposition": "local research execution for SemIf and isolated Kev runtime diagnostic; no source code or weights copied into Bilqis",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
     }
   ]
 }
