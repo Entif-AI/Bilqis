@@ -1,0 +1,86 @@
+{
+  "version": "bilqis-source-rights-0.1.0",
+  "owner_issue": 35,
+  "phase": "A scoped to #65 only; Phase B remains open",
+  "policy": "Accessibility is not permission. Unknown rights fail toward omission. Scorer outputs are non-authoritative annotations, never gold or student initialization. No raw donor grammar prose or external evaluation fixtures included.",
+  "sources": [
+    {
+      "id": "kev-code",
+      "canonical_url": "https://github.com/jaredpalmer/kev",
+      "revision": "6b719c3c3f367295f6ef336f4f751cf5ff970abc",
+      "license": "Apache-2.0",
+      "evidence": "upstream LICENSE at pinned source",
+      "access_date": "2026-10-05",
+      "disposition": "local research execution; no weights/code copied into Bilqis",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
+    },
+    {
+      "id": "semif-code",
+      "canonical_url": "https://github.com/TheoLeeCJ/SemIf-OpenJev",
+      "revision": "23cf1f39fc9534fe81437200959b6dfc7106e45a",
+      "license": "MIT",
+      "evidence": "upstream LICENSE at pinned source",
+      "access_date": "2026-10-05",
+      "disposition": "local research execution; no weights/code copied into Bilqis",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
+    },
+    {
+      "id": "kev4-adapter-head",
+      "canonical_url": "https://huggingface.co/jaredpalmer/kev-4b",
+      "revision": "6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+      "license": "apache-2.0",
+      "evidence": "pinned upstream model card license declaration",
+      "access_date": "2026-10-05",
+      "disposition": "local research execution; no weights/code copied into Bilqis",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
+    },
+    {
+      "id": "qwen-kev-base",
+      "canonical_url": "https://huggingface.co/Qwen/Qwen3.5-4B-Base",
+      "revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
+      "license": "apache-2.0",
+      "evidence": "pinned upstream model card license declaration",
+      "access_date": "2026-10-05",
+      "disposition": "local research execution; no weights/code copied into Bilqis",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
+    },
+    {
+      "id": "qwen-semif-base",
+      "canonical_url": "https://huggingface.co/Qwen/Qwen3.5-4B",
+      "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "license": "apache-2.0",
+      "evidence": "pinned upstream model card license declaration",
+      "access_date": "2026-10-05",
+      "disposition": "local research execution; no weights/code copied into Bilqis",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
+    },
+    {
+      "id": "decision-fixture-v1",
+      "canonical_location": "fixtures/decision-v1.json",
+      "version": "bilqis-decision-fixture-0.1.0",
+      "rights": "independently project-authored diagnostic",
+      "disposition": "public reference fixture; no third-party corpus copied",
+      "label_authority": "existing independent deterministic oracles, TeacherState.choose, and explicit fixture-local relation map; two rows unlabeled"
+    }
+  ]
+}
