@@ -1,0 +1,567 @@
+{
+  "version": "bilqis-navigation-fixture-0.1.0",
+  "authority": {
+    "subset": "fixture-local typed factors and references",
+    "subordinate_to_issues": [
+      7,
+      10,
+      27,
+      44,
+      69
+    ],
+    "official_rosetta_authority": false,
+    "compatibility": "Does not extend or reinterpret bilqis-finite-world-0.1.0. No full #7 ABI claim."
+  },
+  "objects": {
+    "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84": {
+      "kind": "tool",
+      "color": "red",
+      "purpose": "cutting",
+      "quantity": "single",
+      "evidence": "observed"
+    },
+    "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793": {
+      "kind": "tool",
+      "color": "blue",
+      "purpose": "cutting",
+      "quantity": "single",
+      "evidence": "observed"
+    },
+    "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416": {
+      "kind": "container",
+      "color": "red",
+      "purpose": "holding",
+      "quantity": "single",
+      "evidence": "reported"
+    },
+    "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c": {
+      "kind": "tool",
+      "color": "red",
+      "purpose": "holding",
+      "quantity": "single",
+      "evidence": "observed"
+    },
+    "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52": {
+      "kind": "composition",
+      "configuration": "ordered_pair",
+      "scope": "joint",
+      "evidence": "observed",
+      "members": [
+        {
+          "ref": "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84"
+        },
+        {
+          "ref": "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793"
+        }
+      ]
+    },
+    "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709": {
+      "kind": "composition",
+      "configuration": "ordered_pair",
+      "scope": "joint",
+      "evidence": "reported",
+      "members": [
+        {
+          "ref": "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793"
+        },
+        {
+          "ref": "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84"
+        }
+      ]
+    }
+  },
+  "cases": [
+    {
+      "id": "nav-exact_shallow",
+      "family": "exact_shallow",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+        "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+      ],
+      "factor_path": [
+        "kind",
+        "color"
+      ],
+      "hints": {
+        "kind": "tool",
+        "color": "red"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-deep_composition",
+      "family": "deep_composition",
+      "scopes": {
+        "root": [
+          "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52",
+          "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709"
+        ],
+        "deeper": [
+          "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52",
+          "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709"
+        ]
+      },
+      "initial_live": [
+        "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52",
+        "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709"
+      ],
+      "factor_path": [
+        "kind",
+        "configuration",
+        "scope",
+        "evidence"
+      ],
+      "hints": {
+        "kind": "composition",
+        "configuration": "ordered_pair",
+        "scope": "joint",
+        "evidence": "observed"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "configuration",
+        "scope",
+        "evidence"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-clarified_ambiguity",
+      "family": "clarified_ambiguity",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+      ],
+      "factor_path": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "hints": {
+        "kind": "tool",
+        "color": "red"
+      },
+      "evidence_schedule": [
+        {
+          "purpose": "cutting"
+        }
+      ],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-persistent_ambiguity",
+      "family": "persistent_ambiguity",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+      ],
+      "factor_path": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "hints": {
+        "kind": "tool",
+        "color": "red"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "ambiguous",
+        "object_id": null
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-outside_panel",
+      "family": "outside_panel",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793"
+      ],
+      "factor_path": [
+        "kind",
+        "color"
+      ],
+      "hints": {
+        "kind": "container",
+        "color": "red"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-absent_object",
+      "family": "absent_object",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+        "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+      ],
+      "factor_path": [
+        "kind"
+      ],
+      "hints": {
+        "kind": "novel_unlisted_kind"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "absent",
+        "object_id": null
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-compositional_reuse",
+      "family": "compositional_reuse",
+      "scopes": {
+        "root": [
+          "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52",
+          "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709"
+        ],
+        "deeper": [
+          "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52",
+          "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709"
+        ]
+      },
+      "initial_live": [
+        "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52",
+        "66827f74ece8b4982a511af68b59fa8ab06bfc9a916e993cc82784eb6dd0a709"
+      ],
+      "factor_path": [
+        "kind",
+        "configuration",
+        "scope",
+        "evidence"
+      ],
+      "hints": {
+        "kind": "composition",
+        "configuration": "ordered_pair",
+        "scope": "joint",
+        "evidence": "observed"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793"
+      ],
+      "capabilities": [
+        "kind",
+        "configuration",
+        "scope",
+        "evidence"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "b7f241526acac89c61391c461ebf4e2c028d52ad281edd9fa08966bc14ceba52"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-rare_discriminative_cue",
+      "family": "rare_discriminative_cue",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+      ],
+      "factor_path": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "hints": {
+        "kind": "tool",
+        "color": "red",
+        "purpose": "cutting"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "surface_cue": "holding holding holding holding; the explicit rare distinction is purpose=cutting",
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-equivalent_alternate_order",
+      "family": "equivalent_alternate_order",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+          "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "43322ce90bb42f2d51e19826e9b5adb77abd98b566dfc96b1b26deba25d0d793",
+        "c32de8383bdddf5f685bf11ab86fb34c692e4c26eacd9eecf7bec2d0b860d416"
+      ],
+      "factor_path": [
+        "kind",
+        "color"
+      ],
+      "hints": {
+        "color": "red",
+        "kind": "tool"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "resolved",
+        "object_id": "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84"
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    },
+    {
+      "id": "nav-capability_mismatch",
+      "family": "capability_mismatch",
+      "scopes": {
+        "root": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ],
+        "deeper": [
+          "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+          "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+        ]
+      },
+      "initial_live": [
+        "caffcaf952783b1b5b04d33435806365bb6135d26fd1688e3cd13c483317de84",
+        "f80ac0c816aa36fc0c0c2a093eda129dbce89ebd6d555eb0dae5c01a0ee3234c"
+      ],
+      "factor_path": [
+        "kind",
+        "color",
+        "purpose"
+      ],
+      "hints": {
+        "kind": "tool",
+        "color": "red",
+        "purpose": "cutting"
+      },
+      "evidence_schedule": [],
+      "resolved_refs": [],
+      "capabilities": [
+        "kind",
+        "color"
+      ],
+      "surface_cue": null,
+      "legal_neighborhoods": "values of the next factor among live objects; reserved routes stay explicit",
+      "expected_terminal": {
+        "status": "unsupported",
+        "object_id": null
+      },
+      "provenance": [
+        "https://github.com/Entif-AI/Bilqis/issues/7",
+        "https://github.com/Entif-AI/Bilqis/issues/10",
+        "https://github.com/Entif-AI/Bilqis/issues/27",
+        "https://github.com/Entif-AI/Bilqis/issues/44",
+        "https://github.com/Entif-AI/Bilqis/issues/69"
+      ]
+    }
+  ],
+  "optional_dependencies": {
+    "53": "no donor lexical material used",
+    "67": "no learned sparse address machinery",
+    "59": "no adjacent-resolution interoperability claim",
+    "Akasha": "not required for synthetic corpus"
+  },
+  "control_scope": "Factor-list versus named-field serialization of the same prototype. No donor-specific learning claim."
+}
