@@ -97,6 +97,22 @@ class FrozenBatteryTests(unittest.TestCase):
         self.assertIn('36 / 36',report['RESULTS.md'])
         self.assertIn('42 / 42',report['RESULTS.md'])
 
+    def test_capability_slices_separate_chapter_membership_and_task_structure(self):
+        from bilqis_ref.ithkuil_battery import capability_slices, confusion_matrix
+        rows=self.rows()
+        step=next(r for r in rows if r['decision_id']=='F10-HARD.S1')
+        step['selected_id']=step['candidate_order'][1]
+        step['probabilities']={k:.7 if k==step['selected_id'] else .1 for k in step['candidate_order']}
+        slices=capability_slices(self.fixture,rows)
+        self.assertEqual({'correct':4,'total':4},slices['Chapter 2 — root/stem/Specification'])
+        self.assertEqual({'correct':13,'total':14},slices['Chapter 4 — semantic roles'])
+        self.assertEqual({'correct':2,'total':3},slices['Sequential paths (joint)'])
+        self.assertEqual(36,sum(slices[k]['total'] for k in (
+            'Single decision, one annotated dimension','Single decision, multiple annotated dimensions','Sequential paths (joint)')))
+        matrix=confusion_matrix(self.fixture,rows)
+        self.assertEqual(42,sum(sum(targets.values()) for targets in matrix.values()))
+        self.assertEqual(1,matrix['ERG']['IND'])
+
     def test_paired_epoch_preserves_request_states_and_raw_rows(self):
         # Boundary test uses stub context and scorer; no model or linguistic gold is authored.
         import hashlib

@@ -1,0 +1,26 @@
+{
+  "canonical_cells": 36,
+  "atomic_decisions_per_order": 42,
+  "final_epoch_model_calls": 84,
+  "retained_initial_calls": 42,
+  "total_model_calls": 126,
+  "source_issue_transcription": "PASS",
+  "state_and_prompt_pairing": "PASS",
+  "http_and_native_option_order": "PASS",
+  "runtime_identity": "PASS",
+  "row_and_metric_replay": "PASS",
+  "markdown_replay": "PASS",
+  "historical_65_files_byte_identical": 33,
+  "legacy_abi_byte_identical": true,
+  "private_source_and_journals_excluded": true,
+  "retained_initial_comparison": {
+    "choice_changes": 0,
+    "probability_changes": 0,
+    "canonical_request_hash_changes": 0
+  },
+  "order_sensitive_cells": [
+    "F01-SIMPLE",
+    "F10-HARD",
+    "F10-MEDIUM"
+  ]
+}
