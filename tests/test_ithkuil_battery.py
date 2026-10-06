@@ -8,6 +8,8 @@ from pathlib import Path
 from bilqis_ref.ithkuil_fixture import compile_issue, validate_fixture
 from bilqis_ref.ithkuil_battery import validate_rows, summarize, compare_orders, render_reports, run_epoch, service_identity
 from bilqis_ref.semantics import digest
+from bilqis_ref.semantics import canonical
+from bilqis_ref.decision import kev_score, permute
 
 ROOT = Path(__file__).resolve().parents[1]
 ISSUE = ROOT/'fixtures/new-ithkuil-v0.1.issue.md'
@@ -112,7 +114,8 @@ class FrozenBatteryTests(unittest.TestCase):
             selected=item['options'][0]['id']
             return {'selected_id':selected,'probabilities':{o['id']:.7 if o['id']==selected else .1 for o in item['options']},
                     'runtime_metadata':{'models':model,'native':{'retained':True}},'latency_ms':10.,'warm_state':True,
-                    'state_sha256':digest(item['state']),'prompt_or_state_hash':digest(item)}
+                    'state_sha256':digest(item['state']),'prompt_or_state_hash':digest(item),
+                    'http_candidate_order':[o['id'] for o in item['options']],'request_payload_sha256':digest(item)}
         with tempfile.TemporaryDirectory() as tmp, patch.object(ithkuil_battery,'CONTEXT_SHA256',context_hash), patch.object(ithkuil_fixture,'CONTEXT_SHA256',context_hash), patch.object(ithkuil_battery,'local_json',return_value={'models':[model]}), patch.object(ithkuil_battery,'kev_score',side_effect=score), contextlib.redirect_stdout(io.StringIO()):
             root=Path(tmp);fixture_path=root/'fixture.json';context=root/'context.md';identity=root/'identity.json'
             fixture=compile_issue(ISSUE.read_text());fixture_path.write_text(json.dumps(fixture));fixture_path.with_suffix('.issue.md').write_text(ISSUE.read_text());context.write_bytes(packet)
@@ -127,6 +130,28 @@ class FrozenBatteryTests(unittest.TestCase):
             rows=[json.loads(s) for s in (root/'A/rows.jsonl').read_text().splitlines()]
             self.assertEqual(42,len(rows));self.assertTrue(all(r['runtime_metadata']['native']['retained'] for r in rows))
             with self.assertRaises(FileExistsError):run_epoch(fixture_path,context,identity,root/'A','A')
+
+    def test_native_choice_order_reaches_actual_http_bytes(self):
+        import io
+        from bilqis_ref import local_http
+        model={'run':'jaredpalmer/kev-4b@test-revision','backend':'mlx','prefix_cache':{'hits':0}}
+        sent=[]
+        class Opener:
+            def open(self,request,timeout):
+                if request.data is None:return io.BytesIO(json.dumps({'models':[model]}).encode())
+                payload=json.loads(request.data);criteria=payload['questions']['decision']['criteria'];sent.append(request.data)
+                selected=next(iter(criteria))
+                return io.BytesIO(json.dumps({'answers':{'decision':{'choice':selected,'probabilities':{k:.7 if k==selected else .1 for k in criteria}}}}).encode())
+        d=self.fixture['cells'][0]
+        item={'id':d['id'],'split':'DEV','state':{'z':'last','a':'first'},'question':d['prompt'],'options':d['candidates']}
+        identity={'model':'jaredpalmer/kev-4b','model_revision':'test-revision'}
+        with patch.object(local_http.urllib.request,'build_opener',return_value=Opener()):
+            kev_score(item,'http://127.0.0.1:8008',identity)
+            changed=permute(item,77);kev_score(changed,'http://127.0.0.1:8008',identity)
+        original={'model':'kev-latest','state':item['state'],'questions':{'decision':{'type':'choice','instructions':item['question'],'criteria':{o['id']:o['description'] for o in item['options']}}}}
+        self.assertEqual(canonical(original),sent[0])
+        self.assertEqual([o['id'] for o in changed['options']],list(json.loads(sent[1])['questions']['decision']['criteria']))
+        self.assertEqual(json.loads(sent[0])['state'],json.loads(sent[1])['state'])
 
 
 if __name__=='__main__':unittest.main()

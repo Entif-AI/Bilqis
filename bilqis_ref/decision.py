@@ -2,6 +2,7 @@
 from __future__ import annotations
 import argparse
 import copy
+import hashlib
 import json
 import math
 import random
@@ -9,7 +10,7 @@ import time
 from pathlib import Path
 from .semantics import canonical, digest
 from .teacher import STAGE_NAMES, PREREQUISITES
-from .local_http import local_json
+from .local_http import local_json, encode_body
 
 RESERVED = {'other','insufficient','clarify','abstain'}
 
@@ -108,18 +109,27 @@ def metrics(items, results, policy):
             'qualification_scope':'owned public diagnostic only; no general or SYS-01 quality claim'}
 
 
-def kev_score(item, endpoint, identity):
+def kev_payload(item):
     row = native_item(item)
+    # Preserve the established canonical layout outside the ordered Choice map.
+    payload = json.loads(canonical({'model':'kev-latest','state':row['state'],'questions': {'decision':{
+        'type':'choice','instructions':row['question'],'criteria':{o['id']:o['description'] for o in row['options']}}}}))
+    payload['questions']['decision']['criteria'] = {o['id']:o['description'] for o in row['options']}
+    return payload
+
+
+def kev_score(item, endpoint, identity):
+    payload = kev_payload(item)
     before = local_json(endpoint+'/v1/models','/v1/models')['models'][0]
     if before['backend']!='mlx' or before['run']!=identity['model']+'@'+identity['model_revision']:
         raise ValueError('KEV_RUNTIME_IDENTITY')
-    payload = {'model':'kev-latest','state':row['state'],'questions': {'decision':{
-        'type':'choice','instructions':row['question'],'criteria':{o['id']:o['description'] for o in row['options']}}}}
-    start = time.perf_counter(); native = local_json(endpoint+'/v1/systemone','/v1/systemone',payload)
+    start = time.perf_counter(); native = local_json(endpoint+'/v1/systemone','/v1/systemone',payload,preserve_order=True)
     elapsed = (time.perf_counter()-start)*1000
     after = local_json(endpoint+'/v1/models','/v1/models')['models'][0]
     result = normalize(item,'kev',native,identity,elapsed,after['prefix_cache']['hits']>before['prefix_cache']['hits'])
     result['runtime_metadata'].update(models=after,prefix_cache_before=before['prefix_cache'])
+    result['request_payload_sha256'] = hashlib.sha256(encode_body(payload,True)).hexdigest()
+    result['http_candidate_order'] = list(payload['questions']['decision']['criteria'])
     return result
 
 

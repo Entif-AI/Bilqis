@@ -238,7 +238,9 @@ def run_epoch(fixture_path,context_path,identity_path,output,epoch,paired_rows=N
     if paired:validate_rows(fixture,paired)
     frozen={r['decision_id']:r for r in paired or []}
     output.mkdir(parents=True,exist_ok=False)
-    receipt={'epoch':epoch,'fixture_file_sha256':file_hash(fixture_path),'context_packet_sha256':CONTEXT_SHA256,
+    import subprocess
+    receipt={'epoch':epoch,'execution_epoch':'order-preserving-http-v1','harness_source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+             'fixture_file_sha256':file_hash(fixture_path),'context_packet_sha256':CONTEXT_SHA256,
              'runtime_identity':identity,'seed':fixture['permutation_seed'] if epoch=='B' else None,
              'canonical_state_replay':bool(paired),'model_calls_expected':42,'status':'STARTED'}
     (output/'START.json').write_text(json.dumps(receipt,indent=2)+'\n')
@@ -257,12 +259,12 @@ def run_epoch(fixture_path,context_path,identity_path,output,epoch,paired_rows=N
                 if service_identity(native['runtime_metadata']['models'])!=identity['service']:raise ValueError('ITHKUIL_RUNTIME_CHANGED')
                 values=sorted(native['probabilities'].values(),reverse=True)
                 row={**native,'decision_id':d['id'],'cell_id':cell['id'],'sequence_step_id':d['id'] if cell['family']==10 else None,
-                     'epoch':epoch,'fixture_file_sha256':receipt['fixture_file_sha256'],'context_packet_sha256':CONTEXT_SHA256,
+                     'epoch':epoch,'execution_epoch':receipt['execution_epoch'],'fixture_file_sha256':receipt['fixture_file_sha256'],'context_packet_sha256':CONTEXT_SHA256,
                      'question':d['prompt'],'candidates':item['options'],'candidate_order':[o['id'] for o in item['options']],
                      'gold_id':d['gold_candidate'],'correct':native['selected_id']==d['gold_candidate'],
                      'top_probability':values[0],'margin':values[0]-values[1],'runtime_identity':identity,
-                     'sequence_context':seq,'route':'evaluation_only; no runtime promotion policy applied',
-                     'request_payload_sha256':digest({'model':'kev-latest','state':state,'questions':{'decision':{'type':'choice','instructions':d['prompt'],'criteria':{o['id']:o['description'] for o in item['options']}}}})}
+                     'sequence_context':seq,'route':'evaluation_only; no runtime promotion policy applied'}
+                if native['http_candidate_order']!=row['candidate_order']:raise ValueError('ITHKUIL_HTTP_CANDIDATE_ORDER')
                 stream.write(json.dumps(row,ensure_ascii=False,allow_nan=False)+'\n');stream.flush()
                 import os;os.fsync(stream.fileno())
                 rows.append(row)
