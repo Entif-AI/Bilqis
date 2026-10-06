@@ -21,19 +21,19 @@
     "id": "82344f89-728f-4101-b0dc-4f464defce17",
     "holder": "codex:a702e9eb-133f-49da-a62f-f105efb0f8c6",
     "acquired_at": "2026-10-06T06:21:03.864600Z",
-    "heartbeat_at": "2026-10-06T07:05:54.573408Z",
-    "expires_at": "2026-10-06T08:05:54.573408Z",
+    "heartbeat_at": "2026-10-06T07:12:12.887142Z",
+    "expires_at": "2026-10-06T08:12:12.887142Z",
     "released_at": null
   },
   "focus": {
-    "summary": "Paired results and readable reports complete; comprehensive request/row/Markdown replay passes; 33 historical #65 files intact. Run full suite and final checksum audit.",
+    "summary": "49/49 tests pass at 6037c9aeaac3f9fb7ac8354324cf8679807f3317; complete evidence and checksums verified. Open #77 stacked PR against codex/65-local-decision, publish result evidence, then archive/release; no merge.",
     "acceptance_refs": [
       "#77"
     ]
   },
   "checkpoint": {
-    "sha": "506234c9673c5eca2cf79d8cbc6af031574c21a9",
-    "pushed_at": "2026-10-06T07:05:54.573408Z"
+    "sha": "6037c9aeaac3f9fb7ac8354324cf8679807f3317",
+    "pushed_at": "2026-10-06T07:12:12.887142Z"
   },
   "state": {
     "status": "active",
@@ -51,7 +51,7 @@ Execute frozen #77; preserve historical #65 evidence.
 Work Stack: eda542d8-a888-4a35-9191-c6ea0c24b8b8. Private journal and Drive checkpoints are keyed by work epoch e24d1fae-5d1b-40a4-80ed-486087994b70.
 
 ## Current Focus / Next Safe Step
-Paired results and readable reports complete; comprehensive request/row/Markdown replay passes; 33 historical #65 files intact. Run full suite and final checksum audit.
+49/49 tests pass at 6037c9aeaac3f9fb7ac8354324cf8679807f3317; complete evidence and checksums verified. Open #77 stacked PR against codex/65-local-decision, publish result evidence, then archive/release; no merge.
 
 ## Invariants
 No new linguistic questions/gold; exact supplied packet; fixture-local IDs; native Kev-4B; separate epochs; loopback only; no self-merge.

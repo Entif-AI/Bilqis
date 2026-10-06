@@ -1,15 +1,15 @@
 {
   "focused_tests": {
-    "command": "python3 -m unittest discover -s tests -p test_ithkuil_battery.py -v",
-    "tests": 7,
+    "command": "python -m unittest discover -s tests -p test_ithkuil_battery.py -v",
+    "tests": 9,
     "result": "PASS",
-    "observed_runner_result": "Validation passed (exit 0)."
+    "proof": "9 new tests included and green in the complete 49-test suite"
   },
   "red_test_evidence": "missing module and malformed bracket observed before green; private failure logs retained",
   "tested_file_sha256": {
     "bilqis_ref/ithkuil_fixture.py": "fe7ece870b30663497c418b845313252a1ffd98f95b856a06ee2e1e90ce6f38c",
-    "bilqis_ref/ithkuil_battery.py": "b9d972d1ab66ea9c5532c0cb6608003df06a27f10526cf5a088a944e53fcb2d5",
-    "tests/test_ithkuil_battery.py": "7d61c0c3903167e3dc1a1dc2b2788be566bf0c97ef3497712610f1384a6641f1",
+    "bilqis_ref/ithkuil_battery.py": "b309ef3343fd0aa9d1b5d46b263e815fbe920ad8f5db3e396d937c0dfceb3ad0",
+    "tests/test_ithkuil_battery.py": "cb920af7048d74b49b7dce69e9a2cc41d458a32437e383180a9109fbe6ed2b10",
     "fixtures/new-ithkuil-v0.1.json": "66c41a18a98e9b58f0c88f7dc332493a7dec03f3492dc71617a391047f0aaaa9",
     "bilqis_ref/decision.py": "4ee68124e1f4de8c8fb2a56884e5a4a08a635238fcc5fda9456a5737262ab4b8",
     "bilqis_ref/local_http.py": "12f4cd9d203fccd8d8fb94c3887804c31f5d1e2fcd44f16371157ed8d46fdae7"
@@ -19,5 +19,46 @@
     "result": "PASS",
     "red_before_green": true,
     "regression": "Actual request bytes retain D/A/B/C presentation; canonical request bytes remain byte-identical"
-  }
+  },
+  "prior_focused_test_epochs": {
+    "focused_tests": {
+      "command": "python3 -m unittest discover -s tests -p test_ithkuil_battery.py -v",
+      "tests": 7,
+      "result": "PASS",
+      "observed_runner_result": "Validation passed (exit 0)."
+    },
+    "serialization_epoch_focused_tests": {
+      "tests": 8,
+      "result": "PASS",
+      "red_before_green": true,
+      "regression": "Actual request bytes retain D/A/B/C presentation; canonical request bytes remain byte-identical"
+    }
+  },
+  "full_tests": {
+    "command": "python -m unittest discover -s tests -v",
+    "tests": 49,
+    "seconds": 1.151,
+    "result": "PASS",
+    "python": "3.13.12",
+    "environment": "existing Kev Python interpreter plus private test-only jsonschema overlay; service packages unchanged",
+    "dependency_versions": {
+      "torch": "2.8.0",
+      "numpy": "2.5.3",
+      "scipy": "1.18.1",
+      "jsonschema": "4.26.0"
+    },
+    "dependency_scope": "local behavioral proof; hosted CI installs repository-pinned test requirements",
+    "full_log_sha256": "f963750d17be68a62ad702adfb2bbc5f06c4e6b8feaa41d79be8df6631fee4f9"
+  },
+  "tested_git_sha": "6037c9aeaac3f9fb7ac8354324cf8679807f3317",
+  "verified_at": "2026-10-06T07:11:01.485368+00:00",
+  "reporting_red_green": {
+    "red": "missing capability_slices/confusion_matrix helpers caused ImportError in new focused test",
+    "green": "same focused test and full suite pass after implementation",
+    "red_log_sha256": "6d035b7f6f40bdfe92cf54e21cbdcb2e9e6539c960b97c1b7fe89750a5532d9b"
+  },
+  "environment_failures_preserved": [
+    "Bare Python lacked torch/numpy",
+    "Existing Kev environment lacked jsonschema; test-only dependency overlay supplied it"
+  ]
 }
