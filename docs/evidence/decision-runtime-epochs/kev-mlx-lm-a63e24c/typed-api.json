@@ -1,0 +1,250 @@
+{
+  "http": {
+    "request": {
+      "model": "kev-latest",
+      "state": "Declared evidence: invoice 42 has two identical charges. No delivery problem is reported. Customer asks for help today.",
+      "questions": {
+        "team": {
+          "type": "choice",
+          "instructions": "Which team owns the reported problem?",
+          "criteria": {
+            "billing": "Charges and invoices",
+            "shipping": "Delivery problems",
+            "insufficient": "Evidence insufficient"
+          }
+        },
+        "billing": {
+          "type": "noul",
+          "instructions": "Does the evidence describe a billing problem?"
+        },
+        "urgency": {
+          "type": "score",
+          "instructions": "How soon does the customer request help?",
+          "criteria": [
+            "no requested time",
+            "this week",
+            "today"
+          ]
+        }
+      }
+    },
+    "response": {
+      "model": "kev-latest",
+      "answers": {
+        "team": {
+          "type": "choice",
+          "choice": "billing",
+          "confidence": 0.6672,
+          "probabilities": {
+            "billing": 0.7781,
+            "shipping": 0.0203,
+            "insufficient": 0.2015
+          }
+        },
+        "billing": {
+          "type": "noul",
+          "noul": 0.8594
+        },
+        "urgency": {
+          "type": "score",
+          "score": 1.8247,
+          "legend": {
+            "0": "no requested time",
+            "1": "this week",
+            "2": "today"
+          },
+          "probabilities": {
+            "0": 0.0752,
+            "1": 0.0249,
+            "2": 0.8999
+          },
+          "confidence": 0.7371
+        }
+      },
+      "usage": {
+        "input_tokens": 92,
+        "output_tokens": 179
+      },
+      "latency_ms": 1094.8
+    }
+  },
+  "sdk": {
+    "parsed": {
+      "model": "kev-latest",
+      "usage": {
+        "input_tokens": 92,
+        "output_tokens": 179
+      },
+      "answers": {
+        "team": {
+          "type": "choice",
+          "choice": "billing",
+          "confidence": 0.6672,
+          "probabilities": {
+            "billing": 0.7781,
+            "shipping": 0.0203,
+            "insufficient": 0.2015
+          }
+        },
+        "billing": {
+          "type": "noul",
+          "noul": 0.8594
+        },
+        "urgency": {
+          "type": "score",
+          "score": 1.8247,
+          "confidence": 0.7371,
+          "legend": {
+            "0": "no requested time",
+            "1": "this week",
+            "2": "today"
+          },
+          "probabilities": {
+            "0": 0.0752,
+            "1": 0.0249,
+            "2": 0.8999
+          }
+        }
+      }
+    },
+    "answer_types": {
+      "team": "ChoiceAnswer",
+      "billing": "NoulAnswer",
+      "urgency": "ScoreAnswer"
+    },
+    "request_id": "528adabac2bf4501901b8a59effe25bc",
+    "native": {
+      "model": "kev-latest",
+      "answers": {
+        "team": {
+          "type": "choice",
+          "choice": "billing",
+          "confidence": 0.6672,
+          "probabilities": {
+            "billing": 0.7781,
+            "shipping": 0.0203,
+            "insufficient": 0.2015
+          }
+        },
+        "billing": {
+          "type": "noul",
+          "noul": 0.8594
+        },
+        "urgency": {
+          "type": "score",
+          "score": 1.8247,
+          "legend": {
+            "0": "no requested time",
+            "1": "this week",
+            "2": "today"
+          },
+          "probabilities": {
+            "0": 0.0752,
+            "1": 0.0249,
+            "2": 0.8999
+          },
+          "confidence": 0.7371
+        }
+      },
+      "usage": {
+        "input_tokens": 92,
+        "output_tokens": 179
+      },
+      "latency_ms": 71.2
+    }
+  },
+  "standalone_permutation": {
+    "runs": [
+      {
+        "order": [
+          "billing",
+          "shipping",
+          "insufficient"
+        ],
+        "probabilities": {
+          "billing": 0.7724,
+          "shipping": 0.021,
+          "insufficient": 0.2066
+        },
+        "choice": "billing",
+        "latency_ms": 37.4
+      },
+      {
+        "order": [
+          "billing",
+          "insufficient",
+          "shipping"
+        ],
+        "probabilities": {
+          "billing": 0.7663,
+          "insufficient": 0.2199,
+          "shipping": 0.0138
+        },
+        "choice": "billing",
+        "latency_ms": 37.1
+      },
+      {
+        "order": [
+          "insufficient",
+          "billing",
+          "shipping"
+        ],
+        "probabilities": {
+          "insufficient": 0.302,
+          "billing": 0.6848,
+          "shipping": 0.0131
+        },
+        "choice": "billing",
+        "latency_ms": 37.1
+      },
+      {
+        "order": [
+          "billing",
+          "insufficient",
+          "shipping"
+        ],
+        "probabilities": {
+          "billing": 0.7663,
+          "insufficient": 0.2199,
+          "shipping": 0.0138
+        },
+        "choice": "billing",
+        "latency_ms": 37.1
+      },
+      {
+        "order": [
+          "billing",
+          "shipping",
+          "insufficient"
+        ],
+        "probabilities": {
+          "billing": 0.7724,
+          "shipping": 0.021,
+          "insufficient": 0.2066
+        },
+        "choice": "billing",
+        "latency_ms": 37.2
+      },
+      {
+        "order": [
+          "billing",
+          "shipping",
+          "insufficient"
+        ],
+        "probabilities": {
+          "billing": 0.7724,
+          "shipping": 0.021,
+          "insufficient": 0.2066
+        },
+        "choice": "billing",
+        "latency_ms": 37.9
+      }
+    ],
+    "argmax_stable": true,
+    "spread": {
+      "billing": 0.08760000000000001,
+      "shipping": 0.0079,
+      "insufficient": 0.09539999999999998
+    }
+  }
+}

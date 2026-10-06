@@ -1,0 +1,172 @@
+{
+  "version": "bilqis-decision-runtime-epoch-0.1.0",
+  "owner_issue": 65,
+  "runtime_epoch": "kev-mlx-lm-a63e24c",
+  "observed_date_utc": "2026-10-06",
+  "publication_posture": "public research evidence; host control, package manifests and paths remain private",
+  "bilqis_harness_source_commit": "bdc309aa3c904beb75ddc5b6a74e65ec8ae46a40",
+  "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+  "frozen_policy": {
+    "local_probability": 0.8,
+    "local_margin": 0.2,
+    "confident_wrong_probability": 0.8,
+    "ece_min_labeled": 100,
+    "qualification_accuracy": 0.8,
+    "qualification_min_labeled": 20
+  },
+  "original_qualification_receipt_sha256": "60a9b423eabec04e95c15624bafd981c92eff44925f0827a747a9cd4fd994cde",
+  "original_qualification_conclusion": "QUALITY_INADEQUATE",
+  "identity": {
+    "engine_revision": "6b719c3c3f367295f6ef336f4f751cf5ff970abc",
+    "model": "jaredpalmer/kev-4b",
+    "model_revision": "6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+    "backend": "mlx",
+    "runtime_versions": {
+      "mlx": "0.32.2",
+      "mlx-lm": "0.32.0",
+      "torch": "2.8.0",
+      "transformers": "5.17.0",
+      "python": "3.13.12 (main, Mar 25 2026, 02:48:22) [Clang 22.1.1 ]"
+    },
+    "base_model": "Qwen/Qwen3.5-4B-Base",
+    "base_revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
+    "source_release": "kev-1.0",
+    "dtype": "bfloat16",
+    "typesafe_sdk": "0.6.0",
+    "runtime_epoch": "kev-mlx-lm-a63e24c",
+    "dependency_override": "experimental MLX-LM 0.32.0 exceeds released Kev >=0.31.3,<0.32",
+    "mlx_lm_source_commit": "a63e24c389382619eb6d9af656e3b46024be217a"
+  },
+  "environment_control": {
+    "changed_distributions": {
+      "mlx-lm": [
+        "0.31.3",
+        "0.32.0"
+      ]
+    },
+    "all_other_distribution_versions_and_python_equal": true,
+    "complete_manifest_sha256": "8f5ed69c984571d3542ce898cf0a8a8e97240f189b54f428f9e3978144e467ca",
+    "experimental_dependency_override": "MLX-LM 0.32.0 exceeds the released Kev >=0.31.3,<0.32 contract",
+    "initial_install_drift": "Preserved and corrected before any inference; only controlled environment results are reported"
+  },
+  "predeclared_plan_sha256": "0215b3dfd711d3cf999bea24476a0b011a80a285a164870f293bd6c4e0dc80c5",
+  "diagnostic_gate_passed": false,
+  "diagnostic_conclusion": "QUALITY_INADEQUATE",
+  "selected_quality_default": null,
+  "released_service_replaced": false,
+  "experimental_listener_stopped": true,
+  "profiles": {
+    "direct": {
+      "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+      "engine": "kev",
+      "mode": "direct",
+      "model_load_seconds": null,
+      "wall_seconds": 3.2719580000266433,
+      "memory": null,
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6867905465217391,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 0,
+      "review": 25,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 3005.8657503686845,
+      "decisions_per_second": 8.3170713784984,
+      "resource_ms_per_local_proposal": null,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim"
+    },
+    "order": {
+      "fixture_sha256": "7c602cf56683fe38706932042e49b35e51d048f1d2310ad9d9cfc08558112841",
+      "engine": "kev",
+      "mode": "direct",
+      "model_load_seconds": null,
+      "wall_seconds": 3.273606250062585,
+      "memory": null,
+      "items": 25,
+      "labeled": 23,
+      "correct": 11,
+      "accuracy": 0.4782608695652174,
+      "brier": 0.6867905465217391,
+      "ece": null,
+      "ece_status": "insufficient_labeled_sample",
+      "confident_wrong": 0,
+      "local_proposals": 0,
+      "review": 25,
+      "false_confident_local_completions": 0,
+      "decision_latency_total_ms": 2996.149876154959,
+      "decisions_per_second": 8.344041864849292,
+      "resource_ms_per_local_proposal": null,
+      "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim"
+    }
+  },
+  "comparison": {
+    "items": 25,
+    "changed_choices": 0,
+    "changed_distributions": 25,
+    "permutation_changed_choices": 0,
+    "max_absolute_probability_change": 0.01200000000000001
+  },
+  "runtime_proof": {
+    "typed_sdk_primitives": {
+      "team": "ChoiceAnswer",
+      "billing": "NoulAnswer",
+      "urgency": "ScoreAnswer"
+    },
+    "load_to_ready_seconds": 8.832761500030756,
+    "memory_after_load": {
+      "memory_pressure": "System-wide memory free percentage: 41%",
+      "rss_kib": 1307728
+    },
+    "memory_after_requests": {
+      "memory_pressure": "System-wide memory free percentage: 40%",
+      "rss_kib": 1341568
+    },
+    "memory_scope": "process RSS and system memory-pressure readbacks; neither is MLX allocator peak memory"
+  },
+  "caveats": [
+    "A library-version intervention does not isolate one normalization patch within that version.",
+    "The first attempt failed in the evidence recorder while serializing the SDK HTTP wrapper, after successful HTTP calls; it is not runtime-failure evidence.",
+    "Probabilities retain the native four-decimal serialization; 23 labeled cases do not support ECE or general reliability claims.",
+    "The original K1/S1 receipt, frozen labels and gates remain unchanged; no SYS-01, truth, promotion or initialization authority is granted."
+  ],
+  "downstream": {
+    "71": "BLOCKED_DEPENDENCY: no qualified profile",
+    "72": "BLOCKED_DEPENDENCY: requires #71",
+    "73": "BLOCKED_DEPENDENCY: requires qualified navigation proof",
+    "kev27": "NOT_ADMITTED; no quality-qualified default; weights not downloaded"
+  },
+  "artifacts": [
+    {
+      "path": "direct.rows.jsonl.gz",
+      "sha256": "071a4db47e6bd8faef7c41154b8fb2c0bc80294f212de9499a4d4bd64b39dc81"
+    },
+    {
+      "path": "direct.summary.json",
+      "sha256": "b4fb26743c9da25bfe7cf6ca8116972e2e033f3a9ff5370e8064c1e5a7afa0ac"
+    },
+    {
+      "path": "order.rows.jsonl.gz",
+      "sha256": "09631088c1fcbe7275d22ff8d3b155b8587e79797b06e0627680e034803febb6"
+    },
+    {
+      "path": "order.summary.json",
+      "sha256": "3e90d2d0637e1544adad780e8626368f25602c8612001701abd075148d163529"
+    },
+    {
+      "path": "comparison.json",
+      "sha256": "137b8c56ea79ab0853c7153ffad9cd457148bef158cfdc29c56d50c1b93cce88"
+    },
+    {
+      "path": "typed-api.json",
+      "sha256": "0596efc4617b69576ae8fcd879910d4c2c0dd9fb59c17b6a2c30b8059a6ab369"
+    },
+    {
+      "path": "README.md",
+      "sha256": "cc19da963ab1bcfb89d98b55c6545376474cd8f68ec5d47ea91051d0d623b163"
+    }
+  ]
+}
