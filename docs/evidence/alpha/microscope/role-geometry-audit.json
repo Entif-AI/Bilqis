@@ -1,0 +1,18 @@
+{
+  "audit": "read-only postflight of the frozen pre-step tensor; no additional training",
+  "semantic_ids": [
+    "urn:bilqis:alpha:cogal:role-source",
+    "urn:bilqis:alpha:cogal:role-target"
+  ],
+  "source_row_sha256": "4e6c55a13a45a3b851a20477d131a1a30f62eade8920ae3da170338b004a1ed2",
+  "target_row_sha256": "4e6c55a13a45a3b851a20477d131a1a30f62eade8920ae3da170338b004a1ed2",
+  "rows_equal": true,
+  "observation": "Operator features include role membership/sensitivity; individual role-token rows share coarse family geometry at initialization. AST/codec identities and role order remain distinct.",
+  "causal_status": "Contribution to weak neural role binding untested; no causal attribution",
+  "owners": [
+    81,
+    62,
+    28
+  ],
+  "next_smallest_test": "A separately authorized next epoch can isolate role-token geometry on frozen role/sparse-evidence contrasts before expanding domain/backend."
+}
