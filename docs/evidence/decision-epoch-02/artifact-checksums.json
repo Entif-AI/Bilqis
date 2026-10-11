@@ -1,0 +1,29 @@
+{
+  "policy": "all exported files except this checksum index",
+  "sha256": {
+    "HANDOFF.md": "94d1793ec6afaf8c6f38e4ced126b962916a0e35ddea2d9c4a1199f15b0b3d8d",
+    "RESULTS.md": "7d84a78e7e7afbf9d1abe103acf9fcbe77882aeb52a55ee326c324e93a31b73c",
+    "candidate-inventory.json": "a9f197a3336da532baca828d2bc98ec0396159c84e0c8b76e278c233ff9fdf12",
+    "episodes.json": "c6a0b27810aca26f2b3408b381f429287f836d18956308d4f5e451d8f98d2b5e",
+    "evaluation-summary.json": "a4bdee4b1101fd13ada9dacc1012496e606588f6d0cbd18431955a0d75652d8f",
+    "features.json": "59861f748a236d442e6b5bb49a7e4c21877ba98a2ed944fab5276e74cd8775ee",
+    "fixed-predictions.jsonl": "7cd34af753d97d8533ee1aa10403b5f1c725bda41fbfc218b41f39829c793179",
+    "geometry-proof.json": "1fb5420d8532ce59f4d7ae04be6b30c574c1c0907a82b6dce8b10ba602aed759",
+    "guided-predictions.jsonl": "69c6f0aa9ea2ff60297930e49795471afe0739c9b7931393621c061756927ff9",
+    "initializer.json": "d56a680ff3a7d87fbad02f12724e1e0689ef9f7ac1ec7ad6209d04d1cd0fc024",
+    "input-audit.json": "75116a564e37371c79125fd6158355dc41d5db8b9155d7cd64e0900de7fcc4b8",
+    "manifest.json": "6c6f16e0dccc43b30613ff8e83dea5d723b727208cd0c636b11ed9b67347bab6",
+    "paired-training.json": "d23a0874be0f1a9a0b046ffb09f31ac80a4d61a0fa4478eb1beab3e5bb1873bc",
+    "qualification.json": "e74434c61f14dddf7b1d30e5859af322646513122c95ff7a971a12be0236e4e6",
+    "replay-repair-tests.txt": "3d29eab72c39065c34a77c7ada1bc4fc9537855f2a9f5d632993130d7ac4a4d0",
+    "replay-source-amendment-01.json": "d54362cb354bd0bbf6437e406f487910358bb1616da67865b940ac2eeadbb086",
+    "replay-source-amendment-01.patch": "fe6b16fba6f2f7454fb35cb4594fd49d1263ac16621fd45c8843cbe845c4be41",
+    "replay-summary.json": "08667cb9af962d503a089bfd129f38b659b874648264e53938c7da366f6b8db6",
+    "resources.json": "73034d614054791e01fd105fb66a242086108dcbf2eaa7c90b6c4df1f0d36b62",
+    "retrieval-metrics.json": "2b8a6245f08d13dbf5dc527c647313ddb846b015e5fd73554f6a9db4646f9e7e",
+    "runtime-identities.json": "f7fd72ab1094ffe291d13af899870b67eb46c4b5183a12aef7caddebab442e93",
+    "source-evidence-ledger.json": "ac98ee2a03042c28df8fbb710f4294f1b3e78a6544c588ac3a049e4001c6e446",
+    "token-manifest.json": "1ac117988f3edb9e3166842c7aa5092fa68b7ad9a1874daf83f6ec3db99eb6b6",
+    "unit-tests.txt": "f82d66be92fbd475238c9871e80d222ac0fac066da26dcdb6f79460db5d85b5d"
+  }
+}

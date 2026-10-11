@@ -1,0 +1,84 @@
+{
+  "archived_replay_process": {
+    "peak_process_rss_bytes": 322371584,
+    "source": "replay-process-resource.txt",
+    "system_cpu_seconds": 0.3,
+    "user_cpu_seconds": 1.78,
+    "wall_seconds": 2.12
+  },
+  "eg2": {
+    "cache_hit": 0,
+    "cache_miss": 359,
+    "encoding_seconds": 2.887983,
+    "load_seconds": 1.65346,
+    "mlx_peak_memory_bytes": 2199741938,
+    "retrieval_seconds": 5.040962,
+    "rss_max": 2055438336,
+    "rss_unit": "bytes on macOS; KiB on Linux",
+    "token_counts": {
+      "curriculum": 294,
+      "documents": 8815,
+      "queries": 50153
+    },
+    "truncation": {
+      "curriculum": 0,
+      "documents": 0,
+      "max_length": 256,
+      "policy": "tokenizer truncation",
+      "queries": 195
+    },
+    "wall_seconds": 9.582404
+  },
+  "evaluation_process": {
+    "peak_process_rss_bytes": 327516160,
+    "source": "evaluation-process-resource.txt",
+    "system_cpu_seconds": 1.03,
+    "user_cpu_seconds": 13.08,
+    "wall_seconds": 14.41
+  },
+  "evaluation_wall_seconds": 13.01358254198567,
+  "kev": {
+    "guidance_calls": 16,
+    "guidance_wall_seconds": 385.7819854170666,
+    "live_replay_calls": 3,
+    "live_replay_wall_seconds": 1.8633478760311846,
+    "model_loading_note": "started before sampler; not instrumented",
+    "model_loading_seconds": null,
+    "qualification_calls": 24,
+    "qualification_wall_seconds": 10.799745580065064,
+    "rss_measurement": "5-second sampling, lower bound on process peak; unified peak unmeasured",
+    "sampled_peak_process_rss_bytes": 5290409984
+  },
+  "live_replay_process": {
+    "peak_process_rss_bytes": 2055290880,
+    "source": "live-replay-process-resource.txt",
+    "system_cpu_seconds": 2.59,
+    "user_cpu_seconds": 9.86,
+    "wall_seconds": 15.42
+  },
+  "optional_engines": [],
+  "paid_inference": false,
+  "preparation": {
+    "peak_process_rss_bytes": 294125568,
+    "wall_seconds": 16.379902374988887
+  },
+  "students": {
+    "fixed": {
+      "checkpoint_seconds": 0.05335250005009584,
+      "cpu_seconds": 120.47964800000001,
+      "dev_seconds": 22.33057474999805,
+      "optimizer_seconds": 99.04748129204381,
+      "peak_process_rss_bytes": 418381824,
+      "wall_seconds": 121.43978987500304
+    },
+    "guided": {
+      "checkpoint_seconds": 0.05277958299848251,
+      "cpu_seconds": 125.83329599999999,
+      "dev_seconds": 23.463551041990286,
+      "optimizer_seconds": 103.53760500103817,
+      "peak_process_rss_bytes": 422952960,
+      "wall_seconds": 512.860283624992
+    }
+  },
+  "unmeasured": "Separate DEV/checkpoint CPU times and total unified-system peak; engineering/TDD time and monetary spend not instrumented"
+}
