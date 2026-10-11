@@ -86,6 +86,8 @@ Complete raw worlds, successes and mistakes, logits and probabilities are in [ga
 
 ## Provenance versus supersession diagnostic
 
+Both worlds fix `PARENT(A,B)`, `J0=PARENT(A,B)`, `E0=ASSERT(S0,J0,support)` and `E1=OBSERVE(S1,J0,refute)`. Only the typed `E1 → E0` link changes; the underlying fact and proposition remain true.
+
 | Only link kind | Query | Oracle | Neural |
 | --- | --- | --- | --- |
 | DERIVED_FROM | `DERIVED_FROM(E1,E0)` | TRUE | FALSE |
