@@ -45,6 +45,16 @@ class AlphaSemanticTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "K03-unknown"):
             audit_cases(defective)
 
+    def test_raw_evidence_expectations_do_not_use_generator_state_mapping(self):
+        # Direct canonical facts give this expectation path no world_from_states/BITS dependency.
+        base = {"entities": [sid("a"), sid("b")], "sources": [sid("source-0"), sid("source-1")], "facts": []}
+        for polarities, expected in (((), "UNKNOWN"), (("support",), "TRUE"),
+                                     (("refute",), "FALSE"), (("support", "refute"), "CONFLICT")):
+            w = copy.deepcopy(base)
+            w["facts"] = [{"predicate": sid("relation"), "roles": {"source": sid("a"), "target": sid("b")},
+                           "polarity": sid(p), "source": sid("source-0")} for p in polarities]
+            self.assertEqual(evaluate({"abi": ABI, "world": w, "query": atom("a", "b")}), expected)
+
     def test_quantifier_scope_role_and_binding(self):
         w = world_from_states([0, 0, 1, 1])
         q = atom(variable("x"), constant("b"))

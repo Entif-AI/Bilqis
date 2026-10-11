@@ -125,4 +125,3 @@ No repository-wide license is declared by this bootstrap commit. Source and redi
 
 The source-grounded #102/#103 alpha is documented in [docs/ALPHA.md](docs/ALPHA.md).
 It preserves the CP0008 reference and uses a separate, versioned semantic registry.
-

@@ -17,5 +17,10 @@ Validation: red/green semantic, codec, initializer, split and neural-boundary te
 authored known-pass vectors and an injected-label defect; reference suite; fresh
 process checkpoint verification and replay. No SYS-01 or causal efficiency claim.
 
-Current: source preflight complete; implementation not started.
-Next: author independent boundary expectations, observe red, implement semantics.
+Current: #102 implemented and frozen. Code `32bed02`; run `runs/alpha/epoch-01`.
+Checkpoint SHA-256 `002cffcfbdf44eec2e509704d5a530bb134d655919ec129f46eeffda6b99a3eb`.
+One cycle, 1,536 steps; DEV 676/1152, HELDOUT 476/1024, known neural 6/15.
+40 tests pass, no skips; all 5,135 final predictions reload in a fresh process.
+`ALPHA_DEMO_REPRODUCED` is an exploratory replay disposition, not robust generalization.
+Weak directed relation/sparse evidence behavior is preserved in the failure inventory.
+Next: open #102 review PR, then stack #103 using these exact artifacts. No more training.
