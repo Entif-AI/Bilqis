@@ -19,6 +19,7 @@ from .decision_features import compile_embeddings, feature_map, token_manifest
 from .decision_navigation import (RESERVED, apply, candidate_tokens, focus, initial,
                                   oracle_trace, panel, render, state_tokens, target)
 from .decision_student import initialize, load_checkpoint, save_checkpoint
+from .decision_baseline import CueBaseline, audit
 from .eg2_retrieval import filter_retrieval, hard_negative_separation, rank
 from .kev_teacher import KevTeacher, MIN_MARGIN
 from .semantics import canonical, digest, registry, sid
@@ -221,6 +222,10 @@ def prepare(run):
     start=time.perf_counter()
     if file_hash(HISTORICAL)!=HISTORICAL_SHA: raise ValueError('HISTORICAL_ALPHA_CHANGED')
     data=build(); model,initializer=initialize()
+    input_audit=audit(data['episodes'])
+    baseline_rows=[rollout(CueBaseline(),e) for e in data['episodes']]
+    input_audit['cue_only_rollout']={s:summarize([r for r in baseline_rows if r['split']==s]) for s in ('TRAIN','DEV','HELDOUT')}
+    write(run/'input-audit.json',input_audit)
     write(run/'dataset.json',data)
     write(run/'initializer.json',initializer); write(run/'features.json',feature_map()[2])
     write(run/'token-manifest.json',token_manifest())
@@ -256,6 +261,7 @@ def prepare(run):
     write(run/'retrieval-input.json',retrieval_input)
     sources={str(p):file_hash(p) for p in sorted(list(Path('bilqis_alpha').glob('*.py'))+list(Path('bilqis_ref').glob('*.py')))}
     manifest={'version':VERSION,'dataset_sha256':digest(data),'retrieval_input_sha256':digest(retrieval_input),
+              'input_audit_sha256':file_hash(run/'input-audit.json'),
               'batch_multiset_sha256':BATCHES_SHA256,
               'split_sha256':{s:digest([e for e in data['episodes'] if e['split']==s]) for s in ('TRAIN','DEV','HELDOUT')},
               'source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
@@ -278,6 +284,7 @@ def prepare(run):
 def _inputs(run):
     data=read(run/'dataset.json'); manifest=read(run/'manifest.json'); check_frozen(data,manifest)
     if digest(data)!=DATASET_SHA256: raise ValueError('EPOCH_DATASET_DRIFT')
+    if file_hash(run/'input-audit.json')!=manifest['input_audit_sha256']: raise ValueError('INPUT_AUDIT_TAMPER')
     if digest(read(run/'retrieval-input.json'))!=manifest['retrieval_input_sha256']: raise ValueError('RETRIEVAL_INPUT_TAMPER')
     if file_hash(HISTORICAL)!=HISTORICAL_SHA: raise ValueError('HISTORICAL_ALPHA_CHANGED')
     for p,h in manifest['source_files'].items():
@@ -456,6 +463,7 @@ def evaluate_pair(run):
                       'top_legal_correct':bool(filtered['accepted']) and filtered['accepted'][0]['candidate_id']==gold}
         retrieval_rows.append(row)
     result={'version':VERSION,'disposition':disposition,'primary_endpoint':'exact heldout semantic path without teacher forcing',
+            'prefrozen_input_audit':read(run/'input-audit.json'),
             'dataset_sha256':manifest['dataset_sha256'],'heldout_delta_paths':b-a,'summaries':summaries,'rows':results,
             'retrieval_rows':retrieval_rows,'evaluation_wall_seconds':time.perf_counter()-start,
             'peak_process_rss_bytes':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,

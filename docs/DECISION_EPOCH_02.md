@@ -12,6 +12,12 @@ The role-sensitive initializer is shared by both arms, so this pair cannot
 attribute its effect independently. Treatment also receives nonsealed DEV
 feedback; the comparison measures that integrated teaching policy.
 
+The prefrozen `input-audit.json` distinguishes explicit instruction cues from
+evidence reading and logical folding. The token-only cue baseline copies the
+requested binding entity, grounded orientation, fact update and availability
+marker, then abstains where copying cannot determine the result. Scores on
+those explicit cues establish instruction alignment, not independent reasoning.
+
 From the decision worktree, using the existing separate local environments:
 
 ```sh
