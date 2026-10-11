@@ -57,4 +57,19 @@ no full COGAL/Rosetta/mathematical freeze, no MPS/native-low-bit qualification a
 no SYS-01 acceptance. This batch ends with partial learned behavior and a replayable,
 failure-visible alpha, not entry into the full developmental program.
 
+Postflight protocol/provenance correction: the full 1,024-case HELDOUT plane was
+scored after the final checkpoint, but K09 and K10 share heldout patterns and were
+also in intermediate KNOWN diagnostic probes at steps 0–1,536. They never entered
+optimizer batches or an adaptive teacher, and no tuning followed their results.
+The claim of strictly final-only heldout inference does not apply to those two
+fixtures. Training-composition isolation remains intact; this is exploratory,
+already exposed evidence. See `protocol-audit.json`.
+
+The four-state tables preceded evaluator implementation. The complete named-vector
+artifact was assembled before training, after evaluator code existed, with explicit
+expected labels rather than generated evaluator outputs. An extra raw-evidence test
+was added after training. The frozen metadata's blanket before-implementation wording
+overstates chronology and is corrected by the append-only audit. There was no cold
+human/specification-independent audit; no input, label, split or checkpoint changed.
+
 Exact fresh-process command and checkpoint-location policy: [MICROSCOPE.md](../../../MICROSCOPE.md).

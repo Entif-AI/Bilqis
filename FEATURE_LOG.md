@@ -28,5 +28,8 @@ Delivery: #102 PR #104 open at `d59c20d914fd8380909068017ca9fa2ef72d942f`; hoste
 43 local tests pass; fresh-process microscope matches pinned logits/probabilities.
 Scope learning, unchanged-before/after heldout success, role/evidence failures and a
 coarse role-row initialization collision are explicit in the #103 report.
-Next: publish stacked #103 review PR and append evidence, verify heads/CI, stop.
+Delivery: #103 PR #105 open, stacked on #104. Protocol audit records two named
+heldout-pattern fixtures in early diagnostics, never optimization/tuning; fixture
+chronology prose is corrected without changing frozen inputs/labels/checkpoint.
+Next: append final evidence, verify latest heads/CI and stop at the batch boundary.
 No merge or full developmental-program continuation is authorized.

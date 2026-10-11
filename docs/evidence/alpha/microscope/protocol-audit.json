@@ -1,0 +1,37 @@
+{
+  "kind": "append-only protocol and provenance correction; original manifests/raw evidence preserved",
+  "heldout_timing": {
+    "declared_policy": "HELDOUT predictions only after final checkpoint",
+    "actual_full_heldout_plane": "all 1024 scored after final checkpoint",
+    "known_diagnostic_overlap": [
+      {
+        "id": "K09-mutual-exists",
+        "pattern": "EXISTS(AND(RELATION,RELATION))"
+      },
+      {
+        "id": "K10-not-and",
+        "pattern": "NOT(AND(RELATION,RELATION))"
+      }
+    ],
+    "diagnostic_steps": [
+      0,
+      256,
+      512,
+      768,
+      1024,
+      1280,
+      1536
+    ],
+    "optimizer_exposure": false,
+    "tuning_or_adaptive_teacher_use": false,
+    "scope": "Composition patterns remained absent from optimization; strict final-only inference claim does not apply to these two diagnostic fixtures. These data are alpha-exposed, not independent SEALED evidence."
+  },
+  "expectation_provenance": {
+    "before_evaluator_implementation": "literal four-state truth tables and initial boundary-test requirements",
+    "before_training_after_evaluator_code_existed": "full named fixture artifact assembled with explicitly authored expected strings, not evaluate() outputs",
+    "after_training": "additional raw-evidence test independent of world_from_states/BITS helper",
+    "independent_cold_human_audit": false,
+    "correction": "The frozen known-pass metadata overstates before-implementation chronology for the whole fixture artifact. This receipt corrects that prose; labels/inputs/splits/checkpoints are unchanged."
+  },
+  "neural_integrity": "No gradients or trainable state updates during predict(); fixed LayerNorm transformer with no running statistics or stochastic dropout. All training rows remain on frozen TRAIN membership."
+}
