@@ -36,8 +36,9 @@ One complete cycle: seed 102, 76,160 trainable parameters, two transformer layer
 width 64, four heads, expansion 2, context 128, vocabulary 33. AdamW lr 0.001,
 weight decay 0.01, batch 32, 1,536 steps: **49,152 exposures, 2,415,782 nonpadding
 tokens, 3,492,608 padded tokens**. A stage checkpoint survives at step 512.
-No second cycle or efficacy-control run was used. Three one-step initializer/gradient
-fixtures are engineering tests, outside the full exploratory-cycle budget.
+No second cycle or efficacy-control run was used. Initializer, gradient and
+checkpoint engineering fixtures (including historical reference smoke tests) are
+separate from the complete exploratory-cycle budget.
 
 CPU FP32 arithmetic with ternary-forward/int8 activation emulation; embeddings,
 answer readout, master weights and optimizer remain FP32. Apple M3 Ultra,
