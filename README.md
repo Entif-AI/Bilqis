@@ -79,6 +79,12 @@ These are execution checks, not scientific confirmation.
 
 ## Reference model boundary
 
+The separate [T0/T1 logic pilot](docs/logic-t0-t1/HANDOFF.md) implements a typed
+classical Boolean kernel, deterministic semantic initialization and a tiny scratch
+neural student. It leaves the finite-world reference and historical experiments
+intact. Its exploratory acquisition, composition and equivalence results are
+reported separately from SYS-01 claims.
+
 The implemented student is a small causal decoder-only transformer with a four-answer supervised readout: `TRUE`, `FALSE`, `UNKNOWN`, and `CONFLICT`. The reference-scale configuration contains 2,828,736 trainable parameters. The ternary branch is W1.58A8-style forward emulation over FP32 master weights, not a packed low-bit kernel.
 
 The current Bilqis codec is a machine-oriented, lossless finite-world representation informed by selected New Ithkuil distinctions. **Bilqis is not New Ithkuil and is not presented as an official variant of it.** The codec is not valid surface New Ithkuil and does not claim to implement the language's complete morphology, phonology, lexicon, or writing system.
