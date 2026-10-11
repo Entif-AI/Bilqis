@@ -1,0 +1,21 @@
+# BILQIS-ALPHA-01+02
+
+Base: `97de3909f11652255de2fa60d932ac71578f0665`.
+Owner contracts: #102 then #103; #102 source-audit correction applies.
+Authority: public exploratory implementation; ordinary feature pushes, PRs and
+append-only evidence authorized. Merge/release/deploy are outside this batch.
+No repository lease machinery exists; this isolated branch has one writer.
+Durability: local managed worktree and Git; no duplicate Drive journal.
+
+Plan: preserve CP0008; implement a sourced T0/T1/T2/T4 micro-projection,
+semantic feature compiler and four-answer student using reference neural blocks.
+Freeze splits before one fixed ternary-forward CPU run. Save checkpoint locally
+(repository contribution policy excludes model binaries), commit complete text
+evidence and reproducible commands. Then stack #103 using exactly that checkpoint.
+
+Validation: red/green semantic, codec, initializer, split and neural-boundary tests;
+authored known-pass vectors and an injected-label defect; reference suite; fresh
+process checkpoint verification and replay. No SYS-01 or causal efficiency claim.
+
+Current: source preflight complete; implementation not started.
+Next: author independent boundary expectations, observe red, implement semantics.
