@@ -1,0 +1,26 @@
+{
+  "role": "Advisory context only; live issue snapshots in source-contracts.json control this batch",
+  "documents": [
+    {
+      "title": "Bilqis Roadmap - 20261006",
+      "url": "https://docs.google.com/document/d/19mUp81fRDxBVwc6gX7xNRo6rIeIgMJqyVYo_UQPM5xw/edit",
+      "modified_time": "2026-10-11T08:57:46.197Z",
+      "role": "advisory scientific context; live issues control acceptance",
+      "content_sha256_note": "Exact fetched text retained in local preflight; not redistributed"
+    },
+    {
+      "title": "Bilqis Roadmap Supplement | Alpha Exit, Evidence Transfer, and Mainline Acceleration - 20261011",
+      "url": "https://docs.google.com/document/d/1x1jtvd1KCfcu7nkz3sLgbaPCBBTEd8NvDeZFaBR-67I/edit",
+      "modified_time": "2026-10-11T08:57:48.447Z",
+      "role": "advisory scientific context; live issues control acceptance",
+      "content_sha256_note": "Exact fetched text retained in local preflight; not redistributed"
+    },
+    {
+      "title": "Prepaying Semantics v0.5.1",
+      "url": "https://docs.google.com/document/d/1dAvu7daQBfGJn1g6akpSxAHVpcf5znifdxktvWq7EQs/edit",
+      "modified_time": "2026-10-07T18:42:10.132Z",
+      "role": "advisory scientific context; live issues control acceptance",
+      "content_sha256_note": "Exact fetched text retained in local preflight; not redistributed"
+    }
+  ]
+}

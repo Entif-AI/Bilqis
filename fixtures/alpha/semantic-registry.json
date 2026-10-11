@@ -1,0 +1,777 @@
+{
+  "version": "bilqis-alpha-cogal-0.1.0",
+  "publication_posture": "PUBLIC exploratory fixture only",
+  "authority_owners": [
+    7,
+    80,
+    81,
+    62,
+    102
+  ],
+  "entries": [
+    {
+      "id": "urn:bilqis:alpha:cogal:pad",
+      "name": "pad",
+      "family": "codec",
+      "type": "control",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/10",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:world",
+      "name": "world",
+      "family": "codec",
+      "type": "control",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/10",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:fact",
+      "name": "fact",
+      "family": "codec",
+      "type": "control",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/10",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:query",
+      "name": "query",
+      "family": "codec",
+      "type": "control",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/10",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:answer",
+      "name": "answer",
+      "family": "codec",
+      "type": "control",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/10",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:end-node",
+      "name": "end-node",
+      "family": "codec",
+      "type": "control",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/10",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:constant",
+      "name": "constant",
+      "family": "typing",
+      "type": "term",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "binding": false
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:variable",
+      "name": "variable",
+      "family": "typing",
+      "type": "term",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "binding": true
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:a",
+      "name": "a",
+      "family": "identity",
+      "type": "object",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:constant"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "instance": "a"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:b",
+      "name": "b",
+      "family": "identity",
+      "type": "object",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:constant"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "instance": "b"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:source-0",
+      "name": "source-0",
+      "family": "provenance",
+      "type": "source",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/7",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "instance": "source-0"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:source-1",
+      "name": "source-1",
+      "family": "provenance",
+      "type": "source",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/7",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "instance": "source-1"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-source",
+      "name": "role-source",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-target",
+      "name": "role-target",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-left",
+      "name": "role-left",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-right",
+      "name": "role-right",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-binder",
+      "name": "role-binder",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-body",
+      "name": "role-body",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:role-operand",
+      "name": "role-operand",
+      "family": "role",
+      "type": "role",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ]
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:relation",
+      "name": "relation",
+      "family": "relational",
+      "type": "predicate",
+      "tranche": "T2",
+      "arity": 2,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-source",
+        "urn:bilqis:alpha:cogal:role-target"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:constant",
+        "urn:bilqis:alpha:cogal:variable",
+        "urn:bilqis:alpha:cogal:role-source",
+        "urn:bilqis:alpha:cogal:role-target"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "symmetric": false,
+      "role_sensitive": true,
+      "signature": {
+        "arguments": [
+          "object",
+          "object"
+        ],
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:equal",
+      "name": "equal",
+      "family": "identity",
+      "type": "predicate",
+      "tranche": "T2",
+      "arity": 2,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-left",
+        "urn:bilqis:alpha:cogal:role-right"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:constant",
+        "urn:bilqis:alpha:cogal:variable"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "symmetric": true,
+      "bivalent": true,
+      "signature": {
+        "arguments": [
+          "object",
+          "object"
+        ],
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:not",
+      "name": "not",
+      "family": "logical",
+      "type": "operator",
+      "tranche": "T1",
+      "arity": 1,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-operand"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:relation"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "inverse": "urn:bilqis:alpha:cogal:not",
+      "signature": {
+        "arguments": [
+          "proposition"
+        ],
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:and",
+      "name": "and",
+      "family": "logical",
+      "type": "operator",
+      "tranche": "T1",
+      "arity": 2,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-left",
+        "urn:bilqis:alpha:cogal:role-right"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:not",
+        "urn:bilqis:alpha:cogal:relation"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "symmetric": true,
+      "dual": "urn:bilqis:alpha:cogal:or",
+      "signature": {
+        "arguments": [
+          "proposition",
+          "proposition"
+        ],
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:or",
+      "name": "or",
+      "family": "logical",
+      "type": "operator",
+      "tranche": "T1",
+      "arity": 2,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-left",
+        "urn:bilqis:alpha:cogal:role-right"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:not",
+        "urn:bilqis:alpha:cogal:relation"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "symmetric": true,
+      "dual": "urn:bilqis:alpha:cogal:and",
+      "signature": {
+        "arguments": [
+          "proposition",
+          "proposition"
+        ],
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:exists",
+      "name": "exists",
+      "family": "quantifier",
+      "type": "operator",
+      "tranche": "T2",
+      "arity": 1,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-binder",
+        "urn:bilqis:alpha:cogal:role-body"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:variable",
+        "urn:bilqis:alpha:cogal:relation",
+        "urn:bilqis:alpha:cogal:or"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "binding": true,
+      "dual": "urn:bilqis:alpha:cogal:forall",
+      "signature": {
+        "variable": "object",
+        "body": "proposition",
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:forall",
+      "name": "forall",
+      "family": "quantifier",
+      "type": "operator",
+      "tranche": "T2",
+      "arity": 1,
+      "roles": [
+        "urn:bilqis:alpha:cogal:role-binder",
+        "urn:bilqis:alpha:cogal:role-body"
+      ],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:variable",
+        "urn:bilqis:alpha:cogal:relation",
+        "urn:bilqis:alpha:cogal:and"
+      ],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "binding": true,
+      "dual": "urn:bilqis:alpha:cogal:exists",
+      "signature": {
+        "variable": "object",
+        "body": "proposition",
+        "result": "proposition"
+      }
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:support",
+      "name": "support",
+      "family": "evidence",
+      "type": "polarity",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/7",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "contrast": "urn:bilqis:alpha:cogal:refute",
+      "support": true,
+      "refute": false
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:refute",
+      "name": "refute",
+      "family": "evidence",
+      "type": "polarity",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/7",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "contrast": "urn:bilqis:alpha:cogal:support",
+      "support": false,
+      "refute": true
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:true",
+      "name": "true",
+      "family": "epistemic",
+      "type": "state",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "support": 1,
+      "refute": 0,
+      "contrast": "urn:bilqis:alpha:cogal:false"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:false",
+      "name": "false",
+      "family": "epistemic",
+      "type": "state",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "support": 0,
+      "refute": 1,
+      "contrast": "urn:bilqis:alpha:cogal:true"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:unknown",
+      "name": "unknown",
+      "family": "epistemic",
+      "type": "state",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "support": 0,
+      "refute": 0,
+      "contrast": "urn:bilqis:alpha:cogal:conflict"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:conflict",
+      "name": "conflict",
+      "family": "epistemic",
+      "type": "state",
+      "tranche": "T4",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [],
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "alpha-local projection of named concept; not a promoted global primitive"
+        }
+      ],
+      "support": 1,
+      "refute": 1,
+      "contrast": "urn:bilqis:alpha:cogal:unknown"
+    },
+    {
+      "id": "urn:bilqis:alpha:cogal:x",
+      "name": "x",
+      "family": "identity",
+      "type": "variable",
+      "tranche": "T0",
+      "arity": 0,
+      "roles": [],
+      "dependencies": [
+        "urn:bilqis:alpha:cogal:variable"
+      ],
+      "binding": true,
+      "instance": "x",
+      "sources": [
+        {
+          "url": "https://github.com/Entif-AI/Bilqis/issues/80",
+          "mapping": "T0/T2 variable identity; alpha permits one bound variable"
+        }
+      ]
+    }
+  ],
+  "semantics": {
+    "oracle": "belnap-finite-0.1.0",
+    "logic": "Belnap-Dunn truth-order operations, explicitly alpha-local; not a global logic selection",
+    "designated_states": [
+      "TRUE",
+      "CONFLICT"
+    ],
+    "quantifiers": "nonempty finite domain {a,b}; EXISTS joins and FORALL meets in truth order",
+    "evidence": "support and refutation independently present; no source ranking; absent support+refutation is UNKNOWN",
+    "truth_weight_boundary": "four semantic states never equated to ternary neural weights",
+    "truth_tables": {
+      "order": [
+        "TRUE",
+        "FALSE",
+        "UNKNOWN",
+        "CONFLICT"
+      ],
+      "operators": {
+        "urn:bilqis:alpha:cogal:not": [
+          "FALSE",
+          "TRUE",
+          "UNKNOWN",
+          "CONFLICT"
+        ],
+        "urn:bilqis:alpha:cogal:and": [
+          [
+            "TRUE",
+            "FALSE",
+            "UNKNOWN",
+            "CONFLICT"
+          ],
+          [
+            "FALSE",
+            "FALSE",
+            "FALSE",
+            "FALSE"
+          ],
+          [
+            "UNKNOWN",
+            "FALSE",
+            "UNKNOWN",
+            "FALSE"
+          ],
+          [
+            "CONFLICT",
+            "FALSE",
+            "FALSE",
+            "CONFLICT"
+          ]
+        ],
+        "urn:bilqis:alpha:cogal:or": [
+          [
+            "TRUE",
+            "TRUE",
+            "TRUE",
+            "TRUE"
+          ],
+          [
+            "TRUE",
+            "FALSE",
+            "UNKNOWN",
+            "CONFLICT"
+          ],
+          [
+            "TRUE",
+            "UNKNOWN",
+            "UNKNOWN",
+            "TRUE"
+          ],
+          [
+            "TRUE",
+            "CONFLICT",
+            "TRUE",
+            "CONFLICT"
+          ]
+        ]
+      }
+    }
+  },
+  "omissions": {
+    "80": [
+      "remaining T1 operators",
+      "nested binders",
+      "general FOL",
+      "T3 proofs/tableaux",
+      "ambiguity",
+      "inapplicability"
+    ],
+    "7": [
+      "events/time/modality/causality",
+      "multiple live interpretations",
+      "general typed ABI"
+    ],
+    "84": [
+      "full Rosetta epistemic algebra"
+    ],
+    "85": [
+      "general mathematical substrate"
+    ],
+    "86": [
+      "complete pre-language freeze"
+    ]
+  }
+}
