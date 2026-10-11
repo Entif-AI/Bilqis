@@ -6,7 +6,7 @@ As of 2026-10-11: the authorized helper-guided continuation batch is complete. *
 
 Repository: Entif-AI/Bilqis. Branch: `codex/u5-u6-helper-development`. Durable worktree: `/Users/emilie/.codex/worktrees/bilqis-u5-u6/Bilqis`.
 Stacked base: open PR #109, `codex/108-developmental-micro-universes`, verified head `c858e086df93f5ca1c27be207d72fafd405dae88`.
-Implementation freeze: `787f8d2`; cohort/checkpoint freeze: `f94566b`. The review PR contains the later delivery commit. Do not merge this branch without a new explicit user instruction.
+Implementation freeze: `787f8d2`; cohort/checkpoint freeze: `f94566b`. Review: [draft PR #110](https://github.com/Entif-AI/Bilqis/pull/110), stacked against #109. The review PR contains the later delivery commit. Do not merge this branch without a new explicit user instruction.
 
 Run: `docs/evidence/u5-u6/run-01`. The Git evidence includes the complete compressed corpus, all 768/256 helper vectors and raw native choice requests/responses, graph, new-row initializer, training exposure log, checkpoints and full prediction inventories.
 
@@ -58,4 +58,4 @@ Helper preparation: 34.40s wall; student training process: 191.77s wall. Corpus 
 
 [RESULTS.md](../evidence/u5-u6/RESULTS.md), [semantics](SEMANTICS.md), [execution contract](CONTRACT.md). `CHECKSUMS.sha256` covers raw run files; `DELIVERY-CHECKSUMS.sha256` covers the report and handoff.
 This is a bounded exploratory development result, not full #84/#85 acceptance, complete Rosetta serialization conformance, open-ended retrieval qualification or a controlled attribution result. English reference material remained upstream; student inputs are numeric semantic identities and raw tiny worlds.
-Historical DN-01 was not resumed or discarded. PR #106 adapters were reused byte-for-byte; prior helper capability/failure evidence remains authoritative for its original task scope. All predecessors remain open/unmerged.
+Historical DN-01 was not resumed or discarded. PR #106 adapters were reused byte-for-byte; prior helper capability/failure evidence remains authoritative for its original task scope. PRs #109 and #106 were verified open/unmerged in this session. Historical evidence was preserved.
