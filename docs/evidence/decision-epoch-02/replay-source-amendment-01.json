@@ -1,0 +1,18 @@
+{
+  "evaluation_rerun": false,
+  "evaluation_sha256": "5a09ac8a757b89f57885dad4021bda6a1231a8eff8585d45e3a420e5157522b8",
+  "file": "bilqis_alpha/decision_experiment.py",
+  "frozen_source_commit": "46db1650dfd870f698b9323c65017fe165e37136",
+  "new_file_sha256": "d9b9f9dd88453f094b790c922e0cc3bd2ec2efd72d49817514b62ff403df0d55",
+  "new_source_commit": "7b3f29bdfbc8fd8e9e0c8800f0aee4ff3e397291",
+  "old_file_sha256": "2b78651802b54b8c297a4d140302f88e9a7caf8559d7cbf763d300c176df15ec",
+  "paired_training_sha256": "6c98fe802b9b7855e37d813397c5ee3f05a42ee5e6b171ad5deb79a737b94b74",
+  "patch": "replay-source-amendment-01.patch",
+  "patch_sha256": "fe6b16fba6f2f7454fb35cb4594fd49d1263ac16621fd45c8843cbe845c4be41",
+  "preserved_frozen_source": "preflight/frozen-decision-experiment.py",
+  "qualification_sha256": "3df4d82f3763b030fe4f2ab844867e7b55078d43f665abc1d03b2760b51fe796",
+  "reason": "Sorted JSON payload maps changed option iteration order; immutable serialized requests retain the original order.",
+  "scope": "archived Kev request order and explicit replay-source admission only",
+  "training_rerun": false,
+  "utc": "2026-10-11T14:43:35.604070+00:00"
+}

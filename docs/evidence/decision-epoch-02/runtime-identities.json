@@ -1,0 +1,81 @@
+{
+  "eg2": {
+    "backend": "native MLX",
+    "direct_url": {
+      "url": "https://github.com/Blaizzy/mlx-vlm.git",
+      "vcs_info": {
+        "commit_id": "3d87e88402f307efbf68e568971aa887ee7d9ed0",
+        "requested_revision": "3d87e88402f307efbf68e568971aa887ee7d9ed0",
+        "vcs": "git"
+      }
+    },
+    "documented_artifact_precision": "bfloat16",
+    "file_sha256": {
+      "chat_template.jinja": "4b852efc0b9960283e735363331e6f325b33bc74bdbaa076f595bc4e9b94d85e",
+      "config.json": "24bc60679eecb0a61bcf9f5ecf7b01bbd9603b8e47aa469fe9f0569e17c55ed9",
+      "config_sentence_transformers.json": "031e56a498d33c349ab489a21885bcfe25b4fcba841149dc99e1e90d4a7c28f5",
+      "model.safetensors": "ffaf2604b011ad0634022529bac930a4f6a2feba22687d8d5890434d186b459c",
+      "model.safetensors.index.json": "2f178c9f396d7b5b8ddfbeedf2cd122f9ae4941e97a4f33f4cf0cd0936ef382a",
+      "modules.json": "3d02572a0455b832de67fb8e63a54981bc7e8b46e337c95e917bd8122a533bfd",
+      "preprocessor_config.json": "ea2ae257e901064abdd98dceb19f2b0da06af600bed15e0f99f5c85c37ee9d78",
+      "processor_config.json": "168f6a08522f3ce5dea596d94d003af2fd691742d4f41fe1f9d8cce76bfbf69c",
+      "sentence_bert_config.json": "b1bcd9f2dce3ae863b359e87d0710b5dbc3314a59ecb4e2f97c7778fc8e4b228",
+      "tokenizer.json": "4d777ef5bdc1aa36227abdfb77c3e49e7b9c892d16e1b6bda41c393504828be4",
+      "tokenizer_config.json": "17bd5d6e9364ca49a534e1502076593317c298d4a663623091ed45388f004874",
+      "validation.json": "c45144b823e546ecb1b3bea66e027f6e15754426b244b97549f220b894acc00a"
+    },
+    "mlx_version": "0.32.3",
+    "mlx_vlm_version": "0.7.4",
+    "name": "mlx-community/embeddinggemma-2-bf16",
+    "native_loader_file_sha256": "be41d5142d63888bf288b53d4443b7762f7e052801f1616a60d317ff60e3761e"
+  },
+  "eg2_prefixes": {
+    "document": "title: none | text: ",
+    "query": "task: search result | query: "
+  },
+  "eg2_runtime": {
+    "executable_sha256": "1192b994fbb50303c9df2cc97c9d63797d454c7f57f20ca682877c9e770429aa",
+    "platform": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "python": "3.14.3 (v3.14.3:323c59a5e34, Feb  3 2026, 11:41:37) [Clang 16.0.0 (clang-1600.0.26.6)]"
+  },
+  "kev": {
+    "backend": "mlx",
+    "base": "Qwen/Qwen3.5-4B-Base",
+    "cuda_graphs": null,
+    "description": "Kev pointer head on Qwen/Qwen3.5-4B-Base, serving jaredpalmer/kev-4b@6cfce5c2fa4b4bd64026336ab649c5ca78857d52 at temperature 2.41",
+    "device": "mps",
+    "dtype": "bfloat16",
+    "lora": 16,
+    "max_state_tokens": 65536,
+    "name": "kev-latest",
+    "release_date": "2026-10-01",
+    "run": "jaredpalmer/kev-4b@6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+    "temperature": 2.406050072164233,
+    "truncate_states": false
+  },
+  "kev_environment": {
+    "executable_sha256": "95fb891ec36d4022bdf62172f9d3c757fb3c7b1669a274cacc87fe261a535b7e",
+    "native_source_commit": "6b719c3c3f367295f6ef336f4f751cf5ff970abc",
+    "packages": {
+      "kev": "0.1.0",
+      "mlx": "0.32.2",
+      "mlx-lm": "0.32.0",
+      "typesafe": null,
+      "uvicorn": "0.53.0"
+    },
+    "python": "3.13.12 (main, Mar 25 2026, 02:48:22) [Clang 22.1.1 ]"
+  },
+  "kev_source_commit": "6b719c3c3f367295f6ef336f4f751cf5ff970abc",
+  "student": {
+    "architecture": {
+      "context": 384,
+      "expansion": 2,
+      "heads": 4,
+      "layers": 2,
+      "precision": "ternary",
+      "vocab_size": 53,
+      "width": 64
+    },
+    "parameters": 110272
+  }
+}

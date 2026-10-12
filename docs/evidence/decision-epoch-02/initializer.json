@@ -1,0 +1,15 @@
+{
+  "codec_version": "decision-control-codec-0.1.0",
+  "feature_sha256": "098a7531850bb035f442252cf07dd41445b3fb4612b1c39058e4f33c654baf5d",
+  "feature_version": "decision-structural-features-0.1.0",
+  "other_parameters": "seeded normal 0,0.02; no inherited weights",
+  "pretrained_vectors": false,
+  "projection_sha256": "2b002687d10b4d7b1bf9b5320303621c7b24409c07dfb0ad42fa27628b987dd1",
+  "seed": 202,
+  "semantic_abi": "bilqis-alpha-cogal-0.1.0",
+  "tensor_sha256": "72664fa111a7be355b2f51d41e6a050873e3fc8215cddd8edf078c32da596ccf",
+  "token_sha256": "d24d3d18c2665c41c3ffb96ca7d0f8dd089fb4400e10f7e1197590cea872bc9f",
+  "transform": "fixed DCT-II prefix, row RMS 0.02, FP32; exact zero padding",
+  "version": "decision-dct-initializer-0.1.0",
+  "width": 64
+}
