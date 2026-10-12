@@ -15,6 +15,7 @@ import math
 import os
 from pathlib import Path
 import random
+import signal
 import shutil
 import time
 import uuid
@@ -336,11 +337,26 @@ def _stagnation_stop(*, elapsed_seconds, seconds_since_progress,
             seconds_since_progress >= patience_seconds)
 
 
+def _graceful_interrupt_handler(stop_state):
+    """First SIGINT requests a durable stop; second preserves emergency abort."""
+    def handle(signum, frame):
+        if stop_state["requested"]:
+            signal.default_int_handler(signum, frame)
+        stop_state["requested"]=True
+        os.write(
+            2,
+            b"\nInterrupt requested: finishing the current grade, "
+              b"checkpointing, then stopping. Press Ctrl+C again to abort immediately.\n",
+        )
+    return handle
+
+
 def run(out=RUN, *, max_updates=1024, max_minutes=4,
         block=32, device="cpu", strict_full50=False,
         max_run_gib=32, max_grade_visits=None,
         patience_minutes=None, progress_window=8,
-        min_repeat_improvement=0.01, progress_format="json"):
+        min_repeat_improvement=0.01, progress_format="json",
+        stop_requested=None):
     if (max_updates < 1 or max_minutes <= 0 or block < 1 or block > 256
         or not 1<=max_run_gib<=500
         or (max_grade_visits is not None and max_grade_visits < 1)
@@ -369,8 +385,12 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     paused_for_storage=False
     stopped_for_stagnation=False
     paused_for_visit_limit=False
+    stopped_for_interrupt=False
     while (consumed < max_updates and time.monotonic()-start < max_minutes*60
            and (max_grade_visits is None or visits_this_call < max_grade_visits)):
+        if stop_requested is not None and stop_requested():
+            stopped_for_interrupt=True
+            break
         checkpoints = list(out.glob("student-*.pt"))
         storage_bytes = sum(p.stat().st_size for p in checkpoints)
         # Compute bound before beginning the next grade: a new checkpoint
@@ -493,6 +513,9 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             print(_progress_line(progress),flush=True)
         else:
             print(json.dumps(progress,sort_keys=True),flush=True)
+        if stop_requested is not None and stop_requested():
+            stopped_for_interrupt=True
+            break
         if _stagnation_stop(
                 elapsed_seconds=elapsed,
                 seconds_since_progress=since_progress,
@@ -506,6 +529,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         not stopped_for_stagnation and not paused_for_storage):
         paused_for_visit_limit=True
     status=("PAUSED_FOR_STORAGE_QUOTA" if paused_for_storage else
+            "STOPPED_BY_GRACEFUL_INTERRUPT" if stopped_for_interrupt else
             "STOPPED_NO_MEASURABLE_REPEAT_IMPROVEMENT" if stopped_for_stagnation else
             "PAUSED_AT_REQUESTED_GRADE_VISIT_LIMIT" if paused_for_visit_limit else
             "PAUSED_AT_DURABLE_GRADE_BOUNDARY")
@@ -562,6 +586,8 @@ def main():
                         help="Rolling repeated-grade accuracy gain that resets the patience clock (0.01 = 1 pp).")
     parser.add_argument("--progress-format",choices=("human","json"),default="json",
                         help="Per-grade live progress output.")
+    parser.add_argument("--graceful-interrupt",action="store_true",
+                        help="First Ctrl+C finishes the current grade and checkpoints before stopping; second Ctrl+C aborts immediately.")
     parser.add_argument("--device",choices=("cpu","mps"),default="cpu")
     parser.add_argument("--grow",action="store_true",
                         help="Function-preserving capacity migration, keeping trained state.")
@@ -576,16 +602,27 @@ def main():
                           if k not in ("teacher","grade_ledger","last_results")},
                          indent=2,sort_keys=True))
     else:
-        print(json.dumps(run(arguments.run_dir,max_updates=arguments.max_updates,
-                             max_minutes=arguments.minutes,block=arguments.block,
-                             device=arguments.device,strict_full50=arguments.require_full50,
-                             max_run_gib=arguments.max_run_gib,
-                             max_grade_visits=arguments.grade_visits,
-                             patience_minutes=arguments.patience_minutes,
-                             progress_window=arguments.progress_window,
-                             min_repeat_improvement=arguments.min_repeat_improvement,
-                             progress_format=arguments.progress_format),
-                         indent=2,sort_keys=True))
+        stop_state={"requested":False}
+        previous_handler=None
+        if arguments.graceful_interrupt:
+            previous_handler=signal.getsignal(signal.SIGINT)
+            signal.signal(signal.SIGINT,_graceful_interrupt_handler(stop_state))
+        try:
+            result=run(arguments.run_dir,max_updates=arguments.max_updates,
+                       max_minutes=arguments.minutes,block=arguments.block,
+                       device=arguments.device,strict_full50=arguments.require_full50,
+                       max_run_gib=arguments.max_run_gib,
+                       max_grade_visits=arguments.grade_visits,
+                       patience_minutes=arguments.patience_minutes,
+                       progress_window=arguments.progress_window,
+                       min_repeat_improvement=arguments.min_repeat_improvement,
+                       progress_format=arguments.progress_format,
+                       stop_requested=(lambda: stop_state["requested"])
+                                      if arguments.graceful_interrupt else None)
+        finally:
+            if previous_handler is not None:
+                signal.signal(signal.SIGINT,previous_handler)
+        print(json.dumps(result,indent=2,sort_keys=True))
 
 
 if __name__=="__main__":
