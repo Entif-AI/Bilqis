@@ -6,7 +6,7 @@ import unittest
 from bilqis_ref.model import state_hash
 from bilqis_micro.run import optimizer_receipt
 from bilqis_development.kernel import encode
-from bilqis_u7e.lessons import build, paired_batch, validate_pair
+from bilqis_u7e.lessons import build, paired_batch, validate_pair, without_exposed
 from bilqis_u7e import run as developmental
 
 
@@ -46,6 +46,13 @@ class CumulativeDevelopmentTests(unittest.TestCase):
         self.assertEqual(state_hash(model), developmental.PARENT_STATE)
         self.assertEqual(model.config.vocab_size, 113)
         self.assertEqual(len(payload["graph"]["nodes"]), 113)
+
+    def test_dashboard_removes_identity_overlap_without_resetting_train(self):
+        ids = {r["id"] for a, b in self.direct["episodes"]["DERIVED_FROM"][:2]
+               for r in (a, b)}
+        after = without_exposed(self.direct, ids)
+        self.assertFalse(ids & {r["id"] for pairs in after["episodes"].values()
+                                for a, b in pairs for r in (a, b)})
 
     def test_single_gradient_continues_real_optimizer_moments(self):
         model, optimizer, payload = developmental.parent()

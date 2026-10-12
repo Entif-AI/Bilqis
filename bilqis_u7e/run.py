@@ -30,7 +30,7 @@ from bilqis_development import kernel as semantics
 from bilqis_development import run as development
 from bilqis_development.continuation import load, save
 from bilqis_spiral import run as spiral
-from .lessons import build, paired_batch, validate_pair
+from .lessons import build, paired_batch, validate_pair, without_exposed
 
 VERSION = "bilqis.cumulative-development/v0.1"
 ROOT = Path(__file__).resolve().parents[1]
@@ -224,6 +224,8 @@ def run(out=RUN, *, updates=BUDGET):
     seen = {r["id"] for data in (direct_train, chain_train)
             for pairs in data["episodes"].values() for a, b in pairs
             for r in (a, b)}
+    direct_eval = without_exposed(direct_eval, seen)
+    chain_eval = without_exposed(chain_eval, seen)
     novel = {r["id"] for data in (direct_eval, chain_eval)
              for pairs in data["episodes"].values() for a, b in pairs
              for r in (a, b)}

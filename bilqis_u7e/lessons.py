@@ -129,6 +129,19 @@ def paired_batch(easy, complex_set, *, iteration, rng):
     return selected
 
 
+def without_exposed(source, train_ids):
+    """Keep a development dashboard genuinely unfamiliar to the new trainer."""
+    retained = {}
+    for relation, pairs in source["episodes"].items():
+        retained[relation] = [
+            (a, b) for a, b in pairs
+            if a["id"] not in train_ids and b["id"] not in train_ids
+        ]
+        if len(retained[relation]) < 6:
+            raise ValueError("not enough fresh development examples: " + relation)
+    return {**source, "episodes": retained}
+
+
 def validate_pair(a, b):
     if a["input"]["query"] != b["input"]["query"] or a["gold"] == b["gold"]:
         raise ValueError("no changing-outcome paired lesson")
