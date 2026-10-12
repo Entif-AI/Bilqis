@@ -1175,6 +1175,12 @@ def _stagnation_stop(*, elapsed_seconds, seconds_since_progress,
             seconds_since_progress >= patience_seconds)
 
 
+def _qualifying_holistic_gain(current_mean, champion_mean,
+                              min_repeat_improvement):
+    return current_mean > champion_mean and (
+        current_mean-champion_mean >= min_repeat_improvement)
+
+
 def _lineage_metric_events(events, rejected_passes):
     return [event for event in events if event["pass"] not in rejected_passes]
 
@@ -1710,8 +1716,24 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 if current_mean > champion_mean:
                     state["champion_pass"]=dict(current)
                     pass_report["disposition"]="ACCEPTED_NEW_CHAMPION"
+                    if _qualifying_holistic_gain(
+                            current_mean,champion_mean,
+                            min_repeat_improvement):
+                        progress_now=time.monotonic()
+                        last_measurable_progress=progress_now
+                        measurable_progress_events.append({
+                            "pass":state["spiral_pass"],
+                            "at":progress_now,
+                            "source":"NEW_HOLISTIC_CHAMPION",
+                        })
+                        pass_report["patience_reset"]=True
+                        pass_report["patience_reset_reason"]=(
+                            "NEW_HOLISTIC_CHAMPION")
+                    else:
+                        pass_report["patience_reset"]=False
                 else:
                     pass_report["disposition"]="ACCEPTED_CHAMPION_UNCHANGED"
+                    pass_report["patience_reset"]=False
                 state["pass_reports"].append(pass_report)
             _atomic_json(out/STATE,state)
         if prune_checkpoints:

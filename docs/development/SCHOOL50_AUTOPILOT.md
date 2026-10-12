@@ -150,6 +150,13 @@ strategy observations remain durable. In other words: discarded neural
 weights do not masquerade as progress of the current model, but the teacher
 still remembers what happened.
 
+The patience clock accepts two independent forms of qualifying progress:
+the rolling same-grade window reaching --min-repeat-improvement, or a newly
+promoted holistic pass champion whose simultaneous all-grade mean exceeds the
+previous champion by at least that same threshold. Thus a genuine whole-school
+champion gain cannot coexist with a stale "no-gain" timer merely because the
+grade-by-grade rolling window was flat or negative.
+
 With candidate-grade-gate enabled, a grade lesson is no longer allowed to
 write directly into the production student merely because its optimizer ran.
 Each teaching strategy starts from the current durable student+AdamW state and
