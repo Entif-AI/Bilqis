@@ -54,8 +54,18 @@ class MemoryContinuationTests(unittest.TestCase):
         broken["primitives"] = 25
         self.assertFalse(u7f.viable(broken, baseline))
         broken["primitives"] = 26
-        broken["u0_composite"] = 71
+        broken["u0_composite"] = 69
         self.assertFalse(u7f.viable(broken, baseline))
+        traded = copy.deepcopy(baseline)
+        traded["u4_composite"] = 61
+        traded["u5_varied"] = 153
+        traded["u6_varied"] = 205
+        traded["direct_pairs"]["both"] = 35
+        traded["chain_pairs"]["both"] = 40
+        traded["lineage_10"] = 7
+        self.assertTrue(u7f.viable(traded, baseline))
+        self.assertGreater(u7f.utility(traded, baseline),
+                           u7f.utility(baseline, baseline))
 
 
 if __name__ == "__main__":

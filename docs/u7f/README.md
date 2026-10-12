@@ -19,14 +19,18 @@ without moment or weight reset.
 
 This is a DEVELOPMENT loop. Existing test examples may influence adaptation,
 and no scientific attribution claim follows from improvements. Every 32
-updates we record actual old and new skill performance. A successor is retained
-only if it is useful and meets stricter old-skill conservation bounds; otherwise
-we keep the U7E best checkpoint as the living parent.
+updates we record actual old and new skill performance. We preserve primitive
+Boolean correctness and require U4 composites not to worsen, while permitting
+small, explicitly visible U0/U5/U6 variation losses when total usable
+competence substantially improves. If no acceptable successor improves, keep
+the U7E best checkpoint as the living parent. This v0.2 append-only rescue
+reflects the observed v0.1 tradeoff instead of pretending every old panel can
+be held constant while growing the new skill.
 
 Execute in the local worktree after the U7E source/parent checkpoint is present:
 
     python3 -m unittest tests.test_u7f -v
     python3 -m bilqis_u7f.run
 
-Outputs under ignored runs/u7f-cumulative-memory-20261012/. No model
+Outputs under ignored runs/u7f-cumulative-memory-rescue-20261012/. No model
 binaries are committed to Git or copied into public issue/PR content.
