@@ -114,6 +114,9 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertEqual(teacher["global_stats"][key]["trials"],1)
         self.assertEqual(teacher["grade_stats"]["17"][key]["trials"],1)
 
+    def test_strategy_budget_allows_long_running_teacher_search(self):
+        self.assertGreaterEqual(engine.MAX_STRATEGIES,512)
+
     def test_human_progress_line_and_patience_gate_are_readable(self):
         progress={
             "elapsed_minutes":12.5,"pass":3,"grade":"G06","step":16984,
@@ -130,6 +133,7 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertIn("vs prior +4.2pp",line)
         self.assertIn("rolling8 +1.6pp",line)
         self.assertIn("old avg -6.9pp",line)
+        self.assertIn(f"teacher 20/{engine.MAX_STRATEGIES} strategies/16 mutations",line)
         self.assertIn("no-gain 22.0/60.0m",line)
         self.assertFalse(engine._stagnation_stop(
             elapsed_seconds=4000,seconds_since_progress=4000,

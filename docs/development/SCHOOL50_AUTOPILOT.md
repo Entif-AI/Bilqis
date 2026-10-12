@@ -34,7 +34,10 @@ New Ithkuil training epoch.
 The student has one continuous neural history. The teacher separately
 retains per-grade and cross-grade strategy outcome statistics. It chooses
 between strategy vectors, mutates one whitelisted setting after every
-third grade, and reuses what it discovers across repeated spirals.
+third grade, and reuses what it discovers across repeated spirals. The
+operational strategy budget is 512 candidates. This is a safety ceiling,
+not a target; the teacher may continue creating candidates while novel
+one-knob variants remain available.
 
 Whitelisted variables: earlier-grade example count, two-grade foresight
 example count, question depth, semantic contrast frequency, learning rate,

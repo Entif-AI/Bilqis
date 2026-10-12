@@ -54,7 +54,7 @@ INITIAL = (
     {"old":8,"preview":4,"depth":3,"contrast":1.,"lr":.00020,"distill":.15},
     {"old":16,"preview":2,"depth":1,"contrast":.0,"lr":.00008,"distill":.35},
 )
-MAX_STRATEGIES = 32
+MAX_STRATEGIES = 512
 GRADES = skill_tree()
 
 
@@ -322,7 +322,7 @@ def _progress_line(progress):
         f"| rolling{progress['progress_window']} {rolling_text} "
         f"| old avg {progress['old_mean_delta']*100:+.1f}pp "
         f"| reward {progress['reward']:+.4f} "
-        f"| teacher {progress['teacher_strategies']} strategies/"
+        f"| teacher {progress['teacher_strategies']}/{MAX_STRATEGIES} strategies/"
         f"{progress['teacher_mutations']} mutations{patience}"
     )
 
@@ -537,6 +537,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "spiral_pass":state["spiral_pass"],
             "next_grade":state["next_grade"],
             "teacher_strategies":len(state["teacher"]["strategies"]),
+            "teacher_strategy_capacity":MAX_STRATEGIES,
             "observed_teacher_mutations":state["teacher"]["mutations"],
             "compiled_grades":sum(g.ready for g in GRADES),
             "blocked_grades":state["blocked_grade_ids"],
