@@ -90,7 +90,7 @@ Run a long bounded Apple-Metal training session, resuming existing state:
 For an operator-visible development run, prefer a smaller bounded session with
 human-readable progress and a stagnation stop:
 
-    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01
+    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt
 
 The runner prints one line after every durable grade checkpoint. It includes
 the fixed-probe score before and after that lesson, change versus the previous
@@ -106,6 +106,13 @@ same-grade comparisons and that rolling trend has failed to reach
 min-repeat-improvement for the requested time. A value of 0.01 means one
 percentage point. All stops occur after a completed grade checkpoint, so the
 next invocation resumes the same model and optimizer.
+
+With graceful-interrupt enabled, the first Ctrl+C requests a stop instead of
+raising KeyboardInterrupt. If a grade is in progress, the runner finishes it,
+writes the new checkpoint and atomic state pointer, then exits with
+STOPPED_BY_GRACEFUL_INTERRUPT. If the runner is between grades, it exits
+immediately from the already-durable boundary. A second Ctrl+C preserves the
+ordinary emergency behavior and aborts immediately.
 
 Run a short CPU session:
 

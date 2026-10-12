@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 import random
+import signal
 import tempfile
 import unittest
 
@@ -117,6 +118,14 @@ class AdaptiveTeacher(unittest.TestCase):
     def test_strategy_budget_allows_long_running_teacher_search(self):
         self.assertGreaterEqual(engine.MAX_STRATEGIES,512)
 
+    def test_graceful_interrupt_first_requests_second_aborts(self):
+        state={"requested":False}
+        handler=engine._graceful_interrupt_handler(state)
+        handler(signal.SIGINT,None)
+        self.assertTrue(state["requested"])
+        with self.assertRaises(KeyboardInterrupt):
+            handler(signal.SIGINT,None)
+
     def test_human_progress_line_and_patience_gate_are_readable(self):
         progress={
             "elapsed_minutes":12.5,"pass":3,"grade":"G06","step":16984,
@@ -163,6 +172,14 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertEqual(limited["grade_visits_this_call"],1)
             self.assertEqual(limited["live_optimizer_step"],13854)
             self.assertEqual(engine._read(out/engine.STATE)["teacher"]["events"],3)
+            checks=iter((False,False,True))
+            interrupted=engine.run(
+                out,max_updates=20,max_minutes=2,block=2,
+                stop_requested=lambda: next(checks))
+            self.assertEqual(interrupted["status"],"STOPPED_BY_GRACEFUL_INTERRUPT")
+            self.assertEqual(interrupted["grade_visits_this_call"],1)
+            self.assertEqual(interrupted["live_optimizer_step"],13856)
+            self.assertEqual(engine._read(out/engine.STATE)["teacher"]["events"],4)
             self.assertTrue((out/engine._read(out/engine.STATE)["checkpoint"]).exists())
 
 
