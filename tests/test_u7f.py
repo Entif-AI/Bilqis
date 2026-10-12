@@ -1,5 +1,6 @@
 """Prove the next round really compounds the best learned U7E checkpoint."""
 import copy
+from pathlib import Path
 import random
 import unittest
 
@@ -13,6 +14,11 @@ from bilqis_u7f import run as u7f
 
 
 class MemoryContinuationTests(unittest.TestCase):
+    # Historical source and CPU behavior tests run in CI. Actual neural
+    # resumption needs the ignored local U7E checkpoint and must not
+    # download a model or pretend to initialize equivalent scratch weights.
+    @unittest.skipUnless((u7e.RUN / "result.json").is_file(),
+                         "Local continued U7E checkpoint is not in public Git.")
     def test_parent_is_actual_selected_U7E_optimizer_not_prior_U6(self):
         model, optimizer, payload, chosen = u7f.resume()
         self.assertEqual(chosen["step"], 13528)
@@ -21,6 +27,8 @@ class MemoryContinuationTests(unittest.TestCase):
                          "c118c6086bef09b862bfc7e19a544ac2081506c115fb09f203e47127c944a401")
         self.assertTrue(torch.equal(torch.get_rng_state(), payload["torch_rng"]))
 
+    @unittest.skipUnless((u7e.RUN / "result.json").is_file(),
+                         "Local continued U7E checkpoint is not in public Git.")
     def test_old_and_new_compose_one_meaningful_update(self):
         model, optimizer, payload, _ = u7f.resume()
         reference = copy.deepcopy(model)
