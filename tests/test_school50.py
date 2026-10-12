@@ -143,6 +143,56 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertEqual(report["highest_grade"],"G09")
         self.assertIn("mean probe",engine._pass_summary_line(report))
 
+    def test_call_grade_comparison_reports_start_end_and_delta_for_every_grade(self):
+        start={grade:.50 for grade in engine.REPORT_GRADE_IDS}
+        end=dict(start)
+        end["G01"]=.75
+        end["G02"]=.25
+        comparison=engine._call_grade_comparison(start,end)
+        self.assertEqual(set(comparison["grades"]),set(engine.REPORT_GRADE_IDS))
+        self.assertEqual(
+            comparison["grades"]["G01"],
+            {"start_percent":50.0,"end_percent":75.0,"delta_pp":25.0})
+        self.assertEqual(
+            comparison["grades"]["G02"],
+            {"start_percent":50.0,"end_percent":25.0,"delta_pp":-25.0})
+        self.assertEqual(comparison["improved_grades"],1)
+        self.assertEqual(comparison["regressed_grades"],1)
+        self.assertEqual(comparison["unchanged_grades"],20)
+        self.assertEqual(comparison["mean_start_percent"],50.0)
+        self.assertEqual(comparison["mean_end_percent"],50.0)
+        self.assertEqual(comparison["mean_delta_pp"],0.0)
+
+    def test_pass_report_summary_preserves_human_report_metrics(self):
+        baseline={grade:.50 for grade in engine.REPORT_GRADE_IDS}
+        previous={grade:.60 for grade in engine.REPORT_GRADE_IDS}
+        scores={grade:.75 for grade in engine.REPORT_GRADE_IDS}
+        report=engine._pass_report(4,scores,baseline,previous,optimizer_step=123)
+        report["disposition"]="ACCEPTED_NEW_CHAMPION"
+        report["vs_champion_pass"]={
+            "pass":3,"mean_delta":.025,"median_delta":.0,
+            "regressed":False,"improved_grades":2,"regressed_grades":1,
+            "unchanged_grades":19,
+        }
+        report["patience_reset"]=True
+        report["patience_reset_reason"]="NEW_HOLISTIC_CHAMPION"
+        summary=engine._pass_report_summary(report)
+        self.assertEqual(summary["pass"],4)
+        self.assertEqual(summary["optimizer_step"],123)
+        self.assertEqual(summary["disposition"],"ACCEPTED_NEW_CHAMPION")
+        self.assertEqual(summary["mean_probe_percent"],75.0)
+        self.assertEqual(summary["median_probe_percent"],75.0)
+        self.assertEqual(summary["mean_vs_previous_pp"],15.0)
+        self.assertEqual(summary["median_vs_previous_pp"],15.0)
+        self.assertEqual(summary["mean_vs_school_start_pp"],25.0)
+        self.assertEqual(summary["grades_at_or_above_90"],0)
+        self.assertEqual(summary["perfect_grades"],0)
+        self.assertEqual(summary["vs_champion_pass"],3)
+        self.assertEqual(summary["mean_vs_champion_pp"],2.5)
+        self.assertTrue(summary["patience_reset"])
+        self.assertEqual(
+            summary["patience_reset_reason"],"NEW_HOLISTIC_CHAMPION")
+
     def test_pass_regression_guard_catches_mean_loss_even_with_flat_median(self):
         champion={grade:.75 for grade in engine.REPORT_GRADE_IDS}
         current=dict(champion)
@@ -402,6 +452,10 @@ class AdaptiveTeacher(unittest.TestCase):
             first=engine.run(out,max_updates=2,max_minutes=2,block=2)
             self.assertEqual(first["live_optimizer_step"],13850)
             self.assertEqual(first["next_grade"],2)
+            self.assertEqual(
+                set(first["grade_start_end_this_call"]["grades"]),
+                set(engine.REPORT_GRADE_IDS))
+            self.assertEqual(first["pass_summaries_this_call"],[])
             initialized=engine._read(out/engine.STATE)
             self.assertEqual(initialized["accepted_pass"]["pass"],0)
             self.assertEqual(set(initialized["school_start_probe_scores"]),
