@@ -120,7 +120,7 @@ class AdaptiveTeacher(unittest.TestCase):
             "accuracy_before":.625,"accuracy_after":.708333333,
             "immediate_delta":.083333333,"repeat_delta":.041666667,
             "rolling_repeat_delta":.015625,"progress_window":8,
-            "old_delta":0.0,"reward":.1667,"teacher_strategies":20,
+            "old_mean_delta":-.0694444,"reward":.1667,"teacher_strategies":20,
             "teacher_mutations":16,"minutes_since_measurable_progress":22.0,
             "patience_minutes":60.0,
         }
@@ -129,6 +129,7 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertIn("62.5%->70.8%",line)
         self.assertIn("vs prior +4.2pp",line)
         self.assertIn("rolling8 +1.6pp",line)
+        self.assertIn("old avg -6.9pp",line)
         self.assertIn("no-gain 22.0/60.0m",line)
         self.assertFalse(engine._stagnation_stop(
             elapsed_seconds=4000,seconds_since_progress=4000,
