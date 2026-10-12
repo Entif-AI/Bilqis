@@ -19,6 +19,17 @@ The name also rhymes with the wider Rosetta program. Rosetta is concerned with c
 
 ## What is here
 
+### Separate exploratory formal foundations
+
+The `bilqis_formal/` prototype, documented in
+[`docs/formal/FOUNDATIONS.md`](docs/formal/FOUNDATIONS.md), is a **new scratch
+semantic/token space** for typed propositional formulas, specifically named
+Boolean-law schemas and Kev-curated teaching/diagnostic composition choices.
+It does **not** rewrite or continue any historical U0-U7 student weights.
+The bounded first results, including failed prerequisite gates, are in
+[`docs/evidence/formal-foundations/RESULTS.md`](docs/evidence/formal-foundations/RESULTS.md).
+The first teaching pass is exploratory, not a claim of formal-law mastery.
+
 - `bilqis_micro/` — typed semantic graph, stable keyed embeddings, finite relational/proof/evidence worlds, and one scratch learner continuing through five developmental stages. See [execution guide](docs/micro-universes/README.md) and [measured results](docs/evidence/micro-universes/RESULTS.md).
 - `bilqis_logic/` — the preserved Boolean T0/T1 pilot and its original evidence.
 - `bilqis_ref/` — finite-world semantics, independent oracle pair, codecs, small transformer student, teacher policy, checkpoint/recovery, sealing, evaluation, and constrained pedagogue adapter.
@@ -129,8 +140,37 @@ Start with:
 ## License
 
 No repository-wide license is declared by this bootstrap commit. Source and redistribution policy is tracked in [issue #35](https://github.com/entif-ai/bilqis/issues/35). Do not infer rights beyond those granted by applicable source licenses or explicit project releases.
-# Exploratory alpha
+## Exploratory alpha
 
 The source-grounded #102/#103 alpha is documented in [docs/ALPHA.md](docs/ALPHA.md),
 with the trained replay command in [docs/MICROSCOPE.md](docs/MICROSCOPE.md).
 It preserves the CP0008 reference and uses a separate, versioned semantic registry.
+
+## New versioned dialogue curriculum (experimental)
+
+The [formal dialogue curriculum v0.2](docs/formal/DIALOGUE_V02.md)
+introduces explicit teacher/student feedback turns, independently typed
+truth-versus-correctness answers, strictly matched Kev diagnostic alternatives,
+separate teaching/formative/held-out gate records and a scratch-trained
+feedback-context comparison. The original formal-foundations v0.1 checkpoint
+and legacy development experiments remain separate.
+
+The successor [v0.3 teaching protocol](docs/formal/DIALOGUE_V03_PROTOCOL.md)
+splits teacher feedback from the student's later ability to grade proposed
+answers. Atomic truth evaluation is taught and tested before metacognitive
+judgment, with independent NOT/AND prerequisites and controlled feedback
+probes. This remains exploratory: a passing engineering test does not
+establish student learning or validate the whole #82 developmental program.
+
+The separate [v0.4 standalone-first protocol](docs/formal/DIALOGUE_V04_STANDALONE.md)
+tests whether scratch Boolean, NOT, AND and simple compositions can progress
+using only current-question oracle training. It deliberately postpones prior
+teacher dialogue and student-side answer grading. Contextual sensitivity
+is still measured, but no longer gates elementary truth-function teaching.
+
+The successor [v0.5 adaptive trainee controller protocol](docs/formal/ADAPTIVE_V05_PROTOCOL.md)
+compares fixed 320-update teaching, fixed 1,280-update teaching and
+bounded error-focused updates,
+with a new train/DEV/sealed split, explicit literal-NOT instruction,
+retention remediation and safe rollback. The new run is independent of
+e7 and cannot retroactively change its frozen outcomes.
