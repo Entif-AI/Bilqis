@@ -584,6 +584,20 @@ or student was tested on natural-language instructions, learning semantic
 set membership, predicate logic, full formal proof, native Ithkuil, Rosetta
 semantics or corrective dialogue.
 
+**Post-run protocol erratum (source frozen, not rewritten):** the preregistered
+`SEMANTIC_V06_PROTOCOL.md` calls the V02 SEALED expressions "depth-three
+conjunctions," but the actual source ASTs and run evidence show V02 gate
+depths **1 and 2 only**. V01 NOT SEALED does include depth 3. This text error
+is recorded rather than changing the pre-run source commit or claiming an
+unperformed depth-three AND generalization test. The V02 held-out exercises
+are primarily new row identities / variable rearrangements of existing
+families, not guaranteed structurally novel laws. Likewise, a repeated
+held-out equivalence-pair both-correct score does not consist of statistically
+independent individual trials. The V02 semantic treatment strongly clustered
+**equivalent** function signatures; the observed V02 same-neighborhood
+complement-pair count was zero, so it cannot demonstrate effective teaching
+of complement relationships in that stage.
+
 **Next research branch, not a post-hoc e9 repair:** retain the richer
 semantically classified corpus and independently evaluate protection against
 cross-stage gradient interference (for example preregistered regularization
