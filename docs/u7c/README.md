@@ -20,8 +20,8 @@ same-world perturbation witnesses are retained separately from training.
 Kev receives **English prose only**. Its 3 candidate descriptions include
 concrete generated example worlds and questions, contrasted without gold
 answers. The native inference transport necessarily serializes choices as a
-request object, but no typed ABI, grammar JSON, oracle truth or semantic
-primitive description is placed in the teacher's natural-language context.
+request object, but no typed ABI, grammar JSON, oracle gold or numeric teacher
+embeddings/probabilities is placed in the teacher's natural-language context.
 All candidate identities, gold answers and typed compilation remain internal.
 Review is an explicit valid option. No EG2 calls occur for these known
 definitions.

@@ -2,12 +2,13 @@
   "A": {
     "document_id": "1O0lxmLU7Jc49An-nh2YNpi-GkniLBFjf6pDN-PgGDh8",
     "entry": "R-09 / U7C EXECUTED",
+    "includes_posthoc_exposure_amendment": true,
     "includes_verified_comment_urls": true,
-    "last_index": 38486,
+    "last_index": 39447,
     "native_readback_verified": true,
     "title": "Bilqis Developmental Training | Cumulative Research Findings Ledger | 2026-10-11 onward",
     "url": "https://docs.google.com/document/d/1O0lxmLU7Jc49An-nh2YNpi-GkniLBFjf6pDN-PgGDh8",
-    "verified_revision": "AHj4eMTJTRbDusE_wiWY57jI7x46XR1RVM5vQAfdpkBGMZ31WIQi-olel0SNMxiI1SJ-7DXmSNbQqKgSaMxLikF77USAb9I12fMlQKCvXhU"
+    "verified_revision": "AHj4eMRhRouGSfjUZ0vybU60csEXL9tachYhZfkHllLBVtDAwL5pU9MqmrWX8JT2irZ0X2u-zW5jj-ZsY9SvYBW3Ho1B_ZTwePTh0lrl8jk"
   },
   "B": [
     {
@@ -45,17 +46,28 @@
       "html_url": "https://github.com/Entif-AI/Bilqis/issues/54#issuecomment-6116166905",
       "issue": 54,
       "sha256": "ba2a33008953dd976a9a28350ff428e2ec74f2f161e4b5e881c0f4a052699871"
+    },
+    {
+      "author": "Entif-AI",
+      "comment_id": 6116182873,
+      "created_at": "2026-10-12T01:34:10Z",
+      "exact_body_matches_source": true,
+      "html_url": "https://github.com/Entif-AI/Bilqis/issues/54#issuecomment-6116182873",
+      "issue": 54,
+      "posthoc_exposure_amendment": true,
+      "sha256": "5df90ffe9dff015f9e65fece4c8785ee8a8ef56cd57731aef0c09d566726e51e"
     }
   ],
   "C": {
     "document_id": "19mUp81fRDxBVwc6gX7xNRo6rIeIgMJqyVYo_UQPM5xw",
     "entry": "U7C / draft PR #113",
+    "includes_posthoc_exposure_amendment": true,
     "includes_verified_comment_urls": true,
-    "last_index": 82319,
+    "last_index": 83280,
     "native_readback_verified": true,
     "title": "Bilqis Roadmap - 20261006",
     "url": "https://docs.google.com/document/d/19mUp81fRDxBVwc6gX7xNRo6rIeIgMJqyVYo_UQPM5xw",
-    "verified_revision": "AHj4eMT8ixdCeefGIFKuOmM4EcK6Y275xht9Dhk7HY0lTPMmJF2-qqXQXvPM3hFS4JKl4Ing7xjad34irK4rj86Ge6I7k7SYU4ODEnQbofQ"
+    "verified_revision": "AHj4eMRlFHERH72WdkAkmKM79-WVcO0VwOBKb_IZVIaBI1nCMr8EafiUm7GhDZkUS31zg_Q-4DpfCIdfL57AraxBTuffvqy8WDV33-SnbGQ"
   },
   "PR": "https://github.com/Entif-AI/Bilqis/pull/113",
   "branch": "codex/u7c-english-balanced-spiral",
