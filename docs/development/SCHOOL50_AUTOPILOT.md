@@ -98,7 +98,21 @@ visit to the same grade, rolling repeated-grade improvement, mean change
 across the guarded earlier skills, teacher reward, strategy count and
 mutations, elapsed time, and the current no-improvement clock. The final
 summary also reports mean repeated-grade change and counts of improved,
-unchanged and regressed repeated grades for the call.
+unchanged and regressed repeated grades for the call. These headline repeat
+counts describe one surviving-lineage measurement per grade visit. Rejected
+candidate branches never become separate repeat events; a grade whose
+candidates all fail still contributes its one final live-student measurement.
+If a whole pass is later rolled back, all of that pass's grade events are
+removed from the headline lineage metrics and remain only in attempted/rejected
+evidence.
+
+The final JSON summary also evaluates the same live student on all twenty-two
+fixed 24-example probes at call start and call end. The
+grade_start_end_this_call object reports each grade's start percentage, end
+percentage and percentage-point delta, plus aggregate mean/median start/end
+values and improved/regressed/unchanged counts. This is a simultaneous
+start-to-finish comparison of the actual surviving student, not a stitch of
+grade scores observed at different times during the run.
 
 At the end of every complete executable G01-G22 spiral, the runner also
 evaluates the single resulting checkpoint on all twenty-two fixed probes at
@@ -109,6 +123,15 @@ the number of grades at or above 90%, the number at 100%, the remaining mean
 gap to 100%, and the highest/lowest scoring grades. Existing runs recover the
 true step-13,848 starting checkpoint when it is still present rather than
 fabricating a baseline from staggered in-pass observations.
+
+Every complete pass generated during an invocation is also repeated in the
+final JSON under pass_summaries_this_call. Each entry mirrors the human PASS
+REPORT at compact percentage/percentage-point units: mean/median probe score,
+change versus prior accepted pass and untouched school start, mastery counts,
+gap to 100, high/low grades, disposition, champion comparison, optimizer step,
+and patience-reset status. Rolled-back passes remain in this list with their
+rollback disposition, so the end-of-call report shows the actual pass-by-pass
+trajectory without pretending rejected neural state survived.
 
 The grade-visits option is an explicit durable stop point. The
 patience-minutes option stops only after there are at least progress-window

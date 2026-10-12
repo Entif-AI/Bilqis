@@ -904,6 +904,68 @@ def _pass_report(pass_number, scores, baseline, previous=None, *,
     }
 
 
+def _percent(value):
+    return None if value is None else round(value*100,4)
+
+
+def _call_grade_comparison(start_scores, end_scores):
+    if (set(start_scores)!=set(REPORT_GRADE_IDS) or
+            set(end_scores)!=set(REPORT_GRADE_IDS)):
+        raise ValueError("CALL_REPORT_REQUIRES_COMPLETE_SCORE_SET")
+    deltas={grade:end_scores[grade]-start_scores[grade]
+            for grade in REPORT_GRADE_IDS}
+    start_values=[start_scores[grade] for grade in REPORT_GRADE_IDS]
+    end_values=[end_scores[grade] for grade in REPORT_GRADE_IDS]
+    delta_values=[deltas[grade] for grade in REPORT_GRADE_IDS]
+    return {
+        "probe_profile":BASELINE_PROBE_PROFILE,
+        "grades":{
+            grade:{
+                "start_percent":_percent(start_scores[grade]),
+                "end_percent":_percent(end_scores[grade]),
+                "delta_pp":_percent(deltas[grade]),
+            }
+            for grade in REPORT_GRADE_IDS
+        },
+        "mean_start_percent":_percent(sum(start_values)/len(start_values)),
+        "mean_end_percent":_percent(sum(end_values)/len(end_values)),
+        "mean_delta_pp":_percent(sum(delta_values)/len(delta_values)),
+        "median_start_percent":_percent(statistics.median(start_values)),
+        "median_end_percent":_percent(statistics.median(end_values)),
+        "median_grade_delta_pp":_percent(statistics.median(delta_values)),
+        "improved_grades":sum(delta>0 for delta in delta_values),
+        "regressed_grades":sum(delta<0 for delta in delta_values),
+        "unchanged_grades":sum(delta==0 for delta in delta_values),
+    }
+
+
+def _pass_report_summary(report):
+    champion=report.get("vs_champion_pass") or {}
+    return {
+        "pass":report["pass"],
+        "optimizer_step":report.get("optimizer_step"),
+        "disposition":report.get("disposition","OBSERVED"),
+        "mean_probe_percent":_percent(report["mean_probe_score"]),
+        "median_probe_percent":_percent(report["median_probe_score"]),
+        "mean_vs_previous_pp":_percent(report.get("mean_vs_previous")),
+        "median_vs_previous_pp":_percent(report.get("median_vs_previous")),
+        "mean_vs_school_start_pp":_percent(report["mean_vs_school_start"]),
+        "median_vs_school_start_pp":_percent(report["median_vs_school_start"]),
+        "grades_at_or_above_90":report["grades_at_or_above_90"],
+        "perfect_grades":report["perfect_grades"],
+        "mean_gap_to_100_pp":_percent(report["mean_gap_to_100"]),
+        "lowest_grade":report["lowest_grade"],
+        "lowest_probe_percent":_percent(report["lowest_probe_score"]),
+        "highest_grade":report["highest_grade"],
+        "highest_probe_percent":_percent(report["highest_probe_score"]),
+        "vs_champion_pass":champion.get("pass"),
+        "mean_vs_champion_pp":_percent(champion.get("mean_delta")),
+        "median_vs_champion_pp":_percent(champion.get("median_delta")),
+        "patience_reset":report.get("patience_reset",False),
+        "patience_reset_reason":report.get("patience_reset_reason"),
+    }
+
+
 def _pass_summary_line(report):
     prior=(
         "n/a" if report["mean_vs_previous"] is None else
@@ -1299,6 +1361,9 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             out,state,keep_recent=keep_recent_checkpoints,
             keep_pass=keep_pass_checkpoints)
         _atomic_json(out/STATE,state)
+    pass_reports_start_index=len(state.get("pass_reports",[]))
+    call_start_scores=_probe_all_grades(
+        model,payload["graph"],lib,device=device)
     start=time.monotonic()
     consumed=0
     visits_this_call=0
@@ -1823,6 +1888,14 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     ]
     recent_repeat=repeat_deltas[-progress_window:]
     retention=state.get("checkpoint_retention",{})
+    call_end_scores=_probe_all_grades(
+        model,payload["graph"],lib,device=device)
+    call_grade_comparison=_call_grade_comparison(
+        call_start_scores,call_end_scores)
+    pass_summaries_this_call=[
+        _pass_report_summary(report)
+        for report in state.get("pass_reports",[])[pass_reports_start_index:]
+    ]
     return {"status":status,
             "checkpoint_quota_gib":max_run_gib,
             "completed_this_call":lineage_summary["updates"],
@@ -1840,6 +1913,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "attempted_run_metrics":attempted_summary,
             "rejected_run_metrics":rejected_summary,
             "rejected_passes_this_call":sorted(rejected_passes),
+            "grade_start_end_this_call":call_grade_comparison,
+            "pass_summaries_this_call":pass_summaries_this_call,
             "candidate_grade_gate":candidate_grade_gate,
             "candidate_promotions_this_call":candidate_promotions_this_call,
             "candidate_rejections_this_call":candidate_rejections_this_call,
