@@ -91,9 +91,11 @@ human-readable progress and a stagnation stop:
 
 The runner prints one line after every durable grade checkpoint. It includes
 the fixed-probe score before and after that lesson, change versus the previous
-visit to the same grade, rolling repeated-grade improvement, earlier-skill
-health, teacher reward, strategy count and mutations, elapsed time, and the
-current no-improvement clock.
+visit to the same grade, rolling repeated-grade improvement, mean change
+across the guarded earlier skills, teacher reward, strategy count and
+mutations, elapsed time, and the current no-improvement clock. The final
+summary also reports mean repeated-grade change and counts of improved,
+unchanged and regressed repeated grades for the call.
 
 The grade-visits option is an explicit durable stop point. The
 patience-minutes option stops only after there are at least progress-window

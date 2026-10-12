@@ -320,7 +320,8 @@ def _progress_line(progress):
         f"{progress['accuracy_before']*100:.1f}%->{progress['accuracy_after']*100:.1f}% "
         f"({progress['immediate_delta']*100:+.1f}pp) | vs prior {repeat_text} "
         f"| rolling{progress['progress_window']} {rolling_text} "
-        f"| old {progress['old_delta']*100:+.1f}pp | reward {progress['reward']:+.4f} "
+        f"| old avg {progress['old_mean_delta']*100:+.1f}pp "
+        f"| reward {progress['reward']:+.4f} "
         f"| teacher {progress['teacher_strategies']} strategies/"
         f"{progress['teacher_mutations']} mutations{patience}"
     )
@@ -362,6 +363,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     consumed=0
     visits_this_call=0
     repeat_deltas=[]
+    immediate_deltas=[]
+    old_mean_deltas=[]
     last_measurable_progress=start
     paused_for_storage=False
     stopped_for_stagnation=False
@@ -421,11 +424,15 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         after_old={str(g):_scores(model,lib,payload["graph"],g,170003+g*617,
                                  count=12,device=device) for g in guards}
         old_delta=sum(after_old[k]-before_old[k] for k in before_old)
-        reward=2*(after-before)+.6*old_delta/max(1,len(before_old))
+        old_mean_delta=old_delta/max(1,len(before_old))
+        immediate_delta=after-before
+        reward=2*immediate_delta+.6*old_mean_delta
         repeat_delta=(None if prior_visit is None
                       else after-prior_visit["after"])
         if repeat_delta is not None:
             repeat_deltas.append(repeat_delta)
+        immediate_deltas.append(immediate_delta)
+        old_mean_deltas.append(old_mean_delta)
         recent_repeat=repeat_deltas[-progress_window:]
         rolling_repeat_delta=(sum(recent_repeat)/len(recent_repeat)
                               if recent_repeat else None)
@@ -446,6 +453,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "before":before,"after":after,"old_before":before_old,
                 "old_after":after_old,"reward":round(reward,6),
                 "repeat_delta":None if repeat_delta is None else round(repeat_delta,6),
+                "old_mean_delta":round(old_mean_delta,6),
                 "updates":steps,"loss_first":losses[0],"loss_last":losses[-1],
                 "teacher_mutations":state["teacher"]["mutations"],
                 "row_exposures":tallies,
@@ -470,11 +478,13 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                   "teacher_strategies":len(state["teacher"]["strategies"]),
                   "teacher_mutations":state["teacher"]["mutations"],
                   "accuracy_before":before,"accuracy_after":after,
-                  "immediate_delta":after-before,
+                  "immediate_delta":immediate_delta,
                   "repeat_delta":repeat_delta,
                   "rolling_repeat_delta":rolling_repeat_delta,
                   "progress_window":progress_window,
-                  "reward":round(reward,4),"old_delta":old_delta,
+                  "reward":round(reward,4),
+                  "old_mean_delta":old_mean_delta,
+                  "old_delta_sum":old_delta,
                   "elapsed_minutes":elapsed/60,
                   "minutes_since_measurable_progress":since_progress/60,
                   "patience_minutes":patience_minutes,
@@ -500,10 +510,22 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "PAUSED_AT_REQUESTED_GRADE_VISIT_LIMIT" if paused_for_visit_limit else
             "PAUSED_AT_DURABLE_GRADE_BOUNDARY")
     recent_repeat=repeat_deltas[-progress_window:]
+    mean_repeat=(sum(repeat_deltas)/len(repeat_deltas)
+                 if repeat_deltas else None)
+    mean_immediate=(sum(immediate_deltas)/len(immediate_deltas)
+                    if immediate_deltas else None)
+    mean_old=(sum(old_mean_deltas)/len(old_mean_deltas)
+              if old_mean_deltas else None)
     return {"status":status,
             "checkpoint_quota_gib":max_run_gib,"completed_this_call":consumed,
             "grade_visits_this_call":visits_this_call,
             "repeat_comparisons_this_call":len(repeat_deltas),
+            "mean_repeat_delta_this_call":mean_repeat,
+            "repeat_improved_this_call":sum(x>0 for x in repeat_deltas),
+            "repeat_unchanged_this_call":sum(x==0 for x in repeat_deltas),
+            "repeat_regressed_this_call":sum(x<0 for x in repeat_deltas),
+            "mean_immediate_delta_this_call":mean_immediate,
+            "mean_old_delta_this_call":mean_old,
             "rolling_repeat_delta":(sum(recent_repeat)/len(recent_repeat)
                                     if recent_repeat else None),
             "progress_window":progress_window,
