@@ -1,0 +1,9 @@
+### U7C: balanced composition still failed conservation and causal transfer (11 October 2026)
+
+The U7C successor corrected U7B's gate-only answer leak using a new source-hash-bound, independently verified AND/OR truth table. On 432 TRAIN and 288 fresh final cross examples, root operator alone predicts 50%, and either operator plus one operand's independent oracle truth predicts 75%. Same-world old-arm and new-arm counterfactual sibling witnesses were frozen before any gradients. The sampler still delivered 12 current / 4 fresh earlier / 8 old-new composition / 8 DEV-weak per optimizer step, with old/recent weakness floors.
+
+From accepted U6 AdamW step 13,400, 32 actual updates reached 13,432 and stopped on the predeclared critical DEV gate: U4 historical composites 50/128 to 39/128 (minimum 42), lineage 4/10 to 3/10 (minimum 4), Boolean primitives 26/26 preserved. Balanced cross-final changed 161/288 to 162/288. Posthoc analysis on 144 pregradient-frozen three-case causal sets found fully correct originals plus both arm flips only 9/144 to 10/144. Fixing the sampler shortcut did not establish learned composition or retention.
+
+For #17, treat gate-by-operand-truth balance, no perfect operator/one-arm shortcut, independent same-world sibling sets and DEV critical conservation as a mandatory versioned admission/stop contract before longer stage promotion. The earlier bilqis_spiral.sampler.cross_case and bilqis_teacher.grammar.compile_exercise are historical replay sources with a known shortcut; never recycle their output as clean successors. U7C's bilqis_u7c.grammar.audit_cohort is the tested narrow counterexample.
+
+Branch checkpoint: issue #17; branch codex/u7c-english-balanced-spiral; execution epoch U7C run-02, verified Git head 938184e5c15c5cb4801332accb4699b5bd669f91; draft PR https://github.com/Entif-AI/Bilqis/pull/113 . No merge.
