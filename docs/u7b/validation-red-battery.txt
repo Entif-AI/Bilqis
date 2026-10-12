@@ -1,0 +1,21 @@
+test_teacher_battery (unittest.loader._FailedTest.test_teacher_battery) ... ERROR
+
+======================================================================
+ERROR: test_teacher_battery (unittest.loader._FailedTest.test_teacher_battery)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_teacher_battery
+Traceback (most recent call last):
+  File "/Users/emilie/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/unittest/loader.py", line 396, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "/Users/emilie/.local/share/uv/python/cpython-3.13.12-macos-aarch64-none/lib/python3.13/unittest/loader.py", line 339, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "/Users/emilie/.codex/worktrees/bilqis-u7b/Bilqis/tests/test_teacher_battery.py", line 5, in <module>
+    from bilqis_teacher.battery import make_battery, render, select_mode, verify_trace
+ModuleNotFoundError: No module named 'bilqis_teacher.battery'
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)
