@@ -1273,10 +1273,8 @@ def _stagnation_stop(*, elapsed_seconds, seconds_since_progress,
             seconds_since_progress >= patience_seconds)
 
 
-def _qualifying_holistic_gain(current_mean, champion_mean,
-                              min_repeat_improvement):
-    return current_mean > champion_mean and (
-        current_mean-champion_mean >= min_repeat_improvement)
+def _qualifying_holistic_gain(current_mean, champion_mean):
+    return current_mean > champion_mean
 
 
 def _lineage_metric_events(events, rejected_passes):
@@ -1916,9 +1914,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 if current_mean > champion_mean:
                     state["champion_pass"]=dict(current)
                     pass_report["disposition"]="ACCEPTED_NEW_CHAMPION"
-                    if _qualifying_holistic_gain(
-                            current_mean,champion_mean,
-                            min_repeat_improvement):
+                    if _qualifying_holistic_gain(current_mean,champion_mean):
                         progress_now=time.monotonic()
                         last_measurable_progress=progress_now
                         measurable_progress_events.append({

@@ -92,6 +92,19 @@ human-readable progress and a stagnation stop:
 
     caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4 --candidate-grade-gate --candidate-max-attempts 3 --candidate-clear-reward 0.05 --candidate-sentinel-per-grade 8 --consolidate-grade-champions --consolidation-weight 0.15
 
+For the production continuous run, use the repo-owned operator script instead
+of copying the full command between terminals:
+
+    npm run school50:train
+
+The same script exposes `npm run school50:status` for the live state/process
+summary and `npm run school50:soup` for the inference-only grade-champion soup
+comparison. The live run directory defaults to
+`$HOME/Code/bilqis-auto-curriculum50/runs/school50-continuous-v1`; set
+`BILQIS_SCHOOL50_RUN_DIR` to override it. Other production defaults can be
+overridden with the `BILQIS_SCHOOL50_*` environment variables defined in
+`scripts/school50.sh`.
+
 The runner prints one line after every durable grade checkpoint. It includes
 the fixed-probe score before and after that lesson, change versus the previous
 visit to the same grade, rolling repeated-grade improvement, mean change
@@ -173,12 +186,11 @@ strategy observations remain durable. In other words: discarded neural
 weights do not masquerade as progress of the current model, but the teacher
 still remembers what happened.
 
-The patience clock accepts two independent forms of qualifying progress:
-the rolling same-grade window reaching --min-repeat-improvement, or a newly
-promoted holistic pass champion whose simultaneous all-grade mean exceeds the
-previous champion by at least that same threshold. Thus a genuine whole-school
-champion gain cannot coexist with a stale "no-gain" timer merely because the
-grade-by-grade rolling window was flat or negative.
+The patience clock accepts two independent forms of qualifying progress. The
+rolling same-grade window must reach --min-repeat-improvement, but any strict
+new holistic pass champion resets patience immediately. A simultaneous all-22
+best is already stronger evidence than the noisier rolling grade heuristic, so
+it does not need to clear the separate one-percentage-point trend threshold.
 
 With candidate-grade-gate enabled, a grade lesson is no longer allowed to
 write directly into the production student merely because its optimizer ran.

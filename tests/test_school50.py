@@ -437,9 +437,9 @@ class AdaptiveTeacher(unittest.TestCase):
             repeat_comparisons=8,progress_window=8,patience_minutes=60))
 
     def test_new_holistic_champion_can_reset_patience_clock(self):
-        self.assertTrue(engine._qualifying_holistic_gain(.769,.756,.01))
-        self.assertFalse(engine._qualifying_holistic_gain(.759,.756,.01))
-        self.assertFalse(engine._qualifying_holistic_gain(.756,.756,.01))
+        self.assertTrue(engine._qualifying_holistic_gain(.769,.756))
+        self.assertTrue(engine._qualifying_holistic_gain(.759,.756))
+        self.assertFalse(engine._qualifying_holistic_gain(.756,.756))
 
     @unittest.skipUnless(HAS_LOCAL_STUDENT,
                          "End-to-end continuation needs real local custodied U7F checkpoint.")
