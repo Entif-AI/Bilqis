@@ -126,6 +126,31 @@ class AdaptiveTeacher(unittest.TestCase):
         with self.assertRaises(KeyboardInterrupt):
             handler(signal.SIGINT,None)
 
+    def test_pass_report_tracks_previous_start_and_mastery_shape(self):
+        baseline={grade:.50 for grade in engine.REPORT_GRADE_IDS}
+        previous={grade:.60 for grade in engine.REPORT_GRADE_IDS}
+        scores={grade:.75 for grade in engine.REPORT_GRADE_IDS}
+        scores["G09"]=1.0
+        scores["G11"]=.25
+        report=engine._pass_report(4,scores,baseline,previous)
+        self.assertAlmostEqual(report["mean_vs_previous"],3.05/22)
+        self.assertAlmostEqual(report["median_vs_previous"],.15)
+        self.assertAlmostEqual(report["median_vs_school_start"],.25)
+        self.assertEqual(report["perfect_grades"],1)
+        self.assertEqual(report["lowest_grade"],"G11")
+        self.assertEqual(report["highest_grade"],"G09")
+        self.assertIn("mean probe",engine._pass_summary_line(report))
+
+    def test_pass_regression_guard_requires_broad_material_decline(self):
+        accepted={grade:.75 for grade in engine.REPORT_GRADE_IDS}
+        broad={grade:.70 for grade in engine.REPORT_GRADE_IDS}
+        result=engine._material_pass_regression(broad,accepted,.03)
+        self.assertTrue(result["regressed"])
+        isolated=dict(accepted)
+        isolated["G22"]=.25
+        result=engine._material_pass_regression(isolated,accepted,.03)
+        self.assertFalse(result["regressed"])
+
     def test_human_progress_line_and_patience_gate_are_readable(self):
         progress={
             "elapsed_minutes":12.5,"pass":3,"grade":"G06","step":16984,
@@ -162,6 +187,10 @@ class AdaptiveTeacher(unittest.TestCase):
             first=engine.run(out,max_updates=2,max_minutes=2,block=2)
             self.assertEqual(first["live_optimizer_step"],13850)
             self.assertEqual(first["next_grade"],2)
+            initialized=engine._read(out/engine.STATE)
+            self.assertEqual(initialized["accepted_pass"]["pass"],0)
+            self.assertEqual(set(initialized["school_start_probe_scores"]),
+                             set(engine.REPORT_GRADE_IDS))
             second=engine.run(out,max_updates=2,max_minutes=2,block=2)
             self.assertEqual(second["live_optimizer_step"],13852)
             self.assertEqual(second["next_grade"],3)
@@ -180,6 +209,14 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertEqual(interrupted["grade_visits_this_call"],1)
             self.assertEqual(interrupted["live_optimizer_step"],13856)
             self.assertEqual(engine._read(out/engine.STATE)["teacher"]["events"],4)
+            state=engine._read(out/engine.STATE)
+            teacher_events=state["teacher"]["events"]
+            restored,restored_optimizer,_=engine._load_accepted_student(
+                out,state,state["accepted_pass"],"cpu")
+            self.assertEqual(optimizer_receipt(restored_optimizer)["steps"],[13848])
+            self.assertEqual(state["teacher"]["events"],teacher_events)
+            self.assertEqual(state_hash(restored),
+                             state["model_sha256"])
             self.assertTrue((out/engine._read(out/engine.STATE)["checkpoint"]).exists())
 
 
