@@ -154,6 +154,86 @@ def _checkpoint(run_dir, model, optimizer, graph, metadata):
     return destination.name, _sha(destination)
 
 
+def _checkpoint_step(path):
+    parts=Path(path).stem.split("-",2)
+    if len(parts)!=3 or parts[0]!="student":
+        raise ValueError("INVALID_STUDENT_CHECKPOINT_NAME")
+    return int(parts[1])
+
+
+def _checkpoint_retention_plan(out, state, *, keep_recent=8, keep_pass=4):
+    """Return conservative keep/delete sets without mutating disk or state."""
+    if keep_recent < 0 or keep_pass < 0:
+        raise ValueError("INVALID_CHECKPOINT_RETENTION_REQUEST")
+    out=Path(out)
+    checkpoints=list(out.glob("student-*.pt"))
+    protected=set()
+
+    def protect(name):
+        if name and (out/name).is_file():
+            protected.add(name)
+
+    # Runtime-critical anchors are never eligible for pruning.
+    protect(state.get("checkpoint"))
+    protect(state.get("school_start_checkpoint"))
+    protect(state.get("accepted_pass",{}).get("checkpoint"))
+    for event in state.get("architecture_history",[]):
+        protect(event.get("from"))
+        protect(event.get("to"))
+
+    # Keep several recent pass-end snapshots for manual recovery/comparison.
+    pass_steps=[
+        row["optimizer_step"] for row in state.get("grade_ledger",[])
+        if row.get("grade")==REPORT_GRADE_IDS[-1]
+    ]
+    if keep_pass:
+        for step in pass_steps[-keep_pass:]:
+            for path in out.glob(f"student-{step}-*.pt"):
+                protected.add(path.name)
+
+    # Keep a short rolling tail of ordinary grade checkpoints as crash/recovery
+    # insurance. mtime disambiguates same-step growth migrations.
+    if keep_recent:
+        recent=sorted(
+            checkpoints,
+            key=lambda path:(
+                _checkpoint_step(path),path.stat().st_mtime_ns,path.name)
+        )[-keep_recent:]
+        protected.update(path.name for path in recent)
+
+    keep=[path for path in checkpoints if path.name in protected]
+    delete=[path for path in checkpoints if path.name not in protected]
+    return {"keep":keep,"delete":delete,"protected_names":protected}
+
+
+def _prune_checkpoints(out, state, *, keep_recent=8, keep_pass=4):
+    """Delete only checkpoint binaries outside the durable retention set."""
+    plan=_checkpoint_retention_plan(
+        out,state,keep_recent=keep_recent,keep_pass=keep_pass)
+    deleted_bytes=0
+    for path in plan["delete"]:
+        deleted_bytes+=path.stat().st_size
+        path.unlink()
+    remaining=list(Path(out).glob("student-*.pt"))
+    remaining_bytes=sum(path.stat().st_size for path in remaining)
+    retention=state.setdefault("checkpoint_retention",{})
+    retention.update({
+        "enabled":True,
+        "keep_recent":keep_recent,
+        "keep_pass":keep_pass,
+        "last_pruned_count":len(plan["delete"]),
+        "last_pruned_bytes":deleted_bytes,
+        "retained_count":len(remaining),
+        "retained_bytes":remaining_bytes,
+        "last_pruned_optimizer_step":state["optimizer_step"],
+        "total_pruned_count":(
+            retention.get("total_pruned_count",0)+len(plan["delete"])),
+        "total_pruned_bytes":(
+            retention.get("total_pruned_bytes",0)+deleted_bytes),
+    })
+    return retention
+
+
 def _validate(checkpoint, state):
     path=Path(checkpoint)
     if not path.is_file() or _sha(path)!=state["checkpoint_sha256"]:
@@ -596,6 +676,32 @@ def _stagnation_stop(*, elapsed_seconds, seconds_since_progress,
             seconds_since_progress >= patience_seconds)
 
 
+def _lineage_metric_events(events, rejected_passes):
+    return [event for event in events if event["pass"] not in rejected_passes]
+
+
+def _metric_summary(events):
+    repeats=[
+        event["repeat_delta"] for event in events
+        if event["repeat_delta"] is not None
+    ]
+    immediate=[event["immediate_delta"] for event in events]
+    old=[event["old_mean_delta"] for event in events]
+    return {
+        "grade_visits":len(events),
+        "updates":sum(event["updates"] for event in events),
+        "repeat_comparisons":len(repeats),
+        "repeat_improved":sum(value>0 for value in repeats),
+        "repeat_unchanged":sum(value==0 for value in repeats),
+        "repeat_regressed":sum(value<0 for value in repeats),
+        "mean_repeat_delta":(
+            sum(repeats)/len(repeats) if repeats else None),
+        "mean_immediate_delta":(
+            sum(immediate)/len(immediate) if immediate else None),
+        "mean_old_delta":sum(old)/len(old) if old else None,
+    }
+
+
 def _graceful_interrupt_handler(stop_state):
     """First SIGINT requests a durable stop; second preserves emergency abort."""
     def handle(signum, frame):
@@ -616,13 +722,15 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         patience_minutes=None, progress_window=8,
         min_repeat_improvement=0.01, progress_format="json",
         stop_requested=None, rollback_regressed_pass=False,
-        pass_regression_threshold=0.03):
+        pass_regression_threshold=0.03, prune_checkpoints=False,
+        keep_recent_checkpoints=8, keep_pass_checkpoints=4):
     if (max_updates < 1 or max_minutes <= 0 or block < 1 or block > 256
         or not 1<=max_run_gib<=500
         or (max_grade_visits is not None and max_grade_visits < 1)
         or (patience_minutes is not None and patience_minutes <= 0)
         or progress_window < 1 or min_repeat_improvement < 0
         or not 0<=pass_regression_threshold<=1
+        or keep_recent_checkpoints < 0 or keep_pass_checkpoints < 0
         or progress_format not in ("json","human")):
         raise ValueError("INVALID_BOUNDED_TRAINING_REQUEST")
     out=Path(out)
@@ -638,12 +746,17 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     lib=TeacherLibrary()
     if _ensure_reporting_state(out,state,lib):
         _atomic_json(out/STATE,state)
+    if prune_checkpoints:
+        _prune_checkpoints(
+            out,state,keep_recent=keep_recent_checkpoints,
+            keep_pass=keep_pass_checkpoints)
+        _atomic_json(out/STATE,state)
     start=time.monotonic()
     consumed=0
     visits_this_call=0
-    repeat_deltas=[]
-    immediate_deltas=[]
-    old_mean_deltas=[]
+    metric_events=[]
+    rejected_passes=set()
+    measurable_progress_events=[]
     last_measurable_progress=start
     paused_for_storage=False
     stopped_for_stagnation=False
@@ -712,10 +825,19 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         reward=2*immediate_delta+.6*old_mean_delta
         repeat_delta=(None if prior_visit is None
                       else after-prior_visit["after"])
-        if repeat_delta is not None:
-            repeat_deltas.append(repeat_delta)
-        immediate_deltas.append(immediate_delta)
-        old_mean_deltas.append(old_mean_delta)
+        metric_events.append({
+            "pass":state["spiral_pass"],
+            "grade":grade_id,
+            "updates":steps,
+            "repeat_delta":repeat_delta,
+            "immediate_delta":immediate_delta,
+            "old_mean_delta":old_mean_delta,
+        })
+        lineage_events=_lineage_metric_events(metric_events,rejected_passes)
+        repeat_deltas=[
+            event["repeat_delta"] for event in lineage_events
+            if event["repeat_delta"] is not None
+        ]
         recent_repeat=repeat_deltas[-progress_window:]
         rolling_repeat_delta=(sum(recent_repeat)/len(recent_repeat)
                               if recent_repeat else None)
@@ -723,6 +845,10 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         if (len(recent_repeat) >= progress_window and
             rolling_repeat_delta >= min_repeat_improvement):
             last_measurable_progress=now
+            measurable_progress_events.append({
+                "pass":state["spiral_pass"],
+                "at":now,
+            })
         observe(state["teacher"],grade,key,reward)
         consumed+=steps
         visits_this_call+=1
@@ -775,6 +901,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             }
             rejected=rollback_regressed_pass and regression["regressed"]
             if rejected:
+                rejected_passes.add(state["spiral_pass"])
                 rejected_checkpoint=state["checkpoint"]
                 rejected_sha=state["checkpoint_sha256"]
                 rejected_step=state["optimizer_step"]
@@ -800,6 +927,13 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 model,optimizer,payload=_load_accepted_student(
                     out,state,accepted,device)
                 gpu=torch.device(device)
+                measurable_progress_events=[
+                    event for event in measurable_progress_events
+                    if event["pass"] not in rejected_passes
+                ]
+                last_measurable_progress=(
+                    measurable_progress_events[-1]["at"]
+                    if measurable_progress_events else start)
             else:
                 pass_report["disposition"]="ACCEPTED"
                 state["pass_reports"].append(pass_report)
@@ -811,6 +945,19 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                     "scores":dict(scores),
                 }
             _atomic_json(out/STATE,state)
+        if prune_checkpoints:
+            _prune_checkpoints(
+                out,state,keep_recent=keep_recent_checkpoints,
+                keep_pass=keep_pass_checkpoints)
+            _atomic_json(out/STATE,state)
+        lineage_events=_lineage_metric_events(metric_events,rejected_passes)
+        repeat_deltas=[
+            event["repeat_delta"] for event in lineage_events
+            if event["repeat_delta"] is not None
+        ]
+        recent_repeat=repeat_deltas[-progress_window:]
+        rolling_repeat_delta=(sum(recent_repeat)/len(recent_repeat)
+                              if recent_repeat else None)
         elapsed=time.monotonic()-start
         since_progress=elapsed-(last_measurable_progress-start)
         progress={"pass":state["spiral_pass"],"grade":grade_id,
@@ -860,23 +1007,34 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "STOPPED_NO_MEASURABLE_REPEAT_IMPROVEMENT" if stopped_for_stagnation else
             "PAUSED_AT_REQUESTED_GRADE_VISIT_LIMIT" if paused_for_visit_limit else
             "PAUSED_AT_DURABLE_GRADE_BOUNDARY")
+    lineage_events=_lineage_metric_events(metric_events,rejected_passes)
+    rejected_events=[
+        event for event in metric_events if event["pass"] in rejected_passes
+    ]
+    lineage_summary=_metric_summary(lineage_events)
+    attempted_summary=_metric_summary(metric_events)
+    rejected_summary=_metric_summary(rejected_events)
+    repeat_deltas=[
+        event["repeat_delta"] for event in lineage_events
+        if event["repeat_delta"] is not None
+    ]
     recent_repeat=repeat_deltas[-progress_window:]
-    mean_repeat=(sum(repeat_deltas)/len(repeat_deltas)
-                 if repeat_deltas else None)
-    mean_immediate=(sum(immediate_deltas)/len(immediate_deltas)
-                    if immediate_deltas else None)
-    mean_old=(sum(old_mean_deltas)/len(old_mean_deltas)
-              if old_mean_deltas else None)
+    retention=state.get("checkpoint_retention",{})
     return {"status":status,
             "checkpoint_quota_gib":max_run_gib,"completed_this_call":consumed,
             "grade_visits_this_call":visits_this_call,
-            "repeat_comparisons_this_call":len(repeat_deltas),
-            "mean_repeat_delta_this_call":mean_repeat,
-            "repeat_improved_this_call":sum(x>0 for x in repeat_deltas),
-            "repeat_unchanged_this_call":sum(x==0 for x in repeat_deltas),
-            "repeat_regressed_this_call":sum(x<0 for x in repeat_deltas),
-            "mean_immediate_delta_this_call":mean_immediate,
-            "mean_old_delta_this_call":mean_old,
+            "accepted_grade_visits_this_call":lineage_summary["grade_visits"],
+            "accepted_updates_this_call":lineage_summary["updates"],
+            "repeat_comparisons_this_call":lineage_summary["repeat_comparisons"],
+            "mean_repeat_delta_this_call":lineage_summary["mean_repeat_delta"],
+            "repeat_improved_this_call":lineage_summary["repeat_improved"],
+            "repeat_unchanged_this_call":lineage_summary["repeat_unchanged"],
+            "repeat_regressed_this_call":lineage_summary["repeat_regressed"],
+            "mean_immediate_delta_this_call":lineage_summary["mean_immediate_delta"],
+            "mean_old_delta_this_call":lineage_summary["mean_old_delta"],
+            "attempted_run_metrics":attempted_summary,
+            "rejected_run_metrics":rejected_summary,
+            "rejected_passes_this_call":sorted(rejected_passes),
             "rolling_repeat_delta":(sum(recent_repeat)/len(recent_repeat)
                                     if recent_repeat else None),
             "progress_window":progress_window,
@@ -894,6 +1052,13 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "blocked_grades":state["blocked_grade_ids"],
             "accepted_pass":state.get("accepted_pass",{}).get("pass"),
             "pass_rollbacks":len(state.get("pass_rollbacks",[])),
+            "checkpoint_files_retained":retention.get("retained_count"),
+            "checkpoint_storage_gib":(
+                retention.get("retained_bytes")/1024**3
+                if retention.get("retained_bytes") is not None else None),
+            "checkpoints_pruned_total":retention.get("total_pruned_count",0),
+            "checkpoint_gib_pruned_total":(
+                retention.get("total_pruned_bytes",0)/1024**3),
             "latest_checkpoint":str(out/state["checkpoint"])}
 
 
@@ -921,6 +1086,12 @@ def main():
                         help="At a completed executable pass, restore the last accepted pass if broad probe performance regresses materially.")
     parser.add_argument("--pass-regression-threshold",type=float,default=0.03,
                         help="Mean 22-grade probe regression required before rollback can trigger (0.03 = 3 pp; majority and median must also regress).")
+    parser.add_argument("--prune-checkpoints",action="store_true",
+                        help="Prune redundant historical checkpoint binaries while preserving durable recovery anchors.")
+    parser.add_argument("--keep-recent-checkpoints",type=int,default=8,
+                        help="With pruning enabled, retain this many most recent grade checkpoints.")
+    parser.add_argument("--keep-pass-checkpoints",type=int,default=4,
+                        help="With pruning enabled, retain this many recent G22 pass-end checkpoints.")
     parser.add_argument("--device",choices=("cpu","mps"),default="cpu")
     parser.add_argument("--grow",action="store_true",
                         help="Function-preserving capacity migration, keeping trained state.")
@@ -952,6 +1123,9 @@ def main():
                        progress_format=arguments.progress_format,
                        rollback_regressed_pass=arguments.rollback_regressed_pass,
                        pass_regression_threshold=arguments.pass_regression_threshold,
+                       prune_checkpoints=arguments.prune_checkpoints,
+                       keep_recent_checkpoints=arguments.keep_recent_checkpoints,
+                       keep_pass_checkpoints=arguments.keep_pass_checkpoints,
                        stop_requested=(lambda: stop_state["requested"])
                                       if arguments.graceful_interrupt else None)
         finally:

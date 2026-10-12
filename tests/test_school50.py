@@ -151,6 +151,82 @@ class AdaptiveTeacher(unittest.TestCase):
         result=engine._material_pass_regression(isolated,accepted,.03)
         self.assertFalse(result["regressed"])
 
+    def test_checkpoint_retention_keeps_runtime_and_recovery_anchors(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)
+            names=(
+                "student-100-start.pt",
+                "student-120-grow-from.pt",
+                "student-120-grow-to.pt",
+                "student-200-pass.pt",
+                "student-250-junk.pt",
+                "student-300-pass.pt",
+                "student-350-junk.pt",
+                "student-400-accepted.pt",
+                "student-450-recent.pt",
+                "student-500-live.pt",
+            )
+            for index,name in enumerate(names):
+                (out/name).write_bytes(bytes([index])*128)
+            state={
+                "checkpoint":"student-500-live.pt",
+                "school_start_checkpoint":"student-100-start.pt",
+                "accepted_pass":{"checkpoint":"student-400-accepted.pt"},
+                "architecture_history":[{
+                    "from":"student-120-grow-from.pt",
+                    "to":"student-120-grow-to.pt",
+                }],
+                "grade_ledger":[
+                    {"grade":"G22","optimizer_step":200},
+                    {"grade":"G22","optimizer_step":300},
+                    {"grade":"G22","optimizer_step":400},
+                ],
+                "optimizer_step":500,
+            }
+            plan=engine._checkpoint_retention_plan(
+                out,state,keep_recent=2,keep_pass=1)
+            kept={path.name for path in plan["keep"]}
+            self.assertTrue({
+                "student-100-start.pt",
+                "student-120-grow-from.pt",
+                "student-120-grow-to.pt",
+                "student-400-accepted.pt",
+                "student-450-recent.pt",
+                "student-500-live.pt",
+            }.issubset(kept))
+            self.assertNotIn("student-250-junk.pt",kept)
+            self.assertNotIn("student-350-junk.pt",kept)
+            retention=engine._prune_checkpoints(
+                out,state,keep_recent=2,keep_pass=1)
+            self.assertEqual(retention["last_pruned_count"],4)
+            self.assertEqual(retention["retained_count"],6)
+            self.assertTrue((out/"student-500-live.pt").exists())
+            self.assertTrue((out/"student-400-accepted.pt").exists())
+            self.assertTrue((out/"student-100-start.pt").exists())
+
+    def test_rejected_pass_metrics_are_not_counted_as_live_lineage(self):
+        events=[
+            {"pass":1,"grade":"G01","updates":64,
+             "repeat_delta":.10,"immediate_delta":.05,"old_mean_delta":.01},
+            {"pass":2,"grade":"G01","updates":64,
+             "repeat_delta":-.20,"immediate_delta":-.10,"old_mean_delta":-.03},
+            {"pass":3,"grade":"G01","updates":64,
+             "repeat_delta":.05,"immediate_delta":.02,"old_mean_delta":0.0},
+        ]
+        lineage=engine._lineage_metric_events(events,{2})
+        live=engine._metric_summary(lineage)
+        attempted=engine._metric_summary(events)
+        rejected=engine._metric_summary(
+            [event for event in events if event["pass"]==2])
+        self.assertEqual(live["grade_visits"],2)
+        self.assertEqual(live["repeat_improved"],2)
+        self.assertEqual(live["repeat_regressed"],0)
+        self.assertAlmostEqual(live["mean_repeat_delta"],.075)
+        self.assertEqual(attempted["repeat_regressed"],1)
+        self.assertAlmostEqual(attempted["mean_repeat_delta"],-.05/3)
+        self.assertEqual(rejected["grade_visits"],1)
+        self.assertAlmostEqual(rejected["mean_repeat_delta"],-.20)
+
     def test_human_progress_line_and_patience_gate_are_readable(self):
         progress={
             "elapsed_minutes":12.5,"pass":3,"grade":"G06","step":16984,
