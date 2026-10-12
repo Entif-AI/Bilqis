@@ -389,3 +389,220 @@ name the missed nuance; e7 does not yet evaluate that claim.
 
 Neither this experiment nor the restored mergeability of its parent
 branches constitutes merge approval or #82 curriculum completion.
+
+## Adaptive trainee comptroller v0.5: preregistered e8, 2026-10-12
+
+### Frozen research design and proof boundary
+
+The user asked whether fixed 320-step stages prematurely stop an improving
+student, and whether a teacher should identify missing concepts and repair
+forgotten prerequisites. The e8 design was prepared, audited and source
+committed **before any of its optimizer steps**. It continues **standalone
+supervised question/answer training**, not corrective conversational history:
+no completed prior teacher/student turns were included in the input.
+
+- Pre-run source commit: `e81ce19725931403b621e14a0c60a963b833d9e5`.
+- Pre-run source SHA-256: `f6d4753757793282d5a996c8fd77de6b9b49e1600e3f78fdfd86fc0f6b8de18c`.
+- Source protocol: `docs/formal/ADAPTIVE_V05_PROTOCOL.md`.
+- Draft stacked review: [PR #121](https://github.com/Entif-AI/Bilqis/pull/121),
+  based on preserved e7 draft #120; neither is merge-authorized.
+- Seeds: **463, 467, 479**, matched fresh starts across three
+  preregistered arms: `fixed320`, `fixed1280`, `adaptive`.
+- Atomic curricular scope: Boolean V00, unary NOT V01, binary AND V02.
+  The adaptive arm trains in 64-update blocks, with minimum 320 and
+  maximum 1280 optimizer updates per attempted stage, at most 256
+  updates spent on prior-skill repairs, strict rollback on exhausted
+  repair without retention, DEV-only intervention and a SEALED final
+  exam. The two fixed arms use the same new curriculum at 320/1280
+  respectively and do not use DEV to choose the next practice block.
+- `NOT(TRUE)` and `NOT(FALSE)` are now **TRAIN** examples; their
+  apparent mastery is *taught-domain coverage*, not unseen literal
+  transfer. DEV `NOT(Q)` and SEALED `NOT(R)` are separately held out
+  within v0.5. e8 must **not** be compared as a controlled efficacy
+  rerun of e7: its educational split and outcomes differ by design.
+- Exact e8 local run (ignored; not committed):
+  `runs/formal-foundations-20261012-e8-adaptive-v05/`.
+- Committed raw result projection:
+  `docs/evidence/formal-foundations/E8_COMPARISON_V05.json`
+  (SHA-256 `9f97d6955d77d4da26fdcac9612a3eda7d1b2535eaa64f0349d35861a960f697`);
+  preregistration:
+  `docs/evidence/formal-foundations/E8_PREREGISTRATION_V05.json`
+  (SHA-256 `63060398fc2714526185f124eae5b6b2708931d8d4f7061096bf9adcdb7b6775`).
+
+### Actual single-run outcomes: all three seeds and all three arms
+
+The following cells report each competency's standalone SEALED **gate
+score at that stage's end**, *not* proof that the competency survived later
+teaching. **+** means admitted at that boundary; **-** means not
+admitted. A later retention loss can invalidate simultaneous mastery
+even if an earlier cell was admitted. `ROLL` means the attempted stage
+was rolled back **before** its sealed exam was opened.
+
+| Seed | Arm | Attempted optimizer updates | V00 gate | V01 NOT gate | V02 AND gate | Final outcome |
+| --- | --- | ---: | --- | --- | --- | --- |
+| 463 | fixed320 | 960 | 2/2 + | 1/2 - | 8/8 + | NOT failed transfer; Boolean/AND retained |
+| 463 | fixed1280 | 2,560 | 2/2 + | 2/2 - | not attempted | NOT itself passed, but retained Boolean fell to 1/2; hard stop |
+| 463 | adaptive | 960 | 2/2 + | 1/2 - | 8/8 + | Same final gates as fixed320; no extra budget used |
+| 467 | fixed320 | 960 | 2/2 + | 2/2 + | 8/8 - | After AND, Boolean retention fell to 1/2 |
+| 467 | fixed1280 | 3,840 | 2/2 + | 2/2 + | 8/8 - | After AND, Boolean retention fell to 1/2 |
+| 467 | adaptive | 960 | 2/2 + | 2/2 + | 8/8 - | 192 prior-skill repair steps; Boolean still fell to 1/2 |
+| 479 | fixed320 | 960 | 2/2 + | 2/2 + | 8/8 - | After AND, NOT retention fell to 0/2 |
+| 479 | fixed1280 | 1,280 | 1/2 - | not attempted | not attempted | Longer V00 teaching failed its own sealed gate |
+| 479 | adaptive | 1,024 | 2/2 + | ROLL - | 8/8 + | NOT rolled back after 384 attempted updates (256 repair); Boolean/AND retained |
+
+**Totals:** nine fresh student arms, **13,504 real optimizer updates**
+across 24 stage attempts, **211 saved 64-update block checkpoints**,
+24 stage checkpoints, **zero completed-history training exposures,
+zero native Kev calls**, no retries and no extra seeds. Exactly one
+bounded e8 cohort was executed. The frozen source hash was unchanged
+after completion. The complete locally retained checkpoints and
+optimizer states passed independent postrun replay with status
+`V05_CHECKPOINTS_VERIFIED`: blockwise DEV performance, training
+sample ledgers, curriculum policy decisions, model hashes, AdamW state
+digests, sealed scores, prior retention and skipped-stage accounting
+were validated. Per-block training losses and correctness counts were
+recorded but **historical per-update gradients were not independently
+recomputed**. **142 repository tests passed before the full run.**
+
+### Interpretation and unsolved educational frontier
+
+**None of the nine students finished with stable simultaneous Boolean,
+NOT and AND mastery.** More updates were not monotonically beneficial:
+seed 463's long-training NOT itself passed 2/2 while Boolean fell to 1/2;
+seed 479's 1,280-update Boolean student scored only 1/2, whereas its
+320-update matched control reached 2/2. Seed 467's adaptive repair
+spent 192 optimizer updates on prior-formative regressions, but its
+final SEALED Boolean retention still fell to 1/2 after AND.
+
+Seed 479's adaptive controller demonstrated a **mechanical recovery
+safeguard**, not three-competency progress: NOT repair exhausted its
+256-step allowance, the pre-NOT model/optimizer/RNG were restored,
+and the independent AND branch subsequently passed 8/8 while the
+Boolean 2/2 gate remained intact. The NOT student was not admitted
+and the NOT final exam was not opened after the rollback.
+
+The tiny DEV cases were often perfect even while final SEALED
+transfer/retention failed; that is evidence of a **weak progress
+signal**, not proof that adaptive learning is fundamentally inferior
+or that increasing the model's capacity would solve the interference.
+The V02 exam contains six FALSE and two TRUE cases, so the raw 8/8
+score must not be treated as broad conjunction competence. The set
+of possible short Boolean forms is extremely small, and these forms
+were not historically blinded across prior experiments; controlled
+generalization to structurally richer, genuinely fresh expressions
+remains untested. Although `fixed1280` is a long-compute comparison,
+the adaptive arm can stop earlier, so results need actual compute
+accounting rather than an unqualified win/loss claim.
+
+**Next bounded research choice, not automatically authorized here:**
+grow the expression space, strengthen fresh and diverse DEV/SEALED
+probes, and design more informative prior-skill retention monitoring
+before promoting to NOT+AND compositions, laws or dialogue comprehension.
+The user-facing teacher should keep using supervised gradient learning
+for these primitives, rather than requiring a student to understand
+the semantics of corrective conversation prematurely.
+
+This evidence does not merge PR #121 or its ancestors, does not
+promote any whole Stage A competency set and does **not** close #82.
+
+## E9 v0.6: semantic-neighborhood lessons and matched rehearsal (2026-10-12)
+
+**Disposition: completed, negative on the primary simultaneous-retention
+endpoint; experimental teaching mechanism and checkpoint replay verified.**
+This is a *new* preregistered study, not retroactive tuning of e8, not a
+student architecture change and not a language/conversational-feedback study.
+
+- Source-frozen commit: `b03dc466937a6632ae977610c42d4b954d34484c`.
+- Frozen source SHA-256: `b3e2343aa0631905235c9237c889c3eb8b7814eed95a9fdbcf6ef5d83153a1eb`.
+- Preregistered seeds: `503, 509, 521, 523, 541`; arms: `uniform8`,
+  `semantic8`, `sham8`, `uniform16`, `semantic16`.
+- Per admitted stage: 320 real AdamW updates, five 64-update blocks, 32
+  supervised stand-alone samples per update. Same scratch model, optimizer,
+  deterministic Boolean oracle, type-token input and no dialogue history.
+- Executed **25 student arms, 69 competency-stage attempts, 22,080 real
+  optimizer updates**. The original full run ended with exit code 0. The
+  source was not altered or the run retried after observing results.
+- Pre-experiment repo verification: **153 unit tests passed**. Independent
+  checkpoint replay completed with exit code 0, validating all recorded
+  per-block source/model/optimizer hashes, actual AdamW step accounting,
+  sampler multiset and row order, DEV results, post-stage SEALED results,
+  skipped stages and aggregate. Replay does **not** recompute gradients.
+- Raw evidence: [E9 preregistration](E9_PREREGISTRATION_V06.json) and
+  [E9 comparison](E9_COMPARISON_V06.json). Local ignored run path:
+  `runs/formal-foundations-20261012-e9-semantic-v06/` (binary snapshots not
+  committed). SHA-256 of raw JSON files: prereg
+  `65cb9961bd79608eb9276789b134c0238c89e4934b0995c4b20a847cfca00ab4`;
+  comparison `140bedd9f04e83eb0eb0ab9fdc45c9ff30ca93092764627fd4baa66f595d6890`.
+
+### Complete arm outcomes
+
+| Arm | Attempted stages (V00/V01/V02) | V00 promoted | NOT promoted | AND promoted | All three retained |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Uniform, 8 prior | 5 / 5 / 4 | 5/5 | 0/5 | 3/4 | 0/5 |
+| Semantic, 8 prior | 5 / 5 / 3 | 5/5 | 0/5 | 2/3 | 0/5 |
+| Shuffled-category sham, 8 prior | 5 / 4 / 3 | 4/5 | 0/4 | 0/3 | 0/5 |
+| Uniform, 16 prior | 5 / 5 / 5 | 5/5 | 1/5 | 3/5 | 0/5 |
+| Semantic, 16 prior | 5 / 5 / 5 | 5/5 | 2/5 | 3/5 | 0/5 |
+
+An admitted skill passes its exact current SEALED gate **and** retains
+previous accepted skills; a 30/30 current AND score alone is not promotion
+when prior Boolean or NOT retention drops. Some V02 attempts were skipped
+after earlier retained-skill collapse or failed Boolean prerequisite. Thus
+the different denominator in the table is a real ITT progression outcome,
+not missing data or permission to compare conditional proportions naively.
+
+### What changed, what did not, and what remains unknown
+
+The semantic teacher grouped a fixed block's training examples by exact
+eight-row Boolean function (or its complement), interleaved distinct
+expression shapes, and aligned prior/current examples sharing verified
+semantic relations and valuations. The fixed-row comparison preserved the
+**exact same example-ID multiset in every 64-update block** for arms of the
+same prior-rehearsal dose. A sham clustered by incorrectly assigned grouping
+keys. Cohesion was measured through distinct-AST, cross-skill,
+matched-valuation and predefined-relation coexposures, rather than inflated
+by identical-question repetitions. This establishes that we actually tested
+a semantics-guided instructional intervention.
+
+**The hypothesis of improved simultaneous acquisition was not confirmed.**
+Zero of 25 scratch students retained all three atomic competencies under the
+specified gates. With 16 prior examples, semantic grouping passed the NOT
+current gate in 2/5 seeds versus 1/5 for uniform grouping, but after teaching
+AND neither arm sustained all three skills. With 8 prior examples neither
+semantic nor uniform passed NOT in any seed. Some matched seeds saw higher
+AND sealed scores under grouping; others worsened. The randomized sham was
+often weaker, but five seeds and stage attrition cannot establish a causal
+generalization benefit from its lower conditional counts.
+
+Stronger AST variation made the V01 SEALED panel 6 items and V02 SEALED
+30 items (compared with much smaller e8 panels). This increases within-study
+diagnostic resolution but prevents a direct quantitative e8-vs-e9 treatment
+comparison, and the grammar still uses only P/Q/R and Boolean primitives.
+DEV/SEALED train-row IDs remain disjoint **within e9**; some formulas are
+not historically novel relative to earlier public experiments. No teacher
+or student was tested on natural-language instructions, learning semantic
+set membership, predicate logic, full formal proof, native Ithkuil, Rosetta
+semantics or corrective dialogue.
+
+**Post-run protocol erratum (source frozen, not rewritten):** the preregistered
+`SEMANTIC_V06_PROTOCOL.md` calls the V02 SEALED expressions "depth-three
+conjunctions," but the actual source ASTs and run evidence show V02 gate
+depths **1 and 2 only**. V01 NOT SEALED does include depth 3. This text error
+is recorded rather than changing the pre-run source commit or claiming an
+unperformed depth-three AND generalization test. The V02 held-out exercises
+are primarily new row identities / variable rearrangements of existing
+families, not guaranteed structurally novel laws. Likewise, a repeated
+held-out equivalence-pair both-correct score does not consist of statistically
+independent individual trials. The V02 semantic treatment strongly clustered
+**equivalent** function signatures; the observed V02 same-neighborhood
+complement-pair count was zero, so it cannot demonstrate effective teaching
+of complement relationships in that stage.
+
+**Next research branch, not a post-hoc e9 repair:** retain the richer
+semantically classified corpus and independently evaluate protection against
+cross-stage gradient interference (for example preregistered regularization
+or memory-gradient projection with equal-compute controls), as well as
+per-stage conceptual weak-family targeting. Do not tune e9 after seeing its
+sealed answers. E9 may be integrated as *versioned research infrastructure*
+without declaring #82 scientifically satisfied; an explicit archival
+integration decision and whole-stack verification are still necessary.

@@ -1,0 +1,111 @@
+{
+  "arms": [
+    "fixed320",
+    "fixed1280",
+    "adaptive"
+  ],
+  "atomic_stages": [
+    "V00.BOOLEAN",
+    "V01.NOT",
+    "V02.AND"
+  ],
+  "budget": {
+    "adaptive_cap": 1280,
+    "baseline": 320,
+    "block": 64,
+    "patience": 3,
+    "repair_cap": 256,
+    "stable_checks": 2
+  },
+  "comparison": "matched initial seed; fixed320, fixed1280, adaptive on same v05 split",
+  "course": "bilqis.formal.atomic-curriculum/v0.5.0",
+  "feedback": "DEV and taught-domain only; sealed gates never choose lessons, repairs, or updates",
+  "no_extra_seeds": true,
+  "no_history_training": true,
+  "no_kev_calls": true,
+  "no_retries": true,
+  "promotion": "sealed held-out only after teaching, taught literal coverage, past sealed retention",
+  "runtime": {
+    "machine": "arm64",
+    "python": "3.13.12",
+    "torch": "2.10.0"
+  },
+  "seeds": [
+    463,
+    467,
+    479
+  ],
+  "source_commit": "e81ce19725931403b621e14a0c60a963b833d9e5",
+  "source_sha256": "f6d4753757793282d5a996c8fd77de6b9b49e1600e3f78fdfd86fc0f6b8de18c",
+  "training_splits": {
+    "V00.BOOLEAN": {
+      "dev": [
+        "24e2422de5b271e0fe858135db404fec2cdd1dbb4bb7ef39f91dd8ca24bd736b",
+        "0acd67310aaf4de5c66b896c98b6ea81c29826589a85c33e265f3f25bd878aa9"
+      ],
+      "gate": [
+        "f037481e3ac25b817a2725e7a5abd3d386e2ef617b7f889038f177ae12956894",
+        "f51e71e64510cbe8ff89666e098d48884ba7c4dd4d4a6686d2e7b7ac08120d5e"
+      ],
+      "train": [
+        "88eae609a4823e2f8afbf1adca7d1457d4536721d3c05838a4d17cd67545164b",
+        "dc8d674cf3e07777541a4a3dff491ae3d78eed1bcb0ee6aa293bfc798f681a1e",
+        "07155a9a337429dafce832361dcf441e4a6840c8967b6177d07dde3cbe992a1e",
+        "a43648ae7b920eee501f4e5a30e0a60e6ec0b2155f2b3e64318e2a10f0a65b79"
+      ]
+    },
+    "V01.NOT": {
+      "dev": [
+        "bc0f1d5a77b9b5ce3d1eb25ae9ad89d171b7a22f3bf0b63ac239b906353519fa",
+        "5a0ec9dba4445f40ec0adfc48f0b655111a0935ddece27a19d2017a8deb7fc6a"
+      ],
+      "gate": [
+        "3e6e3fac6ee03c928527ef605d4bb98988f4b4ab745def09b455f51b5c889ad9",
+        "ec4b0ce228be7b185de944686d8363b209a9a5df54c2913b5cfce9c67a6ddef3"
+      ],
+      "train": [
+        "cebf4a0da903a6e9273d08a5e476745ff6576678c2ed6b4afafce06cc2df267d",
+        "70d6b6e172be0c88fcca0725ee881aff887f78f1b2a44e10877a1f7f9281e2b4",
+        "14ad17928a97b5130bec253914a71a1d82a0618f12f176a96a42a7b35e0ff545",
+        "1ef7b6a1ef37adcd8a49584c1b78c72d9312da6f4faa97ca3c1f673c232b8bff"
+      ]
+    },
+    "V02.AND": {
+      "dev": [
+        "f72cd26fd7f68585ef2565e53144829c136467c0c459e5a1eb2cd55f68cddda4",
+        "034cb7ed352a39a53967701f7b5726cf3dd845c7bc184249e2193d81ed6cc779",
+        "de4afcda28ccd373077b25c2192614abb6eaa728d6a64417bfe9a90ced77763f",
+        "9bd326e2242c45b2dd2d5154201964df39c9b6e30d1fd8395b2246adfa2cb695",
+        "5b778bd6958e3a377a68b448e9106968683f0509b169748a802b1e22379413d9",
+        "879721eebcc4d683ea8299acd5db3e75790170c10f1b2b2e75d0512add222a89",
+        "36d64f26f53caace1e8fb79be96066963a1c8dc4b281bf0af57df36879012c65",
+        "836ad1305476ca7378a0887baa69313e8bff7b285438969bc60a583c344457b8"
+      ],
+      "gate": [
+        "8635b4967eba612f4c34e3f4ce419c3d7cb24002df19f31cadb6ff8d7a2f3258",
+        "d5c0a275d74d31cfdfb789e18478b908f72818bc2771bfac698658d140ee0849",
+        "0b5bcc1aae717742caf7c4c2d995d56d2f7d6c2d1cb0ff85b9d619444cf0087d",
+        "f154b14194d85ba6ed8a66445ba17e7d5147b8d52951baebbc23062761f1663a",
+        "44ad9f86c9a203780d898e8fe329c68e24ce117bd5bb7b0a5c33627a745c2add",
+        "ce6bbc5b16d0e6c371f1ed96ccbe5d8baf7a25902b57b92e0c07bf910d75409a",
+        "ff4e0af669a23ab7c6e05ea53fad5237f5f3fa9bd48c26fb007ad0f2e458342b",
+        "6ece2a6253a7c83d942169fb7d8eeecc3b29ff5d92d0e6f94f4f24bbbaf0d0b9"
+      ],
+      "train": [
+        "4e6743a65461f3201c1be2d7494347042a21c8438a73c6d4946963835d999c37",
+        "f46bbae60b58127cb01880305c9ee76cb63e6d671b6987edfc791aecd410104f",
+        "f9830ee81fa2c739127575e9185df2175a6623b0ea263311fbd645f5b418feb1",
+        "6079bb25a23ead8c205629c52fbe9ac6e1297dec54ed419f32e28ac52153b5cb",
+        "25b55a26c9b7e107e41fc938d2fd219a851436d5d3d5977c9c462cf02b394834",
+        "b22e4925d097974940bb074a53d7b233200287f98fe3e2961cd10eb69f521230",
+        "c1cab8f60bc2308468eedd84667559cd339ff75e94413d00ca6aa392b8708244",
+        "cfc282b699051d60136e6b0d5f37d2ec663f929e79e0c5e23caa6d61c7085870",
+        "64ae83def75130d4499dccfc8e0fb896a2c470d2f8e6f773118f2c11ed6507a0",
+        "a55cfb50fe56817ce0f39ba27e8643e599430c466bfde14f357637fe6d71b8e9",
+        "a28c5598ede55c3838cf0a120d4d0a5f2b51f31f4a509733336e647d24995615",
+        "8ef4d65c2ddd1020e57070408307c9aeed408b1d641835641534be3bbc20ce73"
+      ]
+    }
+  },
+  "version": "bilqis.formal.pilot/v0.5.0"
+}
