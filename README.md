@@ -159,3 +159,10 @@ tests whether scratch Boolean, NOT, AND and simple compositions can progress
 using only current-question oracle training. It deliberately postpones prior
 teacher dialogue and student-side answer grading. Contextual sensitivity
 is still measured, but no longer gates elementary truth-function teaching.
+
+The successor [v0.5 adaptive trainee controller protocol](docs/formal/ADAPTIVE_V05_PROTOCOL.md)
+compares fixed 320-update teaching, fixed 1,280-update teaching and
+bounded error-focused updates,
+with a new train/DEV/sealed split, explicit literal-NOT instruction,
+retention remediation and safe rollback. The new run is independent of
+e7 and cannot retroactively change its frozen outcomes.
