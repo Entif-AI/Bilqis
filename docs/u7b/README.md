@@ -18,10 +18,13 @@ python -m bilqis_u7b.run qualify
 python -m bilqis_u7b.run freeze
 python -m bilqis_u7b.run train
 python -m bilqis_u7b.run evaluate
-python -m bilqis_u7b.run replay
+python -m tools.u7b_archive replay
+python -m tools.u7b_archive audit
 ```
 
-Each output is exclusive-create and immutable. A partial/failed run is evidence; use a distinct successor identity rather than overwrite it. Replay uses archived native decisions, repeats all gradients and checks exact weights, optimizer moments, exposures, losses and predictions. It performs no new native helper inference.
+Each output is exclusive-create and immutable. A partial/failed run is evidence; use a distinct successor identity rather than overwrite it. Replay uses archived native decisions, repeats all gradients and checks exact weights, optimizer moments, exposures, losses and predictions. It performs no new native helper inference. The original frozen replay reader hit an option-order check because canonical archive JSON sorts object keys. The separate archive audit rehydrates the authoritative ordering from the exact serialized HTTP request bytes, without editing frozen sources, decisions or student artifacts. Its source hash and the original failure are preserved.
+
+The post-training audit found a perfect gate-only label shortcut in the frozen cross-stage generator. Formal counterfactual influence of both components did not exclude this artifact. No corpus or training correction was made after results; future experiments require a new counterbalanced generator/cohort and pre-training shortcut audit. See the actual negative outcomes in `docs/evidence/u7b/RESULTS.md`.
 
 TRAIN pools exclude predecessor TRAIN/DEV identities for newly generated rows, all historical evaluation identities, the frozen U7 cohort and U7B final worlds. Current-stage rehearsal uses unchanged U6 TRAIN with every historical evaluation row removed. Weak feedback accepts exact inherited varied/composite DEV identities only. The executor never receives fresh final cases; final scoring occurs once after training. Final generation shares the canonical generators and grammar with training, so exact-world holdout is not an independent generator-family or confirmatory scientific seal.
 
