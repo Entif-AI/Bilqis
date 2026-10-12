@@ -114,6 +114,29 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertEqual(teacher["global_stats"][key]["trials"],1)
         self.assertEqual(teacher["grade_stats"]["17"][key]["trials"],1)
 
+    def test_human_progress_line_and_patience_gate_are_readable(self):
+        progress={
+            "elapsed_minutes":12.5,"pass":3,"grade":"G06","step":16984,
+            "accuracy_before":.625,"accuracy_after":.708333333,
+            "immediate_delta":.083333333,"repeat_delta":.041666667,
+            "rolling_repeat_delta":.015625,"progress_window":8,
+            "old_delta":0.0,"reward":.1667,"teacher_strategies":20,
+            "teacher_mutations":16,"minutes_since_measurable_progress":22.0,
+            "patience_minutes":60.0,
+        }
+        line=engine._progress_line(progress)
+        self.assertIn("G06 step 16984",line)
+        self.assertIn("62.5%->70.8%",line)
+        self.assertIn("vs prior +4.2pp",line)
+        self.assertIn("rolling8 +1.6pp",line)
+        self.assertIn("no-gain 22.0/60.0m",line)
+        self.assertFalse(engine._stagnation_stop(
+            elapsed_seconds=4000,seconds_since_progress=4000,
+            repeat_comparisons=7,progress_window=8,patience_minutes=60))
+        self.assertTrue(engine._stagnation_stop(
+            elapsed_seconds=4000,seconds_since_progress=4000,
+            repeat_comparisons=8,progress_window=8,patience_minutes=60))
+
     @unittest.skipUnless(HAS_LOCAL_STUDENT,
                          "End-to-end continuation needs real local custodied U7F checkpoint.")
     def test_resume_inherits_optimizer_even_when_score_declines(self):
@@ -129,7 +152,12 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertEqual(second["live_optimizer_step"],13852)
             self.assertEqual(second["next_grade"],3)
             self.assertEqual(second["completed_grades"],2)
-            self.assertEqual(engine._read(out/engine.STATE)["teacher"]["events"],2)
+            limited=engine.run(out,max_updates=20,max_minutes=2,block=2,
+                               max_grade_visits=1)
+            self.assertEqual(limited["status"],"PAUSED_AT_REQUESTED_GRADE_VISIT_LIMIT")
+            self.assertEqual(limited["grade_visits_this_call"],1)
+            self.assertEqual(limited["live_optimizer_step"],13854)
+            self.assertEqual(engine._read(out/engine.STATE)["teacher"]["events"],3)
             self.assertTrue((out/engine._read(out/engine.STATE)["checkpoint"]).exists())
 
 

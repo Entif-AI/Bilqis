@@ -303,11 +303,49 @@ def _train(model, optimizer, reference, graph, rows, counts, policy, device):
     return float(loss.detach().cpu())
 
 
+def _progress_line(progress):
+    repeat = progress["repeat_delta"]
+    rolling = progress["rolling_repeat_delta"]
+    repeat_text = "n/a" if repeat is None else f"{repeat*100:+.1f}pp"
+    rolling_text = "n/a" if rolling is None else f"{rolling*100:+.1f}pp"
+    patience = ""
+    if progress["patience_minutes"] is not None:
+        patience = (
+            f" | no-gain {progress['minutes_since_measurable_progress']:.1f}"
+            f"/{progress['patience_minutes']:.1f}m"
+        )
+    return (
+        f"[{progress['elapsed_minutes']:6.1f}m] pass {progress['pass']} "
+        f"{progress['grade']} step {progress['step']} | probe "
+        f"{progress['accuracy_before']*100:.1f}%->{progress['accuracy_after']*100:.1f}% "
+        f"({progress['immediate_delta']*100:+.1f}pp) | vs prior {repeat_text} "
+        f"| rolling{progress['progress_window']} {rolling_text} "
+        f"| old {progress['old_delta']*100:+.1f}pp | reward {progress['reward']:+.4f} "
+        f"| teacher {progress['teacher_strategies']} strategies/"
+        f"{progress['teacher_mutations']} mutations{patience}"
+    )
+
+
+def _stagnation_stop(*, elapsed_seconds, seconds_since_progress,
+                     repeat_comparisons, progress_window, patience_minutes):
+    if patience_minutes is None or repeat_comparisons < progress_window:
+        return False
+    patience_seconds=patience_minutes*60
+    return (elapsed_seconds >= patience_seconds and
+            seconds_since_progress >= patience_seconds)
+
+
 def run(out=RUN, *, max_updates=1024, max_minutes=4,
         block=32, device="cpu", strict_full50=False,
-        max_run_gib=32):
+        max_run_gib=32, max_grade_visits=None,
+        patience_minutes=None, progress_window=8,
+        min_repeat_improvement=0.01, progress_format="json"):
     if (max_updates < 1 or max_minutes <= 0 or block < 1 or block > 256
-        or not 1<=max_run_gib<=500):
+        or not 1<=max_run_gib<=500
+        or (max_grade_visits is not None and max_grade_visits < 1)
+        or (patience_minutes is not None and patience_minutes <= 0)
+        or progress_window < 1 or min_repeat_improvement < 0
+        or progress_format not in ("json","human")):
         raise ValueError("INVALID_BOUNDED_TRAINING_REQUEST")
     out=Path(out)
     if strict_full50 and any(not g.ready for g in GRADES):
@@ -322,8 +360,14 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     lib=TeacherLibrary()
     start=time.monotonic()
     consumed=0
+    visits_this_call=0
+    repeat_deltas=[]
+    last_measurable_progress=start
     paused_for_storage=False
-    while consumed < max_updates and time.monotonic()-start < max_minutes*60:
+    stopped_for_stagnation=False
+    paused_for_visit_limit=False
+    while (consumed < max_updates and time.monotonic()-start < max_minutes*60
+           and (max_grade_visits is None or visits_this_call < max_grade_visits)):
         checkpoints = list(out.glob("student-*.pt"))
         storage_bytes = sum(p.stat().st_size for p in checkpoints)
         # Compute bound before beginning the next grade: a new checkpoint
@@ -354,6 +398,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         key,policy=pick(state["teacher"],grade,rng)
         steps=min(block,max_updates-consumed)
         if steps < 1:break
+        grade_id=f"G{grade:02d}"
+        prior_visit=state["last_results"].get(grade_id)
         probe_seed=170003+grade*617
         before=_scores(model,lib,payload["graph"],grade,probe_seed,device=device)
         guards=[g for g in (1,10,13,16,17,19) if g<grade and lib.ready(g)]
@@ -376,17 +422,30 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                                  count=12,device=device) for g in guards}
         old_delta=sum(after_old[k]-before_old[k] for k in before_old)
         reward=2*(after-before)+.6*old_delta/max(1,len(before_old))
+        repeat_delta=(None if prior_visit is None
+                      else after-prior_visit["after"])
+        if repeat_delta is not None:
+            repeat_deltas.append(repeat_delta)
+        recent_repeat=repeat_deltas[-progress_window:]
+        rolling_repeat_delta=(sum(recent_repeat)/len(recent_repeat)
+                              if recent_repeat else None)
+        now=time.monotonic()
+        if (len(recent_repeat) >= progress_window and
+            rolling_repeat_delta >= min_repeat_improvement):
+            last_measurable_progress=now
         observe(state["teacher"],grade,key,reward)
         consumed+=steps
+        visits_this_call+=1
         state["completed_updates"]+=steps
         state["completed_grades"]+=1
         state["optimizer_step"]+=steps
         if optimizer_receipt(optimizer)["steps"]!=[state["optimizer_step"]]:
             raise ValueError("ADAMW_CONTINUITY_BROKEN")
-        record={"spiral_pass":state["spiral_pass"],"grade":f"G{grade:02d}",
+        record={"spiral_pass":state["spiral_pass"],"grade":grade_id,
                 "strategy_id":key,"strategy":policy,
                 "before":before,"after":after,"old_before":before_old,
                 "old_after":after_old,"reward":round(reward,6),
+                "repeat_delta":None if repeat_delta is None else round(repeat_delta,6),
                 "updates":steps,"loss_first":losses[0],"loss_last":losses[-1],
                 "teacher_mutations":state["teacher"]["mutations"],
                 "row_exposures":tallies,
@@ -403,15 +462,53 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         state["checkpoint"],state["checkpoint_sha256"]=name,checksum
         state["last_run_wall_seconds"]=round(time.monotonic()-start,3)
         _atomic_json(out/STATE,state)
-        print(json.dumps({"pass":state["spiral_pass"],"grade":f"G{grade:02d}",
-                          "step":state["optimizer_step"],"updates":steps,
-                          "strategy":key,"teacher_mutations":state["teacher"]["mutations"],
-                          "accuracy_before":before,"accuracy_after":after,
-                          "reward":round(reward,4),"old_delta":round(old_delta,4)},
-                         sort_keys=True),flush=True)
-    return {"status":"PAUSED_FOR_STORAGE_QUOTA" if paused_for_storage else
-                    "PAUSED_AT_DURABLE_GRADE_BOUNDARY",
+        elapsed=time.monotonic()-start
+        since_progress=elapsed-(last_measurable_progress-start)
+        progress={"pass":state["spiral_pass"],"grade":grade_id,
+                  "step":state["optimizer_step"],"updates":steps,
+                  "strategy":key,
+                  "teacher_strategies":len(state["teacher"]["strategies"]),
+                  "teacher_mutations":state["teacher"]["mutations"],
+                  "accuracy_before":before,"accuracy_after":after,
+                  "immediate_delta":after-before,
+                  "repeat_delta":repeat_delta,
+                  "rolling_repeat_delta":rolling_repeat_delta,
+                  "progress_window":progress_window,
+                  "reward":round(reward,4),"old_delta":old_delta,
+                  "elapsed_minutes":elapsed/60,
+                  "minutes_since_measurable_progress":since_progress/60,
+                  "patience_minutes":patience_minutes,
+                  "min_repeat_improvement":min_repeat_improvement}
+        if progress_format=="human":
+            print(_progress_line(progress),flush=True)
+        else:
+            print(json.dumps(progress,sort_keys=True),flush=True)
+        if _stagnation_stop(
+                elapsed_seconds=elapsed,
+                seconds_since_progress=since_progress,
+                repeat_comparisons=len(repeat_deltas),
+                progress_window=progress_window,
+                patience_minutes=patience_minutes):
+            stopped_for_stagnation=True
+            break
+    if (max_grade_visits is not None and
+        visits_this_call >= max_grade_visits and
+        not stopped_for_stagnation and not paused_for_storage):
+        paused_for_visit_limit=True
+    status=("PAUSED_FOR_STORAGE_QUOTA" if paused_for_storage else
+            "STOPPED_NO_MEASURABLE_REPEAT_IMPROVEMENT" if stopped_for_stagnation else
+            "PAUSED_AT_REQUESTED_GRADE_VISIT_LIMIT" if paused_for_visit_limit else
+            "PAUSED_AT_DURABLE_GRADE_BOUNDARY")
+    recent_repeat=repeat_deltas[-progress_window:]
+    return {"status":status,
             "checkpoint_quota_gib":max_run_gib,"completed_this_call":consumed,
+            "grade_visits_this_call":visits_this_call,
+            "repeat_comparisons_this_call":len(repeat_deltas),
+            "rolling_repeat_delta":(sum(recent_repeat)/len(recent_repeat)
+                                    if recent_repeat else None),
+            "progress_window":progress_window,
+            "min_repeat_improvement":min_repeat_improvement,
+            "patience_minutes":patience_minutes,
             "total_school_updates":state["completed_updates"],
             "live_optimizer_step":state["optimizer_step"],
             "completed_grades":state["completed_grades"],
@@ -432,6 +529,16 @@ def main():
     parser.add_argument("--block",type=int,default=32)
     parser.add_argument("--max-run-gib",type=float,default=32,
                         help="Pause safely before generated checkpoint history exceeds this many GiB.")
+    parser.add_argument("--grade-visits",type=int,default=None,
+                        help="Pause at a durable boundary after this many completed grade visits.")
+    parser.add_argument("--patience-minutes",type=float,default=None,
+                        help="Stop if repeated-grade trend shows no measurable improvement for this long.")
+    parser.add_argument("--progress-window",type=int,default=8,
+                        help="Repeated-grade comparisons used for the rolling improvement trend.")
+    parser.add_argument("--min-repeat-improvement",type=float,default=0.01,
+                        help="Rolling repeated-grade accuracy gain that resets the patience clock (0.01 = 1 pp).")
+    parser.add_argument("--progress-format",choices=("human","json"),default="json",
+                        help="Per-grade live progress output.")
     parser.add_argument("--device",choices=("cpu","mps"),default="cpu")
     parser.add_argument("--grow",action="store_true",
                         help="Function-preserving capacity migration, keeping trained state.")
@@ -449,7 +556,12 @@ def main():
         print(json.dumps(run(arguments.run_dir,max_updates=arguments.max_updates,
                              max_minutes=arguments.minutes,block=arguments.block,
                              device=arguments.device,strict_full50=arguments.require_full50,
-                             max_run_gib=arguments.max_run_gib),
+                             max_run_gib=arguments.max_run_gib,
+                             max_grade_visits=arguments.grade_visits,
+                             patience_minutes=arguments.patience_minutes,
+                             progress_window=arguments.progress_window,
+                             min_repeat_improvement=arguments.min_repeat_improvement,
+                             progress_format=arguments.progress_format),
                          indent=2,sort_keys=True))
 
 
