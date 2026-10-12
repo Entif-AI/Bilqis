@@ -18,6 +18,7 @@ import random
 import signal
 import shutil
 import statistics
+import tempfile
 import time
 import uuid
 
@@ -471,6 +472,36 @@ def _candidate_teacher_credit(raw_reward, gate, *,
     if gate["reason"]=="CONSOLIDATION_FULL_PROBE_RETENTION_LOSS":
         return min(raw_reward,-clear_reward)
     return raw_reward
+
+
+def _candidate_selection_rank(record):
+    """Rank only already-safe candidates by demonstrated retained learning."""
+    confirmation=record.get("consolidation_confirmation")
+    sentinel=record.get("sentinel_deltas") or {}
+    sentinel_vote=record.get("sentinel_vote_score")
+    sentinel_vote=0 if sentinel_vote is None else sentinel_vote
+    immediate=record["after"]-record["before"]
+    if confirmation is not None:
+        return (
+            confirmation["mean_delta"],
+            confirmation["worst_grade_delta"],
+            confirmation["median_delta"],
+            sentinel_vote,
+            sentinel.get("accuracy",0.0),
+            record["reward"],
+            immediate,
+            -record["attempt"],
+        )
+    return (
+        sentinel_vote,
+        sentinel.get("accuracy",0.0),
+        sentinel.get("cross_entropy",0.0),
+        sentinel.get("correct_probability",0.0),
+        sentinel.get("margin",0.0),
+        record["reward"],
+        immediate,
+        -record["attempt"],
+    )
 
 
 def _consolidation_confirmation(before_model, after_model, graph, lib, *,
@@ -1195,9 +1226,14 @@ def _progress_line(progress):
         )
     gate=""
     if progress.get("candidate_gate_enabled"):
+        selected=(
+            "" if progress.get("candidate_selected_attempt") is None else
+            f" selected {progress['candidate_selected_attempt']}"
+        )
         gate=(
             f" | gate {progress['candidate_gate_disposition']} "
             f"{progress['candidate_attempts']}/{progress['candidate_max_attempts']}"
+            f"{selected}"
         )
     personal=""
     if progress.get("grade_champion_score") is not None:
@@ -1369,6 +1405,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     visits_this_call=0
     candidate_rejections_this_call=0
     candidate_promotions_this_call=0
+    candidate_eligible_this_call=0
+    candidate_superseded_this_call=0
     candidate_no_updates_this_call=0
     metric_events=[]
     rejected_passes=set()
@@ -1422,7 +1460,15 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         accepted_steps=0
         budget_exhausted=False
         attempted_strategy_keys=set()
+        attempts_performed=0
+        grade_attempt_records=[]
+        best_candidate=None
+        best_candidate_rank=None
+        candidate_temp=tempfile.TemporaryDirectory(
+            prefix="bilqis-school50-candidate-")
+        candidate_snapshot=Path(candidate_temp.name)/"best.pt"
         for attempt in range(1,max_attempts+1):
+            attempts_performed=attempt
             steps=min(block,max_updates-consumed)
             if steps < 1:
                 budget_exhausted=True
@@ -1503,6 +1549,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "parent_checkpoint":state["checkpoint"],
                 "parent_optimizer_step":state["optimizer_step"],
                 "candidate_optimizer_step":candidate_step,
+                "candidate_model_sha256":state_hash(model),
                 "strategy_id":key,
                 "strategy":policy,
                 "before":before,
@@ -1542,7 +1589,39 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "teacher_mutations":state["teacher"]["mutations"],
             }
             state["candidate_ledger"].append(attempt_record)
+            grade_attempt_records.append(attempt_record)
             last_attempt=attempt_record
+            if gate["decision"]=="PROMOTE" and candidate_grade_gate:
+                candidate_eligible_this_call+=1
+                rank=_candidate_selection_rank(attempt_record)
+                attempt_record["selection_rank"]=list(rank)
+                if best_candidate is None or rank > best_candidate_rank:
+                    if best_candidate is not None:
+                        best_candidate["selection_disposition"]="ELIGIBLE_SUPERSEDED"
+                        candidate_superseded_this_call+=1
+                    if candidate_snapshot.exists():
+                        candidate_snapshot.unlink()
+                    save_checkpoint(candidate_snapshot,model,optimizer,payload["graph"],{
+                        "epoch":VERSION,
+                        "step":candidate_step,
+                        "spiral_pass":state["spiral_pass"],
+                        "grade":grade_id,
+                        "attempt":attempt,
+                        "strategy_id":key,
+                        "transient_best_candidate":True,
+                    })
+                    best_candidate=attempt_record
+                    best_candidate_rank=rank
+                    attempt_record["selection_disposition"]="ELIGIBLE_CURRENT_BEST"
+                else:
+                    attempt_record["selection_disposition"]="ELIGIBLE_SUPERSEDED"
+                    candidate_superseded_this_call+=1
+            elif gate["decision"]=="PROMOTE":
+                attempt_record["selection_rank"]=None
+                attempt_record["selection_disposition"]="SELECTED_BEST_CANDIDATE"
+            else:
+                attempt_record["selection_rank"]=None
+                attempt_record["selection_disposition"]="REJECTED"
             if candidate_grade_gate:
                 line_info={
                     "pass":state["spiral_pass"],"grade":grade_id,
@@ -1551,7 +1630,10 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                     "immediate_delta":immediate_delta,
                     "old_mean_delta":old_mean_delta,"reward":reward,
                     "teacher_credit":teacher_credit,
-                    "decision":gate["decision"],"reason":gate["reason"],
+                    "decision":(
+                        "ELIGIBLE" if gate["decision"]=="PROMOTE"
+                        else gate["decision"]),
+                    "reason":gate["reason"],
                     "sentinel_deltas":gate.get("sentinel_deltas"),
                     "consolidation_enabled":consolidate_grade_champions,
                     "consensus_distill_mean":
@@ -1567,16 +1649,63 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                     print(json.dumps({"candidate_attempt":line_info},
                                      sort_keys=True),flush=True)
             if gate["decision"]=="PROMOTE":
-                promoted=True
-                accepted_steps=steps
-                candidate_promotions_this_call+=1
-                break
-            candidate_rejections_this_call+=1
+                if not candidate_grade_gate:
+                    promoted=True
+                    accepted_steps=steps
+                    candidate_promotions_this_call+=1
+                    break
+            else:
+                candidate_rejections_this_call+=1
             _atomic_json(out/STATE,state)
             model,optimizer,payload=_reload_live_student(out,state,device)
             gpu=torch.device(device)
             if stop_requested is not None and stop_requested():
                 break
+
+        if candidate_grade_gate and best_candidate is not None:
+            for attempt_record in grade_attempt_records:
+                if attempt_record is best_candidate:
+                    attempt_record["selection_disposition"]="SELECTED_BEST_CANDIDATE"
+                elif attempt_record["decision"]=="PROMOTE":
+                    attempt_record["selection_disposition"]="ELIGIBLE_SUPERSEDED"
+            model,optimizer,payload=load_checkpoint(candidate_snapshot)
+            _device(model,optimizer,device)
+            gpu=torch.device(device)
+            last_attempt=best_candidate
+            accepted_steps=best_candidate["updates"]
+            if (optimizer_receipt(optimizer)["steps"]!=
+                    [state["optimizer_step"]+accepted_steps]):
+                raise ValueError("SELECTED_CANDIDATE_ADAMW_CONTINUITY_BROKEN")
+            if digest(payload["graph"])!=state["graph_sha256"]:
+                raise ValueError("SELECTED_CANDIDATE_GRAPH_CHANGED")
+            promoted=True
+            candidate_promotions_this_call+=1
+            selection_info={
+                "pass":state["spiral_pass"],
+                "grade":grade_id,
+                "selected_attempt":best_candidate["attempt"],
+                "attempts_performed":attempts_performed,
+                "eligible_candidates":sum(
+                    record["decision"]=="PROMOTE"
+                    for record in grade_attempt_records),
+                "strategy":best_candidate["strategy_id"],
+                "reason":best_candidate["reason"],
+                "selection_rank":best_candidate["selection_rank"],
+            }
+            if progress_format=="human":
+                print(
+                    f"[candidate-select] pass {selection_info['pass']} "
+                    f"{grade_id} selected attempt "
+                    f"{selection_info['selected_attempt']}/{attempts_performed} "
+                    f"strategy {selection_info['strategy']} | best of "
+                    f"{selection_info['eligible_candidates']} safe candidates | "
+                    f"{selection_info['reason']}",
+                    flush=True)
+            else:
+                print(json.dumps({"candidate_selection":selection_info},
+                                 sort_keys=True),flush=True)
+            _atomic_json(out/STATE,state)
+        candidate_temp.cleanup()
 
         if budget_exhausted and last_attempt is None:
             break
@@ -1669,8 +1798,13 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "row_exposures":tallies,
                 "optimizer_step":state["optimizer_step"],
                 "student_update_applied":student_update_applied,
-                "candidate_attempts":(
-                    last_attempt["attempt"] if last_attempt is not None else 0),
+                "candidate_attempts":attempts_performed,
+                "candidate_selected_attempt":(
+                    last_attempt["attempt"] if promoted and last_attempt is not None
+                    else None),
+                "candidate_eligible_attempts":sum(
+                    attempt["decision"]=="PROMOTE"
+                    for attempt in grade_attempt_records),
                 "candidate_gate_disposition":gate_disposition}
         state["grade_ledger"].append(record)
         state["last_results"][f"G{grade:02d}"]=record
@@ -1683,6 +1817,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "last_grade":grade,"spiral_pass":state["spiral_pass"],
                 "learning_strategy":policy,
                 "candidate_attempts":record["candidate_attempts"],
+                "candidate_selected_attempt":record["candidate_selected_attempt"],
                 "candidate_gate_disposition":gate_disposition,
                 "parent_checkpoint_sha256":state["checkpoint_sha256"],
                 "one_continuing_student":True})
@@ -1836,6 +1971,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                   "candidate_gate_enabled":candidate_grade_gate,
                   "candidate_gate_disposition":gate_disposition,
                   "candidate_attempts":record["candidate_attempts"],
+                  "candidate_selected_attempt":record["candidate_selected_attempt"],
                   "candidate_max_attempts":max_attempts,
                   "grade_champion_score":record["grade_champion_score"],
                   "vs_grade_champion":record["vs_grade_champion"],
@@ -1918,6 +2054,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "candidate_grade_gate":candidate_grade_gate,
             "candidate_promotions_this_call":candidate_promotions_this_call,
             "candidate_rejections_this_call":candidate_rejections_this_call,
+            "candidate_eligible_this_call":candidate_eligible_this_call,
+            "candidate_superseded_this_call":candidate_superseded_this_call,
             "candidate_no_update_grades_this_call":candidate_no_updates_this_call,
             "consolidation_enabled":consolidate_grade_champions,
             "consolidation_weight":(

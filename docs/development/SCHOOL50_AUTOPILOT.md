@@ -189,12 +189,23 @@ a fixed all-compiled-grades sentinel using continuous cross-entropy,
 correct-class probability and logit margin in addition to accuracy. A local
 win can therefore be vetoed when it damages the broader curriculum.
 
-Promoted candidates become the new student and receive a durable checkpoint.
-Rejected candidates are discarded by reloading the unchanged live checkpoint,
-but their teacher reward, strategy, losses, probe outcomes and sentinel
-evidence remain in candidate_ledger so the teacher learns from the attempt.
-The teacher may try up to candidate-max-attempts strategies for the grade.
-If none demonstrates enough benefit, the grade advances with no student or
+The teacher evaluates all candidate-max-attempts strategies that fit within the
+call's update budget. Every attempt starts from the same durable model+AdamW
+parent. Candidates that fail any gate stay rejected even when their local grade
+probe improves. Candidates that survive every gate are eligible, not
+immediately installed. After the attempts finish, the runner promotes only the
+best safe candidate and checkpoints its exact model+AdamW state. With
+grade-champion consolidation enabled, selection ranks eligible candidates by
+full-22 mean gain first, then worst-grade retention and median gain; sentinel
+evidence, teacher reward, local gain and earlier attempt order break remaining
+ties. Without consolidation, sentinel evidence leads the ranking before reward
+and local gain.
+
+Rejected and eligible-but-superseded candidates are discarded by reloading the
+unchanged live checkpoint, but their teacher reward, strategy, losses, probe
+outcomes and sentinel evidence remain in candidate_ledger so the teacher learns
+from every attempt. The ledger marks the final selected candidate separately.
+If none demonstrates enough safe benefit, the grade advances with no student or
 AdamW change instead of forcing an unproven lesson into the learner. Attempted
 optimizer work is tracked separately from promoted student optimizer work.
 

@@ -505,11 +505,16 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertEqual(result["completed_this_call"],0)
             self.assertEqual(result["training_updates_attempted_this_call"],4)
             self.assertEqual(result["candidate_rejections_this_call"],2)
+            self.assertEqual(result["candidate_eligible_this_call"],0)
+            self.assertEqual(result["candidate_superseded_this_call"],0)
             self.assertEqual(result["candidate_no_update_grades_this_call"],1)
             self.assertEqual(state["completed_updates"],0)
             self.assertEqual(state["attempted_updates"],4)
             self.assertEqual(state["teacher"]["events"],2)
             self.assertEqual(len(state["candidate_ledger"]),2)
+            self.assertTrue(all(
+                attempt["selection_disposition"]=="REJECTED"
+                for attempt in state["candidate_ledger"]))
             self.assertFalse(state["grade_ledger"][-1]["student_update_applied"])
             self.assertEqual(state["next_grade"],2)
             _,optimizer,_=engine._validate(out/state["checkpoint"],state)
@@ -533,9 +538,94 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertEqual(result["training_updates_attempted_this_call"],2)
             self.assertEqual(result["candidate_promotions_this_call"],1)
             self.assertEqual(result["candidate_rejections_this_call"],0)
+            self.assertEqual(result["candidate_eligible_this_call"],1)
+            self.assertEqual(result["candidate_superseded_this_call"],0)
             self.assertTrue(state["grade_ledger"][-1]["student_update_applied"])
+            self.assertEqual(state["grade_ledger"][-1]["candidate_selected_attempt"],1)
             self.assertEqual(state["completed_updates"],2)
             self.assertEqual(state["attempted_updates"],2)
+
+    def test_candidate_rank_prefers_stronger_full_school_gain_not_later_attempt(self):
+        better={
+            "attempt":2,"before":.80,"after":.90,"reward":.20,
+            "sentinel_vote_score":2,
+            "sentinel_deltas":{"accuracy":.01,"cross_entropy":.01,
+                               "correct_probability":.01,"margin":.01},
+            "consolidation_confirmation":{
+                "mean_delta":.02,"median_delta":.01,"worst_grade_delta":-.02,
+            },
+        }
+        later={
+            "attempt":3,"before":.80,"after":.95,"reward":.30,
+            "sentinel_vote_score":4,
+            "sentinel_deltas":{"accuracy":.02,"cross_entropy":.02,
+                               "correct_probability":.02,"margin":.02},
+            "consolidation_confirmation":{
+                "mean_delta":.01,"median_delta":.01,"worst_grade_delta":0.0,
+            },
+        }
+        self.assertGreater(
+            engine._candidate_selection_rank(better),
+            engine._candidate_selection_rank(later))
+
+    @unittest.skipUnless(HAS_LOCAL_STUDENT,
+                         "Best-of-three selection needs real local student/AdamW state.")
+    def test_candidate_selection_runs_all_attempts_and_promotes_best_safe_survivor(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)/"school"
+            confirmations=[]
+            for gain in (2/528,5/528,3/528):
+                confirmations.append({
+                    "decision":"PROMOTE",
+                    "reason":"CONSOLIDATION_FULL_PROBE_GAIN",
+                    "mean_delta":gain,
+                    "minimum_net_gain":1/528,
+                    "median_delta":0.0,
+                    "improved_grades":1,
+                    "regressed_grades":0,
+                    "unchanged_grades":21,
+                    "worst_grade":"G01",
+                    "worst_grade_delta":0.0,
+                    "deltas":{grade:0.0 for grade in engine.REPORT_GRADE_IDS},
+                    "before_scores":{grade:.5 for grade in engine.REPORT_GRADE_IDS},
+                    "after_scores":{grade:.5 for grade in engine.REPORT_GRADE_IDS},
+                })
+            with (
+                patch.object(
+                    engine,"_candidate_gate_decision",
+                    return_value={"decision":"PROMOTE","reason":"TEST_SAFE"}),
+                patch.object(
+                    engine,"_consolidation_confirmation",
+                    side_effect=confirmations),
+            ):
+                result=engine.run(
+                    out,max_updates=6,max_minutes=3,block=2,
+                    max_grade_visits=1,candidate_grade_gate=True,
+                    candidate_max_attempts=3,
+                    consolidate_grade_champions=True,
+                    consolidation_weight=.15)
+            state=engine._read(out/engine.STATE)
+            attempts=state["candidate_ledger"][-3:]
+            self.assertEqual([attempt["attempt"] for attempt in attempts],[1,2,3])
+            self.assertEqual(result["training_updates_attempted_this_call"],6)
+            self.assertEqual(result["accepted_updates_this_call"],2)
+            self.assertEqual(result["candidate_promotions_this_call"],1)
+            self.assertEqual(result["candidate_eligible_this_call"],3)
+            self.assertEqual(result["candidate_superseded_this_call"],2)
+            self.assertEqual(result["live_optimizer_step"],13850)
+            self.assertEqual(
+                [attempt["selection_disposition"] for attempt in attempts],
+                ["ELIGIBLE_SUPERSEDED","SELECTED_BEST_CANDIDATE",
+                 "ELIGIBLE_SUPERSEDED"])
+            selected=state["grade_ledger"][-1]
+            self.assertEqual(selected["candidate_attempts"],3)
+            self.assertEqual(selected["candidate_selected_attempt"],2)
+            self.assertEqual(selected["strategy_id"],attempts[1]["strategy_id"])
+            self.assertEqual(selected["reward"],attempts[1]["reward"])
+            self.assertEqual(state["model_sha256"],attempts[1]["candidate_model_sha256"])
+            self.assertEqual(state["teacher"]["events"],3)
+            _,optimizer,_=engine._validate(out/state["checkpoint"],state)
+            self.assertEqual(optimizer_receipt(optimizer)["steps"],[13850])
 
     @unittest.skipUnless(HAS_LOCAL_STUDENT,
                          "Soup consolidation needs real local student/AdamW state.")
