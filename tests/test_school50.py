@@ -7,6 +7,8 @@ import random
 import signal
 import tempfile
 import unittest
+from unittest.mock import patch
+import torch
 
 from bilqis_active import load_active
 from bilqis_school import arithmetic, engine, grades, lessons
@@ -141,15 +143,107 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertEqual(report["highest_grade"],"G09")
         self.assertIn("mean probe",engine._pass_summary_line(report))
 
-    def test_pass_regression_guard_requires_broad_material_decline(self):
-        accepted={grade:.75 for grade in engine.REPORT_GRADE_IDS}
-        broad={grade:.70 for grade in engine.REPORT_GRADE_IDS}
-        result=engine._material_pass_regression(broad,accepted,.03)
+    def test_pass_regression_guard_catches_mean_loss_even_with_flat_median(self):
+        champion={grade:.75 for grade in engine.REPORT_GRADE_IDS}
+        current=dict(champion)
+        for grade in engine.REPORT_GRADE_IDS[:7]:
+            current[grade]-=.05
+        for grade in engine.REPORT_GRADE_IDS[7:11]:
+            current[grade]+=.025
+        result=engine._material_pass_regression(current,champion,.01)
         self.assertTrue(result["regressed"])
-        isolated=dict(accepted)
-        isolated["G22"]=.25
-        result=engine._material_pass_regression(isolated,accepted,.03)
+        self.assertEqual(result["median_delta"],0.0)
+        self.assertEqual(result["regressed_grades"],7)
+        tiny={grade:value-.005 for grade,value in champion.items()}
+        result=engine._material_pass_regression(tiny,champion,.01)
         self.assertFalse(result["regressed"])
+
+    def test_retry_pick_excludes_already_attempted_strategy(self):
+        teacher=engine._teacher()
+        rng=random.Random(77)
+        first,_=engine.pick(teacher,1,rng)
+        second,_=engine.pick(teacher,1,rng,exclude={first})
+        self.assertNotEqual(first,second)
+
+    def test_grade_champion_only_moves_on_true_personal_best(self):
+        state={"grade_champions":{
+            "G03":{
+                "score":.75,"checkpoint":"old.pt",
+                "checkpoint_sha256":"old","optimizer_step":10,
+                "source_pass":2,"holistic_mean":.70,
+            }
+        }}
+        tied=engine._maybe_promote_grade_champion(
+            state,"G03",.75,checkpoint="tie.pt",
+            checkpoint_sha256="tie",optimizer_step=20,source_pass=3,
+            holistic_mean=.80)
+        self.assertFalse(tied["new_champion"])
+        self.assertEqual(state["grade_champions"]["G03"]["checkpoint"],"old.pt")
+        better=engine._maybe_promote_grade_champion(
+            state,"G03",.7916666667,checkpoint="new.pt",
+            checkpoint_sha256="new",optimizer_step=30,source_pass=4,
+            holistic_mean=.72)
+        self.assertTrue(better["new_champion"])
+        self.assertAlmostEqual(better["vs_prior_best"],.0416666667)
+        self.assertEqual(state["grade_champions"]["G03"]["checkpoint"],"new.pt")
+
+    def test_model_soup_weight_average_is_grade_weighted(self):
+        first=torch.nn.Linear(2,1,bias=False)
+        second=torch.nn.Linear(2,1,bias=False)
+        with torch.no_grad():
+            first.weight.fill_(1.0)
+            second.weight.fill_(4.0)
+        averaged=engine._average_model_state_dicts(
+            [first,second],[2,1])
+        self.assertTrue(torch.allclose(
+            averaged["weight"],torch.full((1,2),2.0)))
+
+    def test_candidate_gate_uses_continuous_sentinel_for_uncertain_updates(self):
+        self.assertEqual(
+            engine._candidate_gate_decision(-.10)["reason"],
+            "CLEAR_REWARD_LOSS")
+        self.assertEqual(
+            engine._candidate_gate_decision(.10)["decision"],
+            "MEASURE")
+        before={
+            "accuracy":.75,
+            "cross_entropy":.90,
+            "correct_probability":.60,
+            "margin":.40,
+        }
+        better={
+            "accuracy":.75,
+            "cross_entropy":.88,
+            "correct_probability":.61,
+            "margin":.42,
+        }
+        worse={
+            "accuracy":.75,
+            "cross_entropy":.93,
+            "correct_probability":.58,
+            "margin":.37,
+        }
+        ambiguous=engine._candidate_gate_decision(0.0,before,better)
+        self.assertEqual(ambiguous["decision"],"PROMOTE")
+        self.assertEqual(ambiguous["reason"],"SENTINEL_BETTER")
+        veto=engine._candidate_gate_decision(.10,before,worse)
+        self.assertEqual(veto["decision"],"REJECT")
+        self.assertEqual(veto["reason"],"SENTINEL_VETOED_LOCAL_WIN")
+        safe=engine._candidate_gate_decision(.10,before,before)
+        self.assertEqual(safe["decision"],"PROMOTE")
+        self.assertEqual(safe["reason"],"CLEAR_REWARD_WIN_SENTINEL_SAFE")
+        self.assertEqual(
+            engine._candidate_teacher_credit(
+                .10,{"decision":"REJECT","reason":"SENTINEL_VETOED_LOCAL_WIN"}),
+            -.05)
+        self.assertEqual(
+            engine._candidate_teacher_credit(
+                0.0,{"decision":"REJECT","reason":"SENTINEL_NO_DEMONSTRATED_GAIN"}),
+            0.0)
+        self.assertEqual(
+            engine._candidate_teacher_credit(
+                0.0,{"decision":"PROMOTE","reason":"SENTINEL_BETTER"}),
+            .025)
 
     def test_checkpoint_retention_keeps_runtime_and_recovery_anchors(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -161,6 +255,7 @@ class AdaptiveTeacher(unittest.TestCase):
                 "student-200-pass.pt",
                 "student-250-junk.pt",
                 "student-300-pass.pt",
+                "student-325-grade.pt",
                 "student-350-junk.pt",
                 "student-400-accepted.pt",
                 "student-450-recent.pt",
@@ -172,6 +267,10 @@ class AdaptiveTeacher(unittest.TestCase):
                 "checkpoint":"student-500-live.pt",
                 "school_start_checkpoint":"student-100-start.pt",
                 "accepted_pass":{"checkpoint":"student-400-accepted.pt"},
+                "champion_pass":{"checkpoint":"student-300-pass.pt"},
+                "grade_champions":{
+                    "G11":{"checkpoint":"student-325-grade.pt"},
+                },
                 "architecture_history":[{
                     "from":"student-120-grow-from.pt",
                     "to":"student-120-grow-to.pt",
@@ -190,6 +289,8 @@ class AdaptiveTeacher(unittest.TestCase):
                 "student-100-start.pt",
                 "student-120-grow-from.pt",
                 "student-120-grow-to.pt",
+                "student-300-pass.pt",
+                "student-325-grade.pt",
                 "student-400-accepted.pt",
                 "student-450-recent.pt",
                 "student-500-live.pt",
@@ -198,10 +299,12 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertNotIn("student-350-junk.pt",kept)
             retention=engine._prune_checkpoints(
                 out,state,keep_recent=2,keep_pass=1)
-            self.assertEqual(retention["last_pruned_count"],4)
-            self.assertEqual(retention["retained_count"],6)
+            self.assertEqual(retention["last_pruned_count"],3)
+            self.assertEqual(retention["retained_count"],8)
             self.assertTrue((out/"student-500-live.pt").exists())
             self.assertTrue((out/"student-400-accepted.pt").exists())
+            self.assertTrue((out/"student-300-pass.pt").exists())
+            self.assertTrue((out/"student-325-grade.pt").exists())
             self.assertTrue((out/"student-100-start.pt").exists())
 
     def test_rejected_pass_metrics_are_not_counted_as_live_lineage(self):
@@ -294,6 +397,55 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertEqual(state_hash(restored),
                              state["model_sha256"])
             self.assertTrue((out/engine._read(out/engine.STATE)["checkpoint"]).exists())
+
+    @unittest.skipUnless(HAS_LOCAL_STUDENT,
+                         "Candidate promotion needs real local student/AdamW state.")
+    def test_candidate_rejections_preserve_student_but_teacher_learns(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)/"school"
+            with patch.object(
+                    engine,"_candidate_gate_decision",
+                    return_value={"decision":"REJECT","reason":"TEST_REJECT"}):
+                result=engine.run(
+                    out,max_updates=4,max_minutes=2,block=2,
+                    max_grade_visits=1,candidate_grade_gate=True,
+                    candidate_max_attempts=2)
+            state=engine._read(out/engine.STATE)
+            self.assertEqual(result["live_optimizer_step"],13848)
+            self.assertEqual(result["completed_this_call"],0)
+            self.assertEqual(result["training_updates_attempted_this_call"],4)
+            self.assertEqual(result["candidate_rejections_this_call"],2)
+            self.assertEqual(result["candidate_no_update_grades_this_call"],1)
+            self.assertEqual(state["completed_updates"],0)
+            self.assertEqual(state["attempted_updates"],4)
+            self.assertEqual(state["teacher"]["events"],2)
+            self.assertEqual(len(state["candidate_ledger"]),2)
+            self.assertFalse(state["grade_ledger"][-1]["student_update_applied"])
+            self.assertEqual(state["next_grade"],2)
+            _,optimizer,_=engine._validate(out/state["checkpoint"],state)
+            self.assertEqual(optimizer_receipt(optimizer)["steps"],[13848])
+
+    @unittest.skipUnless(HAS_LOCAL_STUDENT,
+                         "Candidate promotion needs real local student/AdamW state.")
+    def test_candidate_promotion_advances_student_once(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)/"school"
+            with patch.object(
+                    engine,"_candidate_gate_decision",
+                    return_value={"decision":"PROMOTE","reason":"TEST_PROMOTE"}):
+                result=engine.run(
+                    out,max_updates=2,max_minutes=2,block=2,
+                    max_grade_visits=1,candidate_grade_gate=True,
+                    candidate_max_attempts=2)
+            state=engine._read(out/engine.STATE)
+            self.assertEqual(result["live_optimizer_step"],13850)
+            self.assertEqual(result["completed_this_call"],2)
+            self.assertEqual(result["training_updates_attempted_this_call"],2)
+            self.assertEqual(result["candidate_promotions_this_call"],1)
+            self.assertEqual(result["candidate_rejections_this_call"],0)
+            self.assertTrue(state["grade_ledger"][-1]["student_update_applied"])
+            self.assertEqual(state["completed_updates"],2)
+            self.assertEqual(state["attempted_updates"],2)
 
 
 if __name__=="__main__":
