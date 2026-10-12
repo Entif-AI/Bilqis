@@ -140,3 +140,10 @@ truth-versus-correctness answers, strictly matched Kev diagnostic alternatives,
 separate teaching/formative/held-out gate records and a scratch-trained
 feedback-context comparison. The original formal-foundations v0.1 checkpoint
 and legacy development experiments remain separate.
+
+The successor [v0.3 teaching protocol](docs/formal/DIALOGUE_V03_PROTOCOL.md)
+splits teacher feedback from the student's later ability to grade proposed
+answers. Atomic truth evaluation is taught and tested before metacognitive
+judgment, with independent NOT/AND prerequisites and controlled feedback
+probes. This remains exploratory: a passing engineering test does not
+establish student learning or validate the whole #82 developmental program.
