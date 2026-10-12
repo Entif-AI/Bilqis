@@ -10,8 +10,11 @@ import unittest
 from bilqis_active import load_active
 from bilqis_school import arithmetic, engine, grades, lessons
 from bilqis_development.continuation import expand
+from bilqis_development.registry import extended_catalog
 from bilqis_micro.run import optimizer_receipt
 from bilqis_ref.model import state_hash
+
+HAS_LOCAL_STUDENT=(Path.home()/"Code"/"bilqis-learner-custody"/"active-u7f-13848.pt").is_file()
 
 
 class SkillTree(unittest.TestCase):
@@ -47,6 +50,8 @@ class ArithmeticSemantics(unittest.TestCase):
                     self.assertEqual(record["gold"],"TRUE" if truth else "FALSE")
                     self.assertTrue(arithmetic.verify(record["input"]["expression"]))
 
+    @unittest.skipUnless(HAS_LOCAL_STUDENT,
+                         "Neural checkpoint integration needs real local custodied U7F weights, not a public-Git fake.")
     def test_full_math_abi_expands_trained_student_without_resetting_weights(self):
         model,optimizer,payload,_=load_active()
         parent_sha=state_hash(model)
@@ -65,8 +70,10 @@ class AdaptiveTeacher(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.library=lessons.TeacherLibrary()
-        _,_,payload,_=load_active()
-        cls.graph=arithmetic.extend_graph(payload["graph"])
+        # Oracle-backed lesson/ABI tests can run in public CI without the
+        # learned student's private checkpoint. Never fabricate a replacement
+        # student's weights merely to satisfy a compiler test.
+        cls.graph=arithmetic.extend_graph(extended_catalog())
 
     def test_all_twenty_two_early_grades_compile_actual_gold(self):
         policy={"old":12,"preview":2,"depth":2,"contrast":.5,"lr":.00013,"distill":.35}
@@ -107,6 +114,8 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertEqual(teacher["global_stats"][key]["trials"],1)
         self.assertEqual(teacher["grade_stats"]["17"][key]["trials"],1)
 
+    @unittest.skipUnless(HAS_LOCAL_STUDENT,
+                         "End-to-end continuation needs real local custodied U7F checkpoint.")
     def test_resume_inherits_optimizer_even_when_score_declines(self):
         with tempfile.TemporaryDirectory() as temp:
             out=Path(temp)/"school"

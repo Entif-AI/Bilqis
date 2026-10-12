@@ -1,5 +1,6 @@
 """Grow actual acquired representations into a larger network without reset."""
 import random
+from pathlib import Path
 import unittest
 
 from bilqis_active import load_active
@@ -12,6 +13,8 @@ from bilqis_micro.run import optimizer_receipt
 
 
 class PreserveAcquiredStudent(unittest.TestCase):
+    @unittest.skipUnless((Path.home()/"Code"/"bilqis-learner-custody"/"active-u7f-13848.pt").is_file(),
+                         "Function-preserving learned-weight migration requires actual U7F checkpoint, never synthetic learned weights.")
     def test_wider_deeper_student_preserves_existing_answers_and_adamw(self):
         old,opt,payload,_=load_active()
         graph=extend_graph(payload["graph"])
