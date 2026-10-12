@@ -84,6 +84,24 @@ Run a long bounded Apple-Metal training session, resuming existing state:
 
     caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 360 --max-updates 1000000 --block 64 --max-run-gib 32
 
+For an operator-visible development run, prefer a smaller bounded session with
+human-readable progress and a stagnation stop:
+
+    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01
+
+The runner prints one line after every durable grade checkpoint. It includes
+the fixed-probe score before and after that lesson, change versus the previous
+visit to the same grade, rolling repeated-grade improvement, earlier-skill
+health, teacher reward, strategy count and mutations, elapsed time, and the
+current no-improvement clock.
+
+The grade-visits option is an explicit durable stop point. The
+patience-minutes option stops only after there are at least progress-window
+same-grade comparisons and that rolling trend has failed to reach
+min-repeat-improvement for the requested time. A value of 0.01 means one
+percentage point. All stops occur after a completed grade checkpoint, so the
+next invocation resumes the same model and optimizer.
+
 Run a short CPU session:
 
     python3 -m bilqis_school.engine --device cpu --minutes 10 --max-updates 100000 --block 32
