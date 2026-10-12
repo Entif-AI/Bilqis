@@ -129,3 +129,8 @@ Start with:
 ## License
 
 No repository-wide license is declared by this bootstrap commit. Source and redistribution policy is tracked in [issue #35](https://github.com/entif-ai/bilqis/issues/35). Do not infer rights beyond those granted by applicable source licenses or explicit project releases.
+# Exploratory alpha
+
+The source-grounded #102/#103 alpha is documented in [docs/ALPHA.md](docs/ALPHA.md),
+with the trained replay command in [docs/MICROSCOPE.md](docs/MICROSCOPE.md).
+It preserves the CP0008 reference and uses a separate, versioned semantic registry.

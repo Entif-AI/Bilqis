@@ -1,0 +1,2748 @@
+{
+  "version": "alpha-microscope-0.1.0",
+  "fixture_version": "alpha-microscope-fixtures-0.1.0",
+  "fixture_sha256": "dd4fd769b189f9d03baca7047a1c22b9a58a8653a5fbb619ec1acfee873aafc1",
+  "bindings": {
+    "checkpoint_file_sha256": "002cffcfbdf44eec2e509704d5a530bb134d655919ec129f46eeffda6b99a3eb",
+    "final_state_sha256": "850e579506d6c68fa0873900d2f9a6b920058c52108cd0e03cdd0ca2f28aef10",
+    "semantic_manifest_sha256": "b651ac6ce407897e520fca18bf001a063455cdafcadb0f1ab3767d7cfc0e76fe",
+    "token_abi_sha256": "a49ddf0d5405c4602290e7dbbfeaa187bc602ecdd17676daa7965b32d27fafef",
+    "initializer_manifest_sha256": "f77db59102ca3afbddd6de5175fd73abe52f8b20a79331041f12f79aa900f251",
+    "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+    "training_code_commit": "32bed02cc4dd871016db23e25319b8c789194d7d",
+    "training_pr_head": "d59c20d914fd8380909068017ca9fa2ef72d942f",
+    "training_source_hashes": {
+      "bilqis_alpha/__init__.py": "8f6434d15e2c6bb71134cd249f7758a45e0a8dfc52c82f1b10b30a59f6ac8d54",
+      "bilqis_alpha/codec.py": "26832c9de6064601ddc3e367f78b6dc116905b85faa558b36ff9ce20fecf462c",
+      "bilqis_alpha/data.py": "ca666d8f161eb4736d4c3242f2a42e0ee5b17d6611305342b658cbc12c947316",
+      "bilqis_alpha/features.py": "b598fbf05e53c1171ebf6b3a6544c1ae7a5fb4932421de7e9ed14721dd09f36e",
+      "bilqis_alpha/model.py": "5d2e1b497b975e9f5564c8f02b47551c4cfa483838e64805807730dd52dc819e",
+      "bilqis_alpha/run.py": "b172736be604eaf5fe80fa77d4ee87a94b611db2c3b1fe8cd169c2ec360db7a5",
+      "bilqis_alpha/semantics.py": "16717ca96c4233729ff3c762ca3618cb2be78a6e177337a7ea9ff3c8f0c9d2db",
+      "bilqis_ref/model.py": "ab4b8ed631f892ab43c5563c78282af8e169ae491e27ec026d7bcc1571d2b26b",
+      "configs/alpha-01.json": "5240dda3f7947cb73e15b2245d94d4b1374a09ee610dd706fef44e690c79df0b",
+      "fixtures/alpha/known-pass.json": "35b05f39a61c9d2043eb4f936cdb2c3296d8f625fd6fee45b017faf08747f41e",
+      "fixtures/alpha/semantic-registry.json": "42a96ad7cf50a08832fb05303758e221eafd7a207b120da06219c3b799210f72",
+      "fixtures/alpha/split-manifest.json": "883f9708dd7cf8888526de88eb60c66d04ad375d20afb865bd06fc947921113c",
+      "fixtures/alpha/token-manifest.json": "9a02a09d818f008465892391b025eaf7b8178167d1058d93416f691ace0c373f",
+      "requirements-alpha.txt": "6700277784ccb5aae902087c43fffd042d885d9bfcd6e61909819d3bc7a7e63b",
+      "schemas/alpha-semantic.schema.json": "c3ac0fe1e195be69a914598e1c1945114dcffc110b0148db30986a06bfbbe3d9"
+    }
+  },
+  "replay_code_sha256": "056453d3b81346d5dd4580786a64f1db7e9a6de62275b017023d811cf65ef0a8",
+  "replay_code_commit": "26733370c2b7d896904c03e83dcb5850fde2bd64",
+  "training_architecture": {
+    "vocab_size": 33,
+    "context": 128,
+    "width": 64,
+    "layers": 2,
+    "heads": 4,
+    "expansion": 2,
+    "precision": "ternary"
+  },
+  "resources": {
+    "training_examples": 49152,
+    "training_nonpadding_tokens": 2415782,
+    "training_padded_tokens": 3492608,
+    "wall_seconds": 41.95122237500618,
+    "cpu_seconds": 41.61868,
+    "peak_process_rss_bytes": 378568704,
+    "energy_joules": null,
+    "developer_tokens": null,
+    "paid_compute": false
+  },
+  "cases": [
+    {
+      "id": "K01-positive",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "210a0c5f6ae58b96ae494674be64b8d03d83921a7bd488cec4ee32655188d963",
+      "world_id": "25b380a83be6a10cb92ae933fcde1da02342d9168f1c168f037a92cda7954cad",
+      "query_id": "9e089121f7c5c2580fda64fb1becb009b90b5851749d470605787ebbc74b4e77",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "R(source=a, target=b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 31,
+        "token_sequence_sha256": "5f048529a9b9ceeabc7dc57b7fe4cd8861fe2beceef61ec1d4dc96a068f2ef75",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.46898743510246277,
+          -0.07592102885246277,
+          1.575143814086914,
+          -1.6567388772964478
+        ],
+        "probabilities": [
+          0.2117765098810196,
+          0.12280810624361038,
+          0.6401406526565552,
+          0.025274736806750298
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-210a0c5f6ae58b96ae49",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K02-negative",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "e8a7cdca45af16b835a93b0770cddcf93f576b3dd36f44bca28289f4b0fe698a",
+      "world_id": "584cd6271887f1234676bad0826072d0810f813e1714ad06b624cd6a05eb1f16",
+      "query_id": "9e089121f7c5c2580fda64fb1becb009b90b5851749d470605787ebbc74b4e77",
+      "rendered_world": "domain={a,b}; refute R(a->b) by source-1",
+      "rendered_query": "R(source=a, target=b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 23,
+        "token_sequence_sha256": "dbe6c12082bcfb08825b45a6aa8bba3bd9a9d9eb389c03069dcf3d0d874d9b7b",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "FALSE",
+        "actual": "FALSE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.3882966637611389,
+          0.322684645652771,
+          1.9886728525161743,
+          -3.2716004848480225
+        ],
+        "probabilities": [
+          0.14456874132156372,
+          0.13538776338100433,
+          0.7163230180740356,
+          0.0037204986438155174
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-e8a7cdca45af16b835a9",
+        "membership": "TRAIN",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K03-unknown",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "96b065a80409836563bc829ba3bc67c24189d0b94caf06d76bd32bfbdfbe0c3e",
+      "world_id": "38e5f798cb525ae602dca75f13d8583881106f528c534398b767932374f67215",
+      "query_id": "9e089121f7c5c2580fda64fb1becb009b90b5851749d470605787ebbc74b4e77",
+      "rendered_world": "domain={a,b}; no evidence",
+      "rendered_query": "R(source=a, target=b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 15,
+        "token_sequence_sha256": "af52704d5718245c42a0441628d171e86289801dfb5b5e10859168b96cad4f7b",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "UNKNOWN",
+        "actual": "UNKNOWN",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.6980565786361694,
+          -0.558214545249939,
+          1.9163204431533813,
+          -2.239349842071533
+        ],
+        "probabilities": [
+          0.2119079828262329,
+          0.06033311039209366,
+          0.7165270447731018,
+          0.011231763288378716
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-96b065a80409836563bc",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K04-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "fe8cd5c035115d7fc78fadfa1680e9b82681d05a3568b8cf5d8ebd8f8438f6b2",
+      "world_id": "853f9cfb62a627ed5ef48b90854fa68fbda47bfdb0852fadfe4ff15b031dc86c",
+      "query_id": "9e089121f7c5c2580fda64fb1becb009b90b5851749d470605787ebbc74b4e77",
+      "rendered_world": "domain={a,b}; refute R(a->b) by source-1; support R(a->b) by source-0",
+      "rendered_query": "R(source=a, target=b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 31,
+        "token_sequence_sha256": "660061a8bfafca19c043c27cc13d7ca27831e485d863794f3c930bee40e108bb",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "CONFLICT",
+        "actual": "CONFLICT",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.5661160349845886,
+          -0.11524099111557007,
+          1.5303256511688232,
+          -1.7365292310714722
+        ],
+        "probabilities": [
+          0.23648276925086975,
+          0.11964371055364609,
+          0.6202266216278076,
+          0.02364685758948326
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-fe8cd5c035115d7fc78f",
+        "membership": "TRAIN",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K05-role-reversal",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "8cbf534e0bd333a0e143e2d4b3e8342b20ee1187692873109833365e8393bb87",
+      "world_id": "25b380a83be6a10cb92ae933fcde1da02342d9168f1c168f037a92cda7954cad",
+      "query_id": "db8f80b5a501338f5a91ad3fa57eaf70cc2b5821bd513df51cd6546248415c9e",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "R(source=b, target=a)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 31,
+        "token_sequence_sha256": "865ab178168b1a6b806da67408e1f8d5e4f3bc72a1743e6800c48fb5fde53cb1",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "FALSE",
+        "actual": "FALSE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.04417352378368378,
+          0.12552154064178467,
+          1.3818957805633545,
+          -0.8892483115196228
+        ],
+        "probabilities": [
+          0.15902525186538696,
+          0.17250238358974457,
+          0.6059426069259644,
+          0.06252966821193695
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": "K01-positive",
+      "semantic_delta": {
+        "factor": "role_assignment",
+        "before_query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "after_query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world_unchanged": true,
+        "unrelated_fields_preserved": true
+      },
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-8cbf534e0bd333a0e143",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K06-negation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "33ae51d51703d1f30ca2d9f2cb973d272af2279b2b2c98fb01587474bba173d6",
+      "world_id": "25b380a83be6a10cb92ae933fcde1da02342d9168f1c168f037a92cda7954cad",
+      "query_id": "3b61e968719619e634aebd6376805f81520be6cfd9663525f2c9570f24896e76",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "NOT[R(source=a, target=b)]",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 33,
+        "token_sequence_sha256": "b1c547f0ed35570a4ed005ef1c4046a8f95f475ccaa242b79d74fd9ab77aad9b",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "FALSE",
+        "actual": "FALSE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.5511497259140015,
+          -0.14719510078430176,
+          1.6288965940475464,
+          -1.7077484130859375
+        ],
+        "probabilities": [
+          0.2202679067850113,
+          0.10956300050020218,
+          0.6471586227416992,
+          0.02301040105521679
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": "K01-positive",
+      "semantic_delta": {
+        "factor": "negation",
+        "before_query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "after_query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world_unchanged": true,
+        "unrelated_fields_preserved": true
+      },
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "NOT(RELATION)",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-33ae51d51703d1f30ca2",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K07-wide-negation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "body": {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              },
+              "op": "urn:bilqis:alpha:cogal:exists",
+              "variable": "urn:bilqis:alpha:cogal:x"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "fe0745d2bfce2b78d3a8596c33e651162f22257a37768132f983fb0674fc754a",
+      "world_id": "b771c13cf4ce808a15279c9813949e154a9c954978d6a3b2347dbc214e24baa3",
+      "query_id": "cf6b014b13c226b892cfe6ae82d064a424d2313c15b681abcdedfd1e6fd865e1",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; refute R(b->b) by source-1; support R(a->a) by source-0; support R(a->b) by source-0",
+      "rendered_query": "NOT[EXISTS x[R(source=x, target=b)]]",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"body\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:x\",\"kind\":\"variable\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"op\":\"urn:bilqis:alpha:cogal:exists\",\"variable\":\"urn:bilqis:alpha:cogal:x\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 53,
+        "token_sequence_sha256": "1a81e7c6ba2ca9c446a351c53b9fd1da583bfb8955a7404bef84a35034dd2ac8",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "FALSE",
+        "actual": "FALSE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "FALSE",
+        "logits": [
+          0.2969339191913605,
+          2.2923781871795654,
+          -1.611675500869751,
+          -1.4132452011108398
+        ],
+        "probabilities": [
+          0.11514647305011749,
+          0.8469564914703369,
+          0.017074663192033768,
+          0.020822329446673393
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "NOT(EXISTS(RELATION))",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-fe0745d2bfce2b78d3a8",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K08-narrow-negation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "body": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          "op": "urn:bilqis:alpha:cogal:exists",
+          "variable": "urn:bilqis:alpha:cogal:x"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "966816a7e2dbdeefc9cc3819c6e7e395da7e4c0fdd68182ddc5cdd30bc6ef492",
+      "world_id": "b771c13cf4ce808a15279c9813949e154a9c954978d6a3b2347dbc214e24baa3",
+      "query_id": "3a64ab26114e6a6dffa296acc1142a812fe4b7b9c4e4437eaeea7d1bdb5c90fa",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; refute R(b->b) by source-1; support R(a->a) by source-0; support R(a->b) by source-0",
+      "rendered_query": "EXISTS x[NOT[R(source=x, target=b)]]",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"body\":{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:x\",\"kind\":\"variable\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},\"op\":\"urn:bilqis:alpha:cogal:exists\",\"variable\":\"urn:bilqis:alpha:cogal:x\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 53,
+        "token_sequence_sha256": "eb0b7fcf5751452027a863a221508b4b496cdd993b46c777cc261ab6362b28b1",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "TRUE",
+        "logits": [
+          2.691889762878418,
+          0.2497989535331726,
+          -1.8397773504257202,
+          -1.5606756210327148
+        ],
+        "probabilities": [
+          0.8993054628372192,
+          0.07822051644325256,
+          0.009678971022367477,
+          0.012795036658644676
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": "K07-wide-negation",
+      "semantic_delta": {
+        "factor": "scope",
+        "before_query": {
+          "args": [
+            {
+              "body": {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              },
+              "op": "urn:bilqis:alpha:cogal:exists",
+              "variable": "urn:bilqis:alpha:cogal:x"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "after_query": {
+          "body": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          "op": "urn:bilqis:alpha:cogal:exists",
+          "variable": "urn:bilqis:alpha:cogal:x"
+        },
+        "world_unchanged": true,
+        "unrelated_fields_preserved": true
+      },
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "EXISTS(NOT(RELATION))",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-966816a7e2dbdeefc9cc",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K09-mutual-exists",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "body": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              },
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:and"
+          },
+          "op": "urn:bilqis:alpha:cogal:exists",
+          "variable": "urn:bilqis:alpha:cogal:x"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "4b8238fa7a3f9619bdc31592d96f70b7379a1fa79c792add810a4dc2f7873af0",
+      "world_id": "6b998cd1aac14a80742c2c6a1a02cda7ea467489063c1163e35b951191305a45",
+      "query_id": "c25b22532fb87ec0457e059b217f212b4855f3c305649c96f46f9864a06873c8",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->a) by source-0; support R(a->b) by source-0",
+      "rendered_query": "EXISTS x[(R(source=a, target=x) AND R(source=x, target=a))]",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"body\":{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:x\",\"kind\":\"variable\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:x\",\"kind\":\"variable\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:and\"},\"op\":\"urn:bilqis:alpha:cogal:exists\",\"variable\":\"urn:bilqis:alpha:cogal:x\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 53,
+        "token_sequence_sha256": "a880cd5b326bf699d4f604db8a8d0b057a3441d6bfa5aee77e8dab8eb1081efc",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "TRUE",
+        "logits": [
+          1.2610605955123901,
+          0.4357975125312805,
+          0.9810253381729126,
+          -3.9283533096313477
+        ],
+        "probabilities": [
+          0.4546586871147156,
+          0.19919493794441223,
+          0.34361153841018677,
+          0.0025348463095724583
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "EXISTS(AND(RELATION,RELATION))",
+      "withheld_from_train": true,
+      "split_evidence": {
+        "corpus_id": "A-4b8238fa7a3f9619bdc3",
+        "membership": "HELDOUT",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": false
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K10-not-and",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                },
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:and"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "e9526dae76446a987342ea5a7fba77200f37d3a079ea1ff1f3d8ff36d96c3af6",
+      "world_id": "25b380a83be6a10cb92ae933fcde1da02342d9168f1c168f037a92cda7954cad",
+      "query_id": "8334859722c777202bc26f6d5361ec4a0aa3a7fbb25ed19a4e4c67abc4d4d215",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "NOT[(R(source=a, target=b) AND R(source=b, target=a))]",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:and\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 43,
+        "token_sequence_sha256": "1c728a02b9c2a78bd7446dddd4c741833506ebe5e1d6f8d1fb85606838ea7380",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.44825857877731323,
+          -0.009782925248146057,
+          1.9315651655197144,
+          -2.04461407661438
+        ],
+        "probabilities": [
+          0.1633269190788269,
+          0.10330775380134583,
+          0.719862699508667,
+          0.013502588495612144
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "NOT(AND(RELATION,RELATION))",
+      "withheld_from_train": true,
+      "split_evidence": {
+        "corpus_id": "A-e9526dae76446a987342",
+        "membership": "HELDOUT",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": false
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K11-negated-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "80563a52ab4e7eebd8b8bf2c099d97c7037e7879d90117ccd04c457e21dc9526",
+      "world_id": "853f9cfb62a627ed5ef48b90854fa68fbda47bfdb0852fadfe4ff15b031dc86c",
+      "query_id": "3b61e968719619e634aebd6376805f81520be6cfd9663525f2c9570f24896e76",
+      "rendered_world": "domain={a,b}; refute R(a->b) by source-1; support R(a->b) by source-0",
+      "rendered_query": "NOT[R(source=a, target=b)]",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 33,
+        "token_sequence_sha256": "f140c6a1c5d63f9e5f4d9206f9c2842e54e21d5bb89009b40bd0634c28f08eb3",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "CONFLICT",
+        "actual": "CONFLICT",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.6818112134933472,
+          -0.2557425796985626,
+          1.709646463394165,
+          -1.944115400314331
+        ],
+        "probabilities": [
+          0.23479877412319183,
+          0.09194356948137283,
+          0.65626460313797,
+          0.01699301227927208
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "NOT(RELATION)",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-80563a52ab4e7eebd8b8",
+        "membership": "TRAIN",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K12-equality",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:equal"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "d5390b2ddb03fd1293957d1f0613173334215c525d1dab59f2973ab7eced1ab1",
+      "world_id": "38e5f798cb525ae602dca75f13d8583881106f528c534398b767932374f67215",
+      "query_id": "4cae08ea20f27de8fa55bf8ac294233a33d67b64fde424d86b9d6e4bd8dd4a72",
+      "rendered_world": "domain={a,b}; no evidence",
+      "rendered_query": "(a = a)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:equal\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 15,
+        "token_sequence_sha256": "143ab5d121a3c2c74cc8644690ddea9d8a2b88bd643588f929a3bc9e8e45c5b9",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "TRUE",
+        "logits": [
+          2.2828915119171143,
+          1.8450822830200195,
+          -1.8718900680541992,
+          -3.2299046516418457
+        ],
+        "probabilities": [
+          0.6005381941795349,
+          0.38761672377586365,
+          0.00942197721451521,
+          0.0024230568669736385
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "EQUAL",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-d5390b2ddb03fd129395",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K13-inequality",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:equal"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "4ac2dc927dda4584c4dbe1ef04b5fe4afd007241e6880d6af5654713cb675546",
+      "world_id": "38e5f798cb525ae602dca75f13d8583881106f528c534398b767932374f67215",
+      "query_id": "acbf40a301f87521e17639e63c310b2febc1241fe297934be75d1d885a4407e4",
+      "rendered_world": "domain={a,b}; no evidence",
+      "rendered_query": "(a = b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:equal\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 15,
+        "token_sequence_sha256": "93995bb3ec8576a00875b3cd33b74e156979a7ddcf3406fea672fa485f7d3080",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "FALSE",
+        "actual": "FALSE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "FALSE",
+        "logits": [
+          1.1068511009216309,
+          2.8919646739959717,
+          -2.3529467582702637,
+          -2.290679931640625
+        ],
+        "probabilities": [
+          0.14234575629234314,
+          0.8484172224998474,
+          0.004474798683077097,
+          0.004762285389006138
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "EQUAL",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-4ac2dc927dda4584c4db",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K14-unknown-and-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:and"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "fbef1809f6d70dd5db94e5c6d8c61b151a516099b4a448563ab6acd62cd2d006",
+      "world_id": "03c26e3d6a3c65c81a55833325f4583d9440955b89f67b3ab5833ad859496a7f",
+      "query_id": "de353642addbf32694da9a8fad58b07e26a7caf6aab6f303aa4b59865490fb3d",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(b->a) by source-0",
+      "rendered_query": "(R(source=a, target=b) AND R(source=b, target=a))",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:and\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 41,
+        "token_sequence_sha256": "0c472626ed62f61dd9a4a78a96cda247f4a4b20129109273f9144f49be3c4135",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "FALSE",
+        "actual": "FALSE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          -1.0574785470962524,
+          1.1628636121749878,
+          1.5854990482330322,
+          -1.7941739559173584
+        ],
+        "probabilities": [
+          0.04041355848312378,
+          0.37222838401794434,
+          0.5680122971534729,
+          0.01934569701552391
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "AND(RELATION,RELATION)",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-fbef1809f6d70dd5db94",
+        "membership": "TRAIN",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "K15-unknown-or-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "9133cf3dab26188400b3d25fac0831d8ebcdf2119ceeaae22c6757e47ac48f3c",
+      "world_id": "03c26e3d6a3c65c81a55833325f4583d9440955b89f67b3ab5833ad859496a7f",
+      "query_id": "9b6d3d42ea0a0115c7ad636f7788f8b0513b2102f026c63cfb6531f42403fd2b",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(b->a) by source-0",
+      "rendered_query": "(R(source=a, target=b) OR R(source=b, target=a))",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:or\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 41,
+        "token_sequence_sha256": "022d51f6420a216b96266a1970b844caf4429d01055e50894fcdd6b3f06e48f7",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          1.1215884685516357,
+          -0.899927020072937,
+          1.7729253768920898,
+          -2.566044807434082
+        ],
+        "probabilities": [
+          0.32514095306396484,
+          0.04306640475988388,
+          0.6236540079116821,
+          0.008138660341501236
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "composition": "OR(RELATION,RELATION)",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": null,
+        "membership": "candidate path outside scored corpus",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "M16-add-refutation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "dee76e5ab63cf247c42685f89d5f6ed41540e6b86bb2c6a58193c5d4eb85ce55",
+      "world_id": "3925f544fa9567527bdb80627a7f71da2ad4365ae845648faa7d680bee397c03",
+      "query_id": "9e089121f7c5c2580fda64fb1becb009b90b5851749d470605787ebbc74b4e77",
+      "rendered_world": "domain={a,b}; refute R(a->b) by source-1; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "R(source=a, target=b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 39,
+        "token_sequence_sha256": "6d87321dd606122b666afeb828701f9bf55bf9ef275b42e63fd0660fc752d4f7",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "CONFLICT",
+        "actual": "CONFLICT",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "TRUE",
+        "logits": [
+          1.077675461769104,
+          0.16451910138130188,
+          0.03669263422489166,
+          -0.8190485835075378
+        ],
+        "probabilities": [
+          0.5250935554504395,
+          0.21069678664207458,
+          0.18541444838047028,
+          0.07879523187875748
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": "K01-positive",
+      "semantic_delta": {
+        "factor": "evidence",
+        "added_facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          }
+        ],
+        "removed_facts": [],
+        "unrelated_fields_preserved": true
+      },
+      "selection_provenance": "single-factor intervention defined from contract, no success selection",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-dee76e5ab63cf247c426",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "M17-remove-support",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "99a076bf9f39da736f69f457fa3e1c15647668458a3a088cdeb6a9deb476afe5",
+      "world_id": "fbdb25a41fa5695e13799feec5db436a2fbf20eaee6a8e87f0dcc7a839b13657",
+      "query_id": "9e089121f7c5c2580fda64fb1becb009b90b5851749d470605787ebbc74b4e77",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1",
+      "rendered_query": "R(source=a, target=b)",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 23,
+        "token_sequence_sha256": "6a10c3f1f66f6abc054d4ae17d1a46f9286bb520873301a4adea90280ea580e9",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "UNKNOWN",
+        "actual": "UNKNOWN",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          0.34175461530685425,
+          0.1579255759716034,
+          2.1308326721191406,
+          -3.0694003105163574
+        ],
+        "probabilities": [
+          0.12740454077720642,
+          0.10601051151752472,
+          0.7623801827430725,
+          0.0042047398164868355
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "PASS",
+      "parent": "K01-positive",
+      "semantic_delta": {
+        "factor": "evidence",
+        "added_facts": [],
+        "removed_facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          }
+        ],
+        "unrelated_fields_preserved": true
+      },
+      "selection_provenance": "single-factor intervention defined from contract, no success selection",
+      "composition": "RELATION",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": "A-99a076bf9f39da736f69",
+        "membership": "DEV",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": true
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "M18-first-heldout-miss",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:not"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "00f5b92c80e10fe107ff79b34519ccabd3fba77add077fe331b2f398e199b8c5",
+      "world_id": "232c7b798d389173057f3d68584754197461922d1866dbb5a3c13bbf0829c343",
+      "query_id": "6d4359f7cb52e07c9a4cd4a537331496279eccbb8f0ac4bc510f0d26625dac55",
+      "rendered_world": "domain={a,b}; refute R(a->a) by source-1; refute R(a->b) by source-1; refute R(b->b) by source-1; support R(b->b) by source-0",
+      "rendered_query": "(NOT[R(source=b, target=a)] OR R(source=a, target=b))",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:or\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 59,
+        "token_sequence_sha256": "6000a39a8be78473891b1d07ca96c98f72097e320d80cc700486cbd6551103de",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "UNKNOWN",
+        "actual": "UNKNOWN",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "TRUE",
+        "logits": [
+          1.8596105575561523,
+          -0.06393080949783325,
+          -2.6953718662261963,
+          1.2396998405456543
+        ],
+        "probabilities": [
+          0.5901111960411072,
+          0.08620858192443848,
+          0.0062048351392149925,
+          0.3174753785133362
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "first observed heldout miss by frozen corpus ID",
+      "composition": "OR(NOT(RELATION),RELATION)",
+      "withheld_from_train": true,
+      "split_evidence": {
+        "corpus_id": "A-00f5b92c80e10fe107ff",
+        "membership": "HELDOUT",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": false
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "M19-intended-relation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:not"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "6716c86181735cde4f7daf150f198c5b632efa413720f64662195cd91e644765",
+      "world_id": "25b380a83be6a10cb92ae933fcde1da02342d9168f1c168f037a92cda7954cad",
+      "query_id": "6d4359f7cb52e07c9a4cd4a537331496279eccbb8f0ac4bc510f0d26625dac55",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "(NOT[R(source=b, target=a)] OR R(source=a, target=b))",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:or\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 43,
+        "token_sequence_sha256": "7d6e1b0743b8bd6d8c645c5bfca005717bd51adcb3a78ad817487b666eddc5d5",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          1.0625114440917969,
+          -1.0326435565948486,
+          2.234370708465576,
+          -2.805544376373291
+        ],
+        "probabilities": [
+          0.22873148322105408,
+          0.028145674616098404,
+          0.7383426427841187,
+          0.004780250135809183
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-defined wrong-relation/same-final-verdict witness; not a network intermediate",
+      "composition": "OR(NOT(RELATION),RELATION)",
+      "withheld_from_train": true,
+      "split_evidence": {
+        "corpus_id": "A-6716c86181735cde4f7d",
+        "membership": "HELDOUT",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": false
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    },
+    {
+      "id": "M20-wrong-candidate",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:not"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "semantic_sha256": "24300cad92714921f3c78a0410b1a2addf67c94c35bc8615a0197d2af1aea585",
+      "world_id": "25b380a83be6a10cb92ae933fcde1da02342d9168f1c168f037a92cda7954cad",
+      "query_id": "8b79697d7af27ebf7afcae1d2c60e1c57d112721cb19441d4be2596232a9245b",
+      "rendered_world": "domain={a,b}; refute R(b->a) by source-1; support R(a->b) by source-0",
+      "rendered_query": "(NOT[R(source=b, target=a)] OR R(source=b, target=a))",
+      "rendering_provenance": "deterministic display; canonical semantic object is learner input",
+      "generic_typed_rendering": "{\"abi\":\"bilqis-alpha-cogal-0.1.0\",\"query\":{\"args\":[{\"args\":[{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:not\"},{\"args\":[{\"id\":\"urn:bilqis:alpha:cogal:b\",\"kind\":\"constant\"},{\"id\":\"urn:bilqis:alpha:cogal:a\",\"kind\":\"constant\"}],\"op\":\"urn:bilqis:alpha:cogal:relation\"}],\"op\":\"urn:bilqis:alpha:cogal:or\"},\"world\":{\"entities\":[\"urn:bilqis:alpha:cogal:a\",\"urn:bilqis:alpha:cogal:b\"],\"facts\":[{\"polarity\":\"urn:bilqis:alpha:cogal:refute\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:b\",\"target\":\"urn:bilqis:alpha:cogal:a\"},\"source\":\"urn:bilqis:alpha:cogal:source-1\"},{\"polarity\":\"urn:bilqis:alpha:cogal:support\",\"predicate\":\"urn:bilqis:alpha:cogal:relation\",\"roles\":{\"source\":\"urn:bilqis:alpha:cogal:a\",\"target\":\"urn:bilqis:alpha:cogal:b\"},\"source\":\"urn:bilqis:alpha:cogal:source-0\"}],\"sources\":[\"urn:bilqis:alpha:cogal:source-0\",\"urn:bilqis:alpha:cogal:source-1\"]}}",
+      "alternate_rendering_provenance": "information-matched JSON display; not a separately trained comparator",
+      "codec": {
+        "version": "alpha-prefix-0.1.0",
+        "nonpadding_tokens": 43,
+        "token_sequence_sha256": "15fd87ed206590f86c7d556238cd4655c81f0b22040b724ba94f1a7f56ba1b43",
+        "roundtrip_verified": true
+      },
+      "oracle": {
+        "expected": "TRUE",
+        "actual": "TRUE",
+        "provenance": "formal Belnap-Dunn finite evaluator"
+      },
+      "neural": {
+        "prediction": "UNKNOWN",
+        "logits": [
+          1.5849794149398804,
+          -0.7684320211410522,
+          1.621993899345398,
+          -3.1023736000061035
+        ],
+        "probabilities": [
+          0.466861367225647,
+          0.044372547417879105,
+          0.4844658076763153,
+          0.004300276283174753
+        ],
+        "provenance": "live neural inference"
+      },
+      "status": "FAIL",
+      "parent": null,
+      "semantic_delta": null,
+      "selection_provenance": "contract-defined wrong-relation/same-final-verdict witness; not a network intermediate",
+      "composition": "OR(NOT(RELATION),RELATION)",
+      "withheld_from_train": false,
+      "split_evidence": {
+        "corpus_id": null,
+        "membership": "candidate path outside scored corpus",
+        "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+        "pattern_in_train": false
+      },
+      "explanation": "Oracle describes the declared evidence and logical composition. Neural logits expose a prediction, without an intermediate explanation interface.",
+      "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning"
+    }
+  ],
+  "wrong_candidate_path": {
+    "provenance": "independently evaluated candidate; no neural intermediate interface",
+    "intended_semantic": {
+      "abi": "bilqis-alpha-cogal-0.1.0",
+      "query": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          {
+            "args": [
+              {
+                "id": "urn:bilqis:alpha:cogal:a",
+                "kind": "constant"
+              },
+              {
+                "id": "urn:bilqis:alpha:cogal:b",
+                "kind": "constant"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:relation"
+          }
+        ],
+        "op": "urn:bilqis:alpha:cogal:or"
+      },
+      "world": {
+        "entities": [
+          "urn:bilqis:alpha:cogal:a",
+          "urn:bilqis:alpha:cogal:b"
+        ],
+        "facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:b",
+              "target": "urn:bilqis:alpha:cogal:a"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          },
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          }
+        ],
+        "sources": [
+          "urn:bilqis:alpha:cogal:source-0",
+          "urn:bilqis:alpha:cogal:source-1"
+        ]
+      }
+    },
+    "candidate_semantic": {
+      "abi": "bilqis-alpha-cogal-0.1.0",
+      "query": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          {
+            "args": [
+              {
+                "id": "urn:bilqis:alpha:cogal:b",
+                "kind": "constant"
+              },
+              {
+                "id": "urn:bilqis:alpha:cogal:a",
+                "kind": "constant"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:relation"
+          }
+        ],
+        "op": "urn:bilqis:alpha:cogal:or"
+      },
+      "world": {
+        "entities": [
+          "urn:bilqis:alpha:cogal:a",
+          "urn:bilqis:alpha:cogal:b"
+        ],
+        "facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:b",
+              "target": "urn:bilqis:alpha:cogal:a"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          },
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          }
+        ],
+        "sources": [
+          "urn:bilqis:alpha:cogal:source-0",
+          "urn:bilqis:alpha:cogal:source-1"
+        ]
+      }
+    },
+    "intended_relation": {
+      "op": "urn:bilqis:alpha:cogal:relation",
+      "args": [
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:a"
+        },
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:b"
+        }
+      ]
+    },
+    "candidate_relation": {
+      "op": "urn:bilqis:alpha:cogal:relation",
+      "args": [
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:b"
+        },
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:a"
+        }
+      ]
+    },
+    "relation_identity_correct": false,
+    "relation_oracle_intended": "TRUE",
+    "relation_oracle_candidate": "FALSE",
+    "relation_consequence_correct": false,
+    "unchanged_downstream_consequence": "TRUE",
+    "final_oracle_intended": "TRUE",
+    "final_oracle_candidate": "TRUE",
+    "terminal_verdict_correct": true,
+    "neural_intermediate": null,
+    "neural_intermediate_status": "MISSING: architecture exposes final logits only"
+  },
+  "rejected_paths": [
+    {
+      "id": "M21-unsupported-implication",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "op": "urn:bilqis:alpha:cogal:implies",
+          "args": [
+            {
+              "op": "urn:bilqis:alpha:cogal:relation",
+              "args": [
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:a"
+                },
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:b"
+                }
+              ]
+            },
+            {
+              "op": "urn:bilqis:alpha:cogal:relation",
+              "args": [
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:b"
+                },
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:a"
+                }
+              ]
+            }
+          ]
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected_error": "UNSUPPORTED_CONSTRUCT",
+      "status": "REJECTED",
+      "error": "UNSUPPORTED_CONSTRUCT",
+      "neural_status": "NOT_RUN: typed codec refused unsupported semantic input"
+    }
+  ],
+  "label_defect_check": {
+    "injected": "K03 UNKNOWN->FALSE label",
+    "detected": true,
+    "diagnostic": "oracle/expected mismatch: K03-unknown expected=FALSE actual=UNKNOWN",
+    "restored_expected": "UNKNOWN",
+    "provenance": "formal regression check; not a neural repair claim"
+  },
+  "missing": {
+    "80": [
+      "remaining T1 operators",
+      "nested binders",
+      "general FOL",
+      "T3 proofs/tableaux",
+      "ambiguity",
+      "inapplicability"
+    ],
+    "7": [
+      "events/time/modality/causality",
+      "multiple live interpretations",
+      "general typed ABI"
+    ],
+    "84": [
+      "full Rosetta epistemic algebra"
+    ],
+    "85": [
+      "general mathematical substrate"
+    ],
+    "86": [
+      "complete pre-language freeze"
+    ]
+  },
+  "equivalent_representations": {
+    "original_surface": {
+      "abi": "bilqis-alpha-cogal-0.1.0",
+      "query": {
+        "args": [
+          {
+            "id": "urn:bilqis:alpha:cogal:a",
+            "kind": "constant"
+          },
+          {
+            "id": "urn:bilqis:alpha:cogal:b",
+            "kind": "constant"
+          }
+        ],
+        "op": "urn:bilqis:alpha:cogal:relation"
+      },
+      "world": {
+        "entities": [
+          "urn:bilqis:alpha:cogal:a",
+          "urn:bilqis:alpha:cogal:b"
+        ],
+        "facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:b",
+              "target": "urn:bilqis:alpha:cogal:a"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          },
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          }
+        ],
+        "sources": [
+          "urn:bilqis:alpha:cogal:source-0",
+          "urn:bilqis:alpha:cogal:source-1"
+        ]
+      }
+    },
+    "reordered_surface": {
+      "abi": "bilqis-alpha-cogal-0.1.0",
+      "query": {
+        "args": [
+          {
+            "id": "urn:bilqis:alpha:cogal:a",
+            "kind": "constant"
+          },
+          {
+            "id": "urn:bilqis:alpha:cogal:b",
+            "kind": "constant"
+          }
+        ],
+        "op": "urn:bilqis:alpha:cogal:relation"
+      },
+      "world": {
+        "entities": [
+          "urn:bilqis:alpha:cogal:a",
+          "urn:bilqis:alpha:cogal:b"
+        ],
+        "facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          },
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:b",
+              "target": "urn:bilqis:alpha:cogal:a"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          }
+        ],
+        "sources": [
+          "urn:bilqis:alpha:cogal:source-0",
+          "urn:bilqis:alpha:cogal:source-1"
+        ]
+      }
+    },
+    "canonical_identity_equal": true,
+    "compiled_tokens_equal": true,
+    "oracle_original": "TRUE",
+    "oracle_reordered": "TRUE",
+    "neural_original": {
+      "prediction": "UNKNOWN",
+      "logits": [
+        0.46898743510246277,
+        -0.07592102885246277,
+        1.575143814086914,
+        -1.6567388772964478
+      ],
+      "probabilities": [
+        0.2117765098810196,
+        0.12280810624361038,
+        0.6401406526565552,
+        0.025274736806750298
+      ],
+      "provenance": "live neural inference"
+    },
+    "neural_reordered": {
+      "prediction": "UNKNOWN",
+      "logits": [
+        0.46898743510246277,
+        -0.07592102885246277,
+        1.575143814086914,
+        -1.6567388772964478
+      ],
+      "probabilities": [
+        0.2117765098810196,
+        0.12280810624361038,
+        0.6401406526565552,
+        0.025274736806750298
+      ],
+      "provenance": "live neural inference"
+    },
+    "provenance": "live inference on meaning-preserving evidence-order renderings; no causal comparison"
+  },
+  "neural_intermediate_status": "MISSING: architecture exposes final logits only",
+  "scientific_status": "Exploratory ALPHA; partial learning with visible failures; no SYS-01 or causal efficiency claim"
+}
