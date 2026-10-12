@@ -17,6 +17,7 @@ from pathlib import Path
 import random
 import signal
 import shutil
+import statistics
 import time
 import uuid
 
@@ -57,6 +58,9 @@ INITIAL = (
 )
 MAX_STRATEGIES = 512
 GRADES = skill_tree()
+REPORT_GRADES = tuple(g.number for g in GRADES if g.ready)
+REPORT_GRADE_IDS = tuple(f"G{grade:02d}" for grade in REPORT_GRADES)
+BASELINE_PROBE_PROFILE = "school50-fixed-24-v1"
 
 
 def _read(path):
@@ -186,6 +190,8 @@ def initialize(out=RUN):
            "optimizer_step":13848,"vocab":len(graph["tokens"]),
            "graph_sha256":digest(graph),
            "parent_checkpoint_sha256":source["checkpoint_sha256"],
+           "school_start_checkpoint":name,
+           "school_start_checkpoint_sha256":checksum,
            "next_grade":1,"spiral_pass":1,"completed_grades":0,
            "completed_updates":0,"teacher":_teacher(),
            "blocked_grade_ids":[g.id for g in GRADES if not g.ready],
@@ -274,6 +280,259 @@ def _scores(model, lib, graph, grade, seed, *, count=24, device="cpu"):
     return correct/count
 
 
+def _find_school_start_checkpoint(out, state):
+    named=state.get("school_start_checkpoint")
+    if named:
+        path=Path(out)/named
+        expected=state.get("school_start_checkpoint_sha256")
+        if not path.is_file() or (expected and _sha(path)!=expected):
+            raise ValueError("SCHOOL_START_CHECKPOINT_MISSING_OR_CHANGED")
+        return path
+    candidates=[]
+    for path in sorted(Path(out).glob("student-13848-*.pt")):
+        try:
+            _,optimizer,payload=load_checkpoint(path)
+        except Exception:
+            continue
+        if (optimizer_receipt(optimizer)["steps"]==[13848] and
+            len(payload["graph"]["tokens"])==state["vocab"] and
+            digest(payload["graph"])==state["graph_sha256"]):
+            candidates.append(path)
+    if len(candidates)!=1:
+        raise ValueError("SCHOOL_START_CHECKPOINT_AMBIGUOUS_OR_MISSING")
+    return candidates[0]
+
+
+def _ensure_starting_probe_baseline(out, state, lib):
+    if (state.get("school_start_probe_profile")==BASELINE_PROBE_PROFILE and
+        set(state.get("school_start_probe_scores",{}))==set(REPORT_GRADE_IDS)):
+        return False
+    path=_find_school_start_checkpoint(out,state)
+    model,optimizer,payload=load_checkpoint(path)
+    if optimizer_receipt(optimizer)["steps"] != [13848]:
+        raise ValueError("SCHOOL_START_CHECKPOINT_STEP_DRIFT")
+    scores={
+        f"G{grade:02d}":_scores(
+            model,lib,payload["graph"],grade,170003+grade*617,
+            count=24,device="cpu")
+        for grade in REPORT_GRADES
+    }
+    state["school_start_checkpoint"]=path.name
+    state["school_start_checkpoint_sha256"]=_sha(path)
+    state["school_start_probe_profile"]=BASELINE_PROBE_PROFILE
+    state["school_start_probe_scores"]=scores
+    state["school_start_probe_mean"]=sum(scores.values())/len(scores)
+    return True
+
+
+def _pass_rows(state, pass_number):
+    rows={}
+    for record in state["grade_ledger"]:
+        if (record["spiral_pass"]==pass_number and
+            record["grade"] in REPORT_GRADE_IDS):
+            if record["grade"] in rows:
+                raise ValueError("DUPLICATE_GRADE_IN_SPIRAL_PASS")
+            rows[record["grade"]]=record
+    return rows
+
+
+def _find_pass_checkpoint(out, state, pass_number):
+    rows=_pass_rows(state,pass_number)
+    if set(rows)!=set(REPORT_GRADE_IDS):
+        raise ValueError("PASS_CHECKPOINT_REQUIRES_COMPLETE_EXECUTABLE_PASS")
+    step=rows[REPORT_GRADE_IDS[-1]]["optimizer_step"]
+    candidates=[]
+    for path in sorted(Path(out).glob(f"student-{step}-*.pt")):
+        try:
+            _,optimizer,payload=load_checkpoint(path)
+        except Exception:
+            continue
+        metadata=payload.get("metadata",{})
+        if (optimizer_receipt(optimizer)["steps"]==[step] and
+            metadata.get("last_grade")==REPORT_GRADES[-1] and
+            metadata.get("spiral_pass")==pass_number and
+            len(payload["graph"]["tokens"])==state["vocab"] and
+            digest(payload["graph"])==state["graph_sha256"]):
+            candidates.append(path)
+    if len(candidates)!=1:
+        raise ValueError("PASS_CHECKPOINT_AMBIGUOUS_OR_MISSING")
+    return candidates[0]
+
+
+def _probe_all_grades(model, graph, lib, *, device):
+    return {
+        f"G{grade:02d}":_scores(
+            model,lib,graph,grade,170003+grade*617,count=24,device=device)
+        for grade in REPORT_GRADES
+    }
+
+
+def _pass_report(pass_number, scores, baseline, previous=None, *,
+                 checkpoint=None, checkpoint_sha256=None, optimizer_step=None):
+    if set(scores)!=set(REPORT_GRADE_IDS) or set(baseline)!=set(REPORT_GRADE_IDS):
+        raise ValueError("PASS_REPORT_REQUIRES_COMPLETE_SCORE_SET")
+    if previous is not None and set(previous)!=set(REPORT_GRADE_IDS):
+        raise ValueError("PASS_REPORT_PREVIOUS_SCORE_SET_INCOMPLETE")
+    values=[scores[grade] for grade in REPORT_GRADE_IDS]
+    start_deltas=[scores[g]-baseline[g] for g in REPORT_GRADE_IDS]
+    prior_deltas=(
+        [scores[g]-previous[g] for g in REPORT_GRADE_IDS]
+        if previous is not None else None)
+    low=min(REPORT_GRADE_IDS,key=lambda grade:scores[grade])
+    high=max(REPORT_GRADE_IDS,key=lambda grade:scores[grade])
+    return {
+        "pass":pass_number,
+        "checkpoint":checkpoint,
+        "checkpoint_sha256":checkpoint_sha256,
+        "optimizer_step":optimizer_step,
+        "scores":dict(scores),
+        "mean_probe_score":sum(values)/len(values),
+        "median_probe_score":statistics.median(values),
+        "mean_vs_previous":(
+            sum(prior_deltas)/len(prior_deltas)
+            if prior_deltas is not None else None),
+        "median_vs_previous":(
+            statistics.median(prior_deltas)
+            if prior_deltas is not None else None),
+        "mean_vs_school_start":sum(start_deltas)/len(start_deltas),
+        "median_vs_school_start":statistics.median(start_deltas),
+        "school_start_mean_probe_score":sum(baseline.values())/len(baseline),
+        "mean_gap_to_100":1.0-sum(values)/len(values),
+        "grades_at_or_above_90":sum(value>=.9 for value in values),
+        "perfect_grades":sum(value==1.0 for value in values),
+        "lowest_grade":low,
+        "lowest_probe_score":scores[low],
+        "highest_grade":high,
+        "highest_probe_score":scores[high],
+    }
+
+
+def _pass_summary_line(report):
+    prior=(
+        "n/a" if report["mean_vs_previous"] is None else
+        f"mean {report['mean_vs_previous']*100:+.1f}pp, "
+        f"median {report['median_vs_previous']*100:+.1f}pp"
+    )
+    disposition=report.get("disposition","OBSERVED")
+    return (
+        f"=== PASS {report['pass']} REPORT | "
+        f"mean probe {report['mean_probe_score']*100:.1f}% | "
+        f"median probe {report['median_probe_score']*100:.1f}% | "
+        f"vs prior pass {prior} | "
+        f"vs school start mean {report['mean_vs_school_start']*100:+.1f}pp, "
+        f"median {report['median_vs_school_start']*100:+.1f}pp | "
+        f">=90% {report['grades_at_or_above_90']}/{len(REPORT_GRADES)} | "
+        f"100% {report['perfect_grades']}/{len(REPORT_GRADES)} | "
+        f"gap to 100 {report['mean_gap_to_100']*100:.1f}pp | "
+        f"low {report['lowest_grade']} {report['lowest_probe_score']*100:.1f}% | "
+        f"high {report['highest_grade']} {report['highest_probe_score']*100:.1f}% | "
+        f"{disposition} ==="
+    )
+
+
+def _material_pass_regression(current_scores, accepted_scores, threshold):
+    deltas=[current_scores[g]-accepted_scores[g] for g in REPORT_GRADE_IDS]
+    mean_delta=sum(deltas)/len(deltas)
+    median_delta=statistics.median(deltas)
+    regressions=sum(delta<0 for delta in deltas)
+    return {
+        "regressed":(
+            mean_delta <= -threshold and
+            median_delta < 0 and
+            regressions > len(deltas)//2),
+        "mean_delta":mean_delta,
+        "median_delta":median_delta,
+        "regressed_grades":regressions,
+        "improved_grades":sum(delta>0 for delta in deltas),
+        "unchanged_grades":sum(delta==0 for delta in deltas),
+    }
+
+
+def _restore_last_results_to_pass(state, pass_number):
+    rows=_pass_rows(state,pass_number)
+    if set(rows)!=set(REPORT_GRADE_IDS):
+        raise ValueError("ACCEPTED_PASS_ROWS_MISSING")
+    for grade in REPORT_GRADE_IDS:
+        state["last_results"][grade]=rows[grade]
+
+
+def _load_accepted_student(out, state, accepted, device):
+    path=Path(out)/accepted["checkpoint"]
+    if not path.is_file() or _sha(path)!=accepted["checkpoint_sha256"]:
+        raise ValueError("ACCEPTED_PASS_CHECKPOINT_MISSING_OR_CHANGED")
+    model,optimizer,payload=load_checkpoint(path)
+    if optimizer_receipt(optimizer)["steps"] != [accepted["optimizer_step"]]:
+        raise ValueError("ACCEPTED_PASS_OPTIMIZER_STEP_CHANGED")
+    _device(model,optimizer,device)
+    state["checkpoint"]=path.name
+    state["checkpoint_sha256"]=accepted["checkpoint_sha256"]
+    state["model_sha256"]=state_hash(model)
+    state["optimizer_step"]=accepted["optimizer_step"]
+    state["vocab"]=len(payload["graph"]["tokens"])
+    state["graph_sha256"]=digest(payload["graph"])
+    if accepted["pass"]==0:
+        state["last_results"]={
+            grade:{
+                "grade":grade,
+                "after":accepted["scores"][grade],
+                "baseline_reference":True,
+            }
+            for grade in REPORT_GRADE_IDS
+        }
+    else:
+        _restore_last_results_to_pass(state,accepted["pass"])
+    return model,optimizer,payload
+
+
+def _ensure_reporting_state(out, state, lib):
+    changed=_ensure_starting_probe_baseline(out,state,lib)
+    reports=state.setdefault("pass_reports",[])
+    if not reports:
+        complete=[]
+        for pass_number in sorted({r["spiral_pass"] for r in state["grade_ledger"]}):
+            if set(_pass_rows(state,pass_number))==set(REPORT_GRADE_IDS):
+                complete.append(pass_number)
+        if complete:
+            pass_number=complete[-1]
+            path=_find_pass_checkpoint(out,state,pass_number)
+            model,optimizer,payload=load_checkpoint(path)
+            scores=_probe_all_grades(model,payload["graph"],lib,device="cpu")
+            report=_pass_report(
+                pass_number,scores,state["school_start_probe_scores"],
+                checkpoint=path.name,checkpoint_sha256=_sha(path),
+                optimizer_step=optimizer_receipt(optimizer)["steps"][0])
+            report["disposition"]="ACCEPTED_BASELINE_FOR_REPORTING"
+            reports.append(report)
+            state["accepted_pass"]={
+                "pass":pass_number,
+                "checkpoint":path.name,
+                "checkpoint_sha256":_sha(path),
+                "optimizer_step":report["optimizer_step"],
+                "scores":dict(scores),
+            }
+            changed=True
+        elif "accepted_pass" not in state:
+            state["accepted_pass"]={
+                "pass":0,
+                "checkpoint":state["school_start_checkpoint"],
+                "checkpoint_sha256":state["school_start_checkpoint_sha256"],
+                "optimizer_step":13848,
+                "scores":dict(state["school_start_probe_scores"]),
+            }
+            changed=True
+    elif "accepted_pass" not in state:
+        latest=reports[-1]
+        state["accepted_pass"]={
+            "pass":latest["pass"],
+            "checkpoint":latest["checkpoint"],
+            "checkpoint_sha256":latest["checkpoint_sha256"],
+            "optimizer_step":latest["optimizer_step"],
+            "scores":dict(latest["scores"]),
+        }
+        changed=True
+    return changed
+
+
 def _train(model, optimizer, reference, graph, rows, counts, policy, device):
     lengths=[encode(row,graph) for row in rows]
     labels=torch.tensor([STATES.index(r["gold"]) for r in rows],
@@ -356,12 +615,14 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         max_run_gib=32, max_grade_visits=None,
         patience_minutes=None, progress_window=8,
         min_repeat_improvement=0.01, progress_format="json",
-        stop_requested=None):
+        stop_requested=None, rollback_regressed_pass=False,
+        pass_regression_threshold=0.03):
     if (max_updates < 1 or max_minutes <= 0 or block < 1 or block > 256
         or not 1<=max_run_gib<=500
         or (max_grade_visits is not None and max_grade_visits < 1)
         or (patience_minutes is not None and patience_minutes <= 0)
         or progress_window < 1 or min_repeat_improvement < 0
+        or not 0<=pass_regression_threshold<=1
         or progress_format not in ("json","human")):
         raise ValueError("INVALID_BOUNDED_TRAINING_REQUEST")
     out=Path(out)
@@ -375,6 +636,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     model,optimizer,payload=_validate(out/state["checkpoint"],state)
     gpu=_device(model,optimizer,device)
     lib=TeacherLibrary()
+    if _ensure_reporting_state(out,state,lib):
+        _atomic_json(out/STATE,state)
     start=time.monotonic()
     consumed=0
     visits_this_call=0
@@ -490,10 +753,68 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         state["checkpoint"],state["checkpoint_sha256"]=name,checksum
         state["last_run_wall_seconds"]=round(time.monotonic()-start,3)
         _atomic_json(out/STATE,state)
+        pass_report=None
+        if grade==REPORT_GRADES[-1]:
+            previous=(state["pass_reports"][-1]["scores"]
+                      if state["pass_reports"]
+                      else state["accepted_pass"]["scores"])
+            scores=_probe_all_grades(
+                model,payload["graph"],lib,device=device)
+            pass_report=_pass_report(
+                state["spiral_pass"],scores,state["school_start_probe_scores"],
+                previous,
+                checkpoint=state["checkpoint"],
+                checkpoint_sha256=state["checkpoint_sha256"],
+                optimizer_step=state["optimizer_step"])
+            accepted=state["accepted_pass"]
+            regression=_material_pass_regression(
+                scores,accepted["scores"],pass_regression_threshold)
+            pass_report["vs_accepted_pass"]={
+                "pass":accepted["pass"],
+                **regression,
+            }
+            rejected=rollback_regressed_pass and regression["regressed"]
+            if rejected:
+                rejected_checkpoint=state["checkpoint"]
+                rejected_sha=state["checkpoint_sha256"]
+                rejected_step=state["optimizer_step"]
+                pass_report["disposition"]=(
+                    f"ROLLED_BACK_TO_ACCEPTED_PASS_{accepted['pass']}")
+                state["pass_reports"].append(pass_report)
+                state.setdefault("pass_rollbacks",[]).append({
+                    "rejected_pass":state["spiral_pass"],
+                    "rejected_checkpoint":rejected_checkpoint,
+                    "rejected_checkpoint_sha256":rejected_sha,
+                    "rejected_optimizer_step":rejected_step,
+                    "accepted_pass":accepted["pass"],
+                    "restored_checkpoint":accepted["checkpoint"],
+                    "restored_checkpoint_sha256":accepted["checkpoint_sha256"],
+                    "restored_optimizer_step":accepted["optimizer_step"],
+                    "threshold":pass_regression_threshold,
+                    "mean_delta":regression["mean_delta"],
+                    "median_delta":regression["median_delta"],
+                    "regressed_grades":regression["regressed_grades"],
+                    "teacher_events_preserved":state["teacher"]["events"],
+                    "teacher_mutations_preserved":state["teacher"]["mutations"],
+                })
+                model,optimizer,payload=_load_accepted_student(
+                    out,state,accepted,device)
+                gpu=torch.device(device)
+            else:
+                pass_report["disposition"]="ACCEPTED"
+                state["pass_reports"].append(pass_report)
+                state["accepted_pass"]={
+                    "pass":state["spiral_pass"],
+                    "checkpoint":state["checkpoint"],
+                    "checkpoint_sha256":state["checkpoint_sha256"],
+                    "optimizer_step":state["optimizer_step"],
+                    "scores":dict(scores),
+                }
+            _atomic_json(out/STATE,state)
         elapsed=time.monotonic()-start
         since_progress=elapsed-(last_measurable_progress-start)
         progress={"pass":state["spiral_pass"],"grade":grade_id,
-                  "step":state["optimizer_step"],"updates":steps,
+                  "step":record["optimizer_step"],"updates":steps,
                   "strategy":key,
                   "teacher_strategies":len(state["teacher"]["strategies"]),
                   "teacher_mutations":state["teacher"]["mutations"],
@@ -513,6 +834,12 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             print(_progress_line(progress),flush=True)
         else:
             print(json.dumps(progress,sort_keys=True),flush=True)
+        if pass_report is not None:
+            if progress_format=="human":
+                print(_pass_summary_line(pass_report),flush=True)
+            else:
+                print(json.dumps({"pass_report":pass_report},sort_keys=True),
+                      flush=True)
         if stop_requested is not None and stop_requested():
             stopped_for_interrupt=True
             break
@@ -565,6 +892,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "observed_teacher_mutations":state["teacher"]["mutations"],
             "compiled_grades":sum(g.ready for g in GRADES),
             "blocked_grades":state["blocked_grade_ids"],
+            "accepted_pass":state.get("accepted_pass",{}).get("pass"),
+            "pass_rollbacks":len(state.get("pass_rollbacks",[])),
             "latest_checkpoint":str(out/state["checkpoint"])}
 
 
@@ -588,6 +917,10 @@ def main():
                         help="Per-grade live progress output.")
     parser.add_argument("--graceful-interrupt",action="store_true",
                         help="First Ctrl+C finishes the current grade and checkpoints before stopping; second Ctrl+C aborts immediately.")
+    parser.add_argument("--rollback-regressed-pass",action="store_true",
+                        help="At a completed executable pass, restore the last accepted pass if broad probe performance regresses materially.")
+    parser.add_argument("--pass-regression-threshold",type=float,default=0.03,
+                        help="Mean 22-grade probe regression required before rollback can trigger (0.03 = 3 pp; majority and median must also regress).")
     parser.add_argument("--device",choices=("cpu","mps"),default="cpu")
     parser.add_argument("--grow",action="store_true",
                         help="Function-preserving capacity migration, keeping trained state.")
@@ -617,6 +950,8 @@ def main():
                        progress_window=arguments.progress_window,
                        min_repeat_improvement=arguments.min_repeat_improvement,
                        progress_format=arguments.progress_format,
+                       rollback_regressed_pass=arguments.rollback_regressed_pass,
+                       pass_regression_threshold=arguments.pass_regression_threshold,
                        stop_requested=(lambda: stop_state["requested"])
                                       if arguments.graceful_interrupt else None)
         finally:

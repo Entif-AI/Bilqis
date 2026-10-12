@@ -100,6 +100,16 @@ mutations, elapsed time, and the current no-improvement clock. The final
 summary also reports mean repeated-grade change and counts of improved,
 unchanged and regressed repeated grades for the call.
 
+At the end of every complete executable G01-G22 spiral, the runner also
+evaluates the single resulting checkpoint on all twenty-two fixed probes at
+once and prints a PASS REPORT. That report includes mean and median probe
+score, mean and median grade improvement versus the previous pass, mean and
+median improvement versus the untouched School50 starting checkpoint,
+the number of grades at or above 90%, the number at 100%, the remaining mean
+gap to 100%, and the highest/lowest scoring grades. Existing runs recover the
+true step-13,848 starting checkpoint when it is still present rather than
+fabricating a baseline from staggered in-pass observations.
+
 The grade-visits option is an explicit durable stop point. The
 patience-minutes option stops only after there are at least progress-window
 same-grade comparisons and that rolling trend has failed to reach
@@ -113,6 +123,19 @@ writes the new checkpoint and atomic state pointer, then exits with
 STOPPED_BY_GRACEFUL_INTERRUPT. If the runner is between grades, it exits
 immediately from the already-durable boundary. A second Ctrl+C preserves the
 ordinary emergency behavior and aborts immediately.
+
+For optional pass-level regression protection, add:
+
+    --rollback-regressed-pass --pass-regression-threshold 0.03
+
+The teacher still tolerates ordinary grade and pass wobble. A rollback occurs
+only when the simultaneous twenty-two-grade checkpoint report is at least
+three percentage points worse on mean score than the last accepted pass,
+the median grade also regresses, and a strict majority of grades are worse.
+When that happens, the student model and AdamW state resume from the last
+accepted pass checkpoint, but teacher strategy statistics and the rejected
+pass remain in the durable ledger. This preserves the lesson from a bad pass
+without making its neural weights the foundation of the next one.
 
 Run a short CPU session:
 
