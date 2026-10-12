@@ -90,7 +90,7 @@ Run a long bounded Apple-Metal training session, resuming existing state:
 For an operator-visible development run, prefer a smaller bounded session with
 human-readable progress and a stagnation stop:
 
-    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt
+    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4
 
 The runner prints one line after every durable grade checkpoint. It includes
 the fixed-probe score before and after that lesson, change versus the previous
@@ -136,6 +136,32 @@ When that happens, the student model and AdamW state resume from the last
 accepted pass checkpoint, but teacher strategy statistics and the rejected
 pass remain in the durable ledger. This preserves the lesson from a bad pass
 without making its neural weights the foundation of the next one.
+
+Run-level headline learning metrics follow the surviving student lineage.
+If a completed pass is rolled back, its repeat/immediate/retention deltas no
+longer contribute to repeat_improved_this_call, repeat_regressed_this_call,
+repeat_unchanged_this_call, mean_repeat_delta_this_call,
+mean_immediate_delta_this_call, mean_old_delta_this_call, rolling repeat
+trend, or the patience clock. The attempted pass remains available under
+attempted_run_metrics and rejected_run_metrics, and its teacher rewards and
+strategy observations remain durable. In other words: discarded neural
+weights do not masquerade as progress of the current model, but the teacher
+still remembers what happened.
+
+Long-running development should also enable bounded checkpoint retention:
+
+    --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4
+
+Pruning runs only after a durable state pointer exists. It always preserves
+the current live checkpoint, the untouched School50 starting checkpoint, the
+accepted pass checkpoint used by rollback protection, and both sides of any
+recorded function-preserving architecture migration. It additionally keeps
+the requested rolling tail of recent grade checkpoints and recent G22
+pass-end checkpoints. Older binary checkpoints are deleted, but their grade
+ledger, teacher statistics, pass reports, hashes and rollback history remain
+in state.json. Existing oversized runs are migrated/report-initialized before
+the first pruning pass, so the starting baseline and accepted pass are known
+before any historical checkpoint can become eligible for deletion.
 
 Run a short CPU session:
 
