@@ -504,3 +504,105 @@ the semantics of corrective conversation prematurely.
 
 This evidence does not merge PR #121 or its ancestors, does not
 promote any whole Stage A competency set and does **not** close #82.
+
+## E9 v0.6: semantic-neighborhood lessons and matched rehearsal (2026-10-12)
+
+**Disposition: completed, negative on the primary simultaneous-retention
+endpoint; experimental teaching mechanism and checkpoint replay verified.**
+This is a *new* preregistered study, not retroactive tuning of e8, not a
+student architecture change and not a language/conversational-feedback study.
+
+- Source-frozen commit: `b03dc466937a6632ae977610c42d4b954d34484c`.
+- Frozen source SHA-256: `b3e2343aa0631905235c9237c889c3eb8b7814eed95a9fdbcf6ef5d83153a1eb`.
+- Preregistered seeds: `503, 509, 521, 523, 541`; arms: `uniform8`,
+  `semantic8`, `sham8`, `uniform16`, `semantic16`.
+- Per admitted stage: 320 real AdamW updates, five 64-update blocks, 32
+  supervised stand-alone samples per update. Same scratch model, optimizer,
+  deterministic Boolean oracle, type-token input and no dialogue history.
+- Executed **25 student arms, 69 competency-stage attempts, 22,080 real
+  optimizer updates**. The original full run ended with exit code 0. The
+  source was not altered or the run retried after observing results.
+- Pre-experiment repo verification: **153 unit tests passed**. Independent
+  checkpoint replay completed with exit code 0, validating all recorded
+  per-block source/model/optimizer hashes, actual AdamW step accounting,
+  sampler multiset and row order, DEV results, post-stage SEALED results,
+  skipped stages and aggregate. Replay does **not** recompute gradients.
+- Raw evidence: [E9 preregistration](E9_PREREGISTRATION_V06.json) and
+  [E9 comparison](E9_COMPARISON_V06.json). Local ignored run path:
+  `runs/formal-foundations-20261012-e9-semantic-v06/` (binary snapshots not
+  committed). SHA-256 of raw JSON files: prereg
+  `65cb9961bd79608eb9276789b134c0238c89e4934b0995c4b20a847cfca00ab4`;
+  comparison `140bedd9f04e83eb0eb0ab9fdc45c9ff30ca93092764627fd4baa66f595d6890`.
+
+### Complete arm outcomes
+
+| Arm | Attempted stages (V00/V01/V02) | V00 promoted | NOT promoted | AND promoted | All three retained |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Uniform, 8 prior | 5 / 5 / 4 | 5/5 | 0/5 | 3/4 | 0/5 |
+| Semantic, 8 prior | 5 / 5 / 3 | 5/5 | 0/5 | 2/3 | 0/5 |
+| Shuffled-category sham, 8 prior | 5 / 4 / 3 | 4/5 | 0/4 | 0/3 | 0/5 |
+| Uniform, 16 prior | 5 / 5 / 5 | 5/5 | 1/5 | 3/5 | 0/5 |
+| Semantic, 16 prior | 5 / 5 / 5 | 5/5 | 2/5 | 3/5 | 0/5 |
+
+An admitted skill passes its exact current SEALED gate **and** retains
+previous accepted skills; a 30/30 current AND score alone is not promotion
+when prior Boolean or NOT retention drops. Some V02 attempts were skipped
+after earlier retained-skill collapse or failed Boolean prerequisite. Thus
+the different denominator in the table is a real ITT progression outcome,
+not missing data or permission to compare conditional proportions naively.
+
+### What changed, what did not, and what remains unknown
+
+The semantic teacher grouped a fixed block's training examples by exact
+eight-row Boolean function (or its complement), interleaved distinct
+expression shapes, and aligned prior/current examples sharing verified
+semantic relations and valuations. The fixed-row comparison preserved the
+**exact same example-ID multiset in every 64-update block** for arms of the
+same prior-rehearsal dose. A sham clustered by incorrectly assigned grouping
+keys. Cohesion was measured through distinct-AST, cross-skill,
+matched-valuation and predefined-relation coexposures, rather than inflated
+by identical-question repetitions. This establishes that we actually tested
+a semantics-guided instructional intervention.
+
+**The hypothesis of improved simultaneous acquisition was not confirmed.**
+Zero of 25 scratch students retained all three atomic competencies under the
+specified gates. With 16 prior examples, semantic grouping passed the NOT
+current gate in 2/5 seeds versus 1/5 for uniform grouping, but after teaching
+AND neither arm sustained all three skills. With 8 prior examples neither
+semantic nor uniform passed NOT in any seed. Some matched seeds saw higher
+AND sealed scores under grouping; others worsened. The randomized sham was
+often weaker, but five seeds and stage attrition cannot establish a causal
+generalization benefit from its lower conditional counts.
+
+Stronger AST variation made the V01 SEALED panel 6 items and V02 SEALED
+30 items (compared with much smaller e8 panels). This increases within-study
+diagnostic resolution but prevents a direct quantitative e8-vs-e9 treatment
+comparison, and the grammar still uses only P/Q/R and Boolean primitives.
+DEV/SEALED train-row IDs remain disjoint **within e9**; some formulas are
+not historically novel relative to earlier public experiments. No teacher
+or student was tested on natural-language instructions, learning semantic
+set membership, predicate logic, full formal proof, native Ithkuil, Rosetta
+semantics or corrective dialogue.
+
+**Post-run protocol erratum (source frozen, not rewritten):** the preregistered
+`SEMANTIC_V06_PROTOCOL.md` calls the V02 SEALED expressions "depth-three
+conjunctions," but the actual source ASTs and run evidence show V02 gate
+depths **1 and 2 only**. V01 NOT SEALED does include depth 3. This text error
+is recorded rather than changing the pre-run source commit or claiming an
+unperformed depth-three AND generalization test. The V02 held-out exercises
+are primarily new row identities / variable rearrangements of existing
+families, not guaranteed structurally novel laws. Likewise, a repeated
+held-out equivalence-pair both-correct score does not consist of statistically
+independent individual trials. The V02 semantic treatment strongly clustered
+**equivalent** function signatures; the observed V02 same-neighborhood
+complement-pair count was zero, so it cannot demonstrate effective teaching
+of complement relationships in that stage.
+
+**Next research branch, not a post-hoc e9 repair:** retain the richer
+semantically classified corpus and independently evaluate protection against
+cross-stage gradient interference (for example preregistered regularization
+or memory-gradient projection with equal-compute controls), as well as
+per-stage conceptual weak-family targeting. Do not tune e9 after seeing its
+sealed answers. E9 may be integrated as *versioned research infrastructure*
+without declaring #82 scientifically satisfied; an explicit archival
+integration decision and whole-stack verification are still necessary.
