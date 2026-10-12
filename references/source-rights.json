@@ -1,7 +1,7 @@
 {
   "version": "bilqis-source-rights-0.1.0",
   "owner_issue": 35,
-  "phase": "A scoped to #65 only; Phase B remains open",
+  "phase": "A scoped to #65 and #77; Phase B remains open",
   "policy": "Accessibility is not permission. Unknown rights fail toward omission. Scorer outputs are non-authoritative annotations, never gold or student initialization. No raw donor grammar prose or external evaluation fixtures included.",
   "sources": [
     {
@@ -95,6 +95,56 @@
         "local_execution"
       ],
       "redistribution": "not exercised; preserve upstream terms and notices if later redistributed"
+    },
+    {
+      "id": "ni77-chapter-2",
+      "canonical_url": "https://www.ithkuil.net/newithkuil_02_morpho-phonology.htm",
+      "source_snapshot_sha256": "5ee3a68497ca3bb242ba79cd3c556fa790a9407413b75242380b4cc1ecd2ffc6",
+      "license": "not established by the supplied packet",
+      "access_date": "2026-10-06",
+      "disposition": "user-supplied local research reference; raw HTML and complete prose packet excluded from public Git",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "raw source withheld; fixture reproduces only the frozen user-authored issue contract and its limited worked forms"
+    },
+    {
+      "id": "ni77-chapter-3",
+      "canonical_url": "https://www.ithkuil.net/newithkuil_03_morphology.htm",
+      "source_snapshot_sha256": "93d9d61682fa2d051fc667cf2952a0e521b07ec42629e2788f57b0b2f4c34c0f",
+      "license": "not established by the supplied packet",
+      "access_date": "2026-10-06",
+      "disposition": "user-supplied local research reference; raw HTML and complete prose packet excluded from public Git",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "raw source withheld; fixture reproduces only the frozen user-authored issue contract and its limited worked forms"
+    },
+    {
+      "id": "ni77-chapter-4",
+      "canonical_url": "https://www.ithkuil.net/newithkuil_04_case.htm",
+      "source_snapshot_sha256": "d9e322e731a1df0fa6ed6213e15dc039ce7f27839fa06275e66764ff4dea0825",
+      "license": "not established by the supplied packet",
+      "access_date": "2026-10-06",
+      "disposition": "user-supplied local research reference; raw HTML and complete prose packet excluded from public Git",
+      "permitted_uses": [
+        "reference",
+        "local_execution"
+      ],
+      "redistribution": "raw source withheld; fixture reproduces only the frozen user-authored issue contract and its limited worked forms"
+    },
+    {
+      "id": "ni77-human-fixture",
+      "canonical_location": "fixtures/new-ithkuil-v0.1.issue.md",
+      "source": "https://github.com/Entif-AI/Bilqis/issues/77",
+      "disposition": "user-authored public proving contract transcribed unchanged; source-derived facts and limited example forms attributed; no official endorsement",
+      "permitted_uses": [
+        "evaluation",
+        "public_experiment_evidence"
+      ],
+      "redistribution": "exact #77 fixture and results authorized by the current user; no raw chapter prose or model weights"
     }
   ]
 }
