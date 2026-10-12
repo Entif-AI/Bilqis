@@ -45,7 +45,10 @@ The first 512 steps use relation/equality/negation, then all frozen TRAIN patter
 with those earlier rows retained. A saved stage checkpoint and known-case probes
 make retention visible. This is a fixed schedule, not a mastery promotion claim.
 DEV worlds are separated by world hash. All four HELDOUT AST shapes are excluded
-from optimization, and their predictions are first examined after training.
+from optimization. The full heldout plane was scored after training; two named
+boundary fixtures with those patterns also received intermediate diagnostic probes.
+The fixed training schedule never used their results. The timing deviation is
+preserved in `docs/evidence/alpha/microscope/protocol-audit.json`.
 The splits and exact corpus hash are frozen in `fixtures/alpha/split-manifest.json`.
 The heldout plane is exploratory, already exposed by this batch, and not SEALED.
 
@@ -61,10 +64,12 @@ The preserved command rebuilds them; an absent checkpoint is a replay error,
 never an invitation to substitute an oracle or untrained model. Model-state
 identity and replay tolerances are reported separately from file-byte identity.
 
-The known-pass vectors and exhaustive four-state truth tables were authored from
-the declared contract before the evaluator. An injected UNKNOWN→FALSE label is
-detected. This provides a distinct expectation path, not a cold human audit or a
-second independent specification lineage. Unsupported operators, free variables,
+The exhaustive four-state tables preceded the evaluator; the full named-vector
+artifact was assembled before training with explicit contract-derived expected
+strings, after evaluator code existed. An injected UNKNOWN→FALSE label is detected.
+This provides a separate expectation path, not a cold human audit or a second
+independent specification lineage. The append-only audit corrects the frozen
+metadata's broader chronology claim. Unsupported operators, free variables,
 shadowed binders, invalid roles and missing fields reject explicitly; they never
 become UNKNOWN. Commutative arguments and evidence order canonicalize; the codec
 is lossless over the supported domain and never includes a gold label.

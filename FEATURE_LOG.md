@@ -23,4 +23,13 @@ One cycle, 1,536 steps; DEV 676/1152, HELDOUT 476/1024, known neural 6/15.
 40 tests pass, no skips; all 5,135 final predictions reload in a fresh process.
 `ALPHA_DEMO_REPRODUCED` is an exploratory replay disposition, not robust generalization.
 Weak directed relation/sparse evidence behavior is preserved in the failure inventory.
-Next: open #102 review PR, then stack #103 using these exact artifacts. No more training.
+Delivery: #102 PR #104 open at `d59c20d914fd8380909068017ca9fa2ef72d942f`; hosted CI green.
+#103 microscope code `2673337`, 20 cases: 7 correct/13 wrong plus one formal rejection.
+43 local tests pass; fresh-process microscope matches pinned logits/probabilities.
+Scope learning, unchanged-before/after heldout success, role/evidence failures and a
+coarse role-row initialization collision are explicit in the #103 report.
+Delivery: #103 PR #105 open, stacked on #104. Protocol audit records two named
+heldout-pattern fixtures in early diagnostics, never optimization/tuning; fixture
+chronology prose is corrected without changing frozen inputs/labels/checkpoint.
+Next: append final evidence, verify latest heads/CI and stop at the batch boundary.
+No merge or full developmental-program continuation is authorized.
