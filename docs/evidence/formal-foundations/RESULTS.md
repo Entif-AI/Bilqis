@@ -283,3 +283,109 @@ separate contextual-retention goals. Distinguish identity/value inference
 from teacher-feedback comprehension. A newly approved version and new
 preregistration would be required. Do **not** edit/relabel e6 after seeing
 its scores, pick a more favorable seed, or merge #115 on this evidence.
+
+## Standalone-first v0.4, preregistered e7, 2026-10-12
+
+### Deliberate educational change, frozen before training
+
+Following e6, the human/Chat decision was to let the learner acquire
+fundamental Boolean truth functions **without making historical teacher
+dialogue comprehension a prerequisite**. Teacher/proposed-answer judgment,
+named laws, general mathematics, and Ithkuil remain planned but deferred.
+The v0.3 course's semantic identities, oracle labels, and complete prior
+e1–e6 evidence were preserved. e7 uses the same fresh 46-token scratch
+student topology as v0.3 but only the current question and answer target
+appear during training; earlier completed turns never enter attention.
+
+The policy and source were committed and pushed **before any e7 optimizer
+step**:
+
+- Exact pre-run commit: `c830db239b5eb97bbaa0665b6e1fed98521a23ad`
+- Runtime-source SHA-256:
+  `ff8f11ce7e0485ffa4616814576f362a685a908678c2f1db4c2f5a6199e8d4a5`
+- Contract: `docs/formal/DIALOGUE_V04_STANDALONE.md`
+- Original run path:
+  `runs/formal-foundations-20261012-e7-standalone-v04/` (ignored, locally retained)
+- Seeds **463, 467, 479**, new scratch weights and AdamW per seed.
+- Exactly 320 optimizer updates per eligible attempted competency, with
+  oracle-validated fixed lessons and two deterministic composition contrasts
+  when eligible. Zero remediation, zero native Kev decisions.
+- **Promotion** based solely on independent held-out standalone answers
+  and all earlier admitted standalone retention; full contextual dialogue
+  and structural transfer remained frozen **diagnostics only**.
+- Independently gated NOT and AND branches; a failed NOT may block
+  compositions but does not block eligible atomic AND.
+
+### Actual e7 held-out outcomes, no seed selection
+
+| Seed | V00 Boolean standalone / contextual | V01 NOT standalone / contextual | V02 AND standalone / contextual | Actual promotion |
+| --- | --- | --- | --- | --- |
+| 463 | **4/4** / 2/4 | **4/4** / 2/4 | **4/4** / 3/4 | V00 and V01 passed, but **retention stopped** after AND |
+| 467 | **4/4** / 2/4 | **3/4** / 2/4 | **4/4** / 3/4 | V00 and V02 only; NOT failed |
+| 479 | **4/4** / 2/4 | **2/4** / 2/4 | **4/4** / 3/4 | V00 and V02 only; NOT failed |
+
+The standalone policy let **all three** students attempt both NOT and AND,
+unlike e6, when failed dialogue-gate prerequisites prevented either
+operator from being taught. This is a change of *experiment objective and
+promotion policy*, **not a controlled efficacy comparison** between e6 and
+e7 (different seeds, lesson mix and presentation distribution).
+
+All three obtained 4/4 on fresh standalone AND truth questions, and
+4/4 on the separately frozen mixed-constant/variable structural AND probe
+(`AND(TRUE,R)` and `AND(FALSE,R)` instances). These are eight tiny
+item results per student, **not** confirmation of general compositional
+competence. V00 retention remained 4/4 at later gates.
+
+**The decisive retention failure occurred for seed 463.** At the end of
+its NOT lesson, it answered all four held-out NOT questions correctly.
+After subsequent AND instruction, the current AND gate was still 4/4,
+but retained NOT was only **2/4**. Its two fresh variable-negation
+questions remained correct; both literal-constant forms failed:
+`NOT(TRUE)` was predicted TRUE (oracle FALSE), and `NOT(FALSE)` was
+predicted FALSE (oracle TRUE). The predeclared retention rule stopped
+further teaching despite the apparently successful AND gate.
+
+Seeds 467 and 479 did not pass NOT (3/4 and 2/4 respectively), but
+still learned the independent AND gate, with V00 retention intact.
+Every V03/V04/V05 composition remained **unattempted** because the
+same student never held both prerequisite competencies at the required
+retention gate. Student-side correctness judgment `J00`, algebraic
+laws, broader maths, Ithkuil, and native Kev pedagogy were **not reached**.
+
+### Separate dialogue diagnostic and technical proof
+
+The same two-turn valid teacher-dialogue prompt was placed before
+held-out questions **only after training**. Under this out-of-training
+distribution input, V00 scored 2/4 in all seeds; NOT scored 2/4;
+AND scored 3/4. Such differences document presentation/context
+sensitivity, but do **not** show teacher corrections impair learning:
+there were no prior completed turns during e7 optimization. The separate
+counterfactual-correction probe was likewise read-only and never a label.
+
+Exactly **nine stage attempts × 320 = 2,880** optimizer updates were
+executed across three students. There were **zero historical-context
+training exposures**, zero Kev calls, no retry, and no additional seeds.
+The source-locked runner saved all three student reports and all
+**nine** stage checkpoints with model and optimizer state, actual
+retention, diagnostic scores, and source/commit provenance. After the
+run, the replay checked each checkpoint's hash, optimizer-step count,
+prerequisite path, retained earlier gates, promotion, structural/context
+diagnostics, aggregate completeness, and independent oracle labels:
+`REPLAY_VERIFIED`. **127 repository tests passed before the run.**
+Historical e1–e6 source and local student experiments remain untouched.
+
+### Next educational frontier (proposal, not silently authorized training)
+
+Focus on the **NOT literal-constant versus variable distinction** and
+retention under subsequent AND rehearsal. Use a separate source-locked
+curriculum design that balances both representations, tests predictable
+counterexamples and prevents a student from shortcutting one form through
+position/operator-frequency patterns. Keep the conversational interface
+as an observable diagnostic while foundational truth-function stability
+is tested. Only when these prerequisites hold should more laws, algebra
+and later Ithkuil lessons enter the learning path. Future teacher
+explanations may be invaluable when a *specific* learned primitive can
+name the missed nuance; e7 does not yet evaluate that claim.
+
+Neither this experiment nor the restored mergeability of its parent
+branches constitutes merge approval or #82 curriculum completion.
