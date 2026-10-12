@@ -37,6 +37,12 @@ def validate(expr, *, meta=False, depth=0):
         validate(child, meta=meta, depth=depth + 1)
 
 
+def canonical(expr):
+    """Normalize serialized JSON lists and in-memory tuples to one AST form."""
+    validate(expr)
+    return expr if isinstance(expr, str) else (expr[0], *(canonical(v) for v in expr[1:]))
+
+
 def variables(expr):
     validate(expr)
     if isinstance(expr, str):
@@ -115,8 +121,8 @@ def match(pattern, expr, bindings=None):
     def rec(p, e):
         if isinstance(p, str) and p in METAS:
             if p in bindings:
-                return bindings[p] == e
-            bindings[p] = e
+                return canonical(bindings[p]) == canonical(e)
+            bindings[p] = canonical(e)
             return True
         return (p == e if isinstance(p, str) else
                 isinstance(e, (list, tuple)) and len(p) == len(e) and p[0] == e[0]
@@ -167,7 +173,8 @@ def rewrite(source, law_id, path=()):
 
 def law_applies(source, target, law_id, path=()):
     validate(target)
-    return rewrite(source, law_id, path) == target
+    result = rewrite(source, law_id, path)
+    return result is not None and canonical(result) == canonical(target)
 
 
 def truth(record):

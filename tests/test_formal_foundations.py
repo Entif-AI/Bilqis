@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import tempfile
+import json
 import unittest
 from pathlib import Path
 
@@ -48,6 +49,15 @@ class FoundationSemanticTests(unittest.TestCase):
         self.assertEqual(rewrite(source, "LAW.AND.ANNIHILATOR.RIGHT", (0,)), target)
         self.assertTrue(law_applies(source, target, "LAW.AND.ANNIHILATOR.RIGHT", (0,)))
         self.assertFalse(law_applies(source, target, "LAW.AND.ANNIHILATOR.RIGHT", ()))
+
+    def test_named_law_survives_json_round_trip(self):
+        source = app("AND", app("AND", "P", "Q"), "R")
+        target = app("AND", "P", app("AND", "Q", "R"))
+        persisted = json.loads(json.dumps({"source": source, "target": target}))
+        self.assertTrue(law_applies(persisted["source"], persisted["target"],
+                                    "LAW.AND.ASSOCIATIVITY"))
+        self.assertFalse(law_applies(persisted["source"], persisted["target"],
+                                     "LAW.AND.IDENTITY.RIGHT"))
 
     def test_progression_split_balance_and_no_answer_leak(self):
         self.assertTrue(validate_course())

@@ -132,3 +132,11 @@ Start with:
 ## License
 
 No repository-wide license is declared by this bootstrap commit. Source and redistribution policy is tracked in [issue #35](https://github.com/entif-ai/bilqis/issues/35). Do not infer rights beyond those granted by applicable source licenses or explicit project releases.
+# New versioned dialogue curriculum (experimental)
+
+The [formal dialogue curriculum v0.2](docs/formal/DIALOGUE_V02.md)
+introduces explicit teacher/student feedback turns, independently typed
+truth-versus-correctness answers, strictly matched Kev diagnostic alternatives,
+separate teaching/formative/held-out gate records and a scratch-trained
+feedback-context comparison. The original formal-foundations v0.1 checkpoint
+and legacy development experiments remain separate.
