@@ -1,0 +1,14 @@
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/Users/emilie/.codex/worktrees/bilqis-u7b/Bilqis/bilqis_u7b/run.py", line 368, in <module>
+    if __name__ == '__main__': main()
+                               ~~~~^^
+  File "/Users/emilie/.codex/worktrees/bilqis-u7b/Bilqis/bilqis_u7b/run.py", line 365, in main
+    print(json.dumps(action(args.run), sort_keys=True))
+                     ~~~~~~^^^^^^^^^^
+  File "/Users/emilie/.codex/worktrees/bilqis-u7b/Bilqis/bilqis_u7b/run.py", line 339, in replay
+    outcome = execute(run, manifest, pools, corpus, model, optimizer, actual.append, lambda r: None, archived=decisions)
+  File "/Users/emilie/.codex/worktrees/bilqis-u7b/Bilqis/bilqis_u7b/run.py", line 263, in execute
+    raise ValueError('DEV/candidate/teacher replay drift')
+ValueError: DEV/candidate/teacher replay drift

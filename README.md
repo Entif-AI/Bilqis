@@ -30,11 +30,13 @@ The bounded first results, including failed prerequisite gates, are in
 [`docs/evidence/formal-foundations/RESULTS.md`](docs/evidence/formal-foundations/RESULTS.md).
 The first teaching pass is exploratory, not a claim of formal-law mastery.
 
+- `bilqis_micro/` — typed semantic graph, stable keyed embeddings, finite relational/proof/evidence worlds, and one scratch learner continuing through five developmental stages. See [execution guide](docs/micro-universes/README.md) and [measured results](docs/evidence/micro-universes/RESULTS.md).
+- `bilqis_logic/` — the preserved Boolean T0/T1 pilot and its original evidence.
 - `bilqis_ref/` — finite-world semantics, independent oracle pair, codecs, small transformer student, teacher policy, checkpoint/recovery, sealing, evaluation, and constrained pedagogue adapter.
 - `abi/` — token ABI and grammar-prerequisite graph used by the reference package.
 - `configs/` — smoke, reference-scale, and system-design configurations.
 - `schemas/` — JSON Schemas for semantic objects, run configs, and results.
-- `tests/` — 29 engineering tests covering formal semantics, codecs, token symmetry, restart identity, teacher boundaries, sealing, and related invariants.
+- `tests/` — engineering tests covering formal semantics, codecs, token symmetry, restart identity, teacher boundaries, sealing, and cumulative developmental learning.
 - `docs/reference/` — architecture, semantic/token contracts, Ithkuil primitive map, split/sealing rules, teacher boundaries, checkpoint lineage, and reproducibility gaps.
 - `docs/research/` — the current SYS-01 preregistration and attribution/control plans from the Stage 2 package.
 - `references/` — the source-grounded New Ithkuil grammar map used during the Stage 2 research pass.
@@ -68,7 +70,7 @@ python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu -r 
 python -m unittest discover -s tests -v
 ```
 
-The delivered suite should report 29 passing tests.
+The suite includes the original reference tests and the subsequent logic and developmental tests.
 
 Run a tiny engineering lineage:
 
@@ -89,6 +91,12 @@ python -m bilqis_ref.run \
 These are execution checks, not scientific confirmation.
 
 ## Reference model boundary
+
+The separate [T0/T1 logic pilot](docs/logic-t0-t1/HANDOFF.md) implements a typed
+classical Boolean kernel, deterministic semantic initialization and a tiny scratch
+neural student. It leaves the finite-world reference and historical experiments
+intact. Its exploratory acquisition, composition and equivalence results are
+reported separately from SYS-01 claims.
 
 The implemented student is a small causal decoder-only transformer with a four-answer supervised readout: `TRUE`, `FALSE`, `UNKNOWN`, and `CONFLICT`. The reference-scale configuration contains 2,828,736 trainable parameters. The ternary branch is W1.58A8-style forward emulation over FP32 master weights, not a packed low-bit kernel.
 
