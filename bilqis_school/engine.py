@@ -61,6 +61,11 @@ GRADES = skill_tree()
 REPORT_GRADES = tuple(g.number for g in GRADES if g.ready)
 REPORT_GRADE_IDS = tuple(f"G{grade:02d}" for grade in REPORT_GRADES)
 BASELINE_PROBE_PROFILE = "school50-fixed-24-v1"
+GRADE_CHAMPION_PROFILE = "school50-grade-champion-48-v1"
+GRADE_CHAMPION_COUNT = 48
+CANDIDATE_CLEAR_REWARD = 0.05
+CANDIDATE_SENTINEL_PER_GRADE = 8
+CANDIDATE_MAX_ATTEMPTS = 3
 
 
 def _read(path):
@@ -119,11 +124,12 @@ def mutate(teacher, rng):
     return None
 
 
-def pick(teacher, grade, rng):
+def pick(teacher, grade, rng, exclude=None):
     if teacher["events"] and teacher["events"] % 3 == 0:
         mutate(teacher,rng)
     local=teacher["grade_stats"].get(str(grade),{})
     total=teacher["events"]+1
+    excluded=set(exclude or ())
     def rank(item):
         key, policy=item
         info=local.get(key) or teacher["global_stats"][key]
@@ -132,7 +138,13 @@ def pick(teacher, grade, rng):
         exploitation=info["reward_sum"]/info["trials"]
         exploration=0.6*math.sqrt(math.log(total+2)/(1+info["trials"]))
         return exploitation+exploration
-    return max(teacher["strategies"].items(),key=rank)
+    choices=[
+        item for item in teacher["strategies"].items()
+        if item[0] not in excluded
+    ]
+    if not choices:
+        raise ValueError("NO_UNTRIED_TEACHER_STRATEGY_FOR_GRADE_ATTEMPT")
+    return max(choices,key=rank)
 
 
 def observe(teacher, grade, policy_key, reward):
@@ -177,6 +189,9 @@ def _checkpoint_retention_plan(out, state, *, keep_recent=8, keep_pass=4):
     protect(state.get("checkpoint"))
     protect(state.get("school_start_checkpoint"))
     protect(state.get("accepted_pass",{}).get("checkpoint"))
+    protect(state.get("champion_pass",{}).get("checkpoint"))
+    for champion in state.get("grade_champions",{}).values():
+        protect(champion.get("checkpoint"))
     for event in state.get("architecture_history",[]):
         protect(event.get("from"))
         protect(event.get("to"))
@@ -273,9 +288,9 @@ def initialize(out=RUN):
            "school_start_checkpoint":name,
            "school_start_checkpoint_sha256":checksum,
            "next_grade":1,"spiral_pass":1,"completed_grades":0,
-           "completed_updates":0,"teacher":_teacher(),
+           "completed_updates":0,"attempted_updates":0,"teacher":_teacher(),
            "blocked_grade_ids":[g.id for g in GRADES if not g.ready],
-           "grade_ledger":[],"last_results":{},
+           "grade_ledger":[],"candidate_ledger":[],"last_results":{},
            "no_retention_rollback":True,
            "last_run_wall_seconds":0.0}
     _atomic_json(out/STATE,state)
@@ -341,7 +356,7 @@ def _device(model, optimizer, name):
     return torch.device(name)
 
 
-def _scores(model, lib, graph, grade, seed, *, count=24, device="cpu"):
+def _probe_metrics(model, lib, graph, grade, seed, *, count=24, device="cpu"):
     rng=random.Random(seed)
     rows=[]
     for i in range(count):
@@ -354,10 +369,125 @@ def _scores(model, lib, graph, grade, seed, *, count=24, device="cpu"):
     with torch.no_grad():
         ids,lengths=batch([encode(row,graph) for row in rows],device=device)
         logits=model(ids,lengths)
+        labels=torch.tensor(
+            [STATES.index(row["gold"]) for row in rows],
+            device=device,dtype=torch.long)
         predictions=logits.argmax(-1).cpu().tolist()
         correct=sum(STATES[i]==row["gold"] for i,row in zip(predictions,rows))
+        probs=F.softmax(logits,dim=-1)
+        correct_prob=probs.gather(1,labels[:,None]).squeeze(1)
+        masked=logits.clone()
+        masked.scatter_(1,labels[:,None],float("-inf"))
+        margin=logits.gather(1,labels[:,None]).squeeze(1)-masked.max(-1).values
+        cross=F.cross_entropy(logits,labels)
     if old_training:model.train()
-    return correct/count
+    return {
+        "accuracy":correct/count,
+        "cross_entropy":float(cross.detach().cpu()),
+        "correct_probability":float(correct_prob.mean().detach().cpu()),
+        "margin":float(margin.mean().detach().cpu()),
+    }
+
+
+def _scores(model, lib, graph, grade, seed, *, count=24, device="cpu"):
+    return _probe_metrics(
+        model,lib,graph,grade,seed,count=count,device=device)["accuracy"]
+
+
+def _sentinel_metrics(model, lib, graph, *, device,
+                      count_per_grade=CANDIDATE_SENTINEL_PER_GRADE):
+    metrics=[
+        _probe_metrics(
+            model,lib,graph,grade,971003+grade*811,
+            count=count_per_grade,device=device)
+        for grade in REPORT_GRADES
+    ]
+    return {
+        name:sum(item[name] for item in metrics)/len(metrics)
+        for name in ("accuracy","cross_entropy","correct_probability","margin")
+    }
+
+
+def _candidate_gate_decision(reward, before_sentinel=None, after_sentinel=None,
+                             *, clear_reward=CANDIDATE_CLEAR_REWARD):
+    if reward <= -clear_reward:
+        return {"decision":"REJECT","reason":"CLEAR_REWARD_LOSS"}
+    if before_sentinel is None or after_sentinel is None:
+        return {
+            "decision":"MEASURE",
+            "reason":(
+                "CLEAR_REWARD_WIN_NEEDS_SENTINEL"
+                if reward >= clear_reward else "AMBIGUOUS_REWARD"),
+        }
+    deltas={
+        "accuracy":after_sentinel["accuracy"]-before_sentinel["accuracy"],
+        "cross_entropy":before_sentinel["cross_entropy"]-after_sentinel["cross_entropy"],
+        "correct_probability":(
+            after_sentinel["correct_probability"]-
+            before_sentinel["correct_probability"]),
+        "margin":after_sentinel["margin"]-before_sentinel["margin"],
+    }
+    score=0
+    if deltas["accuracy"] > 0:score+=2
+    elif deltas["accuracy"] < 0:score-=2
+    for name,epsilon in (
+        ("cross_entropy",0.002),
+        ("correct_probability",0.001),
+        ("margin",0.005),
+    ):
+        if deltas[name] > epsilon:score+=1
+        elif deltas[name] < -epsilon:score-=1
+    if reward >= clear_reward and score >= 0:
+        decision,reason="PROMOTE","CLEAR_REWARD_WIN_SENTINEL_SAFE"
+    elif reward >= clear_reward and score < 0:
+        decision,reason="REJECT","SENTINEL_VETOED_LOCAL_WIN"
+    elif score > 0:
+        decision,reason="PROMOTE","SENTINEL_BETTER"
+    elif score < 0:
+        decision,reason="REJECT","SENTINEL_WORSE"
+    else:
+        decision,reason="REJECT","SENTINEL_NO_DEMONSTRATED_GAIN"
+    return {"decision":decision,"reason":reason,
+            "sentinel_deltas":deltas,"sentinel_vote_score":score}
+
+
+def _candidate_teacher_credit(raw_reward, gate, *,
+                              clear_reward=CANDIDATE_CLEAR_REWARD):
+    if gate["decision"]=="PROMOTE":
+        if gate["reason"]=="SENTINEL_BETTER":
+            return max(raw_reward,clear_reward/2)
+        return raw_reward
+    if gate["reason"]=="CLEAR_REWARD_LOSS":
+        return raw_reward
+    if gate["reason"] in ("SENTINEL_WORSE","SENTINEL_VETOED_LOCAL_WIN"):
+        return min(raw_reward,-clear_reward)
+    if gate["reason"]=="SENTINEL_NO_DEMONSTRATED_GAIN":
+        return 0.0
+    return raw_reward
+
+
+def _candidate_line(info):
+    sentinel=info.get("sentinel_deltas")
+    sentinel_text=""
+    if sentinel is not None:
+        sentinel_text=(
+            f" | sentinel acc {sentinel['accuracy']*100:+.1f}pp"
+            f" CE {sentinel['cross_entropy']:+.4f}"
+            f" p(correct) {sentinel['correct_probability']:+.4f}"
+            f" margin {sentinel['margin']:+.4f}"
+        )
+    return (
+        f"[candidate] pass {info['pass']} {info['grade']} "
+        f"attempt {info['attempt']}/{info['max_attempts']} "
+        f"strategy {info['strategy']} | probe "
+        f"{info['before']*100:.1f}%->{info['after']*100:.1f}% "
+        f"({info['immediate_delta']*100:+.1f}pp) | "
+        f"old avg {info['old_mean_delta']*100:+.1f}pp | "
+        f"reward {info['reward']:+.4f}"
+        f" teacher-credit {info['teacher_credit']:+.4f}"
+        f"{sentinel_text} | "
+        f"{info['decision']} {info['reason']}"
+    )
 
 
 def _find_school_start_checkpoint(out, state):
@@ -420,6 +550,18 @@ def _find_pass_checkpoint(out, state, pass_number):
     rows=_pass_rows(state,pass_number)
     if set(rows)!=set(REPORT_GRADE_IDS):
         raise ValueError("PASS_CHECKPOINT_REQUIRES_COMPLETE_EXECUTABLE_PASS")
+    explicit=rows[REPORT_GRADE_IDS[-1]].get("checkpoint")
+    if explicit:
+        path=Path(out)/explicit
+        if not path.is_file():
+            raise ValueError("PASS_CHECKPOINT_MISSING")
+        _,optimizer,payload=load_checkpoint(path)
+        if (optimizer_receipt(optimizer)["steps"]==
+            [rows[REPORT_GRADE_IDS[-1]]["optimizer_step"]] and
+            len(payload["graph"]["tokens"])==state["vocab"] and
+            digest(payload["graph"])==state["graph_sha256"]):
+            return path
+        raise ValueError("PASS_CHECKPOINT_CHANGED")
     step=rows[REPORT_GRADE_IDS[-1]]["optimizer_step"]
     candidates=[]
     for path in sorted(Path(out).glob(f"student-{step}-*.pt")):
@@ -444,6 +586,201 @@ def _probe_all_grades(model, graph, lib, *, device):
         f"G{grade:02d}":_scores(
             model,lib,graph,grade,170003+grade*617,count=24,device=device)
         for grade in REPORT_GRADES
+    }
+
+
+def _grade_champion_score(model, graph, lib, grade, *, device):
+    return _scores(
+        model,lib,graph,grade,1931003+grade*1237,
+        count=GRADE_CHAMPION_COUNT,device=device)
+
+
+def _recoverable_champion_candidates(out, state):
+    out=Path(out)
+    candidates={}
+    def add(name, source_pass=None):
+        if name and (out/name).is_file():
+            candidates.setdefault(name,source_pass)
+    add(state.get("checkpoint"),state.get("spiral_pass"))
+    add(state.get("accepted_pass",{}).get("checkpoint"),
+        state.get("accepted_pass",{}).get("pass"))
+    add(state.get("champion_pass",{}).get("checkpoint"),
+        state.get("champion_pass",{}).get("pass"))
+    for report in state.get("pass_reports",[]):
+        add(report.get("checkpoint"),report.get("pass"))
+    for row in state.get("grade_ledger",[]):
+        add(row.get("checkpoint"),row.get("spiral_pass"))
+    return candidates
+
+
+def _ensure_grade_champions(out, state, lib):
+    champions=state.get("grade_champions",{})
+    if (state.get("grade_champion_profile")==GRADE_CHAMPION_PROFILE and
+        set(champions)==set(REPORT_GRADE_IDS) and
+        all((Path(out)/item["checkpoint"]).is_file()
+            for item in champions.values())):
+        return False
+    candidates=_recoverable_champion_candidates(out,state)
+    if not candidates:
+        raise ValueError("NO_RECOVERABLE_CHECKPOINTS_FOR_GRADE_CHAMPIONS")
+    best={}
+    for name,source_pass in candidates.items():
+        path=Path(out)/name
+        model,optimizer,payload=load_checkpoint(path)
+        if (len(payload["graph"]["tokens"])!=state["vocab"] or
+            digest(payload["graph"])!=state["graph_sha256"]):
+            continue
+        scores={
+            f"G{grade:02d}":_grade_champion_score(
+                model,payload["graph"],lib,grade,device="cpu")
+            for grade in REPORT_GRADES
+        }
+        holistic=sum(scores.values())/len(scores)
+        step=optimizer_receipt(optimizer)["steps"][0]
+        checksum=_sha(path)
+        for grade_id,score in scores.items():
+            incumbent=best.get(grade_id)
+            if (incumbent is None or score>incumbent["score"] or
+                (score==incumbent["score"] and
+                 holistic>incumbent["holistic_mean"])):
+                best[grade_id]={
+                    "score":score,
+                    "checkpoint":name,
+                    "checkpoint_sha256":checksum,
+                    "optimizer_step":step,
+                    "source_pass":source_pass,
+                    "holistic_mean":holistic,
+                }
+    if set(best)!=set(REPORT_GRADE_IDS):
+        raise ValueError("GRADE_CHAMPION_MIGRATION_INCOMPLETE")
+    state["grade_champion_profile"]=GRADE_CHAMPION_PROFILE
+    state["grade_champions"]=best
+    return True
+
+
+def _maybe_promote_grade_champion(state, grade_id, score, *,
+                                  checkpoint, checkpoint_sha256,
+                                  optimizer_step, source_pass,
+                                  holistic_mean=None):
+    incumbent=state["grade_champions"].get(grade_id)
+    delta=None if incumbent is None else score-incumbent["score"]
+    promoted=(incumbent is None or score>incumbent["score"])
+    if promoted:
+        state["grade_champions"][grade_id]={
+            "score":score,
+            "checkpoint":checkpoint,
+            "checkpoint_sha256":checkpoint_sha256,
+            "optimizer_step":optimizer_step,
+            "source_pass":source_pass,
+            "holistic_mean":holistic_mean,
+        }
+    return {
+        "score":score,
+        "prior_best":None if incumbent is None else incumbent["score"],
+        "vs_prior_best":delta,
+        "new_champion":promoted,
+        "prior_checkpoint":None if incumbent is None else incumbent["checkpoint"],
+    }
+
+
+def _average_model_state_dicts(models, weights):
+    if not models or len(models)!=len(weights) or sum(weights)<=0:
+        raise ValueError("INVALID_MODEL_SOUP_INGREDIENTS")
+    total=float(sum(weights))
+    states=[model.state_dict() for model in models]
+    keys=list(states[0])
+    if any(list(state)!=keys for state in states[1:]):
+        raise ValueError("MODEL_SOUP_STATE_KEYS_DIFFER")
+    averaged={}
+    for key in keys:
+        tensors=[state[key].detach().cpu() for state in states]
+        first=tensors[0]
+        if any(t.shape!=first.shape or t.dtype!=first.dtype for t in tensors[1:]):
+            raise ValueError("MODEL_SOUP_TENSOR_ABI_DIFFERS")
+        if torch.is_floating_point(first):
+            value=sum(t.float()*float(w) for t,w in zip(tensors,weights))/total
+            averaged[key]=value.to(first.dtype)
+        else:
+            if any(not torch.equal(first,t) for t in tensors[1:]):
+                raise ValueError("MODEL_SOUP_NONFLOAT_BUFFER_DIFFERS")
+            averaged[key]=first.clone()
+    return averaged
+
+
+def evaluate_grade_champion_soup(out=RUN, *, device="cpu"):
+    """Inference-only grade-champion weight soup versus the pass champion."""
+    out=Path(out)
+    state=_read(out/STATE)
+    lib=TeacherLibrary()
+    shadow=copy.deepcopy(state)
+    _ensure_reporting_state(out,shadow,lib)
+    _ensure_grade_champions(out,shadow,lib)
+    pass_champion=shadow["champion_pass"]
+    pass_path=out/pass_champion["checkpoint"]
+    pass_model,_,payload=load_checkpoint(pass_path)
+    ingredient_models={}
+    grade_weights={}
+    for grade_id in REPORT_GRADE_IDS:
+        name=shadow["grade_champions"][grade_id]["checkpoint"]
+        grade_weights[name]=grade_weights.get(name,0)+1
+        if name not in ingredient_models:
+            model,_,candidate_payload=load_checkpoint(out/name)
+            if (model.config!=pass_model.config or
+                digest(candidate_payload["graph"])!=digest(payload["graph"])):
+                raise ValueError("GRADE_CHAMPION_SOUP_REQUIRES_IDENTICAL_MODEL_ABI")
+            ingredient_models[name]=model
+    names=list(ingredient_models)
+    weights=[grade_weights[name] for name in names]
+    ingredient_sha256={name:_sha(out/name) for name in names}
+    grade_assignments={
+        grade_id:{
+            "checkpoint":shadow["grade_champions"][grade_id]["checkpoint"],
+            "checkpoint_sha256":shadow["grade_champions"][grade_id]["checkpoint_sha256"],
+            "grade_champion_score":shadow["grade_champions"][grade_id]["score"],
+            "source_pass":shadow["grade_champions"][grade_id]["source_pass"],
+        }
+        for grade_id in REPORT_GRADE_IDS
+    }
+    soup=copy.deepcopy(pass_model)
+    soup.load_state_dict(_average_model_state_dicts(
+        [ingredient_models[name] for name in names],weights))
+    if device=="mps" and not torch.backends.mps.is_available():
+        raise ValueError("MPS_NOT_AVAILABLE")
+    if device not in ("cpu","mps"):
+        raise ValueError("UNSUPPORTED_LEARNER_DEVICE")
+    soup.to(device)
+    pass_model.to(device)
+    soup_scores=_probe_all_grades(
+        soup,payload["graph"],lib,device=device)
+    pass_scores=_probe_all_grades(
+        pass_model,payload["graph"],lib,device=device)
+    deltas={grade:soup_scores[grade]-pass_scores[grade]
+            for grade in REPORT_GRADE_IDS}
+    soup_mean=sum(soup_scores.values())/len(soup_scores)
+    pass_mean=sum(pass_scores.values())/len(pass_scores)
+    return {
+        "status":"INFERENCE_ONLY_GRADE_CHAMPION_SOUP",
+        "live_state_mutated":False,
+        "optimizer_averaged":False,
+        "pass_champion_pass":pass_champion["pass"],
+        "pass_champion_checkpoint":pass_champion["checkpoint"],
+        "pass_champion_checkpoint_sha256":pass_champion["checkpoint_sha256"],
+        "ingredient_checkpoint_weights":grade_weights,
+        "ingredient_checkpoint_sha256":ingredient_sha256,
+        "grade_champion_assignments":grade_assignments,
+        "unique_ingredient_checkpoints":len(names),
+        "grade_count":len(REPORT_GRADE_IDS),
+        "pass_champion_mean":pass_mean,
+        "soup_mean":soup_mean,
+        "mean_delta":soup_mean-pass_mean,
+        "pass_champion_median":statistics.median(pass_scores.values()),
+        "soup_median":statistics.median(soup_scores.values()),
+        "improved_grades":sum(delta>0 for delta in deltas.values()),
+        "regressed_grades":sum(delta<0 for delta in deltas.values()),
+        "unchanged_grades":sum(delta==0 for delta in deltas.values()),
+        "grade_deltas":deltas,
+        "soup_scores":soup_scores,
+        "pass_champion_scores":pass_scores,
     }
 
 
@@ -494,6 +831,14 @@ def _pass_summary_line(report):
         f"median {report['median_vs_previous']*100:+.1f}pp"
     )
     disposition=report.get("disposition","OBSERVED")
+    champion=report.get("vs_champion_pass")
+    champion_text=""
+    if champion is not None:
+        champion_text=(
+            f" | vs champion P{champion['pass']} "
+            f"mean {champion['mean_delta']*100:+.1f}pp, "
+            f"median {champion['median_delta']*100:+.1f}pp"
+        )
     return (
         f"=== PASS {report['pass']} REPORT | "
         f"mean probe {report['mean_probe_score']*100:.1f}% | "
@@ -506,20 +851,20 @@ def _pass_summary_line(report):
         f"gap to 100 {report['mean_gap_to_100']*100:.1f}pp | "
         f"low {report['lowest_grade']} {report['lowest_probe_score']*100:.1f}% | "
         f"high {report['highest_grade']} {report['highest_probe_score']*100:.1f}% | "
-        f"{disposition} ==="
+        f"{disposition}{champion_text} ==="
     )
 
 
-def _material_pass_regression(current_scores, accepted_scores, threshold):
-    deltas=[current_scores[g]-accepted_scores[g] for g in REPORT_GRADE_IDS]
+def _material_pass_regression(current_scores, champion_scores, threshold):
+    deltas=[current_scores[g]-champion_scores[g] for g in REPORT_GRADE_IDS]
     mean_delta=sum(deltas)/len(deltas)
     median_delta=statistics.median(deltas)
     regressions=sum(delta<0 for delta in deltas)
     return {
-        "regressed":(
-            mean_delta <= -threshold and
-            median_delta < 0 and
-            regressions > len(deltas)//2),
+        # Aggregate simultaneous performance is the primary safety signal.
+        # Median/grade counts remain diagnostic, but do not mask asymmetric
+        # losses where fewer grades fall by more than the gains elsewhere.
+        "regressed":mean_delta <= -threshold,
         "mean_delta":mean_delta,
         "median_delta":median_delta,
         "regressed_grades":regressions,
@@ -548,6 +893,7 @@ def _load_accepted_student(out, state, accepted, device):
     state["checkpoint_sha256"]=accepted["checkpoint_sha256"]
     state["model_sha256"]=state_hash(model)
     state["optimizer_step"]=accepted["optimizer_step"]
+    state["completed_updates"]=max(0,accepted["optimizer_step"]-13848)
     state["vocab"]=len(payload["graph"]["tokens"])
     state["graph_sha256"]=digest(payload["graph"])
     if accepted["pass"]==0:
@@ -561,6 +907,12 @@ def _load_accepted_student(out, state, accepted, device):
         }
     else:
         _restore_last_results_to_pass(state,accepted["pass"])
+    return model,optimizer,payload
+
+
+def _reload_live_student(out, state, device):
+    model,optimizer,payload=_validate(Path(out)/state["checkpoint"],state)
+    _device(model,optimizer,device)
     return model,optimizer,payload
 
 
@@ -590,6 +942,7 @@ def _ensure_reporting_state(out, state, lib):
                 "optimizer_step":report["optimizer_step"],
                 "scores":dict(scores),
             }
+            state["champion_pass"]=dict(state["accepted_pass"])
             changed=True
         elif "accepted_pass" not in state:
             state["accepted_pass"]={
@@ -599,6 +952,7 @@ def _ensure_reporting_state(out, state, lib):
                 "optimizer_step":13848,
                 "scores":dict(state["school_start_probe_scores"]),
             }
+            state["champion_pass"]=dict(state["accepted_pass"])
             changed=True
     elif "accepted_pass" not in state:
         latest=reports[-1]
@@ -609,6 +963,28 @@ def _ensure_reporting_state(out, state, lib):
             "optimizer_step":latest["optimizer_step"],
             "scores":dict(latest["scores"]),
         }
+        state["champion_pass"]=dict(state["accepted_pass"])
+        changed=True
+    elif "champion_pass" not in state:
+        # Existing runs historically replaced accepted_pass even after small
+        # declines. Seed the champion from the best stored pass report that
+        # still has a checkpoint available, preferring higher mean score.
+        candidates=[
+            report for report in reports
+            if report.get("checkpoint") and
+            (Path(out)/report["checkpoint"]).is_file()
+        ]
+        best=max(candidates,key=lambda report:report["mean_probe_score"]) if candidates else None
+        if best is not None:
+            state["champion_pass"]={
+                "pass":best["pass"],
+                "checkpoint":best["checkpoint"],
+                "checkpoint_sha256":best["checkpoint_sha256"],
+                "optimizer_step":best["optimizer_step"],
+                "scores":dict(best["scores"]),
+            }
+        else:
+            state["champion_pass"]=dict(state["accepted_pass"])
         changed=True
     return changed
 
@@ -654,6 +1030,21 @@ def _progress_line(progress):
             f" | no-gain {progress['minutes_since_measurable_progress']:.1f}"
             f"/{progress['patience_minutes']:.1f}m"
         )
+    gate=""
+    if progress.get("candidate_gate_enabled"):
+        gate=(
+            f" | gate {progress['candidate_gate_disposition']} "
+            f"{progress['candidate_attempts']}/{progress['candidate_max_attempts']}"
+        )
+    personal=""
+    if progress.get("grade_champion_score") is not None:
+        delta=progress.get("vs_grade_champion")
+        delta_text="baseline" if delta is None else f"{delta*100:+.1f}pp"
+        marker=" NEW" if progress.get("new_grade_champion") else ""
+        personal=(
+            f" | best48 {progress['grade_champion_score']*100:.1f}% "
+            f"vs personal-best {delta_text}{marker}"
+        )
     return (
         f"[{progress['elapsed_minutes']:6.1f}m] pass {progress['pass']} "
         f"{progress['grade']} step {progress['step']} | probe "
@@ -663,7 +1054,7 @@ def _progress_line(progress):
         f"| old avg {progress['old_mean_delta']*100:+.1f}pp "
         f"| reward {progress['reward']:+.4f} "
         f"| teacher {progress['teacher_strategies']}/{MAX_STRATEGIES} strategies/"
-        f"{progress['teacher_mutations']} mutations{patience}"
+        f"{progress['teacher_mutations']} mutations{gate}{personal}{patience}"
     )
 
 
@@ -722,8 +1113,12 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         patience_minutes=None, progress_window=8,
         min_repeat_improvement=0.01, progress_format="json",
         stop_requested=None, rollback_regressed_pass=False,
-        pass_regression_threshold=0.03, prune_checkpoints=False,
-        keep_recent_checkpoints=8, keep_pass_checkpoints=4):
+        pass_regression_threshold=0.01, prune_checkpoints=False,
+        keep_recent_checkpoints=8, keep_pass_checkpoints=4,
+        candidate_grade_gate=False,
+        candidate_max_attempts=CANDIDATE_MAX_ATTEMPTS,
+        candidate_clear_reward=CANDIDATE_CLEAR_REWARD,
+        candidate_sentinel_per_grade=CANDIDATE_SENTINEL_PER_GRADE):
     if (max_updates < 1 or max_minutes <= 0 or block < 1 or block > 256
         or not 1<=max_run_gib<=500
         or (max_grade_visits is not None and max_grade_visits < 1)
@@ -731,6 +1126,9 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         or progress_window < 1 or min_repeat_improvement < 0
         or not 0<=pass_regression_threshold<=1
         or keep_recent_checkpoints < 0 or keep_pass_checkpoints < 0
+        or candidate_max_attempts < 1
+        or candidate_clear_reward < 0
+        or candidate_sentinel_per_grade < 1
         or progress_format not in ("json","human")):
         raise ValueError("INVALID_BOUNDED_TRAINING_REQUEST")
     out=Path(out)
@@ -741,10 +1139,24 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     state=_read(out/STATE)
     if state["version"] != VERSION:
         raise ValueError("CANNOT_SILENTLY_RESUME_DIFFERENT_SCHOOL_ENGINE")
+    migrated_accounting=False
+    legacy_completed=state["completed_updates"]
+    if "attempted_updates" not in state:
+        state["attempted_updates"]=legacy_completed
+        migrated_accounting=True
+    live_updates=max(0,state["optimizer_step"]-13848)
+    if state["completed_updates"] != live_updates:
+        state["completed_updates"]=live_updates
+        migrated_accounting=True
+    if "candidate_ledger" not in state:
+        state["candidate_ledger"]=[]
+        migrated_accounting=True
     model,optimizer,payload=_validate(out/state["checkpoint"],state)
     gpu=_device(model,optimizer,device)
     lib=TeacherLibrary()
-    if _ensure_reporting_state(out,state,lib):
+    reporting_changed=_ensure_reporting_state(out,state,lib)
+    grade_champions_changed=_ensure_grade_champions(out,state,lib)
+    if reporting_changed or grade_champions_changed or migrated_accounting:
         _atomic_json(out/STATE,state)
     if prune_checkpoints:
         _prune_checkpoints(
@@ -754,6 +1166,9 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     start=time.monotonic()
     consumed=0
     visits_this_call=0
+    candidate_rejections_this_call=0
+    candidate_promotions_this_call=0
+    candidate_no_updates_this_call=0
     metric_events=[]
     rejected_passes=set()
     measurable_progress_events=[]
@@ -791,12 +1206,6 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             continue
         if shutil.disk_usage(out).free < 512*1024*1024:
             raise OSError("SCHOOL_STORAGE_RESERVE_512MiB_REACHED")
-        seed=(state["spiral_pass"]*1000003 + grade*9973 +
-              state["completed_grades"]*3)
-        rng=random.Random(seed)
-        key,policy=pick(state["teacher"],grade,rng)
-        steps=min(block,max_updates-consumed)
-        if steps < 1:break
         grade_id=f"G{grade:02d}"
         prior_visit=state["last_results"].get(grade_id)
         probe_seed=170003+grade*617
@@ -804,31 +1213,178 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         guards=[g for g in (1,10,13,16,17,19) if g<grade and lib.ready(g)]
         before_old={str(g):_scores(model,lib,payload["graph"],g,170003+g*617,
                                   count=12,device=device) for g in guards}
-        anchor=copy.deepcopy(model).eval()
-        for p in anchor.parameters():p.requires_grad_(False)
-        for group in optimizer.param_groups:group["lr"]=policy["lr"]
-        tallies={"current":0,"old":0,"preview":0}
-        losses=[]
-        for local_step in range(steps):
-            rows,counts=compose_batch(lib,grade,policy,payload["graph"],rng)
-            if counts["current"] <= 0 or len(rows)!=32:
-                raise ValueError("NO_COGNITIVE_GROWTH_SAMPLES")
-            loss=_train(model,optimizer,anchor,payload["graph"],rows,counts,policy,gpu)
-            losses.append(loss)
-            for name,value in counts.items():tallies[name]+=value
-        after=_scores(model,lib,payload["graph"],grade,probe_seed,device=device)
-        after_old={str(g):_scores(model,lib,payload["graph"],g,170003+g*617,
-                                 count=12,device=device) for g in guards}
-        old_delta=sum(after_old[k]-before_old[k] for k in before_old)
-        old_mean_delta=old_delta/max(1,len(before_old))
-        immediate_delta=after-before
-        reward=2*immediate_delta+.6*old_mean_delta
+        base_seed=(state["spiral_pass"]*1000003 + grade*9973 +
+                   state["completed_grades"]*3)
+        max_attempts=(candidate_max_attempts if candidate_grade_gate else 1)
+        promoted=False
+        last_attempt=None
+        accepted_steps=0
+        budget_exhausted=False
+        attempted_strategy_keys=set()
+        for attempt in range(1,max_attempts+1):
+            steps=min(block,max_updates-consumed)
+            if steps < 1:
+                budget_exhausted=True
+                break
+            rng=random.Random(
+                base_seed + attempt*104729 + state["teacher"]["events"]*17)
+            key,policy=pick(
+                state["teacher"],grade,rng,exclude=attempted_strategy_keys)
+            attempted_strategy_keys.add(key)
+            anchor=copy.deepcopy(model).eval()
+            for p in anchor.parameters():p.requires_grad_(False)
+            for group in optimizer.param_groups:group["lr"]=policy["lr"]
+            tallies={"current":0,"old":0,"preview":0}
+            losses=[]
+            for local_step in range(steps):
+                rows,counts=compose_batch(lib,grade,policy,payload["graph"],rng)
+                if counts["current"] <= 0 or len(rows)!=32:
+                    raise ValueError("NO_COGNITIVE_GROWTH_SAMPLES")
+                loss=_train(
+                    model,optimizer,anchor,payload["graph"],rows,counts,policy,gpu)
+                losses.append(loss)
+                for name,value in counts.items():tallies[name]+=value
+            candidate_step=optimizer_receipt(optimizer)["steps"][0]
+            if candidate_step != state["optimizer_step"]+steps:
+                raise ValueError("CANDIDATE_ADAMW_CONTINUITY_BROKEN")
+            after=_scores(
+                model,lib,payload["graph"],grade,probe_seed,device=device)
+            after_old={
+                str(g):_scores(
+                    model,lib,payload["graph"],g,170003+g*617,
+                    count=12,device=device)
+                for g in guards
+            }
+            old_delta=sum(after_old[k]-before_old[k] for k in before_old)
+            old_mean_delta=old_delta/max(1,len(before_old))
+            immediate_delta=after-before
+            reward=2*immediate_delta+.6*old_mean_delta
+            gate=(
+                _candidate_gate_decision(
+                    reward,clear_reward=candidate_clear_reward)
+                if candidate_grade_gate
+                else {"decision":"PROMOTE","reason":"GRADE_GATE_DISABLED"}
+            )
+            before_sentinel=after_sentinel=None
+            if gate["decision"]=="MEASURE":
+                before_sentinel=_sentinel_metrics(
+                    anchor,lib,payload["graph"],device=device,
+                    count_per_grade=candidate_sentinel_per_grade)
+                after_sentinel=_sentinel_metrics(
+                    model,lib,payload["graph"],device=device,
+                    count_per_grade=candidate_sentinel_per_grade)
+                gate=_candidate_gate_decision(
+                    reward,before_sentinel,after_sentinel,
+                    clear_reward=candidate_clear_reward)
+            teacher_credit=_candidate_teacher_credit(
+                reward,gate,clear_reward=candidate_clear_reward)
+            observe(state["teacher"],grade,key,teacher_credit)
+            consumed+=steps
+            state["attempted_updates"]+=steps
+            attempt_record={
+                "spiral_pass":state["spiral_pass"],
+                "grade":grade_id,
+                "attempt":attempt,
+                "max_attempts":max_attempts,
+                "parent_checkpoint":state["checkpoint"],
+                "parent_optimizer_step":state["optimizer_step"],
+                "candidate_optimizer_step":candidate_step,
+                "strategy_id":key,
+                "strategy":policy,
+                "before":before,
+                "after":after,
+                "old_before":before_old,
+                "old_after":after_old,
+                "old_mean_delta":round(old_mean_delta,6),
+                "reward":round(reward,6),
+                "teacher_credit":round(teacher_credit,6),
+                "updates":steps,
+                "loss_first":losses[0],
+                "loss_last":losses[-1],
+                "row_exposures":tallies,
+                "decision":gate["decision"],
+                "reason":gate["reason"],
+                "sentinel_before":before_sentinel,
+                "sentinel_after":after_sentinel,
+                "sentinel_deltas":gate.get("sentinel_deltas"),
+                "sentinel_vote_score":gate.get("sentinel_vote_score"),
+                "teacher_mutations":state["teacher"]["mutations"],
+            }
+            state["candidate_ledger"].append(attempt_record)
+            last_attempt=attempt_record
+            if candidate_grade_gate:
+                line_info={
+                    "pass":state["spiral_pass"],"grade":grade_id,
+                    "attempt":attempt,"max_attempts":max_attempts,
+                    "strategy":key,"before":before,"after":after,
+                    "immediate_delta":immediate_delta,
+                    "old_mean_delta":old_mean_delta,"reward":reward,
+                    "teacher_credit":teacher_credit,
+                    "decision":gate["decision"],"reason":gate["reason"],
+                    "sentinel_deltas":gate.get("sentinel_deltas"),
+                }
+                if progress_format=="human":
+                    print(_candidate_line(line_info),flush=True)
+                else:
+                    print(json.dumps({"candidate_attempt":line_info},
+                                     sort_keys=True),flush=True)
+            if gate["decision"]=="PROMOTE":
+                promoted=True
+                accepted_steps=steps
+                candidate_promotions_this_call+=1
+                break
+            candidate_rejections_this_call+=1
+            _atomic_json(out/STATE,state)
+            model,optimizer,payload=_reload_live_student(out,state,device)
+            gpu=torch.device(device)
+            if stop_requested is not None and stop_requested():
+                break
+
+        if budget_exhausted and last_attempt is None:
+            break
+        if promoted:
+            key=last_attempt["strategy_id"]
+            policy=last_attempt["strategy"]
+            after=last_attempt["after"]
+            after_old=last_attempt["old_after"]
+            old_mean_delta=last_attempt["old_mean_delta"]
+            old_delta=sum(after_old[k]-before_old[k] for k in before_old)
+            immediate_delta=after-before
+            reward=last_attempt["reward"]
+            losses=[last_attempt["loss_first"],last_attempt["loss_last"]]
+            tallies=last_attempt["row_exposures"]
+            state["completed_updates"]+=accepted_steps
+            state["optimizer_step"]+=accepted_steps
+            if optimizer_receipt(optimizer)["steps"]!=[state["optimizer_step"]]:
+                raise ValueError("ADAMW_CONTINUITY_BROKEN")
+            student_update_applied=True
+            gate_disposition=last_attempt["reason"]
+        else:
+            # All candidate lessons failed to demonstrate enough value.
+            # Preserve teacher evidence, but advance the curriculum with the
+            # production student and AdamW state unchanged.
+            model,optimizer,payload=_reload_live_student(out,state,device)
+            gpu=torch.device(device)
+            key=None
+            policy=None
+            after=before
+            after_old=dict(before_old)
+            old_delta=0.0
+            old_mean_delta=0.0
+            immediate_delta=0.0
+            reward=0.0
+            accepted_steps=0
+            tallies={"current":0,"old":0,"preview":0}
+            losses=[None,None]
+            student_update_applied=False
+            gate_disposition="NO_CANDIDATE_PROMOTED"
+            candidate_no_updates_this_call+=1
         repeat_delta=(None if prior_visit is None
                       else after-prior_visit["after"])
         metric_events.append({
             "pass":state["spiral_pass"],
             "grade":grade_id,
-            "updates":steps,
+            "updates":accepted_steps,
             "repeat_delta":repeat_delta,
             "immediate_delta":immediate_delta,
             "old_mean_delta":old_mean_delta,
@@ -849,41 +1405,66 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "pass":state["spiral_pass"],
                 "at":now,
             })
-        observe(state["teacher"],grade,key,reward)
-        consumed+=steps
         visits_this_call+=1
-        state["completed_updates"]+=steps
         state["completed_grades"]+=1
-        state["optimizer_step"]+=steps
-        if optimizer_receipt(optimizer)["steps"]!=[state["optimizer_step"]]:
-            raise ValueError("ADAMW_CONTINUITY_BROKEN")
         record={"spiral_pass":state["spiral_pass"],"grade":grade_id,
                 "strategy_id":key,"strategy":policy,
                 "before":before,"after":after,"old_before":before_old,
                 "old_after":after_old,"reward":round(reward,6),
                 "repeat_delta":None if repeat_delta is None else round(repeat_delta,6),
                 "old_mean_delta":round(old_mean_delta,6),
-                "updates":steps,"loss_first":losses[0],"loss_last":losses[-1],
+                "updates":accepted_steps,
+                "loss_first":losses[0],"loss_last":losses[-1],
                 "teacher_mutations":state["teacher"]["mutations"],
                 "row_exposures":tallies,
-                "optimizer_step":state["optimizer_step"]}
+                "optimizer_step":state["optimizer_step"],
+                "student_update_applied":student_update_applied,
+                "candidate_attempts":(
+                    last_attempt["attempt"] if last_attempt is not None else 0),
+                "candidate_gate_disposition":gate_disposition}
         state["grade_ledger"].append(record)
         state["last_results"][f"G{grade:02d}"]=record
         state["next_grade"]=grade+1
         state["model_sha256"]=state_hash(model)
-        name,checksum=_checkpoint(out,model,optimizer,payload["graph"],{
-            "epoch":VERSION,"step":state["optimizer_step"],
-            "last_grade":grade,"spiral_pass":state["spiral_pass"],
-            "learning_strategy":policy,"parent_checkpoint_sha256":state["checkpoint_sha256"],
-            "one_continuing_student":True})
-        state["checkpoint"],state["checkpoint_sha256"]=name,checksum
+        grade_champion_result=None
+        if student_update_applied:
+            name,checksum=_checkpoint(out,model,optimizer,payload["graph"],{
+                "epoch":VERSION,"step":state["optimizer_step"],
+                "last_grade":grade,"spiral_pass":state["spiral_pass"],
+                "learning_strategy":policy,
+                "candidate_attempts":record["candidate_attempts"],
+                "candidate_gate_disposition":gate_disposition,
+                "parent_checkpoint_sha256":state["checkpoint_sha256"],
+                "one_continuing_student":True})
+            state["checkpoint"],state["checkpoint_sha256"]=name,checksum
+            champion_score=_grade_champion_score(
+                model,payload["graph"],lib,grade,device=device)
+            grade_champion_result=_maybe_promote_grade_champion(
+                state,grade_id,champion_score,
+                checkpoint=name,checkpoint_sha256=checksum,
+                optimizer_step=state["optimizer_step"],
+                source_pass=state["spiral_pass"],
+                holistic_mean=(
+                    last_attempt.get("sentinel_after",{}).get("accuracy")
+                    if last_attempt is not None and
+                    last_attempt.get("sentinel_after") is not None
+                    else None))
         state["last_run_wall_seconds"]=round(time.monotonic()-start,3)
+        record["checkpoint"]=state["checkpoint"]
+        record["checkpoint_sha256"]=state["checkpoint_sha256"]
+        record["grade_champion_score"]=(
+            None if grade_champion_result is None
+            else grade_champion_result["score"])
+        record["vs_grade_champion"]=(
+            None if grade_champion_result is None
+            else grade_champion_result["vs_prior_best"])
+        record["new_grade_champion"]=(
+            False if grade_champion_result is None
+            else grade_champion_result["new_champion"])
         _atomic_json(out/STATE,state)
         pass_report=None
         if grade==REPORT_GRADES[-1]:
-            previous=(state["pass_reports"][-1]["scores"]
-                      if state["pass_reports"]
-                      else state["accepted_pass"]["scores"])
+            previous=state["accepted_pass"]["scores"]
             scores=_probe_all_grades(
                 model,payload["graph"],lib,device=device)
             pass_report=_pass_report(
@@ -892,11 +1473,11 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 checkpoint=state["checkpoint"],
                 checkpoint_sha256=state["checkpoint_sha256"],
                 optimizer_step=state["optimizer_step"])
-            accepted=state["accepted_pass"]
+            champion=state["champion_pass"]
             regression=_material_pass_regression(
-                scores,accepted["scores"],pass_regression_threshold)
-            pass_report["vs_accepted_pass"]={
-                "pass":accepted["pass"],
+                scores,champion["scores"],pass_regression_threshold)
+            pass_report["vs_champion_pass"]={
+                "pass":champion["pass"],
                 **regression,
             }
             rejected=rollback_regressed_pass and regression["regressed"]
@@ -906,17 +1487,17 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 rejected_sha=state["checkpoint_sha256"]
                 rejected_step=state["optimizer_step"]
                 pass_report["disposition"]=(
-                    f"ROLLED_BACK_TO_ACCEPTED_PASS_{accepted['pass']}")
+                    f"ROLLED_BACK_TO_CHAMPION_PASS_{champion['pass']}")
                 state["pass_reports"].append(pass_report)
                 state.setdefault("pass_rollbacks",[]).append({
                     "rejected_pass":state["spiral_pass"],
                     "rejected_checkpoint":rejected_checkpoint,
                     "rejected_checkpoint_sha256":rejected_sha,
                     "rejected_optimizer_step":rejected_step,
-                    "accepted_pass":accepted["pass"],
-                    "restored_checkpoint":accepted["checkpoint"],
-                    "restored_checkpoint_sha256":accepted["checkpoint_sha256"],
-                    "restored_optimizer_step":accepted["optimizer_step"],
+                    "champion_pass":champion["pass"],
+                    "restored_checkpoint":champion["checkpoint"],
+                    "restored_checkpoint_sha256":champion["checkpoint_sha256"],
+                    "restored_optimizer_step":champion["optimizer_step"],
                     "threshold":pass_regression_threshold,
                     "mean_delta":regression["mean_delta"],
                     "median_delta":regression["median_delta"],
@@ -925,7 +1506,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                     "teacher_mutations_preserved":state["teacher"]["mutations"],
                 })
                 model,optimizer,payload=_load_accepted_student(
-                    out,state,accepted,device)
+                    out,state,champion,device)
+                state["accepted_pass"]=dict(champion)
                 gpu=torch.device(device)
                 measurable_progress_events=[
                     event for event in measurable_progress_events
@@ -935,15 +1517,23 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                     measurable_progress_events[-1]["at"]
                     if measurable_progress_events else start)
             else:
-                pass_report["disposition"]="ACCEPTED"
-                state["pass_reports"].append(pass_report)
-                state["accepted_pass"]={
+                current={
                     "pass":state["spiral_pass"],
                     "checkpoint":state["checkpoint"],
                     "checkpoint_sha256":state["checkpoint_sha256"],
                     "optimizer_step":state["optimizer_step"],
                     "scores":dict(scores),
                 }
+                state["accepted_pass"]=current
+                current_mean=sum(scores.values())/len(scores)
+                champion_mean=(
+                    sum(champion["scores"].values())/len(champion["scores"]))
+                if current_mean > champion_mean:
+                    state["champion_pass"]=dict(current)
+                    pass_report["disposition"]="ACCEPTED_NEW_CHAMPION"
+                else:
+                    pass_report["disposition"]="ACCEPTED_CHAMPION_UNCHANGED"
+                state["pass_reports"].append(pass_report)
             _atomic_json(out/STATE,state)
         if prune_checkpoints:
             _prune_checkpoints(
@@ -961,7 +1551,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         elapsed=time.monotonic()-start
         since_progress=elapsed-(last_measurable_progress-start)
         progress={"pass":state["spiral_pass"],"grade":grade_id,
-                  "step":record["optimizer_step"],"updates":steps,
+                  "step":record["optimizer_step"],"updates":accepted_steps,
                   "strategy":key,
                   "teacher_strategies":len(state["teacher"]["strategies"]),
                   "teacher_mutations":state["teacher"]["mutations"],
@@ -976,7 +1566,14 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                   "elapsed_minutes":elapsed/60,
                   "minutes_since_measurable_progress":since_progress/60,
                   "patience_minutes":patience_minutes,
-                  "min_repeat_improvement":min_repeat_improvement}
+                  "min_repeat_improvement":min_repeat_improvement,
+                  "candidate_gate_enabled":candidate_grade_gate,
+                  "candidate_gate_disposition":gate_disposition,
+                  "candidate_attempts":record["candidate_attempts"],
+                  "candidate_max_attempts":max_attempts,
+                  "grade_champion_score":record["grade_champion_score"],
+                  "vs_grade_champion":record["vs_grade_champion"],
+                  "new_grade_champion":record["new_grade_champion"]}
         if progress_format=="human":
             print(_progress_line(progress),flush=True)
         else:
@@ -1021,7 +1618,9 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     recent_repeat=repeat_deltas[-progress_window:]
     retention=state.get("checkpoint_retention",{})
     return {"status":status,
-            "checkpoint_quota_gib":max_run_gib,"completed_this_call":consumed,
+            "checkpoint_quota_gib":max_run_gib,
+            "completed_this_call":lineage_summary["updates"],
+            "training_updates_attempted_this_call":consumed,
             "grade_visits_this_call":visits_this_call,
             "accepted_grade_visits_this_call":lineage_summary["grade_visits"],
             "accepted_updates_this_call":lineage_summary["updates"],
@@ -1035,12 +1634,17 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "attempted_run_metrics":attempted_summary,
             "rejected_run_metrics":rejected_summary,
             "rejected_passes_this_call":sorted(rejected_passes),
+            "candidate_grade_gate":candidate_grade_gate,
+            "candidate_promotions_this_call":candidate_promotions_this_call,
+            "candidate_rejections_this_call":candidate_rejections_this_call,
+            "candidate_no_update_grades_this_call":candidate_no_updates_this_call,
             "rolling_repeat_delta":(sum(recent_repeat)/len(recent_repeat)
                                     if recent_repeat else None),
             "progress_window":progress_window,
             "min_repeat_improvement":min_repeat_improvement,
             "patience_minutes":patience_minutes,
             "total_school_updates":state["completed_updates"],
+            "total_training_updates_attempted":state["attempted_updates"],
             "live_optimizer_step":state["optimizer_step"],
             "completed_grades":state["completed_grades"],
             "spiral_pass":state["spiral_pass"],
@@ -1051,6 +1655,7 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "compiled_grades":sum(g.ready for g in GRADES),
             "blocked_grades":state["blocked_grade_ids"],
             "accepted_pass":state.get("accepted_pass",{}).get("pass"),
+            "champion_pass":state.get("champion_pass",{}).get("pass"),
             "pass_rollbacks":len(state.get("pass_rollbacks",[])),
             "checkpoint_files_retained":retention.get("retained_count"),
             "checkpoint_storage_gib":(
@@ -1084,26 +1689,44 @@ def main():
                         help="First Ctrl+C finishes the current grade and checkpoints before stopping; second Ctrl+C aborts immediately.")
     parser.add_argument("--rollback-regressed-pass",action="store_true",
                         help="At a completed executable pass, restore the last accepted pass if broad probe performance regresses materially.")
-    parser.add_argument("--pass-regression-threshold",type=float,default=0.03,
-                        help="Mean 22-grade probe regression required before rollback can trigger (0.03 = 3 pp; majority and median must also regress).")
+    parser.add_argument("--pass-regression-threshold",type=float,default=0.01,
+                        help="Mean 22-grade probe regression versus the retained champion required before rollback can trigger (0.01 = 1 pp).")
     parser.add_argument("--prune-checkpoints",action="store_true",
                         help="Prune redundant historical checkpoint binaries while preserving durable recovery anchors.")
     parser.add_argument("--keep-recent-checkpoints",type=int,default=8,
                         help="With pruning enabled, retain this many most recent grade checkpoints.")
     parser.add_argument("--keep-pass-checkpoints",type=int,default=4,
                         help="With pruning enabled, retain this many recent G22 pass-end checkpoints.")
+    parser.add_argument("--candidate-grade-gate",action="store_true",
+                        help="Train grade lessons as candidates and promote only evidence-backed student updates.")
+    parser.add_argument("--candidate-max-attempts",type=int,
+                        default=CANDIDATE_MAX_ATTEMPTS,
+                        help="Maximum teaching strategies tried from the same live student for one grade.")
+    parser.add_argument("--candidate-clear-reward",type=float,
+                        default=CANDIDATE_CLEAR_REWARD,
+                        help="Teacher reward magnitude treated as clear local evidence; wins still face the cross-grade sentinel.")
+    parser.add_argument("--candidate-sentinel-per-grade",type=int,
+                        default=CANDIDATE_SENTINEL_PER_GRADE,
+                        help="Examples per compiled grade in the continuous promotion sentinel.")
     parser.add_argument("--device",choices=("cpu","mps"),default="cpu")
     parser.add_argument("--grow",action="store_true",
                         help="Function-preserving capacity migration, keeping trained state.")
     parser.add_argument("--require-full50",action="store_true")
     parser.add_argument("--status",action="store_true")
+    parser.add_argument("--evaluate-grade-champion-soup",action="store_true",
+                        help="Read-only inference evaluation of a grade-champion weight soup versus the holistic pass champion.")
     arguments=parser.parse_args()
-    if arguments.grow:
+    if arguments.evaluate_grade_champion_soup:
+        print(json.dumps(
+            evaluate_grade_champion_soup(arguments.run_dir,device=arguments.device),
+            indent=2,sort_keys=True))
+    elif arguments.grow:
         print(json.dumps(grow_active_school(arguments.run_dir),indent=2,sort_keys=True))
     elif arguments.status:
         result=_read(arguments.run_dir/STATE)
         print(json.dumps({k:v for k,v in result.items()
-                          if k not in ("teacher","grade_ledger","last_results")},
+                          if k not in ("teacher","grade_ledger",
+                                       "candidate_ledger","last_results")},
                          indent=2,sort_keys=True))
     else:
         stop_state={"requested":False}
@@ -1126,6 +1749,10 @@ def main():
                        prune_checkpoints=arguments.prune_checkpoints,
                        keep_recent_checkpoints=arguments.keep_recent_checkpoints,
                        keep_pass_checkpoints=arguments.keep_pass_checkpoints,
+                       candidate_grade_gate=arguments.candidate_grade_gate,
+                       candidate_max_attempts=arguments.candidate_max_attempts,
+                       candidate_clear_reward=arguments.candidate_clear_reward,
+                       candidate_sentinel_per_grade=arguments.candidate_sentinel_per_grade,
                        stop_requested=(lambda: stop_state["requested"])
                                       if arguments.graceful_interrupt else None)
         finally:

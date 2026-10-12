@@ -90,7 +90,7 @@ Run a long bounded Apple-Metal training session, resuming existing state:
 For an operator-visible development run, prefer a smaller bounded session with
 human-readable progress and a stagnation stop:
 
-    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4
+    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4 --candidate-grade-gate --candidate-max-attempts 3 --candidate-clear-reward 0.05 --candidate-sentinel-per-grade 8
 
 The runner prints one line after every durable grade checkpoint. It includes
 the fixed-probe score before and after that lesson, change versus the previous
@@ -126,16 +126,18 @@ ordinary emergency behavior and aborts immediately.
 
 For optional pass-level regression protection, add:
 
-    --rollback-regressed-pass --pass-regression-threshold 0.03
+    --rollback-regressed-pass --pass-regression-threshold 0.01
 
-The teacher still tolerates ordinary grade and pass wobble. A rollback occurs
-only when the simultaneous twenty-two-grade checkpoint report is at least
-three percentage points worse on mean score than the last accepted pass,
-the median grade also regresses, and a strict majority of grades are worse.
-When that happens, the student model and AdamW state resume from the last
-accepted pass checkpoint, but teacher strategy statistics and the rejected
-pass remain in the durable ledger. This preserves the lesson from a bad pass
-without making its neural weights the foundation of the next one.
+The teacher still tolerates ordinary grade and pass wobble, but the rollback
+anchor is a retained champion checkpoint rather than merely the most recent
+pass that escaped rejection. A pass rolls back when its simultaneous
+twenty-two-grade mean probe score is at least one percentage point below that
+champion. Median and per-grade counts remain diagnostic instead of masking
+asymmetric aggregate damage. A pass that stays within tolerance may continue
+as the live student, but it replaces the champion only when its mean probe
+score actually exceeds the champion. When rollback occurs, the student model
+and AdamW state resume from the champion while teacher strategy statistics and
+rejected-pass evidence remain durable.
 
 Run-level headline learning metrics follow the surviving student lineage.
 If a completed pass is rolled back, its repeat/immediate/retention deltas no
@@ -147,6 +149,54 @@ attempted_run_metrics and rejected_run_metrics, and its teacher rewards and
 strategy observations remain durable. In other words: discarded neural
 weights do not masquerade as progress of the current model, but the teacher
 still remembers what happened.
+
+With candidate-grade-gate enabled, a grade lesson is no longer allowed to
+write directly into the production student merely because its optimizer ran.
+Each teaching strategy starts from the current durable student+AdamW state and
+trains a candidate branch. A clearly negative teacher reward rejects that
+branch immediately. Positive or ambiguous local outcomes are checked against
+a fixed all-compiled-grades sentinel using continuous cross-entropy,
+correct-class probability and logit margin in addition to accuracy. A local
+win can therefore be vetoed when it damages the broader curriculum.
+
+Promoted candidates become the new student and receive a durable checkpoint.
+Rejected candidates are discarded by reloading the unchanged live checkpoint,
+but their teacher reward, strategy, losses, probe outcomes and sentinel
+evidence remain in candidate_ledger so the teacher learns from the attempt.
+The teacher may try up to candidate-max-attempts strategies for the grade.
+If none demonstrates enough benefit, the grade advances with no student or
+AdamW change instead of forcing an unproven lesson into the learner. Attempted
+optimizer work is tracked separately from promoted student optimizer work.
+
+Local and holistic champions are intentionally separate. Each G01-G22 keeps
+one recoverable personal-best checkpoint using a dedicated 48-example
+grade-champion panel that is distinct from both the 24-example teaching probe
+and the cross-grade sentinel. The live progress line reports the promoted
+checkpoint's score versus that grade's prior personal best, and checkpoint
+retention pins every current grade champion. A grade champion is a benchmark
+and archive, not the parent for the next lesson: rewinding to G07's historic
+best merely to teach G07 again could silently discard later gains in the other
+grades and their AdamW history.
+
+The pass champion remains a separate whole-student concept. It is selected by
+simultaneous all-22 evaluation and is the rollback anchor for broad regression.
+Thus a checkpoint can be the best G11 student ever seen without being the best
+overall student, and a holistic champion can be slightly below a historical
+personal best on several individual grades.
+
+To test whether those local optima combine constructively without touching the
+live learner, run:
+
+    python3 -m bilqis_school.engine --run-dir <RUN> --device cpu --evaluate-grade-champion-soup
+
+This creates an inference-only grade-weighted model soup in memory by averaging
+the model weights referenced by the 22 personal-best checkpoints and evaluates
+it against the single holistic pass champion. A checkpoint that champions
+multiple grades receives corresponding grade weight in the average. AdamW
+moments are never averaged or attached to the soup, and the command never
+changes state.json or the live checkpoint pointer. A winning soup is evidence
+for a later guarded consolidation design, not automatic authorization to
+replace the continuing student's optimizer lineage.
 
 Long-running development should also enable bounded checkpoint retention:
 
@@ -172,12 +222,14 @@ Explicitly test whether all fifty grades have source-backed compilers
 
     python3 -m bilqis_school.engine --require-full50 --minutes 1
 
-The runner creates a new checkpoint per completed grade under ignored
-runs/school50-continuous-v1. With 10.7 million trainable parameters
-and full AdamW moments, long runs can consume substantial storage.
-Currently checkpoints are intentionally NOT automatically pruned.
-The default generated-checkpoint quota of 32 GiB stops cleanly at a grade
-boundary before new writes reach the cap, with a separate 512 MiB free
+Promoted student updates create a new checkpoint under ignored
+runs/school50-continuous-v1; rejected/no-update candidate lessons do not
+create redundant student binaries. With 10.7 million trainable parameters
+and full AdamW moments, long runs can still consume substantial storage.
+When --prune-checkpoints is enabled, redundant history is removed according
+to the protected retention set above. The generated-checkpoint quota still
+stops cleanly at a grade boundary before new writes reach the cap, with a
+separate 512 MiB free
 volume reserve. Increase --max-run-gib only after confirming available
 space; design and explicitly authorize a rolling checkpoint-retention
 policy if running unattended for many hours. It must never destroy the
