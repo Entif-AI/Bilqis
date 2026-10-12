@@ -66,6 +66,7 @@ GRADE_CHAMPION_COUNT = 48
 CANDIDATE_CLEAR_REWARD = 0.05
 CANDIDATE_SENTINEL_PER_GRADE = 8
 CANDIDATE_MAX_ATTEMPTS = 3
+CONSOLIDATION_WEIGHT = 0.15
 
 
 def _read(path):
@@ -456,6 +457,8 @@ def _candidate_teacher_credit(raw_reward, gate, *,
     if gate["decision"]=="PROMOTE":
         if gate["reason"]=="SENTINEL_BETTER":
             return max(raw_reward,clear_reward/2)
+        if gate["reason"]=="CONSOLIDATION_FULL_PROBE_GAIN":
+            return max(raw_reward,clear_reward/2)
         return raw_reward
     if gate["reason"]=="CLEAR_REWARD_LOSS":
         return raw_reward
@@ -463,7 +466,43 @@ def _candidate_teacher_credit(raw_reward, gate, *,
         return min(raw_reward,-clear_reward)
     if gate["reason"]=="SENTINEL_NO_DEMONSTRATED_GAIN":
         return 0.0
+    if gate["reason"]=="CONSOLIDATION_FULL_PROBE_NO_GAIN":
+        return 0.0
+    if gate["reason"]=="CONSOLIDATION_FULL_PROBE_RETENTION_LOSS":
+        return min(raw_reward,-clear_reward)
     return raw_reward
+
+
+def _consolidation_confirmation(before_model, after_model, graph, lib, *,
+                                device):
+    before=_probe_all_grades(before_model,graph,lib,device=device)
+    after=_probe_all_grades(after_model,graph,lib,device=device)
+    deltas={grade:after[grade]-before[grade] for grade in REPORT_GRADE_IDS}
+    mean_delta=sum(deltas.values())/len(deltas)
+    worst=min(deltas,key=deltas.get)
+    worst_delta=deltas[worst]
+    minimum_net_gain=1/(24*len(REPORT_GRADE_IDS))
+    if mean_delta < minimum_net_gain-1e-12:
+        decision,reason="REJECT","CONSOLIDATION_FULL_PROBE_NO_GAIN"
+    elif worst_delta <= -(2/24):
+        decision,reason="REJECT","CONSOLIDATION_FULL_PROBE_RETENTION_LOSS"
+    else:
+        decision,reason="PROMOTE","CONSOLIDATION_FULL_PROBE_GAIN"
+    return {
+        "decision":decision,
+        "reason":reason,
+        "mean_delta":mean_delta,
+        "minimum_net_gain":minimum_net_gain,
+        "median_delta":statistics.median(deltas.values()),
+        "improved_grades":sum(delta>0 for delta in deltas.values()),
+        "regressed_grades":sum(delta<0 for delta in deltas.values()),
+        "unchanged_grades":sum(delta==0 for delta in deltas.values()),
+        "worst_grade":worst,
+        "worst_grade_delta":worst_delta,
+        "deltas":deltas,
+        "before_scores":before,
+        "after_scores":after,
+    }
 
 
 def _candidate_line(info):
@@ -476,6 +515,19 @@ def _candidate_line(info):
             f" p(correct) {sentinel['correct_probability']:+.4f}"
             f" margin {sentinel['margin']:+.4f}"
         )
+    consolidation=""
+    if info.get("consolidation_enabled"):
+        consolidation=(
+            f" | soup KL {info['consensus_distill_mean']:.4f}"
+            f" cov {info['consensus_coverage_mean']*100:.1f}%"
+        )
+        confirm=info.get("consolidation_confirmation")
+        if confirm is not None:
+            consolidation+=(
+                f" full22 {confirm['mean_delta']*100:+.1f}pp"
+                f" worst {confirm['worst_grade']} "
+                f"{confirm['worst_grade_delta']*100:+.1f}pp"
+            )
     return (
         f"[candidate] pass {info['pass']} {info['grade']} "
         f"attempt {info['attempt']}/{info['max_attempts']} "
@@ -485,7 +537,7 @@ def _candidate_line(info):
         f"old avg {info['old_mean_delta']*100:+.1f}pp | "
         f"reward {info['reward']:+.4f}"
         f" teacher-credit {info['teacher_credit']:+.4f}"
-        f"{sentinel_text} | "
+        f"{sentinel_text}{consolidation} | "
         f"{info['decision']} {info['reason']}"
     )
 
@@ -707,24 +759,34 @@ def _average_model_state_dicts(models, weights):
     return averaged
 
 
-def evaluate_grade_champion_soup(out=RUN, *, device="cpu"):
-    """Inference-only grade-champion weight soup versus the pass champion."""
+def _load_checkpoint_preserving_rng(path):
+    rng=torch.get_rng_state()
+    try:
+        return load_checkpoint(path)
+    finally:
+        torch.set_rng_state(rng)
+
+
+def _build_grade_champion_soup(out, state, lib, *, device):
     out=Path(out)
-    state=_read(out/STATE)
-    lib=TeacherLibrary()
     shadow=copy.deepcopy(state)
     _ensure_reporting_state(out,shadow,lib)
     _ensure_grade_champions(out,shadow,lib)
     pass_champion=shadow["champion_pass"]
     pass_path=out/pass_champion["checkpoint"]
-    pass_model,_,payload=load_checkpoint(pass_path)
+    if (_sha(pass_path)!=pass_champion["checkpoint_sha256"]):
+        raise ValueError("PASS_CHAMPION_CHECKPOINT_CHANGED")
+    pass_model,_,payload=_load_checkpoint_preserving_rng(pass_path)
     ingredient_models={}
     grade_weights={}
     for grade_id in REPORT_GRADE_IDS:
         name=shadow["grade_champions"][grade_id]["checkpoint"]
+        expected_sha=shadow["grade_champions"][grade_id]["checkpoint_sha256"]
+        if _sha(out/name)!=expected_sha:
+            raise ValueError("GRADE_CHAMPION_CHECKPOINT_CHANGED")
         grade_weights[name]=grade_weights.get(name,0)+1
         if name not in ingredient_models:
-            model,_,candidate_payload=load_checkpoint(out/name)
+            model,_,candidate_payload=_load_checkpoint_preserving_rng(out/name)
             if (model.config!=pass_model.config or
                 digest(candidate_payload["graph"])!=digest(payload["graph"])):
                 raise ValueError("GRADE_CHAMPION_SOUP_REQUIRES_IDENTICAL_MODEL_ABI")
@@ -749,6 +811,31 @@ def evaluate_grade_champion_soup(out=RUN, *, device="cpu"):
     if device not in ("cpu","mps"):
         raise ValueError("UNSUPPORTED_LEARNER_DEVICE")
     soup.to(device)
+    soup.eval()
+    for parameter in soup.parameters():
+        parameter.requires_grad_(False)
+    manifest={
+        "pass_champion_pass":pass_champion["pass"],
+        "pass_champion_checkpoint":pass_champion["checkpoint"],
+        "pass_champion_checkpoint_sha256":pass_champion["checkpoint_sha256"],
+        "ingredient_checkpoint_weights":grade_weights,
+        "ingredient_checkpoint_sha256":ingredient_sha256,
+        "grade_champion_assignments":grade_assignments,
+        "unique_ingredient_checkpoints":len(names),
+        "grade_count":len(REPORT_GRADE_IDS),
+    }
+    manifest["teacher_digest"]=hashlib.sha256(
+        json.dumps(manifest,sort_keys=True).encode()).hexdigest()
+    return soup,payload,manifest,pass_model
+
+
+def evaluate_grade_champion_soup(out=RUN, *, device="cpu"):
+    """Inference-only grade-champion weight soup versus the pass champion."""
+    out=Path(out)
+    state=_read(out/STATE)
+    lib=TeacherLibrary()
+    soup,payload,manifest,pass_model=_build_grade_champion_soup(
+        out,state,lib,device=device)
     pass_model.to(device)
     soup_scores=_probe_all_grades(
         soup,payload["graph"],lib,device=device)
@@ -762,14 +849,7 @@ def evaluate_grade_champion_soup(out=RUN, *, device="cpu"):
         "status":"INFERENCE_ONLY_GRADE_CHAMPION_SOUP",
         "live_state_mutated":False,
         "optimizer_averaged":False,
-        "pass_champion_pass":pass_champion["pass"],
-        "pass_champion_checkpoint":pass_champion["checkpoint"],
-        "pass_champion_checkpoint_sha256":pass_champion["checkpoint_sha256"],
-        "ingredient_checkpoint_weights":grade_weights,
-        "ingredient_checkpoint_sha256":ingredient_sha256,
-        "grade_champion_assignments":grade_assignments,
-        "unique_ingredient_checkpoints":len(names),
-        "grade_count":len(REPORT_GRADE_IDS),
+        **manifest,
         "pass_champion_mean":pass_mean,
         "soup_mean":soup_mean,
         "mean_delta":soup_mean-pass_mean,
@@ -989,7 +1069,8 @@ def _ensure_reporting_state(out, state, lib):
     return changed
 
 
-def _train(model, optimizer, reference, graph, rows, counts, policy, device):
+def _train(model, optimizer, reference, graph, rows, counts, policy, device,
+           *, consensus_teacher=None, consensus_weight=0.0):
     lengths=[encode(row,graph) for row in rows]
     labels=torch.tensor([STATES.index(r["gold"]) for r in rows],
                         device=device,dtype=torch.long)
@@ -1010,13 +1091,33 @@ def _train(model, optimizer, reference, graph, rows, counts, policy, device):
             F.log_softmax(logits[old_slice]/1.5,dim=-1),
             F.softmax(old_logits/1.5,dim=-1),
             reduction="batchmean")*(1.5**2)
-    loss=cross + policy["distill"]*memory
+    consensus=torch.zeros((),device=device)
+    consensus_coverage=torch.zeros((),device=device)
+    if consensus_teacher is not None and consensus_weight>0:
+        with torch.no_grad():
+            consensus_teacher.eval()
+            teacher_logits=consensus_teacher(inp,n)
+            trusted=teacher_logits.argmax(-1)==labels
+        if bool(trusted.any()):
+            consensus=F.kl_div(
+                F.log_softmax(logits[trusted]/1.5,dim=-1),
+                F.softmax(teacher_logits[trusted]/1.5,dim=-1),
+                reduction="batchmean")*(1.5**2)
+            consensus_coverage=trusted.float().mean()
+    loss=(cross + policy["distill"]*memory +
+          consensus_weight*consensus)
     if not bool(torch.isfinite(loss)):
         raise ValueError("NONFINITE_CONTINUOUS_LEARNER_LOSS")
     loss.backward()
     torch.nn.utils.clip_grad_norm_(model.parameters(),1.0)
     optimizer.step()
-    return float(loss.detach().cpu())
+    return {
+        "total":float(loss.detach().cpu()),
+        "cross_entropy":float(cross.detach().cpu()),
+        "parent_distill":float(memory.detach().cpu()),
+        "consensus_distill":float(consensus.detach().cpu()),
+        "consensus_coverage":float(consensus_coverage.detach().cpu()),
+    }
 
 
 def _progress_line(progress):
@@ -1045,6 +1146,12 @@ def _progress_line(progress):
             f" | best48 {progress['grade_champion_score']*100:.1f}% "
             f"vs personal-best {delta_text}{marker}"
         )
+    consolidation=""
+    if progress.get("consolidation_enabled"):
+        consolidation=(
+            f" | soup KL {progress['consensus_distill_mean']:.4f}"
+            f" cov {progress['consensus_coverage_mean']*100:.1f}%"
+        )
     return (
         f"[{progress['elapsed_minutes']:6.1f}m] pass {progress['pass']} "
         f"{progress['grade']} step {progress['step']} | probe "
@@ -1054,7 +1161,8 @@ def _progress_line(progress):
         f"| old avg {progress['old_mean_delta']*100:+.1f}pp "
         f"| reward {progress['reward']:+.4f} "
         f"| teacher {progress['teacher_strategies']}/{MAX_STRATEGIES} strategies/"
-        f"{progress['teacher_mutations']} mutations{gate}{personal}{patience}"
+        f"{progress['teacher_mutations']} mutations{gate}{personal}"
+        f"{consolidation}{patience}"
     )
 
 
@@ -1118,7 +1226,9 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         candidate_grade_gate=False,
         candidate_max_attempts=CANDIDATE_MAX_ATTEMPTS,
         candidate_clear_reward=CANDIDATE_CLEAR_REWARD,
-        candidate_sentinel_per_grade=CANDIDATE_SENTINEL_PER_GRADE):
+        candidate_sentinel_per_grade=CANDIDATE_SENTINEL_PER_GRADE,
+        consolidate_grade_champions=False,
+        consolidation_weight=CONSOLIDATION_WEIGHT):
     if (max_updates < 1 or max_minutes <= 0 or block < 1 or block > 256
         or not 1<=max_run_gib<=500
         or (max_grade_visits is not None and max_grade_visits < 1)
@@ -1129,6 +1239,8 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
         or candidate_max_attempts < 1
         or candidate_clear_reward < 0
         or candidate_sentinel_per_grade < 1
+        or consolidation_weight < 0
+        or (consolidate_grade_champions and not candidate_grade_gate)
         or progress_format not in ("json","human")):
         raise ValueError("INVALID_BOUNDED_TRAINING_REQUEST")
     out=Path(out)
@@ -1157,6 +1269,24 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
     reporting_changed=_ensure_reporting_state(out,state,lib)
     grade_champions_changed=_ensure_grade_champions(out,state,lib)
     if reporting_changed or grade_champions_changed or migrated_accounting:
+        _atomic_json(out/STATE,state)
+    consensus_teacher=None
+    consensus_manifest=None
+    if consolidate_grade_champions:
+        consensus_teacher,consensus_payload,consensus_manifest,_ = (
+            _build_grade_champion_soup(out,state,lib,device=device))
+        if digest(consensus_payload["graph"])!=state["graph_sha256"]:
+            raise ValueError("CONSOLIDATION_TEACHER_GRAPH_CHANGED")
+        state.setdefault("consolidation_sessions",[]).append({
+            "teacher_digest":consensus_manifest["teacher_digest"],
+            "weight":consolidation_weight,
+            "parent_checkpoint":state["checkpoint"],
+            "parent_checkpoint_sha256":state["checkpoint_sha256"],
+            "parent_optimizer_step":state["optimizer_step"],
+            "pass_champion_pass":consensus_manifest["pass_champion_pass"],
+            "ingredient_checkpoint_weights":
+                consensus_manifest["ingredient_checkpoint_weights"],
+        })
         _atomic_json(out/STATE,state)
     if prune_checkpoints:
         _prune_checkpoints(
@@ -1235,14 +1365,17 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             for p in anchor.parameters():p.requires_grad_(False)
             for group in optimizer.param_groups:group["lr"]=policy["lr"]
             tallies={"current":0,"old":0,"preview":0}
-            losses=[]
+            train_metrics=[]
             for local_step in range(steps):
                 rows,counts=compose_batch(lib,grade,policy,payload["graph"],rng)
                 if counts["current"] <= 0 or len(rows)!=32:
                     raise ValueError("NO_COGNITIVE_GROWTH_SAMPLES")
-                loss=_train(
-                    model,optimizer,anchor,payload["graph"],rows,counts,policy,gpu)
-                losses.append(loss)
+                metrics=_train(
+                    model,optimizer,anchor,payload["graph"],rows,counts,policy,gpu,
+                    consensus_teacher=consensus_teacher,
+                    consensus_weight=(
+                        consolidation_weight if consolidate_grade_champions else 0.0))
+                train_metrics.append(metrics)
                 for name,value in counts.items():tallies[name]+=value
             candidate_step=optimizer_receipt(optimizer)["steps"][0]
             if candidate_step != state["optimizer_step"]+steps:
@@ -1276,6 +1409,16 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 gate=_candidate_gate_decision(
                     reward,before_sentinel,after_sentinel,
                     clear_reward=candidate_clear_reward)
+            consolidation_confirmation=None
+            if consolidate_grade_champions and gate["decision"]=="PROMOTE":
+                consolidation_confirmation=_consolidation_confirmation(
+                    anchor,model,payload["graph"],lib,device=device)
+                gate={
+                    **gate,
+                    "decision":consolidation_confirmation["decision"],
+                    "reason":consolidation_confirmation["reason"],
+                    "consolidation_confirmation":consolidation_confirmation,
+                }
             teacher_credit=_candidate_teacher_credit(
                 reward,gate,clear_reward=candidate_clear_reward)
             observe(state["teacher"],grade,key,teacher_credit)
@@ -1299,8 +1442,25 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "reward":round(reward,6),
                 "teacher_credit":round(teacher_credit,6),
                 "updates":steps,
-                "loss_first":losses[0],
-                "loss_last":losses[-1],
+                "loss_first":train_metrics[0]["total"],
+                "loss_last":train_metrics[-1]["total"],
+                "cross_entropy_first":train_metrics[0]["cross_entropy"],
+                "cross_entropy_last":train_metrics[-1]["cross_entropy"],
+                "parent_distill_mean":(
+                    sum(item["parent_distill"] for item in train_metrics)/
+                    len(train_metrics)),
+                "consensus_distill_mean":(
+                    sum(item["consensus_distill"] for item in train_metrics)/
+                    len(train_metrics)),
+                "consensus_coverage_mean":(
+                    sum(item["consensus_coverage"] for item in train_metrics)/
+                    len(train_metrics)),
+                "consolidation_teacher_digest":(
+                    None if consensus_manifest is None
+                    else consensus_manifest["teacher_digest"]),
+                "consolidation_weight":(
+                    consolidation_weight if consolidate_grade_champions else 0.0),
+                "consolidation_confirmation":consolidation_confirmation,
                 "row_exposures":tallies,
                 "decision":gate["decision"],
                 "reason":gate["reason"],
@@ -1322,6 +1482,13 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                     "teacher_credit":teacher_credit,
                     "decision":gate["decision"],"reason":gate["reason"],
                     "sentinel_deltas":gate.get("sentinel_deltas"),
+                    "consolidation_enabled":consolidate_grade_champions,
+                    "consensus_distill_mean":
+                        attempt_record["consensus_distill_mean"],
+                    "consensus_coverage_mean":
+                        attempt_record["consensus_coverage_mean"],
+                    "consolidation_confirmation":
+                        attempt_record["consolidation_confirmation"],
                 }
                 if progress_format=="human":
                     print(_candidate_line(line_info),flush=True)
@@ -1415,6 +1582,18 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                 "old_mean_delta":round(old_mean_delta,6),
                 "updates":accepted_steps,
                 "loss_first":losses[0],"loss_last":losses[-1],
+                "consensus_distill_mean":(
+                    None if last_attempt is None
+                    else last_attempt.get("consensus_distill_mean")),
+                "consensus_coverage_mean":(
+                    None if last_attempt is None
+                    else last_attempt.get("consensus_coverage_mean")),
+                "consolidation_teacher_digest":(
+                    None if last_attempt is None
+                    else last_attempt.get("consolidation_teacher_digest")),
+                "consolidation_confirmation":(
+                    None if last_attempt is None
+                    else last_attempt.get("consolidation_confirmation")),
                 "teacher_mutations":state["teacher"]["mutations"],
                 "row_exposures":tallies,
                 "optimizer_step":state["optimizer_step"],
@@ -1573,7 +1752,12 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
                   "candidate_max_attempts":max_attempts,
                   "grade_champion_score":record["grade_champion_score"],
                   "vs_grade_champion":record["vs_grade_champion"],
-                  "new_grade_champion":record["new_grade_champion"]}
+                  "new_grade_champion":record["new_grade_champion"],
+                  "consolidation_enabled":consolidate_grade_champions,
+                  "consensus_distill_mean":(
+                      record["consensus_distill_mean"] or 0.0),
+                  "consensus_coverage_mean":(
+                      record["consensus_coverage_mean"] or 0.0)}
         if progress_format=="human":
             print(_progress_line(progress),flush=True)
         else:
@@ -1638,6 +1822,12 @@ def run(out=RUN, *, max_updates=1024, max_minutes=4,
             "candidate_promotions_this_call":candidate_promotions_this_call,
             "candidate_rejections_this_call":candidate_rejections_this_call,
             "candidate_no_update_grades_this_call":candidate_no_updates_this_call,
+            "consolidation_enabled":consolidate_grade_champions,
+            "consolidation_weight":(
+                consolidation_weight if consolidate_grade_champions else 0.0),
+            "consolidation_teacher_digest":(
+                None if consensus_manifest is None
+                else consensus_manifest["teacher_digest"]),
             "rolling_repeat_delta":(sum(recent_repeat)/len(recent_repeat)
                                     if recent_repeat else None),
             "progress_window":progress_window,
@@ -1708,6 +1898,11 @@ def main():
     parser.add_argument("--candidate-sentinel-per-grade",type=int,
                         default=CANDIDATE_SENTINEL_PER_GRADE,
                         help="Examples per compiled grade in the continuous promotion sentinel.")
+    parser.add_argument("--consolidate-grade-champions",action="store_true",
+                        help="Use the frozen grade-champion soup as an additional trusted-row distillation teacher; requires candidate gating.")
+    parser.add_argument("--consolidation-weight",type=float,
+                        default=CONSOLIDATION_WEIGHT,
+                        help="KL weight for trusted grade-champion soup guidance during candidate training.")
     parser.add_argument("--device",choices=("cpu","mps"),default="cpu")
     parser.add_argument("--grow",action="store_true",
                         help="Function-preserving capacity migration, keeping trained state.")
@@ -1753,6 +1948,8 @@ def main():
                        candidate_max_attempts=arguments.candidate_max_attempts,
                        candidate_clear_reward=arguments.candidate_clear_reward,
                        candidate_sentinel_per_grade=arguments.candidate_sentinel_per_grade,
+                       consolidate_grade_champions=arguments.consolidate_grade_champions,
+                       consolidation_weight=arguments.consolidation_weight,
                        stop_requested=(lambda: stop_state["requested"])
                                       if arguments.graceful_interrupt else None)
         finally:

@@ -90,7 +90,7 @@ Run a long bounded Apple-Metal training session, resuming existing state:
 For an operator-visible development run, prefer a smaller bounded session with
 human-readable progress and a stagnation stop:
 
-    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4 --candidate-grade-gate --candidate-max-attempts 3 --candidate-clear-reward 0.05 --candidate-sentinel-per-grade 8
+    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 90 --grade-visits 16 --max-updates 1000000 --block 64 --max-run-gib 32 --progress-format human --patience-minutes 60 --progress-window 8 --min-repeat-improvement 0.01 --graceful-interrupt --prune-checkpoints --keep-recent-checkpoints 8 --keep-pass-checkpoints 4 --candidate-grade-gate --candidate-max-attempts 3 --candidate-clear-reward 0.05 --candidate-sentinel-per-grade 8 --consolidate-grade-champions --consolidation-weight 0.15
 
 The runner prints one line after every durable grade checkpoint. It includes
 the fixed-probe score before and after that lesson, change versus the previous
@@ -194,9 +194,30 @@ the model weights referenced by the 22 personal-best checkpoints and evaluates
 it against the single holistic pass champion. A checkpoint that champions
 multiple grades receives corresponding grade weight in the average. AdamW
 moments are never averaged or attached to the soup, and the command never
-changes state.json or the live checkpoint pointer. A winning soup is evidence
-for a later guarded consolidation design, not automatic authorization to
-replace the continuing student's optimizer lineage.
+changes state.json or the live checkpoint pointer.
+
+To distill a winning soup back into the continuing student without replacing
+its optimizer lineage, add:
+
+    --candidate-grade-gate --consolidate-grade-champions --consolidation-weight 0.15
+
+The current live student remains the parent because it owns the legitimate
+AdamW history. The grade-champion soup is frozen for the whole invocation and
+acts only as a second logits teacher. On each training row, soup KL is applied
+only when the soup itself predicts the oracle gold label correctly; wrong soup
+answers receive no distillation weight. The ordinary parent-retention KL and
+supervised cross-entropy remain active.
+
+Soup-guided candidate updates still face the ordinary per-grade candidate gate.
+Any candidate otherwise eligible for promotion then receives a stronger
+simultaneous 24-example x 22-grade confirmation. It must produce a positive
+mean all-grade accuracy delta amounting to at least one net additional correct
+answer across that 528-example panel, and may not lose two or more answers on
+any single grade. A failure restores the exact pre-candidate model+AdamW state
+while preserving teacher evidence. Candidate ledger records include the frozen
+soup manifest digest, distillation strength, trusted-row coverage, consensus
+KL and the full-school confirmation receipt. The pass champion remains the
+separate final rollback anchor at the end of the complete G01-G22 pass.
 
 Long-running development should also enable bounded checkpoint retention:
 

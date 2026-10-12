@@ -198,6 +198,37 @@ class AdaptiveTeacher(unittest.TestCase):
         self.assertTrue(torch.allclose(
             averaged["weight"],torch.full((1,2),2.0)))
 
+    def test_consolidation_confirmation_requires_net_gain_and_limits_damage(self):
+        baseline={grade:.75 for grade in engine.REPORT_GRADE_IDS}
+        better=dict(baseline)
+        better["G01"]+=1/24
+        with patch.object(
+                engine,"_probe_all_grades",
+                side_effect=[baseline,better]):
+            result=engine._consolidation_confirmation(
+                None,None,None,None,device="cpu")
+        self.assertEqual(result["decision"],"PROMOTE")
+        self.assertEqual(result["reason"],"CONSOLIDATION_FULL_PROBE_GAIN")
+        damaged=dict(baseline)
+        damaged["G01"]+=3/24
+        damaged["G18"]-=2/24
+        with patch.object(
+                engine,"_probe_all_grades",
+                side_effect=[baseline,damaged]):
+            result=engine._consolidation_confirmation(
+                None,None,None,None,device="cpu")
+        self.assertEqual(result["decision"],"REJECT")
+        self.assertEqual(
+            result["reason"],"CONSOLIDATION_FULL_PROBE_RETENTION_LOSS")
+
+    def test_consolidation_requires_candidate_gate(self):
+        with tempfile.TemporaryDirectory() as temp:
+            with self.assertRaisesRegex(
+                    ValueError,"INVALID_BOUNDED_TRAINING_REQUEST"):
+                engine.run(
+                    Path(temp)/"school",max_updates=1,max_minutes=1,
+                    consolidate_grade_champions=True)
+
     def test_candidate_gate_uses_continuous_sentinel_for_uncertain_updates(self):
         self.assertEqual(
             engine._candidate_gate_decision(-.10)["reason"],
@@ -446,6 +477,56 @@ class AdaptiveTeacher(unittest.TestCase):
             self.assertTrue(state["grade_ledger"][-1]["student_update_applied"])
             self.assertEqual(state["completed_updates"],2)
             self.assertEqual(state["attempted_updates"],2)
+
+    @unittest.skipUnless(HAS_LOCAL_STUDENT,
+                         "Soup consolidation needs real local student/AdamW state.")
+    def test_soup_consolidation_distills_without_replacing_optimizer_lineage(self):
+        with tempfile.TemporaryDirectory() as temp:
+            out=Path(temp)/"school"
+            confirmation={
+                "decision":"PROMOTE",
+                "reason":"CONSOLIDATION_FULL_PROBE_GAIN",
+                "mean_delta":1/528,
+                "median_delta":0.0,
+                "improved_grades":1,
+                "regressed_grades":0,
+                "unchanged_grades":21,
+                "worst_grade":"G01",
+                "worst_grade_delta":0.0,
+                "deltas":{grade:0.0 for grade in engine.REPORT_GRADE_IDS},
+                "before_scores":{grade:.5 for grade in engine.REPORT_GRADE_IDS},
+                "after_scores":{grade:.5 for grade in engine.REPORT_GRADE_IDS},
+            }
+            with (
+                patch.object(
+                    engine,"_candidate_gate_decision",
+                    return_value={"decision":"PROMOTE","reason":"TEST_PROMOTE"}),
+                patch.object(
+                    engine,"_consolidation_confirmation",
+                    return_value=confirmation),
+            ):
+                result=engine.run(
+                    out,max_updates=2,max_minutes=3,block=2,
+                    max_grade_visits=1,candidate_grade_gate=True,
+                    candidate_max_attempts=1,
+                    consolidate_grade_champions=True,
+                    consolidation_weight=.15)
+            state=engine._read(out/engine.STATE)
+            attempt=state["candidate_ledger"][-1]
+            self.assertTrue(result["consolidation_enabled"])
+            self.assertIsNotNone(result["consolidation_teacher_digest"])
+            self.assertEqual(result["live_optimizer_step"],13850)
+            self.assertEqual(state["completed_updates"],2)
+            self.assertEqual(state["attempted_updates"],2)
+            self.assertEqual(len(state["consolidation_sessions"]),1)
+            self.assertEqual(
+                attempt["consolidation_teacher_digest"],
+                result["consolidation_teacher_digest"])
+            self.assertGreaterEqual(attempt["consensus_distill_mean"],0.0)
+            self.assertGreaterEqual(attempt["consensus_coverage_mean"],0.0)
+            self.assertLessEqual(attempt["consensus_coverage_mean"],1.0)
+            _,optimizer,_=engine._validate(out/state["checkpoint"],state)
+            self.assertEqual(optimizer_receipt(optimizer)["steps"],[13850])
 
 
 if __name__=="__main__":
