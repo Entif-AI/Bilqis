@@ -6,7 +6,7 @@ Stacked on Bilqis draft PR #112. Successor run-02 started from the accepted U6 s
 
 The independent-oracle frozen grammar has 432 balanced cross-stage TRAIN rows, 288 unseen final cross-stage rows, and 216 training / 144 final same-world causal witness pairs. Operator-only label accuracy was exactly 50% in both sets. Operator plus old-arm oracle truth and operator plus new-arm oracle truth each predicted 75%: these are oracle-informed audit upper features, not an executable learned model. No DEV, prior heldout or final identities entered new training pools. All 32-row optimizer batches used the exact 12 current, 4 fresh prior, 8 composition, 8 DEV weak split.
 
-Kev received English-only source-grounded prose with real contrasting lesson worlds and optional REVIEW. No typed JSON, gold, or primitive definitions entered teacher natural-language contexts. EG2 made zero calls. Both actual Kev decisions were REVIEW, leaving the broad admitted grammar fallback.
+Kev received English-only source-grounded prose with real contrasting lesson worlds and optional REVIEW. No canonical typed JSON/AST, numeric embeddings or oracle gold labels entered Kev. English semantic glosses of the known source definitions were included by design. EG2 made zero calls. Both actual Kev decisions were REVIEW, leaving the broad admitted grammar fallback.
 
 Training stopped at 32 of 256 allowed gradient updates at AdamW step 13432, after a predeclared DEV retention gate failure. No thresholds were relaxed.
 
