@@ -1,0 +1,45 @@
+{
+  "fixture_sha256": "84280f893410d8ec547c60fa8280ad5e431401ac88cc5f6a1a3b695d21ff41dd",
+  "engine": "semif",
+  "mode": "serial",
+  "model_load_seconds": 10.528353082947433,
+  "wall_seconds": 16.689157999586314,
+  "memory": {
+    "active_bytes": 8471410186,
+    "peak_bytes": 8872086526,
+    "cache_bytes": 268673608,
+    "scope": "MLX allocator; not total system unified memory"
+  },
+  "items": 25,
+  "labeled": 23,
+  "correct": 12,
+  "accuracy": 0.5217391304347826,
+  "brier": 0.5713475327074595,
+  "ece": null,
+  "ece_status": "insufficient_labeled_sample",
+  "confident_wrong": 0,
+  "local_proposals": 6,
+  "review": 19,
+  "false_confident_local_completions": 0,
+  "decision_latency_total_ms": 6053.399083670229,
+  "decisions_per_second": 4.129911088703949,
+  "resource_ms_per_local_proposal": 1008.8998472783715,
+  "qualification_scope": "owned public diagnostic only; no general or SYS-01 quality claim",
+  "quality_by_family": {
+    "evidence": {
+      "correct": 5,
+      "labeled": 12
+    },
+    "curriculum": {
+      "correct": 1,
+      "labeled": 5
+    },
+    "relation": {
+      "correct": 6,
+      "labeled": 6
+    }
+  },
+  "generated_output_tokens": 0,
+  "first_state_median_ms": 234.4490836840123,
+  "warm_median_ms": 122.84829095005989
+}

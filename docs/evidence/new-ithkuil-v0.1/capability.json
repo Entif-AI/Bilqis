@@ -1,0 +1,1267 @@
+{
+  "dimensions": {
+    "A": {
+      "Affiliation": {
+        "correct": 9,
+        "total": 12
+      },
+      "Configuration": {
+        "correct": 10,
+        "total": 14
+      },
+      "Specification": {
+        "correct": 2,
+        "total": 2
+      },
+      "case morphology": {
+        "correct": 9,
+        "total": 11
+      },
+      "holistic composition": {
+        "correct": 4,
+        "total": 6
+      },
+      "reconstruction": {
+        "correct": 0,
+        "total": 3
+      },
+      "root/stem": {
+        "correct": 2,
+        "total": 3
+      },
+      "semantic role": {
+        "correct": 12,
+        "total": 14
+      },
+      "uncertainty/clarification": {
+        "correct": 1,
+        "total": 3
+      }
+    },
+    "B": {
+      "Affiliation": {
+        "correct": 11,
+        "total": 12
+      },
+      "Configuration": {
+        "correct": 12,
+        "total": 14
+      },
+      "Specification": {
+        "correct": 2,
+        "total": 2
+      },
+      "case morphology": {
+        "correct": 9,
+        "total": 11
+      },
+      "holistic composition": {
+        "correct": 5,
+        "total": 6
+      },
+      "reconstruction": {
+        "correct": 1,
+        "total": 3
+      },
+      "root/stem": {
+        "correct": 2,
+        "total": 3
+      },
+      "semantic role": {
+        "correct": 12,
+        "total": 14
+      },
+      "uncertainty/clarification": {
+        "correct": 1,
+        "total": 3
+      }
+    }
+  },
+  "families": {
+    "A": {
+      "1": {
+        "correct": 2,
+        "total": 3
+      },
+      "2": {
+        "correct": 3,
+        "total": 3
+      },
+      "3": {
+        "correct": 2,
+        "total": 3
+      },
+      "4": {
+        "correct": 3,
+        "total": 3
+      },
+      "5": {
+        "correct": 3,
+        "total": 3
+      },
+      "6": {
+        "correct": 3,
+        "total": 3
+      },
+      "7": {
+        "correct": 3,
+        "total": 3
+      },
+      "8": {
+        "correct": 3,
+        "total": 3
+      },
+      "9": {
+        "correct": 3,
+        "total": 3
+      },
+      "10": {
+        "correct": 0,
+        "total": 3
+      },
+      "11": {
+        "correct": 3,
+        "total": 3
+      },
+      "12": {
+        "correct": 1,
+        "total": 3
+      }
+    },
+    "B": {
+      "1": {
+        "correct": 3,
+        "total": 3
+      },
+      "2": {
+        "correct": 3,
+        "total": 3
+      },
+      "3": {
+        "correct": 2,
+        "total": 3
+      },
+      "4": {
+        "correct": 3,
+        "total": 3
+      },
+      "5": {
+        "correct": 3,
+        "total": 3
+      },
+      "6": {
+        "correct": 3,
+        "total": 3
+      },
+      "7": {
+        "correct": 3,
+        "total": 3
+      },
+      "8": {
+        "correct": 3,
+        "total": 3
+      },
+      "9": {
+        "correct": 3,
+        "total": 3
+      },
+      "10": {
+        "correct": 1,
+        "total": 3
+      },
+      "11": {
+        "correct": 3,
+        "total": 3
+      },
+      "12": {
+        "correct": 1,
+        "total": 3
+      }
+    }
+  },
+  "wrong_choices": {
+    "A": [
+      {
+        "decision_id": "F01-SIMPLE",
+        "gold": "F01-SIMPLE.A",
+        "selected": "F01-SIMPLE.C",
+        "probabilities": {
+          "F01-SIMPLE.A": 0.3687,
+          "F01-SIMPLE.B": 0.2058,
+          "F01-SIMPLE.C": 0.3801,
+          "F01-SIMPLE.D": 0.0455
+        }
+      },
+      {
+        "decision_id": "F03-MEDIUM",
+        "gold": "F03-MEDIUM.B",
+        "selected": "F03-MEDIUM.A",
+        "probabilities": {
+          "F03-MEDIUM.A": 0.6917,
+          "F03-MEDIUM.B": 0.1629,
+          "F03-MEDIUM.C": 0.0635,
+          "F03-MEDIUM.D": 0.0819
+        }
+      },
+      {
+        "decision_id": "F10-SIMPLE.S1",
+        "gold": "F10-SIMPLE.S1.B",
+        "selected": "F10-SIMPLE.S1.A",
+        "probabilities": {
+          "F10-SIMPLE.S1.A": 0.2736,
+          "F10-SIMPLE.S1.B": 0.246,
+          "F10-SIMPLE.S1.C": 0.2436,
+          "F10-SIMPLE.S1.D": 0.2367
+        }
+      },
+      {
+        "decision_id": "F10-MEDIUM.S2",
+        "gold": "F10-MEDIUM.S2.C",
+        "selected": "F10-MEDIUM.S2.A",
+        "probabilities": {
+          "F10-MEDIUM.S2.A": 0.3164,
+          "F10-MEDIUM.S2.B": 0.2251,
+          "F10-MEDIUM.S2.C": 0.2709,
+          "F10-MEDIUM.S2.D": 0.1876
+        }
+      },
+      {
+        "decision_id": "F10-HARD.S1",
+        "gold": "F10-HARD.S1.A",
+        "selected": "F10-HARD.S1.B",
+        "probabilities": {
+          "F10-HARD.S1.A": 0.2341,
+          "F10-HARD.S1.B": 0.4581,
+          "F10-HARD.S1.C": 0.1801,
+          "F10-HARD.S1.D": 0.1278
+        }
+      },
+      {
+        "decision_id": "F10-HARD.S2",
+        "gold": "F10-HARD.S2.A",
+        "selected": "F10-HARD.S2.C",
+        "probabilities": {
+          "F10-HARD.S2.A": 0.172,
+          "F10-HARD.S2.B": 0.2827,
+          "F10-HARD.S2.C": 0.4434,
+          "F10-HARD.S2.D": 0.1019
+        }
+      },
+      {
+        "decision_id": "F12-MEDIUM",
+        "gold": "F12-MEDIUM.D",
+        "selected": "F12-MEDIUM.A",
+        "probabilities": {
+          "F12-MEDIUM.A": 0.3423,
+          "F12-MEDIUM.B": 0.2637,
+          "F12-MEDIUM.C": 0.1363,
+          "F12-MEDIUM.D": 0.2576
+        }
+      },
+      {
+        "decision_id": "F12-HARD",
+        "gold": "F12-HARD.D",
+        "selected": "F12-HARD.B",
+        "probabilities": {
+          "F12-HARD.A": 0.0764,
+          "F12-HARD.B": 0.6945,
+          "F12-HARD.C": 0.0391,
+          "F12-HARD.D": 0.19
+        }
+      }
+    ],
+    "B": [
+      {
+        "decision_id": "F03-MEDIUM",
+        "gold": "F03-MEDIUM.B",
+        "selected": "F03-MEDIUM.A",
+        "probabilities": {
+          "F03-MEDIUM.D": 0.1562,
+          "F03-MEDIUM.A": 0.5123,
+          "F03-MEDIUM.B": 0.2542,
+          "F03-MEDIUM.C": 0.0773
+        }
+      },
+      {
+        "decision_id": "F10-SIMPLE.S1",
+        "gold": "F10-SIMPLE.S1.B",
+        "selected": "F10-SIMPLE.S1.A",
+        "probabilities": {
+          "F10-SIMPLE.S1.D": 0.1578,
+          "F10-SIMPLE.S1.A": 0.3642,
+          "F10-SIMPLE.S1.B": 0.2609,
+          "F10-SIMPLE.S1.C": 0.2171
+        }
+      },
+      {
+        "decision_id": "F10-HARD.S1",
+        "gold": "F10-HARD.S1.A",
+        "selected": "F10-HARD.S1.B",
+        "probabilities": {
+          "F10-HARD.S1.D": 0.1158,
+          "F10-HARD.S1.A": 0.2396,
+          "F10-HARD.S1.B": 0.4419,
+          "F10-HARD.S1.C": 0.2027
+        }
+      },
+      {
+        "decision_id": "F10-HARD.S2",
+        "gold": "F10-HARD.S2.A",
+        "selected": "F10-HARD.S2.C",
+        "probabilities": {
+          "F10-HARD.S2.D": 0.0919,
+          "F10-HARD.S2.A": 0.2266,
+          "F10-HARD.S2.B": 0.2369,
+          "F10-HARD.S2.C": 0.4446
+        }
+      },
+      {
+        "decision_id": "F10-HARD.S4",
+        "gold": "F10-HARD.S4.A",
+        "selected": "F10-HARD.S4.B",
+        "probabilities": {
+          "F10-HARD.S4.D": 0.1437,
+          "F10-HARD.S4.A": 0.3673,
+          "F10-HARD.S4.B": 0.3859,
+          "F10-HARD.S4.C": 0.1031
+        }
+      },
+      {
+        "decision_id": "F12-MEDIUM",
+        "gold": "F12-MEDIUM.D",
+        "selected": "F12-MEDIUM.A",
+        "probabilities": {
+          "F12-MEDIUM.D": 0.1804,
+          "F12-MEDIUM.A": 0.4098,
+          "F12-MEDIUM.B": 0.234,
+          "F12-MEDIUM.C": 0.1758
+        }
+      },
+      {
+        "decision_id": "F12-HARD",
+        "gold": "F12-HARD.D",
+        "selected": "F12-HARD.B",
+        "probabilities": {
+          "F12-HARD.D": 0.1447,
+          "F12-HARD.A": 0.0888,
+          "F12-HARD.B": 0.7345,
+          "F12-HARD.C": 0.032
+        }
+      }
+    ]
+  },
+  "capability_slices": {
+    "A": {
+      "Chapter 2 — root/stem/Specification": {
+        "correct": 3,
+        "total": 4
+      },
+      "Chapter 3 — Configuration": {
+        "correct": 10,
+        "total": 14
+      },
+      "Chapter 3 — Affiliation": {
+        "correct": 9,
+        "total": 12
+      },
+      "Chapter 4 — semantic roles": {
+        "correct": 12,
+        "total": 14
+      },
+      "Chapter 4 — case morphology": {
+        "correct": 9,
+        "total": 11
+      },
+      "Single decision, one annotated dimension": {
+        "correct": 14,
+        "total": 15
+      },
+      "Single decision, multiple annotated dimensions": {
+        "correct": 15,
+        "total": 18
+      },
+      "Sequential paths (joint)": {
+        "correct": 0,
+        "total": 3
+      }
+    },
+    "B": {
+      "Chapter 2 — root/stem/Specification": {
+        "correct": 3,
+        "total": 4
+      },
+      "Chapter 3 — Configuration": {
+        "correct": 12,
+        "total": 14
+      },
+      "Chapter 3 — Affiliation": {
+        "correct": 11,
+        "total": 12
+      },
+      "Chapter 4 — semantic roles": {
+        "correct": 12,
+        "total": 14
+      },
+      "Chapter 4 — case morphology": {
+        "correct": 9,
+        "total": 11
+      },
+      "Single decision, one annotated dimension": {
+        "correct": 14,
+        "total": 15
+      },
+      "Single decision, multiple annotated dimensions": {
+        "correct": 16,
+        "total": 18
+      },
+      "Sequential paths (joint)": {
+        "correct": 1,
+        "total": 3
+      }
+    }
+  },
+  "confusion_matrix": {
+    "A": {
+      "COA(-r-) + DSS(-c-)": {
+        "COA(-r-) + DDS(-ţs-)": 1
+      },
+      "CSV(-e-) + ASO(-l-) + MDS(-ţ-)": {
+        "CSV(-e-) + ASO(-l-) + MDS(-ţ-)": 1
+      },
+      "Weţdosmá welo šnaliothe aggwilä.": {
+        "Weţdosmá welo šnaliothe aggwilä.": 2
+      },
+      "A pair of similar connected members whose distinct functions complement one another as a unified whole.": {
+        "A pair of similar connected members whose distinct functions complement one another as a unified whole.": 1
+      },
+      "Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways.": {
+        "Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways.": 1
+      },
+      "The child hit themself on the leg with a rock.": {
+        "The child hit themself on the leg with a rock.": 1
+      },
+      "-DN- : NAME / DESIGNATION / LABEL": {
+        "-DN- : NAME / DESIGNATION / LABEL": 1
+      },
+      "-DN-, Stem 2: designation/reference": {
+        "-DN-, Stem 1: name": 1
+      },
+      "-ţd-, Stem 2, the forceful-physical-contact base used for hit/strike": {
+        "-ţd-, Stem 2, the forceful-physical-contact base used for hit/strike": 1
+      },
+      "INSTRUMENT": {
+        "INSTRUMENT": 1
+      },
+      "children = RECIPIENT; story = CONTENT": {
+        "children = RECIPIENT; story = CONTENT": 1
+      },
+      "child = AGENT; leg = PATIENT; rock = INSTRUMENT": {
+        "child = AGENT; leg = PATIENT; rock = INSTRUMENT": 1
+      },
+      "MSC": {
+        "MSC": 1
+      },
+      "MDS + COA": {
+        "MDS + COA": 1
+      },
+      "ERG / ABS / INS": {
+        "ERG / ABS / INS": 1
+      },
+      "-e-": {
+        "-e-": 1
+      },
+      "-kš-": {
+        "-kš-": 1
+      },
+      "-o- / -e- / -ä-": {
+        "-o- / -e- / -ä-": 1
+      },
+      "Separability is wrong: separate instead of connected.": {
+        "Separability is wrong: separate instead of connected.": 1
+      },
+      "The candidate says the members share the same subjective function rather than having distinct complementary functions.": {
+        "The candidate says the members share the same subjective function rather than having distinct complementary functions.": 1
+      },
+      "ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain.": {
+        "ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain.": 1
+      },
+      "rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS).": {
+        "rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS).": 1
+      },
+      "čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary.": {
+        "čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary.": 1
+      },
+      "The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental.": {
+        "The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental.": 1
+      },
+      "Yes: INSTRUMENT in both, despite different English syntactic positions.": {
+        "Yes: INSTRUMENT in both, despite different English syntactic positions.": 1
+      },
+      "No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation.": {
+        "No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation.": 1
+      },
+      "No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit.": {
+        "No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit.": 1
+      },
+      "DSS": {
+        "DPX": 1
+      },
+      "COA": {
+        "COA": 1,
+        "CSL": 1
+      },
+      "MDS": {
+        "MDS": 1
+      },
+      "čverţa": {
+        "čverţa": 1
+      },
+      "ERG": {
+        "IND": 1
+      },
+      "ABS": {
+        "LOC": 1
+      },
+      "INS": {
+        "INS": 1
+      },
+      "Yes, for the selected Configuration + Affiliation dimensions.": {
+        "Yes, for the selected Configuration + Affiliation dimensions.": 1
+      },
+      "Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET.": {
+        "Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET.": 1
+      },
+      "Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting.": {
+        "Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting.": 1
+      },
+      "CLARIFY / INSUFFICIENT": {
+        "CLARIFY / INSUFFICIENT": 1,
+        "MSS": 1,
+        "EFF": 1
+      }
+    },
+    "B": {
+      "COA(-r-) + DSS(-c-)": {
+        "COA(-r-) + DSS(-c-)": 1
+      },
+      "CSV(-e-) + ASO(-l-) + MDS(-ţ-)": {
+        "CSV(-e-) + ASO(-l-) + MDS(-ţ-)": 1
+      },
+      "Weţdosmá welo šnaliothe aggwilä.": {
+        "Weţdosmá welo šnaliothe aggwilä.": 1,
+        "Weţdosmá welu šnali’othia aggwilä.": 1
+      },
+      "A pair of similar connected members whose distinct functions complement one another as a unified whole.": {
+        "A pair of similar connected members whose distinct functions complement one another as a unified whole.": 1
+      },
+      "Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways.": {
+        "Focus on content/purpose; three-or-more separate members whose similarity is fuzzy/indeterminate and whose purposes/functions differ in unrelated ways.": 1
+      },
+      "The child hit themself on the leg with a rock.": {
+        "The child hit themself on the leg with a rock.": 1
+      },
+      "-DN- : NAME / DESIGNATION / LABEL": {
+        "-DN- : NAME / DESIGNATION / LABEL": 1
+      },
+      "-DN-, Stem 2: designation/reference": {
+        "-DN-, Stem 1: name": 1
+      },
+      "-ţd-, Stem 2, the forceful-physical-contact base used for hit/strike": {
+        "-ţd-, Stem 2, the forceful-physical-contact base used for hit/strike": 1
+      },
+      "INSTRUMENT": {
+        "INSTRUMENT": 1
+      },
+      "children = RECIPIENT; story = CONTENT": {
+        "children = RECIPIENT; story = CONTENT": 1
+      },
+      "child = AGENT; leg = PATIENT; rock = INSTRUMENT": {
+        "child = AGENT; leg = PATIENT; rock = INSTRUMENT": 1
+      },
+      "MSC": {
+        "MSC": 1
+      },
+      "MDS + COA": {
+        "MDS + COA": 1
+      },
+      "ERG / ABS / INS": {
+        "ERG / ABS / INS": 1
+      },
+      "-e-": {
+        "-e-": 1
+      },
+      "-kš-": {
+        "-kš-": 1
+      },
+      "-o- / -e- / -ä-": {
+        "-o- / -e- / -ä-": 1
+      },
+      "Separability is wrong: separate instead of connected.": {
+        "Separability is wrong: separate instead of connected.": 1
+      },
+      "The candidate says the members share the same subjective function rather than having distinct complementary functions.": {
+        "The candidate says the members share the same subjective function rather than having distinct complementary functions.": 1
+      },
+      "ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain.": {
+        "ERG changed to EFF, so the child is no longer the direct agent/force but the initiator/enabler of a causal chain.": 1
+      },
+      "rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS).": {
+        "rrasa is a generic pair of cats (DPX); rraca overtly specifies a pair of similar cats (DSS).": 1
+      },
+      "čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary.": {
+        "čveţa is a neutral/natural bunch of tools; čverţa is a toolset whose distinct functions are complementary.": 1
+      },
+      "The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental.": {
+        "The child changes from ERG direct agent to IND simultaneous agent+patient: “hits something” -> “hits themself,” while the rock remains instrumental.": 1
+      },
+      "Yes: INSTRUMENT in both, despite different English syntactic positions.": {
+        "Yes: INSTRUMENT in both, despite different English syntactic positions.": 1
+      },
+      "No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation.": {
+        "No. They may share the relevant group Configuration, but the latter adds ASO purposeful/shared-function affiliation.": 1
+      },
+      "No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit.": {
+        "No. In (1) the leg is THM/content-like referent of the hitting; in (2) the leg is LOC, the site of the hit.": 1
+      },
+      "DSS": {
+        "DPX": 1
+      },
+      "COA": {
+        "COA": 2
+      },
+      "MDS": {
+        "MDS": 1
+      },
+      "čverţa": {
+        "čverţa": 1
+      },
+      "ERG": {
+        "IND": 1
+      },
+      "ABS": {
+        "LOC": 1
+      },
+      "INS": {
+        "INS": 1
+      },
+      "Yes, for the selected Configuration + Affiliation dimensions.": {
+        "Yes, for the selected Configuration + Affiliation dimensions.": 1
+      },
+      "Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET.": {
+        "Mismatch: source uses this as a well-designed set of tools; ASO shared-function/design is not the COA complementary-function relation required for TOOLSET.": 1
+      },
+      "Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting.": {
+        "Mismatch. Candidate encodes child ERG + leg ABS: the child intentionally hits their leg as patient, not child IND + leg LOC self-targeting.": 1
+      },
+      "CLARIFY / INSUFFICIENT": {
+        "CLARIFY / INSUFFICIENT": 1,
+        "MSS": 1,
+        "EFF": 1
+      }
+    }
+  },
+  "confusion_scope": "exact battery-local candidate descriptions; atomic counts including correct diagonal; recurring anchors are not independent samples",
+  "order": {
+    "seed": 77,
+    "atomic_unchanged": 39,
+    "atomic_changed": 3,
+    "correctness_changed": 3,
+    "canonical_unchanged": 33,
+    "order_sensitive_cells": [
+      "F01-SIMPLE",
+      "F10-HARD",
+      "F10-MEDIUM"
+    ],
+    "mean_total_variation_distance": 0.08277619047619048,
+    "decisions": [
+      {
+        "decision_id": "F01-SIMPLE",
+        "cell_id": "F01-SIMPLE",
+        "choice_stable": false,
+        "correctness_stable": false,
+        "probability_delta": {
+          "F01-SIMPLE.A": 0.4909,
+          "F01-SIMPLE.B": -0.1421,
+          "F01-SIMPLE.C": -0.3173,
+          "F01-SIMPLE.D": -0.0316
+        },
+        "gold_probability_delta": 0.4909,
+        "total_variation_distance": 0.49095
+      },
+      {
+        "decision_id": "F01-MEDIUM",
+        "cell_id": "F01-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F01-MEDIUM.A": 0.3361,
+          "F01-MEDIUM.B": -0.10060000000000002,
+          "F01-MEDIUM.C": -0.1588,
+          "F01-MEDIUM.D": -0.07669999999999999
+        },
+        "gold_probability_delta": 0.3361,
+        "total_variation_distance": 0.3361
+      },
+      {
+        "decision_id": "F01-HARD",
+        "cell_id": "F01-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F01-HARD.A": -0.2316999999999999,
+          "F01-HARD.B": 0.2032,
+          "F01-HARD.C": 0.01609999999999999,
+          "F01-HARD.D": 0.012399999999999994
+        },
+        "gold_probability_delta": -0.2316999999999999,
+        "total_variation_distance": 0.23169999999999993
+      },
+      {
+        "decision_id": "F02-SIMPLE",
+        "cell_id": "F02-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F02-SIMPLE.A": -0.05740000000000001,
+          "F02-SIMPLE.B": -0.0109,
+          "F02-SIMPLE.C": 0.06330000000000001,
+          "F02-SIMPLE.D": 0.0051
+        },
+        "gold_probability_delta": -0.05740000000000001,
+        "total_variation_distance": 0.06835000000000001
+      },
+      {
+        "decision_id": "F02-MEDIUM",
+        "cell_id": "F02-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F02-MEDIUM.A": -0.06559999999999999,
+          "F02-MEDIUM.B": 0.0241,
+          "F02-MEDIUM.C": 9.99999999999994e-05,
+          "F02-MEDIUM.D": 0.04139999999999999
+        },
+        "gold_probability_delta": -0.06559999999999999,
+        "total_variation_distance": 0.06559999999999999
+      },
+      {
+        "decision_id": "F02-HARD",
+        "cell_id": "F02-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F02-HARD.A": -0.011299999999999998,
+          "F02-HARD.B": 0.016900000000000026,
+          "F02-HARD.C": -0.0036000000000000008,
+          "F02-HARD.D": -0.002
+        },
+        "gold_probability_delta": 0.016900000000000026,
+        "total_variation_distance": 0.016900000000000012
+      },
+      {
+        "decision_id": "F03-SIMPLE",
+        "cell_id": "F03-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F03-SIMPLE.A": 0.010700000000000043,
+          "F03-SIMPLE.B": -0.0013000000000000008,
+          "F03-SIMPLE.C": -0.0048000000000000004,
+          "F03-SIMPLE.D": -0.0048000000000000004
+        },
+        "gold_probability_delta": 0.010700000000000043,
+        "total_variation_distance": 0.010800000000000021
+      },
+      {
+        "decision_id": "F03-MEDIUM",
+        "cell_id": "F03-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F03-MEDIUM.A": -0.1794,
+          "F03-MEDIUM.B": 0.09129999999999999,
+          "F03-MEDIUM.C": 0.013799999999999993,
+          "F03-MEDIUM.D": 0.0743
+        },
+        "gold_probability_delta": 0.09129999999999999,
+        "total_variation_distance": 0.1794
+      },
+      {
+        "decision_id": "F03-HARD",
+        "cell_id": "F03-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F03-HARD.A": 0.016199999999999992,
+          "F03-HARD.B": -0.0026,
+          "F03-HARD.C": -0.011500000000000003,
+          "F03-HARD.D": -0.0021999999999999997
+        },
+        "gold_probability_delta": 0.016199999999999992,
+        "total_variation_distance": 0.016249999999999997
+      },
+      {
+        "decision_id": "F04-SIMPLE",
+        "cell_id": "F04-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F04-SIMPLE.A": 0.0005,
+          "F04-SIMPLE.B": -0.00010000000000000005,
+          "F04-SIMPLE.C": 0.00019999999999997797,
+          "F04-SIMPLE.D": -0.0007000000000000001
+        },
+        "gold_probability_delta": 0.00019999999999997797,
+        "total_variation_distance": 0.0007499999999999891
+      },
+      {
+        "decision_id": "F04-MEDIUM",
+        "cell_id": "F04-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F04-MEDIUM.A": -0.009700000000000042,
+          "F04-MEDIUM.B": -0.0024999999999999996,
+          "F04-MEDIUM.C": -0.003300000000000001,
+          "F04-MEDIUM.D": 0.015399999999999999
+        },
+        "gold_probability_delta": -0.009700000000000042,
+        "total_variation_distance": 0.015450000000000021
+      },
+      {
+        "decision_id": "F04-HARD",
+        "cell_id": "F04-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F04-HARD.A": 0.015000000000000013,
+          "F04-HARD.B": -0.0019000000000000002,
+          "F04-HARD.C": -0.0238,
+          "F04-HARD.D": 0.010600000000000002
+        },
+        "gold_probability_delta": 0.015000000000000013,
+        "total_variation_distance": 0.02565000000000001
+      },
+      {
+        "decision_id": "F05-SIMPLE",
+        "cell_id": "F05-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F05-SIMPLE.A": 0.007300000000000001,
+          "F05-SIMPLE.B": 0.05069999999999997,
+          "F05-SIMPLE.C": 0.003300000000000001,
+          "F05-SIMPLE.D": -0.0613
+        },
+        "gold_probability_delta": 0.05069999999999997,
+        "total_variation_distance": 0.061299999999999986
+      },
+      {
+        "decision_id": "F05-MEDIUM",
+        "cell_id": "F05-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F05-MEDIUM.A": 0.015199999999999991,
+          "F05-MEDIUM.B": -0.009399999999999999,
+          "F05-MEDIUM.C": -0.0006999999999999923,
+          "F05-MEDIUM.D": -0.005099999999999999
+        },
+        "gold_probability_delta": 0.015199999999999991,
+        "total_variation_distance": 0.015199999999999991
+      },
+      {
+        "decision_id": "F05-HARD",
+        "cell_id": "F05-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F05-HARD.A": -0.005900000000000016,
+          "F05-HARD.B": -0.0006999999999999992,
+          "F05-HARD.C": 0.004400000000000001,
+          "F05-HARD.D": 0.0020999999999999977
+        },
+        "gold_probability_delta": -0.005900000000000016,
+        "total_variation_distance": 0.006550000000000007
+      },
+      {
+        "decision_id": "F06-SIMPLE",
+        "cell_id": "F06-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F06-SIMPLE.A": 0.0015000000000000005,
+          "F06-SIMPLE.B": 0.0005999999999999998,
+          "F06-SIMPLE.C": 0.0015999999999999348,
+          "F06-SIMPLE.D": -0.0036000000000000008
+        },
+        "gold_probability_delta": 0.0015999999999999348,
+        "total_variation_distance": 0.003649999999999968
+      },
+      {
+        "decision_id": "F06-MEDIUM",
+        "cell_id": "F06-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F06-MEDIUM.A": -0.0245,
+          "F06-MEDIUM.B": 0.027000000000000024,
+          "F06-MEDIUM.C": 0.03639999999999999,
+          "F06-MEDIUM.D": -0.038900000000000004
+        },
+        "gold_probability_delta": 0.027000000000000024,
+        "total_variation_distance": 0.06340000000000001
+      },
+      {
+        "decision_id": "F06-HARD",
+        "cell_id": "F06-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F06-HARD.A": 0.07839999999999991,
+          "F06-HARD.B": -0.037599999999999995,
+          "F06-HARD.C": -0.06079999999999999,
+          "F06-HARD.D": 0.020099999999999993
+        },
+        "gold_probability_delta": 0.07839999999999991,
+        "total_variation_distance": 0.09844999999999995
+      },
+      {
+        "decision_id": "F07-SIMPLE",
+        "cell_id": "F07-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F07-SIMPLE.A": -0.11130000000000001,
+          "F07-SIMPLE.B": 0.09429999999999994,
+          "F07-SIMPLE.C": 0.01930000000000001,
+          "F07-SIMPLE.D": -0.0023000000000000034
+        },
+        "gold_probability_delta": 0.09429999999999994,
+        "total_variation_distance": 0.11359999999999998
+      },
+      {
+        "decision_id": "F07-MEDIUM",
+        "cell_id": "F07-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F07-MEDIUM.A": -0.08939999999999992,
+          "F07-MEDIUM.B": 0.0011000000000000003,
+          "F07-MEDIUM.C": -0.0002999999999999999,
+          "F07-MEDIUM.D": 0.08870000000000001
+        },
+        "gold_probability_delta": -0.08939999999999992,
+        "total_variation_distance": 0.08974999999999997
+      },
+      {
+        "decision_id": "F07-HARD",
+        "cell_id": "F07-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F07-HARD.A": 0.0865999999999999,
+          "F07-HARD.B": -0.03459999999999999,
+          "F07-HARD.C": -0.025099999999999983,
+          "F07-HARD.D": -0.026900000000000007
+        },
+        "gold_probability_delta": 0.0865999999999999,
+        "total_variation_distance": 0.08659999999999994
+      },
+      {
+        "decision_id": "F08-SIMPLE",
+        "cell_id": "F08-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F08-SIMPLE.A": 0.005400000000000071,
+          "F08-SIMPLE.B": -0.001899999999999999,
+          "F08-SIMPLE.C": -0.0002999999999999999,
+          "F08-SIMPLE.D": -0.003199999999999998
+        },
+        "gold_probability_delta": 0.005400000000000071,
+        "total_variation_distance": 0.005400000000000034
+      },
+      {
+        "decision_id": "F08-MEDIUM",
+        "cell_id": "F08-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F08-MEDIUM.A": 0.10970000000000002,
+          "F08-MEDIUM.B": -0.119,
+          "F08-MEDIUM.C": -0.0026,
+          "F08-MEDIUM.D": 0.011800000000000005
+        },
+        "gold_probability_delta": 0.10970000000000002,
+        "total_variation_distance": 0.12155
+      },
+      {
+        "decision_id": "F08-HARD",
+        "cell_id": "F08-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F08-HARD.A": 0.008799999999999919,
+          "F08-HARD.B": 0.005999999999999998,
+          "F08-HARD.C": 0.0116,
+          "F08-HARD.D": -0.026399999999999993
+        },
+        "gold_probability_delta": 0.008799999999999919,
+        "total_variation_distance": 0.026399999999999955
+      },
+      {
+        "decision_id": "F09-SIMPLE",
+        "cell_id": "F09-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F09-SIMPLE.A": 0.0010999999999999899,
+          "F09-SIMPLE.B": -0.004199999999999999,
+          "F09-SIMPLE.C": -0.0018999999999999998,
+          "F09-SIMPLE.D": 0.004900000000000002
+        },
+        "gold_probability_delta": 0.0010999999999999899,
+        "total_variation_distance": 0.006049999999999995
+      },
+      {
+        "decision_id": "F09-MEDIUM",
+        "cell_id": "F09-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F09-MEDIUM.A": -0.019100000000000006,
+          "F09-MEDIUM.B": 0.004600000000000007,
+          "F09-MEDIUM.C": 0.0003999999999999976,
+          "F09-MEDIUM.D": 0.01419999999999999
+        },
+        "gold_probability_delta": -0.019100000000000006,
+        "total_variation_distance": 0.01915
+      },
+      {
+        "decision_id": "F09-HARD",
+        "cell_id": "F09-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F09-HARD.A": -0.06470000000000009,
+          "F09-HARD.B": 0.016699999999999993,
+          "F09-HARD.C": 0.012300000000000005,
+          "F09-HARD.D": 0.03570000000000001
+        },
+        "gold_probability_delta": -0.06470000000000009,
+        "total_variation_distance": 0.06470000000000005
+      },
+      {
+        "decision_id": "F10-SIMPLE.S1",
+        "cell_id": "F10-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-SIMPLE.S1.A": 0.09060000000000001,
+          "F10-SIMPLE.S1.B": 0.014900000000000024,
+          "F10-SIMPLE.S1.C": -0.026500000000000024,
+          "F10-SIMPLE.S1.D": -0.0789
+        },
+        "gold_probability_delta": 0.014900000000000024,
+        "total_variation_distance": 0.10545000000000003
+      },
+      {
+        "decision_id": "F10-SIMPLE.S2",
+        "cell_id": "F10-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-SIMPLE.S2.A": -0.010699999999999987,
+          "F10-SIMPLE.S2.B": 0.028299999999999992,
+          "F10-SIMPLE.S2.C": 0.019699999999999995,
+          "F10-SIMPLE.S2.D": -0.03719999999999998
+        },
+        "gold_probability_delta": 0.019699999999999995,
+        "total_variation_distance": 0.04794999999999998
+      },
+      {
+        "decision_id": "F10-MEDIUM.S1",
+        "cell_id": "F10-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-MEDIUM.S1.A": 0.019199999999999995,
+          "F10-MEDIUM.S1.B": 0.0017000000000000348,
+          "F10-MEDIUM.S1.C": 0.0121,
+          "F10-MEDIUM.S1.D": -0.03309999999999999
+        },
+        "gold_probability_delta": 0.0121,
+        "total_variation_distance": 0.03305000000000001
+      },
+      {
+        "decision_id": "F10-MEDIUM.S2",
+        "cell_id": "F10-MEDIUM",
+        "choice_stable": false,
+        "correctness_stable": false,
+        "probability_delta": {
+          "F10-MEDIUM.S2.A": -0.03820000000000001,
+          "F10-MEDIUM.S2.B": 0.014700000000000019,
+          "F10-MEDIUM.S2.C": 0.03180000000000005,
+          "F10-MEDIUM.S2.D": -0.008300000000000002
+        },
+        "gold_probability_delta": 0.03180000000000005,
+        "total_variation_distance": 0.04650000000000004
+      },
+      {
+        "decision_id": "F10-MEDIUM.S3",
+        "cell_id": "F10-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-MEDIUM.S3.A": 0.035199999999999995,
+          "F10-MEDIUM.S3.B": 0.033899999999999986,
+          "F10-MEDIUM.S3.C": 0.08820000000000006,
+          "F10-MEDIUM.S3.D": -0.1572
+        },
+        "gold_probability_delta": 0.08820000000000006,
+        "total_variation_distance": 0.15725000000000003
+      },
+      {
+        "decision_id": "F10-HARD.S1",
+        "cell_id": "F10-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-HARD.S1.A": 0.005500000000000005,
+          "F10-HARD.S1.B": -0.016199999999999992,
+          "F10-HARD.S1.C": 0.02259999999999998,
+          "F10-HARD.S1.D": -0.011999999999999997
+        },
+        "gold_probability_delta": 0.005500000000000005,
+        "total_variation_distance": 0.028149999999999988
+      },
+      {
+        "decision_id": "F10-HARD.S2",
+        "cell_id": "F10-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-HARD.S2.A": 0.05460000000000001,
+          "F10-HARD.S2.B": -0.04580000000000001,
+          "F10-HARD.S2.C": 0.0011999999999999789,
+          "F10-HARD.S2.D": -0.010000000000000009
+        },
+        "gold_probability_delta": 0.05460000000000001,
+        "total_variation_distance": 0.0558
+      },
+      {
+        "decision_id": "F10-HARD.S3",
+        "cell_id": "F10-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F10-HARD.S3.A": 0.1048,
+          "F10-HARD.S3.B": -0.0358,
+          "F10-HARD.S3.C": -0.048600000000000004,
+          "F10-HARD.S3.D": -0.020300000000000002
+        },
+        "gold_probability_delta": 0.1048,
+        "total_variation_distance": 0.10475000000000001
+      },
+      {
+        "decision_id": "F10-HARD.S4",
+        "cell_id": "F10-HARD",
+        "choice_stable": false,
+        "correctness_stable": false,
+        "probability_delta": {
+          "F10-HARD.S4.A": -0.14009999999999995,
+          "F10-HARD.S4.B": 0.10520000000000002,
+          "F10-HARD.S4.C": -0.05760000000000001,
+          "F10-HARD.S4.D": 0.0925
+        },
+        "gold_probability_delta": -0.14009999999999995,
+        "total_variation_distance": 0.1977
+      },
+      {
+        "decision_id": "F11-SIMPLE",
+        "cell_id": "F11-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F11-SIMPLE.A": 0.0004999999999999449,
+          "F11-SIMPLE.B": -0.004399999999999987,
+          "F11-SIMPLE.C": -0.006499999999999999,
+          "F11-SIMPLE.D": 0.0104
+        },
+        "gold_probability_delta": 0.0004999999999999449,
+        "total_variation_distance": 0.010899999999999965
+      },
+      {
+        "decision_id": "F11-MEDIUM",
+        "cell_id": "F11-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F11-MEDIUM.A": 0.0816,
+          "F11-MEDIUM.B": -0.1078,
+          "F11-MEDIUM.C": 0.005500000000000001,
+          "F11-MEDIUM.D": 0.0208
+        },
+        "gold_probability_delta": 0.0816,
+        "total_variation_distance": 0.10785
+      },
+      {
+        "decision_id": "F11-HARD",
+        "cell_id": "F11-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F11-HARD.A": 0.03620000000000001,
+          "F11-HARD.B": -0.0031999999999999806,
+          "F11-HARD.C": -0.019600000000000006,
+          "F11-HARD.D": -0.013499999999999998
+        },
+        "gold_probability_delta": 0.03620000000000001,
+        "total_variation_distance": 0.03625
+      },
+      {
+        "decision_id": "F12-SIMPLE",
+        "cell_id": "F12-SIMPLE",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F12-SIMPLE.A": 0.082,
+          "F12-SIMPLE.B": 0.045,
+          "F12-SIMPLE.C": 0.019000000000000003,
+          "F12-SIMPLE.D": -0.14600000000000002
+        },
+        "gold_probability_delta": -0.14600000000000002,
+        "total_variation_distance": 0.14600000000000002
+      },
+      {
+        "decision_id": "F12-MEDIUM",
+        "cell_id": "F12-MEDIUM",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F12-MEDIUM.A": 0.0675,
+          "F12-MEDIUM.B": -0.029699999999999976,
+          "F12-MEDIUM.C": 0.03950000000000001,
+          "F12-MEDIUM.D": -0.07719999999999999
+        },
+        "gold_probability_delta": -0.07719999999999999,
+        "total_variation_distance": 0.10694999999999999
+      },
+      {
+        "decision_id": "F12-HARD",
+        "cell_id": "F12-HARD",
+        "choice_stable": true,
+        "correctness_stable": true,
+        "probability_delta": {
+          "F12-HARD.A": 0.012400000000000008,
+          "F12-HARD.B": 0.040000000000000036,
+          "F12-HARD.C": -0.007100000000000002,
+          "F12-HARD.D": -0.04530000000000001
+        },
+        "gold_probability_delta": -0.04530000000000001,
+        "total_variation_distance": 0.05240000000000003
+      }
+    ]
+  }
+}

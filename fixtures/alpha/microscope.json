@@ -1,0 +1,1495 @@
+{
+  "version": "alpha-microscope-fixtures-0.1.0",
+  "bindings": {
+    "checkpoint_file_sha256": "002cffcfbdf44eec2e509704d5a530bb134d655919ec129f46eeffda6b99a3eb",
+    "final_state_sha256": "850e579506d6c68fa0873900d2f9a6b920058c52108cd0e03cdd0ca2f28aef10",
+    "semantic_manifest_sha256": "b651ac6ce407897e520fca18bf001a063455cdafcadb0f1ab3767d7cfc0e76fe",
+    "token_abi_sha256": "a49ddf0d5405c4602290e7dbbfeaa187bc602ecdd17676daa7965b32d27fafef",
+    "initializer_manifest_sha256": "f77db59102ca3afbddd6de5175fd73abe52f8b20a79331041f12f79aa900f251",
+    "split_manifest_sha256": "2b0f4a35a08a4d2443f6da7ad0ee30c1e387f30c908f47707ccaa200f1042c30",
+    "training_code_commit": "32bed02cc4dd871016db23e25319b8c789194d7d",
+    "training_pr_head": "d59c20d914fd8380909068017ca9fa2ef72d942f",
+    "training_source_hashes": {
+      "bilqis_alpha/__init__.py": "8f6434d15e2c6bb71134cd249f7758a45e0a8dfc52c82f1b10b30a59f6ac8d54",
+      "bilqis_alpha/codec.py": "26832c9de6064601ddc3e367f78b6dc116905b85faa558b36ff9ce20fecf462c",
+      "bilqis_alpha/data.py": "ca666d8f161eb4736d4c3242f2a42e0ee5b17d6611305342b658cbc12c947316",
+      "bilqis_alpha/features.py": "b598fbf05e53c1171ebf6b3a6544c1ae7a5fb4932421de7e9ed14721dd09f36e",
+      "bilqis_alpha/model.py": "5d2e1b497b975e9f5564c8f02b47551c4cfa483838e64805807730dd52dc819e",
+      "bilqis_alpha/run.py": "b172736be604eaf5fe80fa77d4ee87a94b611db2c3b1fe8cd169c2ec360db7a5",
+      "bilqis_alpha/semantics.py": "16717ca96c4233729ff3c762ca3618cb2be78a6e177337a7ea9ff3c8f0c9d2db",
+      "bilqis_ref/model.py": "ab4b8ed631f892ab43c5563c78282af8e169ae491e27ec026d7bcc1571d2b26b",
+      "configs/alpha-01.json": "5240dda3f7947cb73e15b2245d94d4b1374a09ee610dd706fef44e690c79df0b",
+      "fixtures/alpha/known-pass.json": "35b05f39a61c9d2043eb4f936cdb2c3296d8f625fd6fee45b017faf08747f41e",
+      "fixtures/alpha/semantic-registry.json": "42a96ad7cf50a08832fb05303758e221eafd7a207b120da06219c3b799210f72",
+      "fixtures/alpha/split-manifest.json": "883f9708dd7cf8888526de88eb60c66d04ad375d20afb865bd06fc947921113c",
+      "fixtures/alpha/token-manifest.json": "9a02a09d818f008465892391b025eaf7b8178167d1058d93416f691ace0c373f",
+      "requirements-alpha.txt": "6700277784ccb5aae902087c43fffd042d885d9bfcd6e61909819d3bc7a7e63b",
+      "schemas/alpha-semantic.schema.json": "c3ac0fe1e195be69a914598e1c1945114dcffc110b0148db30986a06bfbbe3d9"
+    }
+  },
+  "cases": [
+    {
+      "id": "K01-positive",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K02-negative",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "FALSE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K03-unknown",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "UNKNOWN",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K04-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "CONFLICT",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K05-role-reversal",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "FALSE",
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "parent": "K01-positive",
+      "factor": "role_assignment"
+    },
+    {
+      "id": "K06-negation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "FALSE",
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "parent": "K01-positive",
+      "factor": "negation"
+    },
+    {
+      "id": "K07-wide-negation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "body": {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              },
+              "op": "urn:bilqis:alpha:cogal:exists",
+              "variable": "urn:bilqis:alpha:cogal:x"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "FALSE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K08-narrow-negation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "body": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          "op": "urn:bilqis:alpha:cogal:exists",
+          "variable": "urn:bilqis:alpha:cogal:x"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-authored known boundary, retained before training",
+      "parent": "K07-wide-negation",
+      "factor": "scope"
+    },
+    {
+      "id": "K09-mutual-exists",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "body": {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              },
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:x",
+                    "kind": "variable"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:and"
+          },
+          "op": "urn:bilqis:alpha:cogal:exists",
+          "variable": "urn:bilqis:alpha:cogal:x"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K10-not-and",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                },
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:and"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K11-negated-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:not"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "CONFLICT",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K12-equality",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:equal"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K13-inequality",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:equal"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "FALSE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K14-unknown-and-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:and"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "FALSE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "K15-unknown-or-conflict",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-authored known boundary, retained before training"
+    },
+    {
+      "id": "M16-add-refutation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "CONFLICT",
+      "parent": "K01-positive",
+      "factor": "evidence",
+      "selection_provenance": "single-factor intervention defined from contract, no success selection"
+    },
+    {
+      "id": "M17-remove-support",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "id": "urn:bilqis:alpha:cogal:a",
+              "kind": "constant"
+            },
+            {
+              "id": "urn:bilqis:alpha:cogal:b",
+              "kind": "constant"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:relation"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "UNKNOWN",
+      "parent": "K01-positive",
+      "factor": "evidence",
+      "selection_provenance": "single-factor intervention defined from contract, no success selection"
+    },
+    {
+      "id": "M18-first-heldout-miss",
+      "corpus_id": "A-00f5b92c80e10fe107ff",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:not"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "UNKNOWN",
+      "selection_provenance": "first observed heldout miss by frozen corpus ID"
+    },
+    {
+      "id": "M19-intended-relation",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:not"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-defined wrong-relation/same-final-verdict witness; not a network intermediate"
+    },
+    {
+      "id": "M20-wrong-candidate",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "args": [
+            {
+              "args": [
+                {
+                  "args": [
+                    {
+                      "id": "urn:bilqis:alpha:cogal:b",
+                      "kind": "constant"
+                    },
+                    {
+                      "id": "urn:bilqis:alpha:cogal:a",
+                      "kind": "constant"
+                    }
+                  ],
+                  "op": "urn:bilqis:alpha:cogal:relation"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:not"
+            },
+            {
+              "args": [
+                {
+                  "id": "urn:bilqis:alpha:cogal:b",
+                  "kind": "constant"
+                },
+                {
+                  "id": "urn:bilqis:alpha:cogal:a",
+                  "kind": "constant"
+                }
+              ],
+              "op": "urn:bilqis:alpha:cogal:relation"
+            }
+          ],
+          "op": "urn:bilqis:alpha:cogal:or"
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected": "TRUE",
+      "selection_provenance": "contract-defined wrong-relation/same-final-verdict witness; not a network intermediate"
+    }
+  ],
+  "wrong_candidate_path": {
+    "intended": {
+      "abi": "bilqis-alpha-cogal-0.1.0",
+      "query": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          {
+            "args": [
+              {
+                "id": "urn:bilqis:alpha:cogal:a",
+                "kind": "constant"
+              },
+              {
+                "id": "urn:bilqis:alpha:cogal:b",
+                "kind": "constant"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:relation"
+          }
+        ],
+        "op": "urn:bilqis:alpha:cogal:or"
+      },
+      "world": {
+        "entities": [
+          "urn:bilqis:alpha:cogal:a",
+          "urn:bilqis:alpha:cogal:b"
+        ],
+        "facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:b",
+              "target": "urn:bilqis:alpha:cogal:a"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          },
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          }
+        ],
+        "sources": [
+          "urn:bilqis:alpha:cogal:source-0",
+          "urn:bilqis:alpha:cogal:source-1"
+        ]
+      }
+    },
+    "candidate": {
+      "abi": "bilqis-alpha-cogal-0.1.0",
+      "query": {
+        "args": [
+          {
+            "args": [
+              {
+                "args": [
+                  {
+                    "id": "urn:bilqis:alpha:cogal:b",
+                    "kind": "constant"
+                  },
+                  {
+                    "id": "urn:bilqis:alpha:cogal:a",
+                    "kind": "constant"
+                  }
+                ],
+                "op": "urn:bilqis:alpha:cogal:relation"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:not"
+          },
+          {
+            "args": [
+              {
+                "id": "urn:bilqis:alpha:cogal:b",
+                "kind": "constant"
+              },
+              {
+                "id": "urn:bilqis:alpha:cogal:a",
+                "kind": "constant"
+              }
+            ],
+            "op": "urn:bilqis:alpha:cogal:relation"
+          }
+        ],
+        "op": "urn:bilqis:alpha:cogal:or"
+      },
+      "world": {
+        "entities": [
+          "urn:bilqis:alpha:cogal:a",
+          "urn:bilqis:alpha:cogal:b"
+        ],
+        "facts": [
+          {
+            "polarity": "urn:bilqis:alpha:cogal:refute",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:b",
+              "target": "urn:bilqis:alpha:cogal:a"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-1"
+          },
+          {
+            "polarity": "urn:bilqis:alpha:cogal:support",
+            "predicate": "urn:bilqis:alpha:cogal:relation",
+            "roles": {
+              "source": "urn:bilqis:alpha:cogal:a",
+              "target": "urn:bilqis:alpha:cogal:b"
+            },
+            "source": "urn:bilqis:alpha:cogal:source-0"
+          }
+        ],
+        "sources": [
+          "urn:bilqis:alpha:cogal:source-0",
+          "urn:bilqis:alpha:cogal:source-1"
+        ]
+      }
+    },
+    "intended_relation": {
+      "op": "urn:bilqis:alpha:cogal:relation",
+      "args": [
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:a"
+        },
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:b"
+        }
+      ]
+    },
+    "candidate_relation": {
+      "op": "urn:bilqis:alpha:cogal:relation",
+      "args": [
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:b"
+        },
+        {
+          "kind": "constant",
+          "id": "urn:bilqis:alpha:cogal:a"
+        }
+      ]
+    },
+    "unchanged_consequence": {
+      "op": "urn:bilqis:alpha:cogal:not",
+      "args": [
+        {
+          "op": "urn:bilqis:alpha:cogal:relation",
+          "args": [
+            {
+              "kind": "constant",
+              "id": "urn:bilqis:alpha:cogal:b"
+            },
+            {
+              "kind": "constant",
+              "id": "urn:bilqis:alpha:cogal:a"
+            }
+          ]
+        }
+      ]
+    },
+    "provenance": "independently evaluated candidate; no neural intermediate interface"
+  },
+  "rejected_paths": [
+    {
+      "id": "M21-unsupported-implication",
+      "semantic": {
+        "abi": "bilqis-alpha-cogal-0.1.0",
+        "query": {
+          "op": "urn:bilqis:alpha:cogal:implies",
+          "args": [
+            {
+              "op": "urn:bilqis:alpha:cogal:relation",
+              "args": [
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:a"
+                },
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:b"
+                }
+              ]
+            },
+            {
+              "op": "urn:bilqis:alpha:cogal:relation",
+              "args": [
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:b"
+                },
+                {
+                  "kind": "constant",
+                  "id": "urn:bilqis:alpha:cogal:a"
+                }
+              ]
+            }
+          ]
+        },
+        "world": {
+          "entities": [
+            "urn:bilqis:alpha:cogal:a",
+            "urn:bilqis:alpha:cogal:b"
+          ],
+          "facts": [
+            {
+              "polarity": "urn:bilqis:alpha:cogal:refute",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:b",
+                "target": "urn:bilqis:alpha:cogal:a"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-1"
+            },
+            {
+              "polarity": "urn:bilqis:alpha:cogal:support",
+              "predicate": "urn:bilqis:alpha:cogal:relation",
+              "roles": {
+                "source": "urn:bilqis:alpha:cogal:a",
+                "target": "urn:bilqis:alpha:cogal:b"
+              },
+              "source": "urn:bilqis:alpha:cogal:source-0"
+            }
+          ],
+          "sources": [
+            "urn:bilqis:alpha:cogal:source-0",
+            "urn:bilqis:alpha:cogal:source-1"
+          ]
+        }
+      },
+      "expected_error": "UNSUPPORTED_CONSTRUCT"
+    }
+  ],
+  "explanation_provenance": "deterministic code and contract-authored annotations; not model reasoning",
+  "neural_intermediate_status": "MISSING: architecture exposes final logits only"
+}

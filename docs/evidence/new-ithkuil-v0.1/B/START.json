@@ -1,0 +1,50 @@
+{
+  "epoch": "B",
+  "execution_epoch": "order-preserving-http-v1",
+  "harness_source_commit": "1c1e29e36d28be084a824cb11c46baef34367356",
+  "fixture_file_sha256": "66c41a18a98e9b58f0c88f7dc332493a7dec03f3492dc71617a391047f0aaaa9",
+  "context_packet_sha256": "c178cd133d051cddcca0eae8a69111b4696418425a6a99c27723786a6af898be",
+  "runtime_identity": {
+    "engine_revision": "6b719c3c3f367295f6ef336f4f751cf5ff970abc",
+    "model": "jaredpalmer/kev-4b",
+    "model_revision": "6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+    "base_model": "Qwen/Qwen3.5-4B-Base",
+    "base_revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
+    "base_revision_evidence": "existing #65 pinned cache identity; service reports the model name, not base revision",
+    "backend": "mlx",
+    "dtype": "bfloat16",
+    "runtime_versions": {
+      "python": "3.13.12",
+      "mlx": "0.32.2",
+      "mlx-lm": "0.31.3",
+      "torch": "2.8.0",
+      "transformers": "5.17.0",
+      "tokenizers": "0.23.2"
+    },
+    "service": {
+      "name": "kev-latest",
+      "run": "jaredpalmer/kev-4b@6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+      "base": "Qwen/Qwen3.5-4B-Base",
+      "lora": 16,
+      "backend": "mlx",
+      "device": "mps",
+      "dtype": "bfloat16",
+      "temperature": 2.406050072164233,
+      "max_state_tokens": 65536,
+      "truncate_states": false,
+      "prefix_cache_settings": {
+        "size": 4,
+        "min_state_tokens": 0,
+        "max_tokens": 65536
+      }
+    },
+    "endpoint": "http://127.0.0.1:8008/v1/systemone",
+    "engine_source_clean": true,
+    "health_preflight": "three identity queries agree; released service; stable existing native probability adapter reused",
+    "probability_precision": "native public API four-decimal serialization; no unavailable raw-logit claim"
+  },
+  "seed": 77,
+  "canonical_state_replay": true,
+  "model_calls_expected": 42,
+  "status": "STARTED"
+}

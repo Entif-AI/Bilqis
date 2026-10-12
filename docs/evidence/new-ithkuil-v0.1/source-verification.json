@@ -1,0 +1,1112 @@
+{
+  "version": "new-ithkuil-v0.1-source-review",
+  "context_packet_sha256": "c178cd133d051cddcca0eae8a69111b4696418425a6a99c27723786a6af898be",
+  "source_issue_body_sha256": "08cc45c32bf5abe90677799cdf887b6c019565e27641a66628dca6d139309716",
+  "reviewer": "Codex, narrow source-preserving Logic pass",
+  "scope": "supplied official snapshots only; no grammar expansion or linguistic fixture rewriting",
+  "source_internal_note": "Section 3.1 prose ordinal description of abbreviation letters is inconsistent with its own explicit table. Table labels and worked examples agree with the frozen cells; no scored gold is contradicted.",
+  "invalid_fixture_cells": [],
+  "cells": [
+    {
+      "cell_id": "F01-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.3",
+          "packet_locator_lines": [
+            72,
+            261,
+            276
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.6",
+          "packet_locator_lines": [
+            15,
+            162,
+            416
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "DSS supplies two similar separate members; COA supplies distinct complementary functions.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F01-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.4",
+          "packet_locator_lines": [
+            160,
+            265
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.2",
+          "packet_locator_lines": [
+            567
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "CSV foregrounds realized form; MDS supplies multiplex dissimilar separate members; ASO supplies shared subjective function.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F01-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The worked row explicitly marks child ERG, leg ABS and rock INS and gives the intended translation.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F02-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.6",
+          "packet_locator_lines": [
+            15,
+            162,
+            416
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "DSC is duplex similar connected; COA is distinct complementary function.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F02-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.4",
+          "packet_locator_lines": [
+            160,
+            265
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.4",
+          "packet_locator_lines": [
+            595
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "CTE foregrounds content/purpose; MFS supplies multiplex fuzzy separate; VAR supplies non-complementary differing purposes.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F02-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The worked IND/LOC/INS row explicitly translates self-hitting on the leg with a rock.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F03-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.1",
+          "packet_locator_lines": [
+            247
+          ]
+        },
+        {
+          "chapter": 2,
+          "section": "2.4.3",
+          "packet_locator_lines": [
+            158,
+            251,
+            259
+          ]
+        },
+        {
+          "chapter": 2,
+          "section": "2.4.4",
+          "packet_locator_lines": [
+            160,
+            265
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The -DN- root and adna example are explicitly given in Chapter 2.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F03-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 2,
+          "section": "2.4.3",
+          "packet_locator_lines": [
+            158,
+            251,
+            259
+          ]
+        },
+        {
+          "chapter": 2,
+          "section": "2.4.4",
+          "packet_locator_lines": [
+            160,
+            265
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The -edn- Stem 2 designation/reference identity survives the OBJ Specification in edni.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F03-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The source identifies -ţd- Stem 2 as forceful physical contact; the listed -osm- affix yields hit/strike. The option names that base, not an unaffixed complete predicate.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F04-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.1",
+          "packet_locator_lines": [
+            888,
+            894,
+            918
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The key remains the means/tool INSTRUMENT in the opening event.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F04-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.2",
+          "packet_locator_lines": [
+            15,
+            827,
+            882
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The Mary story example explicitly assigns children RECIPIENT and story CONTENT.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F04-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The worked row states child agent, leg patient and rock instrumental.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F05-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The Configuration table labels MSC multiplex/similar/connected.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F05-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The toolset example explicitly uses MDS with COA.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F05-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The worked sentence row explicitly gives ERG / ABS / INS.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F06-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.3",
+          "packet_locator_lines": [
+            892
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "Section 4.2.3 gives ABS -e- and PATIENT.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F06-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The Configuration table gives DFC duplex/fuzzy/connected as kš.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F06-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.2",
+          "packet_locator_lines": [
+            886
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.3",
+          "packet_locator_lines": [
+            892
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7",
+          "packet_locator_lines": [
+            916
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Sections 4.2.7, 4.2.3 and 4.2.2 give -o-, -e- and -ä-.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F07-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "MSS and MSC retain multiplex/similar and differ in separate versus connected.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F07-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.2.2",
+          "packet_locator_lines": [
+            567
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Replacing COA with ASO changes complementary distinct functions into shared subjective function.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F07-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.6",
+          "packet_locator_lines": [
+            910
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7",
+          "packet_locator_lines": [
+            916
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The source anger pair differs in child ERG versus EFF while clown AFF remains fixed.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F08-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The source labels rrasa generic DPX and rraca specifically DSS.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F08-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.2.1",
+          "packet_locator_lines": [
+            553
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The source contrasts neutral čveţa with complementary-function čverţa.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F08-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.9",
+          "packet_locator_lines": [
+            928
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The worked rows differ in child ERG versus IND; rock INS remains fixed.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F09-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.1",
+          "packet_locator_lines": [
+            888,
+            894,
+            918
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Chapter 4 explicitly preserves the key INSTRUMENT role across English positional changes.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F09-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.2",
+          "packet_locator_lines": [
+            567
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "Section 3.2.2 explicitly contrasts CSL group of soldiers and ASO troop/platoon.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F09-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.1",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-explicit",
+      "inference": "The worked rows keep child ABS and rock INS but distinguish leg THM from LOC.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F10-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.6",
+          "packet_locator_lines": [
+            15,
+            162,
+            416
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Two table-derived decisions determine the explicitly frozen COA + DSS bundle.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F10-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The toolset example explicitly supplies MDS, COA and čverţa.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F10-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.2",
+          "packet_locator_lines": [
+            886
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.3",
+          "packet_locator_lines": [
+            892
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7",
+          "packet_locator_lines": [
+            916
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The worked sentence explicitly supplies child ERG, leg ABS, rock INS and the matching complete form.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F11-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.2",
+          "packet_locator_lines": [
+            567
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "MSS supplies similar separate multiplex members; ASO supplies shared subjective function. The prompt expressly restricts the scored dimensions.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F11-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.2.2",
+          "packet_locator_lines": [
+            567
+          ]
+        },
+        {
+          "chapter": 3,
+          "section": "3.2.3",
+          "packet_locator_lines": [
+            581
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The source assigns čvelţa to ASO well-designed set, distinct from COA čverţa toolset.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F11-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "The offered ERG/ABS sentence is distinct from the required IND/LOC self-targeting sentence.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F12-SIMPLE",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.1.1",
+          "packet_locator_lines": [
+            888,
+            894,
+            918
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.1.2",
+          "packet_locator_lines": [
+            15,
+            827,
+            882
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Reconstructed insufficiency follows because Chapter 4 assigns different Mary roles for different predicates in the same English subject position.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F12-MEDIUM",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 3,
+          "section": "3.1",
+          "packet_locator_lines": [
+            15,
+            416,
+            418
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Reconstructed insufficiency follows because group gives multiplicity while exact Configuration also requires similarity and separability.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    },
+    {
+      "cell_id": "F12-HARD",
+      "status": "VALID_FIXTURE",
+      "source_locators": [
+        {
+          "chapter": 4,
+          "section": "4.2.6",
+          "packet_locator_lines": [
+            910
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.7",
+          "packet_locator_lines": [
+            916
+          ]
+        },
+        {
+          "chapter": 4,
+          "section": "4.2.10",
+          "packet_locator_lines": [
+            15,
+            827,
+            876
+          ]
+        }
+      ],
+      "gold_support": "source-derived",
+      "inference": "Reconstructed insufficiency follows because the source distinguishes direct ERG causation from EFF causal-chain initiation and the prompt omits that distinction.",
+      "checks": {
+        "prompt_supported": true,
+        "gold_present_once_per_atomic_decision": true,
+        "no_correct_duplicate": true,
+        "distractors_meaningfully_distinct": true,
+        "rationale_agrees_or_not_separately_supplied": true
+      }
+    }
+  ]
+}

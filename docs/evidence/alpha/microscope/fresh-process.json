@@ -1,0 +1,9 @@
+{
+  "cases": 20,
+  "passed": 7,
+  "failed": 13,
+  "formal_rejections": 1,
+  "replayed": true,
+  "checkpoint_sha256": "002cffcfbdf44eec2e509704d5a530bb134d655919ec129f46eeffda6b99a3eb",
+  "logit_probability_atol": 1e-06
+}
