@@ -47,6 +47,7 @@ case "${1:-}" in
 import json
 from pathlib import Path
 import sys
+import torch
 
 path = Path(sys.argv[1])
 if not path.is_file():
@@ -56,6 +57,9 @@ state = json.loads(path.read_text())
 accepted = state.get("accepted_pass", {})
 champion = state.get("champion_pass", {})
 retention = state.get("checkpoint_retention", {})
+checkpoint = path.parent / state["checkpoint"]
+payload = torch.load(checkpoint, map_location="cpu", weights_only=True)
+model_parameters = sum(tensor.numel() for tensor in payload["model"].values())
 summary = {
     "run_dir": str(path.parent),
     "spiral_pass": state.get("spiral_pass"),
@@ -64,6 +68,8 @@ summary = {
     "accepted_pass": accepted.get("pass"),
     "champion_pass": champion.get("pass"),
     "checkpoint": state.get("checkpoint"),
+    "model_parameters": model_parameters,
+    "model_config": payload.get("config"),
     "teacher_strategies": len(state.get("teacher", {}).get("strategies", {})),
     "checkpoint_files_retained": retention.get("retained_count"),
     "checkpoint_storage_gib": (
