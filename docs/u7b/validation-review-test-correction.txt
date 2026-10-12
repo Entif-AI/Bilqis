@@ -1,0 +1,24 @@
+test_combined_needs_meaningful_improvement_and_retains_null (test_teacher_battery.TeacherBatteryTests.test_combined_needs_meaningful_improvement_and_retains_null) ... ok
+test_identical_panel_identities_and_no_gold_in_three_renderings (test_teacher_battery.TeacherBatteryTests.test_identical_panel_identities_and_no_gold_in_three_renderings) ... FAIL
+test_order_and_actual_request_bytes_are_checked (test_teacher_battery.TeacherBatteryTests.test_order_and_actual_request_bytes_are_checked) ... ok
+test_feedback_requires_exact_dev_identity_and_rejects_final (test_teacher_policy.TeacherPolicyTests.test_feedback_requires_exact_dev_identity_and_rejects_final) ... ok
+test_gold_source_type_and_language_cannot_bypass_admission (test_teacher_policy.TeacherPolicyTests.test_gold_source_type_and_language_cannot_bypass_admission) ... ok
+test_grammar_compiles_distinct_candidates_and_both_causal_arms (test_teacher_policy.TeacherPolicyTests.test_grammar_compiles_distinct_candidates_and_both_causal_arms) ... ok
+test_known_alias_and_typed_composition_bypass_retrieval (test_teacher_policy.TeacherPolicyTests.test_known_alias_and_typed_composition_bypass_retrieval) ... ok
+test_new_identity_or_wrong_source_spec_is_rejected (test_teacher_policy.TeacherPolicyTests.test_new_identity_or_wrong_source_spec_is_rejected) ... ok
+test_policy_loads_the_exact_spiral_and_closeout_contract (test_teacher_policy.TeacherPolicyTests.test_policy_loads_the_exact_spiral_and_closeout_contract) ... ok
+test_unqualified_and_previously_deferred_gaps_cannot_retrieve (test_teacher_policy.TeacherPolicyTests.test_unqualified_and_previously_deferred_gaps_cannot_retrieve) ... ok
+
+======================================================================
+FAIL: test_identical_panel_identities_and_no_gold_in_three_renderings (test_teacher_battery.TeacherBatteryTests.test_identical_panel_identities_and_no_gold_in_three_renderings)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/emilie/.codex/worktrees/bilqis-u7b/Bilqis/tests/test_teacher_battery.py", line 17, in test_identical_panel_identities_and_no_gold_in_three_renderings
+    self.assertNotIn(cell['gold'], question)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 'REVIEW' unexpectedly found in 'Choose the expression satisfying the requested criterion under the supplied source semantics. Choose REVIEW if the criterion is underdetermined. Do not resolve missing information by guessing.'
+
+----------------------------------------------------------------------
+Ran 10 tests in 0.063s
+
+FAILED (failures=1)

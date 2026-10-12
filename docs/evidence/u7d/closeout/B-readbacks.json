@@ -1,0 +1,18 @@
+[
+  {
+    "comment_id": 6117196171,
+    "created_at": "2026-10-12T03:26:59Z",
+    "exact_body_readback": true,
+    "issue": 16,
+    "sha256": "7c693e6e2413fc8af2c12271ac811ef97754dcefae95b754b7195d3533c49180",
+    "url": "https://github.com/Entif-AI/Bilqis/issues/16#issuecomment-6117196171"
+  },
+  {
+    "comment_id": 6117196292,
+    "created_at": "2026-10-12T03:27:00Z",
+    "exact_body_readback": true,
+    "issue": 65,
+    "sha256": "81848f46f05b4194e85aa92d4654bfd70cbbc980936dc7a78165004644493d25",
+    "url": "https://github.com/Entif-AI/Bilqis/issues/65#issuecomment-6117196292"
+  }
+]

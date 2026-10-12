@@ -1,0 +1,7 @@
+### U7C follow-up: critical U4 rehearsal was only 30 of 1,024 exposures (11 October 2026)
+
+A separate exact-log accounting pass over the already frozen 32-step U7C run found example exposures by stage: U0 27, U1 54, U2 84, U3 62, U4 30, U5 204, U6 563. U4 received just 30/1,024 (2.9%) of all example slots, and only five of the 256 DEV-weak reinforcement slots; U0 received six targeted weak slots. This happened despite correctly satisfying every 12/4/8/8 top-level bucket allocation and the old/recent weak-family floor.
+
+U4 historical composites degraded from 50/128 to 39/128, triggering the early-stop gate at step 13,432. The sparse U4 rehearsal is a plausible contributing factor, not a proven causal mechanism. For a later version of #54, make explicit critical-family exposure and adaptive attention minima observable before and during the next frozen run, potentially transferring more of the eight DEV-weak slots to failing critical families while preserving overall batch semantics. Audit exact exposure counts rather than trusting aggregate weak-family weights or old-stage floors. Do not adjust or retroactively extend U7C; the negative remains frozen.
+
+Source: https://github.com/Entif-AI/Bilqis/pull/113 ; original training logs under docs/evidence/u7c/run-02/training.jsonl.gz ; additive source-hashed audit docs/evidence/u7c/closeout/exposure-audit.json . Research ledger R-09: https://docs.google.com/document/d/1O0lxmLU7Jc49An-nh2YNpi-GkniLBFjf6pDN-PgGDh8/edit .
