@@ -1,0 +1,137 @@
+# Bilqis: autonomous, development-first spiral school
+
+The goal is a more capable continuing student, not repeated scratch-model
+attribution experiments. Incorrect answers are evidence for new practice,
+not automatic rejection of the learner or rollback of its neural history.
+
+## The fifty-grade skill tree
+
+See SKILL_TREE_50.json for the canonical executable design:
+
+- G01-G22: twenty-two grades of logic, mathematics and typed relationships.
+- G23-G35: thirteen grades of official 2023 New Ithkuil grammar.
+- G36-G50: fifteen grades of official New Ithkuil lexical semantics.
+
+Every grade has a mechanic, its prerequisite, older concepts for rehearsal
+and forward previews of the next two grades. Grade progression is
+developmental, not a requirement to ace an exam before proceeding. The
+student traverses successive increasing-grade spirals.
+
+Twenty-two logic/math grades can actually compile trustworthy lessons,
+using existing finite-world semantics plus new small-integer arithmetic
+(numbers 0-100; ADD/SUB/MUL/MOD/EQ/LT/LE, exact truth labels). The
+machine ABI grows append-only from 113 learned identities to 222 without
+changing existing model weights, optimizer moments or semantic token IDs.
+
+G23-G50 are DESIGNED ONLY, not language-capable exercises: the full
+source-backed grammar and lexicon compiler does not exist. The teacher
+skips these with explicit reporting, or the --require-full50 flag causes
+a fail-fast error before any gradient. This is not a completed 50-grade
+New Ithkuil training epoch.
+
+## Autonomous teacher
+
+The student has one continuous neural history. The teacher separately
+retains per-grade and cross-grade strategy outcome statistics. It chooses
+between strategy vectors, mutates one whitelisted setting after every
+third grade, and reuses what it discovers across repeated spirals.
+
+Whitelisted variables: earlier-grade example count, two-grade foresight
+example count, question depth, semantic contrast frequency, learning rate,
+and the strength of previous-model distillation. Each 32-example batch
+contains actually compiled new, old and future examples. Oracle truth
+is never replaced or invented by the teaching policy.
+
+The reward uses practical accuracy change on small developmental probes
+plus earlier-grade health. These probes are reused for feedback, and
+therefore are not independent scientific tests. Low scores inform future
+lessons; they do not freeze or restart the student.
+
+After every completed grade, the runner saves the model, AdamW optimizer,
+fixed semantic graph, exact optimizer step, teacher policy statistics,
+complete per-grade ledger, and a new atomic state pointer. The next
+invocation reopens that exact checkpoint. A crash within a grade can lose
+the unsaved part of that grade but not completed grade checkpoints.
+
+## Model capacity
+
+The school preserves the previously learned U7F student at step 13,848.
+An independently tested migration expanded it from 362,976 parameters
+to 10,743,936; width 96 to 384, attention heads 6 to 24, transformer
+blocks 3 to 6. Existing learned representations are replicated and new
+residual blocks initially act as identities, with transferred optimizer
+moments and unchanged step count. All answers matched on 256 real old
+and new questions with maximum logit error below 0.000014.
+Capacity is now larger; this itself does not confer language competence.
+
+The architecture still has only a 96-token input context and a classifier
+head for five Boolean/evidence states. Teaching full Ithkuil utterance
+production requires more than vocabulary: a versioned longer-context,
+sequence-generating objective must reuse or distill the already learned
+semantic representations.
+
+## Local continuous operation
+
+Start from the new isolated school repository worktree. First initialize
+only while the externally custodied U7F active checkpoint is available.
+Then the system resumes from its own latest checkpoint on every invocation.
+
+Observe exact state:
+
+    python3 -m bilqis_school.engine --status
+
+Run a long bounded Apple-Metal training session, resuming existing state:
+
+    caffeinate -i python3 -m bilqis_school.engine --device mps --minutes 360 --max-updates 1000000 --block 64 --max-run-gib 32
+
+Run a short CPU session:
+
+    python3 -m bilqis_school.engine --device cpu --minutes 10 --max-updates 100000 --block 32
+
+Explicitly test whether all fifty grades have source-backed compilers
+(expected failure until G23-G50 are implemented):
+
+    python3 -m bilqis_school.engine --require-full50 --minutes 1
+
+The runner creates a new checkpoint per completed grade under ignored
+runs/school50-continuous-v1. With 10.7 million trainable parameters
+and full AdamW moments, long runs can consume substantial storage.
+Currently checkpoints are intentionally NOT automatically pruned.
+The default generated-checkpoint quota of 32 GiB stops cleanly at a grade
+boundary before new writes reach the cap, with a separate 512 MiB free
+volume reserve. Increase --max-run-gib only after confirming available
+space; design and explicitly authorize a rolling checkpoint-retention
+policy if running unattended for many hours. It must never destroy the
+independently custodied learner.
+
+The model parameters are not in public Git and their absence is a hard
+error, not a license to create a randomly initialized replacement student.
+The checked-in ACTIVE_SCHOOL_POINTER.json identifies the working live state
+under the ignored run directory. After a school run exists, it supersedes
+the old U7F ACTIVE_LEARNER.json as the active school pointer. U7F remains
+a preserved source ancestor. An absent school run directory in a new
+checkout is a missing learning artifact, not permission to pretend the
+latest student is still at step 13,848.
+
+## Ithkuil truth and provenance
+
+The official current 2023 New Ithkuil source is https://www.ithkuil.net/.
+The existing source map in references/ithkuil-grammar-source-map.csv
+separates implemented subsets, specifications, deferred concepts and
+source questions. The 36-cell human-authored diagnostic fixture is NOT
+a complete Ithkuil lexicon or grammar and must not be relabeled as one.
+
+The official New Ithkuil lexicon has thousands of roots, roots have
+multiple stems, and morphological Specification changes interpretation.
+A root spelling or English gloss is not a complete, validated semantic
+target. Source version, stem, interpretation, scopes, negative examples,
+and accepted compositional operations are required before a grade may
+give it to the neural student as supervised gold. Raw New Ithkuil source
+publication rights remain unresolved in the repository rights register;
+the implementation must not publish a bulk verbatim harvested lexicon.
+
+The practical next milestone is to compile the first real New Ithkuil
+grammar grades with typed semantic ASTs and source-verified minimal pairs,
+then ingest root lexemes under a verified source/rights pipeline. Expand
+learned token identity without deleting old acquired representations.
+Only then can all fifty grades run rather than just G01-G22.
