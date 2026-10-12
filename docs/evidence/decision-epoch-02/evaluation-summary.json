@@ -1,0 +1,1424 @@
+{
+  "dataset_sha256": "4f56c4285a10d1166ed443c32f2a49bfe46b488274404ab8256103a450b2cd0b",
+  "disposition": "HYBRID_PILOT_NULL_OR_REVERSAL",
+  "evaluation_wall_seconds": 13.01358254198567,
+  "heldout_delta_paths": -1,
+  "historical_model": "separate four-class alpha; not a matched arm",
+  "neural_replay_tolerance": {
+    "atol": 1e-06,
+    "rtol": 0
+  },
+  "peak_process_rss_bytes": 312377344,
+  "prefrozen_input_audit": {
+    "classification": {
+      "add/remove": "explicit fact update; copy alignment followed by validator",
+      "bind": "explicit entity instruction; copy alignment, not inferred binding",
+      "fold": "apply four-valued logical operator to observed operands; result is not copied by this baseline",
+      "orient": "explicit grounded query roles; canonical role alignment, not discovering a relationship",
+      "read": "compute evidence truth for selected relation; result is not copied by this baseline",
+      "reserved": "availability marker directly selects reserved action"
+    },
+    "cue_only_rollout": {
+      "DEV": {
+        "binding": {
+          "correct": 8,
+          "steps": 8,
+          "valid": 8
+        },
+        "cases": 34,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 34,
+        "evidence_state": {
+          "correct": 7,
+          "steps": 37,
+          "valid": 37
+        },
+        "final_confusion": [
+          {
+            "count": 9,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 9,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 8,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 4,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "abstained"
+          }
+        ],
+        "final_correct": 4,
+        "orientation": {
+          "correct": 29,
+          "steps": 29,
+          "valid": 29
+        },
+        "path_correct": 4,
+        "per_family": {
+          "binding": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 8,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 4,
+            "final_correct": 4,
+            "path_correct": 4
+          },
+          "scope": {
+            "cases": 4,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 4,
+          "correct": 4
+        },
+        "selection": {
+          "correct": 44,
+          "steps": 74,
+          "valid": 74
+        },
+        "truth_cases": 30,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      },
+      "HELDOUT": {
+        "binding": {
+          "correct": 12,
+          "steps": 12,
+          "valid": 12
+        },
+        "cases": 34,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 34,
+        "evidence_state": {
+          "correct": 9,
+          "steps": 39,
+          "valid": 39
+        },
+        "final_confusion": [
+          {
+            "count": 10,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 8,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 9,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 3,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "abstained"
+          }
+        ],
+        "final_correct": 4,
+        "orientation": {
+          "correct": 31,
+          "steps": 31,
+          "valid": 31
+        },
+        "path_correct": 4,
+        "per_family": {
+          "binding": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 4,
+            "final_correct": 4,
+            "path_correct": 4
+          },
+          "scope": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 4,
+          "correct": 4
+        },
+        "selection": {
+          "correct": 52,
+          "steps": 82,
+          "valid": 82
+        },
+        "truth_cases": 30,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      },
+      "TRAIN": {
+        "binding": {
+          "correct": 32,
+          "steps": 32,
+          "valid": 32
+        },
+        "cases": 128,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 128,
+        "evidence_state": {
+          "correct": 22,
+          "steps": 142,
+          "valid": 142
+        },
+        "final_confusion": [
+          {
+            "count": 25,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 42,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 39,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 14,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "abstained"
+          }
+        ],
+        "final_correct": 8,
+        "orientation": {
+          "correct": 114,
+          "steps": 114,
+          "valid": 114
+        },
+        "path_correct": 8,
+        "per_family": {
+          "binding": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 32,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 8,
+            "final_correct": 8,
+            "path_correct": 8
+          },
+          "scope": {
+            "cases": 16,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 8,
+          "correct": 8
+        },
+        "selection": {
+          "correct": 168,
+          "steps": 288,
+          "valid": 288
+        },
+        "truth_cases": 120,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      }
+    },
+    "inputs": "exact student token tensors only; no gold, fixture IDs, or evaluator in baseline inference",
+    "limits": "Instruction-following accuracy is not independently learned reasoning. This baseline abstains when copying cannot determine a choice; it is not a complete rule solver.",
+    "oracle_state_transition_counts": {
+      "DEV/add": {
+        "copy_correct": 2,
+        "copyable": 2,
+        "steps": 2
+      },
+      "DEV/bind": {
+        "copy_correct": 20,
+        "copyable": 20,
+        "steps": 20
+      },
+      "DEV/fold": {
+        "copy_correct": 0,
+        "copyable": 0,
+        "steps": 28
+      },
+      "DEV/orient": {
+        "copy_correct": 47,
+        "copyable": 47,
+        "steps": 47
+      },
+      "DEV/read": {
+        "copy_correct": 3,
+        "copyable": 3,
+        "steps": 51
+      },
+      "DEV/remove": {
+        "copy_correct": 2,
+        "copyable": 2,
+        "steps": 2
+      },
+      "HELDOUT/add": {
+        "copy_correct": 6,
+        "copyable": 6,
+        "steps": 6
+      },
+      "HELDOUT/bind": {
+        "copy_correct": 24,
+        "copyable": 24,
+        "steps": 24
+      },
+      "HELDOUT/fold": {
+        "copy_correct": 0,
+        "copyable": 0,
+        "steps": 90
+      },
+      "HELDOUT/orient": {
+        "copy_correct": 97,
+        "copyable": 97,
+        "steps": 97
+      },
+      "HELDOUT/read": {
+        "copy_correct": 3,
+        "copyable": 3,
+        "steps": 99
+      },
+      "TRAIN/add": {
+        "copy_correct": 8,
+        "copyable": 8,
+        "steps": 8
+      },
+      "TRAIN/bind": {
+        "copy_correct": 80,
+        "copyable": 80,
+        "steps": 80
+      },
+      "TRAIN/fold": {
+        "copy_correct": 0,
+        "copyable": 0,
+        "steps": 112
+      },
+      "TRAIN/orient": {
+        "copy_correct": 186,
+        "copyable": 186,
+        "steps": 186
+      },
+      "TRAIN/read": {
+        "copy_correct": 6,
+        "copyable": 6,
+        "steps": 198
+      },
+      "TRAIN/remove": {
+        "copy_correct": 8,
+        "copyable": 8,
+        "steps": 8
+      }
+    },
+    "version": "decision-explicit-cue-baseline-0.1.0"
+  },
+  "primary_endpoint": "exact heldout semantic path without teacher forcing",
+  "summaries": {
+    "fixed": {
+      "DEV": {
+        "binding": {
+          "correct": 1,
+          "steps": 8,
+          "valid": 8
+        },
+        "cases": 34,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 33,
+        "evidence_state": {
+          "correct": 5,
+          "steps": 9,
+          "valid": 9
+        },
+        "final_confusion": [
+          {
+            "count": 2,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 7,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 5,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 3,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 7,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 4,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "missing"
+          }
+        ],
+        "final_correct": 2,
+        "orientation": {
+          "correct": 0,
+          "steps": 25,
+          "valid": 25
+        },
+        "path_correct": 2,
+        "per_family": {
+          "binding": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 8,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 4,
+            "final_correct": 2,
+            "path_correct": 2
+          },
+          "scope": {
+            "cases": 4,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 4,
+          "correct": 2
+        },
+        "selection": {
+          "correct": 6,
+          "steps": 42,
+          "valid": 42
+        },
+        "truth_cases": 30,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      },
+      "HELDOUT": {
+        "binding": {
+          "correct": 6,
+          "steps": 12,
+          "valid": 12
+        },
+        "cases": 34,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 29,
+        "evidence_state": {
+          "correct": 3,
+          "steps": 9,
+          "valid": 9
+        },
+        "final_confusion": [
+          {
+            "count": 5,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 5,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 5,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 3,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 7,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 2,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 3,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "missing"
+          }
+        ],
+        "final_correct": 3,
+        "orientation": {
+          "correct": 1,
+          "steps": 26,
+          "valid": 26
+        },
+        "path_correct": 3,
+        "per_family": {
+          "binding": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 4,
+            "final_correct": 3,
+            "path_correct": 3
+          },
+          "scope": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 4,
+          "correct": 3
+        },
+        "selection": {
+          "correct": 10,
+          "steps": 47,
+          "valid": 47
+        },
+        "truth_cases": 30,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      },
+      "TRAIN": {
+        "binding": {
+          "correct": 9,
+          "steps": 33,
+          "valid": 33
+        },
+        "cases": 128,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 116,
+        "evidence_state": {
+          "correct": 10,
+          "steps": 31,
+          "valid": 31
+        },
+        "final_confusion": [
+          {
+            "count": 1,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 11,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 13,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 2,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 26,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 14,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 1,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 33,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 5,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 13,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "outside"
+          }
+        ],
+        "final_correct": 8,
+        "orientation": {
+          "correct": 3,
+          "steps": 84,
+          "valid": 84
+        },
+        "path_correct": 8,
+        "per_family": {
+          "binding": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 32,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 8,
+            "final_correct": 8,
+            "path_correct": 8
+          },
+          "scope": {
+            "cases": 16,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 8,
+          "correct": 8
+        },
+        "selection": {
+          "correct": 22,
+          "steps": 148,
+          "valid": 148
+        },
+        "truth_cases": 120,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      }
+    },
+    "guided": {
+      "DEV": {
+        "binding": {
+          "correct": 0,
+          "steps": 8,
+          "valid": 8
+        },
+        "cases": 34,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 30,
+        "evidence_state": {
+          "correct": 2,
+          "steps": 12,
+          "valid": 12
+        },
+        "final_confusion": [
+          {
+            "count": 2,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 6,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 3,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 5,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 2,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 4,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 2,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "missing"
+          }
+        ],
+        "final_correct": 2,
+        "orientation": {
+          "correct": 0,
+          "steps": 19,
+          "valid": 19
+        },
+        "path_correct": 2,
+        "per_family": {
+          "binding": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 8,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 4,
+            "final_correct": 2,
+            "path_correct": 2
+          },
+          "scope": {
+            "cases": 4,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 4,
+          "correct": 2
+        },
+        "selection": {
+          "correct": 2,
+          "steps": 39,
+          "valid": 39
+        },
+        "truth_cases": 30,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      },
+      "HELDOUT": {
+        "binding": {
+          "correct": 1,
+          "steps": 12,
+          "valid": 12
+        },
+        "cases": 34,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 28,
+        "evidence_state": {
+          "correct": 2,
+          "steps": 10,
+          "valid": 10
+        },
+        "final_confusion": [
+          {
+            "count": 2,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 3,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 5,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 4,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 2,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 3,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 4,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 3,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 2,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 1,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 2,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "outside"
+          }
+        ],
+        "final_correct": 2,
+        "orientation": {
+          "correct": 1,
+          "steps": 14,
+          "valid": 14
+        },
+        "path_correct": 2,
+        "per_family": {
+          "binding": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 4,
+            "final_correct": 2,
+            "path_correct": 2
+          },
+          "scope": {
+            "cases": 6,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 4,
+          "correct": 2
+        },
+        "selection": {
+          "correct": 4,
+          "steps": 36,
+          "valid": 36
+        },
+        "truth_cases": 30,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      },
+      "TRAIN": {
+        "binding": {
+          "correct": 2,
+          "steps": 32,
+          "valid": 32
+        },
+        "cases": 128,
+        "consequence": {
+          "correct": 0,
+          "steps": 0,
+          "valid": 0
+        },
+        "evidence_preserved": 113,
+        "evidence_state": {
+          "correct": 7,
+          "steps": 35,
+          "valid": 35
+        },
+        "final_confusion": [
+          {
+            "count": 4,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 17,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 3,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "CONFLICT",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 11,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 28,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 2,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 1,
+            "expected": "FALSE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 4,
+            "expected": "None",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 2,
+            "expected": "None",
+            "observed": "None",
+            "status": "unsupported"
+          },
+          {
+            "count": 8,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 25,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 4,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "missing"
+          },
+          {
+            "count": 2,
+            "expected": "TRUE",
+            "observed": "None",
+            "status": "outside"
+          },
+          {
+            "count": 7,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "abstained"
+          },
+          {
+            "count": 6,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "ambiguous"
+          },
+          {
+            "count": 1,
+            "expected": "UNKNOWN",
+            "observed": "None",
+            "status": "missing"
+          }
+        ],
+        "final_correct": 6,
+        "orientation": {
+          "correct": 3,
+          "steps": 74,
+          "valid": 74
+        },
+        "path_correct": 6,
+        "per_family": {
+          "binding": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "consequence": {
+            "cases": 32,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "evidence": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "orientation": {
+            "cases": 24,
+            "final_correct": 0,
+            "path_correct": 0
+          },
+          "reserved": {
+            "cases": 8,
+            "final_correct": 6,
+            "path_correct": 6
+          },
+          "scope": {
+            "cases": 16,
+            "final_correct": 0,
+            "path_correct": 0
+          }
+        },
+        "reserved": {
+          "cases": 8,
+          "correct": 6
+        },
+        "selection": {
+          "correct": 12,
+          "steps": 141,
+          "valid": 141
+        },
+        "truth_cases": 120,
+        "truth_correct": 0,
+        "wrong_intermediate_right_terminal": 0
+      }
+    }
+  },
+  "version": "bilqis-decision-epoch-02-0.1.0"
+}

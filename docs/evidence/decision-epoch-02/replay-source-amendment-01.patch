@@ -1,0 +1,67 @@
+diff --git a/bilqis_alpha/decision_experiment.py b/bilqis_alpha/decision_experiment.py
+index 7ea07fb..6846eae 100644
+--- a/bilqis_alpha/decision_experiment.py
++++ b/bilqis_alpha/decision_experiment.py
+@@ -44,6 +44,29 @@ def file_hash(path):
+     with Path(path).open('rb') as f: return hashlib.file_digest(f,'sha256').hexdigest()
+ 
+ 
++def archived_request(trace):
++    serialized=trace['serialized_request']
++    request=json.loads(serialized)
++    if (hashlib.sha256(serialized.encode()).hexdigest()!=trace['request_sha256']
++        or request!=trace['payload']
++        or list(request['questions']['decision']['criteria'])!=trace['offered_candidate_ids']):
++        raise ValueError('ARCHIVED_REQUEST_BINDING')
++    return request
++
++
++def amended_source_hash(path,frozen_hash,manifest,receipt):
++    # One explicit append-only repair; the original training/evaluation source stays frozen.
++    if (path!='bilqis_alpha/decision_experiment.py' or receipt['file']!=path
++        or receipt['frozen_source_commit']!=manifest['source_commit']
++        or receipt['old_file_sha256']!=frozen_hash
++        or receipt['scope']!='archived Kev request order and explicit replay-source admission only'):
++        raise ValueError('SOURCE_AMENDMENT_BINDING')
++    committed=subprocess.check_output(['git','show',receipt['new_source_commit']+':'+path])
++    if hashlib.sha256(committed).hexdigest()!=receipt['new_file_sha256']:
++        raise ValueError('SOURCE_AMENDMENT_BINDING')
++    return receipt['new_file_sha256']
++
++
+ def check_frozen(data, manifest):
+     if digest(data)!=manifest['dataset_sha256']: raise ValueError('FROZEN_DATASET_TAMPER')
+ 
+@@ -288,7 +311,10 @@ def _inputs(run):
+     if digest(read(run/'retrieval-input.json'))!=manifest['retrieval_input_sha256']: raise ValueError('RETRIEVAL_INPUT_TAMPER')
+     if file_hash(HISTORICAL)!=HISTORICAL_SHA: raise ValueError('HISTORICAL_ALPHA_CHANGED')
+     for p,h in manifest['source_files'].items():
+-        if file_hash(p)!=h: raise ValueError('SOURCE_DRIFT '+p)
++        if file_hash(p)!=h:
++            amendment=run/'replay-source-amendment-01.json'
++            if not amendment.exists() or file_hash(p)!=amended_source_hash(p,h,manifest,read(amendment)):
++                raise ValueError('SOURCE_DRIFT '+p)
+     if file_hash(run/'initial.pt')!=manifest['initial_checkpoint_sha256']: raise ValueError('INITIAL_FILE_TAMPER')
+     model,payload=load_checkpoint(run/'initial.pt'); validate_initial(model,payload,manifest)
+     return data,manifest
+@@ -498,6 +524,8 @@ def replay(run,live=False):
+     chosen=list(dict.fromkeys(chosen)); output={'version':VERSION,'historical_checkpoint_sha256':HISTORICAL_SHA,
+         'new_model_checkpoint_sha256':{a:paired['arms'][a]['checkpoint_sha256'] for a in ('fixed','guided')},
+         'external_trace_provenance':'genuinely recorded native EG2/Kev; archived defaults','cases':[]}
++    amendment=run/'replay-source-amendment-01.json'
++    if amendment.exists(): output['replay_source_amendment']=read(amendment)
+     teacher=KevTeacher() if live else None
+     for arm in ('fixed','guided'):
+         model,_=verified_arm(run,paired,arm,manifest)
+@@ -511,9 +539,10 @@ def replay(run,live=False):
+     if live:
+         comparisons=[]
+         for row in qualification['traces'][:3]:
+-            original=row['direct']; request=original['payload']
++            original=row['direct']; request=archived_request(original)
+             observed=teacher.score(request['state'],request['questions']['decision']['instructions'],
+                                    [{'candidate_id':k,'description':v} for k,v in request['questions']['decision']['criteria'].items()],original['binding'])
++            if observed['request_sha256']!=original['request_sha256']: raise ValueError('LIVE_REQUEST_BYTES_DRIFT')
+             comparisons.append({'episode_id':row['episode_id'],'archived':original,'live':observed,
+                                 'same_choice':observed.get('choice')==original.get('choice')})
+         output['live_kev_comparisons']=comparisons
