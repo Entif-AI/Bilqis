@@ -160,3 +160,126 @@ feedback meaning from generic turn-boundary or input-length effects, and
 test the mixed-context lesson before claims of retention or live Kev
 pedagogical advantage. None of the named laws has been taught in e3-e5.
 No issue #82 completion or general semantic mastery is claimed.
+
+## Teacher-first v0.3, preregistered e6, 2026-10-12
+
+### Frozen pre-run source and experimental contract
+
+Human/Chat approved a new teaching order: first learn Boolean truth values,
+atomic NOT/AND and their separate compositions with TRUE/FALSE student
+responses; **only after all prerequisites** may Bilqis learn to judge
+someone else's proposed answer. Throughout, the teacher can still say
+`FEEDBACK.CORRECT`, `FEEDBACK.INCORRECT` and provide the correct answer
+after a student's actual mistake. Student-side judgment identities
+`JUDGMENT.CORRECT/INCORRECT` are distinct tokens, in a new **46-token**
+scratch ABI. No v0.2 learner weights or optimizer state were imported.
+
+Before any e6 optimizer update, the source + exact preregistration were
+committed as **`6da9325b56a1fad82ed643ef71085da438c01653`**, with
+runtime-source SHA-256:
+
+```text
+b0ce4a9b2abfba22dd44db8d609e8b92988c6bb329c7040f202e0d752b439abd
+```
+
+Exact protocol: `docs/formal/DIALOGUE_V03_PROTOCOL.md`; output:
+`runs/formal-foundations-20261012-e6-v03/` (ignored, locally preserved).
+Python 3.13.12, PyTorch 2.10.0, arm64, newly initialized 2-layer/64-width
+student. Three preregistered seeds **401, 409, 419**, each with four
+conditions, 320 optimizer updates per attempted stage and a hard maximum
+96 extra remedial updates. Full-feedback and answer-history conditions
+systematically mixed standalone and context-bearing inputs; the
+no-history condition received standalone inputs. The answer-only/PAD arm
+was designed to match the full-feedback arm's sequence lengths without
+revealing the verdict through padding count. Both receive equal source
+token exposure for each matched seed; ordinary answer-only and no-history
+read fewer tokens.
+
+### Actual e6 held-out results
+
+| Preregistered seed | Full feedback, standalone / contextual | Answer history only, standalone / contextual | Answer-only + matched PAD, standalone / contextual | No-history, standalone / contextual |
+| --- | --- | --- | --- | --- |
+| 401 | 4/4 / **2/4** | 4/4 / **2/4** | 4/4 / **4/4** | 4/4 / **2/4** |
+| 409 | 4/4 / **2/4** | 4/4 / **2/4** | 4/4 / **2/4** | 4/4 / **2/4** |
+| 419 | 4/4 / **2/4** | 4/4 / **2/4** | 4/4 / **2/4** | 4/4 / **2/4** |
+| **Totals** | **12/12 / 6/12** | **12/12 / 6/12** | **12/12 / 8/12** | **12/12 / 6/12** |
+
+Across all 12 fresh students, the standalone V00.Boolean truth probe
+passed **48/48**. Ten students failed their conversational gate at 2/4;
+one additional failed it at 2/4 in the padded arm; only the seed-401 padded
+arm passed both. More precisely: **11/12 failed contextual promotion**,
+one passed, but that single successful padded arm could not continue into
+V01 under the shared full-feedback reference-teacher frontier. No V01 NOT,
+V02 AND, composition, student-judgment or named-law *training* actually
+occurred in e6.
+
+These data do **not** show a full-feedback learning advantage. Padded
+answer history performed modestly better in this extremely small
+single-epoch sample, but only one seed showed the difference. The same
+source-verified question sampling digests match across all arms within
+each seed's attempted V00 stage. The three-seed design is far too small
+for a broad statistical or scientific generalization.
+
+### Error mechanism observed, but not established
+
+The fixed conversational gate uses one oracle-valid correct previous turn
+and one oracle-valid, corrected previous error, taken from training
+examples and held constant **for every** held-out current question.
+In seed 401, the full-feedback student incorrectly answered TRUE for
+both held-out FALSE valuations, despite getting both standalone FALSE
+questions right. In seed 409, it incorrectly answered FALSE for both
+TRUE valuations. This strongly indicates **input-history sensitivity**,
+not loss of the plain atom/valuation truth lookup.
+
+The preregistered, frozen, one-token deliberately-invalid *past*
+correction diagnostic changed zero of four predictions for the
+full-feedback model at all three seeds. It changed two for seed-401's
+otherwise passing padded control, and varied among other controls.
+The invalid correction was NEVER taught to the student and never used
+for gold/promotion. Response/no-response to this token is not proof
+of understanding correct feedback. The opposite-label honest-primer
+and matched PAD conditions leave multiple plausible mechanisms:
+attention to previous answer labels, position dependence, learned
+prefix shortcuts, or inability to disentangle completed historical
+utterances from the current question.
+
+### Verification and hard limits
+
+- All **71 repository tests passed** before the run, including
+  truth-versus-grading separation, stage DAG, no current-answer leakage,
+  oracle/panel validation, equal-length interventions, checkpoint
+  recovery and unauthorized-parameter rejection.
+- Exactly **12 × 320 = 3,840 optimizer updates** were executed in e6;
+  no remedial budget was consumed and **zero native Kev selection calls**
+  occurred because no composition skill was eligible.
+- Every arm's checkpoint was reloaded and its model hash and **every
+  completed stage's standalone/contextual gate** recalculated successfully
+  via `python -m bilqis_formal.pilot_v3 --out
+  runs/formal-foundations-20261012-e6-v03 --replay`: `VERIFIED`.
+- The e6 local files include preregistration, source SHA, original Git
+  commit, pinned teacher runtime identity, per-stage prediction errors,
+  feedback-content sensitivities, actual token/update budgets, optimizer
+  checkpoint and exact hash.
+- A local shell wrapper returned a nonzero exit after Python had already
+  finished because zsh reserves the shell variable `status`. Live
+  inspection confirmed the complete `comparison.json` plus all
+  12 reports, and **read-only checkpoint replay succeeded**. No
+  training was repeated or experiment path reused to hide that artifact
+  of the command wrapper.
+- e6 contextual promotion applied the same **full teacher dialogue**
+  to all arms. That is out-of-distribution for no-history and answer-only
+  controls; their standalone scores are the cleaner common-format
+  Boolean comparisons. The experiment used reference-arm-dependent
+  teacher planning, although no Kev panels were ultimately eligible.
+- V00 is only a four-question held-out gate. Passing 4/4 is evidence of
+  bounded behavior in this small world, not durable semantic mastery.
+  Likewise, an e6 prerequisite stop does not prove those students would
+  have failed NOT or AND if subsequently taught.
+
+**Next proposed Chat-mode research decision:** test whether Bilqis can
+identify the *current* question invariantly under randomized, balanced,
+genuinely completed historical turns, using frozen-position controls and
+separate contextual-retention goals. Distinguish identity/value inference
+from teacher-feedback comprehension. A newly approved version and new
+preregistration would be required. Do **not** edit/relabel e6 after seeing
+its scores, pick a more favorable seed, or merge #115 on this evidence.
