@@ -19,6 +19,17 @@ The name also rhymes with the wider Rosetta program. Rosetta is concerned with c
 
 ## What is here
 
+### Separate exploratory formal foundations
+
+The `bilqis_formal/` prototype, documented in
+[`docs/formal/FOUNDATIONS.md`](docs/formal/FOUNDATIONS.md), is a **new scratch
+semantic/token space** for typed propositional formulas, specifically named
+Boolean-law schemas and Kev-curated teaching/diagnostic composition choices.
+It does **not** rewrite or continue any historical U0-U7 student weights.
+The bounded first results, including failed prerequisite gates, are in
+[`docs/evidence/formal-foundations/RESULTS.md`](docs/evidence/formal-foundations/RESULTS.md).
+The first teaching pass is exploratory, not a claim of formal-law mastery.
+
 - `bilqis_ref/` — finite-world semantics, independent oracle pair, codecs, small transformer student, teacher policy, checkpoint/recovery, sealing, evaluation, and constrained pedagogue adapter.
 - `abi/` — token ABI and grammar-prerequisite graph used by the reference package.
 - `configs/` — smoke, reference-scale, and system-design configurations.
