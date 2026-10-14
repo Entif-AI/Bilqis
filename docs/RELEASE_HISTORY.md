@@ -1,49 +1,47 @@
-# Bilqis release and experiment history
+# Bilqis release and research archive
 
-The repository's default branch describes its **current** source, tests, architecture and research limits. Earlier research snapshots retain their original file layouts at immutable historical references; this index is the front door to that record.
+## Current source and historical releases
 
-## `v0.0.0` · pre-first-release research archive
+- [v0.1.0 source release](https://github.com/Entif-AI/Bilqis/releases/tag/v0.1.0): source/software SemVer only, at commit `4c1b54438cb61e600e732059a06183de05a1e24b`. It is **not** a neural golden-student release.
+- [v0.0.0 research archive](https://github.com/Entif-AI/Bilqis/releases/tag/v0.0.0): the pre-cleanup public source tree at commit `a8d1360b75f42a637da5928863ed51c0178ddf21`. Existing tag identity and history remain unchanged.
 
-- [Verified GitHub prerelease](https://github.com/Entif-AI/Bilqis/releases/tag/v0.0.0)
-- Source commit: `a8d1360b75f42a637da5928863ed51c0178ddf21`
-- Purpose: preserve the public research and development tree before the first qualified golden-model release and documentation cleanup.
-- Qualification: **archival only**. No all-current-competency 100% student, validated FP32+AdamW golden checkpoint, or independent scientific efficacy claim is certified by this tag.
-- Original full documentation and evidence: [browse the historical docs directory](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs).
+The current checkout retains the bounded `bilqis_ref` implementation and its runnable reference tests. Older code, full experiment transcripts and generated outputs were removed from the current *tree*, not from Git history. Historical identifiers such as U7B or `logic-t0-t1` are original experiment names. They do not form a chronology to renumber.
 
-### Find the original experiment sources
+## Find historical work
 
-| Historical program | Original documentation and evidence at `v0.0.0` |
+| Historical program | Exact paths at the immutable v0.0.0 tag |
 | --- | --- |
-| Typed finite-world micro-universes | [`docs/micro-universes`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/micro-universes) · [`docs/evidence/micro-universes`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/micro-universes) |
-| T0/T1 logic foundations | [`docs/logic-t0-t1`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/logic-t0-t1) · [`docs/evidence/logic-t0-t1`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/logic-t0-t1) |
-| U5/U6 and U7 spiral experiments | [`docs/u5-u6`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/u5-u6) · [`docs/spiral-u7`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/spiral-u7) |
-| U7b/U7c/U7d/U7e/U7f variations | [`docs/u7b`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/u7b) · [`docs/u7c`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/u7c) · [`docs/u7d`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/u7d) · [`docs/u7e`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/u7e) · [`docs/u7f`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/u7f) |
-| Formal Boolean and dialogue experiments | [`docs/formal`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/formal) · [`docs/evidence/formal-foundations`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/formal-foundations) |
-| Alpha, decision and later experimental records | [`docs/evidence`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence) and the [original README](https://github.com/Entif-AI/Bilqis/blob/v0.0.0/README.md) |
+| Typed micro-universes | [implementation](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_micro), [source guide](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/micro-universes), [evidence and checkpoints](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/micro-universes) |
+| T0/T1 logic | [implementation](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_logic), [guide](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/logic-t0-t1), [evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/logic-t0-t1) |
+| U5/U6 development and U7 spiral | [development code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_development), [U5/U6 evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/u5-u6), [spiral evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/spiral-u7) |
+| U7B to U7F experiments | [U7B code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_u7b), [U7C code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_u7c), [U7D code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_u7d), [U7E code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_u7e), [U7F code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_u7f), [evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence) |
+| Adaptive/grade teachers and School50 | [teacher code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_teacher), [School50 runner](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_school), [old active pointer records](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/development) |
+| Formal Boolean, dialogue and semantic pilots | [formal code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_formal), [guides](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/formal), [evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/formal-foundations) |
+| Alpha and bounded decision experiments | [alpha code](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/bilqis_alpha), [alpha evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/alpha), [decision evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/decision-epoch-02), [qualification evidence](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/decision-qualification) |
+| Historical studies, protocols and run logs | [research plans](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/research), [full documentation](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs), [historical root log](https://github.com/Entif-AI/Bilqis/blob/v0.0.0/FEATURE_LOG.md), [original test suite](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/tests) |
 
-These experiment identifiers are historical titles, not sequential grade numbers or a supported versioning taxonomy. Files remain available at their original exact historical paths even when removed from the active `main` checkout.
+All other retired source paths are discoverable under the same tag with `git ls-tree`. Those include `docs/evidence/new-ithkuil-v0.1` and `docs/evidence/decision-runtime-epochs`. The release tag preserves original filenames, source Git blobs, and committed model bytes. Nothing was reserialized or renamed in the archive.
 
-### Archived-only evidence on the default branch
+## Read or reproduce an archived experiment
 
-The current checkout omits these historical `docs/evidence/` families, all preserved at unchanged `v0.0.0`: `alpha`, `decision-epoch-02`, `decision-qualification`, `decision-runtime-epochs`, `new-ithkuil-v0.1`, and `u7b`. Other legacy evidence families remain because existing tests use their original checkpoints, traces, or frozen inputs directly. Exact source and receipt paths remain discoverable with:
-
-```sh
-git fetch --tags
-git ls-tree -r --name-only v0.0.0 docs/evidence/<family>
-git show v0.0.0:docs/evidence/<family>/<filename> > <local-copy>
-```
-
-Legacy research runners may still refer to their archived input paths; execute them from a separate historical checkout or explicitly restore their original data. These are not golden student checkpoints. Removing artifacts from the current tree does not remove historical blob contents from a full Git clone. Use a shallow clone or release source archive to avoid most historical download overhead if only today's sources are wanted.
-
-## Research reproduction and scope
-
-For an exact historical source checkout:
+For a separate working tree, without changing the current checkout:
 
 ```sh
-git fetch --tags
-git switch --detach v0.0.0
+git fetch origin tag v0.0.0
+git worktree add --detach ../bilqis-v0-archive v0.0.0
 ```
 
-Historical evidence committed in this tag travels with a full clone. **Local ignored `runs/` checkpoint artifacts and private research stores were never automatically published to Git; the tag does not claim to contain those bytes.** Additional off-repository scientific archives must have verified hashes and retrieval links before any paper cites them as accessible.
+For an exact file or an inventory of archived material:
 
-Future releases should include the applicable source identity, assessment contract and score receipt, model/optimizer checkpoint hash, reproducibility statement, and exact immutable tag. Only verified links belong in this index.
+```sh
+git ls-tree -r -l v0.0.0 docs/evidence/micro-universes
+git show v0.0.0:docs/evidence/micro-universes/run-01/after-U4.pt > /tmp/bilqis-after-U4.pt
+```
+
+The tag includes **only bytes committed to Git**. Ignored local `runs/` files, protected custodial models, and private research archives do not become publicly recoverable through a tag. Do not cite them as published artifacts without a separate verified retrieval path and hash.
+
+Removing historical files from the present tree makes the checkout smaller, but ordinary full-history clones can still download their Git objects. For current source alone, use a shallow clone, for example `git clone --depth 1 https://github.com/Entif-AI/Bilqis.git`, or a source archive from the current commit. A shallow clone needs a separate fetch before accessing old tags.
+
+## Next scientific release
+
+The next golden-model PR must pass the [golden-release gate](GOLDEN_RELEASE_GATE.md). A version number, merged source PR, or historically best result does not by itself qualify a model.

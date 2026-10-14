@@ -1,10 +1,6 @@
 {
   "private": true,
   "scripts": {
-    "school50:train": "bash scripts/school50.sh train",
-    "school50:status": "bash scripts/school50.sh status",
-    "school50:soup": "bash scripts/school50.sh soup",
-    "school50:test": "python3 -m pytest -q tests/test_school50.py",
     "prepare": "husky",
     "test": "python3 -m unittest discover -s tests -q",
     "test:ci": "python3 -m unittest discover -s tests -v"

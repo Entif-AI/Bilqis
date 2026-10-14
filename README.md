@@ -1,56 +1,48 @@
 # Bilqis
 
-Bilqis is Entif AI's experimental developmental semantic-learning research project. It investigates whether explicit, typed semantic representations can support reusable relational and compositional competence with fewer training resources than less structured representations.
+Bilqis is Entif AI's experimental work on finite-world semantics and developmental learning. The public repository currently ships a **bounded reference implementation**, not a trained golden student or an active neural-training campaign.
 
-**Status:** Research software, not a proven language model, published golden checkpoint, complete New Ithkuil implementation, or demonstrated efficiency result. The repository's first archived historical snapshot is [`v0.0.0`](https://github.com/Entif-AI/Bilqis/releases/tag/v0.0.0). Later engineering work remains experimental until its own source and qualification evidence are published.
+The historical [v0.1.0 source release](https://github.com/Entif-AI/Bilqis/releases/tag/v0.1.0) is a software milestone. The earlier [v0.0.0 research archive](https://github.com/Entif-AI/Bilqis/releases/tag/v0.0.0) preserves the original experiment code, logs, checkpoints committed to Git, and tests under their original names.
 
-## Start here
+## Run the current reference
 
-- **Reproduce the current source:** install the requirements and run the engineering tests below. The tests establish implementation behavior, not learning efficacy.
-- **Understand the architecture:** start with [`docs/reference/ARCHITECTURE.md`](docs/reference/ARCHITECTURE.md), [`docs/reference/SEMANTIC_AND_TOKEN_ABIS.md`](docs/reference/SEMANTIC_AND_TOKEN_ABIS.md), and [`docs/PROVENANCE.md`](docs/PROVENANCE.md). Some reference contracts describe independent historical prototypes rather than a single unified trained learner.
-- **Understand the research claims and their limits:** read [`docs/research/preregistration.md`](docs/research/preregistration.md) and [`docs/reference/REPLICATION_GAP_MATRIX.md`](docs/reference/REPLICATION_GAP_MATRIX.md).
-- **Find earlier experiments:** use the [release and experiment history](docs/RELEASE_HISTORY.md). Original pilot documentation, validation traces, and evidence remain at the immutable historical tag instead of forming an ever-growing set of current top-level guides.
-- **Contribute:** see [`CONTRIBUTING.md`](CONTRIBUTING.md) and the repository issue tracker. Experiments and regressions should identify their model, lesson/assessment revision, data, source and checkpoint provenance.
-
-## What's in the repository?
-
-The code includes independent research implementations of finite-world semantics (`bilqis_ref/`), typed micro-world learning (`bilqis_micro/`), logical composition (`bilqis_logic/`), formal Boolean foundations (`bilqis_formal/`), developmental training (`bilqis_development/` and `bilqis_school/`), and later experimental adapters. They are **not** automatically compatible checkpoints, collectively validated curricula, or a single published production trainer.
-
-Relevant stable inputs live in `abi/`, `configs/`, `schemas/`, `fixtures/`, and `references/`. The default checkout retains historical evidence needed by bundled verification tests. Other experiment outputs are recovered from the immutable [`v0.0.0` tag](docs/RELEASE_HISTORY.md), not bundled with current `main`.
-
-## Quick start
-
-Python 3.13 and an environment with CPU PyTorch are recommended for the reference tests. Use a separate virtual environment; local `.venv*` files are not part of releases.
+Use Python 3.13. Install the published CPU dependencies in a separate virtual environment:
 
 ```sh
 python3 -m venv .venv
-source .venv/bin/activate
+. .venv/bin/activate
 python -m pip install --extra-index-url https://download.pytorch.org/whl/cpu -r requirements.txt
 python -m unittest discover -s tests -v
 ```
 
-The reference implementation also supports a tiny smoke check:
+Run an isolated, small reference experiment:
 
 ```sh
 python -m bilqis_ref.run --config configs/smoke-bilqis-ternary.json --out runs/bilqis-ternary-smoke
 ```
 
-This is an engineering lineage check, **not** evidence of scientific generalization or a qualifying 100%-mastery milestone.
+The smoke run creates local output under `runs/`, which Git ignores. It tests reference behavior; it is not the current Bilqis student and cannot establish learning efficacy or golden qualification.
 
-## Research and provenance
+## Source map
 
-Bilqis takes inspiration from selected distinctions in New Ithkuil but is not New Ithkuil, does not claim official status, and does not implement its complete morphology, phonology or lexicon. Its independent formal oracles, experimental teachers, and assessment protocols are intended to distinguish what a model learns from what the generator declares correct.
+| Path | Purpose |
+| --- | --- |
+| `bilqis_ref/` | Finite-world semantics, codecs, reference student, teacher rules, evaluation, and decision/navigation fixtures |
+| `abi/`, `schemas/`, `configs/` | Versioned reference input and data contracts |
+| `fixtures/`, `references/`, `prompts/` | Small reproducible inputs and source-rights records |
+| `tests/` | Current reference behavior, checkpoints, provenance, and validation tests |
+| `docs/reference/` | Architecture, token ABI, testing boundaries, and research limitations |
+| `docs/PROVENANCE.md` | Original source import and precise provenance |
+| `docs/RELEASE_HISTORY.md` | Exact historical paths and retrieval instructions |
 
-The initial public reference was extracted from the ETR-2026-05 Stage 2 research package. See [`docs/CP0008_IMPORT_MANIFEST.json`](docs/CP0008_IMPORT_MANIFEST.json) for imported-source identities. The related research paper, *Prepaying Semantics: Bilqis as a Developmental Substrate for Representation-Efficient Relational and Compositional Learning*, has a [public research page](https://entif.ai/tags/research/2026/09/12/prepaying-semantics/).
+Older School50 generations, the U-series experiments, formal and alpha prototypes, generated training evidence, and their original tests are stored at the historical `v0.0.0` tag. They are not required for the current reference checkout. See [release history](docs/RELEASE_HISTORY.md) to recover them without changing this tree.
 
-The program explicitly accepts null results. Neither a passing unit test nor success on exposed teaching examples establishes sample efficiency, transfer, or mastery on an independent assessment.
+The next neural golden-student release is separately gated by [golden-release requirements](docs/GOLDEN_RELEASE_GATE.md). A valid release must identify one fully qualified FP32 checkpoint with its own AdamW state and a complete approved current-capability examination. An earlier source tag, a high historical score, or a mixed candidate snapshot cannot substitute.
 
-## Versions and release history
+## Research scope and rights
 
-Releases and source revisions are distinct from neural-training curriculum revisions. The [`v0.0.0` prerelease](https://github.com/Entif-AI/Bilqis/releases/tag/v0.0.0) is an archaeological snapshot of the public research history, **not** a certified golden student. Future qualified model milestones require same-checkpoint assessment receipts, full model and optimizer provenance, reviewed source, and a release tied to a verified commit on `main`.
+The reference models use synthetic, typed semantic worlds and restricted answer heads. They are not a general-purpose language model, a complete New Ithkuil implementation, or proof of better sample efficiency. Read the [architecture](docs/reference/ARCHITECTURE.md), [semantic and token ABI](docs/reference/SEMANTIC_AND_TOKEN_ABIS.md), and [replication limitations](docs/reference/REPLICATION_GAP_MATRIX.md) before interpreting results.
 
-See [`docs/RELEASE_HISTORY.md`](docs/RELEASE_HISTORY.md) for original experiment names and how to recover their files. We retain those names as historical identities rather than cosmetically renumbering them.
+Bilqis is not an official New Ithkuil project. Public source access does not itself grant reuse rights. No repository-wide license has been declared; [issue #35](https://github.com/Entif-AI/Bilqis/issues/35) tracks the licensing decision.
 
-## License
-
-A repository-wide license has not yet been declared. Redistribution and source rights must not be inferred from public visibility. See [issue #35](https://github.com/Entif-AI/Bilqis/issues/35) for the licensing work.
+For changes, follow [CONTRIBUTING.md](CONTRIBUTING.md) and [AGENTS.md](AGENTS.md).

@@ -1,5 +1,11 @@
 # Initial reference implementation provenance
 
+This document describes the original reference import. Its manifest records the
+original repository paths, including historical files now available only at
+the immutable [v0.0.0 archive](RELEASE_HISTORY.md). The current checkout
+keeps the bounded reference implementation and its own tests. Do not treat
+the original import inventory as a current-tree file listing.
+
 ## Source checkpoint
 
 This repository bootstrap was prepared from the uploaded research checkpoint:
@@ -53,7 +59,7 @@ Source, licensing, and redistribution policy remains tracked in issue #35. Any l
 
 ## Intentionally excluded
 
-The public bootstrap does **not** import:
+The original public bootstrap did **not** import:
 
 - generated smoke-run result directories
 - `.pt` checkpoints or other model binaries

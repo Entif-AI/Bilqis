@@ -2,6 +2,12 @@
 
 Bilqis is an experimental research repository. Contributions are welcome, especially those that make the hypotheses easier to falsify, the implementation easier to reproduce, or the comparison conditions more credible.
 
+The current checkout maintains only the `bilqis_ref/` reference. Historical
+School50, U-series, alpha, formal, and related experimental implementations and
+test suites are available at the immutable `v0.0.0` tag. The next golden
+neural-student release has separate, explicit qualification requirements in
+[`docs/GOLDEN_RELEASE_GATE.md`](docs/GOLDEN_RELEASE_GATE.md).
+
 ## Before changing behavior
 
 1. Identify the issue or experimental claim the change affects.
