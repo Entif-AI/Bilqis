@@ -42,3 +42,6 @@ checkpoints/
 *.log
 *.tmp
 *.bak
+
+# Local JavaScript toolchain
+node_modules/
