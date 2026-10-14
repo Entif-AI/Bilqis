@@ -145,7 +145,33 @@ class FrozenBatteryTests(unittest.TestCase):
                 self.assertNotIn('gold',a)
             rows=[json.loads(s) for s in (root/'A/rows.jsonl').read_text().splitlines()]
             self.assertEqual(42,len(rows));self.assertTrue(all(r['runtime_metadata']['native']['retained'] for r in rows))
+            start=json.loads((root/'A/START.json').read_text())
+            self.assertIn(start['harness_source_commit_status'],('GIT_HEAD_AVAILABLE','SOURCE_ARCHIVE_NO_GIT'))
+            self.assertEqual(64,len(start['harness_module_sha256']))
+            if start['harness_source_commit_status']=='SOURCE_ARCHIVE_NO_GIT':
+                self.assertIsNone(start['harness_source_commit'])
             with self.assertRaises(FileExistsError):run_epoch(fixture_path,context,identity,root/'A','A')
+
+    def test_source_archive_identity_does_not_invent_git_provenance(self):
+        from types import SimpleNamespace
+        from bilqis_ref import ithkuil_battery
+        with patch.object(ithkuil_battery.subprocess,'run',
+                          return_value=SimpleNamespace(returncode=128,stdout='')):
+            identity=ithkuil_battery.source_identity()
+        self.assertEqual(identity['harness_source_commit_status'],'SOURCE_ARCHIVE_NO_GIT')
+        self.assertIsNone(identity['harness_source_commit'])
+        self.assertEqual(ithkuil_battery.file_hash(ithkuil_battery.__file__),
+                         identity['harness_module_sha256'])
+
+    def test_nested_archive_does_not_borrow_parent_repository_head(self):
+        from types import SimpleNamespace
+        from bilqis_ref import ithkuil_battery
+        with patch.object(ithkuil_battery.subprocess,'run',
+                          return_value=SimpleNamespace(returncode=0,stdout='/unrelated/repo\n')) as run:
+            identity=ithkuil_battery.source_identity()
+        self.assertIsNone(identity['harness_source_commit'])
+        self.assertEqual(identity['harness_source_commit_status'],'SOURCE_ARCHIVE_NO_GIT')
+        run.assert_called_once()
 
     def test_native_choice_order_reaches_actual_http_bytes(self):
         import io
