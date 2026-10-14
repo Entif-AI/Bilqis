@@ -9,7 +9,6 @@ permissions:
   contents: write
   pull-requests: write
   issues: write
-  actions: write
 
 jobs:
   release-please:
@@ -21,22 +20,3 @@ jobs:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
-      - name: Trigger required CI checks on generated release PR
-        if: ${{ steps.release.outputs.prs_created == 'true' }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          RELEASE_PRS: ${{ steps.release.outputs.prs }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          branch=$(jq -r '.[0].headBranchName // empty' <<< "$RELEASE_PRS")
-          [[ "$branch" == release-please--branches--main ]] || {
-            echo 'Unexpected release PR head; refusing workflow dispatch' >&2
-            exit 1
-          }
-          gh workflow run test.yml --ref "$branch" -R "$GITHUB_REPOSITORY"
-          gh workflow run conventional-commits.yml --ref "$branch" -R "$GITHUB_REPOSITORY"
-          # An explicit dispatch works with GITHUB_TOKEN. The trusted
-          # default-branch attestor waits for both official successful
-          # checks and then records them on the byte-identical merge tree.
-          gh workflow run release-pr-attest.yml --ref main -R "$GITHUB_REPOSITORY"
