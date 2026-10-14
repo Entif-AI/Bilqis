@@ -33,13 +33,17 @@ The history index at [`RELEASE_HISTORY.md`](RELEASE_HISTORY.md) links back to ex
 The first live release PR proved that `workflow_dispatch` test jobs can
 succeed on the release branch's exact head SHA while GitHub still reports the
 synthetic merge commit as missing required checks. In live testing, a passive
-`workflow_run` listener did not start for the GITHUB_TOKEN-created
-`workflow_dispatch` runs. The release job therefore explicitly dispatches
+`workflow_run` approach did not produce an executing attestation job for
+the exact release head. The release job therefore explicitly dispatches
 `release-pr-attest.yml` on trusted `main`. The attestor waits for BOTH exact
 source-SHA official `workflow_dispatch` runs and verifies their job results,
 the bot-owned release PR, current base SHA, and byte-identical head/merge Git
-TREE with expected parents. Only then does it report both passing contexts
-on the synthetic merge commit. The
+TREE with expected parents, plus an allowlist of only generated changelog
+and release manifest file changes. The first attestor successfully created
+*commit statuses* on the merge commit, but GitHub required *check runs*
+attributed to its Actions app, so the PR remained blocked. The attestor now
+uses `checks: write` to create two idempotent, auditable GitHub Actions App
+check runs on the proven identical synthetic merge commit. The
 attestor never checks out or executes PR-head code, and does not convert a
 failed/missing/stale test into a success. Main remains strict and PR-only.
 This path must be verified with a live generated release PR; a successful
