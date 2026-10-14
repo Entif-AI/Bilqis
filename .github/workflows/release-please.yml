@@ -36,3 +36,7 @@ jobs:
           }
           gh workflow run test.yml --ref "$branch" -R "$GITHUB_REPOSITORY"
           gh workflow run conventional-commits.yml --ref "$branch" -R "$GITHUB_REPOSITORY"
+          # An explicit dispatch works with GITHUB_TOKEN. The trusted
+          # default-branch attestor waits for both official successful
+          # checks and then records them on the byte-identical merge tree.
+          gh workflow run release-pr-attest.yml --ref main -R "$GITHUB_REPOSITORY"
