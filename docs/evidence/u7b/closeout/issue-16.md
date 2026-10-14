@@ -1,7 +1,0 @@
-### U7B: recognition quality did not produce a teaching intervention (2026-10-11)
-
-U7B's frozen native Kev battery scored English 13/16, canonical 9/16 and combined 11/16, selecting the predeclared English fallback. In the teaching job, all eight panels of three competing valid grammar productions plus REVIEW selected REVIEW. Zero choices narrowed the reservoir; all 2,048 cross-stage exposures came from the broad deterministic fallback. No teacher benefit is established.
-
-For a future #16 contract, require measurable intervention/exposure receipts separately from semantic-discrimination accuracy, and test a bounded pedagogical utility objective whose alternatives remain valid without a handpicked gold winner. Count review/fallback as no helper intervention and preserve it. Good source recognition is not curriculum intelligence. No frozen contract or prior negative is changed.
-
-Detailed execution: https://docs.google.com/document/d/1O0lxmLU7Jc49An-nh2YNpi-GkniLBFjf6pDN-PgGDh8/edit (R-08 / U7B). Draft PR and immutable evidence: https://github.com/Entif-AI/Bilqis/pull/112 ; `docs/evidence/u7b/RESULTS.md` and `run-01/shortcut-audit.json.gz`.

@@ -5,7 +5,9 @@ import copy
 import hashlib
 import json
 import math
+import re
 import statistics
+import subprocess
 import time
 from pathlib import Path
 from .decision import kev_score, permute
@@ -21,6 +23,32 @@ FAMILIES = {1:'English → New Ithkuil',2:'New Ithkuil → English',3:'Root / st
 
 def file_hash(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def source_identity():
+    """Record real checkout identity, or only the module hash for source archives."""
+    root = Path(__file__).resolve().parents[1]
+    commit = None
+    try:
+        repository = subprocess.run(
+            ['git', '-C', str(root), 'rev-parse', '--show-toplevel'],
+            capture_output=True, text=True, check=False,
+        )
+        if repository.returncode == 0 and Path(repository.stdout.strip()).resolve() == root:
+            result = subprocess.run(
+                ['git', '-C', str(root), 'rev-parse', 'HEAD'],
+                capture_output=True, text=True, check=False,
+            )
+            candidate = result.stdout.strip()
+            if result.returncode == 0 and re.fullmatch(r'[0-9a-f]{40}|[0-9a-f]{64}', candidate):
+                commit = candidate
+    except OSError:
+        pass
+    return {
+        'harness_source_commit': commit,
+        'harness_source_commit_status': 'GIT_HEAD_AVAILABLE' if commit else 'SOURCE_ARCHIVE_NO_GIT',
+        'harness_module_sha256': file_hash(__file__),
+    }
 
 
 def service_identity(model):
@@ -305,8 +333,7 @@ def run_epoch(fixture_path,context_path,identity_path,output,epoch,paired_rows=N
     if paired:validate_rows(fixture,paired)
     frozen={r['decision_id']:r for r in paired or []}
     output.mkdir(parents=True,exist_ok=False)
-    import subprocess
-    receipt={'epoch':epoch,'execution_epoch':'order-preserving-http-v1','harness_source_commit':subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+    receipt={'epoch':epoch,'execution_epoch':'order-preserving-http-v1',**source_identity(),
              'fixture_file_sha256':file_hash(fixture_path),'context_packet_sha256':CONTEXT_SHA256,
              'runtime_identity':identity,'seed':fixture['permutation_seed'] if epoch=='B' else None,
              'canonical_state_replay':bool(paired),'model_calls_expected':42,'status':'STARTED'}

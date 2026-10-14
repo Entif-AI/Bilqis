@@ -1,6 +1,0 @@
-# Native macOS/CPU reference profile; FP32 arithmetic, emulated ternary forward.
-# Historical CP0008 requirements.txt remains unchanged.
-torch==2.10.0
-numpy==2.3.5
-scipy==1.17.0
-jsonschema==4.26.0
