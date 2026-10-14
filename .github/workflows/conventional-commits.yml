@@ -4,11 +4,9 @@ on:
   pull_request:
     branches: [main]
     types: [opened, reopened, edited, synchronize]
-  workflow_dispatch:
 
 permissions:
   contents: read
-  pull-requests: read
 
 jobs:
   commit-messages:
@@ -27,20 +25,8 @@ jobs:
           PR_TITLE: ${{ github.event.pull_request.title }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
-            # GITHUB_TOKEN-generated PRs do not fire ordinary pull_request
-            # workflows. Release Please dispatches this check on the exact
-            # version branch after creating its PR. Reject unrelated refs.
-            [[ "$GITHUB_REF_NAME" == release-please--branches--main ]] || exit 1
-            pr=$(gh pr list -R "$GITHUB_REPOSITORY" --base main --head "$GITHUB_REF_NAME" --state open --json title --jq '.[0]')
-            [[ -n "$pr" && "$pr" != null ]] || exit 1
-            PR_TITLE=$(jq -r '.title' <<< "$pr")
-            BASE_SHA=$(git merge-base HEAD origin/main)
-            HEAD_SHA=$(git rev-parse HEAD)
-          fi
           printf '%s\n' "$PR_TITLE" | npx --no-install commitlint --verbose
           npx --no-install commitlint --from "$BASE_SHA" --to "$HEAD_SHA" --verbose
