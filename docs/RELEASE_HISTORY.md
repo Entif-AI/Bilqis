@@ -23,6 +23,18 @@ The repository's default branch describes its **current** source, tests, archite
 
 These experiment identifiers are historical titles, not sequential grade numbers or a supported versioning taxonomy. Files remain available at their original exact historical paths even when removed from the active `main` checkout.
 
+### Archived-only evidence on the default branch
+
+The current checkout omits these historical `docs/evidence/` families, all preserved at unchanged `v0.0.0`: `alpha`, `decision-epoch-02`, `decision-qualification`, `decision-runtime-epochs`, `new-ithkuil-v0.1`, and `u7b`. Other legacy evidence families remain because existing tests use their original checkpoints, traces, or frozen inputs directly. Exact source and receipt paths remain discoverable with:
+
+```sh
+git fetch --tags
+git ls-tree -r --name-only v0.0.0 docs/evidence/<family>
+git show v0.0.0:docs/evidence/<family>/<filename> > <local-copy>
+```
+
+Legacy research runners may still refer to their archived input paths; execute them from a separate historical checkout or explicitly restore their original data. These are not golden student checkpoints. Removing artifacts from the current tree does not remove historical blob contents from a full Git clone. Use a shallow clone or release source archive to avoid most historical download overhead if only today's sources are wanted.
+
 ## Research reproduction and scope
 
 For an exact historical source checkout:

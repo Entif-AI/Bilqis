@@ -1,9 +1,0 @@
-{
-  "tests_run": 40,
-  "failures": 0,
-  "errors": 0,
-  "skipped": [],
-  "successful": true,
-  "known_injected_defect": "K03-unknown expected FALSE detected against independent raw evidence expectation",
-  "test_only_gradient_steps": "one step per neural engineering fixture, separate from the complete exploratory lineage"
-}

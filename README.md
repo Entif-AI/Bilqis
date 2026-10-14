@@ -16,7 +16,7 @@ Bilqis is Entif AI's experimental developmental semantic-learning research proje
 
 The code includes independent research implementations of finite-world semantics (`bilqis_ref/`), typed micro-world learning (`bilqis_micro/`), logical composition (`bilqis_logic/`), formal Boolean foundations (`bilqis_formal/`), developmental training (`bilqis_development/` and `bilqis_school/`), and later experimental adapters. They are **not** automatically compatible checkpoints, collectively validated curricula, or a single published production trainer.
 
-Relevant stable inputs live in `abi/`, `configs/`, `schemas/`, `fixtures/`, and `references/`. Historical evidence retained in this checkout may still be required by existing research tests; it will be separated into versioned release archives only after dependency and retrieval checks.
+Relevant stable inputs live in `abi/`, `configs/`, `schemas/`, `fixtures/`, and `references/`. The default checkout retains historical evidence needed by bundled verification tests. Other experiment outputs are recovered from the immutable [`v0.0.0` tag](docs/RELEASE_HISTORY.md), not bundled with current `main`.
 
 ## Quick start
 

@@ -46,12 +46,12 @@ SemIf, with temperature zero and a 128-token limit. This bounded control avoids
 substituting the separately installed community LM Studio model for a matched
 mechanism comparison. No new generative service is required.
 
-Public qualification evidence lives under `docs/evidence/decision-qualification`.
+Historical qualification evidence is archived at [`v0.0.0`](https://github.com/Entif-AI/Bilqis/tree/v0.0.0/docs/evidence/decision-qualification), not included in the current checkout.
 Machine paths, process controls, launcher state, and raw host inventory remain
 host-local. This setup does not authorize SYS-01 use; #22 must freeze identity,
 privileges, fallback and budget before any such trial.
 
-The separately recorded [MLX-LM runtime diagnostic](../evidence/decision-runtime-epochs/kev-mlx-lm-a63e24c/README.md)
+The separately recorded [MLX-LM runtime diagnostic](https://github.com/Entif-AI/Bilqis/blob/v0.0.0/docs/evidence/decision-runtime-epochs/kev-mlx-lm-a63e24c/README.md)
 changes only that library to SemIf's pinned source revision. It changes native
 probabilities without changing any of the 25 choices, so accuracy remains 11/23.
 The experimental dependency override does not replace the released runtime or
