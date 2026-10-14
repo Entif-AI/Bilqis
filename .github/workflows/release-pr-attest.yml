@@ -1,15 +1,12 @@
 name: attest-release-pr-checks
 
 # GITHUB_TOKEN-created release PRs do not emit pull_request workflows.
-# Existing release-please workflow explicitly dispatches the normal CI jobs
-# onto the bot-controlled release branch. GitHub branch protection also checks
-# the synthetic PR merge commit. This *trusted* default-branch workflow
-# attests those official test outcomes only if the source and merge TREES
-# are byte-identical. It never checks out or executes the PR's code.
+# The trusted release-please job dispatches all three workflows explicitly.
+# This default-branch attestor waits for both official jobs to pass at the
+# exact source SHA, and checks the synthetic PR merge commit has IDENTICAL
+# content before issuing the two protected contexts. No PR code checkout.
 on:
-  workflow_run:
-    workflows: [reference-tests, conventional-commits]
-    types: [completed]
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -19,27 +16,15 @@ permissions:
 
 jobs:
   attest:
-    if: >-
-      ${{ github.event.workflow_run.event == 'workflow_dispatch' &&
-          github.event.workflow_run.head_branch == 'release-please--branches--main' &&
-          github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Verify official checks against the exact synthetic merge tree
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          RUN_ID: ${{ github.event.workflow_run.id }}
-          SOURCE_SHA: ${{ github.event.workflow_run.head_sha }}
-          RUN_NAME: ${{ github.event.workflow_run.name }}
-          RUN_URL: ${{ github.event.workflow_run.html_url }}
         run: |
           set -euo pipefail
-          case "$RUN_NAME" in
-            reference-tests) context=unit ;;
-            conventional-commits) context=commit-messages ;;
-            *) exit 1 ;;
-          esac
           pr=$(gh api "/repos/$GITHUB_REPOSITORY/pulls?state=open&head=Entif-AI:release-please--branches--main" --jq '.[0]')
           [[ -n "$pr" && "$pr" != null ]] || exit 0
           [[ $(jq -r '.base.ref' <<< "$pr") == main ]] || exit 1
@@ -50,15 +35,46 @@ jobs:
           head=$(jq -r '.head.sha' <<< "$pr")
           base=$(jq -r '.base.sha' <<< "$pr")
           merge=$(jq -r '.merge_commit_sha' <<< "$pr")
-          [[ "$head" == "$SOURCE_SHA" && "$merge" =~ ^[a-f0-9]{40}$ ]] || exit 0
+          [[ "$head" =~ ^[a-f0-9]{40}$ && "$merge" =~ ^[a-f0-9]{40}$ ]] || exit 1
           # Reject stale base and any concurrent PR/head movement.
           current_main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
           [[ "$base" == "$current_main" ]] || exit 0
 
-          # Only an official GitHub Actions job, in the original successful
-          # workflow_dispatch run, can supply the source check result.
-          jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100")
-          jq -e --arg name "$context" '[.jobs[] | select(.name == $name and .conclusion == "success")] | length == 1' <<< "$jobs" >/dev/null
+          # The two tests were explicitly dispatched with GITHUB_TOKEN. A
+          # passive workflow_run listener was not invoked for that sequence
+          # in the first live test. Poll ONLY the latest official dispatched
+          # runs for this exact SHA. Never extrapolate from an older SHA or
+          # a manually created commit status.
+          specs=('test.yml:unit' 'conventional-commits.yml:commit-messages')
+          ready=0
+          declare -A verified_run_urls=()
+          for attempt in {1..60}; do
+            ready=1
+            for spec in "${specs[@]}"; do
+              workflow="${spec%%:*}"
+              context="${spec#*:}"
+              runs=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/$workflow/runs?event=workflow_dispatch&branch=release-please--branches--main&per_page=100")
+              run=$(jq -c --arg sha "$head" '[.workflow_runs[] | select(.head_sha == $sha)] | sort_by(.id) | last // empty' <<< "$runs")
+              if [[ -z "$run" ]]; then ready=0; break; fi
+              status=$(jq -r '.status' <<< "$run")
+              conclusion=$(jq -r '.conclusion // empty' <<< "$run")
+              if [[ "$status" != completed ]]; then ready=0; break; fi
+              if [[ "$conclusion" != success ]]; then
+                echo "Official $workflow failed on exact head $head: $conclusion" >&2
+                exit 1
+              fi
+              run_id=$(jq -r '.id' <<< "$run")
+              jobs=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$run_id/jobs?per_page=100")
+              jq -e --arg name "$context" '[.jobs[] | select(.name == $name and .conclusion == "success")] | length == 1' <<< "$jobs" >/dev/null
+              verified_run_urls["$context"]=$(jq -r '.html_url' <<< "$run")
+            done
+            if [[ "$ready" == 1 ]]; then break; fi
+            sleep 10
+          done
+          if [[ "$ready" != 1 ]]; then
+            echo 'Timed out waiting for TWO successful official release-branch jobs on exact head' >&2
+            exit 1
+          fi
 
           head_commit=$(gh api "repos/$GITHUB_REPOSITORY/commits/$head")
           merge_commit=$(gh api "repos/$GITHUB_REPOSITORY/commits/$merge")
@@ -67,10 +83,20 @@ jobs:
           merge_base=$(jq -r '.parents[0].sha' <<< "$merge_commit")
           merge_head=$(jq -r '.parents[1].sha' <<< "$merge_commit")
           [[ "$head_tree" == "$merge_tree" && "$merge_base" == "$base" && "$merge_head" == "$head" ]] || exit 0
-          # Only now report the actually passing source test on the exact
-          # byte-identical merge commit expected by strict branch protection.
-          gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$merge" \
-            -f state=success -f context="$context" \
-            -f description="Verified official $context check on identical merge tree" \
-            -f target_url="$RUN_URL" >/dev/null
-          echo "Attested $context on $merge from verified $RUN_ID ($head_tree)"
+          # Revalidate PR identity and base/head before the two writes.
+          current_pr=$(gh api "/repos/$GITHUB_REPOSITORY/pulls?state=open&head=Entif-AI:release-please--branches--main" --jq '.[0]')
+          latest_main=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')
+          [[ "$latest_main" == "$base" ]] || exit 0
+          [[ $(jq -r '.head.sha' <<< "$current_pr") == "$head" &&
+             $(jq -r '.base.sha' <<< "$current_pr") == "$base" &&
+             $(jq -r '.merge_commit_sha' <<< "$current_pr") == "$merge" ]] || exit 0
+          # Statuses are issued by the GitHub Actions app, *not* by a
+          # maintainer account, and only after both actual jobs succeeded.
+          for spec in "${specs[@]}"; do
+            context="${spec#*:}"
+            gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$merge" \
+              -f state=success -f context="$context" \
+              -f description="Verified official $context check on identical merge tree" \
+              -f target_url="${verified_run_urls[$context]}" >/dev/null
+            echo "Attested $context on $merge (same tree $head_tree, source $head)"
+          done
