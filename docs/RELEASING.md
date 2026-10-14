@@ -27,3 +27,18 @@ The [Release Please Action](https://github.com/googleapis/release-please-action)
 A new golden-model release additionally requires one complete same-checkpoint assessment receipt for every current grade/capability, model+its own AdamW checksums, curriculum/ABI identity, and a reviewed scientific manifest. Neither passing CI nor merging a code PR creates an unverified golden checkpoint.
 
 The history index at [`RELEASE_HISTORY.md`](RELEASE_HISTORY.md) links back to exact historical paths even after curating them out of the current checkout.
+
+### Strict release-PR checks created with GITHUB_TOKEN
+
+The first live release PR proved that `workflow_dispatch` test jobs can
+succeed on the release branch's exact head SHA while GitHub still reports the
+synthetic merge commit as missing required checks. The trusted
+`release-pr-attest.yml` workflow listens for completion of the TWO official
+workflow-dispatched jobs and checks the run ID, source SHA, bot-owned release
+PR identity, current main SHA, original job conclusion, and byte-identical
+head/merge Git TREE plus expected parents. Only then does it report that
+specific passing job as a status on the synthetic merge commit. The
+attestor never checks out or executes PR-head code, and does not convert a
+failed/missing/stale test into a success. Main remains strict and PR-only.
+This path must be verified with a live generated release PR; a successful
+branch-only check without a merge attestation is not sufficient.
