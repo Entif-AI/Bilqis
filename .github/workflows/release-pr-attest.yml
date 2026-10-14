@@ -4,7 +4,8 @@ name: attest-release-pr-checks
 # The trusted release-please job dispatches all three workflows explicitly.
 # This default-branch attestor waits for both official jobs to pass at the
 # exact source SHA, and checks the synthetic PR merge commit has IDENTICAL
-# content before issuing the two protected contexts. No PR code checkout.
+# content before issuing the two protected GitHub Actions CHECK RUNS. No PR code
+# checkout, no source change to either CI workflow, no guessed check result.
 on:
   workflow_dispatch:
 
@@ -12,7 +13,7 @@ permissions:
   actions: read
   contents: read
   pull-requests: read
-  statuses: write
+  checks: write
 
 jobs:
   attest:
@@ -32,6 +33,13 @@ jobs:
           [[ $(jq -r '.head.repo.full_name' <<< "$pr") == "$GITHUB_REPOSITORY" ]] || exit 1
           [[ $(jq -r '.user.login' <<< "$pr") == 'github-actions[bot]' ]] || exit 1
           [[ $(jq -r '.draft' <<< "$pr") == false ]] || exit 1
+          number=$(jq -r '.number' <<< "$pr")
+          [[ "$number" =~ ^[0-9]+$ ]] || exit 1
+          # Only the generated version manifest and changelog may differ
+          # from trusted main. In particular, a changed CI workflow in the
+          # release branch cannot grade its own behavior.
+          changed_files=$(gh api "repos/$GITHUB_REPOSITORY/pulls/$number/files?per_page=100")
+          jq -e '([.[].filename] | sort) == ([".release-please-manifest.json","CHANGELOG.md"] | sort)' <<< "$changed_files" >/dev/null
           head=$(jq -r '.head.sha' <<< "$pr")
           base=$(jq -r '.base.sha' <<< "$pr")
           merge=$(jq -r '.merge_commit_sha' <<< "$pr")
@@ -90,13 +98,25 @@ jobs:
           [[ $(jq -r '.head.sha' <<< "$current_pr") == "$head" &&
              $(jq -r '.base.sha' <<< "$current_pr") == "$base" &&
              $(jq -r '.merge_commit_sha' <<< "$current_pr") == "$merge" ]] || exit 0
-          # Statuses are issued by the GitHub Actions app, *not* by a
-          # maintainer account, and only after both actual jobs succeeded.
+          # The first live pass issued simple commit statuses on this merge
+          # commit, but GitHub requires CHECK RUNS from app ID 15368 here.
+          # GITHUB_TOKEN is the Actions App installation token, with
+          # checks:write explicitly scoped to this trusted job.
           for spec in "${specs[@]}"; do
             context="${spec#*:}"
-            gh api -X POST "repos/$GITHUB_REPOSITORY/statuses/$merge" \
-              -f state=success -f context="$context" \
-              -f description="Verified official $context check on identical merge tree" \
-              -f target_url="${verified_run_urls[$context]}" >/dev/null
-            echo "Attested $context on $merge (same tree $head_tree, source $head)"
+            external_id="bilqis.release-attest.v1:$merge:$context"
+            previous=$(gh api "repos/$GITHUB_REPOSITORY/commits/$merge/check-runs?per_page=100")
+            if jq -e --arg id "$external_id" '[.check_runs[] | select(.external_id == $id and .conclusion == "success" and .app.id == 15368)] | length == 1' <<< "$previous" >/dev/null; then
+              echo "Already attested $context on $merge; no duplicate check run"
+              continue
+            fi
+            result=$(gh api -X POST "repos/$GITHUB_REPOSITORY/check-runs" \
+              -f name="$context" -f head_sha="$merge" -f status=completed \
+              -f conclusion=success -f external_id="$external_id" \
+              -f details_url="${verified_run_urls[$context]}" \
+              -f "output[title]=Verified $context on release merge" \
+              -f "output[summary]=Official dispatched $context check passed on $head and the protected PR merge $merge has identical tree $head_tree; both original jobs were verified.")
+            jq -e --arg name "$context" --arg sha "$merge" \
+              '.name == $name and .head_sha == $sha and .conclusion == "success" and .app.id == 15368' <<< "$result" >/dev/null
+            echo "Created trusted check run $context on $merge (same tree $head_tree, source $head)"
           done
