@@ -594,16 +594,16 @@ Purpose: retained Engram allocation/retrieval/correction state without promoting
 Purpose: strategy population, measured outcomes, cost/fidelity observations without unsupported ranking.
 
 ### COMP-D-801 · Strategy population
-- Information: strategy identity/role/status.
-- Treatment: cards/table/list.
-- Interaction: select strategy.
-- Effect: opens descriptive strategy evidence.
+- Information: strategy identity/role/status, measured outcomes/cost scope, episode links, checkpoint-role history.
+- Treatment: strategy roster and repeated strategy cards.
+- Interaction: inspect a strategy identity through the shared inspector path; comparison selection belongs to COMP-D-802.
+- Effect: exposes descriptive strategy evidence without changing strategy policy.
 
-### COMP-D-802 · Outcome/cost/fidelity observations
-- Information: attempts, retained/no-gain/interference, resource/fidelity evidence.
-- Treatment: comparative analytical surface.
-- Interaction: inspect related evidence.
-- Effect: supports comparison without policy mutation or winner synthesis.
+### COMP-D-802 · Outcome/cost comparison
+- Information: selected strategy set, comparison scope, attempts/retained/gain/no-gain/interference, wall time, steps, and per-row coverage.
+- Treatment: strategy/scope controls plus a comparative analytical table.
+- Interaction: choose strategies and comparison scope; the comparison rows themselves do not expose evidence-inspection controls.
+- Effect: recomputes the descriptive comparison without policy mutation or winner synthesis. Fidelity observations remain separately owned by COMP-D-803.
 
 ### COMP-D-803 · Fidelity ladder
 - Information: strategy evidence at declared fidelity levels such as 2/4/8/16 where the current Teacher projection provides it.
@@ -640,21 +640,21 @@ Purpose: independent Impact, Exigency, and Osmotic Novelty evidence with reversi
 - Effect: grounds the three salience axes.
 
 ### COMP-D-903 · Recursive aggregation
-- Information: observation → cluster → pattern → trend aggregation where present.
-- Treatment: progressive hierarchy rather than a single “score.”
-- Interaction: expand/select aggregation level.
-- Effect: preserves reversibility and scale.
+- Information: observation → window → cluster → pattern → trend aggregation where present, including constituent observation identity.
+- Treatment: nested progressive disclosure rather than a single “score.”
+- Interaction: expand/collapse disclosure levels and inspect constituent observations where buttons exist; there is no persistent selected-aggregation-level state.
+- Effect: preserves reversibility and scale without promoting aggregation to source truth.
 
 ### COMP-D-904 · Routing rationale
-- Information: reversible aggregate and admitted rationale.
-- Treatment: derived summary separated from source axes.
-- Interaction: inspect rationale/evidence.
-- Effect: explains routing input without pretending aggregate is source truth.
+- Information: recorded route identity, tier/rule, ordering keys, hidden-weighting posture, and cited observation identities.
+- Treatment: derived routing records separated from source axes.
+- Interaction: inspect cited observations when they are available in the selected as-of snapshot; the rationale record itself is static.
+- Effect: explains admitted routing input without pretending aggregate is source truth or inferring private weights.
 
 ### COMP-D-905 · Projection boundary
-- Information: the limits of the current salience projection.
-- Treatment: local helper/disclosure.
-- Interaction: inspect evidence.
+- Information: projection schema, PARTIAL coverage, projected field inventory, and explicitly fixture-backed/non-first-class detail.
+- Treatment: static local authority explanation.
+- Interaction: none directly in the current renderer.
 - Effect: prevents salience telemetry from being read as universal decision authority.
 
 ## VIEW-D-010 · Corrections
@@ -696,10 +696,10 @@ Purpose: correction blast radius, append-only correction history, receipt-backed
 Purpose: immutable accepted-generation lineage and literal structured generation differences.
 
 ### COMP-D-1101 · Accepted-generation lineage
-- Information: generation, manifest, parent, transition, checkpoint.
-- Treatment: lineage graph/list.
-- Interaction: select generation/checkpoint.
-- Effect: opens exact custody identity.
+- Information: accepted generation nodes, compact manifests, parent/transition relations, checkpoint facts, exact transitions, and tabular equivalent.
+- Treatment: read-only lineage node set plus transition list/table.
+- Interaction: select an accepted generation node; checkpoint is a relation/fact, not a selectable control.
+- Effect: changes the exact generation dossier/inspection context.
 
 ### COMP-D-1102 · Generation comparison
 - Information: literal structured differences.
@@ -714,38 +714,38 @@ Purpose: immutable accepted-generation lineage and literal structured generation
 - Effect: prevents rejected candidate activity from appearing as an accepted generation.
 
 ### COMP-D-1104 · Exact immutable generation node
-- Information: selected accepted generation, manifest, checkpoint, parent and transition identity.
-- Treatment: exact node dossier.
-- Interaction: inspect evidence or choose as a comparison endpoint.
-- Effect: anchors lineage navigation to immutable accepted custody.
+- Information: selected generation/transition state, full manifest and parent custody, manifest fields with source refs, stable deep link, and exact CP03 query identity.
+- Treatment: static exact node dossier with a separate historical-missing defensive state.
+- Interaction: no local evidence or comparison-endpoint control; comparison endpoints are owned by COMP-D-1102.
+- Effect: anchors lineage navigation to immutable accepted custody and refuses current-generation substitution when historical identity is missing.
 
 ## VIEW-D-012 · Resources
 
 Purpose: measured resource budgets, exact historical comparison, and spike correlation.
 
 ### COMP-D-1201 · Resource headline
-- Information: current budget posture.
-- Treatment: primary metrics/status.
-- Interaction: none/inspect.
-- Effect: establishes current resource condition.
+- Information: projection provenance, page state, headline metric identities/semantic states/values/evidence-strength notes, and the throughput≠learning boundary.
+- Treatment: static primary metric/status surface with an explicit no-current-projection defensive replacement.
+- Interaction: none directly in the headline surface.
+- Effect: establishes current resource condition without synthesizing absent measurements.
 
 ### COMP-D-1202 · Metric semantics
-- Information: evidence semantics and resource decomposition where instrumented.
-- Treatment: grouped metrics.
-- Interaction: inspect.
-- Effect: separates measured/estimated/unavailable quantities.
+- Information: measured-value, configured-limit, and forecast/estimate semantic classes with values and explanatory notes.
+- Treatment: static semantic metric grouping.
+- Interaction: none directly.
+- Effect: separates measured/configured/estimated quantities before the operator reads the numerical values.
 
 ### COMP-D-1203 · Memory decomposition / remainder
-- Information: memory quantities that can be decomposed and any explicitly unresolved remainder.
-- Treatment: grouped resource decomposition.
-- Interaction: inspect supporting sample/evidence.
+- Information: reconciliation state, measured memory categories, unresolved remainder, and aggregate-vs-allocated explanation.
+- Treatment: static grouped decomposition with explicit COMPLETE/PARTIAL/UNAVAILABLE and remainder states.
+- Interaction: none directly; exact resource-sample inspection belongs to COMP-D-1205.
 - Effect: avoids pretending an unexplained total has been causally attributed.
 
 ### COMP-D-1204 · Compute/length profile
-- Information: CPU/memory/MLX/workers/compile/wall cost plus sequence/frame/batch/length statistics.
-- Treatment: metric groups.
-- Interaction: inspect.
-- Effect: decomposes resource cost.
+- Information: CPU/workers/snapshot/compile/MLX-wall/cost measurements plus sequence/frame/batch/length statistics.
+- Treatment: static compute/preparation and sequence/batch/length metric groups.
+- Interaction: none directly.
+- Effect: decomposes resource cost without implying causal attribution.
 
 ### COMP-D-1205 · Timeline and spike correlation
 - Information: resource samples related to episode/batch/checkpoint/preparation/refinement.
@@ -775,16 +775,16 @@ Purpose: exact Mission Control records, provenance links, bounded pagination, li
 - Interaction: none directly; state changes as bounded queries start/resolve/fail.
 - Effect: exposes query health without converting missing/disconnected evidence into an empty successful result.
 
-### COMP-D-1302 · Evidence result list/table
-- Information: record identities/types/provenance.
-- Treatment: analytical list/table.
-- Interaction: select exact record.
-- Effect: opens evidence detail and establishes return origin.
+### COMP-D-1302 · Evidence results
+- Information: exact record results plus exact page-relationship results and their hydration posture.
+- Treatment: record buttons and relationship articles, not a tabular result grid.
+- Interaction: select an exact record or hydrate an exact relationship target when one is projected.
+- Effect: opens exact evidence detail while preserving current query/origin context.
 
 ### COMP-D-1306 · Traversal / omission status
 - Information: degraded/omission markers from the evidence page plus provenance-link traversal failures.
-- Treatment: omission/degraded marker section and explicit traversal alert.
-- Interaction: provenance/reference buttons remain available where exact refs are present; failed traversal itself has no synthetic fallback.
+- Treatment: passive omission/degraded marker section and explicit traversal alert.
+- Interaction: none directly in these status surfaces; reference-search controls belong to COMP-D-1303 provenance refs and target-hydration controls belong to COMP-D-1302/1303 links.
 - Effect: preserves partial/degraded evidence semantics and keeps unresolved provenance visible instead of silently dropping it.
 
 ### COMP-D-1303 · Exact record/raw payload
@@ -822,10 +822,10 @@ Purpose: command boundary, not another dashboard.
 - Effect: establishes exact authorization target or blocks stale context.
 
 ### COMP-D-1404 · Deliberate authorization
-- Information: exact phrase for mutation or read-only execution state.
-- Treatment: high-salience human gate.
-- Interaction: type exact authorization and submit.
-- Effect: dispatches only the reviewed exact target; target drift fails closed.
+- Information: HUMAN GATE versus READ ONLY posture, reviewed target binding, exact authorization phrase where mutation is permitted, input state, and submit enablement.
+- Treatment: high-salience authorization region for mutating commands and explicit read-only execution posture otherwise.
+- Interaction: mutating commands require the exact phrase before submit; read-only commands do not use the phrase gate.
+- Effect: dispatches only the reviewed exact target; target drift and authorization mismatch fail closed.
 
 ### COMP-D-1405 · Receipt/readback/reconciliation
 - Information: operation ID, receipt state, postcondition/error refs, bounded logs, literal inspection.
@@ -847,8 +847,8 @@ Every component above inherits the concern profile for its containing shell/view
 | VIEW-D-005 Atlas / COMP-D-501..505, 521 | overview/selection/lens/bank/request epoch | canonical semantic identity is source-authoritative; learned similarity remains derived | graph/table keyboard paths, exact lookup labels, nonvisual relationship access | lens/search/helper text tokenized; semantic IDs remain data | `atlas-*`, `atlas-semantic-*` |
 | VIEW-D-006 Model / COMP-D-601..611 | model subsection, neural fixture mode, frame request epoch, saved return context | measured runtime vs fixture-backed diagnostics vs frame receipts remain explicit | peer-mode navigation, tables/progress readable by AT, fixture posture announced | diagnostic labels/help/state copy; raw IDs/receipts remain data | `model-*`, `neural-*`, `frame-*` |
 | VIEW-D-007 Memory / COMP-D-701..705, 733 | generation, selected page/slot, compare generation | retrieval telemetry is operational evidence, never semantic/capability authority | page/slot controls, detail lists, comparison semantics, non-color held/rejected cues | labels/help/compare copy tokenized; stable motif IDs remain data | `memory-*`, `memory-slot-*` |
-| VIEW-D-008 Teacher / COMP-D-801..804 | strategy selection/comparison scope and fidelity level | descriptive strategy outcomes/cost/fidelity only; no unsupported winner/policy authority | strategy selection, comparison table/ladder reading order, state cues | strategy-role labels, comparison guidance, projection-boundary copy | `teacher-*`, `teacher-strategy-*` |
-| VIEW-D-009 SÍ SÉ SON / COMP-D-901..906 | selected as-of snapshot/observation/aggregation level | Impact, Exigency, Osmotic Novelty remain independent; aggregate/routing rationale derived | snapshot selector, axis labels not color-only, aggregation hierarchy navigable, evidence links named | snapshot labels, axis names/explanations/rationale labels tokenized; source IDs remain data | `salience-*`, `salience-observation-*` |
+| VIEW-D-008 Teacher / COMP-D-801..804 | strategy roster, comparison strategy/scope selection, and static fidelity observations | descriptive strategy outcomes/cost/fidelity only; no unsupported winner/policy authority | strategy selection, comparison table/ladder reading order, state cues | strategy-role labels, comparison guidance, projection-boundary copy | `teacher-*`, `teacher-strategy-*` |
+| VIEW-D-009 SÍ SÉ SON / COMP-D-901..906 | selected as-of snapshot plus transient observation inspection; aggregation disclosure is not persistent selection state | Impact, Exigency, Osmotic Novelty remain independent; aggregate/routing rationale derived | snapshot selector, axis labels not color-only, aggregation hierarchy navigable, evidence links named | snapshot labels, axis names/explanations/rationale labels tokenized; source IDs remain data | `salience-*`, `salience-observation-*` |
 | VIEW-D-010 Corrections / COMP-D-1001..1005 | selected correction/affected artifact/requalification state | known exposure and receipt-backed requalification only; no perfect-unlearning claim | graph has equivalent table, history order explicit, state cues non-color | correction/requalification/history guidance tokenized | `corrections-*`, `correction-artifact-*` |
 | VIEW-D-011 Lineage / COMP-D-1101..1104 | selected generation/checkpoint and diff endpoints | accepted immutable lineage only; rejected candidates explicitly excluded | DAG/table equivalence, exact node inspection, diff table orientation | lineage/diff guidance tokenized; hashes/checkpoints remain data | `lineage-*`, `lineage-generation-*` |
 | VIEW-D-012 Resources / COMP-D-1201..1206 | current projection, exact comparison generation, resource-only live refresh | measured/derived/estimated/unavailable distinctions preserved; correlation is not causation | metric units/denominators announced, wide tables own overflow, comparison forms labeled | metric labels/units/help/status copy tokenized | `resources-*`, `resource-sample-*` |
