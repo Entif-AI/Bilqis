@@ -57,13 +57,32 @@
   --surface-raised: var(--surface-2);
   --line: var(--border);
   --line-strong: var(--border-strong);
-  --text-xs: 11px;
-  --text-sm: 12px;
-  --text-md: 14px;
-  --text-lg: 16px;
-  --heading-sm: 18px;
-  --heading-md: 22px;
-  --heading-lg: 32px;
+  /*
+   * One operator type scale.  View CSS may choose a semantic role, but it may
+   * not invent another rendered size.
+   *
+   * label   = metadata, badges, dense tables
+   * body    = prose, controls, ordinary values
+   * section = local headings
+   * display = destination titles and primary numeric emphasis
+   */
+  --type-label: 11px;
+  --type-body: 14px;
+  --type-section: 18px;
+  --type-display: 28px;
+  --line-label: 1.2;
+  --line-body: 1.4;
+  --line-section: 1.2;
+  --line-display: 1.05;
+
+  /* Compatibility aliases for existing domain styles. */
+  --text-xs: var(--type-label);
+  --text-sm: var(--type-label);
+  --text-md: var(--type-body);
+  --text-lg: var(--type-body);
+  --heading-sm: var(--type-section);
+  --heading-md: var(--type-section);
+  --heading-lg: var(--type-display);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --space-1: 4px;
   --space-2: 8px;

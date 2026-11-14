@@ -14,17 +14,18 @@
 .lineage-edges li { padding: 6px 8px; border-left: 3px solid var(--border-strong); }
 .lineage-edges li[data-transition="recovery-fork"] { border-left-style: dotted; border-left-width: 5px; }
 .lineage-edges li[data-transition="correction-requalification"] { border-left-style: dashed; }
-.lineage-state { border: 1px solid var(--border-strong); padding: 3px 7px; font-size: 11px; font-weight: 700; }
+.lineage-state { border: 1px solid var(--border-strong); padding: 3px 7px; font-size: var(--type-label); font-weight: 700; }
+.lineage-state { white-space: nowrap; }
 .lineage-state[data-lineage-state="recovery-fork"] { border-style: dotted; border-width: 2px; }
 .lineage-manifest { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .lineage-manifest > div { padding: 8px; background: var(--surface-2); overflow-wrap: anywhere; }
-.lineage-manifest dt { color: var(--text-muted); font-size: 11px; }
+.lineage-manifest dt { color: var(--text-muted); font-size: var(--type-label); }
 .lineage-manifest dd { margin: 4px 0; font-weight: 700; }
 .lineage-exact-route { margin-top: 10px; flex-wrap: wrap; }
 .lineage-exact-route code { overflow-wrap: anywhere; }
 .lineage-compare-controls { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
 .lineage-compare-controls label { display: flex; gap: 7px; align-items: center; }
-.lineage-table, .lineage-diff { width: 100%; border-collapse: collapse; font-size: 12px; }
+.lineage-table, .lineage-diff { width: 100%; border-collapse: collapse; font-size: var(--type-label); }
 .lineage-table th, .lineage-table td, .lineage-diff th, .lineage-diff td { padding: 7px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 .lineage-diff td:last-child small { display: block; margin-top: 4px; }
 .lineage-diff tr[data-state="unavailable"] { border-left: 3px dotted var(--border-strong); }

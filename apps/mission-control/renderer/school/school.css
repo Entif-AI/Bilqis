@@ -13,10 +13,10 @@
 .school-controls label { display: inline-flex; align-items: center; gap: 6px; }
 .school-panel { min-width: 0; max-width: 100%; overflow: hidden; border: 1px solid var(--border); background: var(--surface-1); }
 .school-panel > header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-4); border-bottom: 1px solid var(--border); }
-.school-panel h2 { margin: 3px 0 0; font-size: 18px; }
+.school-panel h2 { margin: 3px 0 0; font-size: var(--type-section); }
 .coverage-counter { font-variant-numeric: tabular-nums; color: var(--text-muted); }
 .matrix-scroll { min-width: 0; width: 100%; overflow: auto; max-width: 100%; max-height: 560px; scrollbar-gutter: stable; overscroll-behavior: contain; border-bottom: 1px solid var(--border); }
-.school-matrix { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums lining-nums; }
+.school-matrix { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: var(--type-label); font-variant-numeric: tabular-nums lining-nums; }
 .school-matrix th, .school-matrix td { min-height: var(--row-height); padding: 8px 10px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); vertical-align: middle; background: var(--surface-1); line-height: 1.25; }
 .school-matrix thead th { position: sticky; top: 0; z-index: 3; background: var(--surface-2); text-align: left; }
 .school-matrix thead button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 750; cursor: pointer; }
@@ -30,7 +30,7 @@
 .school-matrix .num { text-align: right; }
 .family-row th { position: static; background: var(--surface-2); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; font-size: var(--text-xs); }
 .school-state-stack { display: flex; flex-wrap: wrap; gap: 4px; min-width: 250px; }
-.school-state-stack span { padding: 2px 5px; border: 1px solid var(--border); font-size: 10px; }
+.school-state-stack span { padding: 2px 5px; border: 1px solid var(--border); font-size: var(--type-label); }
 .school-state-stack [data-school-state="SOURCE_HELD"] { border-style: double; color: var(--attention); }
 .school-state-stack [data-school-state="IMPLEMENTATION_UNCOVERED"] { border-style: dashed; color: var(--invalid); }
 .school-state-stack [data-school-state="QUALIFIED"] { border-style: solid; color: var(--healthy); }
@@ -40,8 +40,8 @@
 .school-graph line { stroke: var(--border-strong); stroke-width: 2; }
 .dependency-node { cursor: pointer; }
 .dependency-node rect { fill: var(--surface-2); stroke: var(--border-strong); stroke-width: 1.5; }
-.dependency-node text { fill: var(--text); font-size: 12px; font-weight: 750; }
-.dependency-node .node-state { fill: var(--text-muted); font-size: 9px; font-weight: 500; }
+.dependency-node text { fill: var(--text); font-size: var(--type-label); font-weight: 750; }
+.dependency-node .node-state { fill: var(--text-muted); font-size: var(--type-label); font-weight: 500; }
 .dependency-node[data-state="source-held"] rect { stroke: var(--attention); stroke-width: 3; stroke-dasharray: 2 4; }
 .dependency-node[data-state="implementation-uncovered"] rect { stroke: var(--invalid); stroke-width: 2; stroke-dasharray: 8 4; }
 .dependency-node[data-state="qualified"] rect { stroke: var(--healthy); }
@@ -52,11 +52,11 @@
 .dependency-node[data-relation="prerequisite"] rect { stroke-dasharray: 2 3; }
 .dependency-node[data-relation="dependent"] rect { stroke-dasharray: 8 3; }
 .dependency-node[data-relation="other"] { opacity: .42; }
-.dependency-fallback { width: 100%; border-collapse: collapse; font-size: 12px; }
+.dependency-fallback { width: 100%; border-collapse: collapse; font-size: var(--type-label); }
 .dependency-fallback th, .dependency-fallback td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
 .graph-panel > .dependency-fallback { margin-top: 0; }
 
-:root[data-density="terminal"] .school-matrix { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+:root[data-density="terminal"] .school-matrix { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--type-label); }
 :root[data-density="terminal"] .school-matrix th,
 :root[data-density="terminal"] .school-matrix td { padding: 4px 6px; }
 

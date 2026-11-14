@@ -10,6 +10,7 @@
 .teacher-panel h3, .strategy-card h4 { margin: 4px 0 0; }
 .strategy-card h4 { overflow-wrap: anywhere; }
 .teacher-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: var(--text-xs); line-height: 1.1; font-weight: 800; letter-spacing: .04em; }
+.teacher-state { white-space: nowrap; }
 .teacher-state[data-state="incumbent"], .teacher-state[data-state="present"], .teacher-state[data-state="active"] { color: var(--healthy); }
 .teacher-state[data-state="challenger"], .teacher-state[data-state="canary"], .teacher-state[data-state="partial"] { color: var(--attention); border-style: dashed; }
 .teacher-state[data-state="retired"], .teacher-state[data-state="checkpoint-local-retired"], .teacher-state[data-state="harmful"] { color: var(--invalid); border-style: double; }
@@ -32,7 +33,7 @@
 .teacher-compare-controls button, .strategy-card button { min-height: var(--control-height); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 6px 9px; }
 .teacher-compare-controls button[aria-pressed="true"] { border-style: double; box-shadow: inset 3px 0 0 var(--accent); }
 .comparison-wrap { overflow: auto; scrollbar-gutter: stable; border: 1px solid var(--border); }
-.comparison-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.comparison-table { width: 100%; border-collapse: collapse; font-size: var(--type-label); font-variant-numeric: tabular-nums; }
 .comparison-table th, .comparison-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
 .comparison-table .no-gain { border-left: 3px dotted var(--text-muted); }
 .comparison-table .harmful { border-left: 3px double var(--invalid); }

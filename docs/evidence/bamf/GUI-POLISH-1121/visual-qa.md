@@ -109,3 +109,46 @@ Fresh-origin browser review at 1440 × 920 confirmed:
 At the same viewport, Teacher's strategy roster computed as two equal columns of approximately 578 px each. Evidence's disconnected preview now reports `Evidence queries are unavailable while the local evidence service is disconnected.` instead of exposing the missing `api.query` method.
 
 The layout-contract suite now also guards the shared type tokens, two-column Teacher roster, explanatory surfaces, and the Evidence `QUERY UNAVAILABLE` presentation contract.
+
+## Third pass after owner rejection of the second acceptance claim
+
+The owner supplied two fresh screenshots after the second pass and rejected the claim that the visual language had been normalized. That rejection was correct. The screenshots exposed failures that the earlier measurements did not detect:
+
+- the nominal type scale was not a real invariant because domain CSS still declared many literal sizes;
+- the no-snapshot context header still reserved an empty context-facts column, forcing `No verified snapshot` into ugly multi-line wrapping while leaving unused horizontal space;
+- selectors, pills, and buttons occupied different vertical positions inside the same horizontal row;
+- the Scientific Visual Language catalog still used different card grammars and different numeric-emphasis sizes;
+- successful containment and zero page overflow were insufficient acceptance criteria for visual coherence.
+
+The third pass replaced the compatibility-heavy scale with four actual rendered roles:
+
+| Role | Size | Intended use |
+| --- | ---: | --- |
+| label | 11 px | metadata, badges, dense tables |
+| body | 14 px | prose, controls, ordinary values |
+| section | 18 px | local section headings |
+| display | 28 px | destination headings and primary numeric emphasis |
+
+All Mission Control domain CSS now resolves through these roles. A regression test recursively scans every renderer stylesheet and rejects new literal rendered text sizes. The only literal sizes left in `shell.css` are non-content exceptions: 28 px close icons, the responsive `font-size: 0` nav-hiding technique, and its 14 px first-letter fallback.
+
+The context header now has separate verified and empty-state geometry. In the empty state, the unused facts surface is hidden and the header becomes a single 72 px row. At 1266 px:
+
+- `No verified snapshot` remains one line;
+- `Generation unavailable` remains one line;
+- Run / As of selectors, freshness, Density, and Theme share one bottom control baseline;
+- page-level horizontal overflow is 0 px.
+
+In verified state at the same 1266 px width, identity and controls occupy the first row and all eight context facts occupy one compact second row. Header height is 111 px rather than the earlier 150 px. At 1440 px the verified header is 88 px.
+
+The Scientific Visual Language catalog now uses the same header/value geometry for both metric cards. At 1295 px both primary values begin at the same vertical coordinate and both use the 28 px display role. The catalog heading is also 28 px with 14 px supporting copy rather than another independent heading scale.
+
+Full destination-matrix browser verification at 1266 × 920 showed:
+
+- every primary destination uses exactly `11px / 14px / 18px / 28px`;
+- every primary destination has 0 px document-level horizontal overflow;
+- every destination title occupies one 29 px line;
+- verified context height is 111 px across the matrix.
+
+At 1440 × 920, the same matrix retains the four-size type system, 0 px page overflow, a one-line 28 px destination title, and an 88 px verified context header. The native Electron app was relaunched at its real 1440 × 920 window after the third-pass changes for direct visual confirmation.
+
+The previous second-pass statement that the visual language was normalized is superseded by this section.

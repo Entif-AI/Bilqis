@@ -13,12 +13,12 @@
 .frame-metrics p { color: var(--text-muted); }
 .frame-metrics dl { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(80px, .6fr); gap: var(--space-2); font-variant-numeric: tabular-nums; }
 .frame-metrics dd, .frame-identity dd { margin: 0; overflow-wrap: anywhere; }
-.frame-identity { display: grid; grid-template-columns: minmax(110px, .35fr) minmax(0, 1fr); gap: var(--space-2); font-size: 12px; }
+.frame-identity { display: grid; grid-template-columns: minmax(110px, .35fr) minmax(0, 1fr); gap: var(--space-2); font-size: var(--type-label); }
 .frame-identity dt { color: var(--text-muted); }
 .frame-position { margin-block: var(--space-4); border: 1px solid var(--border-strong); padding: var(--space-3); background: var(--surface-1); }
 .frame-position summary { cursor: pointer; min-height: var(--control-height); overflow-wrap: anywhere; }
 .frame-table-scroll { overflow-x: auto; }
-.frame-explorer table { border-collapse: collapse; width: 100%; font-size: 12px; }
+.frame-explorer table { border-collapse: collapse; width: 100%; font-size: var(--type-label); }
 .frame-explorer caption { text-align: left; padding-block: var(--space-3); font-weight: 700; }
 .frame-explorer th, .frame-explorer td { border-bottom: 1px solid var(--border); padding: var(--space-2); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
 .frame-explorer th { color: var(--text-muted); }
