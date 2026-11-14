@@ -10,6 +10,7 @@ Before UI implementation:
 
 - `apps/mission-control/DESIGN.md`
 - `STYLE_GUIDE.md`
+- `VISUAL_COMPOSITION_SPEC.md`
 - `CONSTRAINT_REGISTER.md`
 - `INFORMATION_ATLAS.md`
 - `CURRENT_STATE_UI_INVENTORY.md`
@@ -84,7 +85,7 @@ Runs once after all prior leaves integrate. This is the requested whole-app pass
 
 For each issue:
 
-1. reread `DESIGN.md`, style guide, exact anti-pattern gallery, target atlas, current-state inventory, and relevant CON-D/FLOW-D IDs;
+1. reread `DESIGN.md`, style guide, `VISUAL_COMPOSITION_SPEC.md`, exact anti-pattern gallery, target atlas, current-state inventory, and relevant CON-D/FLOW-D IDs;
 2. enumerate the target nodes owned by the issue and map the relevant current inventory nodes to **retain / transform / merge / move / remove** dispositions;
 3. capture the current micro-surface as before evidence;
 4. implement the smallest coherent target-state redesign, removing current atoms that have no target-state job rather than preserving them by inertia;
