@@ -15,10 +15,10 @@ Concrete consequence: the current standalone `B` brand mark is **not part of the
 
 ## Diagram convention
 
-- Mermaid diagrams use `flowchart TB`, not `mindmap`, because the atlas must remain readable in ordinary GitHub rendering.
+- Mermaid diagrams use `flowchart LR`, not `mindmap`, because the atlas must remain readable in ordinary GitHub rendering.
 - One diagram covers the shell or one destination. Cross-view relationships stay in `FLOWS.md`.
-- Published `COMP-D-*` IDs remain stable where the target retains the concept; dotted IDs identify intended target constituents.
-- The detailed register beneath each diagram records information, treatment, interaction, effect, and current-substrate disposition.
+- Published `COMP-D-*` IDs remain stable where the target retains the concept; dotted IDs identify intended target constituents. There is **no maximum decomposition depth**: a target branch continues for as many levels as the intended UI requires.
+- The detailed register beneath each diagram records information, treatment, interaction, effect, and current-substrate disposition. The diagrams themselves are recursively authoritative: if a constituent contains intended child UI, those children appear beneath it rather than being flattened into the parent label.
 
 ## Global target states
 
@@ -36,7 +36,7 @@ Concrete consequence: the current standalone `B` brand mark is **not part of the
 Persistent orientation, navigation, global context, investigation, accessibility and defensive-state infrastructure without stealing attention from the active task.
 
 ```mermaid
-flowchart TB
+flowchart LR
   SHELLD001["SHELL-D-001<br/>Application shell"]
   SHELLD001 --> COMPD015["COMP-D-015<br/>Skip-to-main access path"]
   COMPD015 --> COMPD015C1["COMP-D-015.1<br/>Skip link"]
@@ -44,9 +44,23 @@ flowchart TB
   SHELLD001 --> COMPD001["COMP-D-001<br/>Primary navigation rail"]
   COMPD001 --> COMPD001C1["COMP-D-001.1<br/>Mission Control text label"]
   COMPD001 --> COMPD001C2["COMP-D-001.2<br/>Overview & learning group"]
+  COMPD001C2 --> NCOMP_D_001_2_1["COMP-D-001.2.1<br/>Mission Control"]
+  COMPD001C2 --> NCOMP_D_001_2_2["COMP-D-001.2.2<br/>School"]
+  COMPD001C2 --> NCOMP_D_001_2_3["COMP-D-001.2.3<br/>Capability Explorer"]
+  COMPD001C2 --> NCOMP_D_001_2_4["COMP-D-001.2.4<br/>Learning"]
   COMPD001 --> COMPD001C3["COMP-D-001.3<br/>Representation & mechanisms group"]
+  COMPD001C3 --> NCOMP_D_001_3_1["COMP-D-001.3.1<br/>Atlas"]
+  COMPD001C3 --> NCOMP_D_001_3_2["COMP-D-001.3.2<br/>Model"]
+  COMPD001C3 --> NCOMP_D_001_3_3["COMP-D-001.3.3<br/>Memory"]
   COMPD001 --> COMPD001C4["COMP-D-001.4<br/>Decision & correction group"]
+  COMPD001C4 --> NCOMP_D_001_4_1["COMP-D-001.4.1<br/>Teacher"]
+  COMPD001C4 --> NCOMP_D_001_4_2["COMP-D-001.4.2<br/>SÍ SÉ SON"]
+  COMPD001C4 --> NCOMP_D_001_4_3["COMP-D-001.4.3<br/>Corrections"]
   COMPD001 --> COMPD001C5["COMP-D-001.5<br/>Provenance & operations group"]
+  COMPD001C5 --> NCOMP_D_001_5_1["COMP-D-001.5.1<br/>Lineage"]
+  COMPD001C5 --> NCOMP_D_001_5_2["COMP-D-001.5.2<br/>Resources"]
+  COMPD001C5 --> NCOMP_D_001_5_3["COMP-D-001.5.3<br/>Evidence"]
+  COMPD001C5 --> NCOMP_D_001_5_4["COMP-D-001.5.4<br/>Operate"]
   COMPD001 --> COMPD001C6["COMP-D-001.6<br/>Command trigger"]
   COMPD001 --> COMPD001C7["COMP-D-001.7<br/>Responsive navigation mode"]
   SHELLD001 --> COMPD002["COMP-D-002<br/>Global context bar"]
@@ -54,7 +68,17 @@ flowchart TB
   COMPD002 --> COMPD002C2["COMP-D-002.2<br/>Generation / as-of summary"]
   COMPD002 --> COMPD002C3["COMP-D-002.3<br/>Freshness / connectivity"]
   COMPD002 --> COMPD002C4["COMP-D-002.4<br/>System context disclosure"]
+  COMPD002C4 --> NCOMP_D_002_4_1["COMP-D-002.4.1<br/>Topology"]
+  COMPD002C4 --> NCOMP_D_002_4_2["COMP-D-002.4.2<br/>Factory release"]
+  COMPD002C4 --> NCOMP_D_002_4_3["COMP-D-002.4.3<br/>Semantic release"]
+  COMPD002C4 --> NCOMP_D_002_4_4["COMP-D-002.4.4<br/>Optimizer"]
+  COMPD002C4 --> NCOMP_D_002_4_5["COMP-D-002.4.5<br/>Admission lease"]
+  COMPD002C4 --> NCOMP_D_002_4_6["COMP-D-002.4.6<br/>Correction frontier"]
+  COMPD002C4 --> NCOMP_D_002_4_7["COMP-D-002.4.7<br/>Resource health"]
+  COMPD002C4 --> NCOMP_D_002_4_8["COMP-D-002.4.8<br/>Coverage"]
   COMPD002 --> COMPD002C5["COMP-D-002.5<br/>View settings"]
+  COMPD002C5 --> NCOMP_D_002_5_1["COMP-D-002.5.1<br/>Theme"]
+  COMPD002C5 --> NCOMP_D_002_5_2["COMP-D-002.5.2<br/>Density"]
   SHELLD001 --> COMPD003["COMP-D-003<br/>Investigation toolbar"]
   COMPD003 --> COMPD003C1["COMP-D-003.1<br/>Time lens"]
   COMPD003 --> COMPD003C2["COMP-D-003.2<br/>Compare"]
@@ -68,6 +92,10 @@ flowchart TB
   COMPD011 --> COMPD011C1["COMP-D-011.1<br/>Left object"]
   COMPD011 --> COMPD011C2["COMP-D-011.2<br/>Right object"]
   COMPD011 --> COMPD011C3["COMP-D-011.3<br/>Literal comparison"]
+  COMPD011C3 --> NCOMP_D_011_3_1["COMP-D-011.3.1<br/>Dimension"]
+  COMPD011C3 --> NCOMP_D_011_3_2["COMP-D-011.3.2<br/>Left value"]
+  COMPD011C3 --> NCOMP_D_011_3_3["COMP-D-011.3.3<br/>Right value"]
+  COMPD011C3 --> NCOMP_D_011_3_4["COMP-D-011.3.4<br/>Comparison state"]
   COMPD011 --> COMPD011C4["COMP-D-011.4<br/>Mismatch / unavailable explanation"]
   SHELLD001 --> COMPD012["COMP-D-012<br/>Pins"]
   COMPD012 --> COMPD012C1["COMP-D-012.1<br/>Pinned exact objects"]
@@ -76,7 +104,13 @@ flowchart TB
   SHELLD001 --> COMPD013["COMP-D-013<br/>Operator notes"]
   COMPD013 --> COMPD013C1["COMP-D-013.1<br/>Exact target"]
   COMPD013 --> COMPD013C2["COMP-D-013.2<br/>Existing notes"]
+  COMPD013C2 --> NCOMP_D_013_2_1["COMP-D-013.2.1<br/>Author / timestamp"]
+  COMPD013C2 --> NCOMP_D_013_2_2["COMP-D-013.2.2<br/>Exact target identity"]
+  COMPD013C2 --> NCOMP_D_013_2_3["COMP-D-013.2.3<br/>Note body"]
   COMPD013 --> COMPD013C3["COMP-D-013.3<br/>New note form"]
+  COMPD013C3 --> NCOMP_D_013_3_1["COMP-D-013.3.1<br/>Exact target label"]
+  COMPD013C3 --> NCOMP_D_013_3_2["COMP-D-013.3.2<br/>Note body field"]
+  COMPD013C3 --> NCOMP_D_013_3_3["COMP-D-013.3.3<br/>Save note action"]
   COMPD013 --> COMPD013C4["COMP-D-013.4<br/>Non-authoritative marker"]
   SHELLD001 --> COMPD004["COMP-D-004<br/>Defensive state banner"]
   COMPD004 --> COMPD004C1["COMP-D-004.1<br/>State label"]
@@ -90,12 +124,44 @@ flowchart TB
   COMPD006 --> COMPD006C1["COMP-D-006.1<br/>Peer modes only when a destination genuinely has peers"]
   SHELLD001 --> COMPD007["COMP-D-007<br/>Global inspector"]
   COMPD007 --> COMPD007C1["COMP-D-007.1<br/>Exact identity"]
+  COMPD007C1 --> NCOMP_D_007_1_1["COMP-D-007.1.1<br/>Run"]
+  COMPD007C1 --> NCOMP_D_007_1_2["COMP-D-007.1.2<br/>Generation"]
+  COMPD007C1 --> NCOMP_D_007_1_3["COMP-D-007.1.3<br/>Object kind"]
+  COMPD007C1 --> NCOMP_D_007_1_4["COMP-D-007.1.4<br/>Exact ID"]
   COMPD007 --> COMPD007C2["COMP-D-007.2<br/>Key facts"]
+  COMPD007C2 --> NCOMP_D_007_2_1["COMP-D-007.2.1<br/>Posture"]
+  COMPD007C2 --> NCOMP_D_007_2_2["COMP-D-007.2.2<br/>Evidence posture"]
+  COMPD007C2 --> NCOMP_D_007_2_3["COMP-D-007.2.3<br/>Owner / source context"]
+  COMPD007C2 --> NCOMP_D_007_2_4["COMP-D-007.2.4<br/>Domain-specific facts"]
   COMPD007 --> COMPD007C3["COMP-D-007.3<br/>Owner / Evidence actions"]
+  COMPD007C3 --> NCOMP_D_007_3_1["COMP-D-007.3.1<br/>Open owning view"]
+  COMPD007C3 --> NCOMP_D_007_3_2["COMP-D-007.3.2<br/>Open Evidence"]
   COMPD007 --> COMPD007C4["COMP-D-007.4<br/>Pin / Compare / Note"]
+  COMPD007C4 --> NCOMP_D_007_4_1["COMP-D-007.4.1<br/>Pin / unpin"]
+  COMPD007C4 --> NCOMP_D_007_4_2["COMP-D-007.4.2<br/>Set compare left"]
+  COMPD007C4 --> NCOMP_D_007_4_3["COMP-D-007.4.3<br/>Set compare right"]
+  COMPD007C4 --> NCOMP_D_007_4_4["COMP-D-007.4.4<br/>Add operator note"]
   COMPD007 --> COMPD007C5["COMP-D-007.5<br/>Copy deep link"]
   SHELLD001 --> COMPD008["COMP-D-008<br/>Command palette"]
   COMPD008 --> COMPD008C1["COMP-D-008.1<br/>Grouped destinations"]
+  COMPD008C1 --> NCOMP_D_008_1_1["COMP-D-008.1.1<br/>Overview & learning"]
+  NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_1["COMP-D-008.1.1.1<br/>Mission Control"]
+  NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_2["COMP-D-008.1.1.2<br/>School"]
+  NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_3["COMP-D-008.1.1.3<br/>Capability Explorer"]
+  NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_4["COMP-D-008.1.1.4<br/>Learning"]
+  COMPD008C1 --> NCOMP_D_008_1_2["COMP-D-008.1.2<br/>Representation & mechanisms"]
+  NCOMP_D_008_1_2 --> NCOMP_D_008_1_2_1["COMP-D-008.1.2.1<br/>Atlas"]
+  NCOMP_D_008_1_2 --> NCOMP_D_008_1_2_2["COMP-D-008.1.2.2<br/>Model"]
+  NCOMP_D_008_1_2 --> NCOMP_D_008_1_2_3["COMP-D-008.1.2.3<br/>Memory"]
+  COMPD008C1 --> NCOMP_D_008_1_3["COMP-D-008.1.3<br/>Decision & correction"]
+  NCOMP_D_008_1_3 --> NCOMP_D_008_1_3_1["COMP-D-008.1.3.1<br/>Teacher"]
+  NCOMP_D_008_1_3 --> NCOMP_D_008_1_3_2["COMP-D-008.1.3.2<br/>SÍ SÉ SON"]
+  NCOMP_D_008_1_3 --> NCOMP_D_008_1_3_3["COMP-D-008.1.3.3<br/>Corrections"]
+  COMPD008C1 --> NCOMP_D_008_1_4["COMP-D-008.1.4<br/>Provenance & operations"]
+  NCOMP_D_008_1_4 --> NCOMP_D_008_1_4_1["COMP-D-008.1.4.1<br/>Lineage"]
+  NCOMP_D_008_1_4 --> NCOMP_D_008_1_4_2["COMP-D-008.1.4.2<br/>Resources"]
+  NCOMP_D_008_1_4 --> NCOMP_D_008_1_4_3["COMP-D-008.1.4.3<br/>Evidence"]
+  NCOMP_D_008_1_4 --> NCOMP_D_008_1_4_4["COMP-D-008.1.4.4<br/>Operate"]
   COMPD008 --> COMPD008C2["COMP-D-008.2<br/>Available global commands"]
   COMPD008 --> COMPD008C3["COMP-D-008.3<br/>Availability state"]
   SHELLD001 --> COMPD016["COMP-D-016<br/>Polite live announcer"]
@@ -223,7 +289,7 @@ flowchart TB
 Answer, at a glance: Is it running? Is it learning? What is it doing? Is anything regressing or invalid? What needs my attention?
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD001["VIEW-D-001<br/>Mission Control"]
   VIEWD001 --> COMPD107["COMP-D-107<br/>Startup / no-learning state"]
   COMPD107 --> COMPD107C1["COMP-D-107.1<br/>Accepted generation"]
@@ -245,16 +311,34 @@ flowchart TB
   COMPD102 --> COMPD102C5["COMP-D-102.5<br/>Assessment posture"]
   VIEWD001 --> COMPD103["COMP-D-103<br/>Actionable attention"]
   COMPD103 --> COMPD103C1["COMP-D-103.1<br/>Prioritized concerns"]
+  COMPD103C1 --> NCOMP_D_103_1_1["COMP-D-103.1.1<br/>Concern item"]
+  NCOMP_D_103_1_1 --> NCOMP_D_103_1_1_1["COMP-D-103.1.1.1<br/>Kind"]
+  NCOMP_D_103_1_1 --> NCOMP_D_103_1_1_2["COMP-D-103.1.1.2<br/>Reason"]
+  NCOMP_D_103_1_1 --> NCOMP_D_103_1_1_3["COMP-D-103.1.1.3<br/>Owning object"]
+  NCOMP_D_103_1_1 --> NCOMP_D_103_1_1_4["COMP-D-103.1.1.4<br/>Open action"]
   COMPD103 --> COMPD103C2["COMP-D-103.2<br/>Kind"]
   COMPD103 --> COMPD103C3["COMP-D-103.3<br/>Reason"]
   COMPD103 --> COMPD103C4["COMP-D-103.4<br/>Owning object"]
   VIEWD001 --> COMPD104["COMP-D-104<br/>Learning pulse"]
   COMPD104 --> COMPD104C1["COMP-D-104.1<br/>Recent accepted/rejected events"]
+  COMPD104C1 --> NCOMP_D_104_1_1["COMP-D-104.1.1<br/>Learning event"]
+  NCOMP_D_104_1_1 --> NCOMP_D_104_1_1_1["COMP-D-104.1.1.1<br/>Accepted / rejected state"]
+  NCOMP_D_104_1_1 --> NCOMP_D_104_1_1_2["COMP-D-104.1.1.2<br/>Timestamp"]
+  NCOMP_D_104_1_1 --> NCOMP_D_104_1_1_3["COMP-D-104.1.1.3<br/>Short outcome"]
+  NCOMP_D_104_1_1 --> NCOMP_D_104_1_1_4["COMP-D-104.1.1.4<br/>Exact object link"]
   COMPD104 --> COMPD104C2["COMP-D-104.2<br/>Timestamp"]
   COMPD104 --> COMPD104C3["COMP-D-104.3<br/>Short outcome"]
   COMPD104 --> COMPD104C4["COMP-D-104.4<br/>Exact object link"]
   VIEWD001 --> COMPD105["COMP-D-105<br/>School snapshot"]
   COMPD105 --> COMPD105C1["COMP-D-105.1<br/>Capability"]
+  COMPD105C1 --> NCOMP_D_105_1_1["COMP-D-105.1.1<br/>Capability row"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_1["COMP-D-105.1.1.1<br/>Capability identity"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_2["COMP-D-105.1.1.2<br/>Now"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_3["COMP-D-105.1.1.3<br/>Best"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_4["COMP-D-105.1.1.4<br/>Delta"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_5["COMP-D-105.1.1.5<br/>Debt"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_6["COMP-D-105.1.1.6<br/>Retention"]
+  NCOMP_D_105_1_1 --> NCOMP_D_105_1_1_7["COMP-D-105.1.1.7<br/>Status"]
   COMPD105 --> COMPD105C2["COMP-D-105.2<br/>Now"]
   COMPD105 --> COMPD105C3["COMP-D-105.3<br/>Best"]
   COMPD105 --> COMPD105C4["COMP-D-105.4<br/>Delta"]
@@ -263,9 +347,36 @@ flowchart TB
   COMPD105 --> COMPD105C7["COMP-D-105.7<br/>Status"]
   VIEWD001 --> COMPD106["COMP-D-106<br/>Health details disclosure"]
   COMPD106 --> COMPD106C1["COMP-D-106.1<br/>Learning health"]
+  COMPD106C1 --> NCOMP_D_106_1_1["COMP-D-106.1.1<br/>Latest school score"]
+  COMPD106C1 --> NCOMP_D_106_1_2["COMP-D-106.1.2<br/>Best school score"]
+  COMPD106C1 --> NCOMP_D_106_1_3["COMP-D-106.1.3<br/>Whole-school growth"]
+  COMPD106C1 --> NCOMP_D_106_1_4["COMP-D-106.1.4<br/>G-RTN"]
+  COMPD106C1 --> NCOMP_D_106_1_5["COMP-D-106.1.5<br/>P-RET"]
+  COMPD106C1 --> NCOMP_D_106_1_6["COMP-D-106.1.6<br/>Retained optimizer steps"]
+  COMPD106C1 --> NCOMP_D_106_1_7["COMP-D-106.1.7<br/>Capability state"]
   COMPD106 --> COMPD106C2["COMP-D-106.2<br/>Curriculum health"]
+  COMPD106C2 --> NCOMP_D_106_2_1["COMP-D-106.2.1<br/>Qualified capabilities"]
+  COMPD106C2 --> NCOMP_D_106_2_2["COMP-D-106.2.2<br/>Observed debt"]
+  COMPD106C2 --> NCOMP_D_106_2_3["COMP-D-106.2.3<br/>Active concepts"]
+  COMPD106C2 --> NCOMP_D_106_2_4["COMP-D-106.2.4<br/>Ready"]
+  COMPD106C2 --> NCOMP_D_106_2_5["COMP-D-106.2.5<br/>Held"]
+  COMPD106C2 --> NCOMP_D_106_2_6["COMP-D-106.2.6<br/>Implementation uncovered"]
+  COMPD106C2 --> NCOMP_D_106_2_7["COMP-D-106.2.7<br/>School state"]
   COMPD106 --> COMPD106C3["COMP-D-106.3<br/>Runtime health"]
+  COMPD106C3 --> NCOMP_D_106_3_1["COMP-D-106.3.1<br/>Elapsed"]
+  COMPD106C3 --> NCOMP_D_106_3_2["COMP-D-106.3.2<br/>Visits"]
+  COMPD106C3 --> NCOMP_D_106_3_3["COMP-D-106.3.3<br/>Visit rate"]
+  COMPD106C3 --> NCOMP_D_106_3_4["COMP-D-106.3.4<br/>Retained candidates"]
+  COMPD106C3 --> NCOMP_D_106_3_5["COMP-D-106.3.5<br/>Rejected candidates"]
+  COMPD106C3 --> NCOMP_D_106_3_6["COMP-D-106.3.6<br/>Accepted steps / hour"]
+  COMPD106C3 --> NCOMP_D_106_3_7["COMP-D-106.3.7<br/>Run state"]
   COMPD106 --> COMPD106C4["COMP-D-106.4<br/>System health"]
+  COMPD106C4 --> NCOMP_D_106_4_1["COMP-D-106.4.1<br/>Unified memory pressure"]
+  COMPD106C4 --> NCOMP_D_106_4_2["COMP-D-106.4.2<br/>Peak memory"]
+  COMPD106C4 --> NCOMP_D_106_4_3["COMP-D-106.4.3<br/>Disk reserve"]
+  COMPD106C4 --> NCOMP_D_106_4_4["COMP-D-106.4.4<br/>Correction / requalification debt"]
+  COMPD106C4 --> NCOMP_D_106_4_5["COMP-D-106.4.5<br/>Hard warnings"]
+  COMPD106C4 --> NCOMP_D_106_4_6["COMP-D-106.4.6<br/>Resource state"]
 ```
 
 ### Target component register
@@ -331,13 +442,17 @@ flowchart TB
 Compare capability state, understand declared dependencies, and inspect curriculum-semantic structure without losing orientation.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD002["VIEW-D-002<br/>School"]
   VIEWD002 --> COMPD204["COMP-D-204<br/>School mode switch"]
   COMPD204 --> COMPD204C1["COMP-D-204.1<br/>Capability matrix"]
   COMPD204 --> COMPD204C2["COMP-D-204.2<br/>Curriculum semantic atlas"]
   VIEWD002 --> COMPD207["COMP-D-207<br/>Matrix controls"]
   COMPD207 --> COMPD207C1["COMP-D-207.1<br/>Filters"]
+  COMPD207C1 --> NCOMP_D_207_1_1["COMP-D-207.1.1<br/>Lifecycle / state filters"]
+  COMPD207C1 --> NCOMP_D_207_1_2["COMP-D-207.1.2<br/>Family filter"]
+  COMPD207C1 --> NCOMP_D_207_1_3["COMP-D-207.1.3<br/>Source / implementation filter"]
+  COMPD207C1 --> NCOMP_D_207_1_4["COMP-D-207.1.4<br/>Qualification filter"]
   COMPD207 --> COMPD207C2["COMP-D-207.2<br/>Group by family"]
   COMPD207 --> COMPD207C3["COMP-D-207.3<br/>Column disclosure"]
   COMPD207 --> COMPD207C4["COMP-D-207.4<br/>Export displayed scope"]
@@ -349,21 +464,49 @@ flowchart TB
   COMPD201 --> COMPD201C5["COMP-D-201.5<br/>Pagination"]
   VIEWD002 --> COMPD202["COMP-D-202<br/>Declared dependency view"]
   COMPD202 --> COMPD202C1["COMP-D-202.1<br/>Graph"]
+  COMPD202C1 --> NCOMP_D_202_1_1["COMP-D-202.1.1<br/>Capability nodes"]
+  NCOMP_D_202_1_1 --> NCOMP_D_202_1_1_1["COMP-D-202.1.1.1<br/>Capability identity"]
+  NCOMP_D_202_1_1 --> NCOMP_D_202_1_1_2["COMP-D-202.1.1.2<br/>Lifecycle / eligibility"]
+  NCOMP_D_202_1_1 --> NCOMP_D_202_1_1_3["COMP-D-202.1.1.3<br/>Mastery / debt"]
+  COMPD202C1 --> NCOMP_D_202_1_2["COMP-D-202.1.2<br/>Prerequisite / dependent edges"]
   COMPD202 --> COMPD202C2["COMP-D-202.2<br/>Equivalent relationship table"]
+  COMPD202C2 --> NCOMP_D_202_2_1["COMP-D-202.2.1<br/>Relationship row"]
+  NCOMP_D_202_2_1 --> NCOMP_D_202_2_1_1["COMP-D-202.2.1.1<br/>From capability"]
+  NCOMP_D_202_2_1 --> NCOMP_D_202_2_1_2["COMP-D-202.2.1.2<br/>Relation"]
+  NCOMP_D_202_2_1 --> NCOMP_D_202_2_1_3["COMP-D-202.2.1.3<br/>To capability"]
   COMPD202 --> COMPD202C3["COMP-D-202.3<br/>Legend / keyboard guidance"]
   VIEWD002 --> COMPD205["COMP-D-205<br/>Curriculum atlas controls"]
   COMPD205 --> COMPD205C1["COMP-D-205.1<br/>Search"]
   COMPD205 --> COMPD205C2["COMP-D-205.2<br/>Jump to active"]
   COMPD205 --> COMPD205C3["COMP-D-205.3<br/>Trace mode"]
   COMPD205 --> COMPD205C4["COMP-D-205.4<br/>Grade / state / family filters"]
+  COMPD205C4 --> NCOMP_D_205_4_1["COMP-D-205.4.1<br/>Grade"]
+  COMPD205C4 --> NCOMP_D_205_4_2["COMP-D-205.4.2<br/>State"]
+  COMPD205C4 --> NCOMP_D_205_4_3["COMP-D-205.4.3<br/>Family"]
+  COMPD205C4 --> NCOMP_D_205_4_4["COMP-D-205.4.4<br/>Attention"]
+  COMPD205C4 --> NCOMP_D_205_4_5["COMP-D-205.4.5<br/>New only"]
   COMPD205 --> COMPD205C5["COMP-D-205.5<br/>Reset"]
   VIEWD002 --> COMPD203["COMP-D-203<br/>Curriculum semantic atlas"]
   COMPD203 --> COMPD203C1["COMP-D-203.1<br/>Grade strata"]
   COMPD203 --> COMPD203C2["COMP-D-203.2<br/>Declared prerequisite edges"]
   COMPD203 --> COMPD203C3["COMP-D-203.3<br/>Capability nodes"]
+  COMPD203C3 --> NCOMP_D_203_3_1["COMP-D-203.3.1<br/>Capability node"]
+  NCOMP_D_203_3_1 --> NCOMP_D_203_3_1_1["COMP-D-203.3.1.1<br/>Capability identity"]
+  NCOMP_D_203_3_1 --> NCOMP_D_203_3_1_2["COMP-D-203.3.1.2<br/>Semantic identity"]
+  NCOMP_D_203_3_1 --> NCOMP_D_203_3_1_3["COMP-D-203.3.1.3<br/>Grade"]
+  NCOMP_D_203_3_1 --> NCOMP_D_203_3_1_4["COMP-D-203.3.1.4<br/>Lifecycle / qualification"]
+  NCOMP_D_203_3_1 --> NCOMP_D_203_3_1_5["COMP-D-203.3.1.5<br/>Now / top / debt"]
+  NCOMP_D_203_3_1 --> NCOMP_D_203_3_1_6["COMP-D-203.3.1.6<br/>Blocker state"]
   COMPD203 --> COMPD203C4["COMP-D-203.4<br/>Semantic identity / state / debt"]
   VIEWD002 --> COMPD208["COMP-D-208<br/>Curriculum semantic equivalent table"]
   COMPD208 --> COMPD208C1["COMP-D-208.1<br/>Capability / semantic identity"]
+  COMPD208C1 --> NCOMP_D_208_1_1["COMP-D-208.1.1<br/>Relationship row"]
+  NCOMP_D_208_1_1 --> NCOMP_D_208_1_1_1["COMP-D-208.1.1.1<br/>Capability"]
+  NCOMP_D_208_1_1 --> NCOMP_D_208_1_1_2["COMP-D-208.1.1.2<br/>Semantic identity"]
+  NCOMP_D_208_1_1 --> NCOMP_D_208_1_1_3["COMP-D-208.1.1.3<br/>Grade / state"]
+  NCOMP_D_208_1_1 --> NCOMP_D_208_1_1_4["COMP-D-208.1.1.4<br/>Prerequisites"]
+  NCOMP_D_208_1_1 --> NCOMP_D_208_1_1_5["COMP-D-208.1.1.5<br/>Dependents"]
+  NCOMP_D_208_1_1 --> NCOMP_D_208_1_1_6["COMP-D-208.1.1.6<br/>Evidence"]
   COMPD208 --> COMPD208C2["COMP-D-208.2<br/>Grade / state"]
   COMPD208 --> COMPD208C3["COMP-D-208.3<br/>Prerequisites / dependents"]
   COMPD208 --> COMPD208C4["COMP-D-208.4<br/>Evidence"]
@@ -374,9 +517,19 @@ flowchart TB
   COMPD206 --> COMPD206C4["COMP-D-206.4<br/>Now / top / debt"]
   COMPD206 --> COMPD206C5["COMP-D-206.5<br/>Blocker reason"]
   COMPD206 --> COMPD206C6["COMP-D-206.6<br/>Recent evidence"]
+  COMPD206C6 --> NCOMP_D_206_6_1["COMP-D-206.6.1<br/>Recent event"]
+  NCOMP_D_206_6_1 --> NCOMP_D_206_6_1_1["COMP-D-206.6.1.1<br/>Generation / time"]
+  NCOMP_D_206_6_1 --> NCOMP_D_206_6_1_2["COMP-D-206.6.1.2<br/>State / outcome"]
+  NCOMP_D_206_6_1 --> NCOMP_D_206_6_1_3["COMP-D-206.6.1.3<br/>Evidence ref"]
   COMPD206 --> COMPD206C7["COMP-D-206.7<br/>Cross-view actions"]
+  COMPD206C7 --> NCOMP_D_206_7_1["COMP-D-206.7.1<br/>Open Capability Explorer"]
+  COMPD206C7 --> NCOMP_D_206_7_2["COMP-D-206.7.2<br/>Open Atlas"]
+  COMPD206C7 --> NCOMP_D_206_7_3["COMP-D-206.7.3<br/>Open Evidence"]
+  COMPD206C7 --> NCOMP_D_206_7_4["COMP-D-206.7.4<br/>Open Lineage"]
   VIEWD002 --> COMPD209["COMP-D-209<br/>Scale disclosure"]
   COMPD209 --> COMPD209C1["COMP-D-209.1<br/>Grade/family summary"]
+  COMPD209C1 --> NCOMP_D_209_1_1["COMP-D-209.1.1<br/>Grade summary"]
+  COMPD209C1 --> NCOMP_D_209_1_2["COMP-D-209.1.2<br/>Family summary"]
   COMPD209 --> COMPD209C2["COMP-D-209.2<br/>Bounded family expansion"]
   COMPD209 --> COMPD209C3["COMP-D-209.3<br/>Selected semantic prerequisites/dependents"]
 ```
@@ -460,7 +613,7 @@ flowchart TB
 Give one capability an exact longitudinal dossier: identity, current state, measured history, source support, dependencies and literal evidence, without inferred causality.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD003["VIEW-D-003<br/>Capability Explorer"]
   VIEWD003 --> COMPD304["COMP-D-304<br/>Dossier lens controls"]
   COMPD304 --> COMPD304C1["COMP-D-304.1<br/>Exact capability"]
@@ -483,14 +636,42 @@ flowchart TB
   COMPD302 --> COMPD302C8["COMP-D-302.8<br/>Source"]
   VIEWD003 --> COMPD305["COMP-D-305<br/>Dossier sections"]
   COMPD305 --> COMPD305C1["COMP-D-305.1<br/>Performance"]
+  COMPD305C1 --> NCOMP_D_305_1_1["COMP-D-305.1.1<br/>Measured performance entries"]
+  NCOMP_D_305_1_1 --> NCOMP_D_305_1_1_1["COMP-D-305.1.1.1<br/>Kind / label"]
+  NCOMP_D_305_1_1 --> NCOMP_D_305_1_1_2["COMP-D-305.1.1.2<br/>Generation / time"]
+  NCOMP_D_305_1_1 --> NCOMP_D_305_1_1_3["COMP-D-305.1.1.3<br/>Facts"]
+  NCOMP_D_305_1_1 --> NCOMP_D_305_1_1_4["COMP-D-305.1.1.4<br/>Evidence / related object actions"]
   COMPD305 --> COMPD305C2["COMP-D-305.2<br/>Teaching"]
+  COMPD305C2 --> NCOMP_D_305_2_1["COMP-D-305.2.1<br/>Teaching entries"]
+  NCOMP_D_305_2_1 --> NCOMP_D_305_2_1_1["COMP-D-305.2.1.1<br/>Strategy / source"]
+  NCOMP_D_305_2_1 --> NCOMP_D_305_2_1_2["COMP-D-305.2.1.2<br/>Outcome facts"]
+  NCOMP_D_305_2_1 --> NCOMP_D_305_2_1_3["COMP-D-305.2.1.3<br/>Evidence / related object actions"]
   COMPD305 --> COMPD305C3["COMP-D-305.3<br/>Sources"]
+  COMPD305C3 --> NCOMP_D_305_3_1["COMP-D-305.3.1<br/>Source entries"]
+  NCOMP_D_305_3_1 --> NCOMP_D_305_3_1_1["COMP-D-305.3.1.1<br/>Source identity"]
+  NCOMP_D_305_3_1 --> NCOMP_D_305_3_1_2["COMP-D-305.3.1.2<br/>Authority / admission posture"]
+  NCOMP_D_305_3_1 --> NCOMP_D_305_3_1_3["COMP-D-305.3.1.3<br/>Evidence actions"]
   COMPD305 --> COMPD305C4["COMP-D-305.4<br/>Dependencies"]
+  COMPD305C4 --> NCOMP_D_305_4_1["COMP-D-305.4.1<br/>Dependency entries"]
+  NCOMP_D_305_4_1 --> NCOMP_D_305_4_1_1["COMP-D-305.4.1.1<br/>Relation"]
+  NCOMP_D_305_4_1 --> NCOMP_D_305_4_1_2["COMP-D-305.4.1.2<br/>Related capability"]
+  NCOMP_D_305_4_1 --> NCOMP_D_305_4_1_3["COMP-D-305.4.1.3<br/>Evidence actions"]
   COMPD305 --> COMPD305C5["COMP-D-305.5<br/>History"]
+  COMPD305C5 --> NCOMP_D_305_5_1["COMP-D-305.5.1<br/>History entries"]
+  NCOMP_D_305_5_1 --> NCOMP_D_305_5_1_1["COMP-D-305.5.1.1<br/>Generation / time"]
+  NCOMP_D_305_5_1 --> NCOMP_D_305_5_1_2["COMP-D-305.5.1.2<br/>Event / state"]
+  NCOMP_D_305_5_1 --> NCOMP_D_305_5_1_3["COMP-D-305.5.1.3<br/>Evidence actions"]
   VIEWD003 --> COMPD306["COMP-D-306<br/>Inline evidence detail"]
   COMPD306 --> COMPD306C1["COMP-D-306.1<br/>Selected evidence identity"]
+  COMPD306C1 --> NCOMP_D_306_1_1["COMP-D-306.1.1<br/>Record ID"]
+  COMPD306C1 --> NCOMP_D_306_1_2["COMP-D-306.1.2<br/>Record type"]
+  COMPD306C1 --> NCOMP_D_306_1_3["COMP-D-306.1.3<br/>Query / coverage state"]
   COMPD306 --> COMPD306C2["COMP-D-306.2<br/>Literal detail"]
   COMPD306 --> COMPD306C3["COMP-D-306.3<br/>Related objects"]
+  COMPD306C3 --> NCOMP_D_306_3_1["COMP-D-306.3.1<br/>Related record"]
+  NCOMP_D_306_3_1 --> NCOMP_D_306_3_1_1["COMP-D-306.3.1.1<br/>Record identity"]
+  NCOMP_D_306_3_1 --> NCOMP_D_306_3_1_2["COMP-D-306.3.1.2<br/>Relation"]
+  NCOMP_D_306_3_1 --> NCOMP_D_306_3_1_3["COMP-D-306.3.1.3<br/>Open action"]
   COMPD306 --> COMPD306C4["COMP-D-306.4<br/>Pagination / bounded continuation"]
 ```
 
@@ -541,22 +722,47 @@ flowchart TB
 Replay one candidate transaction from intent through teaching, assessment, retention or rejection, with explicit custody and rollback boundaries.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD004["VIEW-D-004<br/>Learning"]
   VIEWD004 --> COMPD401["COMP-D-401<br/>Episode selector"]
   COMPD401 --> COMPD401C1["COMP-D-401.1<br/>Episode / candidate identity"]
+  COMPD401C1 --> NCOMP_D_401_1_1["COMP-D-401.1.1<br/>Episode option"]
+  NCOMP_D_401_1_1 --> NCOMP_D_401_1_1_1["COMP-D-401.1.1.1<br/>Episode / candidate ID"]
+  NCOMP_D_401_1_1 --> NCOMP_D_401_1_1_2["COMP-D-401.1.1.2<br/>Capability"]
+  NCOMP_D_401_1_1 --> NCOMP_D_401_1_1_3["COMP-D-401.1.1.3<br/>Terminal state"]
+  NCOMP_D_401_1_1 --> NCOMP_D_401_1_1_4["COMP-D-401.1.1.4<br/>Retention reason"]
   COMPD401 --> COMPD401C2["COMP-D-401.2<br/>Capability"]
   COMPD401 --> COMPD401C3["COMP-D-401.3<br/>Terminal state"]
   COMPD401 --> COMPD401C4["COMP-D-401.4<br/>Retention reason"]
   VIEWD004 --> COMPD402["COMP-D-402<br/>Transaction summary"]
   COMPD402 --> COMPD402C1["COMP-D-402.1<br/>Target capability"]
+  COMPD402C1 --> NCOMP_D_402_1_1["COMP-D-402.1.1<br/>Custody facts"]
+  NCOMP_D_402_1_1 --> NCOMP_D_402_1_1_1["COMP-D-402.1.1.1<br/>Candidate ID"]
+  NCOMP_D_402_1_1 --> NCOMP_D_402_1_1_2["COMP-D-402.1.1.2<br/>CP03 record ID"]
+  NCOMP_D_402_1_1 --> NCOMP_D_402_1_1_3["COMP-D-402.1.1.3<br/>Target capability"]
+  NCOMP_D_402_1_1 --> NCOMP_D_402_1_1_4["COMP-D-402.1.1.4<br/>Parent generation"]
   COMPD402 --> COMPD402C2["COMP-D-402.2<br/>Parent generation"]
+  COMPD402C2 --> NCOMP_D_402_2_1["COMP-D-402.2.1<br/>Teaching / work facts"]
+  NCOMP_D_402_2_1 --> NCOMP_D_402_2_1_1["COMP-D-402.2.1.1<br/>Strategy"]
+  NCOMP_D_402_2_1 --> NCOMP_D_402_2_1_2["COMP-D-402.2.1.2<br/>Source family"]
+  NCOMP_D_402_2_1 --> NCOMP_D_402_2_1_3["COMP-D-402.2.1.3<br/>Lesson family"]
+  NCOMP_D_402_2_1 --> NCOMP_D_402_2_1_4["COMP-D-402.2.1.4<br/>Intended / attempted / retained steps"]
   COMPD402 --> COMPD402C3["COMP-D-402.3<br/>Strategy / source"]
   COMPD402 --> COMPD402C4["COMP-D-402.4<br/>Attempted / retained work"]
   COMPD402 --> COMPD402C5["COMP-D-402.5<br/>Resource posture"]
+  COMPD402C5 --> NCOMP_D_402_5_1["COMP-D-402.5.1<br/>Resource facts"]
+  NCOMP_D_402_5_1 --> NCOMP_D_402_5_1_1["COMP-D-402.5.1.1<br/>Duration"]
+  NCOMP_D_402_5_1 --> NCOMP_D_402_5_1_2["COMP-D-402.5.1.2<br/>Peak memory"]
+  NCOMP_D_402_5_1 --> NCOMP_D_402_5_1_3["COMP-D-402.5.1.3<br/>Step rate"]
+  NCOMP_D_402_5_1 --> NCOMP_D_402_5_1_4["COMP-D-402.5.1.4<br/>Resource coverage"]
   COMPD402 --> COMPD402C6["COMP-D-402.6<br/>Terminal state"]
   VIEWD004 --> COMPD405["COMP-D-405<br/>Lifecycle replay"]
   COMPD405 --> COMPD405C1["COMP-D-405.1<br/>Ordered stages"]
+  COMPD405C1 --> NCOMP_D_405_1_1["COMP-D-405.1.1<br/>Lifecycle stage"]
+  NCOMP_D_405_1_1 --> NCOMP_D_405_1_1_1["COMP-D-405.1.1.1<br/>Stage label"]
+  NCOMP_D_405_1_1 --> NCOMP_D_405_1_1_2["COMP-D-405.1.1.2<br/>Stage state"]
+  NCOMP_D_405_1_1 --> NCOMP_D_405_1_1_3["COMP-D-405.1.1.3<br/>Stage detail"]
+  NCOMP_D_405_1_1 --> NCOMP_D_405_1_1_4["COMP-D-405.1.1.4<br/>Evidence actions"]
   COMPD405 --> COMPD405C2["COMP-D-405.2<br/>Current stage"]
   COMPD405 --> COMPD405C3["COMP-D-405.3<br/>Stage evidence"]
   VIEWD004 --> COMPD404["COMP-D-404<br/>Challenger vs committed comparison"]
@@ -569,6 +775,11 @@ flowchart TB
   COMPD403 --> COMPD403C2["COMP-D-403.2<br/>Pending / unknown outcome"]
   COMPD403 --> COMPD403C3["COMP-D-403.3<br/>Rejection class / reason"]
   COMPD403 --> COMPD403C4["COMP-D-403.4<br/>Rollback invariants"]
+  COMPD403C4 --> NCOMP_D_403_4_1["COMP-D-403.4.1<br/>Parent neural identity unchanged"]
+  COMPD403C4 --> NCOMP_D_403_4_2["COMP-D-403.4.2<br/>Parent optimizer identity unchanged"]
+  COMPD403C4 --> NCOMP_D_403_4_3["COMP-D-403.4.3<br/>Parent allocation identity unchanged"]
+  COMPD403C4 --> NCOMP_D_403_4_4["COMP-D-403.4.4<br/>Retained optimizer steps = 0"]
+  COMPD403C4 --> NCOMP_D_403_4_5["COMP-D-403.4.5<br/>Child generation = none"]
 ```
 
 ### Target component register
@@ -618,7 +829,7 @@ flowchart TB
 Inspect canonical semantic identity and generation-scoped ABI placement while keeping learned similarity visibly separate and derived.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD005["VIEW-D-005<br/>Atlas"]
   VIEWD005 --> COMPD521["COMP-D-521<br/>Atlas request state"]
   COMPD521 --> COMPD521C1["COMP-D-521.1<br/>Loading"]
@@ -702,7 +913,7 @@ flowchart TB
 Inspect measured neural/runtime mechanisms and exact frame compiler behavior without turning instrumentation into semantic authority.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD006["VIEW-D-006<br/>Model"]
   VIEWD006 --> COMPD601["COMP-D-601<br/>Model mode switch"]
   COMPD601 --> COMPD601C1["COMP-D-601.1<br/>Neural Runtime"]
@@ -795,7 +1006,7 @@ flowchart TB
 Inspect retained Engram allocation, retrieval and correction state without promoting memory hits to semantic or capability authority.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD007["VIEW-D-007<br/>Memory"]
   VIEWD007 --> COMPD733["COMP-D-733<br/>Historical memory unavailable"]
   COMPD733 --> COMPD733C1["COMP-D-733.1<br/>Requested generation"]
@@ -884,7 +1095,7 @@ flowchart TB
 Compare strategy population and measured outcomes/cost/fidelity without creating unsupported ranking or policy authority.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD008["VIEW-D-008<br/>Teacher"]
   VIEWD008 --> COMPD801["COMP-D-801<br/>Strategy roster"]
   COMPD801 --> COMPD801C1["COMP-D-801.1<br/>Identity / role / status"]
@@ -948,7 +1159,7 @@ flowchart TB
 Inspect Impact, Exigency and Osmotic Novelty as independent evidence, plus reversible aggregation and admitted routing rationale.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD009["VIEW-D-009<br/>SÍ SÉ SON"]
   VIEWD009 --> COMPD906["COMP-D-906<br/>As-of selector"]
   COMPD906 --> COMPD906C1["COMP-D-906.1<br/>Exact retained snapshot"]
@@ -1034,7 +1245,7 @@ flowchart TB
 Show correction context, known blast radius, requalification work and append-only history without claiming perfect unlearning.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD010["VIEW-D-010<br/>Corrections"]
   VIEWD010 --> COMPD1001["COMP-D-1001<br/>Correction context"]
   COMPD1001 --> COMPD1001C1["COMP-D-1001.1<br/>Correction ID"]
@@ -1111,7 +1322,7 @@ flowchart TB
 Inspect immutable accepted-generation custody, exact generation detail and literal differences; rejected candidates remain explicitly outside accepted lineage.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD011["VIEW-D-011<br/>Lineage"]
   VIEWD011 --> COMPD1101["COMP-D-1101<br/>Accepted lineage"]
   COMPD1101 --> COMPD1101C1["COMP-D-1101.1<br/>Generation nodes"]
@@ -1184,7 +1395,7 @@ flowchart TB
 Inspect measured resource posture, decomposition, time correlation and exact historical comparison without confusing absence with zero or correlation with causation.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD012["VIEW-D-012<br/>Resources"]
   VIEWD012 --> COMPD1201["COMP-D-1201<br/>Resource headline"]
   COMPD1201 --> COMPD1201C1["COMP-D-1201.1<br/>Projection provenance"]
@@ -1268,7 +1479,7 @@ flowchart TB
 Find and inspect exact Mission Control records, literal payloads and provenance while preserving degraded/partial states and investigation origin.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD013["VIEW-D-013<br/>Evidence"]
   VIEWD013 --> COMPD1301["COMP-D-1301<br/>Evidence query"]
   COMPD1301 --> COMPD1301C1["COMP-D-1301.1<br/>Kind"]
@@ -1353,7 +1564,7 @@ flowchart TB
 Cross a deliberate command boundary: exact request → read-only preflight → reviewed consequence → human authorization when mutating → receipt/readback/reconciliation.
 
 ```mermaid
-flowchart TB
+flowchart LR
   VIEWD014["VIEW-D-014<br/>Operate"]
   VIEWD014 --> COMPD1400["COMP-D-1400<br/>Command boundary posture"]
   COMPD1400 --> COMPD1400C1["COMP-D-1400.1<br/>Mutation zone identity"]
