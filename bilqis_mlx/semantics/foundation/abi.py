@@ -14,6 +14,8 @@ from pathlib import Path
 import re
 from typing import Mapping
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
+
 
 ABI_MANIFEST = Path(__file__).resolve().parents[1] / "legacy_abi_v1.json"
 HISTORICAL_GRAPH_REGISTRY = Path(__file__).resolve().parents[1] / "numeric_registry_v1.json"
@@ -159,7 +161,10 @@ def load_historical_graph(source: Path = HISTORICAL_GRAPH_REGISTRY, *,
         prefix, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
         allow_nan=False).encode("utf-8")
     if hashlib.sha256(serialized).hexdigest() != abi.graph_sha256:
-        raise ValueError("HISTORICAL_ABI_GRAPH_DIGEST_MISMATCH")
+        ErrorBus.Raise(
+            SCHOOL.STATE.HISTORICAL_ARTIFACT_INVALID,
+            reason="historical ABI graph digest mismatch",
+        )
     if len(prefix["tokens"]) != abi.prefix_tokens:
         _model_graph_count_drift()
     return prefix

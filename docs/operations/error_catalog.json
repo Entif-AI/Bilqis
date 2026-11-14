@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 266,
-  "legacy_raw_raise_count": 2094,
+  "legacy_raw_file_count": 267,
+  "legacy_raw_raise_count": 2093,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -6044,13 +6044,6 @@
       "path": "bilqis_mlx/factory/generation.py"
     },
     {
-      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
-      "path": "bilqis_mlx/factory/generation.py"
-    },
-    {
       "code_hint": "FACTORY_EXECUTABLE_GENERATION_UNKNOWN_CAPABILITY",
       "count": 1,
       "exception": "ValueError",
@@ -6128,67 +6121,74 @@
       "path": "bilqis_mlx/factory/generation.py"
     },
     {
+      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
+      "path": "bilqis_mlx/factory/generation_compat.py"
+    },
+    {
       "code_hint": "FACTORY_GENERATION_ADAPTER_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ADAPTER_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_EMPTY_SCOPE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_EMPTY_SCOPE'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_INVALID_COUNT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_INVALID_COUNT'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_UNKNOWN_CAPABILITY",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_UNKNOWN_CAPABILITY'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "",
       "count": 1,
       "exception": "ValueError",
       "expression": "drift_code + ':' + execution.capability_id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_ANSWER_HEAD_COMPILATION_INVALID_INPUT",
@@ -11802,13 +11802,6 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'HISTORICAL_ABI_FIELDS_INVALID'",
-      "path": "bilqis_mlx/semantics/foundation/abi.py"
-    },
-    {
-      "code_hint": "HISTORICAL_ABI_GRAPH_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HISTORICAL_ABI_GRAPH_INVALID'",
       "path": "bilqis_mlx/semantics/foundation/abi.py"
     },
     {

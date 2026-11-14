@@ -62,7 +62,8 @@ class HistoricalAbiTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             source = Path(td) / "registry.json"
             source.write_text(json.dumps(evidence), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "GRAPH_DIGEST_MISMATCH"):
+            with self.assertRaisesRegex(
+                    ValueError, "SCHOOL.STATE.HISTORICAL_ARTIFACT_INVALID"):
                 load_historical_graph(source)
 
     def test_sheet_reordering_does_not_mutate_semantic_identity(self):
