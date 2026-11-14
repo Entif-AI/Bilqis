@@ -88,8 +88,10 @@ class DataPlaneFileObjectMixin:
         target = self._file_object_path(digest, create=False)
         if target.is_symlink() or not target.is_file():
             raise ValueError(_error(DataPlaneError.OBJECT_MISSING, digest))
-        if _digest(target) != digest:
-            raise ValueError(_error(DataPlaneError.OBJECT_CORRUPTED, digest))
+        if not self.verified_file(target, digest):
+            if _digest(target) != digest:
+                raise ValueError(_error(DataPlaneError.OBJECT_CORRUPTED, digest))
+            self.remember_verified_file(target, digest)
         return target
 
     def owns_file_object(self, digest: str) -> bool:

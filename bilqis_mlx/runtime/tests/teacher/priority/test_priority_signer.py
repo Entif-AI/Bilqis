@@ -72,7 +72,10 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         retained_state=SimpleNamespace(optimizer_step=11),
     )
 
-    def offer(_context, _parent, _path, *, capability, source_seed, source_each):
+    planning_generation = object()
+
+    def offer(_context, _parent, _path, *, capability, source_seed, source_each,
+              planning_generation):
         return SimpleNamespace(
             capability_id=capability,
             source_seed=source_seed,
@@ -85,13 +88,20 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         )
 
     cache = SimpleNamespace(
-        generation=2, accepted_manifest_sha256="f" * 64, run_id="run")
+        generation=2, accepted_manifest_sha256="f" * 64, run_id="run",
+        _correction_registry=registry)
     with patch(
         "bilqis_mlx.runtime.bamf_bundle.accepted_runtime._accepted_correction_registry",
         return_value=(cache, registry),
     ), patch(
         "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer.read_host_system_source_authority_signer",
         return_value=signer,
+    ), patch.object(
+        authority, "bind_priority_planning_generation",
+        return_value=planning_generation,
+    ), patch.object(
+        authority, "_require_planning_generation",
+        return_value=(cache, None),
     ), patch.object(authority, "prepare_priority_source_offer", side_effect=offer), patch.object(
         authority, "priority_rotation_state",
         return_value=(1, {"capability:alpha": 1}),
@@ -174,9 +184,13 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         retained_state=SimpleNamespace(optimizer_step=11),
     )
     cache = SimpleNamespace(
-        generation=2, accepted_manifest_sha256="f" * 64, run_id="run")
+        generation=2, accepted_manifest_sha256="f" * 64, run_id="run",
+        _correction_registry=registry)
 
-    def offer(_context, _parent, _path, *, capability, source_seed, source_each):
+    planning_generation = object()
+
+    def offer(_context, _parent, _path, *, capability, source_seed, source_each,
+              planning_generation):
         return SimpleNamespace(
             capability_id=capability, source_seed=source_seed, source_each=source_each,
             source_family_id="family:" + capability,
@@ -197,6 +211,12 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         ), patch(
             "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer.read_host_system_source_authority_signer",
             return_value=signer,
+        ), patch.object(
+            authority, "bind_priority_planning_generation",
+            return_value=planning_generation,
+        ), patch.object(
+            authority, "_require_planning_generation",
+            return_value=(cache, None),
         ), patch.object(authority, "prepare_priority_source_offer", side_effect=offer), patch.object(
             authority, "priority_rotation_state",
             return_value=(1, {"capability:alpha": 1}),

@@ -1,5 +1,8 @@
 """Portable source-offer serialization and issuance boundaries."""
 import pytest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.priority_source_offer import (
@@ -39,6 +42,33 @@ def test_offer_rejects_context_without_accepted_host():
         assert error.value.context['reason'] == 'FACTORY_SOURCE_CORRECTION_RUNTIME_REQUIRED'
     finally:
         fixture.doCleanups()
+
+
+def test_planning_generation_rejects_acceptance_change_during_binding():
+    from bilqis_mlx.runtime import priority_source_offer as offer_module
+    from bilqis_mlx.runtime.source_execution import SourceExecutionContext
+
+    pointer = {
+        'run_id': 'run', 'generation': 0,
+        'manifest_sha256': 'a' * 64, 'acceptance_sha256': 'b' * 64,
+    }
+    cache = SimpleNamespace(
+        run_id='run', generation=0, accepted_manifest_sha256='a' * 64,
+        generation_binding='c' * 64,
+    )
+    parent = SimpleNamespace(run_identity=SimpleNamespace(digest='d' * 64))
+    context = object.__new__(SourceExecutionContext)
+    object.__setattr__(context, 'run_dir', Path('/run'))
+    with patch.object(
+            SourceExecutionContext, 'require_accepted_runtime', return_value=None), patch.object(
+            offer_module, '_planning_pointer_snapshot',
+            side_effect=((pointer, 'e' * 64), (pointer, 'f' * 64))), patch.object(
+            offer_module, '_current_cache', return_value=cache), patch(
+            'bilqis_mlx.runtime.bamf_bundle.authenticate_bamf_execution_feature_context',
+            return_value=object()):
+        with pytest.raises(BilqisError) as error:
+            offer_module.bind_priority_planning_generation(context, parent, '/atlas')
+    assert error.value.context['reason'] == 'BAMF_PRIORITY_PLANNING_GENERATION_INVALID'
 
 
 @pytest.mark.parametrize('kind', ['SOURCE', 'RIGHTS'])

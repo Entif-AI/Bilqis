@@ -5,6 +5,8 @@ import hashlib
 import json
 import unittest
 from dataclasses import replace
+from types import MappingProxyType
+from unittest.mock import patch
 
 from bilqis_mlx.factory.adapters import SourceAdapterRegistry
 from bilqis_mlx.factory.candidate_frontier import load_candidate_frontier
@@ -152,6 +154,84 @@ class PreNeuralProductionJourneyTests(PreNeuralJourneySupport, unittest.TestCase
         self._assert_staged_identity(staged, context)
         self._assert_provider_and_frontier_corruption_fail(staged, frontier, context)
         self._assert_custody_corruption_fails_closed(pointer_bytes, event_bytes)
+
+    def test_priority_planning_authenticates_generation_once_for_all_capabilities(self):
+        from bilqis_mlx.runtime import priority_source_offer
+
+        original = priority_source_offer._current_cache
+        calls = 0
+
+        def counted(*args, **kwargs):
+            nonlocal calls
+            calls += 1
+            return original(*args, **kwargs)
+
+        with patch.object(priority_source_offer, "_current_cache", side_effect=counted):
+            _pointer, _before, _after, context, selected, _rows, _pointer_bytes, _event_bytes = (
+                self._exercise_journey())
+
+        self.assertEqual(len(context.release.execution_plan.capabilities), 21)
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+        self.assertEqual(calls, 1)
+
+    def test_priority_planning_hashes_parameter_tree_once_after_context_authentication(self):
+        from bilqis_mlx.runtime import backbone_identity
+        from bilqis_mlx.runtime.bamf_bundle import accepted_runtime
+
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        original = backbone_identity.execution_generation_digest
+        calls = 0
+
+        def counted(*args, **kwargs):
+            nonlocal calls
+            calls += 1
+            return original(*args, **kwargs)
+
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                with patch.object(backbone_identity, "execution_generation_digest", side_effect=counted), \
+                        patch.object(accepted_runtime, "execution_generation_digest", side_effect=counted):
+                    selected = select_foundation_priority_visit(
+                        self.run, context, atlas_path, program=program, school=school)
+
+        self.assertEqual(len(context.release.execution_plan.capabilities), 21)
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+        self.assertEqual(calls, 1)
+
+    def test_planning_generation_rejects_in_memory_parent_mutation(self):
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+
+        (_pointer, _before, _after, context, selected, _rows,
+         _pointer_bytes, _event_bytes) = self._exercise_journey()
+        binding = selected.offer._planning_generation
+        parent = binding._parent
+        optimizer = parent.retained_state.optimizer
+        parameters = optimizer.parameters
+        name = next(iter(parameters))
+        original_parameter = parameters[name]
+        original_identity = parent.run_identity
+
+        changed_parameters = dict(parameters)
+        changed_parameters[name] = original_parameter + 1
+        object.__setattr__(optimizer, "parameters", MappingProxyType(changed_parameters))
+        try:
+            with self.assertRaises(ValueError):
+                _require_planning_generation(binding, context, parent)
+        finally:
+            object.__setattr__(optimizer, "parameters", parameters)
+
+        object.__setattr__(parent, "run_identity", None)
+        try:
+            with self.assertRaises(ValueError):
+                _require_planning_generation(binding, context, parent)
+        finally:
+            object.__setattr__(parent, "run_identity", original_identity)
 
 
 if __name__ == "__main__":

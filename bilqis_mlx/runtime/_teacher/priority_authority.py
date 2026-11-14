@@ -15,7 +15,10 @@ from bilqis_mlx.learning.salience_history import (
 )
 from bilqis_mlx.learning.salience_teacher import AttentionFrontier
 from bilqis_mlx.learning.teacher_lineage import priority_rotation_state
-from bilqis_mlx.runtime.priority_source_offer import prepare_priority_source_offer
+from bilqis_mlx.runtime.priority_source_offer import (
+    _require_planning_generation, bind_priority_planning_generation,
+    prepare_priority_source_offer,
+)
 from bilqis_mlx.semantic_sampling import DEFAULT_BINARY_BALANCE
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, DependencyRef
 from bilqis_mlx.semantics.domains import contract_digest
@@ -38,6 +41,7 @@ class AcceptedPriorityAuthority:
     planning: object
     offers: tuple
     now: int
+    planning_generation: object
 
 
 def _signed(record, signer, kind, key):
@@ -122,22 +126,25 @@ def issue_foundation_priority_authority(
         run_dir, source_context, parent, teacher_epoch, atlas_artifact_path, *,
         teacher_state):
     """Issue only signed UNKNOWN salience; C06 ranking owns the resulting order."""
-    from bilqis_mlx.runtime.bamf_bundle.accepted_runtime import _accepted_correction_registry
     from bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer import (
         read_host_system_source_authority_signer,
     )
-    cache, registry = _accepted_correction_registry(run_dir)
-    signer = read_host_system_source_authority_signer(registry)
     next_seed = teacher_state.get("next_seed")
     if type(next_seed) is not int or next_seed < 0:
         _invalid("BAMF_PRIORITY_TEACHER_SEED_INVALID")
     counter, last_selected = priority_rotation_state(teacher_state)
     planning = _priority_planning(run_dir, source_context, atlas_artifact_path)
+    planning_generation = bind_priority_planning_generation(
+        source_context, parent, atlas_artifact_path)
+    cache, _authenticated = _require_planning_generation(
+        planning_generation, source_context, parent)
+    registry = cache._correction_registry
+    signer = read_host_system_source_authority_signer(registry)
     offers = tuple((capability.capability_id, prepare_priority_source_offer(
         source_context, parent, atlas_artifact_path,
         capability=capability.capability_id,
         source_seed=_offer_seed(next_seed, capability.capability_id),
-        source_each=_SOURCE_EACH))
+        source_each=_SOURCE_EACH, planning_generation=planning_generation))
         for capability in source_context.release.execution_plan.capabilities)
     rejections = _current_rejections(run_dir, parent, cache)
     option_ids = {capability for capability, _ in offers}
@@ -194,7 +201,8 @@ def issue_foundation_priority_authority(
             "salience-event:" + raw.event_id))
     return AcceptedPriorityAuthority(
         AttentionFrontier(tuple(options), tuple(evidence_rows), snapshot),
-        SalienceHistory(window, tuple(history_events)), planning, offers, now)
+        SalienceHistory(window, tuple(history_events)), planning, offers, now,
+        planning_generation)
 
 
 __all__ = ("AcceptedPriorityAuthority", "issue_foundation_priority_authority")

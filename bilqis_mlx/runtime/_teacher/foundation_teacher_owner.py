@@ -137,6 +137,7 @@ def select_foundation_priority_visit(
         random.Random(parent.teacher_state["next_seed"]), Settings(),
         program=program, now=authority.now,
         total_capabilities=len(source_context.release.execution_plan.capabilities),
+        accepted_parent=parent, planning_generation=authority.planning_generation,
         **bootstrap)
 
 
