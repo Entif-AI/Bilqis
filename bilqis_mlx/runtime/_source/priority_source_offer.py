@@ -243,6 +243,13 @@ class PreparedPrioritySourceOffer:
         self._validate()
         return _decode_rows(self._rows_json)
 
+    def require_current_parent(self, source_context):
+        self._validate()
+        parent = self._planning_generation._parent
+        cache, _authenticated = _require_planning_generation(
+            self._planning_generation, source_context, parent)
+        return parent, cache
+
     def require_current(self, source_context, parent):
         self._validate()
         cache, _authenticated = _require_planning_generation(

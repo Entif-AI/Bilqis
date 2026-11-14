@@ -177,7 +177,7 @@ def execute_accepted_priority_candidate(selection, source_context,
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
-    parent, cache = _accepted_parent(Path(selection._run_dir))
+    parent, cache = selection.offer.require_current_parent(source_context)
     _require_current_visit(parent, cache, selection.visit)
     selection.offer.require_current(source_context, parent)
     policy = selection.policy

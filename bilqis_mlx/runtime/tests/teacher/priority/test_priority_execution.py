@@ -89,6 +89,8 @@ class Offer:
     capability_id = 'cap'
     source_seed = 7
     source_each = 1
+    def require_current_parent(self, context):
+        return 'planned-parent', 'planned-cache'
     def rows(self):
         return ({'id': 'one', 'capability': 'cap'},)
     def require_current(self, context, parent):
@@ -115,6 +117,27 @@ def test_execution_owns_rows_policy_and_teacher_rate(priority):
     assert kw['teacher_hparams'] == HParams(0.25, (0.8, 0.9), 1e-8, 0.2)
     assert kw['observation'] == Observation(args[5], 7)
     assert kw['capture_diagnostics'] is True
+
+
+def test_execution_reuses_authenticated_planning_parent(priority):
+    identity = SimpleNamespace(to_record=lambda: {'visit': 1})
+    selected = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), Visit(identity),
+        {'lr': 0.25}, {}, 'g', (), '/run')
+    release = SimpleNamespace(execution_plan=SimpleNamespace(capability_map={
+        'cap': SimpleNamespace(teaching_option_ids=('instruction',))}))
+    with patch.object(priority, '_accepted_parent',
+                      side_effect=AssertionError('must not reload accepted parent')), \
+         patch.object(priority, '_require_current_visit') as require_visit, \
+         patch.object(priority.BamfVisitProvenance, 'from_c03_record', return_value='provenance'), \
+         patch.object(priority, 'describe_delivered_teaching', return_value='delivery'), \
+         patch.object(priority, 'execute_factory_candidate_step', return_value='step') as execute:
+        assert priority.execute_accepted_priority_candidate(
+            selected, SimpleNamespace(release=release), 'atlas', 'features',
+            teacher_hparams=HParams(0.01, (0.8, 0.9), 1e-8, 0.2),
+            observation=Observation(({'id': 'old'},), 0), optimizer_step_seed=3,
+            max_norm=1) == 'step'
+    require_visit.assert_called_once_with('planned-parent', 'planned-cache', selected.visit)
+    assert execute.call_args.args[2] == 'planned-parent'
 
 
 def test_accepted_priority_school_derives_all_admitted_grades_and_student(priority):
