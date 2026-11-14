@@ -1,6 +1,6 @@
-.neural-view { display: grid; gap: var(--content-gap); margin-top: 34px; }
+.neural-view { display: grid; gap: var(--content-gap); margin-top: 0; }
 .neural-heading { display: flex; justify-content: space-between; align-items: end; gap: var(--space-5); }
-.neural-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
+.neural-heading h2 { margin: 5px 0 0; font-size: var(--type-section); }
 .neural-heading p { max-width: 570px; margin: 0; color: var(--text-muted); line-height: 1.45; }
 .neural-fixture-notice { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 2px double var(--attention); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
 .neural-fixture-notice span { color: var(--text-muted); }
@@ -9,29 +9,30 @@
 .neural-mode-switch button[aria-pressed="true"] { border-style: double; box-shadow: inset 3px 0 0 var(--accent); }
 .neural-panel { border: 1px solid var(--border); background: var(--surface-1); padding: var(--space-4); }
 .neural-panel > header, .ccgqa-card > header, .attnres-grid article > header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); }
-.neural-panel h3 { margin: 4px 0 0; font-size: 16px; }
-.neural-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: 10px; font-weight: 800; letter-spacing: .05em; }
+.neural-panel h3 { margin: 4px 0 0; font-size: var(--type-section); }
+.neural-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: var(--type-label); font-weight: 800; letter-spacing: .05em; }
+.neural-state { white-space: nowrap; }
 .neural-state[data-neural-state="present"], .neural-state[data-neural-state="complete"] { color: var(--healthy); }
 .neural-state[data-neural-state="partial"], .neural-state[data-neural-state="unknown"] { border-style: dotted; color: var(--attention); }
 .neural-state[data-neural-state="unavailable"] { border-style: dashed; color: var(--text-muted); }
 .neural-state[data-neural-state="invalid"] { border-style: double; color: var(--invalid); }
 .topology-path { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 7px; margin: var(--space-4) 0; }
 .topology-path div { min-height: 64px; padding: var(--space-3); border: 1px solid var(--border); background: var(--surface-2); }
-.topology-path span { display: block; color: var(--text-muted); font-size: 10px; }
-.topology-path strong { display: block; margin-top: 5px; font-size: 12px; }
+.topology-path span { display: block; color: var(--text-muted); font-size: var(--type-label); }
+.topology-path strong { display: block; margin-top: 5px; font-size: var(--type-body); }
 .topology-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1px; margin: 0; background: var(--border); }
 .topology-facts div { background: var(--surface-1); padding: 8px; }
-.topology-facts dt, .runtime-metrics small { color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.topology-facts dt, .runtime-metrics small { color: var(--text-muted); font-size: var(--type-label); text-transform: uppercase; letter-spacing: .04em; }
 .topology-facts dd { margin: 3px 0 0; font-variant-numeric: tabular-nums; }
 .runtime-metrics { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 1px; margin-top: var(--space-4); background: var(--border); }
 .runtime-metrics > div { display: grid; gap: 4px; padding: var(--space-3); background: var(--surface-1); }
-.ccgqa-grid, .attnres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.ccgqa-grid, .attnres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .ccgqa-card, .attnres-grid article { border: 1px solid var(--border); background: var(--surface-2); padding: var(--space-3); }
 .ccgqa-card[data-evidence-state="invalid"] { border: 3px double var(--invalid); }
 .invalid-evidence-banner { display: flex; justify-content: space-between; gap: var(--space-3); margin: var(--space-3) 0; padding: var(--space-3); border: 3px double var(--invalid); background: repeating-linear-gradient(135deg, transparent 0 7px, var(--pattern) 7px 14px); color: var(--invalid); }
 .ccgqa-card dl { display: grid; grid-template-columns: repeat(2, minmax(120px, 1fr)); gap: 1px; margin: var(--space-3) 0; background: var(--border); }
 .ccgqa-card dl div { padding: 7px; background: var(--surface-1); }
-.ccgqa-card dt { color: var(--text-muted); font-size: 10px; }
+.ccgqa-card dt { color: var(--text-muted); font-size: var(--type-label); }
 .ccgqa-card dd { margin: 3px 0 0; font-variant-numeric: tabular-nums; }
 .neural-doctrine, .reconciliation-note, .unavailable-panel p { color: var(--text-muted); line-height: 1.5; }
 .mixture-bars { display: grid; gap: 7px; margin: var(--space-3) 0; }
@@ -39,9 +40,9 @@
 .mixture-bars progress, .refinement-histogram progress { width: 100%; accent-color: var(--accent); }
 .refinement-histogram { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-3); margin-top: var(--space-4); }
 .refinement-histogram div { display: grid; gap: 5px; border: 1px solid var(--border); padding: var(--space-3); }
-.refinement-histogram strong { font-size: 24px; font-variant-numeric: tabular-nums; }
+.refinement-histogram strong { font-size: var(--type-display); font-variant-numeric: tabular-nums; }
 .refinement-table-wrap { overflow: auto; }
-.refinement-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.refinement-table { width: 100%; border-collapse: collapse; font-size: var(--type-label); font-variant-numeric: tabular-nums; }
 .refinement-table th, .refinement-table td { padding: 7px 9px; border-bottom: 1px solid var(--border); text-align: left; }
 .refinement-table th { color: var(--text-muted); }
 .instrumentation-panel > div { display: grid; gap: 1px; margin-top: var(--space-4); background: var(--border); }

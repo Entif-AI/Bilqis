@@ -1,10 +1,13 @@
 .corrections-view { display: grid; gap: var(--space-5); }
-.corrections-heading, .correction-panel > header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; }
+.corrections-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .9fr); gap: var(--space-5); align-items: center; }
+.correction-panel > header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; }
 .corrections-heading p, .correction-panel header p { max-width: 64ch; margin: 0; color: var(--text-muted); }
 .corrections-fixture-notice { display: grid; gap: var(--space-1); border: 1px dashed var(--border-strong); padding: var(--space-3); }
 .correction-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-2); }
 .correction-summary div, .correction-panel, .requalification-queue article { border: 1px solid var(--border); background: var(--surface-raised); padding: var(--space-3); }
 .correction-summary small, .correction-summary strong { display: block; overflow-wrap: anywhere; }
+.correction-summary small { color: var(--text-muted); font-size: var(--text-sm); }
+.correction-summary strong { margin-top: 4px; font-size: var(--text-md); line-height: 1.25; }
 .correction-graph { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: var(--space-2); margin-top: var(--space-3); }
 .correction-graph button { text-align: left; border: 1px solid var(--border); border-left: 4px solid currentColor; background: var(--surface); padding: var(--space-3); display: grid; gap: var(--space-1); }
 .correction-graph button span:last-child { font-size: var(--text-xs); overflow-wrap: anywhere; color: var(--text-muted); }
@@ -12,11 +15,12 @@
 .correction-edges div { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: var(--space-2); align-items: center; }
 .correction-edges span { overflow-wrap: anywhere; }
 .correction-state { display: inline-block; width: fit-content; border: 1px solid currentColor; padding: .15rem .4rem; font: 700 var(--text-xs)/1 var(--font-mono); letter-spacing: .03em; }
+.correction-state { white-space: nowrap; }
 [data-correction-state="KNOWN_EXPOSURE"], [data-correction-state="REQUALIFICATION_REQUIRED"] { border-style: dashed; }
 [data-correction-state="INVALIDATED"] { text-decoration: line-through; }
 [data-correction-state="UNAVAILABLE_UNKNOWN"] { outline: 2px dotted currentColor; outline-offset: 2px; }
 [data-correction-state="REQUALIFIED"], [data-correction-state="RECOMPUTED"] { border-style: double; border-width: 3px; }
-.correction-table-wrap { overflow-x: auto; margin-top: var(--space-3); }
+.correction-table-wrap { overflow-x: auto; scrollbar-gutter: stable; margin-top: var(--space-3); border: 1px solid var(--border); }
 .correction-table-wrap table { width: 100%; border-collapse: collapse; }
 .correction-table-wrap th, .correction-table-wrap td { text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); padding: var(--space-2); overflow-wrap: anywhere; }
 .correction-table-wrap button { text-align: left; }
@@ -27,6 +31,6 @@
 .correction-history { display: grid; gap: var(--space-2); padding-left: 1.3rem; }
 .correction-history li { border-left: 3px solid var(--border-strong); padding-left: var(--space-3); display: grid; gap: var(--space-1); }
 .correction-history span:last-child { font-family: var(--font-mono); overflow-wrap: anywhere; }
-@media (max-width: 900px) { .correction-summary { grid-template-columns: 1fr 1fr; } .corrections-heading, .correction-panel > header { display: grid; } }
+@media (max-width: 900px) { .correction-summary { grid-template-columns: 1fr 1fr; } .corrections-heading { grid-template-columns: 1fr; } .correction-panel > header { display: grid; } }
 @media (max-width: 560px) { .correction-summary { grid-template-columns: 1fr; } }
 @media (max-width: 560px) { .correction-edges div { grid-template-columns: 1fr; } }

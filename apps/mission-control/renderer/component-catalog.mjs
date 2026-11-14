@@ -12,7 +12,7 @@ function metricTile() {
 
 function deltaCard() {
   return `<article class="comparison-card">
-    <span class="eyebrow">Generation comparison</span>
+    <header><span>Generation comparison</span><span class="provenance-chip" data-authority="derived">D · derived</span></header>
     <strong>+3.2 pp</strong>
     <small>44217 → 44238 · same rubric</small>
   </article>`;
