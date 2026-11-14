@@ -1,38 +1,41 @@
+import { t } from "./i18n.mjs";
+import { testIdAttribute } from "./test-hooks.mjs";
+
 export const CACHED_OPERATOR_VIEW_KEY = "bilqis.mc.cached-operator-view/v1";
 const CACHE_SCHEMA = "bilqis.mission-control.cached-operator-view/v1";
 
 const profiles = {
-  live: ["Live service", "Current control-plane context is live and mutation may be offered through the accepted command contract.", "status", "FRESH", true, true],
-  loading: ["Loading", "Establishing the local control-plane session and requesting a verified snapshot.", "status", "UNKNOWN", false, false],
-  progressive: ["Progressive data", "Verified data is arriving incrementally. Missing fields remain explicitly incomplete.", "status", "UNKNOWN", false, true],
-  empty: ["Empty", "The verified scope contains no records. Empty is not unavailable or denied.", "status", "FRESH", false, true],
-  stale: ["Stale", "The last verified context is retained for inspection but is not current enough for mutation.", "status", "STALE", false, true],
-  partial: ["Partial", "Only part of the requested evidence is available. Missing evidence remains explicit.", "status", "STALE", false, true],
-  offline: ["Offline", "The local service is disconnected. Verified cached or previously received evidence is inspection-only.", "alert", "DISCONNECTED", false, true],
-  denied: ["Denied", "The current session is not authorized for this surface. No mutation is offered.", "alert", "DISCONNECTED", false, true],
-  revoked: ["Revoked", "Previously available authority was revoked. Existing evidence may be inspected, but no action may proceed.", "alert", "DISCONNECTED", false, true],
-  unavailable: ["Unavailable", "The requested service or evidence surface is not available. This is distinct from an empty result.", "alert", "UNKNOWN", false, false],
-  "incompatible-version": ["Incompatible version", "The renderer and local service cannot establish a compatible contract. Inspection is limited to verified prior evidence.", "alert", "DISCONNECTED", false, true],
-  timeout: ["Timeout", "The request did not complete in time. Existing verified context is preserved without claiming a terminal outcome.", "alert", "STALE", false, true],
-  "duplicate-action": ["Duplicate action", "The command identity already exists. Read the existing operation receipt instead of repeating the effect.", "alert", "FRESH", false, true],
-  "session-restarting": ["Session restarting", "The renderer session is being re-established. Current investigation context is preserved where safe.", "status", "STALE", false, true],
-  "service-restarting": ["Service restarting", "The local control-plane service is restarting. Learner failure is not inferred from this UI condition.", "status", "STALE", false, true],
-  "historical-unavailable": ["Historical reconstruction unavailable", "The requested historical state cannot be reconstructed from retained evidence.", "alert", "UNKNOWN", false, true],
-  "malformed-payload": ["Malformed payload", "A payload failed the accepted Mission Control contract and was not rendered as trusted evidence.", "alert", "UNKNOWN", false, true],
-  "unsupported-payload": ["Unsupported payload", "The payload version or record type is not supported by this renderer.", "alert", "UNKNOWN", false, true],
-  "outcome-unknown": ["Outcome unknown", "A consequential operation may have executed, but its postcondition has not been proven. No automatic retry is offered.", "alert", "STALE", false, true],
-  unknown: ["State unknown", "The renderer cannot yet classify the current service posture. Mutation remains unavailable.", "status", "UNKNOWN", false, true],
+  live: ["foundation.defensive.live.label", "foundation.defensive.live.description", "status", "FRESH", true, true],
+  loading: ["foundation.defensive.loading.label", "foundation.defensive.loading.description", "status", "UNKNOWN", false, false],
+  progressive: ["foundation.defensive.progressive.label", "foundation.defensive.progressive.description", "status", "UNKNOWN", false, true],
+  empty: ["foundation.defensive.empty.label", "foundation.defensive.empty.description", "status", "FRESH", false, true],
+  stale: ["foundation.defensive.stale.label", "foundation.defensive.stale.description", "status", "STALE", false, true],
+  partial: ["foundation.defensive.partial.label", "foundation.defensive.partial.description", "status", "STALE", false, true],
+  offline: ["foundation.defensive.offline.label", "foundation.defensive.offline.description", "alert", "DISCONNECTED", false, true],
+  denied: ["foundation.defensive.denied.label", "foundation.defensive.denied.description", "alert", "DISCONNECTED", false, true],
+  revoked: ["foundation.defensive.revoked.label", "foundation.defensive.revoked.description", "alert", "DISCONNECTED", false, true],
+  unavailable: ["foundation.defensive.unavailable.label", "foundation.defensive.unavailable.description", "alert", "UNKNOWN", false, false],
+  "incompatible-version": ["foundation.defensive.incompatibleVersion.label", "foundation.defensive.incompatibleVersion.description", "alert", "DISCONNECTED", false, true],
+  timeout: ["foundation.defensive.timeout.label", "foundation.defensive.timeout.description", "alert", "STALE", false, true],
+  "duplicate-action": ["foundation.defensive.duplicateAction.label", "foundation.defensive.duplicateAction.description", "alert", "FRESH", false, true],
+  "session-restarting": ["foundation.defensive.sessionRestarting.label", "foundation.defensive.sessionRestarting.description", "status", "STALE", false, true],
+  "service-restarting": ["foundation.defensive.serviceRestarting.label", "foundation.defensive.serviceRestarting.description", "status", "STALE", false, true],
+  "historical-unavailable": ["foundation.defensive.historicalUnavailable.label", "foundation.defensive.historicalUnavailable.description", "alert", "UNKNOWN", false, true],
+  "malformed-payload": ["foundation.defensive.malformedPayload.label", "foundation.defensive.malformedPayload.description", "alert", "UNKNOWN", false, true],
+  "unsupported-payload": ["foundation.defensive.unsupportedPayload.label", "foundation.defensive.unsupportedPayload.description", "alert", "UNKNOWN", false, true],
+  "outcome-unknown": ["foundation.defensive.outcomeUnknown.label", "foundation.defensive.outcomeUnknown.description", "alert", "STALE", false, true],
+  unknown: ["foundation.defensive.unknown.label", "foundation.defensive.unknown.description", "status", "UNKNOWN", false, true],
 };
 
 function makeProfile(id, snapshotAvailable = false, snapshotSource = "none") {
   const raw = profiles[id] ?? profiles.unknown;
-  const [label, description, role, freshness, mutationAllowed, inspectWhenSnapshot] = raw;
+  const [labelKey, descriptionKey, role, freshness, mutationAllowed, inspectWhenSnapshot] = raw;
   const inspectionAllowed = snapshotAvailable && inspectWhenSnapshot;
   const historical = id !== "live" && snapshotAvailable;
   return Object.freeze({
     id,
-    label,
-    description,
+    label: t(labelKey),
+    description: t(descriptionKey),
     role,
     freshness,
     mutationAllowed: mutationAllowed && snapshotAvailable,
@@ -90,7 +93,7 @@ export function defensiveStateIds() {
 export function defensiveCatalogMarkup() {
   return defensiveStateIds().map((id) => {
     const profile = defensiveState(id, { snapshotAvailable: true, snapshotSource: "fixture" });
-    return `<div class="state-surface" data-state="${profile.id}" data-role="${profile.role}"><strong>${profile.label}</strong><small>${profile.description}</small></div>`;
+    return `<div class="state-surface" data-state="${profile.id}" data-role="${profile.role}" ${testIdAttribute("foundation", "defensive", profile.id)}><strong>${profile.label}</strong><small>${profile.description}</small></div>`;
   }).join("");
 }
 

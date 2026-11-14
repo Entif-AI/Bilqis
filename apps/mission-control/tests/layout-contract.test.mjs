@@ -53,8 +53,8 @@ test("operator typography and explanatory surfaces use the shared visual languag
   const evidence = source("evidence/evidence-markup.mjs");
 
   for (const [token, value] of [
-    ["--type-label", "11px"], ["--type-body", "14px"],
-    ["--type-section", "18px"], ["--type-display", "28px"],
+    ["--type-label", "12px"], ["--type-body", "14px"],
+    ["--type-section", "20px"], ["--type-display", "30px"],
   ]) assert.match(tokens, new RegExp(token + ":\\s*" + value));
   assert.match(shell, /\.context-bar\[data-context="empty"\][^}]*grid-template-columns:\s*minmax\(300px, 1fr\) auto/s);
   assert.match(shell, /\.context-actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*align-items:\s*flex-end/s);
@@ -65,6 +65,22 @@ test("operator typography and explanatory surfaces use the shared visual languag
   }
   assert.match(evidence, /QUERY UNAVAILABLE/);
   assert.doesNotMatch(evidence, /QUERY ERROR/);
+});
+
+test("shared primitive layer preserves canvas separation and canonical density modes", () => {
+  const tokens = source("visual-tokens.css");
+  const components = source("components.css");
+  const settings = source("settings.mjs");
+  assert.match(components, /\.ui-canvas\s*\{[^}]*background:\s*var\(--canvas\)/s);
+  assert.match(components, /\.ui-surface-1\s*\{[^}]*background:\s*var\(--surface-1\)/s);
+  assert.match(components, /\.ui-surface-2\s*\{[^}]*background:\s*var\(--surface-2\)/s);
+  assert.match(components, /\.ui-surface-3\s*\{[^}]*background:\s*var\(--surface-3\)/s);
+  assert.match(components, /\.ui-panel\s*\{/);
+  assert.match(components, /\.ui-table-wrap\s*\{/);
+  assert.match(components, /\.ui-disclosure\s*\{/);
+  assert.match(components, /\.ui-state--error\s*\{/);
+  assert.match(settings, /\["comfortable",\s*"compact"\]/);
+  assert.doesNotMatch(tokens, /data-density="terminal"/);
 });
 
 test("domain CSS cannot invent additional rendered text sizes", () => {

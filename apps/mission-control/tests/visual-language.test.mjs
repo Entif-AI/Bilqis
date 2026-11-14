@@ -7,6 +7,9 @@ import { renderComponentCatalog } from "../renderer/component-catalog.mjs";
 import { DENSITIES, THEMES, loadDisplaySettings, saveDisplaySettings } from "../renderer/settings.mjs";
 import { semanticStateInventory, statusBadge, evidenceValue } from "../renderer/visual-language.mjs";
 import { VISUAL_REGRESSION_CASES, visualFixtureNames } from "../renderer/visual-fixtures.mjs";
+import { CONTROL_ROLES, SURFACE_LEVELS, controlClass, disclosureMarkup, panelMarkup, stateMarkup, surfaceClass } from "../renderer/foundation/primitives.mjs";
+import { createTranslator, formatMessage } from "../renderer/foundation/i18n.mjs";
+import { assertUniqueTestIds, collectTestIds, duplicateTestIds, testId, testIdAttribute } from "../renderer/foundation/test-hooks.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../renderer");
@@ -31,6 +34,7 @@ test("semantic inventory covers every GUI02 state with non-color markers", () =>
   for (const state of expected) {
     const html = statusBadge(state);
     assert.match(html, new RegExp('data-state="' + state + '"'));
+    assert.match(html, new RegExp('data-test-id="status-' + state + '"'));
     assert.match(html, /<span aria-hidden="true">.+<\/span>/);
   }
 });
@@ -52,7 +56,7 @@ test("component catalog includes every required common treatment", () => {
   const html = renderComponentCatalog();
   for (const marker of [
     "metric-tile", "status-badge", "provenance-chip", "run-identity", "trend",
-    "comparison-card", "alert", "state-surface", "evidence-row", "graph-legend",
+    "comparison-card", "alert", "state-surface", "ui-disclosure", "graph-legend",
     "historical-banner",
   ]) assert.match(html, new RegExp(marker));
 });
@@ -60,10 +64,10 @@ test("component catalog includes every required common treatment", () => {
 test("theme and density settings persist only in UI-local keys", () => {
   const storage = fakeStorage();
   saveDisplaySettings(storage, { theme: "light", density: "terminal" });
-  assert.deepEqual(loadDisplaySettings(storage), { theme: "light", density: "terminal" });
+  assert.deepEqual(loadDisplaySettings(storage), { theme: "light", density: "compact" });
   assert.deepEqual(Object.keys(storage.snapshot()).sort(), ["bilqis.mc.density", "bilqis.mc.theme"]);
   assert.deepEqual(THEMES, ["dark", "light"]);
-  assert.deepEqual(DENSITIES, ["comfortable", "compact", "terminal"]);
+  assert.deepEqual(DENSITIES, ["comfortable", "compact"]);
 });
 
 test("visual regression fixtures cover required safety postures", () => {
@@ -81,15 +85,15 @@ test("visual regression fixtures cover required safety postures", () => {
   }
 });
 
-test("CSS supplies non-color cues and terminal density without horizontal table forcing", () => {
-  const css = ["visual-tokens.css", "components.css", "shell.css"]
+test("CSS supplies non-color cues without decorative patterns or retired terminal density", () => {
+  const css = ["visual-tokens.css", "components.css"]
     .map((name) => fs.readFileSync(path.join(rendererRoot, name), "utf8"))
     .join("\n");
   assert.match(css, /border-style:\s*dashed/);
   assert.match(css, /border-style:\s*double/);
   assert.match(css, /border-style:\s*dotted/);
-  assert.match(css, /repeating-linear-gradient/);
-  assert.match(css, /data-density="terminal"/);
+  assert.doesNotMatch(css, /repeating-linear-gradient/);
+  assert.doesNotMatch(css, /data-density="terminal"/);
   assert.doesNotMatch(css, /\.catalog[^\{]*\{[^}]*overflow-x:\s*scroll/);
 });
 
@@ -98,4 +102,35 @@ test("dark and light themes expose the same semantic token surface", () => {
   for (const token of ["--canvas", "--surface-1", "--border", "--text", "--text-muted", "--healthy", "--attention", "--invalid", "--historical"]) {
     assert.equal(css.split(token).length - 1 >= 2, true, token + " missing from one theme");
   }
+});
+
+test("shared primitive grammar encodes surface depth and action roles without changing semantics", () => {
+  assert.deepEqual(SURFACE_LEVELS, ["canvas", "surface-1", "surface-2", "surface-3"]);
+  assert.deepEqual(CONTROL_ROLES, ["navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status"]);
+  assert.equal(surfaceClass("surface-2"), "ui-surface ui-surface-2 ui-surface--bounded");
+  assert.equal(controlClass("mutate"), "ui-control ui-control--mutate");
+  assert.match(panelMarkup({ title: "Panel", body: "Body", testId: "foundation-test-panel" }), /ui-panel/);
+  assert.match(disclosureMarkup({ summary: "More", body: "Detail", testId: "foundation-test-disclosure" }), /<details/);
+  assert.match(stateMarkup({ title: "Unavailable", detail: "No data", testId: "foundation-test-state", kind: "error" }), /role="alert"/);
+  assert.throws(() => controlClass("mystery"), /CONTROL_ROLE_INVALID/);
+});
+
+test("foundation localization uses stable keys and named parameters", () => {
+  const translate = createTranslator();
+  assert.equal(translate("foundation.catalog.historical.detail", { generation: 7 }), "Inspection only · generation 7 · not live learner state");
+  assert.equal(formatMessage("{count} rows", { count: 3 }), "3 rows");
+  assert.throws(() => translate("foundation.unknown"), /I18N_KEY_UNKNOWN/);
+  assert.throws(() => formatMessage("Generation {generation}"), /I18N_PARAMETER_MISSING/);
+});
+
+test("dedicated test-hook namespace is semantic and exact ids are unique", () => {
+  assert.equal(testId("foundation", "status", "healthy"), "foundation-status-healthy");
+  assert.equal(testIdAttribute("foundation", "panel"), 'data-test-id="foundation-panel"');
+  assert.throws(() => testId("Foundation", "bad id"), /TEST_ID_INVALID/);
+  const markup = renderComponentCatalog();
+  const ids = collectTestIds(markup);
+  assert.equal(ids.length > 10, true);
+  assert.deepEqual(duplicateTestIds(markup), []);
+  assert.equal(assertUniqueTestIds(markup), true);
+  assert.throws(() => assertUniqueTestIds('<i data-test-id="same"></i><b data-test-id="same"></b>'), /TEST_ID_DUPLICATE:same/);
 });
