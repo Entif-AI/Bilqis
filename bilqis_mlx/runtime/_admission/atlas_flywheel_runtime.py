@@ -18,6 +18,7 @@ from ..factory.atlas_frontier_closure import resolve_frontier_closure
 from ..factory.atlas_runtime_snapshot import build_accepted_executable_snapshot
 from ..factory.candidate_frontier import load_candidate_frontier
 from ..factory.live_answers import live_answer_registry
+from ..compatibility.source_adapter_resume import predecessor_compatible_source_registry
 from ..factory.skos_curriculum import (
     LearnedFrontier,
     SOURCE_FAMILY_ADAPTERS,
@@ -122,6 +123,7 @@ def _replay_current_graph(current, parent_graph: dict) -> dict:
 def _persist_ready_realizations(
         run_dir: Path, current, candidate, frontier, graph: dict) -> tuple:
     sources, answers = live_source_registry(), live_answer_registry()
+    staging_sources = predecessor_compatible_source_registry(current, sources)
     staged = load_staged_candidates(
         run_dir, frontier, current,
         source_registry=sources, answer_registry=answers)
@@ -138,7 +140,7 @@ def _persist_ready_realizations(
         realized = candidate_realizations.prepare_realized_candidate(
             frontier, current, graph, semantic_id,
             source_root=LEGACY_SOURCE,
-            source_registry=sources,
+            source_registry=staging_sources,
             answer_registry=answers,
         )
         if realized.candidate_id not in known:

@@ -37,12 +37,16 @@ def propose_source_frontier_work(session, checkpoint, graph, source_registry):
     staged = load_staged_candidates(
         session.run_dir, frontier, session.release, source_registry=source_registry)
     if graph is not None:
+        from ...compatibility.source_adapter_resume import predecessor_compatible_source_registry
         from ...factory.candidate_realizations import prepare_realized_candidates
         from ...factory.live_answers import live_answer_registry
         known = {item.candidate_id for item in staged}
+        staging_source_registry = predecessor_compatible_source_registry(
+            session.release, source_registry)
         for item in prepare_realized_candidates(
                 frontier, session.release, graph, source_root=session.source_root,
-                source_registry=source_registry, answer_registry=live_answer_registry()):
+                source_registry=staging_source_registry,
+                answer_registry=live_answer_registry()):
             if item.candidate_id not in known:
                 persist_staged_candidate(
                     session.run_dir, item, frontier, session.release)
