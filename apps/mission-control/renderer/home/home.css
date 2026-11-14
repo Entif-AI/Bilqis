@@ -4,7 +4,7 @@
 .shell[data-view="mission-control"] .view-host > p { margin:0 0 14px; max-width:none; font-size:var(--type-body); }
 .home-dashboard { display:grid; gap:10px; min-width:0; }
 .home-startup { max-width:820px; margin-top:12px; padding:22px 24px; border:1px solid var(--border-strong); border-left:4px solid var(--valid); border-radius:10px; background:var(--surface-1); }
-.home-startup h2 { margin:5px 0 8px; font-size:clamp(22px,3vw,30px); }
+.home-startup h2 { margin:5px 0 8px; font-size:var(--type-display); }
 .home-startup>p { color:var(--text-muted); line-height:1.55; }
 .home-startup dl { margin:18px 0; display:grid; gap:0; }
 .home-startup dl div { display:grid; grid-template-columns:minmax(180px,.6fr) 1fr; gap:16px; padding:8px 0; border-bottom:1px dotted var(--border); }
