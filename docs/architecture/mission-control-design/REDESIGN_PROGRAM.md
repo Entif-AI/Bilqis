@@ -20,7 +20,7 @@ Before UI implementation:
 
 No runtime UI leaf begins before that ratification. Merged documentation is not itself proof that the named agreement gate occurred.
 
-No leaf should reinterpret these artifacts independently. If implementation discovers a contradiction, update the authority/deficiency record first.
+No leaf should reinterpret these artifacts independently. If implementation discovers a contradiction, update the authority/deficiency record first. Atlas scope is recursive by default: citing a component owns every dotted descendant beneath it unless the ticket explicitly excludes a descendant with a source-grounded reason.
 
 ## Tier 1 · Shared foundations
 
@@ -83,7 +83,7 @@ Runs once after all prior leaves integrate. This is the requested whole-app pass
 
 For each issue:
 
-1. reread `DESIGN.md`, style guide, the exact anti-pattern gallery, and relevant CON-D and atlas/flow IDs;
+1. reread `DESIGN.md`, style guide, the exact anti-pattern gallery, and relevant CON-D and atlas/flow IDs; expand every cited atlas node through its full recursive descendant subtree before scoping edits;
 2. capture the current micro-surface as before evidence;
 3. make the smallest coherent redesign;
 4. sweep the entire owned micro-surface and convert **all** human-facing copy in that surface to localization tokens, not only lines edited for layout;
