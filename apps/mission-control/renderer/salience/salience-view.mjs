@@ -48,7 +48,7 @@ function eventRows(snapshot) {
   return snapshot.events.map((event) => `<article class="salience-event-row" data-event="${event.recordId}">
     <header>
       <div><small>${event.actionKind} · ${event.capabilityId}</small><strong>${event.salienceId}</strong></div>
-      <div><small>observed ${event.observedAt}</small><small>effective ${event.effectiveAt}</small></div>
+      <div><small><b>Observed</b> ${event.observedAt}</small><small><b>Effective</b> ${event.effectiveAt}</small></div>
     </header>
     <div class="salience-lanes">${SALIENCE_AXES.map((axis) => axisCell(event, axis)).join("")}</div>
     <footer>
@@ -194,6 +194,7 @@ export function renderSalienceView(container, inspect) {
     <section class="salience-toolbar" aria-label="Salience as-of fixture selector">
       ${SALIENCE_SNAPSHOTS.map((item) => `<button type="button" data-snapshot="${item.id}" data-focus-key="salience:snapshot:${item.id}" aria-pressed="${item.id === snapshot.id}">${item.label}</button>`).join("")}
     </section>
+    <div class="ui-glossary" aria-label="SÍ SÉ SON definitions"><span><strong>Impact</strong> consequence magnitude.</span><span><strong>Exigency</strong> urgency or time pressure.</span><span><strong>Osmotic Novelty</strong> departure from expectation.</span><span>The three axes remain independent; this view does not compute a universal score.</span></div>
     <section class="salience-panel">
       <header><div><span class="eyebrow">SÍ SÉ SON</span><h3>Three independent evidence lanes</h3></div>${badge(snapshot.mode)}</header>
       <p class="salience-doctrine">Impact, Exigency, and expectation-relative Osmotic Novelty remain separate ordinals. No weighted universal salience score is computed.</p>

@@ -219,6 +219,7 @@ export function renderTeacherView(container, inspectStrategy) {
   container.innerHTML = `<div class="teacher-view">
     <header class="teacher-heading"><div><span class="eyebrow">GUI11 · Teacher / Strategy Lab</span><h2>Measured outcomes, visible uncertainty</h2></div><p>Inspect strategy population, efficacy, no-gain, interference, cost and shadow fidelity without turning observational correlation into policy authority.</p></header>
     <div class="teacher-fixture-notice"><strong>FIXTURE · FACTORY-EVIDENCE SHAPE</strong><span>Strategy-lab detail is representative fixture data because current CP02 TeacherSnapshot is intentionally narrow. Literal Learning Episode links use the landed GUI06 record-ID contract.</span></div>
+    <div class="ui-glossary" aria-label="Strategy lab metric definitions"><span><strong>Retained</strong> candidate updates kept by the teacher.</span><span><strong>No gain</strong> attempts without measurable target improvement.</span><span><strong>Interference</strong> attempts that harmed protected capability evidence.</span><span><strong>Wall s</strong> observed elapsed seconds.</span></div>
     ${rosterPanel(inspectStrategy)}
     ${comparisonPanel()}
     ${fidelityPanel()}

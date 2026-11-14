@@ -1,6 +1,6 @@
-.episodes-view { display: grid; gap: var(--content-gap); margin-top: 34px; }
+.episodes-view { display: grid; gap: var(--content-gap); margin-top: 0; }
 .episodes-heading { display: flex; justify-content: space-between; gap: var(--space-5); align-items: end; }
-.episodes-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
+.episodes-heading h2 { margin: 5px 0 0; font-size: var(--type-section); }
 .episodes-heading p { max-width: 580px; margin: 0; color: var(--text-muted); line-height: 1.45; }
 .episodes-fixture-notice { display: flex; gap: var(--space-3); padding: var(--space-3); border: 2px double var(--attention); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
 .episodes-fixture-notice span { color: var(--text-muted); }
@@ -9,8 +9,9 @@
 .episode-picker button[aria-pressed="true"] { border-style: double; box-shadow: inset 3px 0 0 var(--accent); }
 .episode-panel { border: 1px solid var(--border); background: var(--surface-1); padding: var(--space-4); }
 .episode-panel > header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); margin-bottom: var(--space-4); }
-.episode-panel h3 { margin: 4px 0 0; font-size: 16px; }
-.episode-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: 10px; font-weight: 800; letter-spacing: .05em; }
+.episode-panel h3 { margin: 4px 0 0; font-size: var(--type-section); }
+.episode-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: var(--type-label); font-weight: 800; letter-spacing: .05em; }
+.episode-state { white-space: nowrap; }
 .episode-state[data-state="retained"], .episode-state[data-state="present"] { color: var(--healthy); }
 .episode-state[data-state="rejected"], .episode-state[data-state="invalid"] { color: var(--invalid); border-style: double; }
 .episode-state[data-state="unknown"], .episode-state[data-state="pending"], .episode-state[data-state="partial"] { color: var(--attention); border-style: dashed; }
@@ -29,7 +30,7 @@
 .episode-proof { display: grid; gap: 3px; padding: var(--space-3); border: 1px solid var(--border); background: var(--surface-2); }
 .episode-proof[data-pass="true"] { border-style: double; border-color: var(--healthy); }
 .episode-diff-wrap { overflow: auto; }
-.episode-diff { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.episode-diff { width: 100%; border-collapse: collapse; font-size: var(--type-label); font-variant-numeric: tabular-nums; }
 .episode-diff th, .episode-diff td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
 .episode-diff tr[data-state="partial"] td, .episode-diff tr[data-state="missing"] td { color: var(--text-muted); }
 .episode-replay { display: grid; grid-template-columns: minmax(220px, .8fr) minmax(0, 1.5fr); gap: var(--space-4); }
@@ -40,7 +41,7 @@
 .episode-stage-detail { border: 1px solid var(--border); background: var(--surface-2); padding: var(--space-4); }
 .episode-stage-detail p { color: var(--text-muted); line-height: 1.45; }
 .episode-evidence { display: flex; flex-wrap: wrap; gap: 5px; }
-.episode-evidence button { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; }
+.episode-evidence button { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: var(--type-label); }
 .episode-evidence-empty { color: var(--text-muted); font-style: italic; }
 .episode-replay input[type="range"] { width: 100%; }
 

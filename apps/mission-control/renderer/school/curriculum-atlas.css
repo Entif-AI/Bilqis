@@ -13,12 +13,12 @@
 .curriculum-graph-panel, .curriculum-dossier, .curriculum-table-wrap, .curriculum-scale { border: 1px solid var(--border); background: var(--surface-1); }
 .curriculum-graph-panel > header, .curriculum-dossier > header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: end; padding: var(--space-4); border-bottom: 1px solid var(--border); }
 .curriculum-graph-panel > p { margin: 0; padding: 0 var(--space-4) var(--space-3); color: var(--text-muted); }
-.curriculum-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: 11px; color: var(--text-muted); }
+.curriculum-legend { display: flex; flex-wrap: wrap; gap: 8px 14px; font-size: var(--type-label); color: var(--text-muted); }
 .curriculum-scroll { overflow: auto; border-top: 1px solid var(--border); background: var(--surface-0); }
 .curriculum-canvas { position: relative; min-width: 1010px; height: attr(data-height px, 420px); }
 .curriculum-stratum { position: absolute; top: 0; bottom: 0; width: 316px; padding: 14px; border-right: 1px dashed var(--border-strong); pointer-events: none; }
 .curriculum-stratum strong, .curriculum-stratum span { display: block; }
-.curriculum-stratum span { margin-top: 3px; color: var(--text-muted); font-size: 10px; }
+.curriculum-stratum span { margin-top: 3px; color: var(--text-muted); font-size: var(--type-label); }
 .curriculum-stratum.foundation { left: 0; background: linear-gradient(180deg, var(--surface-1), transparent 70%); }
 .curriculum-stratum.current { left: 340px; border: 2px double var(--accent); border-top: 0; border-bottom: 0; background: repeating-linear-gradient(135deg, transparent 0 18px, var(--pattern) 18px 19px); }
 .curriculum-stratum.forward { left: 680px; opacity: .72; }
@@ -27,26 +27,26 @@
 .curriculum-edges path[data-trace="active"] { stroke: var(--accent); stroke-width: 3; }
 .curriculum-edges path[data-authority="SCHOOL_DECLARED"] { stroke-dasharray: none; }
 .curriculum-node { position: absolute; left: attr(data-x px, 0px); top: attr(data-y px, 0px); z-index: 2; width: 244px; height: 160px; display: grid; align-content: start; gap: 3px; text-align: left; padding: 10px 11px; border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); box-shadow: 0 8px 16px color-mix(in srgb, var(--surface-0) 65%, transparent); }
-.curriculum-node strong { font-size: 13px; }
-.curriculum-node small { color: var(--text-muted); font-size: 10px; }
+.curriculum-node strong { font-size: var(--type-body); }
+.curriculum-node small { color: var(--text-muted); font-size: var(--type-label); }
 .curriculum-node[data-relation="selected"] { border: 3px double var(--accent); outline: 1px solid var(--accent); outline-offset: 3px; }
 .curriculum-node[data-relation="upstream"] { border-style: dashed; border-width: 2px; }
 .curriculum-node[data-relation="downstream"] { border-style: double; border-width: 2px; }
 .curriculum-node[data-relation="unrelated"] { opacity: .34; }
 .curriculum-node[data-visible="false"] { opacity: .10; filter: grayscale(.6); }
-.curriculum-node[data-state="qualified"]::before { content: "✓ QUALIFIED"; font-size: 9px; letter-spacing: .05em; }
-.curriculum-node[data-state="active"]::before { content: "◉ ACTIVE"; font-size: 9px; letter-spacing: .05em; }
-.curriculum-node[data-state="eligible"]::before { content: "◌ ELIGIBLE"; font-size: 9px; letter-spacing: .05em; }
+.curriculum-node[data-state="qualified"]::before { content: "✓ QUALIFIED"; font-size: var(--type-label); letter-spacing: .05em; }
+.curriculum-node[data-state="active"]::before { content: "◉ ACTIVE"; font-size: var(--type-label); letter-spacing: .05em; }
+.curriculum-node[data-state="eligible"]::before { content: "◌ ELIGIBLE"; font-size: var(--type-label); letter-spacing: .05em; }
 .curriculum-node[data-state="source-held"] { border-style: double; border-width: 3px; }
-.curriculum-node[data-state="source-held"]::before { content: "! SOURCE_HELD"; font-size: 9px; }
+.curriculum-node[data-state="source-held"]::before { content: "! SOURCE_HELD"; font-size: var(--type-label); }
 .curriculum-node[data-state="uncovered"] { border-style: dashed; border-width: 2px; }
-.curriculum-node[data-state="uncovered"]::before { content: "! IMPLEMENTATION_UNCOVERED"; font-size: 9px; }
+.curriculum-node[data-state="uncovered"]::before { content: "! IMPLEMENTATION_UNCOVERED"; font-size: var(--type-label); }
 .curriculum-node[data-stratum="forward"] { border-style: dashed; }
-.curriculum-new, .curriculum-carryover { width: fit-content; padding: 1px 5px; font-size: 9px; letter-spacing: .05em; }
+.curriculum-new, .curriculum-carryover { width: fit-content; padding: 1px 5px; font-size: var(--type-label); letter-spacing: .05em; }
 .curriculum-new { border: 1px double var(--accent); }
 .curriculum-carryover { border: 1px dashed var(--border-strong); }
-.curriculum-blocker { width: fit-content; padding: 1px 5px; border: 1px dashed currentColor; font-size: 9px; }
-.relationship-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); color: var(--text-muted); font-size: 11px; }
+.curriculum-blocker { width: fit-content; padding: 1px 5px; border: 1px dashed currentColor; font-size: var(--type-label); }
+.relationship-summary { display: flex; flex-wrap: wrap; gap: 8px 18px; padding: var(--space-3) var(--space-4); border-top: 1px solid var(--border); color: var(--text-muted); font-size: var(--type-label); }
 .curriculum-dossier-grid { display: grid; grid-template-columns: minmax(300px, .9fr) minmax(340px, 1.1fr); gap: var(--space-4); padding: var(--space-4); }
 .curriculum-dossier dl { display: grid; grid-template-columns: minmax(130px, .45fr) 1fr; gap: 5px 12px; margin: 0; }
 .curriculum-dossier dt { color: var(--text-muted); }
@@ -61,7 +61,7 @@
 .curriculum-actions a, .curriculum-actions button, .curriculum-scale button { min-height: var(--control-height); display: inline-flex; align-items: center; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 5px 8px; text-decoration: none; }
 .curriculum-actions button:disabled { opacity: .55; }
 .curriculum-table-wrap { overflow: auto; max-width: 100%; }
-.curriculum-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: 11px; }
+.curriculum-table { width: max-content; min-width: 100%; border-collapse: collapse; font-size: var(--type-label); }
 .curriculum-table th, .curriculum-table td { padding: 7px 9px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
 .curriculum-table tr[data-visible="false"] { opacity: .32; }
 .curriculum-table button { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 750; }

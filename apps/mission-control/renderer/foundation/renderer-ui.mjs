@@ -37,6 +37,10 @@ function compactIdentity(value) {
 
 export function renderContext(state, defense, bootstrap = null) {
   const shell = document.querySelector("#shell");
+  const contextBar = document.querySelector(".context-bar");
+  const contextFacts = document.querySelector("#context-facts");
+  contextBar.dataset.context = state ? "verified" : "empty";
+  contextFacts.hidden = !state;
   if (!state) {
     shell.dataset.posture = defense.id;
     const connection = bootstrap?.connection ?? null;
@@ -93,7 +97,7 @@ export function renderContext(state, defense, bootstrap = null) {
     ["Lease", context.admissionLease], ["Frontier", context.correctionFrontier],
     ["Resources", context.resourceHealth], ["Coverage", context.coverage],
   ];
-  document.querySelector("#context-facts").innerHTML = facts
+  contextFacts.innerHTML = facts
     .map(([label, value]) => `<span><small>${esc(label)}</small><strong title="${esc(value)}" aria-label="${esc(label)}: ${esc(value)}">${esc(compactIdentity(value))}</strong></span>`)
     .join("");
 }

@@ -7,7 +7,8 @@
 .memory-panel { border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-5); background: var(--surface-1); }
 .memory-panel > header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
 .memory-panel h3 { margin: 4px 0 14px; overflow-wrap: anywhere; }
-.memory-state { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 8px; font-size: 11px; letter-spacing: .05em; text-transform: uppercase; }
+.memory-state { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--border-strong); border-radius: 999px; padding: 4px 8px; font-size: var(--type-label); letter-spacing: .05em; text-transform: uppercase; }
+.memory-state { white-space: nowrap; }
 .memory-state::before { content: "◇"; }
 .memory-state[data-memory-state="active"]::before, .memory-state[data-memory-state="present"]::before { content: "●"; }
 .memory-state[data-memory-state="held"] { border-style: dashed; }
@@ -17,7 +18,7 @@
 .memory-summary-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); gap: 10px; }
 .memory-summary-grid > div { display: grid; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); }
 .memory-summary-grid small, .memory-summary-grid span, .memory-site-receipts small, .memory-muted { color: var(--text-muted); }
-.memory-summary-grid strong { font-size: 20px; }
+.memory-summary-grid strong { font-size: var(--type-section); }
 .memory-site-receipts { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 8px; margin-top: 12px; }
 .memory-site-receipts article { display: grid; gap: 4px; padding: 10px; border-left: 3px solid var(--accent); background: var(--surface-2); }
 .memory-doctrine { margin: 14px 0 0; color: var(--text-muted); }
@@ -44,7 +45,7 @@
 .memory-delta-grid ul { margin: 8px 0 0; padding-left: 18px; overflow-wrap: anywhere; }
 .memory-compare-metrics { display: grid; grid-template-columns: repeat(5, minmax(100px, 1fr)); gap: 8px; margin: 12px 0 0; }
 .memory-compare-metrics > div { padding: 9px; background: var(--surface-2); }
-.memory-compare-metrics dt { color: var(--text-muted); font-size: 11px; }
+.memory-compare-metrics dt { color: var(--text-muted); font-size: var(--type-label); }
 .memory-compare-metrics dd { margin: 4px 0 0; font-weight: 700; }
 .rejected-memory { border-style: dashed; }
 .rejected-memory-proof { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 8px; }

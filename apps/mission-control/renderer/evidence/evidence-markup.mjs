@@ -88,7 +88,7 @@ export function renderEvidenceMarkup(state) {
     : "No evidence rows returned for this exact query.";
   const queryState = state.status === "error" ? "error" : page?.state ?? state.status;
   const queryLabel = state.status === "error"
-    ? "QUERY ERROR" : state.status === "loading" ? "LOADING" : pageState(page);
+    ? "QUERY UNAVAILABLE" : state.status === "loading" ? "LOADING" : pageState(page);
   const queryDetail = state.status === "error"
     ? state.error ?? "Evidence query failed"
     : state.status === "loading" ? "Awaiting bounded evidence page"
@@ -97,6 +97,7 @@ export function renderEvidenceMarkup(state) {
     ? '<button type="button" data-evidence-return>Return to inspected object</button>' : "";
   return `<div class="evidence-view"><header class="evidence-heading"><div><span class="eyebrow">GUI16 · Evidence &amp; Receipts</span>
     <h2>Forensic provenance browser</h2></div><p>Literal CP03 records only. External payloads remain external unless the control plane exposes an exact record identity.</p>${returnButton}</header>
+    <div class="ui-glossary" aria-label="Evidence browser help"><span><strong>Exact identity</strong> searches a literal record/reference, not fuzzy text.</span><span><strong>Historical</strong> is inspection-only.</span><span><strong>Unavailable</strong> means the local evidence query surface is not connected.</span></div>
     <form id="evidence-search-form" class="evidence-search"><label>Search by<select name="kind">${SEARCH_KINDS.map(([value, label]) =>
       `<option value="${value}"${state.criteria.kind === value ? " selected" : ""}>${label}</option>`).join("")}</select></label>
       <label>Exact identity<input name="value" value="${esc(state.criteria.value)}" autocomplete="off" /></label><button type="submit">Search</button></form>

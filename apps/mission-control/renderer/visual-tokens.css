@@ -48,6 +48,42 @@
 }
 
 :root {
+  --rail-width: 184px;
+  --page-gutter: clamp(24px, 3vw, 48px);
+  --page-gutter-tight: clamp(18px, 2vw, 30px);
+  --page-block-start: 28px;
+  --domain-offset: 22px;
+  --surface: var(--surface-1);
+  --surface-raised: var(--surface-2);
+  --line: var(--border);
+  --line-strong: var(--border-strong);
+  /*
+   * One operator type scale.  View CSS may choose a semantic role, but it may
+   * not invent another rendered size.
+   *
+   * label   = metadata, badges, dense tables
+   * body    = prose, controls, ordinary values
+   * section = local headings
+   * display = destination titles and primary numeric emphasis
+   */
+  --type-label: 11px;
+  --type-body: 14px;
+  --type-section: 18px;
+  --type-display: 28px;
+  --line-label: 1.2;
+  --line-body: 1.4;
+  --line-section: 1.2;
+  --line-display: 1.05;
+
+  /* Compatibility aliases for existing domain styles. */
+  --text-xs: var(--type-label);
+  --text-sm: var(--type-label);
+  --text-md: var(--type-body);
+  --text-lg: var(--type-body);
+  --heading-sm: var(--type-section);
+  --heading-md: var(--type-section);
+  --heading-lg: var(--type-display);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --space-1: 4px;
   --space-2: 8px;
   --space-3: 12px;
@@ -60,6 +96,7 @@
   --row-height: 42px;
   --control-height: 34px;
   --content-gap: 18px;
+  --measure-copy: 68ch;
 }
 
 :root[data-density="compact"] {
