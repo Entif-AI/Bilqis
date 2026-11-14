@@ -51,6 +51,23 @@ from .helpers import FrameAdapterTestCase, ROOT, SOURCE_ROOT, RELEASE, REGISTRY_
 
 
 class RegistryTests(FrameAdapterTestCase):
+    def test_boolean_identification_release_binds_inherited_and_identification_rows(self):
+        adapter = self.registry.require(
+            BOOLEAN_IDENTIFICATION_GENERATOR, BOOLEAN_IDENTIFICATION_ORACLE)
+        for capability in ("B.AND", BOOLEAN_COMPOSITE_CAPABILITY,
+                           BOOLEAN_IDENTIFICATION_CAPABILITY):
+            with self.subTest(capability=capability):
+                row = adapter.draw(
+                    source_root=SOURCE_ROOT,
+                    graph=self.micro_graph,
+                    course=None,
+                    capability=capability,
+                    seed=31,
+                    each=4,
+                )[0]
+                tree = self._bind(adapter, row, self.micro_graph)
+                self.assertIsInstance(tree, FrameTree)
+
     def test_released_adapter_ids_are_the_actual_current_source_registry_ids(self):
         expected = {
             MICRO_PREDICATE_ADAPTER,

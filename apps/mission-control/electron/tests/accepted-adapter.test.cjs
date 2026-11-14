@@ -15,6 +15,7 @@ const {
   createAcceptedValidators,
 } = require("../accepted-contracts.cjs");
 const { ControlPlaneBridge } = require("../control-plane-bridge.cjs");
+const OPERATOR_VIEW = require("../../fixtures/operator-view-v1.json");
 const {
   OPERATION_ID, TARGET_REF, actionRequest, inspection, preview, receipt,
 } = require("./_operator-fixture.cjs");
@@ -35,6 +36,11 @@ function brokerFixture({ fail = false } = {}) {
         serviceReady: true,
         learnerReady: false,
         learnerActive: false,
+        learnerState: "learner-unavailable",
+        runId: null,
+        generation: null,
+        optimizerStep: null,
+        failureCode: null,
       };
     },
     async status() {
@@ -48,23 +54,29 @@ function brokerFixture({ fail = false } = {}) {
         serviceReady: true,
         learnerReady: true,
         learnerActive: true,
+        learnerState: "healthy",
+        runId: "fixture-run",
+        generation: 7,
+        optimizerStep: 19,
+        failureCode: null,
       };
     },
     async query(request) {
       calls.push(["query", request]);
+      const records = request.family === "run" ? [structuredClone(OPERATOR_VIEW)] : [];
       return {
         schema: QUERY_PAGE_SCHEMA,
         query_id: "a".repeat(64),
         request,
         family: request.family,
         mode: request.mode,
-        state: "EMPTY",
+        state: records.length ? "PRESENT" : "EMPTY",
         coverage: "COMPLETE",
-        total_matches: 0,
-        returned: 0,
+        total_matches: records.length,
+        returned: records.length,
         truncated: false,
         next_cursor: null,
-        records: [],
+        records,
         markers: [],
         links: [],
         accepted: true,
@@ -102,7 +114,7 @@ async function acceptedBridge(broker) {
   };
 }
 
-test("accepted adapter uses CP01 status and the canonical CP02 OperatorView fixture", async () => {
+test("accepted adapter derives the shell OperatorView from the live CP03 run projection", async () => {
   const broker = brokerFixture();
   const { adapter, bridge } = await acceptedBridge(broker);
 
@@ -121,7 +133,27 @@ test("accepted adapter uses CP01 status and the canonical CP02 OperatorView fixt
   assert.equal(JSON.stringify(connected).includes("session"), false);
   await bridge.disconnect();
   adapter.close();
-  assert.deepEqual(broker.calls, ["connect", "status", "disconnect", "close"]);
+  assert.equal(broker.calls[0], "connect");
+  assert.equal(broker.calls[1], "status");
+  assert.deepEqual(broker.calls[2][0], "query");
+  assert.equal(broker.calls[2][1].family, "run");
+  assert.deepEqual(broker.calls.slice(3), ["disconnect", "close"]);
+});
+
+test("accepted adapter never substitutes the checked-in fixture when live run telemetry is absent", async () => {
+  const broker = brokerFixture();
+  broker.query = async (request) => ({
+    schema: QUERY_PAGE_SCHEMA, query_id: "b".repeat(64), request,
+    family: request.family, mode: request.mode, state: "UNAVAILABLE", coverage: "UNKNOWN",
+    total_matches: 0, returned: 0, truncated: false, next_cursor: null,
+    records: [], markers: [], links: [], accepted: true,
+  });
+  const { bridge } = await acceptedBridge(broker);
+  await bridge.connect();
+  await assert.rejects(
+    bridge.snapshot({ schemaVersion: SNAPSHOT_QUERY_SCHEMA, schema: OPERATOR_VIEW_SCHEMA }),
+    /BAMF_GUI20_OPERATOR_VIEW_UNAVAILABLE:UNAVAILABLE/,
+  );
 });
 
 test("accepted adapter exposes only the bounded CP03 query contract", async () => {
@@ -229,6 +261,11 @@ test("incompatible-version preserves the observed CP01 protocol version", async 
     serviceReady: false,
     learnerReady: false,
     learnerActive: null,
+    learnerState: null,
+    runId: null,
+    generation: null,
+    optimizerStep: null,
+    failureCode: null,
   };
   assert.equal(validators.publicStatus(mismatch), mismatch);
   assert.throws(

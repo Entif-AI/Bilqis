@@ -20,7 +20,8 @@ GUI17 reflects the CP05/C11 action vocabulary literally:
 - `status` — read-only;
 - `checkpoint-verify` — read-only;
 - `admission-lease` — mutating through the existing admitted lease operation;
-- `pause` and `stop` — visibly unavailable because CP05/C11 does not expose those runtime semantics.
+- `stop` — mutating; targets one exact active create/resume/owner-launch operation and uses the trainer's existing SIGINT boundary after lineage and process-identity checks;
+- `pause` — visibly unavailable because CP05/C11 does not expose pause semantics.
 
 The GUI does not translate arbitrary text into a shell command. Parameters are a bounded JSON object whose keys and scalar values must match the CP05/C11 admitted parameter surface.
 
@@ -34,7 +35,7 @@ The user flow is deliberately two-phase for mutation:
 4. **Deliberate authorization.** Mutating actions require the operator to type `AUTHORIZE <ACTION>`. The controller enforces that phrase independently of the button-disabled state.
 5. **Submit the reviewed intent.** The final request reuses the exact request identity and idempotency key from preview, changes only the authorization bit where mutation is permitted, and carries the exact reviewed `expectedTargetRef` outside the semantic request payload.
 6. **CP05 re-preflights immediately before admission.** If the current authoritative target no longer matches the reviewed target ref, CP05 persists a rejection and does not reserve dispatch or launch a worker.
-7. **Readback.** GUI17 retains the operation identity and reads CP05's durable receipt/postcondition state. CP04 `operator.action.state` events cause readback only; they never create a new submit.
+7. **Readback.** GUI17 retains the operation identity and reads CP05's durable receipt/postcondition state. CP04 `operator.action.state` events cause readback only; they never create a new submit. A successfully accepted owner launch/resume also seeds the exact operation identity used by Stop.
 
 This design makes preview a review aid rather than an authorization token. The actual mutation owner remains CP05/C11.
 
@@ -59,7 +60,7 @@ GUI17 needed more preflight/readback detail than the ordinary CP03 catalog expos
 - `bilqis.bamf.control-plane.command-preview/v1` — an exact, non-persisting preview of the CP05 plan;
 - `bilqis.bamf.control-plane.command-inspection/v1` — authoritative durable operation status plus bounded preflight and postcondition facts.
 
-These projections explicitly omit the private run-directory path, command `argv`, worker pid, command-store path, socket/session identity, and other process details. The Electron trust membrane validates exact public target, optimizer, resource, receipt, and postcondition shapes before renderer delivery.
+These projections explicitly omit the private run-directory path, command `argv`, worker pid, command-store path, socket/session identity, and other process details. Command inspection may include bounded stdout/stderr log tails for owner diagnosis. The Electron trust membrane validates exact public target, optimizer, resource, receipt, log-tail, and postcondition shapes before renderer delivery.
 
 The public target projection retains only stable identities and counters needed for review: target ref, run id/seed and digest, generation and generation manifest, optimizer step, candidate/Factory/semantic/topology/acceptance digests, and source identity.
 
@@ -87,7 +88,7 @@ Mutating actions display `MUTATION PERMITTED IF AUTHORIZED` before the human gat
   - exact request/idempotency preservation;
   - dry-run/no-authorization semantics;
   - real-context drift detection and fixture non-authority;
-  - unavailable pause/stop;
+  - unavailable pause plus supported Stop presentation and bounded trainer-log tails;
   - operation inspector ownership.
 - `apps/mission-control/tests/operate/operate-controller.test.mjs`
   - typed authorization required for mutation;
@@ -95,7 +96,8 @@ Mutating actions display `MUTATION PERMITTED IF AUTHORIZED` before the human gat
   - lost acknowledgement without retry;
   - authoritative reconciliation;
   - stale context blocks submit;
-  - dry-run remains non-authorized.
+  - dry-run remains non-authorized;
+  - accepted owner launch seeds the exact Stop operation identity and action changes clear action-specific parameters.
 - `apps/mission-control/tests/operate/operate-boundary.test.mjs`
   - no observation renderer module can invoke command IPC.
 - `apps/mission-control/electron/tests/operator-contracts.test.cjs`
@@ -103,9 +105,12 @@ Mutating actions display `MUTATION PERMITTED IF AUTHORIZED` before the human gat
 - `apps/mission-control/electron/tests/cp01-python-broker.test.cjs`
   - real private Electron-to-Python-to-CP01-to-CP05 preview/submit/readback path;
   - no private run/store/session/argv leakage.
-- `bilqis_mlx/control_plane/tests/test_command_lifecycle.py`
+- `bilqis_mlx/control_plane/tests/commands/test_command_lifecycle.py`
   - reviewed-target mismatch rejects before dispatch;
   - matching reviewed target preserves one-dispatch idempotency.
+- `bilqis_mlx/control_plane/tests/test_command_executor.py`
+  - exact active-trainer Stop sends SIGINT only after process-identity and lineage validation;
+  - failed durable process custody interrupts and waits for the newly spawned trainer.
 - `bilqis_mlx/control_plane/tests/test_command_transport.py`
   - public preview and durable inspection round trip over CP01.
 

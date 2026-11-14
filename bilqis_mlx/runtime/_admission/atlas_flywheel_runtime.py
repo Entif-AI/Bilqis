@@ -3,7 +3,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import hashlib
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 from ..factory import candidate_realizations
 from ..factory.atlas_frontier import (
@@ -15,6 +18,7 @@ from ..factory.atlas_frontier_closure import resolve_frontier_closure
 from ..factory.atlas_runtime_snapshot import build_accepted_executable_snapshot
 from ..factory.candidate_frontier import load_candidate_frontier
 from ..factory.live_answers import live_answer_registry
+from ..compatibility.source_adapter_resume import predecessor_compatible_source_registry
 from ..factory.skos_curriculum import (
     LearnedFrontier,
     SOURCE_FAMILY_ADAPTERS,
@@ -62,11 +66,16 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _candidate_frontier():
+def _candidate_frontier(run_dir: Path):
     root = _repo_root()
     builder = root / "lib/ithkuil/src/build_curriculum_frontier.py"
+    output = Path(run_dir) / "candidate-frontier"
+    subprocess.run(
+        [sys.executable, str(builder)], check=True, capture_output=True, text=True,
+        env={**os.environ, "BILQIS_CURRICULUM_FRONTIER_OUT": str(output)},
+    )
     return load_candidate_frontier(
-        root / "lib/ithkuil/_private/curriculum_frontier",
+        output,
         root / "lib/ithkuil/_data/csv",
         expected_builder_sha256=hashlib.sha256(builder.read_bytes()).hexdigest(),
     )
@@ -114,6 +123,7 @@ def _replay_current_graph(current, parent_graph: dict) -> dict:
 def _persist_ready_realizations(
         run_dir: Path, current, candidate, frontier, graph: dict) -> tuple:
     sources, answers = live_source_registry(), live_answer_registry()
+    staging_sources = predecessor_compatible_source_registry(current, sources)
     staged = load_staged_candidates(
         run_dir, frontier, current,
         source_registry=sources, answer_registry=answers)
@@ -130,7 +140,7 @@ def _persist_ready_realizations(
         realized = candidate_realizations.prepare_realized_candidate(
             frontier, current, graph, semantic_id,
             source_root=LEGACY_SOURCE,
-            source_registry=sources,
+            source_registry=staging_sources,
             answer_registry=answers,
         )
         if realized.candidate_id not in known:
@@ -173,7 +183,7 @@ class AcceptedAtlasFlywheelSupervisor:
             selection, SOURCE_FAMILY_ADAPTERS,
             LearnedFrontier(selection.release_sha256))
         source = issue_source_context_transition_authority(selection)
-        frontier = _candidate_frontier()
+        frontier = _candidate_frontier(self.run_dir)
         graph = _replay_current_graph(current, self.parent_graph)
         staged = _persist_ready_realizations(
             self.run_dir, current, candidate, frontier, graph)
@@ -218,7 +228,7 @@ class AcceptedAtlasFlywheelSupervisor:
         checkpoint = _accepted_checkpoint(self.run_dir)
         plan = build_live_autonomy_plan(current, LEGACY_SOURCE)
         ledger = reconcile_live_autonomy_state(self.run_dir, current, plan)
-        frontier = _candidate_frontier()
+        frontier = _candidate_frontier(self.run_dir)
         source_authority, lease, registry = self._authority()
         runtime = AcceptedAtlasAdmissionRuntime(
             self.run_dir, checkpoint, graph, self.reserve_gib)

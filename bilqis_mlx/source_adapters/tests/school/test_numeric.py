@@ -8,7 +8,7 @@ from bilqis_mlx.grade_a_release import accepted_grade_a
 from bilqis_mlx.live_grade_a import live_course as a_course
 from bilqis_mlx.live_grade_b import live_course as b_course
 from bilqis_mlx.live_grade_c import PLANS, draw, live_course, proposed_graph, registry_graph
-from bilqis_mlx.pedagogical_parity import _source_stack
+from bilqis_mlx.semantics.abi import load_historical_graph
 from bilqis_mlx.source_adapters.numeric import decode
 from bilqis_mlx.semantics.numeric import evaluate
 from bilqis_mlx.verification.numeric import independent_value
@@ -130,7 +130,7 @@ class NumericProviderIdentityTests(unittest.TestCase):
 class GradeCSourceTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        _, _, _, _, cls.parent, _ = _source_stack(SOURCE)
+        cls.parent = load_historical_graph()
         cls.graph = registry_graph()
         assert cls.graph == proposed_graph(cls.parent)
         manifest = json.loads((ROOT / "docs/provenance/GRADE_A_CANDIDATE_MANIFEST_V2.json").read_text())

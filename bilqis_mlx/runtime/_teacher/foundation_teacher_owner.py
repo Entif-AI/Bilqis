@@ -120,7 +120,8 @@ def select_foundation_priority_visit(
     projection = current_foundation_teacher_projection(run_dir)
     epoch = restore_teacher_lineage(projection.teacher_state)
     authority = issue_foundation_priority_authority(
-        run_dir, source_context, parent, epoch, atlas_artifact_path)
+        run_dir, source_context, parent, epoch, atlas_artifact_path,
+        teacher_state=projection.teacher_state)
     bootstrap = {"legacy_receipt": None, "adaptation": None, "prior_region": None}
     if "c03_lineage" not in parent.teacher_state:
         owned = foundation_teacher_bootstrap()
@@ -136,6 +137,7 @@ def select_foundation_priority_visit(
         random.Random(parent.teacher_state["next_seed"]), Settings(),
         program=program, now=authority.now,
         total_capabilities=len(source_context.release.execution_plan.capabilities),
+        accepted_parent=parent, planning_generation=authority.planning_generation,
         **bootstrap)
 
 

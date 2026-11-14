@@ -114,18 +114,21 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         with TemporaryDirectory() as temporary:
             current = SimpleNamespace(
                 generation=4, retained_state=SimpleNamespace(optimizer_step=11))
+            progress = []
             with patch(
                     "bilqis_mlx.runtime.bamf_operator.session._visit",
                     return_value="HELD") as visit, patch(
                     "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
                     return_value=current):
                 result = operate_bamf(
-                    temporary, minutes=1, max_visits=3, reserve_gib=0.0)
+                    temporary, minutes=1, max_visits=3, reserve_gib=0.0,
+                    progress=progress.append)
         self.assertEqual(result.status, "PRIORITY_HOLD")
         self.assertEqual(result.visits, 0)
         self.assertEqual(result.accepted, 0)
         self.assertEqual(result.rejected, 0)
-        visit.assert_called_once()
+        visit.assert_called_once_with(Path(temporary).resolve(), 0.0, progress=progress.append)
+        self.assertEqual(progress, ["starting visit 1", "visit 1 outcome: HELD"])
 
     def test_no_admissible_priority_selection_never_executes_candidate(self):
         parent = SimpleNamespace()

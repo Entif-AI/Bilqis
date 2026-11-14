@@ -42,13 +42,13 @@
       <main id="main-content" class="workspace" tabindex="-1">
         <header class="context-bar">
           <div class="identity">
-            <span id="mode-badge" class="mode-badge">LIVE</span>
-            <div><strong id="run-id">Unknown run</strong><small id="generation-id">Generation unknown</small></div>
+            <span id="mode-badge" class="mode-badge">BOOTSTRAP</span>
+            <div><strong id="run-id">Discovering learner</strong><small id="generation-id">Generation not yet identified</small></div>
           </div>
           <div id="context-facts" class="context-facts" aria-label="Inspected context"></div>
           <div class="context-actions">
-            <label class="selector"><span>Run</span><select id="run-selector" aria-label="Run selector"><option>fixture:prometheus-disposable</option></select></label>
-            <label class="selector"><span>As of</span><select id="generation-selector" aria-label="Generation selector"><option>44238 · LIVE</option></select></label>
+            <label class="selector"><span>Run</span><select id="run-selector" aria-label="Run selector"><option>Discovering…</option></select></label>
+            <label class="selector"><span>As of</span><select id="generation-selector" aria-label="Generation selector"><option>Waiting…</option></select></label>
             <span id="freshness" class="freshness">UNKNOWN</span>
             <button id="density-trigger" type="button" aria-label="Change information density">Density</button>
             <button id="theme-trigger" type="button" aria-label="Change theme">Theme</button>
@@ -62,16 +62,16 @@
         <section id="view-host" class="view-host" aria-labelledby="view-title">
           <div class="eyebrow">Current destination</div>
           <h1 id="view-title">Mission Control</h1>
-          <p id="view-summary">Shell foundation ready for provider-neutral BAMF views.</p>
+          <p id="view-summary">Mission Control is starting.</p>
           <nav id="model-nav" class="model-nav" hidden aria-label="Model sections">
             <button type="button" data-model-section="neural">Neural Runtime</button>
             <button type="button" data-model-section="frames">Frame Compiler Explorer</button>
           </nav>
           <section id="frame-explorer" hidden aria-label="Frame Compiler Explorer"></section>
           <p id="domain-context-note" hidden>Independent illustrative fixture: this view uses its own declared provenance and is not bound to the shell run/generation.</p>
-          <div class="fixture-card">
-            <div><span class="status-dot" aria-hidden="true"></span><strong>Fixture-backed shell</strong></div>
-            <p>GUI01 proves navigation, context custody, deep links, inspection, and global stale/historical posture. Domain telemetry remains owned by later GUI issues.</p>
+          <div class="fixture-card" hidden>
+            <div><span class="status-dot" aria-hidden="true"></span><strong>Reference fixture</strong></div>
+            <p>Explicit test/reference data only. Live startup never substitutes this fixture for missing service telemetry.</p>
             <div class="demo-actions" id="demo-actions"></div>
           </div>
           <section id="visual-catalog" class="visual-catalog" aria-label="Scientific visual language catalog"></section>

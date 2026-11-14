@@ -86,6 +86,7 @@ jobs:
               requirements*.txt|\
               package.json|\
               scripts/run_tests.py|\
+              scripts/run_required_tests.py|\
               scripts/skos_test_policy.py|\
               scripts/skos_policy/*|\
               scripts/check_historical_abi.py|\
@@ -214,6 +215,30 @@ jobs:
           echo "expensive test suites: NOT INVALIDATED"
           echo "No production/test dependency surface changed; prior passing evidence remains applicable."
 
+  bamf-readiness:
+    name: bamf-readiness
+    needs: core
+    if: needs.core.result == 'success' && needs.core.outputs.expensive_tests == 'true'
+    runs-on: macos-15
+    timeout-minutes: 15
+    steps:
+      - name: Checkout private source without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up isolated Python for MLX readiness
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: '3.14'
+      - name: Install BAMF readiness dependencies
+        run: >-
+          python3 -m pip install -e .
+          -r lib/ithkuil/requirements-semantic.txt
+          mlx==0.31.1 numpy==2.4.4
+      - name: Verify launch-critical BAMF journey with no skipped tests
+        run: npm run bamf:readiness
+
   semantic-diff:
     name: semantic-profile-diff
     needs: core
@@ -268,7 +293,7 @@ jobs:
 
   portable:
     name: portable
-    needs: [core, semantic-diff, semantic-full]
+    needs: [core, bamf-readiness, semantic-diff, semantic-full]
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -279,11 +304,17 @@ jobs:
           SKOS_ACTION: ${{ needs.core.outputs.skos_action }}
           DIFF_RESULT: ${{ needs.semantic-diff.result }}
           FULL_RESULT: ${{ needs.semantic-full.result }}
+          BAMF_READINESS_RESULT: ${{ needs.bamf-readiness.result }}
         run: |
           set -eu
           if [ "$CORE_RESULT" != "success" ]; then
             echo "portable core failed: $CORE_RESULT"
             exit 1
+          fi
+          if [ "${{ needs.core.outputs.expensive_tests }}" = "true" ]; then
+            test "$BAMF_READINESS_RESULT" = "success"
+          else
+            test "$BAMF_READINESS_RESULT" = "skipped"
           fi
           case "$SKOS_ACTION" in
             "")

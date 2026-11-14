@@ -73,6 +73,7 @@ test("School graph remains keyboard interactive while exposing an equivalent rel
 test("renderer blocks Operate unless verified live context is re-established and preserves offline inspection", () => {
   const renderer = [
     source("renderer.mjs"),
+    source("foundation/bootstrap-controller.mjs"),
     source("foundation/renderer-ui.mjs"),
     source("foundation/current-view.mjs"),
   ].join("\n");
@@ -81,4 +82,18 @@ test("renderer blocks Operate unless verified live context is re-established and
   assert.match(renderer, /cacheOperatorView/);
   assert.match(renderer, /Inspection-only evidence retained/);
   assert.match(renderer, /establishSnapshot\(\{ preserveRoute: true \}\)/);
+});
+
+test("startup reports service learner telemetry and trainer stages without live fixture substitution", () => {
+  const bootstrap = source("foundation/bootstrap-controller.mjs");
+  const current = source("foundation/current-view.mjs");
+  const ui = source("foundation/renderer-ui.mjs");
+  const html = source("index.html");
+  for (const label of ["Local control plane", "Learner discovery", "Mission Control telemetry", "Trainer"]) {
+    assert.match(current, new RegExp(label));
+  }
+  assert.match(bootstrap, /telemetry-pending/);
+  assert.match(ui, /Learner ready · telemetry starting/);
+  assert.match(current, /fixture data is never substituted for live state/);
+  assert.doesNotMatch(html, /fixture:prometheus-disposable/);
 });

@@ -144,11 +144,18 @@ def _resource_observation(run_dir: Path, step) -> dict:
     }
 
 
-def prepare_bamf_visit(run_dir: Path) -> BamfPreparedVisit:
+def _emit_progress(progress, message: str) -> None:
+    if progress is not None:
+        progress(message)
+
+
+def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
     """Compose the production visit through retention without publishing it."""
+    _emit_progress(progress, "validating accepted generation and source custody")
     parent, context, atlas_path, feature_path = _execution_context(run_dir)
     program = schedule_program_from_executable_release(context.release)
     school = accepted_priority_school(parent, program)
+    _emit_progress(progress, "planning current candidate frontier and teacher priority")
     selection = select_foundation_priority_visit(
         run_dir, context, atlas_path, program=program, school=school)
     if selection.status != "TEACHER_SELECTED":
@@ -158,6 +165,7 @@ def prepare_bamf_visit(run_dir: Path) -> BamfPreparedVisit:
     observation = FactoryDeliveryObservation(
         _Capture(run_dir, selection), parent.retained_state.optimizer_step + 1,
         rows, selection.offer.source_seed)
+    _emit_progress(progress, "executing selected neural candidate")
     step = execute_accepted_priority_candidate(
         selection, context, atlas_path, feature_path,
         teacher_hparams=parent.optimizer_hyperparameters,
@@ -165,6 +173,7 @@ def prepare_bamf_visit(run_dir: Path) -> BamfPreparedVisit:
         optimizer_step_seed=_step_seed(selection.visit.identity.visit_id),
         max_norm=1.0)
     capability = selection.offer.capability_id
+    _emit_progress(progress, "evaluating retention evidence")
     evaluation = evaluate_factory_retention_candidate(
         context, step.transaction, atlas_path, capability, run_dir=run_dir)
     decision = issue_factory_retention_decision(evaluation)
@@ -184,8 +193,8 @@ def prepare_bamf_visit(run_dir: Path) -> BamfPreparedVisit:
         parent, selection, step, decision, retained, capability, successor)
 
 
-def _visit(run_dir: Path, reserve_gib: float):
-    prepared = prepare_bamf_visit(run_dir)
+def _visit(run_dir: Path, reserve_gib: float, *, progress=None):
+    prepared = prepare_bamf_visit(run_dir, progress=progress)
     if prepared.status in {"HELD", "ACTION_REQUIRED"}:
         return prepared.status
     parent = prepared.parent
@@ -210,6 +219,7 @@ def _visit(run_dir: Path, reserve_gib: float):
         })
         return "REJECTED"
     successor = prepared.successor
+    _emit_progress(progress, "publishing accepted successor checkpoint")
     accept_and_publish(
         run_dir, successor, retained, decision=decision,
         feature_sha256=successor.extents.factor_map_digest,
@@ -221,6 +231,7 @@ def _visit(run_dir: Path, reserve_gib: float):
 def operate_bamf(
     run_dir: Path, *, minutes: int = 90,
     max_visits: int = 0, reserve_gib: float = 100.0,
+    progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
@@ -232,7 +243,9 @@ def operate_bamf(
     status = "TIME_LIMIT"
     with bamf_operator_lock(run_dir):
         while time.monotonic() < deadline and (not max_visits or visits < max_visits):
-            outcome = _visit(run_dir, reserve_gib)
+            _emit_progress(progress, f"starting visit {visits + 1}")
+            outcome = _visit(run_dir, reserve_gib, progress=progress)
+            _emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
             if outcome in {"HELD", "ACTION_REQUIRED"}:
                 status = "PRIORITY_HOLD" if outcome == "HELD" else "ACTION_REQUIRED"
                 break

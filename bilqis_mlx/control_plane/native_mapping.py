@@ -4,8 +4,8 @@ import math
 
 from bilqis_mlx.mission_control import (
     CandidateDecision, CandidateOutcome, CapabilitySnapshot, CoverageState, DataValue,
-    LearningEpisode, ResourceSample, RunContext, UnavailableEnvelope, UnavailableReason,
-    ValueOrigin, ValueState,
+    LearningEpisode, OperatorView, ResourceSample, RunContext, UnavailableEnvelope,
+    UnavailableReason, ValueOrigin, ValueState,
 )
 
 from .event_stream import EventFamily
@@ -212,13 +212,16 @@ def accepted_records(
     context = RunContext(
         record_meta(f"run-context:{run.run_id}:{run.generation}", run, generation),
         "ACCEPTED", optimizer_step, stage)
+    operator_view = OperatorView(
+        record_meta(f"operator-view:{run.run_id}:{run.generation}", run, generation),
+        "READY", stage, None, (context.meta.record_id,))
     generation_unavailable = UnavailableEnvelope(
         record_meta(
             f"generation-unavailable:{run.run_id}:{run.generation}", run, generation,
             coverage=CoverageState.UNKNOWN),
         f"generation:{run.run_id}", UnavailableReason.UNKNOWN,
         f"bamf-manifest:{generation.manifest_sha256}")
-    records = [context, generation_unavailable]
+    records = [context, operator_view, generation_unavailable]
     events = [(EventFamily.RUN_STATE_CHANGED, context,
                f"native-run:{generation.manifest_sha256}")]
     resource_present = False

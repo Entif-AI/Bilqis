@@ -35,7 +35,7 @@ function compactIdentity(value) {
     : value;
 }
 
-export function renderContext(state, defense) {
+export function renderContext(state, defense, bootstrap = null) {
   const shell = document.querySelector("#shell");
   const contextBar = document.querySelector(".context-bar");
   const contextFacts = document.querySelector("#context-facts");
@@ -43,11 +43,32 @@ export function renderContext(state, defense) {
   contextFacts.hidden = !state;
   if (!state) {
     shell.dataset.posture = defense.id;
-    document.querySelector("#mode-badge").textContent = "INSPECTION";
-    document.querySelector("#run-id").textContent = "No verified snapshot";
-    document.querySelector("#generation-id").textContent = "Generation unavailable";
-    document.querySelector("#freshness").textContent = defense.freshness;
-    contextFacts.innerHTML = "";
+    const connection = bootstrap?.connection ?? null;
+    document.querySelector("#mode-badge").textContent = connection?.serviceLive ? "BOOTSTRAP" : "INSPECTION";
+    document.querySelector("#run-id").textContent = connection?.runId ?? "Discovering learner";
+    document.querySelector("#generation-id").textContent = Number.isSafeInteger(connection?.generation)
+      ? `Generation ${connection.generation} · telemetry pending`
+      : "Generation not yet identified";
+    document.querySelector("#freshness").textContent = connection?.serviceLive
+      ? connection?.learnerReady ? "CONNECTED" : "WAITING"
+      : defense.freshness;
+    const facts = [
+      ["Service", connection?.serviceReady ? "READY" : connection?.serviceLive ? "LIVE" : "WAITING"],
+      ["Learner", connection?.learnerReady ? "READY" : connection?.learnerState ?? "DISCOVERING"],
+      ["Optimizer", Number.isSafeInteger(connection?.optimizerStep) ? connection.optimizerStep : "NOT STARTED"],
+      ["Telemetry", bootstrap?.phase === "telemetry-pending" ? "STARTING" : bootstrap?.phase ?? "WAITING"],
+    ];
+    document.querySelector("#context-facts").innerHTML = facts
+      .map(([label, value]) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("");
+    const runSelector = document.querySelector("#run-selector");
+    runSelector.replaceChildren(new Option(connection?.runId ?? "Discovering…", connection?.runId ?? ""));
+    runSelector.disabled = true;
+    const generationSelector = document.querySelector("#generation-selector");
+    generationSelector.replaceChildren(new Option(
+      Number.isSafeInteger(connection?.generation) ? `${connection.generation} · BOOTSTRAP` : "Waiting…",
+      Number.isSafeInteger(connection?.generation) ? String(connection.generation) : "",
+    ));
+    generationSelector.disabled = true;
     return;
   }
   const { context } = state;
@@ -81,8 +102,25 @@ export function renderContext(state, defense) {
     .join("");
 }
 
-export function renderDefensiveStatus(defense, onReconnect) {
+export function renderDefensiveStatus(defense, onReconnect, bootstrap = null) {
   const host = document.querySelector("#defensive-banner");
+  if (bootstrap && bootstrap.phase !== "ready") {
+    const connection = bootstrap.connection;
+    const detail = bootstrap.error?.code ?? bootstrap.error?.message ?? null;
+    const copy = {
+      connecting: ["Connecting to Mission Control", "Opening the local CP01 session and checking learner custody."],
+      discovering: ["Control plane connected", "CP01 is reachable. Discovering the accepted learner and Mission Control projection."],
+      "telemetry-pending": ["Learner ready · telemetry starting", "The accepted learner is healthy, but Mission Control has not received its first operator projection yet. No fixture data is substituted."],
+      "learner-unavailable": ["Control plane connected · learner unavailable", "CP01 is reachable, but the configured target does not currently expose an accepted learner."],
+      failed: ["Mission Control bootstrap failed", "The local control-plane session or telemetry projection could not be established."],
+    }[bootstrap.phase] ?? ["Mission Control starting", "Establishing the local operator view." ];
+    host.dataset.state = bootstrap.phase;
+    host.setAttribute("role", bootstrap.phase === "failed" ? "alert" : "status");
+    host.hidden = false;
+    host.innerHTML = `<div class="defensive-copy"><strong>${esc(copy[0])}</strong><span>${esc(copy[1])}</span><small>${connection?.runId ? `Run ${esc(connection.runId)} · ` : ""}${Number.isSafeInteger(connection?.generation) ? `generation ${connection.generation} · ` : ""}${detail ? `Detail: ${esc(detail)}` : "No error reported"}</small></div>${bootstrap.phase === "failed" || bootstrap.phase === "learner-unavailable" ? '<button type="button" data-reconnect>Reconnect</button>' : ""}`;
+    host.querySelector("[data-reconnect]")?.addEventListener("click", onReconnect);
+    return;
+  }
   host.dataset.state = defense.id;
   host.setAttribute("role", defense.role);
   host.hidden = defense.id === "live";
@@ -160,15 +198,15 @@ export function renderPaletteOptions(state, onNavigate) {
   bindRovingNavigation(host);
 }
 
-export function renderChrome(state, defense, displaySettings, handlers) {
-  renderContext(state, defense);
-  renderDefensiveStatus(defense, handlers.onReconnect);
+export function renderChrome(state, defense, displaySettings, handlers, bootstrap = null) {
+  renderContext(state, defense, bootstrap);
+  renderDefensiveStatus(defense, handlers.onReconnect, bootstrap);
   renderNavigation(state, handlers.onNavigate);
   renderInspector(state, defense);
   renderDemoActions(state, handlers.onInspect);
   renderCurrentView(
     state, defense, handlers.onInspect, handlers.api,
-    handlers.onEvidenceSelect, handlers.onEvidenceReturn,
+    handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,
   );
   document.querySelector("#view-title").textContent = labels.get(state?.view ?? "mission-control");
   document.querySelector("#view-title").setAttribute("tabindex", "-1");

@@ -19,7 +19,36 @@ function card(title, rows, state) {
   </section>`;
 }
 
+function renderStartup(model) {
+  const startup = model.startup;
+  const running = startup.running === true;
+  const title = startup.state === "GENERATION_ZERO_READY"
+    ? `Generation ${startup.generation} is accepted and ready`
+    : running
+      ? "Trainer is running. Waiting for the first accepted learning event."
+      : "Accepted learner is idle. No domain learning evidence exists yet.";
+  const detail = startup.state === "GENERATION_ZERO_READY"
+    ? "Mission Control is connected to the real learner. Training has not started, so learning, curriculum, and resource cards have no evidence to report yet."
+    : running
+      ? "The control plane reports an active trainer. This view will populate when the first accepted learning records become available."
+      : "The learner is valid and inspectable. Start or resume training when you are ready; empty evidence is not treated as a telemetry failure.";
+  return `<section class="home-startup" data-state="${esc(startup.state)}">
+    <span class="eyebrow">Live learner · setup state</span>
+    <h2>${esc(title)}</h2>
+    <p>${esc(detail)}</p>
+    <dl>
+      <div><dt>Accepted generation</dt><dd>${esc(startup.generation)}</dd></div>
+      <div><dt>Optimizer step</dt><dd>${esc(startup.optimizerStep)}</dd></div>
+      <div><dt>Trainer</dt><dd>${running ? "RUNNING" : startup.running === false ? "STOPPED" : "UNKNOWN"}</dd></div>
+      <div><dt>Stage</dt><dd>${esc(startup.stage ?? "UNKNOWN")}</dd></div>
+      <div><dt>Learning telemetry</dt><dd>${running ? "WAITING FOR FIRST ACCEPTED EVENT" : "NO TRAINING EVENTS YET"}</dd></div>
+    </dl>
+    <p class="home-startup-next"><strong>Next:</strong> use Operate or the documented CLI resume command to start training. Mission Control will replace this setup state with observed learner telemetry as accepted records arrive.</p>
+  </section>`;
+}
+
 export function renderHomeMarkup(model, { historical = false } = {}) {
+  if (model.startup) return renderStartup(model);
   const learning = model.learning;
   const curriculum = model.curriculum;
   const runtime = model.runtime;

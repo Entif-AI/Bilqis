@@ -28,13 +28,13 @@ socket path, run path, service identity and session identity remain behind that
 boundary. Electron never invokes a shell: the broker is started with fixed argv and
 `shell: false`.
 
-The fixture-backed GUI01/GUI02 shell consumes the accepted canonical CP02
-`OperatorView` fixture and the merged cross-runtime `assertOperatorView` consumer.
-GUI20 therefore does not define a competing CP02 record grammar. CP01 explicitly
-does not transport CP02 snapshots/actions/events yet, so command, dry-run, receipt
-and event capabilities fail closed rather than inventing unsupported service
-semantics. The snapshot capability is restricted to the accepted `OperatorView`
-fixture until a later service owner supplies a real CP02 transport surface.
+The GUI shell consumes the accepted canonical CP02 records and the merged
+cross-runtime `assertOperatorView` consumer. GUI20 therefore does not define a
+competing CP02 record grammar. CP01 now transports the accepted bounded query,
+event, command-preview, command-submit, and command-inspection surfaces through
+the private Python broker. The renderer still receives no socket path, run path,
+service credential, command argv, or process identity. Fixture-backed views remain
+explicit fixture evidence rather than command authority.
 
 `createMissionControlWindow` forces `contextIsolation`, sandboxing, no Node
 integration, no webviews, and normal web security even when caller options try to

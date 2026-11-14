@@ -21,6 +21,17 @@ function fakeHost() {
   return { hidden: false, innerHTML: "", querySelectorAll: () => [] };
 }
 
+function runPage({ generation = 0, optimizerStep = 0, stage = "UNKNOWN" } = {}) {
+  return {
+    accepted: true, family: "run", mode: "current", state: "PRESENT", coverage: "COMPLETE",
+    records: [{
+      schema_version: "bilqis.bamf.mission-control.run-context/v1",
+      meta: { run: { generation } },
+      run_state: "ACCEPTED", optimizer_step: optimizerStep, stage,
+    }],
+  };
+}
+
 test("GUI03 reference home answers the five operator questions in one dense view", () => {
   const model = referenceHomeProjection();
   const markup = renderHomeMarkup(model);
@@ -78,6 +89,20 @@ test("RUNNING reflects the live learner-active handshake instead of mere run-rec
   const running = projectionFromPages(pages, { ...context, operatorActive: true });
   assert.match(renderHomeMarkup(stopped), /RUNNING <strong>NO<\/strong>/);
   assert.match(renderHomeMarkup(running), /RUNNING <strong>YES<\/strong>/);
+});
+
+test("accepted generation zero renders a setup state instead of a wall of unavailable metrics", () => {
+  const pages = Object.fromEntries(HOME_FAMILIES.map((family) => [family, emptyPage(family)]));
+  pages.run = runPage();
+  const model = projectionFromPages(pages, { ...context, runId: "aspirant", generation: 0, operatorActive: false });
+  const markup = renderHomeMarkup(model);
+  assert.equal(model.startup.state, "GENERATION_ZERO_READY");
+  assert.match(markup, /Generation 0 is accepted and ready/);
+  assert.match(markup, /Optimizer step<\/dt><dd>0/);
+  assert.match(markup, /Trainer<\/dt><dd>STOPPED/);
+  assert.match(markup, /NO TRAINING EVENTS YET/);
+  assert.doesNotMatch(markup, /UNAVAILABLE/);
+  assert.doesNotMatch(markup, /Latest school score|Whole-school growth|Peak memory/);
 });
 
 test("historical home queries bind the explicit prior generation", () => {

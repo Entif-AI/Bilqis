@@ -46,7 +46,7 @@ def priority_planning(run_dir, source_context, atlas_artifact_path):
         selection, SOURCE_FAMILY_ADAPTERS,
         LearnedFrontier(selection.release_sha256))
     source = issue_source_context_transition_authority(selection)
-    frontier = _candidate_frontier()
+    frontier = _candidate_frontier(run_dir)
     staged = _persist_ready_realizations(
         run_dir, current, candidate, frontier, source_context.graph)
     plan = build_live_autonomy_plan(current, source_context.source_root)

@@ -1,4 +1,4 @@
-import { renderComponentCatalog } from "../component-catalog.mjs";
+import { escapeText as esc } from "../frames/frame-model.mjs";
 import { renderSchoolView } from "../school/school-view.mjs";
 import { renderNeuralView } from "../neural/neural-view.mjs";
 import { renderEpisodesView } from "../episodes/episode-view.mjs";
@@ -10,7 +10,7 @@ import { renderLineageView } from "../lineage/lineage-view.mjs";
 import { renderEvidenceView } from "../evidence/evidence-view.mjs";
 
 export function renderCurrentView(
-  state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn,
+  state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn, bootstrap = null,
 ) {
   const domain = document.querySelector("#domain-view");
   const fixture = document.querySelector(".fixture-card");
@@ -19,11 +19,26 @@ export function renderCurrentView(
   document.querySelector("#shell").dataset.view = state?.view ?? "mission-control";
   if (!state) {
     fixture.hidden = true;
-    catalog.hidden = false;
-    domain.hidden = true;
-    domain.innerHTML = "";
-    summary.textContent = defense.description;
-    catalog.innerHTML = renderComponentCatalog();
+    catalog.hidden = true;
+    domain.hidden = false;
+    const connection = bootstrap?.connection ?? null;
+    const serviceState = connection?.serviceReady ? "Ready" : connection?.serviceLive ? "Connected" : "Connecting";
+    const learnerState = connection?.learnerReady ? "Accepted learner ready" : connection?.learnerState ?? "Discovering learner";
+    const telemetryState = bootstrap?.phase === "telemetry-pending"
+      ? "Waiting for first accepted Mission Control projection"
+      : bootstrap?.phase === "failed" ? "Bootstrap failed" : "Starting";
+    summary.textContent = "Mission Control is establishing the local learner and telemetry pipeline.";
+    domain.innerHTML = `<section class="bootstrap-panel" data-phase="${esc(bootstrap?.phase ?? "connecting")}">
+      <span class="eyebrow">Startup diagnostics</span><h2>${esc(bootstrap?.phase === "telemetry-pending" ? "Learner connected. Telemetry is still bootstrapping." : "Starting Mission Control")}</h2>
+      <p>This view reports each startup boundary separately. Missing telemetry is not rendered as learner failure and fixture data is never substituted for live state.</p>
+      <ol class="bootstrap-steps">
+        <li data-state="${connection?.serviceLive ? "done" : "active"}"><strong>Local control plane</strong><span>${esc(serviceState)}</span></li>
+        <li data-state="${connection?.learnerReady ? "done" : connection?.serviceLive ? "active" : "waiting"}"><strong>Learner discovery</strong><span>${esc(connection?.runId ? `${learnerState} · ${connection.runId}${Number.isSafeInteger(connection.generation) ? ` · generation ${connection.generation}` : ""}` : learnerState)}</span></li>
+        <li data-state="${bootstrap?.phase === "ready" ? "done" : bootstrap?.phase === "telemetry-pending" ? "active" : "waiting"}"><strong>Mission Control telemetry</strong><span>${esc(telemetryState)}</span></li>
+        <li data-state="${connection?.learnerActive === true ? "done" : "waiting"}"><strong>Trainer</strong><span>${connection?.learnerActive === true ? "Running" : "Not running"}</span></li>
+      </ol>
+      ${bootstrap?.error ? `<details><summary>Technical detail</summary><code>${esc(bootstrap.error.code ?? bootstrap.error.message ?? String(bootstrap.error))}</code></details>` : ""}
+    </section>`;
     return;
   }
   if (state.view === "school") {

@@ -41,6 +41,11 @@ def _public_status(payload: dict, *, connected: bool) -> dict:
         "serviceReady": bool(payload.get("service_ready", connected)),
         "learnerReady": bool(payload.get("learner_ready", learner.get("state") == "healthy")),
         "learnerActive": learner.get("operator_active"),
+        "learnerState": learner.get("state"),
+        "runId": learner.get("run_id"),
+        "generation": learner.get("generation"),
+        "optimizerStep": learner.get("optimizer_step"),
+        "failureCode": learner.get("failure_code"),
     }
 
 

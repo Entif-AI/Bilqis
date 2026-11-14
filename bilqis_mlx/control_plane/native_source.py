@@ -6,6 +6,7 @@ import threading
 import weakref
 
 from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.mission_control import MissionControlQueryCatalog
 
 from .native_contracts import AuthenticatedGeneration, NativeProjectionMaterial
 from .native_custody import accepted_pointer, authenticated_history
@@ -51,6 +52,16 @@ def materialize_native_projection(
     records.extend(rejected_records)
     events.extend(rejected_events)
     return NativeProjectionMaterial(tuple(records), tuple(events), tuple(manifests))
+
+
+def native_query_catalog(run_dir: Path) -> MissionControlQueryCatalog:
+    """Build the current CP03 catalog directly from authenticated BAMF custody."""
+    root = Path(run_dir).expanduser().resolve()
+    pointer = root / "bamf-state.json"
+    if not pointer.exists() and not pointer.is_symlink():
+        return MissionControlQueryCatalog.unavailable()
+    material = materialize_native_projection(root, include_live_rejections=True)
+    return MissionControlQueryCatalog(material.records)
 
 
 def publish_native_events(service, *, seen_event_ids: set[str] | None = None):
@@ -103,5 +114,6 @@ def refresh_native_events(service):
 
 __all__ = (
     "AuthenticatedGeneration", "NativeProjectionMaterial", "authenticated_history",
-    "materialize_native_projection", "publish_native_events", "refresh_native_events",
+    "materialize_native_projection", "native_query_catalog", "publish_native_events",
+    "refresh_native_events",
 )

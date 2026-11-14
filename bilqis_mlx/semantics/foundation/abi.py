@@ -14,8 +14,11 @@ from pathlib import Path
 import re
 from typing import Mapping
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
+
 
 ABI_MANIFEST = Path(__file__).resolve().parents[1] / "legacy_abi_v1.json"
+HISTORICAL_GRAPH_REGISTRY = Path(__file__).resolve().parents[1] / "numeric_registry_v1.json"
 ABI_SCHEMA = "bilqis.semantic-abi/v1"
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
@@ -53,6 +56,17 @@ class HistoricalABI:
 
 HISTORICAL_ABI = HistoricalABI.from_manifest()
 HISTORICAL_PREFIX_SIZE = HISTORICAL_ABI.prefix_tokens
+
+
+def _graph_invalid(exc: Exception | None = None):
+    error = ValueError("HISTORICAL_ABI_GRAPH_INVALID")
+    if exc is None:
+        raise error
+    raise error from exc
+
+
+def _model_graph_count_drift():
+    raise ValueError("HISTORICAL_ABI_MODEL_GRAPH_COUNT_DRIFT")
 
 
 def _fingerprint(rows: list[dict[str, object]]) -> str:
@@ -121,8 +135,39 @@ def fingerprint_graph_prefix(graph: Mapping, *, abi: HistoricalABI = HISTORICAL_
                  "contract_sha256": receipts[node["id"]]}
                 for index, node in enumerate(nodes[:abi.prefix_tokens])]
     except (KeyError, TypeError, AttributeError) as exc:
-        raise ValueError("HISTORICAL_ABI_GRAPH_INVALID") from exc
+        _graph_invalid(exc)
     return _fingerprint(rows)
+
+
+def load_historical_graph(source: Path = HISTORICAL_GRAPH_REGISTRY, *,
+                          abi: HistoricalABI = HISTORICAL_ABI) -> dict:
+    """Load the immutable historical semantic graph without a neural checkpoint."""
+    try:
+        evidence = json.loads(Path(source).read_text(encoding="utf-8"))
+        graph = evidence["graph"]
+        tokens = graph["tokens"][:abi.prefix_tokens]
+        prefix = {
+            **graph,
+            "tokens": tokens,
+            "nodes": graph["nodes"][:abi.prefix_tokens],
+            "row_contract_sha256": {
+                token: graph["row_contract_sha256"][token] for token in tokens
+            },
+        }
+    except (OSError, json.JSONDecodeError, KeyError, TypeError) as exc:
+        _graph_invalid(exc)
+    require_historical_prefix(fingerprint_graph_prefix(prefix, abi=abi), abi=abi)
+    serialized = json.dumps(
+        prefix, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        allow_nan=False).encode("utf-8")
+    if hashlib.sha256(serialized).hexdigest() != abi.graph_sha256:
+        ErrorBus.Raise(
+            SCHOOL.STATE.HISTORICAL_ARTIFACT_INVALID,
+            reason="historical ABI graph digest mismatch",
+        )
+    if len(prefix["tokens"]) != abi.prefix_tokens:
+        _model_graph_count_drift()
+    return prefix
 
 
 def _fingerprint_node(node: dict) -> str:
@@ -146,7 +191,7 @@ def prefix_preserving_vocab_size(graph: Mapping, *, allow_growth: bool = False,
     require_historical_prefix(fingerprint_graph_prefix(graph, abi=abi), abi=abi)
     actual = len(graph["tokens"])
     if actual != len(graph["nodes"]):
-        raise ValueError("HISTORICAL_ABI_MODEL_GRAPH_COUNT_DRIFT")
+        _model_graph_count_drift()
     if (not allow_growth and actual != abi.prefix_tokens):
         raise ValueError("HISTORICAL_ABI_NOT_ORIGINAL_RELEASE")
     return actual

@@ -50,13 +50,17 @@ test("time lens pins an exact historical generation and clears generation-depend
 });
 
 test("current lens availability is an explicit renderer concern, not synthesized from history", () => {
-  const source = fs.readFileSync(
+  const renderer = fs.readFileSync(
     new URL("../renderer/renderer.mjs", import.meta.url),
     "utf8",
   );
-  assert.match(source, /verifiedLiveContext = snapshotSource === "service" && defense\.id === "live"/);
-  assert.match(source, /onCurrentLens:/);
-  assert.match(source, /withDefensiveState\(\{ \.\.\.state, context: verifiedLiveContext \}, defense\)/);
+  const bootstrap = fs.readFileSync(
+    new URL("../renderer/foundation/bootstrap-controller.mjs", import.meta.url),
+    "utf8",
+  );
+  assert.match(bootstrap, /snapshotSource === "service" && nextDefense\.id === "live"/);
+  assert.match(renderer, /onCurrentLens:/);
+  assert.match(renderer, /withDefensiveState\(\{ \.\.\.state, context: verifiedLiveContext \}, defense\)/);
 });
 
 test("stable refs preserve exact context and only explicit relations become highlight targets", () => {

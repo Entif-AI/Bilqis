@@ -53,6 +53,13 @@ and a non-color visual treatment. Empty never means unavailable. Denied never
 means empty. Revoked is distinct from both denied and unavailable. Outcome
 unknown never becomes failed or completed without a proven receipt/postcondition.
 
+Startup uses the same defensive vocabulary but exposes progress as a four-step text
+sequence: control plane, learner discovery, Mission Control telemetry, and trainer.
+Assistive technology receives the same progression through the existing polite live
+region. A healthy learner with no operator projection is `progressive`, not `live`,
+`offline`, or failed. The UI exposes the bounded technical error code when a startup
+boundary fails.
+
 ## Offline and restart semantics
 
 A verified OperatorView may be cached only as renderer inspection evidence. The

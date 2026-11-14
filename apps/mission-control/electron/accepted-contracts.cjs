@@ -53,7 +53,8 @@ function exactKeys(value, keys) {
 function validateStatus(value) {
   const keys = [
     "schemaVersion", "state", "protocolVersion", "serviceLive", "serviceReady",
-    "learnerReady", "learnerActive",
+    "learnerReady", "learnerActive", "learnerState", "runId", "generation",
+    "optimizerStep", "failureCode",
   ];
   const protocolVersionValid = value?.state === "incompatible-version"
     ? typeof value?.protocolVersion === "string" && value.protocolVersion.length > 0
@@ -62,7 +63,12 @@ function validateStatus(value) {
       !protocolVersionValid || !CP01_STATES.has(value.state) ||
       typeof value.serviceLive !== "boolean" || typeof value.serviceReady !== "boolean" ||
       typeof value.learnerReady !== "boolean" ||
-      (value.learnerActive !== null && typeof value.learnerActive !== "boolean")) {
+      (value.learnerActive !== null && typeof value.learnerActive !== "boolean") ||
+      (value.learnerState !== null && typeof value.learnerState !== "string") ||
+      (value.runId !== null && typeof value.runId !== "string") ||
+      (value.generation !== null && (!Number.isSafeInteger(value.generation) || value.generation < 0)) ||
+      (value.optimizerStep !== null && (!Number.isSafeInteger(value.optimizerStep) || value.optimizerStep < 0)) ||
+      (value.failureCode !== null && typeof value.failureCode !== "string")) {
     invalid("CP01_STATUS");
   }
   return value;

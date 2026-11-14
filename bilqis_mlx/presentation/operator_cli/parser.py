@@ -40,6 +40,8 @@ def _add_bamf_foundation_args(parser) -> None:
         parser, admission_policy_action=_AdmissionPolicyExplicitStore)
     parser.add_argument('--atlas-release-manifest', type=Path,
                         help='Pinned Atlas release manifest for a BAMF semantic foundation.')
+    parser.add_argument('--source-run-dir', type=Path, action=_FoundationExplicitStore,
+                        help='Accepted source learner used to derive a fresh BAMF foundation.')
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--model-topology", type=Path,
@@ -95,7 +97,8 @@ def _add_training_execution_args(parser) -> None:
                         help="Recheck all 216 candidate records against the pinned source (neural-inert)")
     parser.add_argument(
         "--human-run", action="store_true",
-        help=("Explicit human authorization for mutating operator actions; BAMF create and "
+        help=("Explicit operator confirmation for mutating CLI actions; this is not "
+              "authentication. BAMF create and "
               "enrollment remain neural-inert, while an accepted BAMF --resume may enter "
               "the persistent BAMF-native learner."))
     parser.add_argument("--autonomous-curriculum", action="store_true",

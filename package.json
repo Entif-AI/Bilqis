@@ -60,7 +60,8 @@
     "bamf:legacy-trainer": "python3 -B scripts/check_legacy_trainer_authority.py",
     "bamf:legacy-trainer:test": "python3 -B -m unittest scripts.tests.test_legacy_trainer_authority",
     "bamf:flow-control": "python3 -B scripts/check_bamf_flow_control.py",
-    "bamf:flow-control:test": "python3 -B -m unittest scripts.tests.test_bamf_flow_control scripts.tests.test_bamf_flow_control_live"
+    "bamf:flow-control:test": "python3 -B -m unittest scripts.tests.test_bamf_flow_control scripts.tests.test_bamf_flow_control_live",
+    "bamf:readiness": "python3 -B scripts/run_required_tests.py bilqis_mlx/source_adapters/tests/school/test_provider_compatibility.py bilqis_mlx/factory/tests/lifecycle/test_executable_consumers.py bilqis_mlx/runtime/tests/admission/test_jit_adoption.py bilqis_mlx/runtime/tests/operator/test_pre_neural_journey.py"
   },
   "devDependencies": {
     "electron": "42.11.16",

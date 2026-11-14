@@ -96,6 +96,10 @@ the accepted C11 inspection surface. checkpoint-verify uses lightweight
 accepted-generation inspection. admission-lease uses the existing accepted
 lease operation after read-only validation.
 
-CP05 reports pause and stop as unavailable. C11 supports local process
-interruption, but it does not expose a truthful remote pause or stop contract.
-CP05 does not manufacture one.
+CP05 reports pause as unavailable. Stop is supported only for an exact active
+create/resume/owner-launch operation whose trainer process was launched under CP05
+custody. Before SIGINT, CP05 rechecks the accepted lineage and the recorded process
+identity so a stale PID cannot become stop authority. An interrupted trainer exit
+records the authoritative interrupted postcondition and leaves the last accepted
+checkpoint as the resume point. CP05 does not expose a generic remote process kill
+or manufacture pause semantics.

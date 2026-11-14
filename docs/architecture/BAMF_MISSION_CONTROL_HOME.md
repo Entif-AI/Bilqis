@@ -43,9 +43,29 @@ The resulting page state (`PRESENT`, `EMPTY`, `MISSING`, `UNAVAILABLE`, `PARTIAL
 A stale or partial query therefore changes the section's treatment instead of
 becoming an ordinary zero-value metric.
 
-The checked-in `fixture-run` bootstrap is explicitly rendered as `FIXTURE EVIDENCE`
-and uses already accepted School and Learning Episode fixtures. This is a visual and
-acceptance surface, not a claim that those fixture values are live learner state.
+Checked-in fixtures remain explicit test and reference surfaces. Production startup
+never uses `fixture-run` as a substitute for a missing live OperatorView. The shell
+derives its live identity from CP01 and CP03 only.
+
+## Startup and sparse telemetry
+
+Mission Control reports startup as separate service boundaries instead of rendering a
+fully populated dashboard before evidence exists:
+
+1. local CP01 connection;
+2. accepted learner discovery;
+3. first accepted Mission Control operator projection;
+4. trainer activity.
+
+CP01 status may prove that the service is healthy and an accepted learner exists even
+when CP02 and CP03 telemetry has not materialized. In that state the shell shows the
+real run ID, generation, optimizer step, and trainer activity from the bounded public
+CP01 status. The main view reports that telemetry is starting. It does not fill metric
+cards with repeated `UNAVAILABLE` values and does not load fixture data.
+
+If startup fails, the defensive banner shows the failing boundary and bounded error
+code. Mutation stays unavailable until a fresh verified OperatorView establishes the
+accepted live command context.
 
 ## Incremental LIVE updates
 

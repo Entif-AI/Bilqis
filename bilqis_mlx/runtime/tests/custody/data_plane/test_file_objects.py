@@ -33,6 +33,15 @@ class FileObjectTests(DataPlaneCase):
         self.assertEqual(data_plane().require_file_object(digest), target)
         self.assertEqual(target.read_bytes(), b"immutable tensor bytes")
 
+    def test_require_file_object_reuses_stat_bound_digest_proof(self):
+        source, digest = self.source()
+        plane = data_plane()
+        target = plane.adopt_file_object(source, digest)
+        with patch.object(file_objects, "_digest", wraps=file_objects._digest) as digest_file:
+            self.assertEqual(plane.require_file_object(digest), target)
+            self.assertEqual(plane.require_file_object(digest), target)
+        digest_file.assert_not_called()
+
     def test_competing_install_verifies_and_reuses_winner(self):
         source, digest = self.source()
         plane = data_plane()

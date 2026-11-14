@@ -14,6 +14,18 @@ The runtime error catalog is the authority for new failures. Raw string exceptio
 
 ## Typed catalog
 
+### `FACTORY.SOURCE_ADAPTER.COMPATIBILITY_INVALID`
+
+Factory source-adapter compatibility invalid.
+
+Owner: `compatibility.source_adapter_resume`
+Disposition: `PRESERVE_AND_REPAIR`
+Self-heal owner: `none`
+
+Message: Factory source-adapter compatibility invalid: {reason}
+
+Recovery: Preserve the accepted release and repair the exact source-adapter identity or registry boundary before retrying.
+
 ### `FACTORY.DEVELOPMENTAL_PROGRAM.INVALID`
 
 Factory developmental program invalid.
@@ -1874,7 +1886,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2093** raw raises across **265** files. The baseline gate permits only reduction.
+Current production scan: **2093** raw raises across **267** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2666,15 +2678,15 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_EXECUTION_PLAN_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/_execution/compilation.py` |
 | `FACTORY_EXECUTION_PLAN_SOURCE_BINDINGS_REQUIRED` | 1 | `bilqis_mlx/factory/_execution/compilation.py` |
 | `FACTORY_GENERALIZATION_MUST_USE_DISTINCT_COHORT` | 1 | `bilqis_mlx/factory/lifecycle/assessment.py` |
-| `FACTORY_GENERATION_ADAPTER_DRIFT` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_EMPTY_SCOPE` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_INVALID_COUNT` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_GENERATION_UNKNOWN_CAPABILITY` | 1 | `bilqis_mlx/factory/generation.py` |
+| `FACTORY_GENERATION_ADAPTER_DRIFT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_EMPTY_SCOPE` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_INVALID_COUNT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_UNKNOWN_CAPABILITY` | 1 | `bilqis_mlx/factory/generation_compat.py` |
 | `FACTORY_INVALID_REGISTERED_ANSWER_MODALITY` | 1 | `bilqis_mlx/factory/lifecycle/answers.py` |
 | `FACTORY_INVALID_REGISTERED_SOURCE_ADAPTER` | 1 | `bilqis_mlx/factory/adapters.py` |
 | `FACTORY_LEARNING_EVIDENCE_CLASS_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
@@ -2791,6 +2803,7 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_SOURCE_ADAPTER_IDENTITY_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
 | `FACTORY_SOURCE_ADAPTER_MISSING` | 1 | `bilqis_mlx/factory/adapters.py` |
 | `FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
+| `FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN` | 1 | `bilqis_mlx/compatibility/source_adapter_resume.py` |
 | `FACTORY_SOURCE_ADAPTER_TEACHING_OPTIONS_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
 | `FACTORY_SOURCE_ADAPTER_VARIATION_AXES_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
 | `FACTORY_SOURCE_ATTESTATION_DIGEST_INVALID` | 1 | `bilqis_mlx/factory/curriculum_definition.py` |
@@ -3050,7 +3063,6 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `HISTORICAL_ABI_EXTERNAL_REFERENCE_MISMATCH` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |
 | `HISTORICAL_ABI_EXTERNAL_REFERENCE_MISSING` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |
 | `HISTORICAL_ABI_FIELDS_INVALID` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |
-| `HISTORICAL_ABI_GRAPH_INVALID` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |
 | `HISTORICAL_ABI_MODEL_GRAPH_COUNT_DRIFT` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |
 | `HISTORICAL_ABI_MODEL_TOO_SMALL` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |
 | `HISTORICAL_ABI_NOT_ORIGINAL_RELEASE` | 1 | `bilqis_mlx/semantics/foundation/abi.py` |

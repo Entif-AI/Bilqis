@@ -7,6 +7,7 @@ from pathlib import Path
 
 from bilqis_mlx.paths import active_run_dir
 from bilqis_mlx.mission_control.projection import MissionControlProjection
+from bilqis_mlx.control_plane.native_source import native_query_catalog
 
 from .discovery import discover_learner
 from .service import ControlPlaneService
@@ -31,7 +32,8 @@ def main(argv: list[str] | None = None) -> int:
     socket_path = args.socket or _default_socket(args.run_dir)
     query_source = (
         (lambda: MissionControlProjection(args.projection_db).catalog())
-        if args.projection_db is not None else None
+        if args.projection_db is not None
+        else (lambda: native_query_catalog(args.run_dir))
     )
     service = ControlPlaneService(
         args.run_dir, socket_path, query_source=query_source)

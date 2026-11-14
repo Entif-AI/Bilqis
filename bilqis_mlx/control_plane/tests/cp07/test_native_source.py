@@ -5,10 +5,11 @@ from unittest.mock import patch
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.control_plane import ControlPlaneClient, ControlPlaneService, EventFamily
 from bilqis_mlx.control_plane.native_source import (
-    authenticated_history, materialize_native_projection, refresh_native_events,
+    authenticated_history, materialize_native_projection, native_query_catalog,
+    refresh_native_events,
 )
 from bilqis_mlx.mission_control import (
-    CandidateDecision, CapabilitySnapshot, LearningEpisode, ResourceSample,
+    CandidateDecision, CapabilitySnapshot, LearningEpisode, OperatorView, ResourceSample,
 )
 from bilqis_mlx.mission_control.projection import MissionControlProjection
 from bilqis_mlx.mission_control.query_contracts import QueryFamily, QueryMode, QueryRequest
@@ -37,6 +38,10 @@ class NativeBamfProjectionTests(NativeSourceFixture, unittest.TestCase):
         candidates = [record for record in material.records if isinstance(record, CandidateDecision)]
         capabilities = [record for record in material.records if isinstance(record, CapabilitySnapshot)]
         resources = [record for record in material.records if isinstance(record, ResourceSample)]
+        operator_views = [record for record in material.records if isinstance(record, OperatorView)]
+        self.assertEqual(len(operator_views), 2)
+        self.assertEqual(operator_views[-1].learner_state, "READY")
+        self.assertEqual(operator_views[-1].meta.run.generation, 1)
         self.assertEqual(len(episodes), 1)
         self.assertEqual(episodes[0].capability_id, "A.NATIVE")
         self.assertEqual(episodes[0].meta.coverage.value, "PARTIAL")
@@ -81,6 +86,16 @@ class NativeBamfProjectionTests(NativeSourceFixture, unittest.TestCase):
             QueryFamily.CAPABILITY, run_id=source.run_id,
         )), current)
         self.assertEqual((self.run / "bamf-state.json").read_bytes(), before)
+
+    def test_native_query_catalog_exposes_current_operator_view_without_cp06_database(self):
+        self.parent()
+        source, _pointer = self.publish_successor()
+        page = native_query_catalog(self.run).query(QueryRequest(
+            QueryFamily.RUN, run_id=source.run_id))
+        view = next(record for record in page.records if isinstance(record, OperatorView))
+        self.assertEqual(page.state.value, "PRESENT")
+        self.assertEqual(view.meta.run.generation, 1)
+        self.assertEqual(view.learner_state, "READY")
 
     def test_historical_acceptance_tamper_fails_closed(self):
         self.parent()

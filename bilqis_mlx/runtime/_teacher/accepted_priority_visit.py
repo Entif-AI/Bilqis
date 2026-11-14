@@ -116,8 +116,15 @@ def select_accepted_priority_visit(
         run_dir, source_context, frontier, history, planning, offers,
         engine, school, rng, learning_settings, *, program, now,
         total_capabilities=None, plasticity_escape=None,
-        legacy_receipt=None, adaptation=None, prior_region=None):
-    parent, cache = _accepted_parent(Path(run_dir))
+        legacy_receipt=None, adaptation=None, prior_region=None,
+        accepted_parent=None, planning_generation=None):
+    if planning_generation is None:
+        parent, cache = _accepted_parent(Path(run_dir))
+    else:
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+        parent = accepted_parent
+        cache, _authenticated = _require_planning_generation(
+            planning_generation, source_context, parent)
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
     epoch = restore_teacher_lineage(projection.teacher_state)
@@ -170,7 +177,7 @@ def execute_accepted_priority_candidate(selection, source_context,
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
-    parent, cache = _accepted_parent(Path(selection._run_dir))
+    parent, cache = selection.offer.require_current_parent(source_context)
     _require_current_visit(parent, cache, selection.visit)
     selection.offer.require_current(source_context, parent)
     policy = selection.policy

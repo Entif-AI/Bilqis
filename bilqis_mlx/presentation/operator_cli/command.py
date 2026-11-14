@@ -40,6 +40,19 @@ def _bamf_operator_admission_status(report):
     return report.get("result") if report.get("result") in safe else False
 
 
+def _reject_fresh_external_legacy_fallthrough(args, run_dir: Path) -> None:
+    legacy_pointer = run_dir / "state.json"
+    if (args.resume or args.bamf_v2_foundation_explicit
+            or args.model_topology is not None
+            or legacy_pointer.exists() or legacy_pointer.is_symlink()):
+        return
+    target = run_dir.resolve()
+    local_runs = (ROOT / "runs").resolve()
+    if target != local_runs and local_runs not in target.parents:
+        from .bamf_lifecycle_inputs import invalid
+        invalid("BAMF_OPERATOR_FRESH_EXTERNAL_RUN_REQUIRES_FOUNDATION_INPUTS")
+
+
 def _bamf_or_topology(args):
     """Route BAMF v2 before legacy training while preserving C07 early failure."""
     run_dir = Path(args.run_dir).expanduser()
@@ -94,14 +107,19 @@ def _bamf_or_topology(args):
                 and admission_status is not False):
             from dataclasses import asdict
             from bilqis_mlx.runtime.bamf_operator import operate_bamf
+            def progress(message):
+                print("BAMF TRAINER: " + message, file=sys.stderr, flush=True)
             result = operate_bamf(
                 run_dir, minutes=args.minutes,
-                max_visits=args.max_visits, reserve_gib=args.reserve_gib)
+                max_visits=args.max_visits, reserve_gib=args.reserve_gib,
+                progress=progress)
             operator_report = asdict(result)
             if admission_status is not None:
                 operator_report["admission_status"] = admission_status
             return True, _print_status(operator_report), None
         return True, _print_status(report), None
+
+    _reject_fresh_external_legacy_fallthrough(args, run_dir)
 
     from bilqis_mlx.runtime.topology_lifecycle import topology_from_file
     try:

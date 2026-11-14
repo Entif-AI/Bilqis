@@ -1,33 +1,19 @@
 import { createFrameShell } from "./frames/frame-shell.mjs";
 import {
-  assertOperatorView,
-  createShellState,
   inspect,
   navigate,
-  openEvidence,
   openSelectionOwner,
   returnFromEvidence,
   selectObject,
-  normalizeContext,
   withDefensiveState,
   withRoute,
 } from "./shell-state.mjs";
-import { buildDeepLink, parseDeepLink, routeFromState } from "./deep-link.mjs";
+import { buildDeepLink } from "./deep-link.mjs";
 import {
-  DENSITIES,
-  THEMES,
   applyDisplaySettings,
-  cycleSetting,
   loadDisplaySettings,
-  saveDisplaySettings,
 } from "./settings.mjs";
-import {
-  cacheOperatorView,
-  defensiveState,
-  defensiveStateForConnection,
-  defensiveStateForError,
-  loadCachedOperatorView,
-} from "./foundation/defensive-state.mjs";
+import { defensiveState } from "./foundation/defensive-state.mjs";
 import {
   renderChrome,
   renderContext,
@@ -47,15 +33,14 @@ import { activateDomainViews } from "./foundation/domain-controller.mjs";
 import { createInteractionController } from "./interactions/controller.mjs";
 import { routeForObjectRef } from "./interactions/app-uri.mjs";
 import { withHistoricalLens } from "./interactions/model.mjs";
+import { createBootstrapController } from "./foundation/bootstrap-controller.mjs";
+import { bindStaticInteractions } from "./foundation/static-interactions.mjs";
 
-const SNAPSHOT_REQUEST = Object.freeze({
-  schemaVersion: "bamf.gui20.operator-view-query/v1",
-  schema: "bilqis.bamf.mission-control.operator-view/v1",
-});
 let state = null;
 let verifiedLiveContext = null;
 let displaySettings;
 let defense = defensiveState("loading");
+let bootstrap = Object.freeze({ phase: "connecting", connection: null, error: null });
 let focusReturnToken = null;
 let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl);
@@ -83,6 +68,19 @@ const frameShell = createFrameShell({
   getState: () => state, setState: next => { state = next; }, getDefense: () => defense,
   render, onInspect: openInspector,
   refresh: () => { renderContext(state, defense); renderNavigation(state, navigateTo); renderInspector(state, defense); setHash(); },
+});
+const { establishSnapshot } = createBootstrapController({
+  api: window.bamfMissionControl,
+  storage: window.localStorage,
+  getState: () => state,
+  setState: (next) => { state = next; },
+  setDefense: (next) => { defense = next; },
+  setBootstrap: (next) => { bootstrap = next; },
+  setVerifiedLiveContext: (next) => { verifiedLiveContext = next; },
+  resetFrameShell: () => frameShell.reset(),
+  render,
+  announce,
+  currentHash: () => window.location.hash,
 });
 const capabilityExplorer = createCapabilityExplorer({
   host: document.querySelector("#domain-view"),
@@ -148,7 +146,7 @@ function render() {
     onReconnect: () => establishSnapshot({ preserveRoute: true }),
     onNavigate: navigateTo,
     onInspect: openInspector,
-  });
+  }, bootstrap);
   frameShell.afterRender();
   setHash();
   activateDomainViews({
@@ -213,143 +211,24 @@ function openPalette() {
   window.queueMicrotask(() => dialog.querySelector("button:not(:disabled)")?.focus());
 }
 
-async function establishSnapshot({ preserveRoute = false } = {}) {
-  const modelSection = state?.modelSection;
-  frameShell.reset();
-  if (state) state = { ...state, mutationAvailable: false };
-  const route = preserveRoute && state
-    ? routeFromState(state)
-    : parseDeepLink(window.location.hash);
-  defense = defensiveState("loading", {
-    snapshotAvailable: Boolean(state),
-    snapshotSource: state ? "previous" : "none",
-  });
-  render();
-
-  let connection = null;
-  let connectError = null;
-  try {
-    connection = await window.bamfMissionControl.connect();
-  } catch (error) {
-    connectError = error;
-  }
-
-  let operatorView = null;
-  let snapshotSource = "none";
-  let snapshotError = null;
-  if (connection !== null) {
-    try {
-      operatorView = await window.bamfMissionControl.querySnapshot(SNAPSHOT_REQUEST);
-      assertOperatorView(operatorView);
-      snapshotSource = "service";
-      cacheOperatorView(window.localStorage, operatorView);
-    } catch (error) {
-      snapshotError = error;
-      operatorView = null;
-    }
-  }
-
-  if (operatorView === null) {
-    const cached = loadCachedOperatorView(window.localStorage);
-    if (cached !== null) {
-      try {
-        assertOperatorView(cached.operatorView);
-        operatorView = cached.operatorView;
-        snapshotSource = "cache";
-      } catch (error) {
-        snapshotError ??= error;
-      }
-    }
-  }
-
-  if (operatorView === null) {
-    defense = defensiveStateForError(snapshotError ?? connectError, {
-      snapshotAvailable: false,
-      snapshotSource: "none",
-    });
-    state = null;
-    render();
-    announce(`${defense.label}. No verified snapshot is available.`);
-    return;
-  }
-
-  const options = { snapshotAvailable: true, snapshotSource };
-  defense = snapshotError || connectError
-    ? defensiveStateForError(snapshotError ?? connectError, options)
-    : defensiveStateForConnection(connection?.state, options);
-  if (snapshotSource === "cache" && defense.id === "live") {
-    defense = defensiveState("stale", options);
-  }
-  verifiedLiveContext = snapshotSource === "service" && defense.id === "live"
-    ? normalizeContext(operatorView)
-    : null;
-  state = { ...withDefensiveState(createShellState(operatorView, route), defense), modelSection };
-  render();
-  announce(`${defense.label}. ${defense.historical ? "Inspection-only evidence is shown." : "Live context established."}`);
-}
-
-function bindStaticInteractions() {
-  document.querySelector("#inspector-close").addEventListener("click", closeInspector);
-  document.querySelector("#open-owner").addEventListener("click", () => {
-    if (!state) return;
-    state = openSelectionOwner(state);
-    render();
-  });
-  document.querySelector("#open-evidence").addEventListener("click", () => {
-    if (!state?.selected) return;
-    state = openEvidence(state);
-    render();
-  });
-  document.querySelector("#theme-trigger").addEventListener("click", () => {
-    displaySettings = { ...displaySettings, theme: cycleSetting(displaySettings.theme, THEMES) };
-    saveDisplaySettings(window.localStorage, displaySettings);
-    applyDisplaySettings(document.documentElement, displaySettings);
-    render();
-  });
-  document.querySelector("#density-trigger").addEventListener("click", () => {
-    displaySettings = { ...displaySettings, density: cycleSetting(displaySettings.density, DENSITIES) };
-    saveDisplaySettings(window.localStorage, displaySettings);
-    applyDisplaySettings(document.documentElement, displaySettings);
-    render();
-  });
-  document.querySelector("#palette-trigger").addEventListener("click", openPalette);
-  document.querySelector("#palette-close").addEventListener("click", () => {
-    document.querySelector("#command-palette").close();
+async function bootstrap() {
+  displaySettings = loadDisplaySettings(window.localStorage);
+  applyDisplaySettings(document.documentElement, displaySettings);
+  bindStaticInteractions({
+    document,
+    window,
+    getState: () => state,
+    setState: (next) => { state = next; },
+    getDisplaySettings: () => displaySettings,
+    setDisplaySettings: (next) => { displaySettings = next; },
+    render,
+    closeInspector,
+    openPalette,
+    interactionController,
   });
   document.querySelector("#command-palette").addEventListener("close", () => {
     window.queueMicrotask(() => restoreFocus(document, paletteReturnToken));
   });
-  document.querySelector("#generation-selector").addEventListener("change", (event) => {
-    if (!state) return;
-    const generation = Number(event.currentTarget.value);
-    if (!Number.isSafeInteger(generation) || generation < 0) return;
-    state = withHistoricalLens(state, generation);
-    render();
-  });
-  window.addEventListener("hashchange", () => {
-    if (!state) return;
-    const route = parseDeepLink(window.location.hash);
-    state = withRoute(state, route);
-    render();
-  });
-  document.addEventListener("keydown", (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      openPalette();
-      return;
-    }
-    if (event.key === "Escape" && state?.inspectorOpen && !document.querySelector("#command-palette").open) {
-      event.preventDefault();
-      closeInspector();
-    }
-  });
-  interactionController.bindStatic();
-}
-
-async function bootstrap() {
-  displaySettings = loadDisplaySettings(window.localStorage);
-  applyDisplaySettings(document.documentElement, displaySettings);
-  bindStaticInteractions();
   render();
   await establishSnapshot();
 }

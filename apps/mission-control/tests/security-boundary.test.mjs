@@ -48,7 +48,7 @@ test("GUI01 startup uses the GUI20 window, IPC and custom-protocol boundary", ()
 });
 
 test("GUI01 renderer imports no Electron, Node, filesystem or process privilege", () => {
-  for (const file of ["renderer.mjs", "shell-state.mjs", "deep-link.mjs", "frames/frame-contract.mjs", "frames/frame-model.mjs", "frames/frame-explorer.mjs", "frames/frame-shell.mjs", "foundation/renderer-ui.mjs", "atlas/atlas-controller.mjs"]) {
+  for (const file of ["renderer.mjs", "shell-state.mjs", "deep-link.mjs", "frames/frame-contract.mjs", "frames/frame-model.mjs", "frames/frame-explorer.mjs", "frames/frame-shell.mjs", "foundation/bootstrap-controller.mjs", "foundation/static-interactions.mjs", "foundation/renderer-ui.mjs", "atlas/atlas-controller.mjs"]) {
     const source = fs.readFileSync(path.join(appRoot, "renderer", file), "utf8");
     assert.equal(assertRendererSourceSafe(source, file), true);
   }
@@ -76,8 +76,12 @@ test("strict renderer CSP has no inline style attributes to block at runtime", (
 });
 
 test("GUI01 renderer bootstraps through bamfMissionControl, not a raw shell IPC", () => {
-  const source = fs.readFileSync(path.join(appRoot, "renderer", "renderer.mjs"), "utf8");
-  assert.match(source, /bamfMissionControl\.connect\(\)/);
-  assert.match(source, /bamfMissionControl\.querySnapshot\(/);
-  assert.doesNotMatch(source, /bamfShell|ipcRenderer|child_process|spawn\(|exec\(/);
+  const renderer = fs.readFileSync(path.join(appRoot, "renderer", "renderer.mjs"), "utf8");
+  const bootstrap = fs.readFileSync(
+    path.join(appRoot, "renderer", "foundation/bootstrap-controller.mjs"), "utf8",
+  );
+  assert.match(renderer, /createBootstrapController\(\{[\s\S]*api: window\.bamfMissionControl/);
+  assert.match(bootstrap, /api\.connect\(\)/);
+  assert.match(bootstrap, /api\.querySnapshot\(SNAPSHOT_REQUEST\)/);
+  assert.doesNotMatch(`${renderer}\n${bootstrap}`, /bamfShell|ipcRenderer|child_process|spawn\(|exec\(/);
 });
