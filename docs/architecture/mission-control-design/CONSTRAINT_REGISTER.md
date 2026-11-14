@@ -62,13 +62,13 @@ This register records constraints that a redesign leaf must preserve. It is not 
 | CON-D-050 | Each atlas component has traceable information, treatment, interaction, effect, state, authority, accessibility, i18n, and test-hook concerns. | MUST | User instruction; issue #1124 artifact contract | A component may inherit a view-level concern profile only when that inheritance is explicit and no component-specific exception is lost. |
 | CON-D-051 | Exact screenshot-derived failures are preserved as concrete examples with owning rules; compressed categories are not a substitute for the durable example corpus. | MUST | User instruction; issue #1124 | Maintain `ANTI_PATTERN_GALLERY.md`; when an original screenshot/source is unavailable, say so rather than inventing it. |
 | CON-D-052 | A redesign ticket states the minimum known work, not the maximum allowed refinement. Agents may make additional spec-conformance repairs discovered during implementation, including outside enumerated ticket bullets, while coordinating overlapping active ownership and recording new deficiencies. | MUST | User instruction; issue #1124 | Do not use ticket scope as an excuse to preserve an obvious local design-system violation; do not create conflicting simultaneous edits to another active leaf. |
-| CON-D-053 | Runtime UI implementation is human-gated by explicit ratification of the aesthetics/palette/component-library direction. | MUST | User instruction; issue #1124 | Merged design documentation does not substitute for the named agreement gate. Do not begin #1126 implementation until that ratification is durable. |
+| CON-D-053 | Runtime UI implementation is human-gated by explicit ratification of the aesthetics/palette/component-library direction. | MUST | User instruction; issue #1124 | Merged design documentation does not substitute for the named agreement gate. Do not begin #1126 implementation until that ratification is durable. |\n| CON-D-054 | Atlas decomposition is recursively semantic: a component is composite, not terminal, while it still contains an independently meaningful subcomponent, repeated control family, state/state-presentation, interaction contract, or distinct effect. Existing published parent IDs remain stable; descendants use dotted IDs. | MUST | User correction; issue #1124 D-028 | A leaf may stop only at one concrete information/control unit or one irreducible nonvisual treatment/state/interaction/effect contract. Repeated identical controls may share a family node but fixed instances are enumerated; behaviorally distinct instances/states are separate. |
 
 ## Leaf checklist
 
 Every redesign child issue must cite the relevant CON-D IDs. Its implementation closeout/checkpoint must state:
 
-1. atlas node(s) touched;
+1. atlas node(s) touched, including every recursive descendant owned by the cited node unless explicitly excluded with evidence;
 2. preserved authority/state semantics;
 3. all human-facing strings in the leaf's owned micro-surface and their localization tokens;
 4. all UI element selectors in tests for the leaf's owned micro-surface, the stable test IDs introduced, and the migrated tests;
