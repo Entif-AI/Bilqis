@@ -72,7 +72,7 @@ mindmap
           COMP-D-521 View request state
           COMP-D-501 Semantic overview
           COMP-D-502 Semantic selection
-          COMP-D-503 Learned similarity
+          COMP-D-503 Semantic authority lens
           COMP-D-504 ABI bank map
           COMP-D-505 Exact semantic lookup
         VIEW-D-006 Model
@@ -316,7 +316,7 @@ Purpose: outcome-first learner health, current work, learning pulse, actionable 
 ### COMP-D-106 · Compact School map
 - Information: current curriculum/capability position at overview depth.
 - Treatment: reduced School summary rather than a second full matrix.
-- Interaction: select/open School or Capability Explorer.
+- Interaction: select a capability row; the current Home binding inspects that exact capability through the shared selection/inspector path.
 - Effect: provides orientation without duplicating the full School destination.
 
 ## VIEW-D-002 · School
@@ -467,7 +467,7 @@ Purpose: source-authoritative semantic identity and generation-scoped ABI state;
 - Interaction: inspect/open related object.
 - Effect: preserves source-authoritative semantic navigation.
 
-### COMP-D-503 · Learned-similarity lens
+### COMP-D-503 · Semantic authority lens
 - Information: derived similarity where available.
 - Treatment: explicitly separate derived view.
 - Interaction: compare/explore.
@@ -729,7 +729,7 @@ Purpose: measured resource budgets, exact historical comparison, and spike corre
 - Interaction: none/inspect.
 - Effect: establishes current resource condition.
 
-### COMP-D-1202 · Semantics/decomposition
+### COMP-D-1202 · Metric semantics
 - Information: evidence semantics and resource decomposition where instrumented.
 - Treatment: grouped metrics.
 - Interaction: inspect.
@@ -839,21 +839,21 @@ Every component above inherits the concern profile for its containing shell/view
 
 | Scope | State concerns | Authority concerns | Accessibility concerns | Required i18n posture | Required test-hook posture |
 | --- | --- | --- | --- | --- | --- |
-| SHELL-D-001 / COMP-D-001..014 | STATE-D-001..009; route, selection, defensive, investigation, focus/display, fixture custody | Shell may display source/derived/operator-local facts but never upgrades their authority; mutation gating follows verified context | landmarks, skip link, roving navigation, dialog/inert semantics, focus return, live regions, target size, reduced motion/forced colors | all human labels, summaries, help, state explanations and recovery copy tokenized; machine IDs remain data | `shell-*`, `nav-destination-*`, `investigation-*`, `inspector-*`, `palette-*`; exact IDs unique |
+| SHELL-D-001 / COMP-D-001..016 | STATE-D-001..009; route, selection, defensive, investigation, focus/display, fixture custody | Shell may display source/derived/operator-local facts but never upgrades their authority; mutation gating follows verified context | landmarks, skip link, roving navigation, dialog/inert semantics, focus return, live regions, target size, reduced motion/forced colors | all human labels, summaries, help, state explanations and recovery copy tokenized; machine IDs remain data | `shell-*`, `nav-destination-*`, `investigation-*`, `inspector-*`, `palette-*`; exact IDs unique |
 | VIEW-D-001 Mission Control / COMP-D-101..107 | live overview query families; startup projection; defensive projection; no historical event refresh | summary only; retained/current work/evidence distinctions remain explicit | heading/focus order, status non-color cues, inspectable summaries keyboard-reachable | all startup/overview questions, labels, health copy, attention guidance | `home-*` |
 | VIEW-D-002 School / COMP-D-201..209 | matrix UI, curriculum mode, selected capability/node, filters/sort/page, context-bound async epoch | declared curriculum/topology and measured capability evidence stay distinct | matrix orientation, keyboard graph selection, equivalent relationship table, scale disclosure, scroll discoverability | filters, column labels, explanations, topology/scale guidance | `school-*`, `school-capability-row-*`, `curriculum-*` |
 | VIEW-D-003 Capability Explorer / COMP-D-301..306 | selected capability, lens/source, cursor/page, evidence query epoch | measured chronology/source support only; no inferred causes | dossier navigation, bounded pagination, exact-value access, focus on loaded detail | section labels, helper copy, evidence controls | `capability-*`, `capability-evidence-*` |
 | VIEW-D-004 Learning / COMP-D-401..405 | selected episode/candidate and replay stage | episode evidence, candidate state, retention/rollback custody remain separate | ordered stage controls, comparison tables, status announcements | stage labels, terminal/retention explanations, comparison labels | `learning-*`, `learning-stage-*` |
-| VIEW-D-005 Atlas / COMP-D-501..505 | overview/selection/lens/bank/request epoch | canonical semantic identity is source-authoritative; learned similarity remains derived | graph/table keyboard paths, exact lookup labels, nonvisual relationship access | lens/search/helper text tokenized; semantic IDs remain data | `atlas-*`, `atlas-semantic-*` |
-| VIEW-D-006 Model / COMP-D-601..610 | model subsection, neural fixture mode, frame request epoch, saved return context | measured runtime vs fixture-backed diagnostics vs frame receipts remain explicit | peer-mode navigation, tables/progress readable by AT, fixture posture announced | diagnostic labels/help/state copy; raw IDs/receipts remain data | `model-*`, `neural-*`, `frame-*` |
-| VIEW-D-007 Memory / COMP-D-701..705 | generation, selected page/slot, compare generation | retrieval telemetry is operational evidence, never semantic/capability authority | page/slot controls, detail lists, comparison semantics, non-color held/rejected cues | labels/help/compare copy tokenized; stable motif IDs remain data | `memory-*`, `memory-slot-*` |
+| VIEW-D-005 Atlas / COMP-D-501..505, 521 | overview/selection/lens/bank/request epoch | canonical semantic identity is source-authoritative; learned similarity remains derived | graph/table keyboard paths, exact lookup labels, nonvisual relationship access | lens/search/helper text tokenized; semantic IDs remain data | `atlas-*`, `atlas-semantic-*` |
+| VIEW-D-006 Model / COMP-D-601..611 | model subsection, neural fixture mode, frame request epoch, saved return context | measured runtime vs fixture-backed diagnostics vs frame receipts remain explicit | peer-mode navigation, tables/progress readable by AT, fixture posture announced | diagnostic labels/help/state copy; raw IDs/receipts remain data | `model-*`, `neural-*`, `frame-*` |
+| VIEW-D-007 Memory / COMP-D-701..705, 733 | generation, selected page/slot, compare generation | retrieval telemetry is operational evidence, never semantic/capability authority | page/slot controls, detail lists, comparison semantics, non-color held/rejected cues | labels/help/compare copy tokenized; stable motif IDs remain data | `memory-*`, `memory-slot-*` |
 | VIEW-D-008 Teacher / COMP-D-801..804 | strategy selection/comparison scope and fidelity level | descriptive strategy outcomes/cost/fidelity only; no unsupported winner/policy authority | strategy selection, comparison table/ladder reading order, state cues | strategy-role labels, comparison guidance, projection-boundary copy | `teacher-*`, `teacher-strategy-*` |
 | VIEW-D-009 SÍ SÉ SON / COMP-D-901..906 | selected as-of snapshot/observation/aggregation level | Impact, Exigency, Osmotic Novelty remain independent; aggregate/routing rationale derived | snapshot selector, axis labels not color-only, aggregation hierarchy navigable, evidence links named | snapshot labels, axis names/explanations/rationale labels tokenized; source IDs remain data | `salience-*`, `salience-observation-*` |
 | VIEW-D-010 Corrections / COMP-D-1001..1005 | selected correction/affected artifact/requalification state | known exposure and receipt-backed requalification only; no perfect-unlearning claim | graph has equivalent table, history order explicit, state cues non-color | correction/requalification/history guidance tokenized | `corrections-*`, `correction-artifact-*` |
 | VIEW-D-011 Lineage / COMP-D-1101..1104 | selected generation/checkpoint and diff endpoints | accepted immutable lineage only; rejected candidates explicitly excluded | DAG/table equivalence, exact node inspection, diff table orientation | lineage/diff guidance tokenized; hashes/checkpoints remain data | `lineage-*`, `lineage-generation-*` |
 | VIEW-D-012 Resources / COMP-D-1201..1206 | current projection, exact comparison generation, resource-only live refresh | measured/derived/estimated/unavailable distinctions preserved; correlation is not causation | metric units/denominators announced, wide tables own overflow, comparison forms labeled | metric labels/units/help/status copy tokenized | `resources-*`, `resource-sample-*` |
 | VIEW-D-013 Evidence / COMP-D-1301..1306 | criteria/page/results/selection/raw/traversal/query epoch; degraded/query/traversal failures | literal evidence/provenance is primary; raw payload may stay technical; missing/degraded records remain explicit | search/pagination/detail semantics, live query/traversal status, raw payload readable, explicit return origin | controls, states and explanations tokenized; literal payload/identifiers not translated | `evidence-*`, `evidence-record-*` |
-| VIEW-D-014 Operate / COMP-D-1401..1405 | command phase, target conflicts, authorization, operation readback | CP05 exact target/consequence/receipt authority; unknown outcome remains unknown | deliberate gate focus/order, error association, no hidden mutation, receipt/readback announcements | action/help/error/reconciliation copy tokenized; exact target/operation IDs remain data | `operate-*`, `operate-action-*` |
+| VIEW-D-014 Operate / COMP-D-1400..1405 | command phase, target conflicts, authorization, operation readback | CP05 exact target/consequence/receipt authority; unknown outcome remains unknown | deliberate gate focus/order, error association, no hidden mutation, receipt/readback announcements | action/help/error/reconciliation copy tokenized; exact target/operation IDs remain data | `operate-*`, `operate-action-*` |
 
 For repeated elements, exact IDs are never duplicated. Repeated rows/nodes use a documented prefix plus a stable identity suffix. Functional `data-*` attributes used by runtime behavior are not substitutes for these test hooks.
 
