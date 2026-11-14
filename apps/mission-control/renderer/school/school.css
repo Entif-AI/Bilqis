@@ -1,10 +1,10 @@
 @import "./curriculum-atlas.css";
 .domain-view:empty { display: none; }
 .school-view { min-width: 0; display: grid; gap: var(--content-gap); margin-top: 0; }
-.school-heading { display: flex; justify-content: space-between; align-items: end; gap: var(--space-5); }
-.school-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
+.school-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, .8fr); align-items: center; gap: var(--space-5); }
+.school-heading h2 { margin: 5px 0 0; font-size: var(--heading-md); }
 .school-heading p { max-width: 560px; margin: 0; color: var(--text-muted); line-height: 1.45; }
-.school-fixture-notice { display: flex; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 2px double var(--attention); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
+.school-fixture-notice { display: grid; grid-template-columns: minmax(220px, auto) minmax(0, 1fr); gap: var(--space-4); align-items: center; padding: var(--space-3); border: 2px double var(--attention); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
 .school-fixture-notice span { color: var(--text-muted); }
 .school-controls { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--border); background: var(--surface-1); }
 .filter-set { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -12,12 +12,12 @@
 .school-controls button[aria-pressed="true"] { border-style: double; box-shadow: inset 3px 0 0 var(--accent); }
 .school-controls label { display: inline-flex; align-items: center; gap: 6px; }
 .school-panel { min-width: 0; max-width: 100%; overflow: hidden; border: 1px solid var(--border); background: var(--surface-1); }
-.school-panel > header { display: flex; justify-content: space-between; align-items: end; gap: var(--space-4); padding: var(--space-4); border-bottom: 1px solid var(--border); }
+.school-panel > header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); padding: var(--space-4); border-bottom: 1px solid var(--border); }
 .school-panel h2 { margin: 3px 0 0; font-size: 18px; }
 .coverage-counter { font-variant-numeric: tabular-nums; color: var(--text-muted); }
-.matrix-scroll { min-width: 0; width: 100%; overflow: auto; max-width: 100%; max-height: 560px; overscroll-behavior-inline: contain; }
+.matrix-scroll { min-width: 0; width: 100%; overflow: auto; max-width: 100%; max-height: 560px; scrollbar-gutter: stable; overscroll-behavior: contain; border-bottom: 1px solid var(--border); }
 .school-matrix { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; font-size: 12px; font-variant-numeric: tabular-nums lining-nums; }
-.school-matrix th, .school-matrix td { min-height: var(--row-height); padding: 7px 9px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); vertical-align: top; background: var(--surface-1); }
+.school-matrix th, .school-matrix td { min-height: var(--row-height); padding: 8px 10px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); vertical-align: middle; background: var(--surface-1); line-height: 1.25; }
 .school-matrix thead th { position: sticky; top: 0; z-index: 3; background: var(--surface-2); text-align: left; }
 .school-matrix thead button { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 750; cursor: pointer; }
 .school-matrix .capability-cell { position: sticky; left: 0; z-index: 2; min-width: 142px; background: var(--surface-1); }
@@ -28,7 +28,7 @@
 .capability-cell button { border: 0; background: transparent; color: var(--accent); font: inherit; font-weight: 750; cursor: pointer; }
 .school-matrix tr[data-selected="true"] td, .school-matrix tr[data-selected="true"] .capability-cell { background: var(--surface-3); }
 .school-matrix .num { text-align: right; }
-.family-row th { position: static; background: var(--surface-2); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; font-size: 10px; }
+.family-row th { position: static; background: var(--surface-2); color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; font-size: var(--text-xs); }
 .school-state-stack { display: flex; flex-wrap: wrap; gap: 4px; min-width: 250px; }
 .school-state-stack span { padding: 2px 5px; border: 1px solid var(--border); font-size: 10px; }
 .school-state-stack [data-school-state="SOURCE_HELD"] { border-style: double; color: var(--attention); }
@@ -61,6 +61,7 @@
 :root[data-density="terminal"] .school-matrix td { padding: 4px 6px; }
 
 @media (max-width: 820px) {
-  .school-heading { align-items: start; flex-direction: column; }
+  .school-heading { grid-template-columns: 1fr; align-items: start; }
+  .school-fixture-notice { grid-template-columns: 1fr; }
   .school-pagination { align-items: stretch; flex-direction: column; }
 }

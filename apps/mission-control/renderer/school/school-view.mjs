@@ -92,7 +92,7 @@ function matrix(projectedRows, page) {
   ];
   return `<section class="school-panel matrix-panel">
     <header><div><span class="eyebrow">Exact comparison</span><h2>Capability matrix</h2></div><div class="coverage-counter">${page.start + 1}–${page.end} of ${page.total}</div></header>
-    <div class="matrix-scroll" role="region" aria-label="School capability matrix" tabindex="0">
+    <div class="matrix-scroll scroll-surface" role="region" aria-label="School capability matrix" tabindex="0">
       <table class="school-matrix">
         <thead><tr>${headers.map(([key, label]) => {
           const ariaSort = ui.sortKey === key ? (ui.direction === "asc" ? "ascending" : "descending") : "none";
@@ -256,6 +256,7 @@ export function renderSchoolView(container, inspectCapability, selectedId = null
     <header class="school-heading"><div><span class="eyebrow">GUI04 · School / Curriculum</span><h2>Exact evidence, topology-aware</h2></div><p>Grade labels organize the view only. Eligibility, debt, promotion and scheduling semantics remain evidence-driven and grade-neutral.</p></header>
     <div class="school-fixture-notice" role="status"><strong>FIXTURE · REPRESENTATIVE TERMINAL METRICS</strong><span>These School rows prove GUI04 behavior and mirror the terminal metric classes; they are not current learner evidence.</span></div>
     ${filterBar(projected)}
+    <div class="ui-glossary" aria-label="Capability matrix metric definitions"><span><strong>WAS</strong> prior measured score.</span><span><strong>TOP</strong> best measured score.</span><span><strong>NOW</strong> current measured score.</span><span><strong>ALL</strong> questions in the panel.</span><span><strong>P(RET)</strong> observed retention probability.</span><span>Scroll the matrix horizontally for later evidence columns.</span></div>
     ${matrix(page.rows, page)}
     ${dependencyGraph()}
   </div>`;

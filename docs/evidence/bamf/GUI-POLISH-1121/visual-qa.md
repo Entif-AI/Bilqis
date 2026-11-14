@@ -82,3 +82,30 @@ Observed:
 - compatibility aliases for legacy visual tokens.
 
 The browser/native checks remain the primary proof for the visual outcome; these source-level tests are guardrails against reintroducing the known causes.
+
+## Second visual-language pass after owner review
+
+Owner screenshot review after the first pass showed that shell stability was necessary but not sufficient. The remaining defect was presentation entropy across domain views:
+
+- too many independently invented font sizes;
+- controls and text in the same horizontal row did not share a stable visual baseline;
+- dense data surfaces exposed raw machinery without nearby explanations;
+- Teacher packed too many strategy cards into one row;
+- wide surfaces needed stronger local scroll affordances;
+- Evidence surfaced the implementation exception `api.query is not a function` instead of operator-facing disconnected-state language.
+
+The follow-up pass therefore added a shared operator type scale, normalized control/body line height, shared 22 px domain headings, row-centered header/notice geometry, local scrollbar gutters, and compact in-context glossaries for School, Teacher, SÍ SÉ SON, Corrections, and Evidence. Teacher's strategy roster is now two columns at the 1440 px owner viewport rather than a three/four-card squeeze.
+
+Fresh-origin browser review at 1440 × 920 confirmed:
+
+| View | Domain H2 | Page X overflow | Explanatory glossary |
+| --- | ---: | ---: | --- |
+| School | 22 px | 0 px | present |
+| Teacher | 22 px | 0 px | present |
+| SÍ SÉ SON | n/a | 0 px | present |
+| Evidence | 22 px | 0 px | present |
+| Corrections | 22 px | 0 px | present |
+
+At the same viewport, Teacher's strategy roster computed as two equal columns of approximately 578 px each. Evidence's disconnected preview now reports `Evidence queries are unavailable while the local evidence service is disconnected.` instead of exposing the missing `api.query` method.
+
+The layout-contract suite now also guards the shared type tokens, two-column Teacher roster, explanatory surfaces, and the Evidence `QUERY UNAVAILABLE` presentation contract.

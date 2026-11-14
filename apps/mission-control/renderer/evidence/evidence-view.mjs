@@ -29,6 +29,9 @@ const ui = {
 let queryEpoch = 0;
 
 function errorCode(error, fallback = "Evidence traversal failed") {
+  if (error?.message === "api.query is not a function") {
+    return "Evidence queries are unavailable while the local evidence service is disconnected.";
+  }
   return error?.code ?? error?.message ?? fallback;
 }
 

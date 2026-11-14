@@ -58,6 +58,12 @@
   --line: var(--border);
   --line-strong: var(--border-strong);
   --text-xs: 11px;
+  --text-sm: 12px;
+  --text-md: 14px;
+  --text-lg: 16px;
+  --heading-sm: 18px;
+  --heading-md: 22px;
+  --heading-lg: 32px;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   --space-1: 4px;
   --space-2: 8px;
@@ -71,6 +77,7 @@
   --row-height: 42px;
   --control-height: 34px;
   --content-gap: 18px;
+  --measure-copy: 68ch;
 }
 
 :root[data-density="compact"] {

@@ -20,7 +20,7 @@ test("shared shell owns stable rail and dense page geometry", () => {
   assert.match(shell, /grid-template-columns:\s*var\(--rail-width\) minmax\(0, 1fr\) 0/);
   assert.match(shell, /\.rail\s*\{[^}]*position:\s*sticky[^}]*height:\s*100vh[^}]*overflow-y:\s*auto/s);
   assert.match(shell, /\.view-host\s*\{[^}]*max-width:\s*none[^}]*var\(--page-gutter\)/s);
-  assert.match(shell, /\.view-host h1\s*\{[^}]*clamp\(32px, 3\.2vw, 48px\)/s);
+  assert.match(shell, /\.view-host h1\s*\{[^}]*clamp\(30px, 2\.6vw, 42px\)/s);
 
   assert.doesNotMatch(home, /grid-template-columns:\s*176px/);
   assert.doesNotMatch(dossier, /^\.context-bar\s*\{/m);
@@ -39,7 +39,28 @@ test("dense values and wide School data stay inside their owning surfaces", () =
   assert.match(school, /\.school-panel\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
   assert.match(school, /\.matrix-scroll\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
   assert.match(teacher, /\.strategy-card\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
+  assert.match(teacher, /\.strategy-roster\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
   assert.match(teacher, /\.strategy-metrics\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
+});
+
+test("operator typography and explanatory surfaces use the shared visual language", () => {
+  const tokens = source("visual-tokens.css");
+  const shell = source("shell.css");
+  const school = source("school/school-view.mjs");
+  const teacher = source("teacher/teacher-view.mjs");
+  const salience = source("salience/salience-view.mjs");
+  const corrections = source("corrections/corrections-view.mjs");
+  const evidence = source("evidence/evidence-markup.mjs");
+
+  for (const token of [
+    "--text-sm", "--text-md", "--text-lg", "--heading-sm", "--heading-md", "--heading-lg",
+  ]) assert.match(tokens, new RegExp(token + ":"));
+  assert.match(shell, /\.ui-glossary\s*\{/);
+  for (const markup of [school, teacher, salience, corrections, evidence]) {
+    assert.match(markup, /class="ui-glossary"/);
+  }
+  assert.match(evidence, /QUERY UNAVAILABLE/);
+  assert.doesNotMatch(evidence, /QUERY ERROR/);
 });
 
 test("legacy domain styles resolve through the active visual token surface", () => {

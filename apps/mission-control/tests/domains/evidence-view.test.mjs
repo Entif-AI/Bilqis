@@ -88,12 +88,12 @@ test("older async query cannot overwrite a newer evidence identity", async () =>
   assert.ok(host.innerHTML.includes('value="B.OR"'));
 });
 
-test("rejected bootstrap clears evidence and announces query error", async () => {
+test("rejected bootstrap clears evidence and announces query unavailability", async () => {
   const api = { async query() { return { accepted: false, reason: "QUERY_DENIED" }; } };
   const host = container();
   renderEvidenceView(host, api, { ...context, generation: 72 }, { kind: "capability", id: "B.AND" });
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.ok(host.innerHTML.includes("QUERY ERROR"));
+  assert.ok(host.innerHTML.includes("QUERY UNAVAILABLE"));
   assert.ok(host.innerHTML.includes("QUERY_DENIED"));
   assert.ok(host.innerHTML.includes('role="alert"'));
   assert.equal(host.innerHTML.includes("capability:and"), false);

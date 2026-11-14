@@ -1,10 +1,12 @@
 .evidence-view { display: grid; gap: var(--content-gap); margin-top: 0; }
-.evidence-heading, .evidence-detail > header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; }
+.evidence-heading { display: grid; grid-template-columns: minmax(0, .65fr) minmax(320px, 1fr) auto; gap: var(--space-4); align-items: center; }
+.evidence-detail > header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; }
 .evidence-heading p { max-width: 64ch; }
 .evidence-search { display: grid; grid-template-columns: minmax(12rem, 0.7fr) minmax(18rem, 1.3fr) auto; gap: var(--space-3); align-items: end; }
 .evidence-search label { display: grid; gap: var(--space-1); }
 .evidence-search select, .evidence-search input { width: 100%; }
-.evidence-query-state { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border: 1px solid var(--line); background: var(--surface-raised); }
+.evidence-query-state { display: grid; grid-template-columns: minmax(140px, auto) minmax(0, 1fr); align-items: center; gap: var(--space-4); padding: var(--space-3); border: 1px solid var(--line); background: var(--surface-raised); }
+.evidence-query-state span { color: var(--text-muted); overflow-wrap: anywhere; }
 .evidence-query-state[data-state="DENIED"], .evidence-query-state[data-state="error"] { border-style: double; border-width: 3px; }
 .evidence-traversal-error { display: flex; justify-content: space-between; gap: var(--space-3); padding: var(--space-3); border: 3px double var(--line-strong); }
 .evidence-results { display: grid; gap: var(--space-2); }
@@ -23,5 +25,5 @@
 .evidence-refs button { text-align: left; overflow-wrap: anywhere; }
 .evidence-detail pre { max-height: 34rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.78rem; }
 .evidence-empty { padding: var(--space-4); border: 1px dashed var(--line); }
-@media (max-width: 980px) { .evidence-search, .evidence-readable { grid-template-columns: 1fr; } .evidence-link, .evidence-marker { grid-template-columns: 1fr; } }
+@media (max-width: 980px) { .evidence-heading, .evidence-search, .evidence-readable { grid-template-columns: 1fr; } .evidence-link, .evidence-marker { grid-template-columns: 1fr; } }
 :root[data-density="terminal"] .evidence-view { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }

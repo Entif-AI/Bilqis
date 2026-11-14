@@ -5,8 +5,12 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); }
-button { font: inherit; color: inherit; }
+body { margin: 0; min-width: 320px; min-height: 100vh; background: var(--canvas); font-size: var(--text-md); line-height: 1.4; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button, select, input { min-height: var(--control-height); }
+button { line-height: 1.2; }
+small { font-size: var(--text-sm); line-height: 1.35; }
+code { font-family: var(--font-mono); font-size: .92em; }
 .skip-link { position: fixed; top: 8px; left: 8px; z-index: 20; padding: 8px 10px; border: 2px solid var(--focus); border-radius: 6px; background: var(--surface-1); color: var(--text); transform: translateY(-160%); }
 .skip-link:focus { transform: translateY(0); }
 .sr-only { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
@@ -15,7 +19,7 @@ button { font: inherit; color: inherit; }
 .brand { display: flex; gap: 12px; align-items: center; padding: 0 6px; }
 .brand-mark { width: 38px; height: 38px; display: grid; place-items: center; border: 1px solid var(--border-strong); border-radius: 11px; background: var(--surface-2); font-weight: 800; }
 .brand div { display: grid; gap: 2px; }
-.brand small, .identity small, .context-facts small, .eyebrow { color: var(--text-muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+.brand small, .identity small, .context-facts small, .eyebrow { color: var(--text-muted); font-size: var(--text-xs); line-height: 1.2; letter-spacing: .08em; text-transform: uppercase; }
 #primary-nav { display: grid; gap: 3px; }
 #primary-nav button, .utility-button { min-width: 0; text-align: left; border: 0; border-radius: 8px; padding: 8px 9px; background: transparent; cursor: pointer; }
 #primary-nav button:hover, #primary-nav button:focus-visible, .utility-button:hover { background: var(--surface-3); }
@@ -31,16 +35,26 @@ kbd { color: var(--text-muted); }
 .mode-badge, .freshness { border-radius: 999px; padding: 5px 8px; font-size: 11px; font-weight: 800; letter-spacing: .06em; border: 1px solid var(--healthy); color: var(--healthy); background: var(--surface-2); }
 .context-facts { min-width: 0; display: grid; grid-template-columns: repeat(4, minmax(72px, 1fr)); gap: 5px 12px; }
 .context-facts span { min-width: 0; display: grid; }
-.context-facts strong { font-size: 12px; font-weight: 650; }
+.context-facts strong { font-size: var(--text-sm); line-height: 1.2; font-weight: 650; }
 .context-actions { min-width: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; align-items: center; }
-.selector { display: grid; gap: 2px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
-.selector select { max-width: 150px; border: 1px solid var(--border-strong); border-radius: 7px; color: var(--text); background: var(--surface-1); padding: 6px 7px; font: inherit; text-transform: none; letter-spacing: normal; }
+.selector { display: grid; gap: 3px; color: var(--text-muted); font-size: var(--text-xs); line-height: 1.1; text-transform: uppercase; letter-spacing: .06em; }
+.selector select { max-width: 150px; border: 1px solid var(--border-strong); border-radius: 7px; color: var(--text); background: var(--surface-1); padding: 5px 8px; text-transform: none; letter-spacing: normal; }
 .context-actions button, .demo-actions button, #open-owner { border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); padding: 7px 9px; cursor: pointer; }
 .view-host { min-width: 0; max-width: none; padding: var(--page-block-start) var(--page-gutter) 48px; }
-.view-host h1 { margin: 6px 0 8px; font-size: clamp(32px, 3.2vw, 48px); line-height: 1; letter-spacing: -.035em; }
-.view-host > p { margin: 0; color: var(--text-muted); max-width: 760px; font-size: 15px; line-height: 1.45; }
+.view-host h1 { margin: 6px 0 8px; font-size: clamp(30px, 2.6vw, 42px); line-height: 1.05; letter-spacing: -.03em; }
+.view-host > p { margin: 0; color: var(--text-muted); max-width: var(--measure-copy); font-size: var(--text-md); line-height: 1.45; }
 .domain-view { min-width: 0; max-width: 100%; margin-top: var(--domain-offset); }
 .domain-view > * { min-width: 0; }
+.domain-view h2 { font-size: var(--heading-md); line-height: 1.15; }
+.domain-view h3 { font-size: var(--heading-sm); line-height: 1.2; }
+.domain-view h4 { font-size: var(--text-lg); line-height: 1.25; }
+.domain-view p { line-height: 1.45; }
+.domain-view button,
+.domain-view input,
+.domain-view select { font-size: var(--text-md); }
+.ui-glossary { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 12px; border: 1px solid var(--border); background: color-mix(in srgb, var(--surface-1) 82%, var(--canvas)); color: var(--text-muted); font-size: var(--text-sm); }
+.ui-glossary strong { color: var(--text); }
+.scroll-surface { scrollbar-gutter: stable; overscroll-behavior: contain; }
 .fixture-card { margin-top: 38px; border: 1px solid var(--border); border-radius: 16px; padding: 22px; background: var(--surface-1); }
 .fixture-card > div:first-child { display: flex; gap: 9px; align-items: center; }
 .fixture-card p { color: var(--text-muted); line-height: 1.55; }
@@ -67,7 +81,7 @@ kbd { color: var(--text-muted); }
 .defensive-banner { margin: 0; padding: 12px 18px; border-bottom: 2px dashed var(--attention); background: var(--surface-2); display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; }
 .defensive-banner[hidden] { display: none; }
 .defensive-copy { display: grid; gap: 3px; min-width: 0; }
-.defensive-copy span, .defensive-copy small { color: var(--text-muted); }
+.defensive-copy span, .defensive-copy small { color: var(--text-muted); font-size: var(--text-sm); }
 .defensive-copy strong { letter-spacing: .02em; }
 .defensive-banner button { min-height: var(--control-height); border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-1); padding: 7px 10px; cursor: pointer; }
 .defensive-banner[data-state="offline"],

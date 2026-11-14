@@ -1,27 +1,27 @@
 .teacher-view { display: grid; gap: var(--content-gap); margin-top: 0; }
-.teacher-heading { display: flex; justify-content: space-between; gap: var(--space-5); align-items: end; }
-.teacher-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
+.teacher-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .85fr); gap: var(--space-5); align-items: center; }
+.teacher-heading h2 { margin: 5px 0 0; font-size: var(--heading-md); }
 .teacher-heading p { max-width: 610px; margin: 0; color: var(--text-muted); line-height: 1.45; }
-.teacher-fixture-notice { display: flex; gap: var(--space-3); padding: var(--space-3); border: 2px double var(--attention); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
+.teacher-fixture-notice { display: grid; grid-template-columns: minmax(220px, auto) minmax(0, 1fr); gap: var(--space-4); align-items: center; padding: var(--space-3); border: 2px double var(--attention); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
 .teacher-fixture-notice span { color: var(--text-muted); }
 .teacher-panel { min-width: 0; border: 1px solid var(--border); background: var(--surface-1); padding: var(--space-4); }
 .teacher-panel > header, .strategy-card > header, .fidelity-card > header { display: flex; justify-content: space-between; align-items: center; gap: var(--space-4); }
 .strategy-card > header > div { min-width: 0; }
 .teacher-panel h3, .strategy-card h4 { margin: 4px 0 0; }
 .strategy-card h4 { overflow-wrap: anywhere; }
-.teacher-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: 10px; font-weight: 800; letter-spacing: .05em; }
+.teacher-state { display: inline-flex; align-items: center; min-height: 26px; padding: 3px 7px; border: 1px solid var(--border-strong); font-size: var(--text-xs); line-height: 1.1; font-weight: 800; letter-spacing: .04em; }
 .teacher-state[data-state="incumbent"], .teacher-state[data-state="present"], .teacher-state[data-state="active"] { color: var(--healthy); }
 .teacher-state[data-state="challenger"], .teacher-state[data-state="canary"], .teacher-state[data-state="partial"] { color: var(--attention); border-style: dashed; }
 .teacher-state[data-state="retired"], .teacher-state[data-state="checkpoint-local-retired"], .teacher-state[data-state="harmful"] { color: var(--invalid); border-style: double; }
 .teacher-state[data-state="no-gain"], .teacher-state[data-state="observational"] { color: var(--text-muted); border-style: dotted; }
-.strategy-roster { min-width: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.strategy-roster { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .strategy-card { min-width: 0; overflow: hidden; border: 1px solid var(--border); background: var(--surface-2); padding: var(--space-3); }
 .strategy-card[data-role="RETIRED"] { border-style: double; }
 .strategy-metrics { min-width: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: var(--space-3) 0; background: var(--border); }
 .strategy-metrics div { min-width: 0; display: grid; gap: 3px; padding: 8px; background: var(--surface-1); }
-.strategy-metrics strong { min-width: 0; font-size: 13px; line-height: 1.25; overflow-wrap: anywhere; }
+.strategy-metrics strong { min-width: 0; font-size: var(--text-md); line-height: 1.2; overflow-wrap: anywhere; }
 .strategy-metrics small, .comparison-table th, .strategy-history small, .fidelity-card small { color: var(--text-muted); }
-.strategy-scope { display: grid; gap: 5px; color: var(--text-muted); font-size: 12px; }
+.strategy-scope { display: grid; gap: 5px; color: var(--text-muted); font-size: var(--text-sm); }
 .strategy-episode-links { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--space-3); }
 .strategy-episode-links a { border: 1px solid var(--border); padding: 6px 8px; color: var(--text); text-decoration: none; }
 .strategy-history { display: grid; gap: 4px; margin-top: var(--space-3); }
@@ -31,7 +31,7 @@
 .teacher-compare-controls { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-3) 0; }
 .teacher-compare-controls button, .strategy-card button { min-height: var(--control-height); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 6px 9px; }
 .teacher-compare-controls button[aria-pressed="true"] { border-style: double; box-shadow: inset 3px 0 0 var(--accent); }
-.comparison-wrap { overflow: auto; }
+.comparison-wrap { overflow: auto; scrollbar-gutter: stable; border: 1px solid var(--border); }
 .comparison-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
 .comparison-table th, .comparison-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; }
 .comparison-table .no-gain { border-left: 3px dotted var(--text-muted); }
@@ -47,6 +47,7 @@
 :root[data-density="terminal"] .teacher-panel { padding: var(--space-3); }
 
 @media (max-width: 820px) {
-  .teacher-heading, .teacher-fixture-notice { align-items: start; flex-direction: column; }
+  .teacher-heading, .teacher-fixture-notice { grid-template-columns: 1fr; align-items: start; }
+  .strategy-roster { grid-template-columns: 1fr; }
   .strategy-metrics { grid-template-columns: 1fr 1fr; }
 }
