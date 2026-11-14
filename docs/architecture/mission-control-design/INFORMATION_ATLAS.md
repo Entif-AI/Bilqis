@@ -286,7 +286,7 @@ flowchart LR
 
 ## VIEW-D-001 · Mission Control
 
-Answer, at a glance: Is it running? Is it learning? What is it doing? Is anything regressing or invalid? What needs my attention?
+Answer, at a glance: Is it running? Is it learning? Is it regressing, blocked, or invalid? What is it doing now, and what needs my attention?
 
 ```mermaid
 flowchart LR
@@ -300,8 +300,8 @@ flowchart LR
   VIEWD001 --> COMPD101["COMP-D-101<br/>Learner status summary"]
   COMPD101 --> COMPD101C1["COMP-D-101.1<br/>Running"]
   COMPD101 --> COMPD101C2["COMP-D-101.2<br/>Learning"]
-  COMPD101 --> COMPD101C3["COMP-D-101.3<br/>Current work"]
-  COMPD101 --> COMPD101C4["COMP-D-101.4<br/>Regression"]
+  COMPD101 --> COMPD101C3["COMP-D-101.3<br/>Regression"]
+  COMPD101 --> COMPD101C4["COMP-D-101.4<br/>Blocked"]
   COMPD101 --> COMPD101C5["COMP-D-101.5<br/>Invalidity"]
   VIEWD001 --> COMPD102["COMP-D-102<br/>Current work"]
   COMPD102 --> COMPD102C1["COMP-D-102.1<br/>Target capability"]
@@ -329,6 +329,7 @@ flowchart LR
   COMPD104 --> COMPD104C2["COMP-D-104.2<br/>Timestamp"]
   COMPD104 --> COMPD104C3["COMP-D-104.3<br/>Short outcome"]
   COMPD104 --> COMPD104C4["COMP-D-104.4<br/>Exact object link"]
+  COMPD104 --> COMPD104C5["COMP-D-104.5<br/>Learning direction microtrend<br/>(conditional)"]
   VIEWD001 --> COMPD105["COMP-D-105<br/>School snapshot"]
   COMPD105 --> COMPD105C1["COMP-D-105.1<br/>Capability"]
   COMPD105C1 --> NCOMP_D_105_1_1["COMP-D-105.1.1<br/>Capability row"]
@@ -390,9 +391,9 @@ flowchart LR
 - **Current substrate / disposition:** Transform CUR-COMP-107.
 
 #### COMP-D-101 · Learner status summary
-- **Target constituents:** `COMP-D-101.1` Running; `COMP-D-101.2` Learning; `COMP-D-101.3` Current work; `COMP-D-101.4` Regression; `COMP-D-101.5` Invalidity
+- **Target constituents:** `COMP-D-101.1` Running; `COMP-D-101.2` Learning; `COMP-D-101.3` Regression; `COMP-D-101.4` Blocked; `COMP-D-101.5` Invalidity
 - **Information shown:** Five operator questions expressed as concise current states.
-- **Treatment:** Single compact summary band, not five unrelated cards.
+- **Treatment:** Single compact summary band, not five unrelated cards. Semantic emphasis may strengthen for regression/block/invalidity, but the band remains one compositional unit.
 - **Interaction:** Inspect only when a state has an exact owning object.
 - **Effect:** Gives two-second orientation.
 - **Current substrate / disposition:** Transform CUR-COMP-101 and parts of CUR-COMP-104.
@@ -408,15 +409,15 @@ flowchart LR
 #### COMP-D-103 · Actionable attention
 - **Target constituents:** `COMP-D-103.1` Prioritized concerns; `COMP-D-103.2` Kind; `COMP-D-103.3` Reason; `COMP-D-103.4` Owning object
 - **Information shown:** Only conditions that deserve operator attention.
-- **Treatment:** Priority-ordered concise list; quiet empty state.
+- **Treatment:** Priority-ordered concise list; quiet empty state. When regression, invalidity, or a hard blocker is present, this region becomes visually dominant over Current Work through order, width, tonal separation, or heading emphasis.
 - **Interaction:** Open exact owning object/view.
 - **Effect:** Turns overview into next investigation.
 - **Current substrate / disposition:** Retain/transform CUR-COMP-103.
 
 #### COMP-D-104 · Learning pulse
-- **Target constituents:** `COMP-D-104.1` Recent accepted/rejected events; `COMP-D-104.2` Timestamp; `COMP-D-104.3` Short outcome; `COMP-D-104.4` Exact object link
+- **Target constituents:** `COMP-D-104.1` Recent accepted/rejected events; `COMP-D-104.2` Timestamp; `COMP-D-104.3` Short outcome; `COMP-D-104.4` Exact object link; `COMP-D-104.5` conditional learning-direction microtrend
 - **Information shown:** Recent learning activity and progress.
-- **Treatment:** Compact chronology, not decorative metric cards.
+- **Treatment:** Compact chronology, not decorative metric cards. A tiny direction sparkline may accompany the chronology only when the samples are genuinely comparable, its scope is explicit, and exact values remain accessible.
 - **Interaction:** Inspect exact event/episode/capability.
 - **Effect:** Shows whether learning is advancing and what changed recently.
 - **Current substrate / disposition:** Transform CUR-COMP-102.
