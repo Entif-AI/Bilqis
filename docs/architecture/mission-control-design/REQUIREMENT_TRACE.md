@@ -32,11 +32,12 @@ This file exists because the first design-authority assembly preserved the spiri
 | REQ-D-021 | Codify the agreed decisions and the user's instructions verbatim in the parent issue. | User instruction is verbatim in #1124; proposed rules are codified but cannot become “locked” until REQ-D-020 is ratified. | PARTIAL / GATED |
 | REQ-D-022 | Use prior screenshot failures as exact examples. | `ANTI_PATTERN_GALLERY.md` restores every exact example recoverable from durable repository/#1124 evidence. | PARTIAL: SOURCE GAP |
 | REQ-D-023 | Do not limit good/bad-design guidance to the approximately 100 observed failures. | `DESIGN.md`, `STYLE_GUIDE.md`, constraints generalize structural positive rules. | SATISFIED |
-| REQ-D-024 | The atlas must recurse below subsystem-sized target components until further subdivision no longer changes a meaningful design/interaction/state/accessibility/test decision. | CON-D-054; target flowcharts and register in `INFORMATION_ATLAS.md`; current atomic renderer anatomy remains available separately. | REPAIRED AGAIN AFTER D-029 |
+| REQ-D-024 | The atlas must recurse below subsystem-sized target components until the intended UI no longer contains a separately meaningful element/control/state/interaction/effect below the node. | CON-D-054; target flowcharts and register in `INFORMATION_ATLAS.md`; **no fixed maximum depth**. | REPAIRED AGAIN AFTER D-032 |
 | REQ-D-025 | The atlas describes **everything intended to show up or operate in the new UI**, not everything that happens to exist in the current renderer. | `INFORMATION_ATLAS.md` target authority + `CURRENT_STATE_UI_INVENTORY.md` migration evidence. | SATISFIED |
-| REQ-D-026 | Mermaid atlas diagrams use readable flowchart style rather than mind-map rendering. | 15 separate `flowchart TB` diagrams in `INFORMATION_ATLAS.md`. | SATISFIED |
+| REQ-D-026 | Mermaid atlas diagrams use readable left-to-right flowchart style rather than mind-map or top-to-bottom rendering. | 15 separate `flowchart LR` diagrams in `INFORMATION_ATLAS.md`. | SATISFIED |
 | REQ-D-027 | Current UI atoms with no target purpose are removed instead of preserved as target components. | Target exclusion section and CON-D-057/058. | SATISFIED |
 | REQ-D-028 | The standalone `B` mark has no target-state job and is removed from the redesigned shell. | `INFORMATION_ATLAS.md`, `STYLE_GUIDE.md`, `DESIGN.md`, CON-D-057. | SATISFIED |
+| REQ-D-029 | The atlas authoring model itself must be recursive and may not impose a hidden one-tier or N-tier ceiling. | `INFORMATION_ATLAS.md` now contains recursive target descendants through the depth actually required; CON-D-059. | SATISFIED |
 
 ## Known source gap
 
