@@ -178,7 +178,7 @@ Design decisions follow five priorities, in order:
 4. **Accessible resilience.** Keyboard, assistive technology, zoom, reflow, reduced motion, localization expansion, and failure states are part of the design.
 5. **Visual restraint.** Whitespace, typography, alignment, and tonal hierarchy should do most of the work.
 
-The canonical human-facing companion is `docs/architecture/mission-control-design/STYLE_GUIDE.md`. The structural map is `docs/architecture/mission-control-design/INFORMATION_ATLAS.md`; cross-view behavior is in `docs/architecture/mission-control-design/FLOWS.md`; exact screenshot-derived failure examples are preserved in `docs/architecture/mission-control-design/ANTI_PATTERN_GALLERY.md`; literal parent-requirement coverage is tracked in `docs/architecture/mission-control-design/REQUIREMENT_TRACE.md`. Parent redesign authority and the running deficiency ledger live in GitHub issue #1124.
+The canonical human-facing companion is `docs/architecture/mission-control-design/STYLE_GUIDE.md`. Normative composition and Home-view rules are in `docs/architecture/mission-control-design/VISUAL_COMPOSITION_SPEC.md`. The structural map is `docs/architecture/mission-control-design/INFORMATION_ATLAS.md`; cross-view behavior is in `docs/architecture/mission-control-design/FLOWS.md`; exact screenshot-derived failure examples are preserved in `docs/architecture/mission-control-design/ANTI_PATTERN_GALLERY.md`; literal parent-requirement coverage is tracked in `docs/architecture/mission-control-design/REQUIREMENT_TRACE.md`. Parent redesign authority and the running deficiency ledger live in GitHub issue #1124.
 
 ## Colors
 
@@ -232,6 +232,10 @@ Primary layout rules:
 - Table column groups and optional secondary measures should be progressively disclosed rather than exposing every possible field simultaneously.
 - Comfortable mode must feel comfortable. Compact mode increases density without changing semantic hierarchy. Terminal-style density is not the default visual language.
 
+### Composition authority
+
+`VISUAL_COMPOSITION_SPEC.md` governs canvas/surface separation, when a region earns a card, visible containment depth, unequal hierarchy, alignment/proximity, shell-chrome restraint, interaction-role differentiation, responsive recomposition, and the Home-view composition contract. A bounded surface placed on the application canvas must remain visibly distinct from the canvas in dark and light themes; same-fill card-on-canvas treatment is not acceptable.
+
 The default disclosure ladder is:
 
 1. shell context;
@@ -244,7 +248,7 @@ The default disclosure ladder is:
 
 Mission Control is primarily flat. Depth comes from tonal layers, spacing, and occlusion rather than shadows.
 
-- The canvas is the substrate.
+- The canvas is the substrate. A bounded card/panel placed directly on canvas must use a visibly distinct surface treatment; it may not dissolve into the canvas and rely on radius or hover to reveal its edge.
 - Persistent shell regions and primary working surfaces may use adjacent surface tones.
 - Independent stateful objects may use a bounded panel treatment.
 - A section is not automatically a card.
