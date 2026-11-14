@@ -1,10 +1,10 @@
 # Mission Control cross-view flows
 
-Status: current-state relationship map and redesign reference
+Status: target-state cross-view relationship map for the Mission Control redesign
 Atlas authority: `INFORMATION_ATLAS.md`
 Parent authority: GitHub issue #1124
 
-The atlas owns composition. This file owns relationships between atlas nodes.
+The target atlas owns composition. This file owns target relationships between atlas nodes. Current renderer relationships are migration evidence in `CURRENT_STATE_UI_INVENTORY.md` and source code; a current flow survives only when it remains useful and authority-safe in the target.
 
 ## FLOW-D-001 · Ordinary destination navigation
 
@@ -63,7 +63,7 @@ Evidence preserves an explicit origin when opened contextually. Return restores 
 
 ```mermaid
 flowchart LR
-  A[STATE-D-002 Live context] --> B[COMP-D-003 Time lens]
+  A[STATE-D-002 Live context] --> B[COMP-D-010 Time lens]
   B --> C[STATE-D-003 Historical context]
   C --> D[Destination historical projection]
   D --> E[Mutation unavailable]
@@ -79,7 +79,7 @@ Changing generation makes the context historical and clears/invalidates live-onl
 flowchart LR
   A[COMP-D-007 Inspector] --> B[Set compare left]
   A --> C[Set compare right]
-  B --> D[COMP-D-003 Compare panel]
+  B --> D[COMP-D-011 Compare workspace]
   C --> D
   D --> E{Comparable?}
   E -->|yes| F[Literal comparison rows]
@@ -93,7 +93,7 @@ Compare must state differences in run/generation/kind/context. Visual symmetry d
 ```mermaid
 flowchart LR
   A[COMP-D-007 Inspector] --> B[Pin exact object]
-  B --> C[COMP-D-003 Pins panel]
+  B --> C[COMP-D-012 Pins]
   C --> D[Open exact pin]
   D --> E[Owning destination + pinned context]
 ```
@@ -105,7 +105,7 @@ Pins are operator metadata keyed to exact object context. They do not promote ev
 ```mermaid
 flowchart LR
   A[COMP-D-007 Inspector] --> B[Add operator note]
-  B --> C[COMP-D-003 Annotation workspace]
+  B --> C[COMP-D-013 Operator notes]
   C --> D[Local operator metadata]
   D --> E[Displayed as NON-AUTHORITATIVE]
 ```
@@ -120,8 +120,8 @@ flowchart LR
   C[COMP-D-202 Dependency graph] --> B
   B --> D[COMP-D-007 Inspector]
   D --> E[VIEW-D-003 Capability Explorer]
-  E --> F[COMP-D-302 Chronology]
-  E --> G[COMP-D-303 Source/evidence dossier]
+  E --> F[COMP-D-305 Dossier sections]
+  E --> G[COMP-D-306 Inline evidence detail]
 ```
 
 School answers comparative/topological questions. Capability Explorer owns exact longitudinal dossier detail.
@@ -157,9 +157,9 @@ Memory retrieval is operational evidence, not source truth. Navigation may revea
 
 ```mermaid
 flowchart LR
-  A[COMP-D-1001 Correction] --> B[COMP-D-1002 Affected object]
+  A[COMP-D-1001 Correction context] --> B[COMP-D-1002 Affected object]
   B --> C[Owning destination]
-  A --> D[COMP-D-1003 Requalification state]
+  A --> D[COMP-D-1004 Requalification queue]
   D --> E[VIEW-D-013 Evidence]
   B --> F[VIEW-D-011 Lineage]
 ```
@@ -170,7 +170,7 @@ Corrections reveal known exposure and requalification evidence. The UI must not 
 
 ```mermaid
 flowchart LR
-  A[COMP-D-1204 Resource sample] --> B[COMP-D-007 Inspector]
+  A[COMP-D-1205 Resource sample] --> B[COMP-D-007 Inspector]
   B --> C[Related episode/batch/checkpoint/preparation refs]
   C --> D[VIEW-D-004 Learning]
   C --> E[VIEW-D-011 Lineage]
@@ -218,8 +218,8 @@ The current view/selection may be retained when safe, but mutation stays unavail
 
 ```mermaid
 flowchart LR
-  A[COMP-D-002 Theme control] --> B[Dark / light]
-  C[COMP-D-002 Density control] --> D[Comfortable / compact]
+  A[COMP-D-002 View settings] --> B[Dark / light]
+  A --> D[Comfortable / compact]
   B --> E[Same semantic hierarchy]
   D --> E
 ```
@@ -238,7 +238,7 @@ flowchart LR
   C -->|frame/neural| G[VIEW-D-006 correct Model subsection]
 ```
 
-Deep links preserve destination, exact context, and selection. A redesign may improve readability/copy affordances but may not silently discard run/generation identity or route a frame into the wrong Model subsection.
+Deep links preserve destination, exact context, and selection. Target UI exposes `Copy deep link` from the global inspector rather than dedicating permanent shell chrome to the URI. The route must not silently discard run/generation identity or route a frame into the wrong Model subsection.
 
 ## FLOW-D-017 · Model neural ↔ frame context custody
 

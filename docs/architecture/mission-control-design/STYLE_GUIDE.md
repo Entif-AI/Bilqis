@@ -4,6 +4,8 @@ Status: human-facing design constitution
 Parent authority: GitHub issue #1124
 Normative token source: `apps/mission-control/DESIGN.md`
 Constraint trace: `CONSTRAINT_REGISTER.md`
+Normative visual composition + Home contract: `VISUAL_COMPOSITION_SPEC.md`
+Exact screenshot-derived examples: `ANTI_PATTERN_GALLERY.md`
 
 ## The object we are designing
 
@@ -108,6 +110,8 @@ The shell earns permanent space only with information that matters across destin
 Run identity, time posture, freshness, and genuinely global command context belong there. Secondary topology, Factory, semantic release, lease, coverage, and resource facts may be available through a compact disclosure instead of occupying every screen at all times.
 
 Navigation is an information architecture, not a vertical dump of every implemented view. The current fourteen destinations remain addressable, but visual grouping should be derived from the atlas and recurring operator workflows.
+
+Do not spend permanent shell space on ornamental branding. The current standalone `B` mark is not part of the target UI. Product identity, where useful, is quiet text; accessible landmark names do not require a visible logo glyph.
 
 Selection must be unmistakable without making the selected nav button the loudest rectangle in the application.
 
@@ -224,7 +228,7 @@ Preserve and extend the existing keyboard/focus/live-region/graph-equivalence/re
 
 ## Internationalization
 
-Every touched human-facing string moves behind a stable localization key.
+Every human-facing string in a redesign leaf's owned micro-surface moves behind a stable localization key during that leaf, including copy not otherwise changed for layout. The final application target is complete Mission Control human-copy coverage, not “only whatever happened to be edited.”
 
 Do not concatenate translated sentence fragments. Pass variables as named parameters. Do not translate machine identifiers, source-authoritative values, CSS tokens, or test IDs.
 
@@ -238,7 +242,7 @@ Design for string expansion. Prefer logical CSS properties so future RTL does no
 - groups use documented prefixes;
 - IDs are semantic, stable, nonlocalized, and independent of DOM order or copy;
 - functional `data-*` attributes remain implementation state, not test selectors;
-- touched tests migrate off text, classes, element IDs, DOM ancestry, localized strings, and incidental attributes.
+- every UI test that selects rendered elements in the leaf's owned micro-surface migrates off text, classes, element IDs, DOM ancestry, localized strings, and incidental attributes, even if that selector was not otherwise touched by the visual change.
 
 ## Motion
 
@@ -265,9 +269,21 @@ Acceptance requires before/after rendered evidence showing that the touched surf
 
 The final whole-app pass happens once after the surgical leaves integrate.
 
+
+## Canvas and surface separation
+
+The canvas is negative space and must remain perceptible around independent work units. Cards and panels are not allowed to blur into the backdrop.
+
+- Canvas uses the canonical canvas token; an independent card directly on canvas uses a distinct surface token.
+- A bounded child surface may not reuse its parent's fill. If it cannot justify a distinct layer, remove the inner container.
+- Radius alone does not establish a surface boundary.
+- Shadows are not the default card separator; use tonal separation first and a structural border only when needed.
+- Do not tile the page with same-size rounded rectangles. Ordinary grouping uses alignment, proximity, whitespace, headings, rules, and table structure.
+- `VISUAL_COMPOSITION_SPEC.md` is normative for the full composition hierarchy and Home-view acceptance tests.
+
 ## Anti-pattern gallery
 
-The screenshot failures that triggered this program are concrete evidence, not the limit of the guide. Avoid:
+The screenshot failures that triggered this program are concrete evidence, not the limit of the guide. `ANTI_PATTERN_GALLERY.md` preserves the recoverable exact examples and their owning rules. The list below is only the compact mnemonic:
 
 - clipped semantic values and meaningless ellipses;
 - group names truncated into fragments;
