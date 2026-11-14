@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import unittest
 
 from bilqis_mlx.compatibility.source_adapter_resume import (
+    SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES,
     predecessor_compatible_source_registry,
     resume_adapter_compatible,
 )
@@ -11,6 +12,37 @@ from bilqis_mlx.source_adapters.school import C_ORACLE, live_source_registry
 
 
 class ProviderCompatibilityTests(unittest.TestCase):
+    def test_supported_resume_matrix_is_explicit_one_way_and_targets_live_code(self):
+        registry = live_source_registry()
+        current_by_adapter = {
+            item.descriptor.adapter_id: item.descriptor
+            for item in registry._by_generator.values()
+        }
+        self.assertEqual(
+            tuple(edge.edge_id for edge in SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES),
+            (
+                "grade-a-1324082-to-current",
+                "grade-a-accepted-to-current",
+                "boolean-identification-accepted-to-current",
+                "numeric-accepted-to-current",
+                "numeric-modular-to-current",
+                "numeric-current-adr106-cohort-repair",
+            ),
+        )
+        self.assertEqual(
+            len({(edge.adapter_id, edge.admitted_implementation_sha256,
+                 edge.current_implementation_sha256, edge.rule)
+                 for edge in SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES}),
+            len(SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES),
+        )
+        for edge in SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES:
+            with self.subTest(edge=edge.edge_id):
+                current = current_by_adapter[edge.adapter_id]
+                self.assertEqual(
+                    edge.current_implementation_sha256,
+                    current.implementation_sha256,
+                )
+
     def test_exact_accepted_provider_lineage_resumes_on_current_implementations(self):
         registry = live_source_registry()
         cases = (
@@ -79,7 +111,9 @@ class ProviderCompatibilityTests(unittest.TestCase):
         for changed in (
                 replace(current, implementation_sha256="f" * 64),
                 replace(current, profile_dimensions=(("numbers", ("0",)),)),
-                replace(current, accepted_oracle_ids=("foreign-oracle",))):
+                replace(current, accepted_oracle_ids=("foreign-oracle",)),
+                replace(current, cohort_releases=((
+                    current.cohort_releases[-1][0], "f" * 64),))):
             with self.subTest(changed=changed):
                 self.assertFalse(resume_adapter_compatible(prior, changed))
 

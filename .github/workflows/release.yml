@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: macos-15
     timeout-minutes: 15
     steps:
       - name: Checkout tagged private source
@@ -20,6 +20,8 @@ jobs:
           fetch-depth: 0
       - name: Verify SemVer matches annotated tag and changelog
         run: python3 -B scripts/maintenance/release_version.py --check --require-tag
+      - name: Install BAMF release-readiness dependencies
+        run: python3 -m pip install -e . mlx==0.31.1 numpy==2.4.4
       - name: Verify core source and selected portable contracts
         run: |
           python3 -B scripts/check_historical_abi.py
@@ -28,6 +30,8 @@ jobs:
           python3 -B scripts/error_control_plane.py --check
           python3 -B -m unittest -q scripts.tests.test_release_version
           python3 -B scripts/code_smell_audit.py --check-baseline docs/evidence/development/code_smell_baseline.json
+      - name: Verify launch-critical BAMF journey with no skipped tests
+        run: npm run bamf:readiness
 
   publish:
     needs: verify

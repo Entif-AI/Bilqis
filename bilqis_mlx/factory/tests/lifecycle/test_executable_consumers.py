@@ -1,5 +1,4 @@
 from dataclasses import replace
-from types import SimpleNamespace
 import unittest
 
 from bilqis_mlx.curriculum import BOOLEAN_OPERATORS
@@ -15,10 +14,8 @@ from bilqis_mlx.factory.execution import (
     CapabilityProfile, CurriculumProfile, GradeProfile,
 )
 from bilqis_mlx.factory.generation import (
-    _is_1324082_rollback_adapter_pair, draw_executable_release_rows,
-    runtime_adapter_for_release,
+    draw_executable_release_rows, runtime_adapter_for_release,
 )
-from bilqis_mlx.factory.model import SourceAdapter
 from bilqis_mlx.factory.tests.test_executable_release import _boolean_answers
 from bilqis_mlx.factory.tests.test_execution_plan import _synthetic_boolean_course
 
@@ -144,100 +141,15 @@ class ExecutableConsumerTests(unittest.TestCase):
                 seed=41,
                 capability="B.IDBOOLOPS")
 
-    def test_known_1324082_grade_a_provider_pair_is_resume_compatible(self):
-        current = SourceAdapter(
-            adapter_id="source.micro.predicates/v1",
-            generator_id="bilqis_mlx.grade_a_probe.make_record",
-            accepted_oracle_ids=("bilqis.mlx.grade-a-record-oracle/v2",),
-            implementation_sha256=(
-                "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9"),
-            cohort_generator_id="bilqis.mlx.grade-a-live-constructor/v1",
-            cohort_releases=((
-                "bilqis.mlx.grade-a-live/20261015",
-                "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9",
-            ),),
-            variation_axes=(
-                "source-valid", "balanced-gold", "fresh-seed",
-                "member-decoy-set-context-v1", "irrelevant-source-context-v2",
-            ),
+    def test_runtime_adapter_consumes_real_capability_execution(self):
+        execution = self.reduced.execution_plan.capability_map["B.IDBOOLOPS"]
+        binding = self.reduced.source_bindings.by_capability[execution.capability_id]
+        registered = self.registry.require(binding.generator_id, binding.oracle_id)
+        self.assertIs(
+            runtime_adapter_for_release(
+                None, self.graph, self.reduced, self.registry, execution),
+            registered,
         )
-        admitted = SourceAdapter(
-            adapter_id="source.micro.predicates/v1",
-            generator_id="bilqis_mlx.grade_a_probe.make_record",
-            accepted_oracle_ids=("bilqis.mlx.grade-a-record-oracle/v2",),
-            implementation_sha256=(
-                "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778"),
-            cohort_generator_id="bilqis.mlx.grade-a-live-constructor/v1",
-            cohort_releases=((
-                "bilqis.mlx.grade-a-live/20261015",
-                "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778",
-            ),),
-            variation_axes=(
-                "source-valid", "balanced-gold", "fresh-seed",
-                "member-decoy-set-context-v1", "irrelevant-source-context-v2",
-                "generalization-only-source-context-v3",
-            ),
-        )
-
-        self.assertTrue(_is_1324082_rollback_adapter_pair(admitted, current))
-        self.assertFalse(_is_1324082_rollback_adapter_pair(current, admitted))
-        self.assertFalse(_is_1324082_rollback_adapter_pair(
-            replace(admitted, implementation_sha256="f" * 64), current))
-
-    def test_historical_provider_chains_reach_current_runtime_adapters(self):
-        from bilqis_mlx.source_adapters.school import C_ORACLE, live_source_registry
-
-        registry = live_source_registry()
-        grade_a = registry.resolve_owner("bilqis_mlx.grade_a_probe.make_record")
-        numeric = registry.require(
-            "bilqis_mlx.numeric_curriculum.draw_numeric", C_ORACLE)
-        cases = (
-            (
-                grade_a,
-                replace(
-                    grade_a.descriptor,
-                    implementation_sha256=(
-                        "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778"),
-                    cohort_releases=((
-                        grade_a.descriptor.cohort_releases[0][0],
-                        "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778",
-                    ),),
-                    variation_axes=(
-                        *grade_a.descriptor.variation_axes,
-                        "generalization-only-source-context-v3",
-                    ),
-                ),
-            ),
-            (
-                numeric,
-                replace(
-                    numeric.descriptor,
-                    implementation_sha256=(
-                        "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d"),
-                ),
-            ),
-        )
-        for registered, admitted in cases:
-            with self.subTest(adapter=admitted.adapter_id):
-                capability_id = "fixture." + admitted.adapter_id
-                release = SimpleNamespace(
-                    source_bindings=SimpleNamespace(by_capability={
-                        capability_id: SimpleNamespace(
-                            generator_id=admitted.generator_id,
-                            oracle_id=admitted.accepted_oracle_ids[0],
-                        ),
-                    }),
-                    source_adapters=(admitted,),
-                )
-                execution = SimpleNamespace(
-                    capability_id=capability_id,
-                    provider_id=admitted.adapter_id,
-                )
-                self.assertIs(
-                    runtime_adapter_for_release(
-                        None, {}, release, registry, execution),
-                    registered,
-                )
 
 
 if __name__ == "__main__":

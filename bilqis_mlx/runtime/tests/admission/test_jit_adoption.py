@@ -86,53 +86,15 @@ class JitAdoptionTests(CandidateStagingFixture, unittest.TestCase):
         self.assertEqual(self.staged.successor.manifest(), before)
 
     def test_explicit_historical_source_provider_chains_pass_jit_verification(self):
-        from bilqis_mlx.source_adapters.school import C_ORACLE, live_source_registry
-
-        registry = live_source_registry()
-        grade_a = registry.resolve_owner("bilqis_mlx.grade_a_probe.make_record")
-        numeric = registry.require(
-            "bilqis_mlx.numeric_curriculum.draw_numeric", C_ORACLE)
-        cases = (
-            replace(
-                grade_a.descriptor,
-                implementation_sha256=(
-                    "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778"),
-                cohort_releases=((
-                    grade_a.descriptor.cohort_releases[0][0],
-                    "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778",
-                ),),
-                variation_axes=(
-                    *grade_a.descriptor.variation_axes,
-                    "generalization-only-source-context-v3",
-                ),
-            ),
-            replace(
-                numeric.descriptor,
-                implementation_sha256=(
-                    "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d"),
-            ),
+        from bilqis_mlx.factory.live_answers import live_answer_registry
+        from bilqis_mlx.runtime.tests.operator.pre_neural_journey_support import (
+            historical_school_release,
         )
-        for admitted in cases:
-            with self.subTest(adapter=admitted.adapter_id):
-                capability_id = "fixture." + admitted.adapter_id
-                successor = SimpleNamespace(
-                    source_adapters=(admitted,),
-                    execution_plan=SimpleNamespace(capabilities=(
-                        SimpleNamespace(
-                            capability_id=capability_id,
-                            provider_id=admitted.adapter_id,
-                        ),
-                    )),
-                    source_bindings=SimpleNamespace(by_capability={
-                        capability_id: SimpleNamespace(
-                            generator_id=admitted.generator_id,
-                            oracle_id=admitted.accepted_oracle_ids[0],
-                        ),
-                    }),
-                    answer_modalities=(),
-                )
-                verify_current_implementations(
-                    successor, registry, SimpleNamespace(require=Mock()))
+        from bilqis_mlx.source_adapters.school import live_source_registry
+
+        release, _graph = historical_school_release()
+        verify_current_implementations(
+            release, live_source_registry(), live_answer_registry())
 
     def test_source_and_answer_drift_block_before_admission_transactions(self):
         from bilqis_mlx.runtime import release_adoption

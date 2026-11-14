@@ -8,6 +8,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 from bilqis_mlx.errors import ErrorBus, FACTORY
+from .source_adapter_resume_edges import (
+    SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES, SourceProviderResumeEdge,
+)
 
 
 _NUMERIC_ADAPTER_ID = "source.finite-numeric/v2"
@@ -167,9 +170,24 @@ def _grade_a_1324082_pair(admitted, current) -> bool:
 
 def resume_adapter_compatible(admitted, current) -> bool:
     """Return true only for explicitly proven historical descriptor migrations."""
-    return (_accepted_school_provider_pair(admitted, current)
-            or _numeric_adr106_pair(admitted, current)
-            or _numeric_modular_pair(admitted, current))
+    if admitted is None or current is None:
+        return False
+    matches = tuple(
+        edge for edge in SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES
+        if (edge.adapter_id == admitted.adapter_id == current.adapter_id
+            and edge.admitted_implementation_sha256 == admitted.implementation_sha256
+            and edge.current_implementation_sha256 == current.implementation_sha256)
+    )
+    for edge in matches:
+        if edge.rule == "grade-a-1324082" and _grade_a_1324082_pair(admitted, current):
+            return True
+        if edge.rule == "cohort-bound" and _accepted_school_provider_pair(admitted, current):
+            return True
+        if edge.rule == "numeric-modular" and _numeric_modular_pair(admitted, current):
+            return True
+        if edge.rule == "numeric-adr106" and _numeric_adr106_pair(admitted, current):
+            return True
+    return False
 
 
 def predecessor_compatible_source_registry(predecessor, current_registry):
