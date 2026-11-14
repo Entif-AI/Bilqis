@@ -1,4 +1,4 @@
-.resource-view { display: grid; gap: var(--content-gap); margin-top: 34px; }
+.resource-view { display: grid; gap: var(--content-gap); margin-top: 0; }
 .resource-heading { display: flex; justify-content: space-between; align-items: end; gap: var(--space-5); }
 .resource-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
 .resource-heading p { max-width: 620px; margin: 0; color: var(--text-muted); line-height: 1.45; }

@@ -1,4 +1,4 @@
-.neural-view { display: grid; gap: var(--content-gap); margin-top: 34px; }
+.neural-view { display: grid; gap: var(--content-gap); margin-top: 0; }
 .neural-heading { display: flex; justify-content: space-between; align-items: end; gap: var(--space-5); }
 .neural-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
 .neural-heading p { max-width: 570px; margin: 0; color: var(--text-muted); line-height: 1.45; }
@@ -25,7 +25,7 @@
 .topology-facts dd { margin: 3px 0 0; font-variant-numeric: tabular-nums; }
 .runtime-metrics { display: grid; grid-template-columns: repeat(4, minmax(130px, 1fr)); gap: 1px; margin-top: var(--space-4); background: var(--border); }
 .runtime-metrics > div { display: grid; gap: 4px; padding: var(--space-3); background: var(--surface-1); }
-.ccgqa-grid, .attnres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(310px, 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
+.ccgqa-grid, .attnres-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(310px, 100%), 1fr)); gap: var(--space-3); margin-top: var(--space-4); }
 .ccgqa-card, .attnres-grid article { border: 1px solid var(--border); background: var(--surface-2); padding: var(--space-3); }
 .ccgqa-card[data-evidence-state="invalid"] { border: 3px double var(--invalid); }
 .invalid-evidence-banner { display: flex; justify-content: space-between; gap: var(--space-3); margin: var(--space-3) 0; padding: var(--space-3); border: 3px double var(--invalid); background: repeating-linear-gradient(135deg, transparent 0 7px, var(--pattern) 7px 14px); color: var(--invalid); }

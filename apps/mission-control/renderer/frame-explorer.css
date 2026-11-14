@@ -3,12 +3,6 @@
 .model-nav button { font: inherit; color: var(--text); padding: var(--space-3); background: var(--surface-2); border: 1px solid var(--border-strong); cursor: pointer; }
 .model-nav button[aria-pressed="true"] { border: 3px double var(--accent); font-weight: 750; }
 .identity small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.context-actions { min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
-@media (max-width: 1300px) {
-  .context-bar { grid-template-columns: minmax(0, 1fr) auto; }
-  .context-facts { grid-column: 1 / -1; grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .context-actions { grid-column: 2; grid-row: 1; max-width: 65vw; }
-}
 .frame-explorer { display: grid; gap: var(--space-4); min-width: 0; }
 .frame-fixture-label { border: 2px dashed var(--attention); padding: var(--space-3); font-weight: 700; }
 .frame-explorer label { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); font-weight: 650; }

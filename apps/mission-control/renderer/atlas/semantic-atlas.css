@@ -1,4 +1,3 @@
-.domain-view { margin-top: 34px; }
 .atlas-toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
 .atlas-toolbar button, .atlas-form button, .atlas-bank { border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surface-2); color: var(--text); padding: 8px 10px; cursor: pointer; }
 .atlas-toolbar button[aria-pressed="true"] { box-shadow: inset 0 -2px var(--accent); border-color: var(--accent); }

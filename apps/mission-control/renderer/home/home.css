@@ -1,10 +1,4 @@
-.shell[data-view="mission-control"] { grid-template-columns:176px minmax(0,1fr) 0; }
-.shell[data-view="mission-control"] .rail { padding:14px 10px; gap:14px; }
-.shell[data-view="mission-control"] #primary-nav button { padding:7px 9px; }
-.shell[data-view="mission-control"] .context-bar { min-height:68px; padding:9px 14px; gap:12px; }
-.shell[data-view="mission-control"] .context-facts { gap:4px 10px; }
-.shell[data-view="mission-control"] .context-facts strong { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.shell[data-view="mission-control"] .view-host { max-width:none; padding:18px clamp(14px,2vw,28px) 28px; }
+.shell[data-view="mission-control"] .view-host { max-width:none; padding:20px var(--page-gutter-tight) 32px; }
 .shell[data-view="mission-control"] .view-host > .eyebrow { display:none; }
 .shell[data-view="mission-control"] .view-host > h1 { margin:0 0 3px; font-size:clamp(28px,3vw,42px); line-height:1; letter-spacing:-.025em; }
 .shell[data-view="mission-control"] .view-host > p { margin:0 0 14px; max-width:none; font-size:13px; }
@@ -14,18 +8,18 @@
 .home-verdict p { margin:0; color:var(--text-muted); }
 .home-questions { display:grid; grid-template-columns:repeat(5,minmax(92px,1fr)); gap:7px; align-items:center; min-width:min(590px,60%); }
 .home-questions span { border-left:2px solid var(--border-strong); padding-left:8px; color:var(--text-muted); font-size:10px; letter-spacing:.08em; }
-.home-questions strong { display:block; margin-top:4px; color:var(--text); font-size:11px; overflow-wrap:anywhere; }
+.home-questions strong { display:block; margin-top:4px; color:var(--text); font-size:11px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .home-health-strip { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:8px; }
 .home-metric-card, .home-panel { border:1px solid var(--border); border-radius:9px; background:var(--surface-1); min-width:0; }
-.home-metric-card { padding:9px 10px; }
+.home-metric-card { min-width:0; padding:9px 10px; }
 .home-metric-card header, .home-panel>header { display:flex; justify-content:space-between; align-items:center; gap:10px; border-bottom:1px solid var(--border); padding-bottom:6px; margin-bottom:6px; }
 .home-metric-card h2, .home-panel h2 { font-size:15px; margin:0; }
 .home-metric-card header span, .home-panel>header>span { color:var(--text-muted); font-size:10px; letter-spacing:.08em; }
 .home-metric-card dl, .home-current dl { margin:0; display:grid; gap:0; }
-.home-metric-card dl div, .home-current dl div { display:flex; justify-content:space-between; gap:10px; padding:3px 0; border-bottom:1px dotted var(--border); }
+.home-metric-card dl div, .home-current dl div { display:grid; grid-template-columns:minmax(0,1fr) max-content; align-items:start; gap:10px; padding:3px 0; border-bottom:1px dotted var(--border); }
 .home-metric-card dl div:last-child, .home-current dl div:last-child { border-bottom:0; }
-.home-metric-card dt, .home-current dt { color:var(--text-muted); }
-.home-metric-card dd, .home-current dd { margin:0; font-weight:650; text-align:right; overflow-wrap:anywhere; }
+.home-metric-card dt, .home-current dt { min-width:0; color:var(--text-muted); line-height:1.25; }
+.home-metric-card dd, .home-current dd { margin:0; max-width:14ch; font-size:12px; line-height:1.25; font-weight:700; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .home-lower-grid { display:grid; grid-template-columns:minmax(230px,.9fr) minmax(390px,1.55fr) minmax(220px,.8fr); gap:8px; align-items:start; }
 .home-panel { padding:9px 10px; }
 .home-middle-stack { display:grid; gap:10px; }
@@ -41,9 +35,9 @@
 .home-school th:first-child { text-align:left; }
 .home-school th button { border:0; background:transparent; padding:0; cursor:pointer; color:inherit; font:inherit; font-weight:650; }
 .home-quiet, .home-empty { color:var(--text-muted); line-height:1.5; }
-.home-dashboard[data-learning="IMPROVING"] .home-verdict { border-left:4px solid var(--valid); }
+.home-dashboard[data-learning="IMPROVING"] .home-verdict { border-left:4px solid var(--healthy); }
 .home-dashboard[data-learning="REGRESSION"] .home-verdict { border-left:4px double var(--invalid); }
 .home-dashboard[data-learning="THROUGHPUT_ONLY"] .home-verdict { border-left:4px dashed var(--attention); }
 @media (max-width:1180px) { .home-health-strip{grid-template-columns:repeat(2,minmax(0,1fr));}.home-lower-grid{grid-template-columns:1fr 1.4fr}.home-attention{grid-column:1/-1}.home-verdict{flex-direction:column}.home-questions{min-width:0;width:100%;} }
-@media (max-width:760px) { .home-health-strip,.home-lower-grid,.home-questions{grid-template-columns:1fr}.home-attention{grid-column:auto}.home-school-table-wrap{overflow:visible}.home-school table{font-size:10px}.home-school th,.home-school td{white-space:normal;} }
+@media (max-width:760px) { .home-health-strip,.home-lower-grid,.home-questions{grid-template-columns:1fr}.home-attention{grid-column:auto}.home-school-table-wrap{overflow:auto}.home-school table{font-size:10px;min-width:560px}.home-school th,.home-school td{white-space:normal;} }
 @media (prefers-reduced-motion:reduce){.home-dashboard *{scroll-behavior:auto!important;animation:none!important;transition:none!important;}}

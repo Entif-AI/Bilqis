@@ -1,4 +1,4 @@
-.evidence-view { display: grid; gap: var(--content-gap); margin-top: 34px; }
+.evidence-view { display: grid; gap: var(--content-gap); margin-top: 0; }
 .evidence-heading, .evidence-detail > header { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; }
 .evidence-heading p { max-width: 64ch; }
 .evidence-search { display: grid; grid-template-columns: minmax(12rem, 0.7fr) minmax(18rem, 1.3fr) auto; gap: var(--space-3); align-items: end; }

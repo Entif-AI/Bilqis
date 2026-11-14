@@ -39,8 +39,3 @@
 .capability-explorer button:focus-visible, .capability-explorer summary:focus-visible { outline: 2px solid var(--focus); }
 [hidden] { display: none !important; }
 .shell[data-view="capability"] .workspace { background: var(--canvas); }
-.shell[data-view="capability"] .view-host { padding: 30px clamp(20px, 4vw, 60px); max-width: 1400px; }
-.shell[data-view="capability"] .view-host h1 { font-size: clamp(30px, 3vw, 44px); }
-.context-bar { grid-template-columns: minmax(160px, 1fr) minmax(0, 2fr); }
-.context-actions { grid-column: 1 / -1; flex-wrap: wrap; }
-@media (min-width: 1800px) { .context-bar { grid-template-columns: minmax(180px, 1fr) minmax(340px, 2fr) auto; } .context-actions { grid-column: auto; } }

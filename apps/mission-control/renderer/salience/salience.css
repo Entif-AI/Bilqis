@@ -26,7 +26,7 @@
 .salience-badge { display: inline-block; width: fit-content; border: 1px solid currentColor; padding: .12rem .4rem; font: inherit; font-variant-numeric: tabular-nums; }
 .salience-badge[data-state="UNKNOWN"],
 .salience-badge[data-state="PARTIAL"] { border-style: dashed; }
-.salience-provenance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr)); gap: var(--space-3); }
+.salience-provenance-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr)); gap: var(--space-3); }
 .salience-provenance-grid article { border: 1px solid var(--line); padding: var(--space-3); }
 .salience-provenance-grid dl { display: grid; grid-template-columns: minmax(7rem, auto) 1fr; gap: .3rem var(--space-2); }
 .salience-provenance-grid dd { margin: 0; overflow-wrap: anywhere; }

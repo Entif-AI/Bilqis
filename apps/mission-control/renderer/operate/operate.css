@@ -1,4 +1,4 @@
-.operate-view { display: grid; gap: var(--content-gap); margin-top: 34px; }
+.operate-view { display: grid; gap: var(--content-gap); margin-top: 0; }
 .operate-heading { display: flex; justify-content: space-between; align-items: end; gap: var(--space-5); padding-bottom: var(--space-4); border-bottom: 3px double var(--invalid); }
 .operate-heading h2 { margin: 5px 0 0; font-size: clamp(24px, 3vw, 34px); }
 .operate-zone { display: grid; gap: 3px; min-width: 260px; padding: var(--space-3); border: 2px double var(--invalid); background: repeating-linear-gradient(135deg, transparent 0 8px, var(--pattern) 8px 16px); }
