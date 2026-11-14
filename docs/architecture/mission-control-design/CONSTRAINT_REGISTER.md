@@ -35,8 +35,8 @@ This register records constraints that a redesign leaf must preserve. It is not 
 | CON-D-023 | Primary navigation currently exposes 14 destinations; grouping must be derived from the application atlas and operator tasks, not arbitrary aesthetic categories. | MUST | Current `DESTINATIONS`; issue #1124 | IA changes require atlas/flow evidence and must preserve direct destination access. |
 | CON-D-024 | View summaries currently carry important epistemic boundaries and may not be deleted merely because they are technical. | MUST | `renderer/foundation/current-view.mjs` | Rewrite for operator-first language and progressive disclosure while preserving the underlying claim boundary. |
 | CON-D-025 | One application-wide status grammar replaces per-view ornamental variants without collapsing domain-specific states. | MUST | `visual-language.mjs`; issue #1124 | Shared primitives should encode label + structural/non-color cue + optional explanation. |
-| CON-D-026 | Every human-facing string touched by redesign becomes a stable localization token with explicit parameters. | MUST | User instruction; issue #1124 | No sentence-fragment concatenation. Machine identifiers remain data. Layout must tolerate expansion and prefer logical CSS properties. |
-| CON-D-027 | Every application element touched by UI tests receives a stable unique `data-test-id`; intentional groups use a documented prefix. | MUST | User instruction; issue #1124 | Affected tests migrate away from visible text, DOM hierarchy, classes, element IDs, localized strings, and incidental attributes. |
+| CON-D-026 | Every human-facing string in a redesign leaf's owned Mission Control micro-surface becomes a stable localization token with explicit parameters during that leaf; final acceptance requires complete application human-copy coverage. | MUST | User instruction; issue #1124 | No sentence-fragment concatenation. Machine identifiers remain data. Layout must tolerate expansion and prefer logical CSS properties. |
+| CON-D-027 | Every Mission Control UI test that selects rendered elements in a redesign leaf's owned micro-surface uses a stable unique `data-test-id`; intentional groups use a documented prefix. Final acceptance requires global selector conformance. | MUST | User instruction; issue #1124 | Migrate selectors away from visible text, DOM hierarchy, classes, element IDs, localized strings, ARIA labels used as test locators, and incidental attributes. |
 | CON-D-028 | Exact `data-test-id` values identify one rendered element only. | MUST | User instruction | Repeated rows need prefix/group conventions or identity-suffixed IDs, not duplicate exact IDs. |
 | CON-D-029 | Functional `data-*` attributes may continue to carry runtime semantics but are not substitutes for the test-hook namespace. | SHOULD | Current renderer architecture | Keep behavior data and test identity separate so tests do not couple to implementation mechanics. |
 | CON-D-030 | Existing tests and implementation are preserved as much as possible; each leaf runs the smallest claim-appropriate verification set. | MUST | User instruction; AGENTS differential verification rules | Avoid whole-app retesting and broad rewrites during local redesigns. |
@@ -58,18 +58,24 @@ This register records constraints that a redesign leaf must preserve. It is not 
 | CON-D-046 | Current display settings include a terminal density in addition to comfortable/compact; the redesign constitution treats terminal-like density as non-default and final support must be an explicit design decision rather than accidental inheritance. | MUST-RESOLVE | `renderer/settings.mjs`; `visual-tokens.css`; issue #1124 | Do not silently delete or normalize the mode. Resolve its intended support in the shared-primitives/shell leaf and test the decision. |
 | CON-D-047 | Live CP04 event delivery is selective effect plumbing: Home, Resources, and Operate react to different admitted event families. | MUST | event-stream architecture; renderer controllers | Visual state refresh must not imply that every event refreshes every view or that event arrival changes source authority. |
 | CON-D-048 | Entering the Model frame fixture surface temporarily installs an exact fixture context and disables mutation; leaving restores the saved shell context and invalidates stale frame responses. | MUST | frame shell/controller contracts | Model redesign must preserve this context-custody boundary and make fixture posture legible. |
+| CON-D-049 | The application atlas includes an actual composition-first mind-map/tree view, not only a prose hierarchy, and keeps cross-view relationships in separate flow diagrams. | MUST | User instruction; issue #1124 | The visual tree begins at shell segments, descends through destinations and components, and uses stable node IDs shared with the detailed register and flows. |
+| CON-D-050 | Each atlas component has traceable information, treatment, interaction, effect, state, authority, accessibility, i18n, and test-hook concerns. | MUST | User instruction; issue #1124 artifact contract | A component may inherit a view-level concern profile only when that inheritance is explicit and no component-specific exception is lost. |
+| CON-D-051 | Exact screenshot-derived failures are preserved as concrete examples with owning rules; compressed categories are not a substitute for the durable example corpus. | MUST | User instruction; issue #1124 | Maintain `ANTI_PATTERN_GALLERY.md`; when an original screenshot/source is unavailable, say so rather than inventing it. |
+| CON-D-052 | A redesign ticket states the minimum known work, not the maximum allowed refinement. Agents may make additional spec-conformance repairs discovered during implementation, including outside enumerated ticket bullets, while coordinating overlapping active ownership and recording new deficiencies. | MUST | User instruction; issue #1124 | Do not use ticket scope as an excuse to preserve an obvious local design-system violation; do not create conflicting simultaneous edits to another active leaf. |
+| CON-D-053 | Runtime UI implementation is human-gated by explicit ratification of the aesthetics/palette/component-library direction. | MUST | User instruction; issue #1124 | Merged design documentation does not substitute for the named agreement gate. Do not begin #1126 implementation until that ratification is durable. |
 
 ## Leaf checklist
 
-Every redesign child issue must cite the relevant CON-D IDs and state:
+Every redesign child issue must cite the relevant CON-D IDs. Its implementation closeout/checkpoint must state:
 
 1. atlas node(s) touched;
 2. preserved authority/state semantics;
-3. affected localization tokens;
-4. affected test IDs and migrated tests;
+3. all human-facing strings in the leaf's owned micro-surface and their localization tokens;
+4. all UI element selectors in tests for the leaf's owned micro-surface, the stable test IDs introduced, and the migrated tests;
 5. WCAG 2.2 AA criteria reviewed for the micro-surface;
 6. defensive states exercised;
 7. responsive/theme/density variants exercised;
 8. smallest verification commands;
 9. before/after rendered evidence;
-10. any new deficiency discovered and appended to #1124.
+10. any additional spec-conformance repairs made beyond the issue's enumerated bullets;
+11. any new deficiency discovered and appended to #1124.

@@ -13,7 +13,12 @@ Before UI implementation:
 - `CONSTRAINT_REGISTER.md`
 - `INFORMATION_ATLAS.md`
 - `FLOWS.md`
+- `ANTI_PATTERN_GALLERY.md`
+- `REQUIREMENT_TRACE.md`
 - parent issue #1124 with deficiency ledger
+- explicit human ratification of the aesthetics, palette, component-library posture, and other locked design rules in #1124
+
+No runtime UI leaf begins before that ratification. Merged documentation is not itself proof that the named agreement gate occurred.
 
 No leaf should reinterpret these artifacts independently. If implementation discovers a contradiction, update the authority/deficiency record first.
 
@@ -78,15 +83,15 @@ Runs once after all prior leaves integrate. This is the requested whole-app pass
 
 For each issue:
 
-1. reread `DESIGN.md`, style guide, relevant CON-D and atlas/flow IDs;
+1. reread `DESIGN.md`, style guide, the exact anti-pattern gallery, and relevant CON-D and atlas/flow IDs;
 2. capture the current micro-surface as before evidence;
 3. make the smallest coherent redesign;
-4. tokenize touched copy;
-5. add/migrate touched `data-test-id` hooks/tests;
+4. sweep the entire owned micro-surface and convert **all** human-facing copy in that surface to localization tokens, not only lines edited for layout;
+5. sweep the entire owned micro-surface's UI tests and migrate **all element selection** to exact/prefix `data-test-id` hooks, not only selectors incidentally touched by the visual diff;
 6. perform the local WCAG 2.2 AA review;
 7. run only affected tests plus unavoidable hooks;
 8. capture after evidence in required modes/states;
 9. append newly discovered deficiency to #1124;
-10. turn in the leaf without opportunistically redesigning unrelated views.
+10. make additional conformance refinements beyond the ticket's enumerated defects when they are discovered through `DESIGN.md` / style-guide review, including refinements not previously noticed; coordinate rather than suppress a refinement when it overlaps another leaf's active ownership.
 
-Adjacent refinement inside the touched surface is authorized when it directly improves conformance with the design constitution. Expanding the touched surface itself requires a ticket/atlas rationale.
+The ticket describes the minimum known work, not a maximum. Agents are explicitly authorized by #1124 to improve additional defects they discover in the course of conforming the application to the design constitution. Keep those additions evidence-driven, preserve behavior, record newly discovered deficiencies in #1124, and avoid conflicting simultaneous edits to a surface another leaf actively owns.

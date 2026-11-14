@@ -178,7 +178,7 @@ Design decisions follow five priorities, in order:
 4. **Accessible resilience.** Keyboard, assistive technology, zoom, reflow, reduced motion, localization expansion, and failure states are part of the design.
 5. **Visual restraint.** Whitespace, typography, alignment, and tonal hierarchy should do most of the work.
 
-The canonical human-facing companion is `docs/architecture/mission-control-design/STYLE_GUIDE.md`. The structural map is `docs/architecture/mission-control-design/INFORMATION_ATLAS.md`; cross-view behavior is in `docs/architecture/mission-control-design/FLOWS.md`. Parent redesign authority and the running deficiency ledger live in GitHub issue #1124.
+The canonical human-facing companion is `docs/architecture/mission-control-design/STYLE_GUIDE.md`. The structural map is `docs/architecture/mission-control-design/INFORMATION_ATLAS.md`; cross-view behavior is in `docs/architecture/mission-control-design/FLOWS.md`; exact screenshot-derived failure examples are preserved in `docs/architecture/mission-control-design/ANTI_PATTERN_GALLERY.md`; literal parent-requirement coverage is tracked in `docs/architecture/mission-control-design/REQUIREMENT_TRACE.md`. Parent redesign authority and the running deficiency ledger live in GitHub issue #1124.
 
 ## Colors
 
@@ -320,8 +320,8 @@ Loading, progressive, empty, stale, partial, offline, denied, revoked, unavailab
 - **Do** keep help local and progressive.
 - **Do** prefer native HTML semantics and use WAI-ARIA Authoring Practices where native semantics are insufficient.
 - **Do** verify WCAG 2.2 AA on each touched micro-surface during redesign.
-- **Do** convert touched human-facing strings to localization tokens with parameterized variables.
-- **Do** add stable, unique `data-test-id` hooks to touched elements and migrate affected tests.
+- **Do** sweep each redesign leaf's entire owned micro-surface and convert all human-facing strings in that surface to localization tokens with parameterized variables.
+- **Do** sweep each redesign leaf's UI tests for its owned micro-surface and migrate all rendered-element selection to stable, unique `data-test-id` hooks.
 - **Don't** truncate semantic values into fragments such as `AWAITING_RECO...`, `paired-screen:so...`, or `BOOLEAN F...`.
 - **Don't** display persistent shell facts merely because the data exists.
 - **Don't** use decorative diagonal stripes, gradients, glow, or texture as status language.
@@ -354,7 +354,7 @@ The existing `docs/architecture/BAMF_MISSION_CONTROL_ACCESSIBILITY_DEFENSIVE_UX.
 
 ## Internationalization
 
-Every human-facing string touched by the redesign moves behind a stable localization token. Do not build complete sentences by concatenating translated fragments. Variables are explicit parameters. Machine identifiers and source-authoritative values remain data rather than translation keys.
+Every human-facing string in a micro-surface owned by a redesign leaf moves behind a stable localization token during that leaf, whether or not the line was otherwise edited for layout. By final acceptance, no Mission Control human-facing application copy remains outside the localization boundary except explicitly documented machine/source data. Do not build complete sentences by concatenating translated fragments. Variables are explicit parameters. Machine identifiers and source-authoritative values remain data rather than translation keys.
 
 Layouts must tolerate realistic string expansion. Prefer logical CSS properties so future RTL support is not structurally blocked. Test hooks, CSS tokens, object identities, and localization keys are separate namespaces.
 
@@ -362,7 +362,7 @@ Layouts must tolerate realistic string expansion. Prefer logical CSS properties 
 
 Application UI tests target rendered application elements only through exact `[data-test-id="foo"]` selectors or intentional groups through `[data-test-id^="foo-prefix-"]`.
 
-Every exact test ID identifies one rendered element. Test IDs are stable, semantic, nonlocalized, and independent of copy, CSS class, DOM ancestry, visual order, ARIA label, or element ID. Each micro-redesign migrates only the tests for the touched surface; the final integrated acceptance verifies global conformance.
+Every exact test ID identifies one rendered element. Test IDs are stable, semantic, nonlocalized, and independent of copy, CSS class, DOM ancestry, visual order, ARIA label, or element ID. Each micro-redesign audits every Mission Control UI test that selects elements in its owned surface, not merely the assertions changed by the visual diff. Final integrated acceptance verifies that all Mission Control application UI element selection conforms globally.
 
 ## Motion
 
