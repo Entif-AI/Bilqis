@@ -14,6 +14,18 @@ The runtime error catalog is the authority for new failures. Raw string exceptio
 
 ## Typed catalog
 
+### `FACTORY.SOURCE_ADAPTER.COMPATIBILITY_INVALID`
+
+Factory source-adapter compatibility invalid.
+
+Owner: `compatibility.source_adapter_resume`
+Disposition: `PRESERVE_AND_REPAIR`
+Self-heal owner: `none`
+
+Message: Factory source-adapter compatibility invalid: {reason}
+
+Recovery: Preserve the accepted release and repair the exact source-adapter identity or registry boundary before retrying.
+
 ### `FACTORY.DEVELOPMENTAL_PROGRAM.INVALID`
 
 Factory developmental program invalid.
@@ -1874,7 +1886,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2093** raw raises across **265** files. The baseline gate permits only reduction.
+Current production scan: **2094** raw raises across **266** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2791,6 +2803,7 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_SOURCE_ADAPTER_IDENTITY_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
 | `FACTORY_SOURCE_ADAPTER_MISSING` | 1 | `bilqis_mlx/factory/adapters.py` |
 | `FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
+| `FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN` | 1 | `bilqis_mlx/compatibility/source_adapter_resume.py` |
 | `FACTORY_SOURCE_ADAPTER_TEACHING_OPTIONS_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
 | `FACTORY_SOURCE_ADAPTER_VARIATION_AXES_INVALID` | 1 | `bilqis_mlx/factory/model.py` |
 | `FACTORY_SOURCE_ATTESTATION_DIGEST_INVALID` | 1 | `bilqis_mlx/factory/curriculum_definition.py` |

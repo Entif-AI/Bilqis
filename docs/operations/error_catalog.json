@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 265,
-  "legacy_raw_raise_count": 2093,
+  "legacy_raw_file_count": 266,
+  "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -3585,6 +3585,13 @@
       "exception": "TypeError",
       "expression": "'FACTORY_LEGACY_SCHEDULE_COURSE_REQUIRED'",
       "path": "bilqis_mlx/compatibility/schedule_program.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN:' + registered.descriptor.adapter_id",
+      "path": "bilqis_mlx/compatibility/source_adapter_resume.py"
     },
     {
       "code_hint": "ANSWER_FAMILY_AUTHORITY_INVALID",
@@ -13783,6 +13790,20 @@
   ],
   "schema": "bilqis.error-catalog/v1",
   "typed_errors": [
+    {
+      "code": "FACTORY.SOURCE_ADAPTER.COMPATIBILITY_INVALID",
+      "disposition": "PRESERVE_AND_REPAIR",
+      "legacy_codes": [],
+      "message_key": "errors.factory.source_adapter.compatibility_invalid.message",
+      "message_template": "Factory source-adapter compatibility invalid: {reason}",
+      "next_action": "Preserve the accepted release and repair the exact source-adapter identity or registry boundary before retrying.",
+      "operator_steps": [],
+      "owner": "compatibility.source_adapter_resume",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.source_adapter.compatibility_invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory source-adapter compatibility invalid"
+    },
     {
       "code": "FACTORY.DEVELOPMENTAL_PROGRAM.INVALID",
       "disposition": "CORRECT_INPUT_OR_STATE",

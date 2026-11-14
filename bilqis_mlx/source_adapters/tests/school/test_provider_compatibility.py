@@ -82,3 +82,57 @@ class ProviderCompatibilityTests(unittest.TestCase):
                 replace(current, accepted_oracle_ids=("foreign-oracle",))):
             with self.subTest(changed=changed):
                 self.assertFalse(resume_adapter_compatible(prior, changed))
+
+    def test_intermediate_numeric_provider_resumes_on_current_implementation(self):
+        registry = live_source_registry()
+        registered = registry.require(
+            "bilqis_mlx.numeric_curriculum.draw_numeric", C_ORACLE)
+        current = registered.descriptor
+        modular_sha256 = (
+            "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d")
+        prior_staircase_sha256 = (
+            "ec3b5338fc1604a6250a847ee99eae09956b5a5bb269a63f3ac8372205133e74")
+        for cohort_releases in (
+            current.cohort_releases,
+            tuple(
+                (release, prior_staircase_sha256 if
+                 release == "bilqis.mlx.numeric-staircase/20261017-v1" else digest)
+                for release, digest in current.cohort_releases
+            ),
+        ):
+            with self.subTest(cohort_releases=cohort_releases):
+                admitted = replace(
+                    current,
+                    implementation_sha256=modular_sha256,
+                    cohort_releases=cohort_releases,
+                )
+                self.assertTrue(resume_adapter_compatible(admitted, current))
+                self.assertFalse(resume_adapter_compatible(current, admitted))
+                staging = predecessor_compatible_source_registry(
+                    SimpleNamespace(source_adapters=(admitted,)), registry)
+                rebound = staging.require(
+                    "bilqis_mlx.numeric_curriculum.draw_numeric", C_ORACLE)
+                self.assertEqual(rebound.descriptor, admitted)
+                self.assertIs(rebound.draw, registered.draw)
+
+    def test_grade_a_1324082_provider_resumes_through_current_implementation(self):
+        registry = live_source_registry()
+        registered = registry.resolve_owner(
+            "bilqis_mlx.grade_a_probe.make_record")
+        current = registered.descriptor
+        removed_sha256 = (
+            "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778")
+        admitted = replace(
+            current,
+            implementation_sha256=removed_sha256,
+            cohort_releases=((current.cohort_releases[0][0], removed_sha256),),
+            variation_axes=(
+                *current.variation_axes, "generalization-only-source-context-v3"),
+        )
+        self.assertTrue(resume_adapter_compatible(admitted, current))
+        self.assertFalse(resume_adapter_compatible(current, admitted))
+        staging = predecessor_compatible_source_registry(
+            SimpleNamespace(source_adapters=(admitted,)), registry)
+        rebound = staging.resolve_owner(admitted.generator_id)
+        self.assertEqual(rebound.descriptor, admitted)
+        self.assertIs(rebound.draw, registered.draw)

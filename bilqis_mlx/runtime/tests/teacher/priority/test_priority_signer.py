@@ -59,8 +59,8 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
     release = SimpleNamespace(
         release_sha256="a" * 64,
         execution_plan=SimpleNamespace(capabilities=(
-            SimpleNamespace(id="capability:alpha"),
-            SimpleNamespace(id="capability:beta"),
+            SimpleNamespace(capability_id="capability:alpha"),
+            SimpleNamespace(capability_id="capability:beta"),
         )),
     )
     source_context = SimpleNamespace(release=release)
@@ -160,8 +160,8 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
     release = SimpleNamespace(
         release_sha256="a" * 64,
         execution_plan=SimpleNamespace(capabilities=(
-            SimpleNamespace(id="capability:alpha"),
-            SimpleNamespace(id="capability:beta"),
+            SimpleNamespace(capability_id="capability:alpha"),
+            SimpleNamespace(capability_id="capability:beta"),
         )),
     )
     source_context = SimpleNamespace(release=release)

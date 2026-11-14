@@ -132,10 +132,11 @@ def issue_foundation_priority_authority(
         _invalid("BAMF_PRIORITY_TEACHER_SEED_INVALID")
     counter, last_selected = priority_rotation_state(teacher_state)
     planning = _priority_planning(run_dir, source_context, atlas_artifact_path)
-    offers = tuple((capability.id, prepare_priority_source_offer(
+    offers = tuple((capability.capability_id, prepare_priority_source_offer(
         source_context, parent, atlas_artifact_path,
-        capability=capability.id,
-        source_seed=_offer_seed(next_seed, capability.id), source_each=_SOURCE_EACH))
+        capability=capability.capability_id,
+        source_seed=_offer_seed(next_seed, capability.capability_id),
+        source_each=_SOURCE_EACH))
         for capability in source_context.release.execution_plan.capabilities)
     rejections = _current_rejections(run_dir, parent, cache)
     option_ids = {capability for capability, _ in offers}
