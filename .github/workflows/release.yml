@@ -25,7 +25,10 @@ jobs:
       - name: Verify SemVer matches annotated tag and changelog
         run: python3 -B scripts/maintenance/release_version.py --check --require-tag
       - name: Install BAMF release-readiness dependencies
-        run: python3 -m pip install -e . mlx==0.31.1 numpy==2.4.4
+        run: >-
+          python3 -m pip install -e .
+          -r lib/ithkuil/requirements-semantic.txt
+          mlx==0.31.1 numpy==2.4.4
       - name: Verify core source and selected portable contracts
         run: |
           python3 -B scripts/check_historical_abi.py

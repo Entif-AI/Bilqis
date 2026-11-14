@@ -232,7 +232,10 @@ jobs:
         with:
           python-version: '3.14'
       - name: Install BAMF readiness dependencies
-        run: python3 -m pip install -e . mlx==0.31.1 numpy==2.4.4
+        run: >-
+          python3 -m pip install -e .
+          -r lib/ithkuil/requirements-semantic.txt
+          mlx==0.31.1 numpy==2.4.4
       - name: Verify launch-critical BAMF journey with no skipped tests
         run: npm run bamf:readiness
 
