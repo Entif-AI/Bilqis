@@ -38,6 +38,8 @@ This file exists because the first design-authority assembly preserved the spiri
 | REQ-D-027 | Current UI atoms with no target purpose are removed instead of preserved as target components. | Target exclusion section and CON-D-057/058. | SATISFIED |
 | REQ-D-028 | The standalone `B` mark has no target-state job and is removed from the redesigned shell. | `INFORMATION_ATLAS.md`, `STYLE_GUIDE.md`, `DESIGN.md`, CON-D-057. | SATISFIED |
 | REQ-D-029 | The atlas authoring model itself must be recursive and may not impose a hidden one-tier or N-tier ceiling. | `INFORMATION_ATLAS.md` now contains recursive target descendants through the depth actually required; CON-D-059. | SATISFIED |
+| REQ-D-030 | Codify the dashboard-specific and general visual-design recommendations as implementation-grade authority rather than leaving them in chat. | `VISUAL_COMPOSITION_SPEC.md`; CON-D-060..088; DESIGN.md/style-guide references. | SATISFIED |
+| REQ-D-031 | Ensure simple visual physics such as canvas/card separation are explicit and testable. | CON-D-060..062 plus the spec surface hierarchy and acceptance checklist. | SATISFIED |
 
 ## Known source gap
 
