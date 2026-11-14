@@ -8,6 +8,9 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+
 from bilqis_mlx.compatibility.executable_projection import (
     LIVE_V2_VERIFICATION_SEED, project_legacy_course,
 )
@@ -20,7 +23,9 @@ from bilqis_mlx.factory.executable_release import compile_executable_factory_rel
 from bilqis_mlx.factory.live_answers import live_answer_registry
 from bilqis_mlx.grade_a_release import accepted_grade_a
 from bilqis_mlx.live_grade_c import REGISTRY_COUNTING_TARGET, registry_graph
-from bilqis_mlx.runtime.atlas_source_authority import SourceAuthorityRegistry
+from bilqis_mlx.runtime.atlas_source_authority import (
+    SourceAuthorityKey, SourceAuthorityRegistry, SourceAuthorityScope,
+)
 from bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer import (
     HostSourceAuthoritySigner,
 )
@@ -37,11 +42,9 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle import helpers as custody_help
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures import (
     selection_teacher,
 )
-from bilqis_mlx.runtime.tests.teacher.priority.test_priority_signer import (
-    _registry as priority_registry,
-)
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
 from bilqis_mlx.semantics.atlas_features import FeatureSchema, build_feature_manifest
+from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind
 from bilqis_mlx.semantics.tests.frame_adapters.helpers import (
     _snapshot as accepted_abi_snapshot,
 )
@@ -61,8 +64,22 @@ AUTHORIZED_ATLAS = (
     "58e0c281b5da18b9b7e6c803709b29eeeb0a88f16b06f48de692808e2fb88306",
     "f1c89c1d1bcd72695c81f8e777d0fbbdf446e92cb27132bebf1cd6873ec689ec",
 )
+
+
+def _priority_registry():
+    key = Ed25519PrivateKey.from_private_bytes(bytes.fromhex("44" * 32))
+    public = key.public_key().public_bytes(Encoding.Raw, PublicFormat.Raw).hex()
+    scopes = tuple(sorted((SourceAuthorityScope(kind, prefix) for kind, prefix in (
+        (DependencyKind.POLICY, "salience-policy:"),
+        (DependencyKind.SOURCE, "salience-fact:"),
+        (DependencyKind.ARTIFACT, "salience-option:"),
+        (DependencyKind.ARTIFACT, "salience-event:"),
+    )), key=lambda scope: (scope.kind.value, scope.key_prefix)))
+    return SourceAuthorityRegistry((SourceAuthorityKey("owner:c06", public, scopes),))
+
+
 COMBINED_REGISTRY = SourceAuthorityRegistry(tuple(sorted(
-    (*ATLAS_REGISTRY.keys, *priority_registry().keys),
+    (*ATLAS_REGISTRY.keys, *_priority_registry().keys),
     key=lambda key: key.owner_id,
 )))
 
