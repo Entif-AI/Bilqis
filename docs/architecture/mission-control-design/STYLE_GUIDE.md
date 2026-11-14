@@ -4,6 +4,7 @@ Status: human-facing design constitution
 Parent authority: GitHub issue #1124
 Normative token source: `apps/mission-control/DESIGN.md`
 Constraint trace: `CONSTRAINT_REGISTER.md`
+Normative visual composition + Home contract: `VISUAL_COMPOSITION_SPEC.md`
 Exact screenshot-derived examples: `ANTI_PATTERN_GALLERY.md`
 
 ## The object we are designing
@@ -267,6 +268,18 @@ Acceptance requires before/after rendered evidence showing that the touched surf
 - defensive-state behavior.
 
 The final whole-app pass happens once after the surgical leaves integrate.
+
+
+## Canvas and surface separation
+
+The canvas is negative space and must remain perceptible around independent work units. Cards and panels are not allowed to blur into the backdrop.
+
+- Canvas uses the canonical canvas token; an independent card directly on canvas uses a distinct surface token.
+- A bounded child surface may not reuse its parent's fill. If it cannot justify a distinct layer, remove the inner container.
+- Radius alone does not establish a surface boundary.
+- Shadows are not the default card separator; use tonal separation first and a structural border only when needed.
+- Do not tile the page with same-size rounded rectangles. Ordinary grouping uses alignment, proximity, whitespace, headings, rules, and table structure.
+- `VISUAL_COMPOSITION_SPEC.md` is normative for the full composition hierarchy and Home-view acceptance tests.
 
 ## Anti-pattern gallery
 
