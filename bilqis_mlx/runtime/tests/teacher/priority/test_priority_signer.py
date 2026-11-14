@@ -19,6 +19,7 @@ from bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer import (
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, DependencyRef
 from bilqis_mlx.learning.atlas_salience import DispatchTier, rank_attention_options
 from bilqis_mlx.learning.salience_contracts import Ordinal
+from bilqis_mlx.semantic_sampling import DEFAULT_BINARY_BALANCE
 from bilqis_mlx.runtime import checkpoint_outbox
 from bilqis_mlx.runtime import priority_rejection_replay as rejection_replay
 from bilqis_mlx.runtime.bamf_bundle.records import canonical
@@ -111,7 +112,8 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
     assert tuple(item.stable_id for item in ranked.ordered) == (
         "capability:beta", "capability:alpha")
     assert {tier for _, tier in ranked.tiers} == {DispatchTier.FAIR_ROTATION}
-    assert {offer.source_each for _, offer in issued.offers} == {1}
+    assert {offer.source_each for _, offer in issued.offers} == {
+        DEFAULT_BINARY_BALANCE.minimum_total}
     assert len({offer.source_seed for _, offer in issued.offers}) == 2
     assert issued.planning is planning
 

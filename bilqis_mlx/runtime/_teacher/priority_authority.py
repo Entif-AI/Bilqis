@@ -16,6 +16,7 @@ from bilqis_mlx.learning.salience_history import (
 from bilqis_mlx.learning.salience_teacher import AttentionFrontier
 from bilqis_mlx.learning.teacher_lineage import priority_rotation_state
 from bilqis_mlx.runtime.priority_source_offer import prepare_priority_source_offer
+from bilqis_mlx.semantic_sampling import DEFAULT_BINARY_BALANCE
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, DependencyRef
 from bilqis_mlx.semantics.domains import contract_digest
 from .priority_planning_owner import priority_planning as _priority_planning
@@ -23,7 +24,7 @@ from .priority_rejection_replay import current_rejections as _current_rejections
 
 
 _SCOPE = "factory/foundation"
-_SOURCE_EACH = 1
+_SOURCE_EACH = DEFAULT_BINARY_BALANCE.minimum_total
 
 
 def _invalid(reason):
