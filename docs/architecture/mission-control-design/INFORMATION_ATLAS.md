@@ -874,7 +874,7 @@ These trees are the authoritative answer to **how far down the atlas descends**.
 
 ### SHELL-D-001 · Application shell
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((SHELL-D-001 Application shell))
     COMP-D-015 Skip-to-main access path
@@ -1149,11 +1149,11 @@ mindmap
     COMP-D-016 Polite live announcer
       COMP-D-016.1 sr-only aria-live atomic region treatment
       COMP-D-016.2 clear-then-microtask repeated-message announcement effect
-\`\`\`
+```
 
 ### VIEW-D-001 · Mission Control
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-001 Mission Control))
     COMP-D-107 Startup state
@@ -1241,11 +1241,11 @@ mindmap
         COMP-D-103.2.3 detail datum
         COMP-D-103.2.4 inspect target control-effect
       COMP-D-103.3 no-actionable-concerns state
-\`\`\`
+```
 
 ### VIEW-D-002 · School
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-002 School))
     COMP-D-204 Peer subnavigation
@@ -1322,11 +1322,11 @@ mindmap
         COMP-D-209.3 bounded family expansion
         COMP-D-209.4 selected semantic prerequisite-dependent datum
         COMP-D-209.5 bounded transitive-unlocks datum-state
-\`\`\`
+```
 
 ### VIEW-D-003 · Capability Explorer
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-003 Capability Explorer))
     COMP-D-304 Source-lens controls
@@ -1370,11 +1370,11 @@ mindmap
         COMP-D-306.3.2 exact-record traversal control-effect
       COMP-D-306.4 next-page evidence-links control-effect
       COMP-D-306.5 returned-record payload datum
-\`\`\`
+```
 
 ### VIEW-D-004 · Learning
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-004 Learning))
     COMP-D-401 Episode selector
@@ -1425,11 +1425,11 @@ mindmap
         COMP-D-405.3.1 stage label-state-detail datum
         COMP-D-405.3.2 stage evidence action family
         COMP-D-405.3.3 no-durable-evidence state
-\`\`\`
+```
 
 ### VIEW-D-005 · Atlas
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-005 Atlas))
     COMP-D-521 Whole-view request state
@@ -1460,11 +1460,11 @@ mindmap
       COMP-D-502.5 capability-frame bindings datum-family
       COMP-D-502.6 lens-dependent canonical-similarity relationships datum-family
       COMP-D-502.7 no-selection guidance state
-\`\`\`
+```
 
 ### VIEW-D-006 · Model
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-006 Model))
     COMP-D-601 Model local navigation
@@ -1521,11 +1521,11 @@ mindmap
       COMP-D-610 Aggregate packing
         COMP-D-610.1 aggregate disclosure control-state
         COMP-D-610.2 aggregate packing metrics datum-family
-\`\`\`
+```
 
 ### VIEW-D-007 · Memory
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-007 Memory))
     COMP-D-733 Historical-memory unavailable
@@ -1569,11 +1569,11 @@ mindmap
       COMP-D-705.1 candidate-REJECTED header datum-state
       COMP-D-705.2 four-invariant proof grid datum-family
       COMP-D-705.3 rejection reason candidate-local-not-retained doctrine datum
-\`\`\`
+```
 
 ### VIEW-D-008 · Teacher
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-008 Teacher))
     COMP-D-801 Strategy population
@@ -1610,11 +1610,11 @@ mindmap
       COMP-D-804.2 coverage state
       COMP-D-804.3 exposed field inventory datum
       COMP-D-804.4 fixture-backed limitation-authority explanation datum
-\`\`\`
+```
 
 ### VIEW-D-009 · SÍ SÉ SON
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-009 SI SE SON))
     COMP-D-906 As-of snapshot selector
@@ -1663,11 +1663,11 @@ mindmap
       COMP-D-905.2 PARTIAL coverage state
       COMP-D-905.3 projected field inventory datum
       COMP-D-905.4 non-first-class fixture-backed boundary datum
-\`\`\`
+```
 
 ### VIEW-D-010 · Corrections
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-010 Corrections))
     COMP-D-1001 Correction context
@@ -1711,11 +1711,11 @@ mindmap
         COMP-D-1005.3.1 generation-phase datum
         COMP-D-1005.3.2 state datum
         COMP-D-1005.3.3 receipt datum
-\`\`\`
+```
 
 ### VIEW-D-011 · Lineage
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-011 Lineage))
     COMP-D-1101 Accepted lineage
@@ -1754,11 +1754,11 @@ mindmap
       COMP-D-1104.4 stable deep-link datum
       COMP-D-1104.5 exact CP03 mode-generation-record query identity datum
       COMP-D-1104.6 historical generation missing defensive state
-\`\`\`
+```
 
 ### VIEW-D-012 · Resources
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-012 Resources))
     COMP-D-1201 Resource headline
@@ -1804,11 +1804,11 @@ mindmap
       COMP-D-1206.3 no-comparison empty state
       COMP-D-1206.4 metric historical-inspected-delta table datum-family
       COMP-D-1206.5 bounded historical CP03 query rerender effect
-\`\`\`
+```
 
 ### VIEW-D-013 · Evidence
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-013 Evidence))
     COMP-D-1301 Query-filter
@@ -1864,11 +1864,11 @@ mindmap
       COMP-D-1304.1 return-available state
       COMP-D-1304.2 Return to inspected object control
       COMP-D-1304.3 origin restoration effect
-\`\`\`
+```
 
 ### VIEW-D-014 · Operate
 
-\`\`\`mermaid
+```mermaid
 mindmap
   root((VIEW-D-014 Operate))
     COMP-D-1400 Command-boundary posture
@@ -1929,7 +1929,7 @@ mindmap
       COMP-D-1405.7 literal bounded inspection JSON disclosure
       COMP-D-1405.8 matching operator event reconciliation effect
       COMP-D-1405.9 terminal-pending-lost-unknown phase effect
-\`\`\`
+```
 
 ## Recursive-scope rule for redesign leaves
 
