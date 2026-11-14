@@ -1,4 +1,13 @@
-# Bilqis MLX
+# Bilqis: A Novel Neuro-Symbolic AI Model Trained at Compositional Learning via a Semantic Pasigraphy Substrate
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png">
+    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Mission Control Dashboard, displaying an active neurosymbolic training run.">
+  </picture>
+</p>
+
+<p>Read the research paper behind this work here: <br /><a href="https://entif.ai/tags/research/2026/09/11/prepaying-semantics/" target="_blank">Prepaying Semantics is Cheaper</a></p>
 
 Bilqis MLX is an Apple Silicon-native cognitive learner and training system built around MLX. It combines a source-grounded semantic substrate, a generative curriculum Factory, a continually extensible neural learner, retention-aware training, durable checkpoint custody, a local control plane, and the Mission Control desktop interface.
 
