@@ -276,6 +276,8 @@ The shell shows context useful across destinations. Secondary topology, factory,
 
 Primary navigation exposes destinations according to task/domain groups derived from the information atlas. Selection is clear without becoming the loudest rectangle on screen. Labels do not collapse into ambiguous initials at ordinary supported widths.
 
+The navigation rail does not reserve permanent space for a standalone logo glyph. The current `B` mark is excluded from the target UI because it carries no operator task, state, or navigation meaning. Product identity is conveyed through quiet text and application/window context.
+
 ### Buttons and actions
 
 Primary, secondary, tertiary, destructive, filtering, grouping, export, and navigation actions are visually distinct by role. A row of unrelated dark rectangles is not an action hierarchy. Controls share height, baseline, focus treatment, disabled treatment, and pressed semantics.
@@ -331,6 +333,7 @@ Loading, progressive, empty, stale, partial, offline, denied, revoked, unavailab
 - **Don't** compensate for weak hierarchy by making everything bold.
 - **Don't** nest bordered rectangles by default.
 - **Don't** expose raw implementation exceptions as primary operator copy.
+- **Don't** allocate persistent chrome to decorative brand marks that carry no operator information or action.
 - **Don't** use text, CSS classes, DOM hierarchy, element IDs, localized strings, or unrelated attributes as application test selectors after a micro-surface has been migrated.
 - **Don't** run a whole-application visual/WCAG audit after every micro-redesign; validate the touched surface and run the final integrated audit once all leaves land.
 

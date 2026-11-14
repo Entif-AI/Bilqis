@@ -110,6 +110,8 @@ Run identity, time posture, freshness, and genuinely global command context belo
 
 Navigation is an information architecture, not a vertical dump of every implemented view. The current fourteen destinations remain addressable, but visual grouping should be derived from the atlas and recurring operator workflows.
 
+Do not spend permanent shell space on ornamental branding. The current standalone `B` mark is not part of the target UI. Product identity, where useful, is quiet text; accessible landmark names do not require a visible logo glyph.
+
 Selection must be unmistakable without making the selected nav button the loudest rectangle in the application.
 
 ## Controls

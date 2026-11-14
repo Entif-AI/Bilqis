@@ -58,24 +58,30 @@ This register records constraints that a redesign leaf must preserve. It is not 
 | CON-D-046 | Current display settings include a terminal density in addition to comfortable/compact; the redesign constitution treats terminal-like density as non-default and final support must be an explicit design decision rather than accidental inheritance. | MUST-RESOLVE | `renderer/settings.mjs`; `visual-tokens.css`; issue #1124 | Do not silently delete or normalize the mode. Resolve its intended support in the shared-primitives/shell leaf and test the decision. |
 | CON-D-047 | Live CP04 event delivery is selective effect plumbing: Home, Resources, and Operate react to different admitted event families. | MUST | event-stream architecture; renderer controllers | Visual state refresh must not imply that every event refreshes every view or that event arrival changes source authority. |
 | CON-D-048 | Entering the Model frame fixture surface temporarily installs an exact fixture context and disables mutation; leaving restores the saved shell context and invalidates stale frame responses. | MUST | frame shell/controller contracts | Model redesign must preserve this context-custody boundary and make fixture posture legible. |
-| CON-D-049 | The application atlas includes an actual composition-first mind-map/tree view, not only a prose hierarchy, and keeps cross-view relationships in separate flow diagrams. | MUST | User instruction; issue #1124 | The visual tree begins at shell segments, descends through destinations and components, and uses stable node IDs shared with the detailed register and flows. |
+| CON-D-049 | The application atlas includes an actual composition-first hierarchical visual, not only a prose hierarchy, and keeps cross-view relationships in separate flow diagrams. | MUST | User instruction; issue #1124 | The visual tree begins at shell segments, descends through destinations and components, and uses stable node IDs shared with the detailed register and flows. |
 | CON-D-050 | Each atlas component has traceable information, treatment, interaction, effect, state, authority, accessibility, i18n, and test-hook concerns. | MUST | User instruction; issue #1124 artifact contract | A component may inherit a view-level concern profile only when that inheritance is explicit and no component-specific exception is lost. |
 | CON-D-051 | Exact screenshot-derived failures are preserved as concrete examples with owning rules; compressed categories are not a substitute for the durable example corpus. | MUST | User instruction; issue #1124 | Maintain `ANTI_PATTERN_GALLERY.md`; when an original screenshot/source is unavailable, say so rather than inventing it. |
 | CON-D-052 | A redesign ticket states the minimum known work, not the maximum allowed refinement. Agents may make additional spec-conformance repairs discovered during implementation, including outside enumerated ticket bullets, while coordinating overlapping active ownership and recording new deficiencies. | MUST | User instruction; issue #1124 | Do not use ticket scope as an excuse to preserve an obvious local design-system violation; do not create conflicting simultaneous edits to another active leaf. |
-| CON-D-053 | Runtime UI implementation is human-gated by explicit ratification of the aesthetics/palette/component-library direction. | MUST | User instruction; issue #1124 | Merged design documentation does not substitute for the named agreement gate. Do not begin #1126 implementation until that ratification is durable. |\n| CON-D-054 | Atlas decomposition is recursively semantic: a component is composite, not terminal, while it still contains an independently meaningful subcomponent, repeated control family, state/state-presentation, interaction contract, or distinct effect. Existing published parent IDs remain stable; descendants use dotted IDs. | MUST | User correction; issue #1124 D-028 | A leaf may stop only at one concrete information/control unit or one irreducible nonvisual treatment/state/interaction/effect contract. Repeated identical controls may share a family node but fixed instances are enumerated; behaviorally distinct instances/states are separate. |
+| CON-D-053 | Runtime UI implementation is human-gated by explicit ratification of the aesthetics/palette/component-library direction. | MUST | User instruction; issue #1124 | Merged design documentation does not substitute for the named agreement gate. Do not begin #1126 implementation until that ratification is durable. |
+| CON-D-054 | Atlas decomposition is recursively semantic: a component is composite, not terminal, while it still contains an independently meaningful target subcomponent, repeated control family, state/state-presentation, interaction contract, or distinct effect. Existing published parent IDs remain stable where the target retains the concept; descendants use dotted IDs. | MUST | User correction; issue #1124 D-028 | A target leaf may stop only when further subdivision would not change a design, interaction, state, accessibility, test, or implementation decision. |
+| CON-D-055 | `INFORMATION_ATLAS.md` is the target-state anatomy of everything intended to appear or operate in the redesigned UI. The current renderer anatomy is preserved separately in `CURRENT_STATE_UI_INVENTORY.md`. | MUST | User clarification; issue #1124 | Current presence does not imply target survival. Every relevant current node is retained, transformed, merged, moved, or removed intentionally. |
+| CON-D-056 | Target atlas visuals use Mermaid `flowchart` diagrams split by shell/view; `mindmap` diagrams are not used because they are illegible at the required information density. | MUST | User instruction; issue #1124 | One flowchart per shell/view; cross-view flows remain in `FLOWS.md`. |
+| CON-D-057 | Persistent visible UI elements must earn their space through operator information, interaction, state communication, accessibility, or navigation value. The standalone `B` brand mark is excluded from the target shell. | MUST | User instruction; issue #1124 | Product identity may be quiet text or application/window context; do not preserve decorative chrome merely because it exists today. |
+| CON-D-058 | Every redesign leaf reconciles the target atlas against the current-state inventory and records the disposition of relevant current nodes as retained, transformed, merged, moved, or removed. | MUST | User clarification; issue #1124 | The target atlas governs what to build; the current-state inventory governs what must be consciously migrated or discarded. |
 
 ## Leaf checklist
 
 Every redesign child issue must cite the relevant CON-D IDs. Its implementation closeout/checkpoint must state:
 
-1. atlas node(s) touched, including every recursive descendant owned by the cited node unless explicitly excluded with evidence;
-2. preserved authority/state semantics;
-3. all human-facing strings in the leaf's owned micro-surface and their localization tokens;
-4. all UI element selectors in tests for the leaf's owned micro-surface, the stable test IDs introduced, and the migrated tests;
-5. WCAG 2.2 AA criteria reviewed for the micro-surface;
-6. defensive states exercised;
-7. responsive/theme/density variants exercised;
-8. smallest verification commands;
-9. before/after rendered evidence;
-10. any additional spec-conformance repairs made beyond the issue's enumerated bullets;
-11. any new deficiency discovered and appended to #1124.
+1. target atlas node(s) implemented, including every target descendant owned by the cited node unless explicitly excluded with evidence;
+2. current-state inventory nodes reconciled and their retain/transform/merge/move/remove dispositions;
+3. preserved authority/state semantics;
+4. all human-facing strings in the leaf's owned micro-surface and their localization tokens;
+5. all UI element selectors in tests for the leaf's owned micro-surface, the stable test IDs introduced, and the migrated tests;
+6. WCAG 2.2 AA criteria reviewed for the micro-surface;
+7. defensive states exercised;
+8. responsive/theme/density variants exercised;
+9. smallest verification commands;
+10. before/after rendered evidence;
+11. any additional spec-conformance repairs made beyond the issue's enumerated bullets;
+12. any new deficiency discovered and appended to #1124.
