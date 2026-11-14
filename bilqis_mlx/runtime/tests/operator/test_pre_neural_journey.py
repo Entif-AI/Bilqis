@@ -13,9 +13,12 @@ from bilqis_mlx.factory.candidate_frontier import load_candidate_frontier
 from bilqis_mlx.factory.candidate_staging import StagedCandidate
 from bilqis_mlx.factory.live_answers import live_answer_registry
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
-from bilqis_mlx.runtime.accepted_priority_visit import accepted_priority_school
+from bilqis_mlx.runtime.accepted_priority_visit import (
+    accepted_priority_school, execute_accepted_priority_candidate,
+)
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
-from bilqis_mlx.runtime.bamf_operator.session import _execution_context
+from bilqis_mlx.runtime.bamf_operator.session import _Capture, _execution_context, _step_seed
+from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObservation
 from bilqis_mlx.runtime.foundation_teacher_owner import select_foundation_priority_visit
 from bilqis_mlx.runtime.jit_adoption import verify_current_implementations
 from bilqis_mlx.source_adapters.school import live_source_registry
@@ -154,6 +157,126 @@ class PreNeuralProductionJourneyTests(PreNeuralJourneySupport, unittest.TestCase
         self._assert_staged_identity(staged, context)
         self._assert_provider_and_frontier_corruption_fail(staged, frontier, context)
         self._assert_custody_corruption_fails_closed(pointer_bytes, event_bytes)
+
+    def test_historical_accepted_run_reaches_real_candidate_preflight_without_neural_mutation(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        captured = {}
+        sentinel = object()
+
+        def stop_before_neural(
+                run_dir, source_context, parent, atlas_artifact_path, delivered_rows,
+                **kwargs):
+            captured.update(
+                run_dir=run_dir,
+                source_context=source_context,
+                parent=parent,
+                atlas_artifact_path=atlas_artifact_path,
+                delivered_rows=tuple(delivered_rows),
+                **kwargs,
+            )
+            prepared = kwargs["prepared"]
+            self.assertEqual(
+                prepared.training_batch.generation_binding,
+                kwargs["generation"],
+            )
+            self.assertEqual(
+                len(prepared.training_batch.rows),
+                len(delivered_rows),
+            )
+            self.assertEqual(
+                len(prepared.compiled_rows),
+                len(delivered_rows),
+            )
+            return sentinel
+
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            before = load_accepted_generation(self.run)
+            pointer_bytes = (self.run / "bamf-state.json").read_bytes()
+            event_bytes = (self.run / "events.jsonl").read_bytes()
+            with self.journey_mounts(
+                    snapshot, schema, features, atlas_selection), patch(
+                    "bilqis_mlx.runtime.factory_candidate_training._execute_prepared_candidate",
+                    side_effect=stop_before_neural) as neural:
+                parent, context, atlas_path, feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                selected = select_foundation_priority_visit(
+                    self.run, context, atlas_path, program=program, school=school)
+                rows = selected.offer.rows()
+                observation = FactoryDeliveryObservation(
+                    _Capture(self.run, selected),
+                    parent.retained_state.optimizer_step + 1,
+                    rows,
+                    selected.offer.source_seed,
+                )
+                result = execute_accepted_priority_candidate(
+                    selected, context, atlas_path, feature_path,
+                    teacher_hparams=parent.optimizer_hyperparameters,
+                    observation=observation,
+                    optimizer_step_seed=_step_seed(selected.visit.identity.visit_id),
+                    max_norm=1.0,
+                )
+            after = load_accepted_generation(self.run)
+
+        self.assertIs(result, sentinel)
+        neural.assert_called_once()
+        self.assertIs(captured["parent"], selected.offer._planning_generation._parent)
+        self.assertEqual(captured["delivered_rows"], rows)
+        self.assertEqual(captured["capability"], selected.offer.capability_id)
+        self.assertEqual(captured["observation"].option_rows, rows)
+        self.assertEqual(captured["observation"].seed, selected.offer.source_seed)
+        self.assertEqual(before.retained_state.optimizer_step, 0)
+        self.assertEqual(after.retained_state.optimizer_step, 0)
+        self.assertEqual(after.teacher_state, before.teacher_state)
+        self.assertEqual((self.run / "bamf-state.json").read_bytes(), pointer_bytes)
+        self.assertEqual((self.run / "events.jsonl").read_bytes(), event_bytes)
+
+    def test_candidate_preflight_rejects_pointer_drift_before_neural_boundary(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                selected = select_foundation_priority_visit(
+                    self.run, context, atlas_path, program=program, school=school)
+                rows = selected.offer.rows()
+                observation = FactoryDeliveryObservation(
+                    _Capture(self.run, selected),
+                    parent.retained_state.optimizer_step + 1,
+                    rows,
+                    selected.offer.source_seed,
+                )
+                state_path = self.run / "bamf-state.json"
+                original = state_path.read_bytes()
+                changed = json.loads(original)
+                changed["generation"] += 1
+                state_path.write_text(json.dumps(
+                    changed, sort_keys=True, separators=(",", ":")))
+                try:
+                    with patch(
+                            "bilqis_mlx.runtime.factory_candidate_training._execute_prepared_candidate") as neural:
+                        with self.assertRaises(ValueError) as error:
+                            execute_accepted_priority_candidate(
+                                selected, context, atlas_path, feature_path,
+                                teacher_hparams=parent.optimizer_hyperparameters,
+                                observation=observation,
+                                optimizer_step_seed=_step_seed(selected.visit.identity.visit_id),
+                                max_norm=1.0,
+                            )
+                        self.assertEqual(
+                            error.exception.context["reason"],
+                            "BAMF_PRIORITY_PLANNING_GENERATION_DRIFT",
+                        )
+                    neural.assert_not_called()
+                finally:
+                    state_path.write_bytes(original)
 
     def test_priority_planning_authenticates_generation_once_for_all_capabilities(self):
         from bilqis_mlx.runtime import priority_source_offer

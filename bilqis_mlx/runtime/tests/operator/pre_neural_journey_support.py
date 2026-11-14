@@ -43,8 +43,17 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
     selection_teacher,
 )
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
+from bilqis_mlx.semantics.atlas_projection import (
+    _canonical_bytes as _atlas_bytes, _digest as _atlas_sha256,
+)
 from bilqis_mlx.semantics.atlas_features import FeatureSchema, build_feature_manifest
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind
+from bilqis_mlx.semantics.frame_adapters import (
+    BOOLEAN_CONNECTIVE_ADAPTER, FINITE_NUMERIC_ADAPTER, MICRO_PREDICATE_ADAPTER,
+)
+from bilqis_mlx.semantics.released_frame_schemas import (
+    _load_pinned_released_frame_schemas,
+)
 from bilqis_mlx.semantics.tests.frame_adapters.helpers import (
     _snapshot as accepted_abi_snapshot,
 )
@@ -155,14 +164,17 @@ def portable_atlas_snapshot():
         base.counts, source_rows=1, rdf_terms=1, semantic_concepts=1,
         abi_entries=index + 1, implementation_uncovered=1)
     prior = hashlib.sha256(COPULAR_REGISTRY.read_bytes()).hexdigest()
+    entries = (*base.abi_entries, entry)
+    active_indices = [item.index for item in entries if item.active]
     return replace(
         base,
         bundle_id=AUTHORIZED_ATLAS[0],
         release_sha256=AUTHORIZED_ATLAS[1],
         source_bundle_id=AUTHORIZED_ATLAS[2],
         prior_abi_sha256=prior,
+        active_set_sha256=_atlas_sha256(_atlas_bytes(active_indices)),
         counts=counts,
-        abi_entries=(*base.abi_entries, entry),
+        abi_entries=entries,
         concepts=(concept,),
         semantic_lookup=tuple(sorted(
             (*base.semantic_lookup, (entry.semantic_id, index)))),
@@ -194,10 +206,13 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
         stack.enter_context(self.source_replay(snapshot, schema, features))
         for target in (
             "bilqis_mlx.semantics.atlas.snapshot.load_pinned_atlas_snapshot",
+            "bilqis_mlx.semantics.atlas.feature_io_pins.load_pinned_atlas_snapshot",
+            "bilqis_mlx.semantics.atlas_features.formal.load_pinned_atlas_snapshot",
             "bilqis_mlx.factory.skos_curriculum.load_pinned_atlas_snapshot",
             "bilqis_mlx.semantics.released_frame_schemas.load_pinned_atlas_snapshot",
             "bilqis_mlx.source_adapters.atoms.admission.load_pinned_atlas_snapshot",
             "bilqis_mlx.source_adapters.atom_binding.load_pinned_atlas_snapshot",
+            "bilqis_mlx.runtime.batch_training_authority.load_pinned_atlas_snapshot",
         ):
             stack.enter_context(patch(target, return_value=snapshot))
         stack.enter_context(patch(
@@ -217,9 +232,30 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
 
 
 def journey_source(snapshot):
-    schema = FeatureSchema((), ())
+    selection = AtlasArtifactSelection("/artifact", *AUTHORIZED_ATLAS)
+    adapters = {
+        "boolean": BOOLEAN_CONNECTIVE_ADAPTER,
+        "micro": MICRO_PREDICATE_ADAPTER,
+        "numeric": FINITE_NUMERIC_ADAPTER,
+    }
+    roles, schemas, bindings = set(), [], []
+    with patch(
+            "bilqis_mlx.semantics.released_frame_schemas.load_pinned_atlas_snapshot",
+            return_value=snapshot):
+        for family in ("boolean", "micro", "numeric"):
+            manifest = _load_pinned_released_frame_schemas(
+                family, selection).manifest
+            for body in manifest.bodies:
+                frame = body.parse()
+                schemas.append(frame.schema_id)
+                bindings.append((frame.schema_id, adapters[family]))
+                roles.update(role.role_id for role in frame.roles)
+    schema = FeatureSchema(
+        tuple(sorted(roles)), tuple(sorted(schemas)),
+        source_bindings=tuple(sorted(bindings)),
+    )
     return (
         schema,
         build_feature_manifest(snapshot, schema),
-        AtlasArtifactSelection("/artifact", *AUTHORIZED_ATLAS),
+        selection,
     )
