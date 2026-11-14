@@ -37,6 +37,26 @@ def _bind_identification_row(
     return validate_frame_tree(FrameTree(atomic))
 
 
+def _bind_identification_release_row(
+    row: dict,
+    snapshot: FrozenAtlasSnapshot,
+    graph: dict,
+    *,
+    adapter_id: str,
+    span: SourceSpan,
+    causal_prefix_end: int,
+) -> FrameTree:
+    record = row.get("record")
+    if (isinstance(record, dict)
+            and record.get("task") == "identify_boolean_operator"):
+        return _bind_identification_row(
+            row, snapshot, graph, adapter_id=adapter_id, span=span,
+            causal_prefix_end=causal_prefix_end)
+    return _bind_source_row(
+        row, snapshot, graph, adapter_id=adapter_id, span=span,
+        causal_prefix_end=causal_prefix_end)
+
+
 def _bind_c13_episode_row(
     row: dict,
     snapshot: FrozenAtlasSnapshot,
@@ -68,7 +88,7 @@ _ROW_BINDERS: Mapping[str, RowBinder] = MappingProxyType({
     MICRO_PREDICATE_ADAPTER: _bind_source_row,
     BOOLEAN_CONNECTIVE_ADAPTER: _bind_source_row,
     BOOLEAN_COMPOSITE_ADAPTER: _bind_source_row,
-    BOOLEAN_IDENTIFICATION_ADAPTER: _bind_identification_row,
+    BOOLEAN_IDENTIFICATION_ADAPTER: _bind_identification_release_row,
     FINITE_NUMERIC_ADAPTER: _bind_numeric_row,
     C13_EPISODE_ADAPTER: _bind_c13_episode_row,
 })
