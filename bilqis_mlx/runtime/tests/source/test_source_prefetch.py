@@ -1,5 +1,6 @@
 """Three-lane source preparation must stay deterministic and neural-inert."""
 from pathlib import Path
+import json
 import signal
 from types import SimpleNamespace
 import unittest
@@ -19,8 +20,6 @@ from bilqis_mlx.runtime.source_prefetch import prepare_step_sources
 
 ROOT = Path(__file__).resolve().parents[4]
 SOURCE_ROOT = ROOT / "vendor" / "legacy-v16"
-CHECKPOINT = (SOURCE_ROOT / "runs/primitive-consolidation-v16-triplets/"
-              "student-116760-7e9af4651f28.pt")
 MANIFEST = ROOT / "docs/provenance/GRADE_A_CANDIDATE_MANIFEST_V2.json"
 
 
@@ -260,17 +259,16 @@ class SourcePrefetchTests(unittest.TestCase):
         self.assertEqual({row["capability"] for row in result["fresh"]},
                          {"B.XOR"})
 
-    @unittest.skipUnless(CHECKPOINT.is_file(), "Original source not mounted")
     def test_real_source_packet_survives_spawned_process_boundary(self):
-        import torch
-        from bilqis_mlx.trainer import prepare_source
+        from bilqis_mlx.grade_a_probe import read_sources
+        from bilqis_mlx.grade_a_release import accepted_grade_a
         from bilqis_mlx.live_grade_a import live_course as a_live_course
         from bilqis_mlx.live_grade_b import live_course as b_live_course
 
-        _manifest, historical, _engine, _teacher_sha, _teacher, _provenance = (
-            prepare_source(SOURCE_ROOT, CHECKPOINT, MANIFEST))
-        course = b_live_course(a_live_course(historical), SOURCE_ROOT)
-        graph = torch.load(CHECKPOINT, map_location="cpu", weights_only=True)["graph"]
+        manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
+        course = b_live_course(
+            a_live_course(accepted_grade_a(manifest)), SOURCE_ROOT)
+        graph = read_sources(SOURCE_ROOT)[2]
         request = {
             "identity": "b" * 64,
             "source_root": str(SOURCE_ROOT),
