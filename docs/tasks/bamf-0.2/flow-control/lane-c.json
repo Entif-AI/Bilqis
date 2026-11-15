@@ -403,12 +403,13 @@
     },
     {
       "issue": 1140,
-      "pr": null,
-      "state": "READY",
-      "head_sha": "e5d19a4c211ffa879c59eeed4a5b69c95ac8f375",
-      "summary": "Resources redesign is ready on unified b621e1bb: design PASS, scoped NO_DRIFT, 30 Resources regressions, leaf 319 UI/53 Electron/6 bridge checks and 41 post-sync scoped checks pass. Four rendered variants, expanded copy and axe checks passed. Human review/merge pending.",
+      "pr": 1155,
+      "state": "TURNED_IN",
+      "head_sha": "7f5d01e327220044d0d262bd220d89b7d0622c8f",
+      "summary": "Resources redesign turned in as ready PR #1155. Pinned design PASS, seven drift findings resolved, 30 Resources regressions, full leaf and 41 post-sync checks passed. Four rendered variants, expanded copy, keyboard/focus and axe evidence passed. PR mergeable; hosted gates and human review/merge remain pending.",
       "resume_trigger": null,
-      "preserved_branch": "codex/1140-resources-redesign-20261114"
+      "preserved_branch": "codex/1140-resources-redesign-20261114",
+      "head_sha_role": "Review-ready candidate before this inventory-only receipt; Resources runtime/style remain at e5d19a4c with b621e1bb unified consumed."
     }
   ]
 }
