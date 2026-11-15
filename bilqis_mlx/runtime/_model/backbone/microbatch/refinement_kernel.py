@@ -77,7 +77,8 @@ def _slot_inputs(producer, row_batches, selections, slot, width):
             mx.pad(member_values, ((0, padding), (0, 0))))
         seeds.append(seed)
     counts = tuple(
-        1 if item[2] is None else max(1, item[2].shape[0]) for item in raw)
+        1 if member_values is None else max(1, member_values.shape[0])
+        for _position, _count, member_values, _seed in raw)
     return (
         mx.array(positions, dtype=mx.int32),
         mx.array(passes, dtype=mx.int32),

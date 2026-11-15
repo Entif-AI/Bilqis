@@ -128,6 +128,16 @@ def _compiled_microbatch(row_batches):
     return result
 
 
+def _microbatch_salience_labels(row_batches, salience_supervision):
+    if salience_supervision is None:
+        return ()
+    from .salience_training import SalienceSupervision
+    if type(salience_supervision) is not SalienceSupervision:
+        _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
+    return tuple(
+        salience_supervision.labels_for(row_batch) for row_batch in row_batches)
+
+
 def _bamf_microbatch_value_and_grad_impl(
     backend: Backend,
     params,
@@ -145,13 +155,8 @@ def _bamf_microbatch_value_and_grad_impl(
         _invalid("B11_MICROBATCH_ARGUMENT_INVALID")
     batch = _compiled_microbatch(row_batches)
     backend.__post_init__()
-    salience_labels = ()
-    if salience_supervision is not None:
-        from .salience_training import SalienceSupervision
-        if type(salience_supervision) is not SalienceSupervision:
-            _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
-        salience_labels = tuple(
-            salience_supervision.labels_for(row_batch) for row_batch in row_batches)
+    salience_labels = _microbatch_salience_labels(
+        row_batches, salience_supervision)
     generation = answer_plans[0].generation_binding
     if any(plan.generation_binding != generation for plan in answer_plans):
         _invalid("B11_MICROBATCH_GENERATION_BINDING_MISMATCH")

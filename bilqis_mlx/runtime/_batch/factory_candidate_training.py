@@ -32,64 +32,18 @@ from .factory_candidate_components import (
 )
 
 
-def _execute_prepared_candidate(
-        run_dir, source_context, parent, atlas_artifact_path, delivered_rows, *,
-        capability, teacher_hparams, max_norm, observation, memory_budget,
-        cache, generation, prepared, start, capture_diagnostics,
-        salience_supervision=None, candidate=None, semantic_context=None,
-        semantic_context_materialized_in_step=False,
-        finalize_candidate=True) -> FactoryCandidateStep:
-    resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
-    feature_context = prepared.semantic_context if semantic_context is None else semantic_context
-    if type(feature_context) is not AuthenticatedGenerationFeatureContext:
-        _invalid("FACTORY_CANDIDATE_SEMANTIC_CONTEXT_INVALID")
-    feature_context.__post_init__()
+def _realized_candidate_cost(
+        start, loss_total, prepared, resource_plan, memory_budget, transaction,
+        feature_context, semantic_context_materialized_in_step, c08_metrics):
+    gradient_launches, vectorized_microbatches, materialization_barriers, \
+        scalar_fallback_rows, logical_batch_wall_seconds = c08_metrics
     step_atlas_reloads = (
         feature_context.atlas_reload_count
         if semantic_context_materialized_in_step else 0)
     step_feature_rebuilds = (
         feature_context.feature_manifest_rebuild_count
         if semantic_context_materialized_in_step else 0)
-    parameters = dict((parent.retained_state.optimizer if candidate is None
-                       else candidate.optimizer).parameters)
-
-    if len(prepared.compiled_rows) == 1:
-        gradient, authority, targets = execute_factory_training_row(
-            parameters, prepared.compiled_rows[0], source_context,
-            feature_context.snapshot, generation, cache,
-            salience_supervision=salience_supervision)
-        authorities, target_rows = (authority,), (targets,)
-        transaction = admit_uninterrupted_candidate_step(
-            Path(run_dir), parent, loss_bearing_target=True,
-            gradient_execution=gradient, teacher_hparams=teacher_hparams,
-            max_norm=max_norm, candidate=candidate, execution_cache=cache)
-        loss_total = gradient.loss_total
-        gradient_launches, vectorized_microbatches = 1, 0
-        materialization_barriers = 1
-        scalar_fallback_rows = 0
-        logical_batch_wall_seconds = None
-    else:
-        gradient, authorities, target_rows = execute_factory_logical_batch(
-            parameters, prepared, source_context, feature_context.snapshot,
-            generation, cache, resource_plan,
-            salience_supervision=salience_supervision)
-        transaction = admit_uninterrupted_candidate_step(
-            Path(run_dir), parent, loss_bearing_target=True,
-            logical_batch_execution=gradient,
-            training_batch=prepared.training_batch,
-            logical_batch_plan=resource_plan,
-            teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
-            execution_cache=cache)
-        loss_total = gradient.weighted_mean_loss
-        gradient_launches = gradient.gradient_launches
-        vectorized_microbatches = gradient.vectorized_microbatches
-        materialization_barriers = gradient.materialization_barriers
-        scalar_fallback_rows = gradient.scalar_fallback_rows
-        logical_batch_wall_seconds = gradient.wall_seconds
-    if finalize_candidate:
-        transaction = _stage_retained_motifs(
-            run_dir, parent, cache, transaction, prepared, resource_plan, memory_budget)
-    cost = {
+    return {
         "wall_seconds": time.perf_counter() - start,
         "loss_total": float(loss_total.item()),
         "c08_estimated_peak_bytes": resource_plan.estimated_peak_bytes,
@@ -109,6 +63,58 @@ def _execute_prepared_candidate(
         "visit_feature_manifest_rebuild_count": (
             feature_context.feature_manifest_rebuild_count),
     }
+
+
+def _execute_prepared_candidate(
+        run_dir, source_context, parent, atlas_artifact_path, delivered_rows, *,
+        capability, teacher_hparams, max_norm, observation, memory_budget,
+        cache, generation, prepared, start, capture_diagnostics,
+        salience_supervision=None, candidate=None, semantic_context=None,
+        semantic_context_materialized_in_step=False,
+        finalize_candidate=True) -> FactoryCandidateStep:
+    resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
+    feature_context = prepared.semantic_context if semantic_context is None else semantic_context
+    if type(feature_context) is not AuthenticatedGenerationFeatureContext:
+        _invalid("FACTORY_CANDIDATE_SEMANTIC_CONTEXT_INVALID")
+    feature_context.__post_init__()
+    parameters = dict((parent.retained_state.optimizer if candidate is None
+                       else candidate.optimizer).parameters)
+
+    if len(prepared.compiled_rows) == 1:
+        gradient, authority, targets = execute_factory_training_row(
+            parameters, prepared.compiled_rows[0], source_context,
+            feature_context.snapshot, generation, cache,
+            salience_supervision=salience_supervision)
+        authorities, target_rows = (authority,), (targets,)
+        transaction = admit_uninterrupted_candidate_step(
+            Path(run_dir), parent, loss_bearing_target=True,
+            gradient_execution=gradient, teacher_hparams=teacher_hparams,
+            max_norm=max_norm, candidate=candidate, execution_cache=cache)
+        loss_total = gradient.loss_total
+        c08_metrics = (1, 0, 1, 0, None)
+    else:
+        gradient, authorities, target_rows = execute_factory_logical_batch(
+            parameters, prepared, source_context, feature_context.snapshot,
+            generation, cache, resource_plan,
+            salience_supervision=salience_supervision)
+        transaction = admit_uninterrupted_candidate_step(
+            Path(run_dir), parent, loss_bearing_target=True,
+            logical_batch_execution=gradient,
+            training_batch=prepared.training_batch,
+            logical_batch_plan=resource_plan,
+            teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
+            execution_cache=cache)
+        loss_total = gradient.weighted_mean_loss
+        c08_metrics = (
+            gradient.gradient_launches, gradient.vectorized_microbatches,
+            gradient.materialization_barriers, gradient.scalar_fallback_rows,
+            gradient.wall_seconds)
+    if finalize_candidate:
+        transaction = _stage_retained_motifs(
+            run_dir, parent, cache, transaction, prepared, resource_plan, memory_budget)
+    cost = _realized_candidate_cost(
+        start, loss_total, prepared, resource_plan, memory_budget, transaction,
+        feature_context, semantic_context_materialized_in_step, c08_metrics)
     capture_realized_delivery(
         prepared.training_batch, source_context, observation.capture,
         capability, observation.step, tuple(delivered_rows),

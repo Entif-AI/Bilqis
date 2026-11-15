@@ -50,6 +50,12 @@ def route_microbatch_compatible(row_batches, answer_plans, targets, masks) -> bo
     count = len(row_batches)
     if not (count > 1 and len(answer_plans) == len(targets) == len(masks) == count):
         return False
+    if any(
+            not hasattr(plan, "route_only")
+            or not hasattr(plan, "decisions")
+            or not hasattr(plan, "execution_order")
+            for plan in answer_plans):
+        return False
     ordered = tuple(_ordered(plan) for plan in answer_plans)
     if not ordered or any(not plan.route_only or not items
                           for plan, items in zip(answer_plans, ordered)):
