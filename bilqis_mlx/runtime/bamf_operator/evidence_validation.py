@@ -173,11 +173,17 @@ def validate_candidate_horizon_event(run_dir, event: dict, release) -> dict:
                 _invalid("BAMF_C16_3_EVIDENCE_PROVIDER_DRIFT")
             if "selected_option" in position["roles"]:
                 selected_rows.append(row)
+        delivered = step.get("delivered_teaching")
+        if selected_rows and not isinstance(delivered, dict):
+            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+        delivery_option = (
+            delivered.get("option_id") if isinstance(delivered, dict) else None)
+        if selected_rows and (not isinstance(delivery_option, str) or not delivery_option):
+            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
         expected_delivery = (
             describe_delivered_teaching(
-                release, step["capability"], proposal["selected_option"], selected_rows)
+                release, step["capability"], delivery_option, selected_rows)
             if selected_rows else None)
-        delivered = step.get("delivered_teaching")
         if expected_delivery is None:
             matched = delivered is None
         else:
