@@ -12,18 +12,19 @@ from bilqis_mlx.semantics.frame_compiler import CompiledFrameRows
 from .atlas_model_backend import Backend, model_backend
 from .atlas_model_contracts import (
     BamfCompiledBatch, BamfMicrobatchGradientExecution,
-    _MICROBATCH_EXECUTION_ISSUER, _invalid,
+    _invalid,
 )
 from .atlas_model_forward import (
     _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
+)
+from .atlas_model_forward_validation import (
+    finalize_microbatch_gradient, microbatch_trace_preflight,
 )
 from .atlas_model_training import (
     _gradient_execution_rebinder, _require_finite_tensor_tree, loss_bearing_bamf,
 )
 from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
-from bilqis_mlx.runtime.model_topology_v2 import (
-    ModelTopologySpecV2, validate_bamf_parameters,
-)
+from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 
 
 _MIN_ROWS = 2
@@ -142,6 +143,9 @@ def _bamf_microbatch_value_and_grad_impl(
     rebind_execution = _gradient_execution_rebinder(
         params, cache, spec=backend.topology, extents=batch.compiled.extents,
         generation=generation)
+    preflight_executions = microbatch_trace_preflight(
+        backend, params, batch, row_batches, answer_plans, targets, masks,
+        generation, cache, rebind_execution, salience_supervision)
     holder = {}
 
     def objective(current):
@@ -160,7 +164,8 @@ def _bamf_microbatch_value_and_grad_impl(
                 output = _decode_bamf_producer_row(
                     backend, current, row_batch, plan, producer, hidden, index,
                     accepted_cache, execution_binding, refinement_training=True,
-                    teacher_targets=row_targets, trace=True)
+                    trace=True,
+                    replay_output=preflight_executions[index].output)
                 execution = loss_bearing_bamf(
                     output, row_targets, mask,
                     salience_supervision=salience_supervision,
@@ -174,20 +179,9 @@ def _bamf_microbatch_value_and_grad_impl(
     mx.eval(mean_loss, gradients)
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     executions = holder.get("executions")
-    if (type(executions) is not tuple or len(executions) != len(row_batches)):
-        _invalid("B11_MICROBATCH_EXECUTION_MISSING")
-    validate_bamf_parameters(
-        backend.topology, batch.compiled.extents, gradients)
-    result = object.__new__(BamfMicrobatchGradientExecution)
-    for name, value in (
-        ("executions", executions), ("gradients", gradients),
-        ("mean_loss", mean_loss),
-        ("schema_version", "bilqis.mlx.b11-microbatch-gradient-execution/v1"),
-        ("_issuance", _MICROBATCH_EXECUTION_ISSUER),
-    ):
-        object.__setattr__(result, name, value)
-    result.__post_init__()
-    return result
+    return finalize_microbatch_gradient(
+        backend, batch, row_batches, preflight_executions,
+        executions, mean_loss, gradients)
 
 
 def bamf_microbatch_value_and_grad(
