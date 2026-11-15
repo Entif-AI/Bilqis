@@ -11,6 +11,9 @@ from bilqis_mlx.learning.atlas_plasticity import (
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
 from .common import RETAINED_STATE_ISSUER, STATE_SCHEMA, invalid, is_digest
 from .proofs import CandidateStepProof
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
+    LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME, require_identity_scheme,
+)
 
 def _is_genesis_allocations(snapshot: MotifAllocationSnapshot) -> bool:
     return (type(snapshot) is MotifAllocationSnapshot
@@ -55,9 +58,11 @@ class CandidateState:
     custody: CandidateCustodyIdentity | None = None
     step_proofs: tuple = ()
     schema_version: str = STATE_SCHEMA
+    identity_scheme: str = RAW_IDENTITY_SCHEME
     _issuance: object = field(init=False, default=None, repr=False, compare=False)
 
     def __post_init__(self):
+        require_identity_scheme(self.identity_scheme)
         if (type(self.optimizer) is not AdamWStateTree
                 or type(self.policy) is not PlasticityPolicy
                 or type(self.allocations) is not MotifAllocationSnapshot
@@ -94,6 +99,8 @@ def _load_retained_candidate_state_with_parts(
     state = object.__new__(CandidateState)
     for name, value in (
             ('optimizer', parts.numerical), ('policy', parts.policy),
+            ('identity_scheme', parts.manifest['optimizer'].get(
+                'identity_scheme', LEGACY_IDENTITY_SCHEME)),
             ('allocations', parts.motif), ('optimizer_step', parts.optimizer_step),
             ('custody', CandidateCustodyIdentity(
                 parts.manifest['run_id'], parts.manifest['generation'],
@@ -234,6 +241,7 @@ def _issue_parameter_extension_state(
     state = object.__new__(CandidateState)
     for name, value in (
             ('optimizer', optimizer), ('policy', policy),
+            ('identity_scheme', RAW_IDENTITY_SCHEME if new_rows else parent.identity_scheme),
             ('allocations', parent.allocations),
             ('optimizer_step', parent.optimizer_step),
             ('custody', parent.custody), ('step_proofs', parent.step_proofs),
@@ -266,6 +274,7 @@ def _issue_promotion_transition_state(parent: CandidateState, receipt) -> Candid
     state = object.__new__(CandidateState)
     for name, value in (
             ('optimizer', parent.optimizer), ('policy', policy),
+            ('identity_scheme', parent.identity_scheme),
             ('allocations', parent.allocations),
             ('optimizer_step', parent.optimizer_step),
             ('custody', parent.custody), ('step_proofs', parent.step_proofs),

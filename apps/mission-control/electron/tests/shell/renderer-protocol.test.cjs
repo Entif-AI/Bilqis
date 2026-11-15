@@ -45,6 +45,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/foundation/primitives.mjs",
     "/component-catalog.mjs",
     "/components.css",
+    "/corrections/corrections-controller.mjs",
     "/corrections/corrections-fixture.mjs",
     "/corrections/corrections-model.mjs",
     "/corrections/corrections-messages.mjs",

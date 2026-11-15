@@ -1,4 +1,15 @@
 .corrections-view { display: grid; gap: var(--space-6); min-inline-size: 0; }
+.corrections-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.corrections-heading > div { display: grid; gap: var(--space-2); min-inline-size: 0; }
+.corrections-heading p, .correction-muted { color: var(--text-muted); }
+.correction-tabs { display: flex; gap: var(--space-2); overflow-x: auto; scrollbar-gutter: stable; border-block-end: 1px solid var(--border); }
+.correction-tabs .ui-control { flex: 0 0 auto; }
+.correction-tabpanel { min-inline-size: 0; }
+.correction-tabpanel[hidden] { display: none; }
+.correction-context header, .correction-queue header { display: flex; align-items: center; gap: var(--space-3); }
+.correction-context dt { display: flex; align-items: center; gap: var(--space-2); }
+.correction-panel-tools { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: var(--space-3); }
+.correction-observed { display: flex; align-items: center; gap: var(--space-3); color: var(--text-muted); }
 .corrections-view :is(h2,h3,h4,p) { margin: 0; }
 .corrections-view h2 { font-size: var(--type-title); line-height: var(--line-title); }
 .corrections-view h3 { font-size: var(--type-section); line-height: var(--line-section); }

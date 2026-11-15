@@ -105,4 +105,15 @@ No remaining rendered state observed in the final pass requires a redesign repai
 
 No merge was performed.
 
-Static authority annotation (2026-11-15): the legacy-trainer authority annotation mentioned above refers to the canonical preserved adaptation source `/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`, as specified by `AGENTS.md`. This clarification repairs the static source-reference check only; it does not assert a new live inspection or change the recorded GUI1143 evidence.
+## Legacy-trainer authority pointer
+
+The legacy-trainer reference above describes a documentation gate. Current
+adaptation authority remains `codex/337-replay-349-20261026`, worktree
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026`, run
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`. This UI acceptance record does not select trainer
+policy or change that authority.
+
+Static authority annotation (2026-11-15): the canonical preserved adaptation
+source above is the source specified by `AGENTS.md`. This clarification repairs
+the static source-reference check only; it does not assert a new live inspection
+or change the recorded GUI1143 evidence.

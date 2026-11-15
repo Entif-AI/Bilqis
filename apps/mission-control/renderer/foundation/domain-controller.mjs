@@ -5,6 +5,7 @@ import {
   renderAtlasDomain,
 } from "../atlas/atlas-controller.mjs";
 import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
+import { createCorrectionsController } from "../corrections/corrections-controller.mjs";
 import { createProductionLineageController } from "../lineage/production-controller.mjs";
 import { createProductionMemoryController } from "../memory/production-controller.mjs";
 import {
@@ -16,6 +17,9 @@ let productionLineageApi = null;
 let productionLineageController = null;
 let productionMemoryApi = null;
 let productionMemoryController = null;
+let correctionsApi = null;
+let correctionsSupport = null;
+let correctionsController = null;
 
 function lineageControllerFor(api) {
   if (!api) return null;
@@ -37,11 +41,22 @@ function memoryControllerFor(api) {
   return productionMemoryController;
 }
 
+function correctionsControllerFor(api, fixtureSupport) {
+  if (!api) return null;
+  if (correctionsApi !== api || correctionsSupport !== fixtureSupport) {
+    correctionsController?.deactivate();
+    correctionsApi = api;
+    correctionsSupport = fixtureSupport;
+    correctionsController = createCorrectionsController(api, { fixtureSupport });
+  }
+  return correctionsController;
+}
+
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
   teacherController, salienceController, capabilityExplorer, learningController,
   onInspect, onSelectionChange, onNavigate, onAnnounce,
-  schoolDomainSupport = null, atlasDomainSupport = null,
+  schoolDomainSupport = null, atlasDomainSupport = null, correctionsDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
@@ -93,6 +108,13 @@ export function activateDomainViews({
     });
   } else {
     void resourceController?.deactivate();
+  }
+  if (state?.view === "corrections") {
+    void correctionsControllerFor(api, correctionsDomainSupport)?.activate(state.context, {
+      target: document.querySelector("#domain-view"), onInspect, selection: state.selected,
+    });
+  } else {
+    void correctionsController?.deactivate();
   }
   if (state?.view === "teacher") {
     void teacherController?.activate(state.context, {

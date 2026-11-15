@@ -1,4 +1,13 @@
+import { CORRECTION_MESSAGES } from "./corrections-messages.mjs";
+
 const D = (char) => char.repeat(64);
+
+export const CORRECTION_FIXTURE_MESSAGES = Object.freeze({ "en-US": Object.freeze({
+  "corrections.fixture.title": "REFERENCE FIXTURES · correction contract example",
+  "corrections.fixture.description": "Checked-in correction data for inspection and interaction verification under the explicit fixture launch.",
+  "corrections.posture.live": "REFERENCE FIXTURES · reference correction projection",
+  "corrections.posture.historical": "REFERENCE FIXTURES · reference historical projection · generation {generation}",
+}) });
 
 export const CORRECTION_FIXTURE_CONTRACT = Object.freeze({
   schema: "bilqis.bamf.gui13.correction-impact-fixture/v1",
@@ -28,6 +37,9 @@ const edges = Object.freeze([
 ].map(([from, to, relation]) => Object.freeze({ from, to, relation })));
 
 export const CORRECTION_FIXTURE = Object.freeze({
+  posture: "live",
+  generation: null,
+  pageState: "PRESENT",
   correction: Object.freeze({
     id: "correction:fixture:numeric-source-r8-r9",
     correctionGeneration: 12,
@@ -98,4 +110,13 @@ export const CORRECTION_FIXTURE = Object.freeze({
       }),
     }),
   ]),
+});
+
+export const CORRECTION_FIXTURE_SUPPORT = Object.freeze({
+  projection: CORRECTION_FIXTURE,
+  messages: Object.freeze({ "en-US": Object.freeze({
+    ...CORRECTION_MESSAGES["en-US"],
+    ...CORRECTION_FIXTURE_MESSAGES["en-US"],
+  }) }),
+  notice: `<aside class="corrections-fixture-notice" data-test-id="corrections-fixture-notice" role="note"><strong>REFERENCE FIXTURES</strong><p>Reference correction data is isolated to this explicit fixture launch.</p></aside>`,
 });
