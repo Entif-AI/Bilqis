@@ -15,7 +15,7 @@ export function renderCurrentView(
   state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn, bootstrap = null,
 ) {
   const domain = document.querySelector("#domain-view");
-  const fixture = document.querySelector(".fixture-card");
+  const fixture = document.querySelector("#domain-context-boundary");
   const catalog = document.querySelector("#visual-catalog");
   const summary = document.querySelector("#view-summary");
   document.querySelector("#shell").dataset.view = state?.view ?? "mission-control";
@@ -24,22 +24,34 @@ export function renderCurrentView(
     catalog.hidden = true;
     domain.hidden = false;
     const connection = bootstrap?.connection ?? null;
-    const serviceState = connection?.serviceReady ? "Ready" : connection?.serviceLive ? "Connected" : "Connecting";
-    const learnerState = connection?.learnerReady ? "Accepted learner ready" : connection?.learnerState ?? "Discovering learner";
+    const serviceState = connection?.serviceReady
+      ? t("shell.bootstrap.service.ready")
+      : connection?.serviceLive ? t("shell.bootstrap.service.connected") : t("shell.bootstrap.service.connecting");
+    const learnerState = connection?.learnerReady
+      ? t("shell.bootstrap.learner.ready")
+      : {
+          healthy: t("shell.bootstrap.learner.healthy"),
+          "learner-unavailable": t("shell.bootstrap.learner.unavailable"),
+        }[connection?.learnerState] ?? t("shell.bootstrap.learner.discovering");
     const telemetryState = bootstrap?.phase === "telemetry-pending"
-      ? "Waiting for first accepted Mission Control projection"
-      : bootstrap?.phase === "failed" ? "Bootstrap failed" : "Starting";
-    summary.textContent = "Mission Control is establishing the local learner and telemetry pipeline.";
+      ? t("shell.bootstrap.telemetry.waiting")
+      : bootstrap?.phase === "failed" ? t("shell.bootstrap.telemetry.failed") : t("shell.bootstrap.telemetry.starting");
+    const learnerIdentity = connection?.runId
+      ? Number.isSafeInteger(connection.generation)
+        ? t("shell.bootstrap.learnerIdentityGeneration", { state: learnerState, runId: connection.runId, generation: connection.generation })
+        : t("shell.bootstrap.learnerIdentity", { state: learnerState, runId: connection.runId })
+      : learnerState;
+    summary.textContent = t("shell.destination.mission-control.bootstrapPurpose");
     domain.innerHTML = `<section class="bootstrap-panel" data-phase="${esc(bootstrap?.phase ?? "connecting")}">
-      <span class="eyebrow">Startup diagnostics</span><h2>${esc(bootstrap?.phase === "telemetry-pending" ? "Learner connected. Telemetry is still bootstrapping." : "Starting Mission Control")}</h2>
-      <p>This view reports each startup boundary separately. Missing telemetry is not rendered as learner failure and fixture data is never substituted for live state.</p>
+      <span class="eyebrow">${esc(t("shell.bootstrap.eyebrow"))}</span><h2>${esc(bootstrap?.phase === "telemetry-pending" ? t("shell.bootstrap.heading.telemetryPending") : t("shell.bootstrap.heading.starting"))}</h2>
+      <p>${esc(t("shell.bootstrap.explanation"))}</p>
       <ol class="bootstrap-steps">
-        <li data-state="${connection?.serviceLive ? "done" : "active"}"><strong>Local control plane</strong><span>${esc(serviceState)}</span></li>
-        <li data-state="${connection?.learnerReady ? "done" : connection?.serviceLive ? "active" : "waiting"}"><strong>Learner discovery</strong><span>${esc(connection?.runId ? `${learnerState} · ${connection.runId}${Number.isSafeInteger(connection.generation) ? ` · generation ${connection.generation}` : ""}` : learnerState)}</span></li>
-        <li data-state="${bootstrap?.phase === "ready" ? "done" : bootstrap?.phase === "telemetry-pending" ? "active" : "waiting"}"><strong>Mission Control telemetry</strong><span>${esc(telemetryState)}</span></li>
-        <li data-state="${connection?.learnerActive === true ? "done" : "waiting"}"><strong>Trainer</strong><span>${connection?.learnerActive === true ? "Running" : "Not running"}</span></li>
+        <li data-state="${connection?.serviceLive ? "done" : "active"}"><strong>${esc(t("shell.bootstrap.step.controlPlane"))}</strong><span>${esc(serviceState)}</span></li>
+        <li data-state="${connection?.learnerReady ? "done" : connection?.serviceLive ? "active" : "waiting"}"><strong>${esc(t("shell.bootstrap.step.learner"))}</strong><span>${esc(learnerIdentity)}</span></li>
+        <li data-state="${bootstrap?.phase === "ready" ? "done" : bootstrap?.phase === "telemetry-pending" ? "active" : "waiting"}"><strong>${esc(t("shell.bootstrap.step.telemetry"))}</strong><span>${esc(telemetryState)}</span></li>
+        <li data-state="${connection?.learnerActive === true ? "done" : "waiting"}"><strong>${esc(t("shell.bootstrap.step.trainer"))}</strong><span>${esc(connection?.learnerActive === true ? t("shell.bootstrap.trainer.running") : t("shell.bootstrap.trainer.notRunning"))}</span></li>
       </ol>
-      ${bootstrap?.error ? `<details><summary>Technical detail</summary><code>${esc(bootstrap.error.code ?? bootstrap.error.message ?? String(bootstrap.error))}</code></details>` : ""}
+      ${bootstrap?.error ? `<details><summary>${esc(t("shell.bootstrap.technicalDetail"))}</summary><code>${esc(bootstrap.error.code ?? bootstrap.error.message ?? String(bootstrap.error))}</code></details>` : ""}
     </section>`;
     return;
   }
@@ -47,7 +59,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Exact capability comparison and declared prerequisite topology. Grade labels organize only.";
+    summary.textContent = t("shell.destination.school.purpose");
     if (state.context.mode === "HISTORICAL") {
       domain.innerHTML = `<section class="fixture-card"><span class="eyebrow">Historical School lens</span><h2>UNAVAILABLE</h2>
         <p>The checked-in School matrix has no exact snapshot for generation ${state.context.generation}. The global historical lens remains unchanged.</p></section>`;
@@ -81,33 +93,33 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Outcome-first learner health, current work, learning pulse and actionable attention.";
+    summary.textContent = t("shell.destination.mission-control.purpose");
     return;
   }
   if (state.view === "atlas") {
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Source-authoritative semantic identity and generation-scoped ABI state, with learned similarity isolated behind a separate lens.";
+    summary.textContent = t("shell.destination.atlas.purpose");
     return;
   }
   if (state.view === "capability") {
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Measured chronology, source support, and literal evidence. No inferred causes.";
+    summary.textContent = t("shell.destination.capability.purpose");
     return;
   }
   if (state.view === "model") {
     domain.hidden = state.modelSection === "frames";
     if (state.modelSection === "frames") {
       fixture.hidden = true; catalog.hidden = true;
-      summary.textContent = "Frame Compiler Explorer · inspect exact packing receipts and causal visibility.";
+      summary.textContent = t("shell.destination.model.framesPurpose");
       return;
     }
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Topology, attention health, depth routing and local refinement as measured telemetry only.";
+    summary.textContent = t("shell.destination.model.purpose");
     renderNeuralView(domain, (id, kind) => onInspect({
       kind: "neural",
       id,
@@ -149,7 +161,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Retained Engram allocation, retrieval telemetry, correction state, and generation deltas without promoting memory hits into semantic or capability authority.";
+    summary.textContent = t("shell.destination.memory.purpose");
     renderMemoryView(domain, (id, slot) => onInspect({
       kind: "memory",
       id,
@@ -178,7 +190,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Teacher strategy population, measured outcomes, cost and fidelity observations without unsupported ranking.";
+    summary.textContent = t("shell.destination.teacher.purpose");
     renderTeacherView(domain, (id, strategy, relations) => onInspect({
       kind: "strategy",
       id,
@@ -200,7 +212,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Evidenced correction blast radius, append-only correction history, and receipt-backed requalification state without implying perfect neural unlearning.";
+    summary.textContent = t("shell.destination.corrections.purpose");
     renderCorrectionsView(domain, (id, node) => onInspect({
       kind: "correction",
       id,
@@ -217,7 +229,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Independent Impact, Exigency and Osmotic Novelty evidence with reversible aggregation and admitted routing rationale.";
+    summary.textContent = t("shell.destination.salience.purpose");
     renderSalienceView(domain, (id, details) => onInspect({
       kind: "salience-observation",
       id,
@@ -229,7 +241,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Immutable accepted-generation lineage, exact manifest provenance, and literal structured generation differences without winner synthesis.";
+    summary.textContent = t("shell.destination.lineage.purpose");
     renderLineageView(domain, (id, node) => onInspect({
       kind: "generation",
       id,
@@ -262,7 +274,7 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Measured resource budgets, decomposed where instrumented, with exact historical comparison and spike correlation.";
+    summary.textContent = t("shell.destination.resources.purpose");
     return;
   }
   fixture.hidden = false;
@@ -270,7 +282,7 @@ export function renderCurrentView(
   domain.hidden = true;
   domain.innerHTML = "";
   summary.textContent = defense.historical
-    ? "Inspection-only evidence retained while the live command context is unavailable."
-    : "Shell foundation ready for provider-neutral BAMF views.";
+    ? t("shell.destination.fallback.historical")
+    : t("shell.destination.fallback.ready");
   catalog.innerHTML = renderComponentCatalog();
 }

@@ -26,54 +26,75 @@
     <link rel="stylesheet" href="./operate/operate.css" />
   </head>
   <body>
-    <a class="skip-link" href="#main-content">Skip to main content</a>
+    <a class="skip-link" href="#main-content" data-i18n="shell.skipToMain" data-test-id="shell-skip-main"></a>
     <div id="shell" class="shell" data-posture="unknown">
-      <aside class="rail" aria-label="Primary navigation">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">B</span>
-          <div><strong>Bilqis</strong><small>Mission Control</small></div>
+      <aside class="rail" data-test-id="shell-rail">
+        <div class="brand" data-test-id="shell-brand">
+          <strong data-i18n="shell.brand"></strong>
         </div>
-        <nav id="primary-nav"></nav>
-        <button id="palette-trigger" class="utility-button" type="button" aria-keyshortcuts="Control+K">
-          <span>Command</span><kbd>⌘K</kbd>
+        <nav id="primary-nav" data-test-id="shell-navigation"></nav>
+        <button id="palette-trigger" class="utility-button ui-control ui-control--secondary" type="button"
+                aria-keyshortcuts="Control+K" data-i18n-aria-label="shell.command.triggerAria"
+                data-test-id="shell-command-trigger">
+          <span data-i18n="shell.command.trigger"></span><kbd>⌘K</kbd>
         </button>
       </aside>
 
       <main id="main-content" class="workspace" tabindex="-1">
-        <header class="context-bar">
-          <div class="identity">
-            <span id="mode-badge" class="mode-badge">BOOTSTRAP</span>
-            <div><strong id="run-id">Discovering learner</strong><small id="generation-id">Generation not yet identified</small></div>
+        <header class="context-bar" data-test-id="shell-context-bar">
+          <div class="context-primary">
+            <div class="identity" data-test-id="shell-run-identity">
+              <span id="mode-badge" class="mode-badge" data-test-id="shell-mode-badge"></span>
+              <div><strong id="run-id"></strong><small id="generation-id" data-test-id="shell-generation-summary"></small></div>
+            </div>
+            <span id="freshness" class="freshness" data-test-id="shell-freshness"></span>
           </div>
-          <div id="context-facts" class="context-facts" aria-label="Inspected context"></div>
           <div class="context-actions">
-            <label class="selector"><span>Run</span><select id="run-selector" aria-label="Run selector"><option>Discovering…</option></select></label>
-            <label class="selector"><span>As of</span><select id="generation-selector" aria-label="Generation selector"><option>Waiting…</option></select></label>
-            <span id="freshness" class="freshness">UNKNOWN</span>
-            <button id="density-trigger" type="button" aria-label="Change information density">Density</button>
-            <button id="theme-trigger" type="button" aria-label="Change theme">Theme</button>
+            <details id="system-context-disclosure" class="context-disclosure" data-test-id="shell-system-context-disclosure">
+              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.system"></summary>
+              <div class="context-popover ui-surface ui-surface-2 ui-surface--bounded">
+                <div id="context-facts" class="context-facts" data-i18n-aria-label="shell.context.systemAria"></div>
+              </div>
+            </details>
+            <details id="view-settings-disclosure" class="context-disclosure" data-test-id="shell-view-settings-disclosure">
+              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.viewSettings"></summary>
+              <div class="context-popover context-settings ui-surface ui-surface-2 ui-surface--bounded"
+                   data-i18n-aria-label="shell.context.viewSettingsAria">
+                <button id="theme-trigger" class="ui-control ui-control--mode" type="button"
+                        data-test-id="shell-theme-trigger"></button>
+                <button id="density-trigger" class="ui-control ui-control--mode" type="button"
+                        data-test-id="shell-density-trigger"></button>
+              </div>
+            </details>
           </div>
         </header>
 
         <section id="investigation-strip" class="investigation-strip" aria-label="Global investigation tools"></section>
-        <section id="defensive-banner" class="defensive-banner" aria-live="polite" aria-atomic="true"></section>
-        <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+        <section id="defensive-banner" class="defensive-banner" aria-live="polite" aria-atomic="true"
+                 data-test-id="shell-defensive-banner"></section>
+        <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"
+             data-test-id="shell-announcer"></div>
 
         <section id="view-host" class="view-host" aria-labelledby="view-title">
-          <div class="eyebrow">Current destination</div>
-          <h1 id="view-title">Mission Control</h1>
-          <p id="view-summary">Mission Control is starting.</p>
-          <nav id="model-nav" class="model-nav" hidden aria-label="Model sections">
-            <button type="button" data-model-section="neural">Neural Runtime</button>
-            <button type="button" data-model-section="frames">Frame Compiler Explorer</button>
+          <header class="destination-header" data-test-id="shell-destination-header">
+            <h1 id="view-title" data-test-id="shell-destination-title"></h1>
+            <p id="view-summary" data-test-id="shell-destination-purpose"></p>
+            <span id="view-posture" class="destination-posture" hidden data-test-id="shell-destination-posture"></span>
+          </header>
+          <nav id="model-nav" class="model-nav" hidden data-i18n-aria-label="shell.model.subnav"
+               data-test-id="shell-model-subnav">
+            <button class="ui-control ui-control--peer-tab" type="button" data-model-section="neural"
+                    data-i18n="shell.model.neural" data-test-id="shell-model-neural"></button>
+            <button class="ui-control ui-control--peer-tab" type="button" data-model-section="frames"
+                    data-i18n="shell.model.frames" data-test-id="shell-model-frames"></button>
           </nav>
           <section id="frame-explorer" hidden aria-label="Frame Compiler Explorer"></section>
-          <p id="domain-context-note" hidden>Independent illustrative fixture: this view uses its own declared provenance and is not bound to the shell run/generation.</p>
-          <div class="fixture-card" hidden>
-            <div><span class="status-dot" aria-hidden="true"></span><strong>Reference fixture</strong></div>
-            <p>Explicit test/reference data only. Live startup never substitutes this fixture for missing service telemetry.</p>
+          <p id="domain-context-note" hidden data-i18n="shell.reference.contextNote"></p>
+          <section id="domain-context-boundary" class="domain-context-boundary" hidden>
+            <div><span class="status-dot" aria-hidden="true"></span><strong data-i18n="shell.reference.label"></strong></div>
+            <p data-i18n="shell.reference.description"></p>
             <div class="demo-actions" id="demo-actions"></div>
-          </div>
+          </section>
           <section id="visual-catalog" class="visual-catalog" aria-label="Scientific visual language catalog"></section>
           <section id="domain-view" class="domain-view" aria-label="Current domain view"></section>
         </section>
@@ -95,13 +116,15 @@
         </div>
       </aside>
 
-      <dialog id="command-palette" class="command-palette" aria-labelledby="palette-title">
+      <dialog id="command-palette" class="command-palette" aria-labelledby="palette-title"
+              data-test-id="shell-command-palette">
         <div class="palette-heading">
-          <div><span class="eyebrow">Keyboard navigation</span><h2 id="palette-title">Command palette</h2></div>
-          <button id="palette-close" type="button" aria-label="Close command palette">×</button>
+          <div><span class="eyebrow" data-i18n="shell.command.paletteEyebrow"></span><h2 id="palette-title" data-i18n="shell.command.paletteTitle"></h2></div>
+          <button id="palette-close" type="button" data-i18n-aria-label="shell.command.paletteClose"
+                  data-test-id="shell-palette-close">×</button>
         </div>
-        <p>Jump to a Mission Control destination. Operator mutation remains unavailable unless the current context is verified live.</p>
-        <div id="palette-options" class="palette-options"></div>
+        <p data-i18n="shell.command.paletteDescription"></p>
+        <div id="palette-options" class="palette-options" data-test-id="shell-palette-options"></div>
       </dialog>
     </div>
     <script type="module" src="./renderer.mjs"></script>

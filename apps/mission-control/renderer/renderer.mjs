@@ -35,12 +35,13 @@ import { routeForObjectRef } from "./interactions/app-uri.mjs";
 import { withHistoricalLens } from "./interactions/model.mjs";
 import { createBootstrapController } from "./foundation/bootstrap-controller.mjs";
 import { bindStaticInteractions } from "./foundation/static-interactions.mjs";
+import { t } from "./foundation/i18n.mjs";
 
 let state = null;
 let verifiedLiveContext = null;
 let displaySettings;
 let defense = defensiveState("loading");
-let bootstrap = Object.freeze({ phase: "connecting", connection: null, error: null });
+let bootstrapState = Object.freeze({ phase: "connecting", connection: null, error: null });
 let focusReturnToken = null;
 let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl);
@@ -52,7 +53,7 @@ const interactionController = createInteractionController({
   onTimeLens: (generation) => { state = withHistoricalLens(state, generation); render(); },
   onCurrentLens: () => {
     if (!state || !verifiedLiveContext) {
-      announce("No verified current context is available.");
+      announce(t("shell.announce.noCurrent"));
       return;
     }
     state = withDefensiveState({ ...state, context: verifiedLiveContext }, defense);
@@ -75,7 +76,7 @@ const { establishSnapshot } = createBootstrapController({
   getState: () => state,
   setState: (next) => { state = next; },
   setDefense: (next) => { defense = next; },
-  setBootstrap: (next) => { bootstrap = next; },
+  setBootstrap: (next) => { bootstrapState = next; },
   setVerifiedLiveContext: (next) => { verifiedLiveContext = next; },
   resetFrameShell: () => frameShell.reset(),
   render,
@@ -146,7 +147,7 @@ function render() {
     onReconnect: () => establishSnapshot({ preserveRoute: true }),
     onNavigate: navigateTo,
     onInspect: openInspector,
-  }, bootstrap);
+  }, bootstrapState);
   frameShell.afterRender();
   setHash();
   activateDomainViews({
@@ -169,7 +170,7 @@ function returnEvidenceOrigin() {
   if (!state?.evidenceOrigin) return;
   state = returnFromEvidence(state);
   render();
-  announce("Returned to the inspected evidence origin.");
+  announce(t("shell.announce.returnedEvidenceOrigin"));
 }
 
 function navigateTo(view) {
@@ -177,6 +178,7 @@ function navigateTo(view) {
   document.querySelector("#command-palette")?.close?.();
   render();
   window.queueMicrotask(() => document.querySelector("#view-title")?.focus?.({ preventScroll: true }));
+  announce(t("shell.announce.destination", { destination: t(`shell.destination.${view}`) }));
 }
 
 function openInspector(selected) {
@@ -187,7 +189,7 @@ function openInspector(selected) {
   interactionController.render();
   setHash();
   window.queueMicrotask(() => document.querySelector("#inspector-close")?.focus());
-  announce(`Inspector opened for ${selected.id}`);
+  announce(t("shell.announce.inspectorOpened", { id: selected.id }));
 }
 
 function closeInspector() {
@@ -197,15 +199,16 @@ function closeInspector() {
   interactionController.render();
   setHash();
   window.queueMicrotask(() => restoreFocus(document, focusReturnToken));
-  announce("Inspector closed");
+  announce(t("shell.announce.inspectorClosed"));
 }
 
 function openPalette() {
   const dialog = document.querySelector("#command-palette");
   paletteReturnToken = focusToken(document.activeElement);
-  renderPaletteOptions(state, (view) => {
-    navigateTo(view);
-    window.queueMicrotask(() => document.querySelector("#main-content")?.focus());
+  renderPaletteOptions(state, navigateTo, (command) => {
+    if (command === "theme") document.querySelector("#theme-trigger")?.click();
+    if (command === "density") document.querySelector("#density-trigger")?.click();
+    dialog.close();
   });
   if (!dialog.open) dialog.showModal();
   window.queueMicrotask(() => dialog.querySelector("button:not(:disabled)")?.focus());
