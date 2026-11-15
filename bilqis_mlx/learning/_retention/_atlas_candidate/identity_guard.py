@@ -6,8 +6,12 @@ import copy
 from threading import RLock
 import weakref
 
-import mlx.core as mx
 import numpy as np
+
+try:
+    import mlx.core as mx
+except ModuleNotFoundError:
+    mx = None
 
 
 _GROUPS = ("parameters", "m", "v", "update_counts")
@@ -21,7 +25,7 @@ _EXPORT_SLOTS = ("__buffer__", "__dlpack__", "__getstate__", "__reduce_ex__",
 _STATE_TUPLE_WIDTH = 2
 _REDUCER_STATE_INDEX = 2
 _LOCK = RLock()
-_ARRAY_TYPE = type(mx.array([0], dtype=mx.int32))
+_ARRAY_TYPE = type(mx.array([0], dtype=mx.int32)) if mx is not None else None
 
 
 @dataclass
@@ -237,6 +241,9 @@ def guard_intact(capability) -> bool:
 def binding_supported() -> bool:
     global _CAPABILITY, _UNSUPPORTED, _GENERATION
     with _LOCK:
+        if _ARRAY_TYPE is None:
+            _UNSUPPORTED = True
+            return False
         if _CAPABILITY is not None:
             return guard_intact(_CAPABILITY)
         if _UNSUPPORTED or _POISONED:
