@@ -7,6 +7,7 @@ from bilqis_mlx.factory.adapters import RegisteredSourceAdapter
 from bilqis_mlx.semantics.atlas.snapshot import (
     AtlasArtifactSelection, load_pinned_atlas_snapshot,
 )
+from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
 from bilqis_mlx.semantics.context_eligibility import (
     ApprovedContextProjection, ContextHold, ContextPolicy, SourceFrontier,
     TaskScope,
@@ -117,6 +118,7 @@ def qualify_source_motif_context(
     source_each: int,
     source_profile_parameters: dict | None = None,
     course=None,
+    snapshot: FrozenAtlasSnapshot | None = None,
 ) -> tuple[
     ApprovedContextProjection, tuple[MotifFrameInput, ...], SourceFrontier,
 ] | ContextHold:
@@ -126,7 +128,21 @@ def qualify_source_motif_context(
             or type(source_frontier) is not SourceFrontier
             or type(policy) is not ContextPolicy):
         _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
-    snapshot = load_pinned_atlas_snapshot(atlas_selection)
+    if snapshot is None:
+        snapshot = load_pinned_atlas_snapshot(atlas_selection)
+    elif (
+        type(snapshot) is not FrozenAtlasSnapshot
+        or (
+            snapshot.release_sha256,
+            snapshot.bundle_id,
+            snapshot.source_bundle_id,
+        ) != (
+            atlas_selection.release_sha256,
+            atlas_selection.bundle_id,
+            atlas_selection.source_bundle_id,
+        )
+    ):
+        _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
     if snapshot.release_sha256 != task_scope.semantic_release:
         _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
     rights_authority = issue_source_schema_rights_authority(atlas_selection)
