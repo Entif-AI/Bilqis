@@ -125,6 +125,16 @@
   .teacher-state-pair {
     flex-wrap: wrap;
   }
+
+  .teacher-heading-context,
+  .teacher-heading-tools,
+  .teacher-subheading {
+    align-items: flex-start;
+  }
+
+  .teacher-production-refs div {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -24,6 +24,49 @@
   line-height: 1.5;
 }
 
+.teacher-heading-context {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.teacher-heading-context p {
+  flex: 1;
+}
+
+.teacher-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--border);
+}
+
+.teacher-tab[aria-selected="true"] {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.teacher-tab-panel {
+  min-width: 0;
+}
+
+.teacher-heading-tools,
+.teacher-subheading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.teacher-subheading {
+  margin-bottom: var(--space-3);
+}
+
+.teacher-subheading h4 {
+  margin: 0;
+}
+
 .teacher-fixture-notice {
   display: flex;
   align-items: baseline;
@@ -110,6 +153,7 @@
 }
 
 .teacher-table-wrap:focus-visible,
+.teacher-tab:focus-visible,
 .teacher-strategy-select:focus-visible,
 .teacher-inspect:focus-visible,
 .teacher-compare-strategy:focus-visible,
@@ -118,6 +162,40 @@
 .teacher-glossary summary:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+.teacher-production-provenance {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.teacher-production-provenance h4 {
+  margin: 0;
+  font-size: var(--type-subsection);
+}
+
+.teacher-production-refs {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.teacher-production-refs div {
+  display: grid;
+  grid-template-columns: minmax(110px, .25fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.teacher-production-refs dt {
+  color: var(--text-muted);
+  font-size: var(--type-label);
+}
+
+.teacher-production-refs dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .teacher-roster-table,

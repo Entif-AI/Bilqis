@@ -1,5 +1,6 @@
 import { STRATEGY_FIXTURES } from "./teacher-fixture.mjs";
 import { comparisonScopes, strategyComparison } from "./teacher-model.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
 import { esc, scopeLabel, stateBadge, t, testIdAttribute, unavailable } from "./teacher-view-shared.mjs";
 
 export function availableScopes(strategyIds) {
@@ -47,8 +48,10 @@ export function comparisonPanel(selectedStrategyIds, scope) {
   return `<section class="teacher-comparison" aria-labelledby="teacher-comparison-title" ${testIdAttribute("teacher", "comparison")}>
     <header class="teacher-section-heading"><div>
       <span class="eyebrow">${esc(t("teacher.comparison.eyebrow"))}</span><h3 id="teacher-comparison-title">${esc(t("teacher.comparison.title"))}</h3>
-    </div><span class="teacher-coverage-label"><span aria-hidden="true">${comparison.coverage === "EQUAL_OBSERVED_DENOMINATORS" ? "=" : "◐"}</span>
-      ${esc(coverageLabel(comparison.coverage))}</span></header>
+    </div><div class="teacher-heading-tools"><span class="teacher-coverage-label"><span aria-hidden="true">${comparison.coverage === "EQUAL_OBSERVED_DENOMINATORS" ? "=" : "◐"}</span>
+      ${esc(coverageLabel(comparison.coverage))}</span>${contextHelpMarkup({
+        label: t("teacher.help.comparison.label"), description: t("teacher.help.comparison.body"), testId: "teacher-help-comparison",
+      })}</div></header>
     <div class="teacher-comparison-controls">${strategyControls(selectedStrategyIds)}${scopeControl(selectedStrategyIds, scope)}</div>
     <p class="teacher-comparison-note">${esc(t("teacher.comparison.note", { floor: comparison.commonCoverageFloor }))}</p>
     <div class="teacher-table-wrap" tabindex="0" ${testIdAttribute("teacher", "comparison", "scroll")}><table class="teacher-comparison-table"

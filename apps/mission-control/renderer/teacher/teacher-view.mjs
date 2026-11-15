@@ -3,6 +3,8 @@ import { comparisonPanel, availableScopes } from "./teacher-comparison-view.mjs"
 import { fidelityPanel } from "./teacher-fidelity-view.mjs";
 import { rosterPanel, strategyRelations } from "./teacher-roster-view.mjs";
 import { esc, t, testIdAttribute } from "./teacher-view-shared.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+import { bindTeacherTabs, teacherTabPanelMarkup, teacherTabsMarkup, TEACHER_TABS } from "./teacher-tabs.mjs";
 
 const ui = {
   selectedStrategyId: STRATEGY_FIXTURES[0].id,
@@ -11,6 +13,7 @@ const ui = {
     "strategy:fixture:retired-shallow",
   ]),
   scope: Object.freeze({ kind: "capability", value: "B.IFF" }),
+  activeTab: "roster",
 };
 
 function normalizeScope() {
@@ -21,6 +24,12 @@ function normalizeScope() {
 }
 
 function bind(container, inspectStrategy) {
+  bindTeacherTabs(container, (tab) => {
+    if (!TEACHER_TABS.includes(tab) || tab === ui.activeTab) return;
+    ui.activeTab = tab;
+    renderTeacherView(container, inspectStrategy);
+    container.querySelector(`[data-teacher-tab="${tab}"]`)?.focus({ preventScroll: true });
+  });
   container.querySelectorAll("[data-strategy-select]").forEach((button) => button.addEventListener("click", () => {
     ui.selectedStrategyId = button.dataset.strategySelect;
     renderTeacherView(container, inspectStrategy);
@@ -52,17 +61,24 @@ export function teacherMarkupForTest(
   selectedStrategyId = ui.selectedStrategyId,
   selectedStrategyIds = ui.selectedStrategyIds,
   scope = ui.scope,
+  activeTab = ui.activeTab,
 ) {
+  const tab = TEACHER_TABS.includes(activeTab) ? activeTab : "roster";
   return `<div class="teacher-view" ${testIdAttribute("teacher", "view")}>
     <header class="teacher-heading" ${testIdAttribute("teacher", "heading")}><div>
       <span class="eyebrow">${esc(t("teacher.view.eyebrow"))}</span><h2>${esc(t("teacher.view.title"))}</h2>
-    </div><p>${esc(t("teacher.view.summary"))}</p></header>
+    </div><div class="teacher-heading-context"><p>${esc(t("teacher.view.summary"))}</p>${contextHelpMarkup({
+      label: t("teacher.help.mutation.label"), description: t("teacher.help.mutation.body"), testId: "teacher-help-mutation",
+    })}</div></header>
     <div class="teacher-fixture-notice" role="note" ${testIdAttribute("teacher", "fixture", "notice")}>
-      <strong>${esc(t("teacher.fixture.label"))}</strong><span>${esc(t("teacher.fixture.detail"))}</span>
+      <strong>${esc(t("teacher.fixture.label"))}</strong><span>${esc(t("teacher.fixture.detail"))}</span>${contextHelpMarkup({
+        label: t("teacher.help.provenance.label"), description: t("teacher.help.provenance.fixtureBody"), testId: "teacher-help-provenance",
+      })}
     </div>
-    ${rosterPanel(selectedStrategyId)}
-    ${comparisonPanel(selectedStrategyIds, scope)}
-    ${fidelityPanel()}
+    ${teacherTabsMarkup(tab)}
+    ${teacherTabPanelMarkup("roster", rosterPanel(selectedStrategyId), tab)}
+    ${teacherTabPanelMarkup("comparison", comparisonPanel(selectedStrategyIds, scope), tab)}
+    ${teacherTabPanelMarkup("fidelity", fidelityPanel(), tab)}
   </div>`;
 }
 
@@ -79,5 +95,6 @@ export function teacherComparisonStateForTest() {
     selectedStrategyId: ui.selectedStrategyId,
     selectedStrategyIds: Object.freeze([...ui.selectedStrategyIds]),
     scope: Object.freeze({ ...ui.scope }),
+    activeTab: ui.activeTab,
   });
 }
