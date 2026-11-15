@@ -9,6 +9,11 @@ from bilqis_mlx.learning.atlas_readout import (
     AnswerPlan, DecisionKind, DecisionOutput, ExecutionMode, answer_loss,
 )
 from bilqis_mlx.semantics.frame_schema import ConceptRef
+from bilqis_mlx.runtime.backbone_identity import (
+    _execution_generation_autodiff_rebinder,
+    issue_execution_generation_binding,
+)
+from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_execution_generation
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
 )
@@ -116,6 +121,19 @@ def loss_bearing_bamf(
         salience_artifact_nodes=artifact_nodes)
 
 
+def _gradient_execution_rebinder(params, cache, *, spec, extents, generation):
+    binding = (
+        issue_execution_generation_binding(
+            params, spec=spec, extents=extents, expected_generation=generation)
+        if cache is None else bind_execution_generation(
+            cache, params, spec=spec, extents=extents)
+    )
+    if binding.generation_digest != generation:
+        _invalid("B11_GRADIENT_GENERATION_BINDING_MISMATCH")
+    return _execution_generation_autodiff_rebinder(
+        binding, params, spec=spec, extents=extents)
+
+
 def _bamf_value_and_grad_impl(
     backend: Backend,
     params,
@@ -132,9 +150,13 @@ def _bamf_value_and_grad_impl(
         if type(salience_supervision) is not SalienceSupervision:
             _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
         salience_supervision.labels_for(compiled_batch)
+    rebind_execution = _gradient_execution_rebinder(
+        params, cache, spec=backend.topology, extents=compiled_batch.compiled.extents,
+        generation=answer_plan.generation_binding)
     holder = {}
 
     def objective(current):
+        execution_binding = rebind_execution(current)
         output = _forward_bamf_impl(
             backend,
             current,
@@ -142,7 +164,8 @@ def _bamf_value_and_grad_impl(
             answer_plan,
             ExecutionMode.INFERENCE,
             cache,
-                refinement_training=True,
+            refinement_training=True,
+            execution_binding=execution_binding,
         )
         execution = loss_bearing_bamf(output, targets, mask,
                                       salience_supervision=salience_supervision)

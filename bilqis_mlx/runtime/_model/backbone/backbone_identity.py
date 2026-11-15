@@ -135,6 +135,47 @@ def require_execution_generation_binding(
     return binding
 
 
+def _execution_generation_autodiff_rebinder(
+    binding: ExecutionGenerationBinding,
+    parameters: Mapping[str, mx.array], *,
+    spec: ModelTopologySpecV2,
+    extents: GenerationExtents,
+):
+    """Rebind one already-proven immutable state to MLX autodiff trace tensors.
+
+    ``mx.value_and_grad`` supplies the objective with fresh tensor objects for the
+    exact input tree.  The expensive content proof therefore belongs outside the
+    transform; inside it we only rebind that proof to the trace-owned objects.
+    """
+    owned = require_execution_generation_binding(
+        binding, parameters, spec=spec, extents=extents)
+    names = owned.parameter_names
+
+    def rebind(current: Mapping[str, mx.array]) -> ExecutionGenerationBinding:
+        validate_bamf_parameters(spec, extents, current)
+        current_names = tuple(item.name for item in expected_bamf_shapes(spec, extents))
+        if (current_names != names
+                or owned.topology_digest != spec.digest
+                or owned.extents_digest != extents.digest):
+            _invalid()
+        rebound = object.__new__(ExecutionGenerationBinding)
+        for name, value in (
+            ("generation_digest", owned.generation_digest),
+            ("parameter_tree_digest", owned.parameter_tree_digest),
+            ("topology_digest", owned.topology_digest),
+            ("extents_digest", owned.extents_digest),
+            ("parameter_names", names),
+            ("schema_version", "bilqis.mlx.execution-generation-binding/v1"),
+            ("_parameter_refs", tuple(weakref.ref(current[name]) for name in names)),
+            ("_issuance", _EXECUTION_BINDING_ISSUER),
+        ):
+            object.__setattr__(rebound, name, value)
+        rebound.__post_init__()
+        return rebound
+
+    return rebind
+
+
 def execution_generation_object_key(
     parameters: Mapping[str, mx.array], *, spec: ModelTopologySpecV2,
     extents: GenerationExtents,

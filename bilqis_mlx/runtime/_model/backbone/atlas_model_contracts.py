@@ -71,6 +71,8 @@ class _ForwardRegistry:
 
 _FORWARD_ISSUANCE = _ForwardRegistry()
 _LOSS_EXECUTION_ISSUER = object()
+_MICROBATCH_EXECUTION_ISSUER = object()
+_MICROBATCH_MIN_ROWS = 2
 
 
 @dataclass(frozen=True, init=False)
@@ -168,6 +170,40 @@ class BamfGradientExecution:
         require_bamf_loss_execution(self.execution)
 
 
+@dataclass(frozen=True, init=False)
+class BamfMicrobatchGradientExecution:
+    """One MLX value-and-grad dispatch over multiple row-scoped B11 losses."""
+
+    executions: tuple[BamfLossExecution, ...]
+    gradients: Mapping
+    mean_loss: mx.array
+    schema_version: str = "bilqis.mlx.b11-microbatch-gradient-execution/v1"
+    _issuance: object = field(init=False, repr=False, compare=False)
+
+    def __init__(self, *args, **kwargs):
+        _invalid("B11_MICROBATCH_GRADIENT_CALLER_CONSTRUCTION_FORBIDDEN")
+
+    def __post_init__(self):
+        if (
+            getattr(self, "_issuance", None) is not _MICROBATCH_EXECUTION_ISSUER
+            or type(self.executions) is not tuple
+            or len(self.executions) < _MICROBATCH_MIN_ROWS
+            or any(type(item) is not BamfLossExecution for item in self.executions)
+            or len({item.output.generation_binding for item in self.executions}) != 1
+            or not isinstance(self.gradients, Mapping)
+            or not self.gradients
+            or any(not isinstance(value, mx.array) for value in self.gradients.values())
+            or not isinstance(self.mean_loss, mx.array)
+            or self.mean_loss.size != 1
+            or not bool(mx.all(mx.isfinite(self.mean_loss)))
+            or self.schema_version
+            != "bilqis.mlx.b11-microbatch-gradient-execution/v1"
+        ):
+            _invalid("B11_MICROBATCH_GRADIENT_EXECUTION_INVALID")
+        for execution in self.executions:
+            require_bamf_loss_execution(execution)
+
+
 def _issue_loss_execution(output, loss, record, participation, *, salience_heads=(),
                           salience_dependencies=(), salience_artifact_nodes=()):
     from .atlas_training_authority import extend_training_dependencies
@@ -220,6 +256,7 @@ __all__ = (
     "BamfActiveSemanticRows",
     "BamfLossExecution",
     "BamfGradientExecution",
+    "BamfMicrobatchGradientExecution",
     "bind_candidate_active_semantic_rows",
     "require_bamf_loss_execution",
 )
