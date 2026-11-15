@@ -140,6 +140,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/school/curriculum-atlas-view.mjs",
     "/school/curriculum-atlas.css",
     "/school/school-domain-controller.mjs",
+    "/school/school-live.mjs",
     "/salience/salience-fixture.mjs",
     "/salience/salience-events-fixture.mjs",
     "/salience/salience-aggregation-view.mjs",
