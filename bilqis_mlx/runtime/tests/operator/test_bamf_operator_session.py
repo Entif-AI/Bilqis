@@ -50,6 +50,10 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                     "optimizer_steps": 1,
                     "candidate_optimizer_steps": ordinal,
                     "c08_memory_budget_bytes": 64 * 1024 ** 3,
+                    "atlas_reload_count": 0,
+                    "feature_manifest_rebuild_count": 0,
+                    "visit_atlas_reload_count": 1,
+                    "visit_feature_manifest_rebuild_count": 1,
                 },
             )
 
@@ -99,6 +103,10 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         event = derive.call_args.kwargs["delivery_events"][0]
         self.assertEqual(event["resource"]["optimizer_steps"], 4)
         self.assertEqual(event["resource"]["wall_seconds"], 10.0)
+        self.assertEqual(event["resource"]["atlas_reload_count"], 0)
+        self.assertEqual(event["resource"]["feature_manifest_rebuild_count"], 0)
+        self.assertEqual(event["resource"]["visit_atlas_reload_count"], 1)
+        self.assertEqual(event["resource"]["visit_feature_manifest_rebuild_count"], 1)
 
     def test_accepted_visit_persists_native_resource_observation(self):
         with TemporaryDirectory() as temporary:

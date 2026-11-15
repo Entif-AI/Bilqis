@@ -74,6 +74,8 @@ class AcceptedGenerationFeatureAuthorityTests(FeatureAuthorityTestBase):
 
         self.assertEqual(counts, {"atlas": 1, "features": 1})
         self.assertEqual(context.features, features)
+        self.assertEqual(context.atlas_reload_count, 1)
+        self.assertEqual(context.feature_manifest_rebuild_count, 1)
 
     def test_genesis_preserves_distinct_atlas_release_and_active_set_identity(self):
         features = source_features(release=ATLAS_RELEASE)

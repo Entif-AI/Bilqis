@@ -170,6 +170,11 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
             self.assertEqual(len(result.route_targets), 1)
             self.assertIsNone(result.diagnostics)
             self.assertEqual(result.realized_cost["optimizer_steps"], 1)
+            self.assertEqual(result.realized_cost["atlas_reload_count"], 1)
+            self.assertEqual(result.realized_cost["feature_manifest_rebuild_count"], 1)
+            self.assertEqual(result.realized_cost["visit_atlas_reload_count"], 1)
+            self.assertEqual(
+                result.realized_cost["visit_feature_manifest_rebuild_count"], 1)
             payload = read_sidecar(run_dir, capture.steps[0])
             self.assertEqual(
                 payload["positions"][0]["row"]["sha256"],

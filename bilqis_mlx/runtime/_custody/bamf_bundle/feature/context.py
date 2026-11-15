@@ -56,6 +56,8 @@ class AuthenticatedGenerationFeatureContext:
     schema: FeatureSchema
     features: object
     receipt: AcceptedGenerationFeatureReceipt
+    atlas_reload_count: int
+    feature_manifest_rebuild_count: int
     _issuance: object = field(repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -68,7 +70,11 @@ class AuthenticatedGenerationFeatureContext:
             self.selection, self.snapshot, self.schema, self.features)
         if (type(self.receipt) is not AcceptedGenerationFeatureReceipt
                 or self.receipt.semantic_release != self.features.semantic_release
-                or self.receipt.feature_sha256 != self.features.digest):
+                or self.receipt.feature_sha256 != self.features.digest
+                or type(self.atlas_reload_count) is not int
+                or self.atlas_reload_count < 1
+                or type(self.feature_manifest_rebuild_count) is not int
+                or self.feature_manifest_rebuild_count < 1):
             invalid("BAMF_ACCEPTED_FEATURE_CONTEXT_INVALID")
 
 
@@ -85,11 +91,14 @@ def _issue_candidate_feature_context(
 
 def _issue_generation_feature_context(
         selection, snapshot, schema, features,
-        receipt) -> AuthenticatedGenerationFeatureContext:
+        receipt, *, atlas_reload_count=1,
+        feature_manifest_rebuild_count=1) -> AuthenticatedGenerationFeatureContext:
     context = object.__new__(AuthenticatedGenerationFeatureContext)
     for name, value in (
             ("selection", selection), ("snapshot", snapshot), ("schema", schema),
             ("features", features), ("receipt", receipt),
+            ("atlas_reload_count", atlas_reload_count),
+            ("feature_manifest_rebuild_count", feature_manifest_rebuild_count),
             ("_issuance", _FEATURE_CONTEXT_ISSUER)):
         object.__setattr__(context, name, value)
     context.__post_init__()
