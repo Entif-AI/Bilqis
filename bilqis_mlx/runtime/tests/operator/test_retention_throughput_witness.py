@@ -27,7 +27,17 @@ def _run_fixed_optimizer_steps(horizon: int, *, total_steps: int = 16):
     context = SimpleNamespace(release=object())
     selection = _selection()
     evaluation = object()
-    decision = SimpleNamespace(accepted=False)
+    decision = SimpleNamespace(
+        accepted=False, to_record=lambda: {"decision": "REJECTED"})
+    cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
+    capture = SimpleNamespace(finalize=lambda **_kwargs: {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": 1, "file_fsyncs": 1,
+            "directory_fsyncs": 1, "evidence_objects": 1,
+            "persistence_seconds": 0.0,
+        },
+    })
     decisions = 0
     optimizer_steps = 0
 
@@ -67,11 +77,14 @@ def _run_fixed_optimizer_steps(horizon: int, *, total_steps: int = 16):
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                return_value="cache"), patch(
+                return_value=cache), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=horizon), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                return_value=(1, 1)), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value="capture"), patch(
+                return_value=capture), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
                 return_value="observation"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
