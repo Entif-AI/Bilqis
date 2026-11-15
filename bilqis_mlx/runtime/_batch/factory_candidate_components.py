@@ -17,7 +17,7 @@ from bilqis_mlx.runtime.atlas_resources import (
 )
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.bamf_bundle import (
-    CompleteStudent, authenticate_bamf_execution_feature_context,
+    CompleteStudent,
     seal_source_qualified_motif_batch_from_bundle,
     seal_source_qualified_motifs_from_bundle,
     stage_source_qualified_motif_allocation,

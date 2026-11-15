@@ -108,6 +108,22 @@ class AtlasModelSourceForwardTests(SourceBackboneTestBase):
         )
         self.assertEqual(output.committed[0].value, ControlAction.END_FRAME)
 
+    def test_forward_bamf_does_not_reload_atlas_or_feature_manifest(self):
+        batch = BamfCompiledBatch(
+            self.compiled, (self.source,), self.schema,
+            active_semantic_rows(self.compiled, self.active_indices))
+        plan = self._answer_plan()
+        with patch(
+                "bilqis_mlx.learning.source_atoms.embedding.load_pinned_atlas_snapshot",
+                side_effect=AssertionError("B11 reloaded Atlas snapshot")), patch(
+                    "bilqis_mlx.learning.source_atoms.embedding.build_feature_manifest",
+                    side_effect=AssertionError("B11 rebuilt feature manifest")), patch(
+                        "bilqis_mlx.source_adapters.atom_binding.load_pinned_atlas_snapshot",
+                        side_effect=AssertionError("B11 atom binding reloaded Atlas snapshot")):
+            output = forward_bamf(
+                self.parameters, batch, plan, ExecutionMode.INFERENCE, None)
+        self.assertEqual(output.committed[0].value, ControlAction.END_FRAME)
+
     def test_forward_preserves_atlas_feature_correction_hold_until_real_source_read(self):
         batch = BamfCompiledBatch(
             self.compiled, (self.source,), self.schema,

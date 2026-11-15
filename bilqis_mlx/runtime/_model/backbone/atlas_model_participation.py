@@ -6,7 +6,6 @@ from bilqis_mlx.learning.frame_embeddings.banks import semantic_bank_views
 from bilqis_mlx.runtime.atlas_training_authority import extend_training_dependencies
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_motif_artifact_owner
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2, expected_bamf_shapes
-from bilqis_mlx.semantics.atlas.snapshot import load_pinned_atlas_snapshot
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind
 
 from .atlas_model_contracts import BamfCompiledBatch, _ForwardRecord, _invalid
@@ -32,14 +31,23 @@ def _motif_reads(producer, row_index=0):
         if read is not None)
 
 
-def _active_banks(parameters, batch: BamfCompiledBatch, plan: AnswerPlan):
+def _bound_snapshot(batch: BamfCompiledBatch, plan: AnswerPlan):
+    """Reuse the plan-bound immutable snapshot; never reopen A01 inside B11."""
     source = batch.sources[0]
-    snapshot = load_pinned_atlas_snapshot(source.selection)
+    selection = source.selection
+    snapshot = plan.snapshot
     if (
-        snapshot != plan.snapshot
+        snapshot.release_sha256 != selection.release_sha256
+        or snapshot.bundle_id != selection.bundle_id
+        or snapshot.source_bundle_id != selection.source_bundle_id
         or snapshot.release_sha256 != batch.compiled.features.semantic_release
     ):
         _invalid("B11_SEMANTIC_SNAPSHOT_MISMATCH")
+    return snapshot
+
+
+def _active_banks(parameters, batch: BamfCompiledBatch, plan: AnswerPlan):
+    snapshot = _bound_snapshot(batch, plan)
     return semantic_bank_views(
         parameters, batch.compiled.extents, snapshot.release_sha256,
         batch.active_semantic_rows.active_indices)
@@ -98,7 +106,7 @@ def _forward_participation(
     refinement_roles=(), refinement_executed=False, producer_row_index=0,
 ):
     source = batch.sources[0]
-    snapshot = load_pinned_atlas_snapshot(source.selection)
+    snapshot = _bound_snapshot(batch, plan)
     row = batch.compiled.compiled.rows[0]
     visible = []
     feature_rows = set()
