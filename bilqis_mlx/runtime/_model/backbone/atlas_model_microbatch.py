@@ -17,7 +17,10 @@ from .atlas_model_contracts import (
 from .atlas_model_forward import (
     _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
 )
-from .atlas_model_training import _gradient_execution_rebinder, loss_bearing_bamf
+from .atlas_model_training import (
+    _gradient_execution_rebinder, _require_finite_tensor_tree, loss_bearing_bamf,
+)
+from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
 )
@@ -135,36 +138,41 @@ def _bamf_microbatch_value_and_grad_impl(
     generation = answer_plans[0].generation_binding
     if any(plan.generation_binding != generation for plan in answer_plans):
         _invalid("B11_MICROBATCH_GENERATION_BINDING_MISMATCH")
+    _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
     rebind_execution = _gradient_execution_rebinder(
         params, cache, spec=backend.topology, extents=batch.compiled.extents,
         generation=generation)
     holder = {}
 
     def objective(current):
-        execution_binding = rebind_execution(current)
-        producer, accepted_cache, _capture_derived_cache = _source_producer(
-            current, batch, generation, cache, execution_binding)
-        hidden = _finalize_source_hidden(
-            producer, accepted_cache, batch, capture_derived_cache=False)
-        if hidden.shape[0] != len(row_batches):
-            _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
-        executions = []
-        total = mx.array(0.0, dtype=mx.float32)
-        for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
-                row_batches, answer_plans, targets, masks)):
-            output = _decode_bamf_producer_row(
-                backend, current, row_batch, plan, producer, hidden, index,
-                accepted_cache, execution_binding, refinement_training=True)
-            execution = loss_bearing_bamf(
-                output, row_targets, mask,
-                salience_supervision=salience_supervision)
-            executions.append(execution)
-            total = total + execution.loss.total
-        holder["executions"] = tuple(executions)
-        return total / len(row_batches)
+        with defer_host_tensor_validation():
+            execution_binding = rebind_execution(current)
+            producer, accepted_cache, _capture_derived_cache = _source_producer(
+                current, batch, generation, cache, execution_binding, trace=True)
+            hidden = _finalize_source_hidden(
+                producer, accepted_cache, batch, capture_derived_cache=False)
+            if hidden.shape[0] != len(row_batches):
+                _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
+            executions = []
+            total = mx.array(0.0, dtype=mx.float32)
+            for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
+                    row_batches, answer_plans, targets, masks)):
+                output = _decode_bamf_producer_row(
+                    backend, current, row_batch, plan, producer, hidden, index,
+                    accepted_cache, execution_binding, refinement_training=True,
+                    teacher_targets=row_targets, trace=True)
+                execution = loss_bearing_bamf(
+                    output, row_targets, mask,
+                    salience_supervision=salience_supervision,
+                    validate_finite=False)
+                executions.append(execution)
+                total = total + execution.loss.total
+            holder["executions"] = tuple(executions)
+            return total / len(row_batches)
 
     mean_loss, gradients = mx.value_and_grad(objective)(params)
     mx.eval(mean_loss, gradients)
+    _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     executions = holder.get("executions")
     if (type(executions) is not tuple or len(executions) != len(row_batches)):
         _invalid("B11_MICROBATCH_EXECUTION_MISSING")

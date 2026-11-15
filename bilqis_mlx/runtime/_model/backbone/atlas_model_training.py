@@ -25,6 +25,23 @@ from .atlas_model_contracts import (
     _issue_loss_execution,
 )
 from .atlas_model_forward import _forward_bamf_impl
+from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
+
+
+def _require_finite_tensor_tree(values, code):
+    """Attest a flat BAMF tensor tree at an explicit host boundary.
+
+    Per-module guards stay off the differentiated tape.  One aggregated
+    scalar witness here preserves fail-closed finite-value semantics without
+    hundreds of Python-visible device synchronizations inside ``value_and_grad``.
+    """
+    checks = tuple(mx.all(mx.isfinite(value)) for value in values.values())
+    if not checks:
+        _invalid(code)
+    finite = mx.all(mx.stack(checks))
+    mx.eval(finite)
+    if not bool(finite):
+        _invalid(code)
 
 
 def _loss_participation(output, targets, mask, record):
@@ -80,7 +97,7 @@ def loss_bearing_bamf(
     output,
     targets: tuple[DecisionOutput, ...],
     mask,
-    *, salience_supervision=None,
+    *, salience_supervision=None, validate_finite=True,
 ) -> BamfLossExecution:
     """Bind a nonempty B10 supervised loss to the exact live B11 forward."""
     record = _FORWARD_ISSUANCE.require(output)
@@ -91,6 +108,12 @@ def loss_bearing_bamf(
         or not any(mask.values())
     ):
         _invalid("B11_LOSS_TARGET_REQUIRED")
+    labelled = {target.decision_id for target in targets}
+    required = {decision_id for decision_id, enabled in mask.items()
+                if enabled and decision_id in labelled}
+    executed = {item.decision_id for item in output.decisions}
+    if not required or not required.issubset(executed):
+        _invalid("B11_LOSS_TARGET_NOT_EXECUTED")
     loss = answer_loss(output, targets, mask)
     heads, dependencies, artifact_nodes = (), (), ()
     if salience_supervision is not None:
@@ -113,7 +136,7 @@ def loss_bearing_bamf(
                        novelty=components.novelty)
         heads, dependencies = components.heads, salience_supervision.dependencies
         artifact_nodes = salience_supervision.artifact_nodes
-    if not bool(mx.all(mx.isfinite(loss.total))):
+    if validate_finite and not bool(mx.all(mx.isfinite(loss.total))):
         _invalid("B11_LOSS_NONFINITE")
     return _issue_loss_execution(
         output, loss, record, _loss_participation(output, targets, mask, record),
@@ -150,30 +173,36 @@ def _bamf_value_and_grad_impl(
         if type(salience_supervision) is not SalienceSupervision:
             _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
         salience_supervision.labels_for(compiled_batch)
+    _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
     rebind_execution = _gradient_execution_rebinder(
         params, cache, spec=backend.topology, extents=compiled_batch.compiled.extents,
         generation=answer_plan.generation_binding)
     holder = {}
 
     def objective(current):
-        execution_binding = rebind_execution(current)
-        output = _forward_bamf_impl(
-            backend,
-            current,
-            compiled_batch,
-            answer_plan,
-            ExecutionMode.INFERENCE,
-            cache,
-            refinement_training=True,
-            execution_binding=execution_binding,
-        )
-        execution = loss_bearing_bamf(output, targets, mask,
-                                      salience_supervision=salience_supervision)
-        holder["execution"] = execution
-        return execution.loss.total
+        with defer_host_tensor_validation():
+            execution_binding = rebind_execution(current)
+            output = _forward_bamf_impl(
+                backend,
+                current,
+                compiled_batch,
+                answer_plan,
+                ExecutionMode.INFERENCE,
+                cache,
+                refinement_training=True,
+                execution_binding=execution_binding,
+                teacher_targets=targets,
+            )
+            execution = loss_bearing_bamf(
+                output, targets, mask,
+                salience_supervision=salience_supervision,
+                validate_finite=False)
+            holder["execution"] = execution
+            return execution.loss.total
 
     loss_total, gradients = mx.value_and_grad(objective)(params)
     mx.eval(loss_total, gradients)
+    _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     execution = holder.get("execution")
     if type(execution) is not BamfLossExecution:
         _invalid("B11_GRADIENT_EXECUTION_MISSING")
