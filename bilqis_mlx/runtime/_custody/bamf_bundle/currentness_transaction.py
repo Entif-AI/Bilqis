@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from threading import Lock
 
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.semantics.domains import contract_digest
 
 from .bundle_currentness import (
@@ -129,7 +130,8 @@ def bind_accepted_currentness_transaction(
         invalid("B13_CURRENTNESS_PARENT_INVALID")
     candidate_identity = getattr(cache, "_candidate_identity_sha256", None)
     if (cache.run_id != parent.run_id or cache.generation != parent.generation
-            or not isinstance(candidate_identity, str) or len(candidate_identity) != 64):
+            or not isinstance(candidate_identity, str)
+            or len(candidate_identity) != SHA256_HEX_LENGTH):
         invalid("B13_CURRENTNESS_PARENT_DRIFT")
     metrics = metrics or VisitCurrentnessMetrics()
     run_dir = Path(run_dir).resolve()

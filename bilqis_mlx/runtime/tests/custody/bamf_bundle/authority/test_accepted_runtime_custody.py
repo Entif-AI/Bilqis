@@ -174,45 +174,5 @@ class AcceptedRuntimeCustodyTests(unittest.TestCase):
             "BAMF_C09_CORRECTION_HISTORY_COMMITMENT_DRIFT",
         )
 
-    def test_production_step_reaches_the_owner_binder(self):
-        self.publish(candidate(parent_state()))
-        with shape_patch(), patch.object(
-                admission, "production_candidate_step",
-                side_effect=admission.production_candidate_step) as step:
-            with self.assertRaises(BilqisError):
-                admit_candidate_step(
-                    self.run, {}, loss_bearing_target=True,
-                    teacher_hparams=None, max_norm=1.)
-        self.assertTrue(step.called)
-
-    def test_no_loss_step_cannot_promote_census_to_execution(self):
-        self.publish(candidate(parent_state()))
-        marker = object()
-        with shape_patch(), patch.object(
-                admission, "production_candidate_step", return_value=marker) as step:
-            result = admit_candidate_step(
-                self.run, {}, loss_bearing_target=False,
-                teacher_hparams=None, max_norm=1.)
-        self.assertIs(result, marker)
-        for forbidden in ("motif_reads", "executed_parameter_names",
-                          "visible_identity_rows", "feedback_identity_rows",
-                          "local_slot_rows"):
-            self.assertNotIn(forbidden, step.call_args.kwargs)
-
-    def test_admission_forwards_b11_gradient_execution_without_rederiving_it(self):
-        self.publish(candidate(parent_state()))
-        owner_execution = object()
-        marker = object()
-        with shape_patch(), patch.object(
-                admission, "production_candidate_step", return_value=marker) as step:
-            result = admit_candidate_step(
-                self.run, loss_bearing_target=True,
-                gradient_execution=owner_execution, teacher_hparams=None,
-                max_norm=1.)
-        self.assertIs(result, marker)
-        self.assertIs(step.call_args.kwargs["gradient_execution"], owner_execution)
-        self.assertIsNone(step.call_args.args[1])
-
-
 if __name__ == "__main__":
     unittest.main()

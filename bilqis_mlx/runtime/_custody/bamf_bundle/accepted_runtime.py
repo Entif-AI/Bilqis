@@ -17,6 +17,12 @@ from .records import (
 )
 
 
+def _accepted_source_authority_registry(run_dir: Path, student: CompleteStudent):
+    from .source_authority_custody import resolve_source_authority_registry
+    return resolve_source_authority_registry(
+        run_dir, student.correction_frontier)
+
+
 @dataclass(frozen=True)
 class AcceptedGenerationIdentity:
     """The published identity of the accepted generation in custody."""
@@ -29,7 +35,8 @@ class AcceptedGenerationIdentity:
     optimizer_step: int
     candidate_identity_sha256: str
 
-def _read_accepted_locked(run_dir: Path):
+def _read_accepted_locked(
+        run_dir: Path, *, accepted_parent: tuple[str, CompleteStudent] | None = None):
     run_dir = Path(run_dir)
     pointer_path = run_dir / "bamf-state.json"
     pointer = _read_pointer(pointer_path)
@@ -42,7 +49,8 @@ def _read_accepted_locked(run_dir: Path):
             or student.generation != pointer["generation"]
             or student.parent_manifest_sha256 != pointer["parent_manifest_sha256"]):
         invalid("BAMF_GENERATION_POINTER_DRIFT")
-    _require_published_acceptance(run_dir, pointer, student)
+    _require_published_acceptance(
+        run_dir, pointer, student, accepted_parent=accepted_parent)
     return pointer, student
 
 
@@ -50,11 +58,6 @@ def _read_accepted(run_dir: Path):
     run_dir = Path(run_dir)
     with _pointer_lock(run_dir):
         return _read_accepted_locked(run_dir)
-
-
-def load_accepted_generation(run_dir: Path) -> CompleteStudent:
-    """Load the currently published accepted generation under the pointer lock."""
-    return _read_accepted(run_dir)[1]
 
 
 def _identity_from_pointer(
@@ -80,7 +83,9 @@ def _identity_from_pointer(
 
 
 def _published_in_memory_identity_locked(
-        run_dir: Path, student: CompleteStudent, pointer: dict,
+        run_dir: Path, student: CompleteStudent, pointer: dict, *,
+        accepted_parent: tuple[str, CompleteStudent] | None = None,
+        acceptance_verified: bool = False,
 ) -> AcceptedGenerationIdentity:
     run_dir = Path(run_dir)
     if type(student) is not CompleteStudent:
@@ -105,7 +110,9 @@ def _published_in_memory_identity_locked(
         if (not isinstance(stored, dict)
                 or stored.get("sha256") != sha(canonical(record))):
             invalid("BAMF_GENERATION_POINTER_DRIFT")
-    _require_published_acceptance(run_dir, pointer, student)
+    if not acceptance_verified:
+        _require_published_acceptance(
+            run_dir, pointer, student, accepted_parent=accepted_parent)
     return identity
 
 
@@ -119,12 +126,27 @@ def _published_in_memory_identity(
         return _published_in_memory_identity_locked(run_dir, student, pointer)
 
 
-from .accepted_execution_runtime import (
-    _accepted_correction_registry,
-    _require_owned_execution_cache,
-    _reset_execution_cache_owner_for_tests,
-    bind_accepted_execution_cache,
+from .accepted_execution_cache import (
+    _require_owned_execution_cache, _reset_execution_cache_owner_for_tests,
+    bind_accepted_execution_cache, load_accepted_generation,
 )
+
+
+def _accepted_correction_registry(run_dir: Path):
+    """Resolve C09 verifier material only from current accepted B13 custody."""
+    from bilqis_mlx.runtime.atlas_revalidation import SourceAuthorityRegistry
+    from bilqis_mlx.runtime.atlas_source_authority import (
+        _provision_source_authority_runtime,
+    )
+
+    cache = bind_accepted_execution_cache(run_dir)
+    bound = cache._correction_registry
+    if (not isinstance(bound, SourceAuthorityRegistry)
+            or cache.source_authority_registry_sha256 is None
+            or bound.digest != cache.source_authority_registry_sha256):
+        invalid("BAMF_C09_CORRECTION_AUTHORITY_REQUIRED")
+    _provision_source_authority_runtime(cache)
+    return cache, bound
 
 
 __all__ = (

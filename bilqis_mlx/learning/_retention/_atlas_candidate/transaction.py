@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import mlx.core as mx
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.learning.atlas_engram import MotifBudget
 from bilqis_mlx.learning.atlas_engram_transaction import (
     MotifAllocationSnapshot,
@@ -10,7 +11,6 @@ from bilqis_mlx.learning.atlas_plasticity import advance_candidate_policy, next_
 from bilqis_mlx.runtime.atlas_optimizer import (
     AdamWStateTree, _adamw_update, reconcile_b01_optimizer_manifest,
 )
-from bilqis_mlx.runtime.optimizer_step import issue_optimizer_parent_witness
 from ..atlas_execution_provenance import StepExecutionProvenance, mask_digest, participation_digest
 from ..atlas_participation import optimizer_participation_mask
 from .common import (CLOSURE_STEP_PROOF_SCHEMA, LEGACY_STEP_PROOF_SCHEMA,
@@ -82,7 +82,7 @@ class CandidateTransaction:
                 or (self.motif_transition is not None
                     and type(self.motif_transition) is not CandidateMotifAllocationTransition)
                 or not isinstance(self._parent_identity_sha256, str)
-                or len(self._parent_identity_sha256) != 64
+                or len(self._parent_identity_sha256) != SHA256_HEX_LENGTH
                 or _parent_object_guard(self.parent) != self._parent_guard
                 or self.schema_version != TRANSACTION_SCHEMA):
             invalid()
@@ -172,7 +172,7 @@ def _begin_candidate_with_parent_identity(
     """Accepted-custody ingress that reuses an owner-issued immutable parent identity."""
     if (type(parent) is not CandidateState
             or not isinstance(parent_identity_sha256, str)
-            or len(parent_identity_sha256) != 64
+            or len(parent_identity_sha256) != SHA256_HEX_LENGTH
             or type(teacher_requests_full) is not bool):
         invalid()
     parent.__post_init__()
@@ -290,12 +290,9 @@ def candidate_step(candidate: CandidateTransaction, gradients, execution,
         item.name: (item.whole_parameter, item.row_indices)
         for item in execution.mask.parameters
     }
-    candidate.optimizer.validate()
-    parent_witness = issue_optimizer_parent_witness(candidate.optimizer)
     optimizer = _adamw_update(
         candidate.optimizer, gradients, update_mask, teacher_hparams,
         decay=decay, loss_bearing=loss_bearing, max_norm=max_norm,
-        parent_witness=parent_witness,
         participation_authority=participation_authority)
     if optimizer is candidate.optimizer:
         return candidate

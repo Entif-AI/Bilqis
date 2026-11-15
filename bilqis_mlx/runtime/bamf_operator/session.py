@@ -27,7 +27,7 @@ from bilqis_mlx.runtime.foundation_teacher_owner import (
     derive_accepted_teacher_successor, select_foundation_priority_visit,
 )
 from bilqis_mlx.runtime.priority_rejection_replay import (
-    candidate_step_horizon, current_rejections,
+    candidate_step_horizon, rejection_attempt_ordinals,
 )
 from .locking import bamf_operator_lock
 from .telemetry import TrainerObservation
@@ -202,18 +202,19 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
     retained = prepared.retained
     capability = prepared.capability
     if not decision.accepted:
-        planning_generation = getattr(selection.offer, "_planning_generation", None)
+        offer = getattr(selection, "offer", None)
+        planning_generation = getattr(offer, "_planning_generation", None)
         cache = (
             planning_generation._cache
             if planning_generation is not None
             else bind_accepted_execution_cache(run_dir)
         )
-        rejection_attempt_ordinal = 1 + sum(
-            1 for selected, *_ in current_rejections(run_dir, parent, cache)
-            if selected == capability)
+        rejection_journal_ordinal, rejection_attempt_ordinal = rejection_attempt_ordinals(
+            run_dir, parent, cache, capability)
         record_bamf_rejection(run_dir, parent, {
             "schema": "bilqis.bamf.c16.3-rejection/v2",
             "rejection_attempt_ordinal": rejection_attempt_ordinal,
+            "rejection_journal_ordinal": rejection_journal_ordinal,
             "visit_id": selection.visit.identity.visit_id,
             "teacher_visit": selection.visit.identity.to_record(),
             "selected_option_id": selection.option_id,
