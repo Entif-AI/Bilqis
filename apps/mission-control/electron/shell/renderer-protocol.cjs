@@ -11,8 +11,11 @@ const {
 
 const RENDERER_ASSETS = Object.freeze(new Map([
   ["/atlas/atlas-controller.mjs", "atlas/atlas-controller.mjs"],
+  ["/atlas/atlas-data.mjs", "atlas/atlas-data.mjs"],
+  ["/atlas/atlas-fixture.mjs", "atlas/atlas-fixture.mjs"],
   ["/atlas/semantic-atlas.css", "atlas/semantic-atlas.css"],
   ["/atlas/semantic-atlas.mjs", "atlas/semantic-atlas.mjs"],
+  ["/atlas/atlas-view-parts.mjs", "atlas/atlas-view-parts.mjs"],
   ["/capability/app.mjs", "capability/app.mjs"],
   ["/capability/controller.mjs", "capability/controller.mjs"],
   ["/capability/dossier.css", "capability/dossier.css"],
@@ -70,6 +73,9 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/lineage/lineage-messages.mjs", "lineage/lineage-messages.mjs"],
   ["/lineage/lineage-model.mjs", "lineage/lineage-model.mjs"],
   ["/lineage/lineage-view.mjs", "lineage/lineage-view.mjs"],
+  ["/lineage/production-controller.mjs", "lineage/production-controller.mjs"],
+  ["/lineage/production-query.mjs", "lineage/production-query.mjs"],
+  ["/lineage/production-view.mjs", "lineage/production-view.mjs"],
   ["/lineage/lineage.css", "lineage/lineage.css"],
   ["/learning/controller.mjs", "learning/controller.mjs"],
   ["/learning/query.mjs", "learning/query.mjs"],
@@ -168,6 +174,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
 ]));
 
 const FIXTURE_ONLY_ASSETS = Object.freeze(new Set([
+  "/atlas/atlas-fixture.mjs",
   "/capability/fixture-data.mjs",
   "/capability/fixture.mjs",
   "/corrections/corrections-fixture.mjs",

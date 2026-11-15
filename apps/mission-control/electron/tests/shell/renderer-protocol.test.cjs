@@ -26,8 +26,11 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
   );
   assert.deepEqual([...RENDERER_ASSETS.keys()].sort(), [
     "/atlas/atlas-controller.mjs",
+    "/atlas/atlas-data.mjs",
+    "/atlas/atlas-fixture.mjs",
     "/atlas/semantic-atlas.css",
     "/atlas/semantic-atlas.mjs",
+    "/atlas/atlas-view-parts.mjs",
     "/capability/app.mjs",
     "/capability/controller.mjs",
     "/capability/dossier.css",
@@ -94,6 +97,9 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/lineage/lineage-messages.mjs",
     "/lineage/lineage-model.mjs",
     "/lineage/lineage-view.mjs",
+    "/lineage/production-controller.mjs",
+    "/lineage/production-query.mjs",
+    "/lineage/production-view.mjs",
     "/lineage/lineage.css",
     "/learning/controller.mjs",
     "/learning/query.mjs",
