@@ -54,8 +54,11 @@ All existing digest consumers then select consistently from their state: genesis
 run identity, successor authority, teacher/cache identity, acceptance, retry and
 publication. Parent and child are hashed with their respective schemes. A newly
 resolved updated candidate uses raw-v2; rejection and no-update return the exact
-parent, preserving its scheme. Neural-inert policy/promotion and parameter-extension
-state copies preserve the parent's scheme to keep unchanged-state comparisons.
+parent, preserving its scheme. Neural-inert policy/promotion state copies preserve
+the parent's scheme to keep unchanged-state comparisons. Parameter extension
+preserves the parent's scheme only when it admits no new parameter rows; admitting
+rows changes the retained extension state and migrates a historical legacy-v1 parent
+to raw-v2 so the successor binds shape and dtype as well as bytes.
 A historical lineage migrates on its first accepted updated candidate; parent
 acceptance and teacher references remain historical and verifiable. Rollback to
 old software requires using the preserved historical parent, since old software
@@ -99,8 +102,10 @@ All paths below are relative to the repository root.
   default raw-v2; validate membership. In
   `_load_retained_candidate_state_with_parts` assign from validated manifest
   optimizer, default legacy only on absence. In both
-  `_issue_parameter_extension_state` and `_issue_promotion_transition_state`
-  assign the parent's scheme explicitly.
+  `_issue_promotion_transition_state` assigns the parent's scheme explicitly.
+  `_issue_parameter_extension_state` preserves it for a no-row-change copy, but
+  selects raw-v2 when new parameter rows are introduced; this prevents legacy-v1's
+  historical shape/dtype omissions from becoming successor identity collisions.
 - `bilqis_mlx/learning/_retention/_atlas_candidate/transaction.py`:
   `resolve_candidate` assigns raw-v2 explicitly in both normal construction and
   `object.__new__` paths for an updated state. Rejection/no-update returns parent.

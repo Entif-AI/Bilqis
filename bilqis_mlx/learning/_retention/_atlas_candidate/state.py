@@ -241,7 +241,7 @@ def _issue_parameter_extension_state(
     state = object.__new__(CandidateState)
     for name, value in (
             ('optimizer', optimizer), ('policy', policy),
-            ('identity_scheme', parent.identity_scheme),
+            ('identity_scheme', RAW_IDENTITY_SCHEME if new_rows else parent.identity_scheme),
             ('allocations', parent.allocations),
             ('optimizer_step', parent.optimizer_step),
             ('custody', parent.custody), ('step_proofs', parent.step_proofs),

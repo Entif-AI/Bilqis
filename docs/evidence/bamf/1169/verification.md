@@ -169,3 +169,25 @@ and exam production changes require fresh integration evidence; a third run is
 not described as reuse of a passing R2 gate. PM-2026-11-15-002 was enriched and
 native-ledger read back. The benchmark and raw identity implementation are
 unchanged. No actual student/optimizer/teacher/champion was updated.
+
+## Current-unified closeout
+
+The feature branch consumed unified `c8877477c43b93aff4e2be12d002a5787adc6bac`.
+Final compatibility review found one historical-lineage edge: a parameter-extension
+state that admits new rows must not retain legacy-v1 identity, because legacy-v1
+omits shape and dtype. The extension owner now preserves legacy-v1 only when no new
+parameter rows are admitted and selects raw-v2 for a changed extension state. A
+focused regression proves that byte-equal `(1, 2)` and `(1, 1, 2)` extensions from a
+legacy parent receive distinct raw-v2 identities; a companion regression proves an
+unchanged legacy extension remains legacy-v1. The affected differential gate passes
+43 tests, 6 deselections and 13 subtests.
+
+One fresh bounded `verify:premerge` aggregate reached 4,452 passes and 233 skips
+before one unrelated unified-base test error. The failing test
+`CompiledEvaluationReuseTests.test_parent_candidate_solvers_add_two_generation_authentications_only`
+patches private symbol `_generation`, which no longer exists in the current Factory
+complete-solver owner. The exact test fails identically on a clean detached worktree
+at unified `c8877477`, proving this is pre-existing base test drift rather than a
+#1169 regression. The #1169 preflight itself passed 27/27 with zero skips, and source
+and historical-fixture custody remained unchanged. No production or test change for
+that unrelated base defect is included in this issue branch.
