@@ -36,22 +36,12 @@ class MotifGateFeatures:
 
 def _categorical_factors(
         parameters, features, request, atlas_selection=None,
-        qualified_feature_rows=None):
+        source_execution_authority=None):
     if type(request) is ChildFrameRequest:
         schema, role, types = _child_categorical_factors(parameters, request, features)
         return types, role, schema
-    if qualified_feature_rows is None:
-        row = _source_qualified_feature_row(features, request, atlas_selection)
-    else:
-        row = qualified_feature_rows.get(
-            (request.frame_handle, request.member_handle))
-        if (row is None
-                or row.semantic_id != request.concept.semantic_id
-                or row.abi_index != request.concept.abi_index
-                or row.role_id != request.role_id
-                or row.schema_id != request.schema_id
-                or row.scope != request.scope):
-            _invalid()
+    row = _source_qualified_feature_row(
+        features, request, atlas_selection, source_execution_authority)
     return _released_categorical_factors(parameters, row)
 
 
@@ -74,7 +64,7 @@ def motif_gate_features(
     parameters: Mapping[str, mx.array], projection: ApprovedContextProjection,
     frame_handle: str, features: AtlasFeatures, *, extents: GenerationExtents,
     atlas_selection: AtlasArtifactSelection | None = None,
-    qualified_feature_rows=None,
+    source_execution_authority=None,
 ) -> MotifGateFeatures:
     """Mean member types, mean member roles and schema, before 768 projections.
 
@@ -92,12 +82,9 @@ def motif_gate_features(
         _invalid()
     if envelope.frame.bindings:
         requests = _requests(projection, frame_handle, envelope)
-        if qualified_feature_rows is not None and not isinstance(
-                qualified_feature_rows, Mapping):
-            _invalid()
         values = tuple(_categorical_factors(
                        parameters, features, request, atlas_selection,
-                       qualified_feature_rows)
+                       source_execution_authority)
                        for request in requests)
         types, roles, schema = (
             mx.mean(mx.stack(tuple(value[index] for value in values)), axis=0)
