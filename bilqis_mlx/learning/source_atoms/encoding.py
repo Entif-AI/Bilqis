@@ -32,6 +32,7 @@ def _atomic_source_embeddings(compiled, atom_rows):
 
 def encode_source_compiled_with_handoffs(
     compiled, parameters, sources, feature_schema, banks, artifact_owner, *, snapshot=None,
+    source_execution_authorities=None,
 ):
     """Encode actual A05 rows and return the verified source handoff closure.
 
@@ -42,17 +43,24 @@ def encode_source_compiled_with_handoffs(
     from the same validation that produced the vectors; callers cannot supply them.
     """
     if (type(compiled) is not CompiledEncoderInput or type(sources) is not tuple
-            or len(sources) != len(compiled.compiled.rows)):
+            or len(sources) != len(compiled.compiled.rows)
+            or (source_execution_authorities is not None
+                and (type(source_execution_authorities) is not tuple
+                     or len(source_execution_authorities) != len(sources)))):
         invalid("BAMF_SOURCE_ATOM_COMPILED_INPUT_INVALID")
     compiled.__post_init__()
+    authorities = (
+        (None,) * len(sources)
+        if source_execution_authorities is None
+        else source_execution_authorities)
     atom_rows, member_rows, handoffs = [], [], []
-    for row, config, source, requests in zip(
+    for row, config, source, requests, source_authority in zip(
             compiled.compiled.rows, compiled.compiler_configs,
-            sources, compiled.member_requests):
+            sources, compiled.member_requests, authorities):
         vectors, row_banks, handoff = source_atom_vectors(
             parameters, row, config, source, compiled.features,
             feature_schema, compiled.extents, banks, artifact_owner,
-            snapshot=snapshot)
+            snapshot=snapshot, source_execution_authority=source_authority)
         atom_rows.append(vectors)
         handoffs.append(handoff)
         if requests:
@@ -72,9 +80,11 @@ def encode_source_compiled_with_handoffs(
 
 
 def encode_source_compiled(
-        compiled, parameters, sources, feature_schema, banks, artifact_owner, *, snapshot=None):
+        compiled, parameters, sources, feature_schema, banks, artifact_owner, *,
+        snapshot=None, source_execution_authorities=None):
     """Compatibility surface returning only the differentiable encoded frames."""
     encoded, _ = encode_source_compiled_with_handoffs(
         compiled, parameters, sources, feature_schema, banks, artifact_owner,
-        snapshot=snapshot)
+        snapshot=snapshot,
+        source_execution_authorities=source_execution_authorities)
     return encoded
