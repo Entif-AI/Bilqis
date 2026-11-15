@@ -4,6 +4,7 @@ import {
   compareGenerations,
   lineageNodes,
 } from "../lineage/lineage-model.mjs";
+import { lineageT } from "../lineage/lineage-messages.mjs";
 import {
   STRATEGY_FIXTURES,
 } from "../teacher/teacher-fixture.mjs";
@@ -48,18 +49,26 @@ function compareGenerationRefs(left, right) {
   if (!leftNode || !rightNode) {
     return result("generation", left, right, [], {
       state: "UNAVAILABLE",
-      note: "One or both generation identities are not available in the accepted lineage fixture.",
+      note: lineageT("lineage.compare.unavailableIdentity"),
     });
   }
   const comparison = compareGenerations(leftNode.manifestSha256, rightNode.manifestSha256);
   const rows = [
-    row("Relation", comparison.relation, comparison.relation, "SAME"),
+    row(lineageT("lineage.compare.relation"), comparison.relation, comparison.relation, "SAME"),
     ...comparison.rows.map((item) =>
-      row(item.label, item.before, item.after, item.state, item.reason)),
+      row(
+        lineageT(`lineage.compare.dimension.${item.key}`),
+        item.before,
+        item.after,
+        item.state,
+        item.reasonKey ? lineageT(`lineage.compare.reason.${item.reasonKey}`) : null,
+      )),
     ...comparison.capabilityChanges.map((item) =>
-      row(`Capability ${item.id}`, item.before, item.after, item.state)),
+      row(lineageT("lineage.compare.capabilityRow", { id: item.id }), item.before, item.after, item.state)),
   ];
-  return result("generation", left, right, rows, { note: comparison.interpretation });
+  return result("generation", left, right, rows, {
+    note: lineageT(`lineage.compare.${comparison.interpretationKey}`),
+  });
 }
 
 function findCandidate(ref) {

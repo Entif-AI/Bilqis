@@ -85,6 +85,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/interactions/operator-metadata.mjs",
     "/interactions/view.mjs",
     "/lineage/lineage-fixture.mjs",
+    "/lineage/lineage-messages.mjs",
     "/lineage/lineage-model.mjs",
     "/lineage/lineage-view.mjs",
     "/lineage/lineage.css",

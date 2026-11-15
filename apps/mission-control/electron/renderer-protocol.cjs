@@ -60,6 +60,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/evidence/evidence.css", "evidence/evidence.css"],
   ["/index.html", "index.html"],
   ["/lineage/lineage-fixture.mjs", "lineage/lineage-fixture.mjs"],
+  ["/lineage/lineage-messages.mjs", "lineage/lineage-messages.mjs"],
   ["/lineage/lineage-model.mjs", "lineage/lineage-model.mjs"],
   ["/lineage/lineage-view.mjs", "lineage/lineage-view.mjs"],
   ["/lineage/lineage.css", "lineage/lineage.css"],
