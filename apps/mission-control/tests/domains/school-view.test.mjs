@@ -137,15 +137,21 @@ test("graph lifecycle fixtures span ready through qualified plus held", () => {
   }
 });
 
-test("table alternative and direct-unlock graph evidence are present", () => {
+test("matrix orientation and peer dependency representations are explicit", () => {
   const source = fs.readFileSync(path.join(rendererRoot, "school", "school-view.mjs"), "utf8");
-  assert.match(source, /Use table alternative/);
-  assert.match(source, /Enable graph/);
+  const css = fs.readFileSync(path.join(rendererRoot, "school", "school.css"), "utf8");
+  assert.match(source, /school\.matrix\.group\.score/);
+  assert.match(source, /secondaryColumns/);
+  assert.match(source, /data-toggle-columns/);
+  assert.match(source, /dependency-peers/);
   assert.match(source, /dependency-fallback/);
-  assert.match(source, /direct downstream unlocks/);
-  assert.match(source, /complete coverage/);
+  assert.match(source, /school\.dependency\.nodeAria/);
+  assert.match(source, /school\.pagination\.status/);
   assert.match(source, /data-eligibility=/);
   assert.match(source, /data-mastery=/);
   assert.match(source, /data-observed-debt=/);
-  assert.match(source, /FIXTURE · REPRESENTATIVE TERMINAL METRICS/);
+  assert.match(source, /school\.fixture\.title/);
+  assert.match(css, /\.matrix-scroll[^}]*overflow:\s*auto/s);
+  assert.match(css, /\.school-matrix \.capability-cell[^}]*position:\s*sticky/s);
+  assert.match(css, /\.dependency-peers[^}]*grid-template-columns/s);
 });

@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   authorizationPhrase,
   buildPreviewRequest,
@@ -8,7 +11,11 @@ import {
   parseParameters,
 } from "../../renderer/operate/operate-model.mjs";
 import { renderOperateMarkup } from "../../renderer/operate/operate-view.mjs";
+import { operateT } from "../../renderer/operate/operate-messages.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
 import { createShellState, inspect, openSelectionOwner } from "../../renderer/shell-state.mjs";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..", "renderer");
 
 const context = Object.freeze({
   runId: "real-run", generation: 4, generationManifest: "2".repeat(64),
@@ -75,18 +82,79 @@ test("known generation or release drift blocks authorization while fixture conte
   assert.deepEqual(contextConflicts({ ...context, runId: "fixture-run", recordId: "operator-view:fixture-run:7" }, changed), []);
 });
 
-test("Operate markup keeps pause unavailable while exposing stop through the mutation zone", () => {
+test("Operate markup keeps pause unavailable while exposing stop through the command boundary", () => {
   const markup = renderOperateMarkup({
     action: "status", dryRun: false, parametersText: "{}", phase: "IDLE",
     preview: null, inspection: null, conflicts: [], error: null, authorization: "",
   }, { mutationAllowed: true });
-  assert.match(markup, /MUTATION ZONE/);
+  assert.match(markup, /Command boundary/);
   assert.match(markup, /data-operate-action="pause"[\s\S]*?disabled/);
   assert.doesNotMatch(markup, /data-operate-action="stop"[\s\S]*?disabled/);
   assert.deepEqual(parseParameters('{"operation_id":"operation:' + "a".repeat(64) + '"}'), [
     { key: "operation_id", value: "operation:" + "a".repeat(64) },
   ]);
-  assert.match(markup, /Observation views cannot dispatch commands/);
+  assert.match(markup, /Observation surfaces cannot dispatch commands/);
+});
+
+test("Operate target markup is sequential, localized, stable-hooked, and free of danger theater", () => {
+  const markup = renderOperateMarkup({
+    action: "status", dryRun: false, parametersText: "{}", phase: "IDLE",
+    preview: null, inspection: null, conflicts: [], error: null, authorization: "",
+  }, { mutationAllowed: true });
+  assert.equal(assertUniqueTestIds(markup), true);
+  const hooks = new Set(collectTestIds(markup));
+  for (const hook of [
+    "operate-view", "operate-heading", "operate-boundary", "operate-catalog", "operate-sequence",
+    "operate-request", "operate-request-parameters", "operate-request-preview",
+    "operate-preflight", "operate-receipt", "operate-action-status", "operate-action-pause",
+  ]) assert.equal(hooks.has(hook), true, hook);
+  assert.match(markup, new RegExp(operateT("operate.title")));
+  assert.match(markup, /operate-sequence/);
+  assert.doesNotMatch(markup, /repeating-linear-gradient|MUTATION ZONE/);
+});
+
+test("Operate defensive posture makes preflight visibly unavailable", () => {
+  const markup = renderOperateMarkup({
+    action: "status", dryRun: false, parametersText: "{}", phase: "IDLE",
+    preview: null, inspection: null, conflicts: [], error: null, authorization: "",
+  }, { mutationAllowed: false, detail: "Historical inspection only." });
+  assert.match(markup, /data-test-id="operate-unavailable"/);
+  assert.match(markup, /data-operate-preview[^>]*disabled/);
+  assert.match(markup, /Historical inspection only\./);
+});
+
+test("Operate mutating review gives authorization exceptional salience without changing target binding", () => {
+  const reviewed = preview();
+  const markup = renderOperateMarkup({
+    action: "resume", dryRun: false, parametersText: "{}", phase: "REVIEW",
+    preview: reviewed, inspection: null, conflicts: [], error: null, authorization: "",
+  }, { mutationAllowed: true });
+  assert.match(markup, /data-posture="mutating"/);
+  assert.match(markup, /data-test-id="operate-authorization"/);
+  assert.match(markup, /data-test-id="operate-authorization-target"/);
+  assert.match(markup, new RegExp(reviewed.target_ref.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(markup, /AUTHORIZE RESUME/);
+});
+
+test("Operate owned human copy resolves through stable message keys", () => {
+  for (const key of [
+    "operate.title", "operate.catalog.title", "operate.request.preview", "operate.preflight.title",
+    "operate.authorization.title", "operate.receipt.reconcile", "operate.announce.unknown",
+  ]) assert.equal(typeof operateT(key), "string");
+});
+
+test("Operate CSS is sequential, responsive, compact-aware, focus-visible, and pattern-free", () => {
+  const css = fs.readFileSync(path.join(ROOT, "operate", "operate.css"), "utf8");
+  assert.match(css, /\.operate-sequence\s*\{/);
+  assert.match(css, /\.operate-stage::before/);
+  assert.match(css, /data-density="compact"/);
+  assert.match(css, /@media \(max-width:\s*980px\)/);
+  assert.match(css, /@media \(max-width:\s*720px\)/);
+  assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /forced-colors/);
+  assert.match(css, /focus-visible/);
+  assert.doesNotMatch(css, /repeating-linear-gradient/);
+  assert.doesNotMatch(css, /data-density="terminal"/);
 });
 
 test("Operate inspection surfaces bounded trainer log tails for owner diagnosis", () => {

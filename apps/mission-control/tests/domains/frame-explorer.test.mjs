@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import { assertFramePage, assertFrameRequest } from "../../renderer/frames/frame-contract.mjs";
 import { packingMetrics, visiblePosition } from "../../renderer/frames/frame-model.mjs";
 import { FrameQueryController, renderFrameExample } from "../../renderer/frames/frame-explorer.mjs";
+import { duplicateTestIds } from "../../renderer/foundation/test-hooks.mjs";
 
 const pages = JSON.parse(readFileSync(new URL("../../fixtures/frame-inspections-v1.json", import.meta.url)));
 const page = () => structuredClone(pages[1]);
@@ -133,6 +134,17 @@ test("receipt strings are escaped in text and attribute contexts", () => {
   const html = renderFrameExample(example, 4);
   assert.ok(!html.includes("<img"));
   assert.ok(html.includes("&lt;img"));
+});
+
+test("frame detail markup exposes stable unique hooks with progressive receipt detail", () => {
+  const example = page().examples[0];
+  const html = renderFrameExample(example, 4);
+  assert.deepEqual(duplicateTestIds(html), []);
+  for (const id of ["model-frame-receipt-provenance", "model-frame-position-0", "model-frame-position-0-table-wrap"]) {
+    assert.match(html, new RegExp(`data-test-id="${id}"`), id);
+  }
+  assert.match(html, /<details class="frame-disclosure"/);
+  assert.match(html, /Canonical semantic ID/);
 });
 
 test("query epochs discard superseded and unmounted responses; errors clear details", async () => {

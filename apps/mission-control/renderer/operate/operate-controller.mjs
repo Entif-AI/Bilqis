@@ -9,6 +9,7 @@ import {
   terminalReceipt,
 } from "./operate-model.mjs";
 import { bindOperateInteractions, renderOperateMarkup } from "./operate-view.mjs";
+import { operateT } from "./operate-messages.mjs";
 import { t } from "../foundation/i18n.mjs";
 
 function sameContext(left, right) {
@@ -19,9 +20,17 @@ function sameContext(left, right) {
 }
 
 function publicError(error) {
+  const code = typeof error?.code === "string" ? error.code
+    : typeof error?.message === "string" && error.message.startsWith("GUI17_") ? error.message.split(":", 1)[0]
+    : "GUI17_COMMAND_ERROR";
+  const messageKey = code === "GUI17_PARAMETERS_JSON_INVALID" ? "operate.error.parametersJson"
+    : code === "GUI17_PARAMETERS_OBJECT_REQUIRED" ? "operate.error.parametersObject"
+    : code === "GUI17_PARAMETER_UNSUPPORTED" ? "operate.error.parameterUnsupported"
+    : code === "GUI17_PARAMETER_SCALAR_REQUIRED" ? "operate.error.parameterScalar"
+    : "operate.error.generic";
   return Object.freeze({
-    code: typeof error?.code === "string" ? error.code : "GUI17_COMMAND_ERROR",
-    message: typeof error?.message === "string" ? error.message : "Command boundary rejected the request.",
+    code,
+    message: operateT(messageKey),
   });
 }
 
@@ -49,7 +58,14 @@ export function createOperateController(api) {
       onAction: selectAction,
       onDryRun: (value) => setState({ ...state, dryRun: value, preview: null, inspection: null, conflicts: [], authorization: "", phase: "IDLE", error: null }),
       onParameters: (value) => { state = Object.freeze({ ...state, parametersText: value, preview: null, inspection: null, conflicts: [], authorization: "", phase: "IDLE", error: null }); },
-      onAuthorization: (value) => setState({ ...state, authorization: value }),
+      onAuthorization: (value) => {
+        state = Object.freeze({ ...state, authorization: value });
+        const submit = host?.querySelector("[data-operate-submit]");
+        if (submit && state.preview?.consequence?.mutation === "MUTATING") {
+          submit.disabled = state.authorization !== authorizationPhrase(state.preview) ||
+            state.conflicts.length > 0 || state.phase === "SUBMITTING";
+        }
+      },
       onPreview: preview,
       onSubmit: submit,
       onReconcile: reconcile,
@@ -89,7 +105,7 @@ export function createOperateController(api) {
         ...state, preview: reviewed, conflicts, authorization: "",
         phase: conflicts.length ? "STALE_CONTEXT" : "REVIEW", error: null,
       });
-      onAnnounce?.(conflicts.length ? "Preflight found stale context. Authorization blocked." : "Preflight complete. Review exact target and consequence.");
+      onAnnounce?.(operateT(conflicts.length ? "operate.announce.stale" : "operate.announce.ready"));
     } catch (error) {
       setState({ ...state, phase: "ERROR", error: publicError(error) });
     }
@@ -121,10 +137,10 @@ export function createOperateController(api) {
       } else {
         setState({ ...state, phase: "LOST_ACK", error: null });
       }
-      onAnnounce?.(`Command ${receipt.state.toLowerCase()}. Operation identity retained.`);
+      onAnnounce?.(operateT("operate.announce.command", { state: String(receipt.state).toLowerCase() }));
     } catch (_error) {
       setState({ ...state, phase: "LOST_ACK", inspection: null, error: null });
-      onAnnounce?.("Command acknowledgement unavailable. No retry will be attempted; reconcile by operation identity.");
+      onAnnounce?.(operateT("operate.announce.lost"));
     }
   }
 
@@ -135,10 +151,10 @@ export function createOperateController(api) {
     try {
       const inspection = await api.fetchReceipt(operationId);
       setState({ ...state, inspection, phase: terminalReceipt(inspection.receipt?.state) ? "TERMINAL" : "PENDING", error: null });
-      onAnnounce?.(`Operation readback: ${inspection.receipt?.state ?? "UNKNOWN"}.`);
+      onAnnounce?.(operateT("operate.announce.readback", { state: inspection.receipt?.state ?? operateT("operate.value.unknown") }));
     } catch (_error) {
       setState({ ...state, phase: "OUTCOME_UNKNOWN", inspection: null, error: null });
-      onAnnounce?.("Operation is not yet reconcilable. No retry was issued.");
+      onAnnounce?.(operateT("operate.announce.unknown"));
     }
   }
 
@@ -148,11 +164,11 @@ export function createOperateController(api) {
     onInspect?.({
       kind: "operation", id: receipt.meta.record_id,
       details: {
-        "Operation": receipt.operation_id,
-        "State": receipt.state,
-        "Target": receipt.target_ref,
-        "Postcondition": receipt.postcondition_ref ?? "UNAVAILABLE",
-        "Error": receipt.error_ref ?? "NONE",
+        [operateT("operate.inspector.operation")]: receipt.operation_id,
+        [operateT("operate.inspector.state")]: receipt.state,
+        [operateT("operate.inspector.target")]: receipt.target_ref,
+        [operateT("operate.inspector.postcondition")]: receipt.postcondition_ref ?? operateT("operate.value.unavailable"),
+        [operateT("operate.inspector.error")]: receipt.error_ref ?? operateT("operate.value.none"),
       },
     });
   }

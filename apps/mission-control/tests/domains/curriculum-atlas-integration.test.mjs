@@ -137,9 +137,9 @@ test("GUI22 source keeps learned similarity out of causal edges and destination 
   assert.match(model, /DECLARED_PREREQUISITE/);
   assert.match(model, /SCHOOL_DECLARED/);
   assert.match(markup, /route\("capability", "capability", node\.id\)/);
-  assert.match(markup, /Open in Capability/);
-  assert.match(markup, /Open in Lineage · capability route unavailable/);
-  assert.match(markup, /no scheduling guarantee/);
+  assert.match(markup, /curriculum\.action\.openCapability/);
+  assert.match(markup, /curriculum\.action\.lineageUnavailable/);
+  assert.match(markup, /curriculum\.dossier\.consequence/);
 });
 
 test("GUI22 graph is keyboard-first, text-redundant, and reduced-motion safe", () => {
@@ -153,12 +153,14 @@ test("GUI22 graph is keyboard-first, text-redundant, and reduced-motion safe", (
     path.join(rendererRoot, "school", "curriculum-atlas.css"), "utf8",
   );
   assert.match(markup, /data-focus-key="curriculum:/);
-  assert.match(markup, /NEW THIS GRADE/);
-  assert.match(css, /SOURCE_HELD/);
-  assert.match(css, /IMPLEMENTATION_UNCOVERED/);
+  assert.match(markup, /curriculum\.node\.new/);
+  assert.match(markup, /testIdAttribute\("curriculum", "node"/);
+  assert.match(css, /data-state="source-held"/);
+  assert.match(css, /data-state="uncovered"/);
   assert.match(css, /prefers-reduced-motion/);
   assert.match(view, /aria-live="polite"/);
-  assert.match(view, /equivalent non-visual representation/);
+  assert.match(view, /curriculum-topology-grid/);
+  assert.match(view, /tableMarkup\(graph, visibility, ui\.semanticBindings, selected\.id\)/);
   assert.match(view, /semanticEpoch/);
   assert.match(view, /isActive/);
   assert.match(view, /bindContext/);
@@ -166,7 +168,8 @@ test("GUI22 graph is keyboard-first, text-redundant, and reduced-motion safe", (
   assert.match(view, /onInspect\(node\.id, node,/);
   assert.match(markup, /data-focus-key="curriculum:trace:/);
   assert.match(markup, /data-focus-key="curriculum:filter:/);
-  assert.match(css, /height: 160px/);
+  assert.match(css, /height:\s*160px/);
+  assert.doesNotMatch(css, /-webkit-line-clamp|text-overflow:\s*ellipsis/);
 });
 
 test("GUI22 open-in Semantic Atlas handoff is backed by route hydration", () => {
