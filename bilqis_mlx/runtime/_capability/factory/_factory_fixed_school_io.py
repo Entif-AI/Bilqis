@@ -140,6 +140,23 @@ def read_projection(root_fd: int, directory: str, filename: str) -> bytes | None
             os.close(child_fd)
 
 
+def projection_names(root_fd: int, directory: str) -> tuple[str, ...]:
+    """List one anchored projection directory without following path indirection."""
+    child_fd = None
+    try:
+        child_fd = _open_child_dir(root_fd, directory)
+        names = os.listdir(child_fd)
+        if any(not isinstance(name, str) or name in (".", "..") for name in names):
+            _invalid("BAMF_C05_FIXED_SCHOOL_PROJECTION_UNSAFE")
+        return tuple(sorted(names))
+    except OSError:
+        _invalid("BAMF_C05_FIXED_SCHOOL_PROJECTION_UNSAFE")
+        raise AssertionError
+    finally:
+        if child_fd is not None:
+            os.close(child_fd)
+
+
 def require_projection_json(
         root_fd: int, directory: str, filename: str, raw: bytes) -> None:
     """Repair one mutable projection from immutable authority and verify readback."""
