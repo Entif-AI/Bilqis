@@ -120,3 +120,19 @@ leaf and static evidence is reused for unaffected surfaces.
 Scope-drift audit after integration commits: every changed Resources obligation
 still maps to #1140's inherited acceptance; synchronization and review receipts
 add no feature scope or new acceptance.
+
+### Narrow-table correction and final intake
+
+Final screenshot inspection found that sticky category labels could consume the
+narrow scroller and conceal values. At widths through 640px, identity columns now
+use 40vw with word wrapping; numeric columns remain visible and the rest retain
+local scrolling. The browser regression requires five explicit identity hooks and
+bounds each identity column to 35–55% of the viewport. Measured widths are 128px
+at 320px and 156px at 390px. Updated screenshots, expanded-copy checks and axe
+checks pass. Independent focused review found no additional design drift.
+
+The final active repair consumed unified `9cc037d8d67d34fc548b76d7a2375c53ddfb23a7`
+through merge `40e04c95fc9e3a0c0045bfd43eb3c75e0ea351c9`. The Resources,
+layout and finite-asset dependency closure passed **42 tests** after the new
+identity-hook regression (31 Resources cases). Unchanged backend/semantic and
+unaffected UI evidence remains reused; hosted checks qualify the final PR head.
