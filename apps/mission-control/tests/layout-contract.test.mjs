@@ -58,6 +58,7 @@ test("operator values and wide School data stay inside their owning surfaces", (
   const home = source("home/home.css");
   const school = source("school/school.css");
   const teacher = source("teacher/teacher.css");
+  const salience = source("salience/salience.css");
 
   assert.match(home, /\.home-current dd[^}]*overflow-wrap:\s*anywhere/s);
   assert.match(home, /\.home-school-table-wrap[^}]*overflow:\s*auto/s);
@@ -68,6 +69,7 @@ test("operator values and wide School data stay inside their owning surfaces", (
   assert.match(teacher, /\.teacher-table-wrap\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
   assert.match(teacher, /\.teacher-detail-grid,/);
   assert.match(teacher, /\.teacher-comparison-controls\s*\{/);
+  assert.match(salience, /\.salience-table-wrap\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
 });
 
 test("operator typography and explanatory surfaces use the shared visual language", () => {
@@ -80,7 +82,12 @@ test("operator typography and explanatory surfaces use the shared visual languag
     source("teacher/teacher-comparison-view.mjs"),
     source("teacher/teacher-fidelity-view.mjs"),
   ].join("\n");
-  const salience = source("salience/salience-view.mjs");
+  const salience = [
+    source("salience/salience-view.mjs"),
+    source("salience/salience-observation-view.mjs"),
+    source("salience/salience-aggregation-view.mjs"),
+    source("salience/salience-routing-view.mjs"),
+  ].join("\n");
   const corrections = source("corrections/corrections-view.mjs");
   const evidence = source("evidence/evidence-markup.mjs");
 
@@ -94,9 +101,9 @@ test("operator typography and explanatory surfaces use the shared visual languag
   assert.match(shell, /\.context-facts\s*\{[^}]*repeat\(3, minmax\(140px, 1fr\)\)/s);
   assert.doesNotMatch(shell, /\.selector\s*\{/);
   assert.match(shell, /\.ui-glossary\s*\{/);
-  for (const markup of [school, salience]) {
-    assert.match(markup, /class="ui-glossary"/);
-  }
+  assert.match(school, /class="ui-glossary"/);
+  assert.doesNotMatch(salience, /class="ui-glossary"/);
+  assert.match(salience, /salience-axis-guide/);
   assert.doesNotMatch(corrections, /class="ui-glossary"/);
   assert.doesNotMatch(teacher, /class="ui-glossary"/);
   assert.match(teacher, /teacher-glossary/);
