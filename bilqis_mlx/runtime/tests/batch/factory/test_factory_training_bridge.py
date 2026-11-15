@@ -187,6 +187,27 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
                 compiled.compiled.compiler_configs[0],
                 forged)
 
+    def test_bound_b11_source_authority_rejects_in_place_row_drift(self):
+        _rows, prepared = self.prepare("A.IDENTITY", 37123, 1)
+        compiled = prepared.compiled_rows[0]
+        source = compiled.sources[0]
+        row = source.source_row
+        marker = object()
+        previous = row.get("_authority_drift_test", marker)
+        row["_authority_drift_test"] = True
+        try:
+            with self.assertRaises(BilqisError):
+                require_b11_source_execution_authority(
+                    compiled.source_execution_authority,
+                    compiled.compiled.compiled.rows[0],
+                    compiled.compiled.compiler_configs[0],
+                    source)
+        finally:
+            if previous is marker:
+                row.pop("_authority_drift_test", None)
+            else:
+                row["_authority_drift_test"] = previous
+
     def test_b11_row_binding_rejects_sibling_row_substitution(self):
         rows, prepared = self.prepare("A.IDENTITY", 37104, 2)
         first = prepared.compiled_rows[0]
