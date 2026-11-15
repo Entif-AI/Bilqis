@@ -143,8 +143,14 @@ class BamfOperatorRejectionReplayIntegrationTests(NativeSourceFixture, unittest.
             accepted=False, parent=parent.retained_state,
             retained=parent.retained_state)
         selection = SimpleNamespace(option_id="A.REJECT", visit=visit)
-        step = SimpleNamespace(transaction=SimpleNamespace(
-            parent=parent.retained_state, update_steps=1))
+        step = SimpleNamespace(
+            transaction=SimpleNamespace(parent=parent.retained_state, update_steps=1),
+            realized_cost={
+                "wall_seconds": 1.0,
+                "optimizer_steps": 1,
+                "candidate_optimizer_steps": 1,
+                "c08_memory_budget_bytes": 1,
+            })
         rejected = BamfPreparedVisit(
             "REJECTED", parent, selection=selection, step=step,
             decision=decision, retained=parent.retained_state,

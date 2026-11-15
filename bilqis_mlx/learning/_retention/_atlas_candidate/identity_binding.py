@@ -204,6 +204,31 @@ def candidate_identity_for_state(state, topology_digest: str, extents_digest: st
     invalid()
 
 
+def candidate_identity_for_bound_state(state) -> str:
+    """Reuse an exact live binding without making callers restate its B01 context."""
+    with _LOCK:
+        binding = _binding_for(state)
+        status = _STATUSES.get(id(state))
+        status_value = (status[1] if status is not None and status[0]() is state
+                        else "UNCLASSIFIED")
+    if binding is not None:
+        return require_candidate_identity_binding(
+            state, binding.topology_digest, binding.extents_digest, binding).digest
+    if status_value == "UNBINDABLE" or not candidate_identity_binding_supported():
+        return candidate_identity_digest(state)
+    invalid()
+
+
+def candidate_identity_for_canonical_consumer(state) -> str:
+    """Reuse a live binding when present; otherwise perform the canonical proof."""
+    with _LOCK:
+        binding = _binding_for(state)
+    if binding is not None:
+        return require_candidate_identity_binding(
+            state, binding.topology_digest, binding.extents_digest, binding).digest
+    return candidate_identity_digest(state)
+
+
 def candidate_identity_metrics_snapshot() -> dict:
     with _LOCK:
         return dict(_METRICS)

@@ -114,12 +114,13 @@ class MotifAllocationPublicationTests(unittest.TestCase):
                     run_dir, transaction, continuation)
                 retained = resolve_candidate(staged, accepted=True)
                 successor = derive_motif_successor_bundle(
-                    parent, staged,
+                    parent, staged, retained_state=retained,
                     parent_manifest_sha256=genesis["manifest_sha256"],
                     delivery_events=({
                         "event": "BAMF_GENERATION_ACCEPTED",
                         "optimizer_step": retained.optimizer_step,
                     },))
+                self.assertIs(successor.retained_state, retained)
                 decision = accepted_c05_decision(
                     run_dir, staged, parent, successor, retained)
                 self._assert_transition_mutation_rejected(

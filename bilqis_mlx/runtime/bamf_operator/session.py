@@ -12,8 +12,10 @@ import time
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
-from bilqis_mlx.learning.atlas_candidate import resolve_candidate
 from bilqis_mlx.learning.atlas_retention_decision import issue_factory_retention_decision
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_metrics_delta, candidate_identity_metrics_snapshot,
+)
 from bilqis_mlx.runtime.accepted_priority_visit import (
     accepted_priority_school, execute_accepted_priority_candidate,
 )
@@ -145,6 +147,7 @@ def prepare_bamf_visit(
     if observer is not None:
         observer.update(phase="TRAINING", capability_id=capability, candidate_step=0,
                         candidate_horizon=horizon, candidate_optimizer_step=parent.retained_state.optimizer_step)
+    identity_before = candidate_identity_metrics_snapshot()
     steps = _execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
         progress, source_prefetch_workers, source_prefetch_executor,
@@ -168,7 +171,9 @@ def prepare_bamf_visit(
         context, step.transaction, atlas_path, capability, run_dir=run_dir,
         **({"observer": lambda fields: observer.update(**fields)} if observer is not None else {}))
     decision = issue_factory_retention_decision(evaluation)
-    retained = resolve_candidate(step.transaction, accepted=decision.accepted)
+    identity_metrics = candidate_identity_metrics_delta(identity_before)
+    retained = (
+        evaluation.candidate_state if decision.accepted else evaluation.parent_state)
     successor = None
     if decision.accepted:
         successor = derive_accepted_teacher_successor(
@@ -177,12 +182,14 @@ def prepare_bamf_visit(
                 "event": "BAMF_C16_3_ACCEPTED",
                 "optimizer_step": retained.optimizer_step,
                 "capability": capability,
-                "resource": _resource_observation(run_dir, tuple(steps)),
+                "resource": _resource_observation(
+                    run_dir, tuple(steps), identity_metrics=identity_metrics),
             },))
     return BamfPreparedVisit(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
-        retained=retained, capability=capability, successor=successor)
+        retained=retained, capability=capability, successor=successor,
+        identity_metrics=identity_metrics)
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
@@ -225,6 +232,9 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
             "retention_reason": decision.reason,
             "capability": capability,
             "decision": decision.to_record(),
+            "resource": _resource_observation(
+                run_dir, prepared.steps if prepared.steps else prepared.step,
+                identity_metrics=prepared.identity_metrics),
         })
         return "REJECTED"
     successor = prepared.successor

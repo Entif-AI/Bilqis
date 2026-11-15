@@ -111,7 +111,7 @@ class CandidateIdentityTests(unittest.TestCase):
             self.assertEqual(candidate_identity_digest(value), legacy_oracle(value))
 
     def test_historical_hex_encoding_is_bounded_per_chunk(self):
-        from bilqis_mlx.learning._retention._atlas_candidate import identity as owner
+        from bilqis_mlx.learning._atlas_candidate import identity as owner
         sizes = []
         original = owner._bytes
         class ObservedBytes:

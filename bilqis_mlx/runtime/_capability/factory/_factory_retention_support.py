@@ -4,8 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction, resolve_candidate
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    bind_candidate_identity, candidate_identity_for_canonical_consumer,
+)
 from bilqis_mlx.learning.atlas_package_import import PackageImportTransaction
 from bilqis_mlx.runtime.atlas_training_authority import (
     BamfLogicalBatchTrainingAuthority, BamfTrainingAuthority,
@@ -80,8 +82,8 @@ def _candidate_from_live_parent(run_dir: Path, transaction: CandidateTransaction
     cache = bind_accepted_execution_cache(run_dir)
     custody = transaction.parent.custody
     if (transaction.update_steps < 1 or custody is None
-            or candidate_identity_digest(transaction.parent)
-            != candidate_identity_digest(parent.retained_state)
+            or candidate_identity_for_canonical_consumer(transaction.parent)
+            != candidate_identity_for_canonical_consumer(parent.retained_state)
             or custody.run_id != cache.run_id
             or custody.generation != cache.generation
             or custody.manifest_sha256 != cache.accepted_manifest_sha256
@@ -90,13 +92,14 @@ def _candidate_from_live_parent(run_dir: Path, transaction: CandidateTransaction
         _invalid("BAMF_C05_CANDIDATE_PARENT_CUSTODY_MISMATCH")
     preview = resolve_candidate(transaction, accepted=True)
     if transaction.motif_transition is None:
+        bind_candidate_identity(preview, parent.topology.digest, parent.extents.digest)
         successor = derive_successor_bundle(
             parent, preview,
             parent_manifest_sha256=cache.accepted_manifest_sha256,
             delivery_events=())
     else:
         successor = derive_motif_successor_bundle(
-            parent, transaction,
+            parent, transaction, retained_state=preview,
             parent_manifest_sha256=cache.accepted_manifest_sha256,
             delivery_events=())
     return parent, successor, preview, cache
@@ -111,8 +114,8 @@ def _package_import_from_live_parent(
     cache = bind_accepted_execution_cache(run_dir)
     custody = transaction.parent.custody
     if (custody is None
-            or candidate_identity_digest(transaction.parent)
-            != candidate_identity_digest(parent.retained_state)
+            or candidate_identity_for_canonical_consumer(transaction.parent)
+            != candidate_identity_for_canonical_consumer(parent.retained_state)
             or custody.run_id != cache.run_id
             or custody.generation != cache.generation
             or custody.manifest_sha256 != cache.accepted_manifest_sha256

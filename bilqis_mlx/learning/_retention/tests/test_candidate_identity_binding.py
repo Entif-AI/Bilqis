@@ -13,8 +13,8 @@ from bilqis_mlx.learning.atlas_engram_transaction import MotifAllocationSnapshot
 from bilqis_mlx.learning.atlas_plasticity import IdentityRowAge, PlasticityPolicy
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
 from bilqis_mlx.runtime.model_topology_v2 import GenerationExtents, ModelTopologySpecV2
-from bilqis_mlx.learning._retention._atlas_candidate.identity import candidate_identity_digest
-from bilqis_mlx.learning._retention._atlas_candidate.identity_binding import (
+from bilqis_mlx.learning._atlas_candidate.identity import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
     _reset_candidate_identity_metrics_for_tests,
     bind_candidate_identity,
     candidate_identity_for_state,
@@ -118,7 +118,7 @@ class CandidateIdentityBindingTests(TestCase):
         state, topology, extents = _state()
         mark_candidate_state_unbindable(state, "CALLER_OWNED_NUMERICAL_STATE")
         with patch(
-            "bilqis_mlx.learning._retention._atlas_candidate.identity_binding."
+            "bilqis_mlx.learning._atlas_candidate.identity_binding."
             "candidate_identity_binding_supported", return_value=False,
         ):
             self.assertEqual(

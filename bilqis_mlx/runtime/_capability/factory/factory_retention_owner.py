@@ -6,7 +6,9 @@ from pathlib import Path
 from bilqis_mlx.fixed_frontier import load_frontier_cohort
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
 from bilqis_mlx.learning.atlas_package_import import PackageImportTransaction
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
+)
 from bilqis_mlx.runtime.bamf_bundle.admission import (
     bind_accepted_execution_cache, derive_successor_bundle,
     load_accepted_generation,
@@ -35,6 +37,11 @@ from ._factory_identity_evaluation import (
 
 
 CURRENT_EVIDENCE_STAGE = EvidenceStage.FOUNDATION_ACQUISITION
+
+
+def candidate_identity_digest(state):
+    """Preserve the Factory owner's test seam while reusing live bindings."""
+    return candidate_identity_for_canonical_consumer(state)
 
 from ._factory_retention_support import (
     C05_FRESH_LESSON_SEED_OFFSET, C05_FRESH_TARGET_SEED_OFFSET,
@@ -155,6 +162,8 @@ def _bind_factory_evaluation_issuer(raw_issue):
             candidate_identity_digest(candidate.retained_state),
             generation_authority,
             cache,
+            parent_state=parent.retained_state,
+            candidate_state=candidate.retained_state,
         )
 
     def foundation(*args, **kwargs):

@@ -4,7 +4,9 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Mapping
 
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
+)
 from bilqis_mlx.runtime.atlas_optimizer import AdamWHyperparameters
 
 from ..records import canonical, invalid, sha
@@ -119,7 +121,7 @@ def _candidate_identity_payload(candidate, *, allow_missing_run_identity: bool) 
             "generation": candidate.generation,
             "parent_manifest_sha256": candidate.parent_manifest_sha256,
             "run_identity_sha256": identity_digest,
-            "optimizer_state_sha256": candidate_identity_digest(state),
+            "optimizer_state_sha256": candidate_identity_for_canonical_consumer(state),
             "optimizer_hyperparameters_sha256": optimizer_hyperparameters_digest(
                 candidate.optimizer_hyperparameters),
             "implementation_sha256": candidate.implementation_sha256,

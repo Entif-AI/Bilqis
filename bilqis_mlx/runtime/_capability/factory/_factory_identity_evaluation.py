@@ -23,7 +23,7 @@ def _new_factory_evaluation_owner():
 
     def issue(decision, parent_candidate_sha256, candidate_candidate_sha256,
               candidate_generation_authority_sha256,
-              parent_assessment_cache=None):
+              parent_assessment_cache=None, *, parent_state=None, candidate_state=None):
         item = object.__new__(FactoryRetentionEvaluation)
         for name, value in (
             ("decision", decision),
@@ -32,6 +32,8 @@ def _new_factory_evaluation_owner():
             ("candidate_generation_authority_sha256",
              candidate_generation_authority_sha256),
             ("parent_assessment_cache", parent_assessment_cache),
+            ("parent_state", parent_state),
+            ("candidate_state", candidate_state),
         ):
             object.__setattr__(item, name, value)
         issued[id(item)] = item
@@ -49,6 +51,8 @@ class FactoryRetentionEvaluation:
     candidate_candidate_sha256: str
     candidate_generation_authority_sha256: str | None
     parent_assessment_cache: ParentAssessmentCacheReceipt | None
+    parent_state: object
+    candidate_state: object
 
     def __init__(self, *args, **kwargs):
         _invalid("BAMF_C05_FACTORY_EVALUATION_CALLER_CONSTRUCTION_FORBIDDEN")
