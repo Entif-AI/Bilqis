@@ -16,7 +16,8 @@ from ..factory_release.admission import (
 )
 from ..codec import load_bamf_bundle, save_bamf_bundle
 from ..records import (
-    BAMF_POINTER_SCHEMA, BamfBundleCandidate, CompleteStudent, invalid,
+    BAMF_POINTER_SCHEMA, BamfBundleCandidate, CompleteStudent,
+    complete_student_from_candidate, invalid,
 )
 from .authority import (
     _UNBOUND_RETRY,
@@ -61,7 +62,11 @@ def _load_generation_locked(pointer_path: Path) -> tuple[CompleteStudent, dict]:
 
 def _parent_acceptance_for_publication(
         run_dir: Path, candidate: BamfBundleCandidate,
-        accepted):
+        accepted, *, parent_witness=None):
+    from ..accepted_execution_cache import (
+        _bind_accepted_publication_parent_locked,
+        _require_accepted_publication_parent_locked,
+    )
     pointer_lock = (
         _initial_generation_pointer_lock
         if candidate.generation == 0 else _publication_pointer_lock)
@@ -69,7 +74,10 @@ def _parent_acceptance_for_publication(
         run_dir, candidate, accepted,
         pointer_lock=pointer_lock, read_pointer=_read_pointer,
         live_manifest=_live_bundle_manifest, load_bundle=load_bamf_bundle,
-        require_published_acceptance=_require_published_acceptance)
+        require_published_acceptance=_require_published_acceptance,
+        parent_witness=parent_witness,
+        bind_parent_witness_locked=_bind_accepted_publication_parent_locked,
+        require_parent_witness_locked=_require_accepted_publication_parent_locked)
 
 
 def _save_publication_bundle(candidate: BamfBundleCandidate, stage: Path,
@@ -92,11 +100,15 @@ def _save_publication_bundle(candidate: BamfBundleCandidate, stage: Path,
 def publish_bamf_generation(
         run_dir: Path, candidate: BamfBundleCandidate, *,
         acceptance: AcceptedCandidateBinding | None = None,
-        reserve_gib: float = 100.0) -> dict:
+        reserve_gib: float = 100.0, parent_witness=None,
+        publication_observer=None) -> dict:
     """Publish one retained successor; generation zero has a separate B13 gate."""
     accepted = _require_acceptance(candidate, acceptance)
-    return _publish_authorized_generation(
-        run_dir, candidate, accepted, reserve_gib=reserve_gib)
+    from .instrumentation import publication_measurement
+    with publication_measurement(publication_observer):
+        return _publish_authorized_generation(
+            run_dir, candidate, accepted, reserve_gib=reserve_gib,
+            parent_witness=parent_witness)
 
 
 def publish_atlas_admission_generation(
@@ -165,20 +177,21 @@ def _require_successor_source_authority(run_dir, parent, child, authority):
 
 def _publish_authorized_generation(
         run_dir: Path, candidate: BamfBundleCandidate, authority, *,
-        reserve_gib: float) -> dict:
+        reserve_gib: float, parent_witness=None) -> dict:
     """Shared crash-safe transaction after generation-specific authority validates."""
     authority, prepared, existing = _authorize_publication_candidate(
         run_dir, candidate, authority)
     if existing is not None:
         return existing
     run_dir = Path(run_dir)
-    parent_acceptance = _parent_acceptance_for_publication(
-        run_dir, candidate, authority)
+    parent_acceptance, parent_witness = _parent_acceptance_for_publication(
+        run_dir, candidate, authority, parent_witness=parent_witness)
     stage = _stage(run_dir)
     try:
         manifest = _save_publication_bundle(
             candidate, stage, parent_acceptance, reserve_gib=reserve_gib)
         digest = manifest["manifest_sha256"]
+        published_student = complete_student_from_candidate(candidate)
         target = _require_bundle_root(run_dir, create=True) / digest
         pointer_path = run_dir / "bamf-state.json"
         pointer_lock = (
@@ -193,24 +206,40 @@ def _publish_authorized_generation(
             if prepared is not None:
                 from ..genesis import validate_initial_generation_preparation
                 validate_initial_generation_preparation(prepared)
+            if parent_witness is not None:
+                from ..accepted_execution_cache import (
+                    _require_accepted_publication_parent_locked,
+                )
+                parent_witness = _require_accepted_publication_parent_locked(
+                    run_dir, current, parent_witness)
+                witnessed_parent = parent_witness.student
+            else:
+                witnessed_parent = None
             parent = _validate_parent_transition_impl(
                 run_dir, current, candidate,
-                load_bundle=load_bamf_bundle, reconcile=reconcile_bamf_outbox)
+                load_bundle=load_bamf_bundle, reconcile=reconcile_bamf_outbox,
+                parent=witnessed_parent)
             if candidate.generation > 0:
                 if parent is None:
                     invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
                 _require_successor_source_authority(
                     run_dir, parent, candidate, authority)
                 _require_accepted_parent_impl(
-                    run_dir, candidate, authority, load_bundle=load_bamf_bundle)
-                live_parent_acceptance = _require_published_acceptance(
-                    run_dir, current, parent)
-                if live_parent_acceptance.digest != parent_acceptance:
+                    run_dir, candidate, authority, load_bundle=load_bamf_bundle,
+                    parent=parent)
+                live_parent_acceptance = (
+                    parent_witness.acceptance_sha256
+                    if parent_witness is not None else
+                    _require_published_acceptance(run_dir, current, parent).digest)
+                if live_parent_acceptance != parent_acceptance:
                     invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
             if target.exists() or target.is_symlink():
                 if target.is_symlink() or not target.is_dir():
                     invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
-                load_bamf_bundle(target, expected_manifest_sha256=digest)
+                from .instrumentation import publication_bundle_load
+                with publication_bundle_load("child"):
+                    published_student = load_bamf_bundle(
+                        target, expected_manifest_sha256=digest)
                 _remove_stage(stage)
             else:
                 stage.rename(target)
@@ -228,8 +257,7 @@ def _publish_authorized_generation(
                 "manifest_sha256": digest, "acceptance_sha256": authority.digest,
             }
             _atomic_pointer(pointer_path, pointer)
-            student = load_bamf_bundle(target, expected_manifest_sha256=digest)
-            reconcile_bamf_outbox(run_dir, student)
+            reconcile_bamf_outbox(run_dir, published_student)
             return pointer
     except BaseException:
         if stage.exists() and stage.is_dir() and not stage.is_symlink():

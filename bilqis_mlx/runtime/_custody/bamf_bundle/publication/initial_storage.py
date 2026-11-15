@@ -8,6 +8,7 @@ from pathlib import Path
 from bilqis_mlx.data_plane import DataPlaneError
 from ..records import canonical, invalid
 from .storage import ACCEPTANCE_DIR, _fsync_directory
+from .instrumentation import note_fsync, note_write
 
 
 def _classify_initial_generation_target(run_dir: Path) -> str:
@@ -110,8 +111,10 @@ def _write_acceptance_record(run_dir: Path, manifest_sha256: str,
     try:
         with os.fdopen(fd, "wb") as stream:
             stream.write(raw)
+            note_write(len(raw))
             stream.flush()
             os.fsync(stream.fileno())
+            note_fsync(len(raw))
         os.replace(temporary, path)
         _fsync_directory(path.parent)
     finally:

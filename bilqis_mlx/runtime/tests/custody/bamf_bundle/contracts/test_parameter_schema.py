@@ -12,6 +12,9 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_candidate import CandidateState
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_bundle, save_bamf_bundle
+from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import (
+    publication_bundle_load, publication_measurement,
+)
 from bilqis_mlx.runtime.mlx_checkpoint import save_bamf_state_payload
 from bilqis_mlx.runtime.model_topology_v2 import (
     GenerationExtents, bamf_storage_key, create_unbound_bamf_state,
@@ -78,7 +81,9 @@ class ParameterSchemaTests(unittest.TestCase):
             with patch.dict(os.environ, {"BILQIS_DATA_PLANE": str(root / "plane.db")}):
                 self._reject_parameter_drift(root, spec, extents, numerical)
                 bundle = root / "complete"
-                manifest = save_bamf_bundle(value, bundle)
+                steady_metrics = []
+                with publication_measurement(steady_metrics.append):
+                    manifest = save_bamf_bundle(value, bundle)
                 self.assertEqual(manifest["tensors"]["tensor_count"], 860)
                 self.assertEqual(manifest["topology"], spec.to_record())
                 self.assertEqual(manifest["extents"], extents.to_record())
@@ -87,8 +92,14 @@ class ParameterSchemaTests(unittest.TestCase):
                     numerical.parameters, numerical.m, numerical.v, numerical.update_counts)
                     for array in tree.values())
                 self.assertEqual(manifest["tensors"]["uncompressed_bytes"], expected_bytes)
-                restored = load_bamf_bundle(
-                    bundle, expected_manifest_sha256=manifest["manifest_sha256"])
+                self.assertEqual(steady_metrics[0].tensor_bytes_read, 0)
+                self.assertGreaterEqual(steady_metrics[0].write_bytes, expected_bytes)
+                cold_metrics = []
+                with publication_measurement(cold_metrics.append), publication_bundle_load("child"):
+                    restored = load_bamf_bundle(
+                        bundle, expected_manifest_sha256=manifest["manifest_sha256"])
+                self.assertEqual(cold_metrics[0].child_bundle_loads, 1)
+                self.assertEqual(cold_metrics[0].tensor_bytes_read, expected_bytes)
                 for field in ("parameters", "m", "v", "update_counts"):
                     before = getattr(numerical, field)
                     after = getattr(restored.retained_state.optimizer, field)
