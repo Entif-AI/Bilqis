@@ -1,0 +1,45 @@
+{
+  "results": [
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "scroll": 1440,
+      "font": 12
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "scroll": 1440,
+      "font": 12
+    },
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "scroll": 390,
+      "font": 12
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "scroll": 320,
+      "font": 12
+    }
+  ],
+  "checks": [
+    "draft",
+    "caret",
+    "focus",
+    "disclosure",
+    "exact-inspection",
+    "unique-hooks",
+    "states",
+    "reflow",
+    "minimum-font",
+    "reduced-motion",
+    "rtl-text-spacing"
+  ]
+}
