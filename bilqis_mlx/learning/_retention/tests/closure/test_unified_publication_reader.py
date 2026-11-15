@@ -11,7 +11,9 @@ class UnifiedPublicationReaderTests(unittest.TestCase):
         proof = SimpleNamespace(digest='2'*64)
         state = SimpleNamespace(optimizer_step=1, step_proofs=(proof,))
         student = SimpleNamespace(run_id='run', generation=1, retained_state=state,
-                                  extents=SimpleNamespace(factor_map_digest='3'*64),
+                                  topology=SimpleNamespace(digest='topology'),
+                                  extents=SimpleNamespace(
+                                      digest='extents', factor_map_digest='3'*64),
                                   correction_frontier={'source_authority_registry_sha256': None},
                                   transition={})
         acceptance = SimpleNamespace(digest='1'*64, run_id='run', generation=1,
@@ -19,7 +21,7 @@ class UnifiedPublicationReaderTests(unittest.TestCase):
             schema_version=CLOSURE_ACCEPTANCE_SCHEMA, step_proof_sha256=('2'*64,),
             source_authority_registry_sha256=None)
         pointer = {'acceptance_sha256': '1'*64}
-        with patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance.candidate_identity_digest', return_value='4'*64), \
+        with patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance.bind_candidate_identity_or_fallback', return_value='4'*64), \
              patch('bilqis_mlx.learning._retention._atlas_acceptance_records.require_closure_proofs', side_effect=ValueError('mismatched closure')) as verify:
             with self.assertRaisesRegex(ValueError, 'mismatched closure'):
                 _require_non_genesis_acceptance_identity(acceptance, pointer, student)
@@ -30,6 +32,8 @@ class UnifiedPublicationReaderTests(unittest.TestCase):
         from bilqis_mlx.runtime.bamf_bundle.publication.acceptance import require_published_acceptance
         from bilqis_mlx.runtime.bamf_bundle.records import BAMF_POINTER_SCHEMA
         parent = SimpleNamespace(run_id='run', generation=0, run_identity='id',
+            topology=SimpleNamespace(digest='topology'),
+            extents=SimpleNamespace(digest='extents'),
             retained_state=SimpleNamespace(allocations=SimpleNamespace(digest='allocation')))
         student = SimpleNamespace(run_id='run', generation=1, run_identity='id',
             parent_manifest_sha256='a'*64, transition={},
@@ -39,7 +43,7 @@ class UnifiedPublicationReaderTests(unittest.TestCase):
         with patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance._read_published_acceptance_record', return_value={}), \
              patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance._parse_published_acceptance', return_value=binding), \
              patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance._require_non_genesis_acceptance_identity'), \
-             patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance.candidate_identity_digest', return_value='c'*64):
+             patch('bilqis_mlx.runtime.bamf_bundle.publication.acceptance.bind_candidate_identity_or_fallback', return_value='c'*64):
             with self.assertRaises(BilqisError):
                 require_published_acceptance('/tmp/test', pointer, student,
                     load_bundle=lambda *args, **kwargs: parent, live_manifest=lambda *args: {})

@@ -76,12 +76,12 @@ test("epoch-millisecond trainer heartbeat projected to Unix seconds renders near
   assert.doesNotMatch(html, /year/);
 });
 
-test("observed elapsed and CPU values render human durations across seconds minutes hours days and fractions", () => {
+test("observed elapsed and CPU values render human durations and round fractional seconds", () => {
   const cases = [
     { elapsed_ms: 4_000, cpu_seconds: 0.4, expected: ["4 seconds", "0 seconds"] },
     { elapsed_ms: 64_000, cpu_seconds: 61.25, expected: ["1 minute and 4 seconds", "1 minute and 1 second"] },
     { elapsed_ms: 3_664_000, cpu_seconds: 3_661.5, expected: ["1 hour, 1 minute, and 4 seconds", "1 hour, 1 minute, and 2 seconds"] },
-    { elapsed_ms: 93_784_500, cpu_seconds: 90_061.02, expected: ["1 day, 2 hours, 3 minutes, and 4.5 seconds", "1 day, 1 hour, 1 minute, and 1 second"] },
+    { elapsed_ms: 93_784_500, cpu_seconds: 90_061.02, expected: ["1 day, 2 hours, 3 minutes, and 5 seconds", "1 day, 1 hour, 1 minute, and 1 second"] },
     { elapsed_ms: 34_560_000_000, cpu_seconds: 34_560_000, expected: ["400 days"] },
   ];
   for (const sample of cases) {

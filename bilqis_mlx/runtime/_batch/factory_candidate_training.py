@@ -14,6 +14,9 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
     bind_candidate_execution_cache, bind_execution_generation,
 )
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_metrics_delta, candidate_identity_metrics_snapshot,
+)
 
 from .atlas_training_delivery import capture_realized_delivery
 from .factory_candidate_microbatch import (
@@ -90,6 +93,7 @@ def _execute_prepared_candidate(
         semantic_context=None,
         semantic_context_materialized_in_step=False,
         finalize_candidate=True) -> FactoryCandidateStep:
+    identity_before = candidate_identity_metrics_snapshot()
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
     feature_context = _prepared_feature_context(prepared, semantic_context)
     parameters = dict((parent.retained_state.optimizer if candidate is None
@@ -132,6 +136,7 @@ def _execute_prepared_candidate(
     cost = _realized_candidate_cost(
         start, loss_total, prepared, resource_plan, memory_budget, transaction,
         feature_context, semantic_context_materialized_in_step, c08_metrics)
+    cost.update(candidate_identity_metrics_delta(identity_before))
     capture_realized_delivery(
         prepared.training_batch, source_context, observation.capture,
         capability, observation.step, tuple(delivered_rows),

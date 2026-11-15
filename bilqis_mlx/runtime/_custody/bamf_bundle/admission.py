@@ -81,7 +81,7 @@ def derive_successor_bundle(parent: CompleteStudent, retained_state: CandidateSt
 
 
 def derive_motif_successor_bundle(
-        parent: CompleteStudent, transaction: CandidateTransaction, *,
+        parent: CompleteStudent, transaction: CandidateTransaction, *, retained_state=None,
         parent_manifest_sha256: str, delivery_events: tuple) -> BamfBundleCandidate:
     """Build the exact successor C05 must screen for a staged B07 transition."""
     from bilqis_mlx.learning._atlas_candidate.motif_transition import (
@@ -99,9 +99,18 @@ def derive_motif_successor_bundle(
         invalid("BAMF_MOTIF_ALLOCATION_TRANSITION_INVALID")
     b12 = transaction.motif_transition
     _require_candidate_motif_allocation_transition(b12)
-    retained_state = resolve_candidate(transaction, accepted=True)
+    retained_state = (
+        resolve_candidate(transaction, accepted=True)
+        if retained_state is None else retained_state)
+    if type(retained_state) is not CandidateState:
+        invalid("BAMF_MOTIF_ALLOCATION_TRANSITION_INVALID")
     extents = b12.candidate_extents
     reconcile_b01_optimizer_manifest(retained_state.optimizer, parent.topology, extents)
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+        bind_candidate_identity_or_fallback,
+    )
+    bind_candidate_identity_or_fallback(
+        retained_state, parent.topology.digest, extents.digest)
     transition = derive_motif_allocation_transition(b12, retained_state)
     return BamfBundleCandidate(
         parent.run_id, parent.generation + 1, parent_manifest_sha256,

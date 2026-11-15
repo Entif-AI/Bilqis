@@ -4,7 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 import threading
 
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
+)
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
     require_accepted_execution_cache,
 )
@@ -229,7 +231,7 @@ def factory_parent_assessment_identity(
         accepted_manifest_sha256=accepted_cache.accepted_manifest_sha256,
         accepted_generation_binding=accepted_cache.generation_binding,
         parent_generation_sha256=parent_generation,
-        parent_candidate_sha256=candidate_identity_digest(
+        parent_candidate_sha256=candidate_identity_for_canonical_consumer(
             parent.retained_state),
         factory_release_sha256=release.release_sha256,
         semantic_catalog_sha256=release.semantic_catalog_sha256,

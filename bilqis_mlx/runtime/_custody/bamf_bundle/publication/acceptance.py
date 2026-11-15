@@ -11,7 +11,9 @@ from bilqis_mlx.learning.atlas_acceptance import (
     MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_ACCEPTANCE_SCHEMA,
     EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
     EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
-    candidate_identity_digest,
+)
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    bind_candidate_identity_or_fallback,
 )
 
 from ..atlas_admission import (
@@ -46,11 +48,13 @@ def require_accepted_parent(
             expected_manifest_sha256=parent_sha)
     elif type(parent) is not CompleteStudent:
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    parent_digest = bind_candidate_identity_or_fallback(
+        parent.retained_state, parent.topology.digest, parent.extents.digest,
+        expected_digest=acceptance.parent_candidate_identity_sha256)
     if (parent.run_id != candidate.run_id
             or parent.generation + 1 != candidate.generation
             or parent.run_identity != candidate.run_identity
-            or acceptance.parent_candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or acceptance.parent_candidate_identity_sha256 != parent_digest):
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
     vocabulary_changed = (
         parent.extents.semantic_bank_count != candidate.extents.semantic_bank_count
@@ -115,13 +119,16 @@ def _parse_published_acceptance(student, pointer, record):
 
 
 def _require_non_genesis_acceptance_identity(acceptance, pointer, student) -> None:
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import bind_candidate_identity
+    candidate_digest = bind_candidate_identity_or_fallback(
+        student.retained_state, student.topology.digest, student.extents.digest,
+        expected_digest=acceptance.candidate_identity_sha256)
     if (acceptance.digest != pointer["acceptance_sha256"]
             or acceptance.run_id != student.run_id
             or acceptance.generation != student.generation
             or acceptance.feature_sha256 != student.extents.factor_map_digest
             or acceptance.optimizer_step != student.retained_state.optimizer_step
-            or acceptance.candidate_identity_sha256
-            != candidate_identity_digest(student.retained_state)
+            or acceptance.candidate_identity_sha256 != candidate_digest
             or (not isinstance(acceptance, (
                     ParsedAtlasAdmissionBinding,
                     ParsedFactoryReleaseAdmissionBinding))
@@ -198,6 +205,10 @@ def require_published_acceptance(
         parent = load_bundle(
             Path(run_dir) / "bamf-bundles" / parent_sha,
             expected_manifest_sha256=parent_sha)
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import bind_candidate_identity
+    parent_digest = bind_candidate_identity_or_fallback(
+        parent.retained_state, parent.topology.digest, parent.extents.digest,
+        expected_digest=acceptance.parent_candidate_identity_sha256)
     if (parent.run_id != student.run_id
             or parent.generation + 1 != student.generation
             or (not legacy_student
@@ -205,7 +216,6 @@ def require_published_acceptance(
             or (not is_motif_allocation_transition(student.transition)
                 and parent.retained_state.allocations.digest
                 != student.retained_state.allocations.digest)
-            or acceptance.parent_candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or acceptance.parent_candidate_identity_sha256 != parent_digest):
         invalid("BAMF_RUN_IDENTITY_DRIFT")
     return acceptance
