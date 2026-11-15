@@ -82,15 +82,20 @@ def _prior_credit(snapshot, closure, prior, current):
         return set(), None, None, False
     credited = credited_obligation_keys(
         snapshot, closure, prior, current)
-    pending_receipt = prior.pending_receipt if prior else None
-    pending_key = (None if pending_receipt is None else (
-        pending_receipt.selected_semantic_id,
-        obligation_digest(pending_receipt.selection.selected_obligations),
+    pending_sha = prior.pending_staged_receipt_sha256
+    pending_credit = (
+        None if pending_sha is None else
+        _history_owner(prior).receipt_credit(prior.history_head, pending_sha))
+    if pending_sha is not None and pending_credit is None:
+        _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_INVALID")
+    pending_key = (None if pending_credit is None else (
+        pending_credit.selected_semantic_id,
+        pending_credit.obligation_sha256,
     ))
     invalidated = pending_key is not None and pending_key not in credited
-    pending = (prior.pending_staged_successor_sha256
-               if prior is not None and not invalidated else None)
-    return credited, (None if invalidated else pending_receipt), pending, invalidated
+    pending = (pending_credit.staged_successor_sha256
+               if pending_credit is not None and not invalidated else None)
+    return credited, (None if invalidated else pending_sha), pending, invalidated
 
 
 def _status_without_new_proposal(
@@ -118,7 +123,7 @@ def _progress_result(
     closure: FrontierClosure,
     status: FrontierStatus,
     proposal: str | None,
-    pending_receipt: StagedSelectionReceipt | None,
+    pending_receipt_sha256: str | None,
     direct_uncovered: int,
     prior: FrontierProgress | None = None,
     staged_receipt: StagedSelectionReceipt | None = None,
@@ -136,7 +141,7 @@ def _progress_result(
         head = owner.append_receipt(head, staged_receipt, verified=True)
     provisional = FrontierProgress(
         input_snapshot, planning_snapshot, head, status, proposal,
-        pending_receipt, len(closure.source_holds), direct_uncovered,
+        pending_receipt_sha256, len(closure.source_holds), direct_uncovered,
         counts[ClosureStatus.WAITING_FOR_EVIDENCE], counts[ClosureStatus.READY],
         _remediation(closure), "0" * 64,
     )
@@ -192,21 +197,21 @@ def plan_frontier_progress(
         snapshot, selection, staged_receipt, current_release, selected_projection)
 
     current = current_obligations(closure)
-    credited, pending_receipt, pending, pending_invalidated = (
+    credited, pending_receipt_sha256, pending, pending_invalidated = (
         _prior_credit(snapshot, closure, prior, current))
     if pending == snapshot.admitted_factory_release_sha256:
         return _reconcile_admission(
             snapshot, closure, prior, credited, current)
     planning_snapshot = snapshot
     if staged_receipt is not None:
-        if (pending_receipt is not None
-                and pending_receipt.receipt_sha256 != staged_receipt.receipt_sha256):
+        if (pending_receipt_sha256 is not None
+                and pending_receipt_sha256 != staged_receipt.receipt_sha256):
             _fail("BAMF_PLANNER_PROGRESS_LEASE_PENDING")
         credited.add((
             staged_receipt.selected_semantic_id,
             obligation_digest(staged_receipt.selection.selected_obligations),
         ))
-        pending_receipt = staged_receipt
+        pending_receipt_sha256 = staged_receipt.receipt_sha256
         pending = staged_receipt.staged_successor_sha256
 
     counts = _counts(closure)
@@ -234,5 +239,5 @@ def plan_frontier_progress(
             status = _status_without_new_proposal(
                 snapshot, counts, credited, current, held, direct_uncovered)
     return _progress_result(
-        snapshot, planning_snapshot, closure, status, proposal, pending_receipt,
+        snapshot, planning_snapshot, closure, status, proposal, pending_receipt_sha256,
         direct_uncovered, prior, staged_receipt)

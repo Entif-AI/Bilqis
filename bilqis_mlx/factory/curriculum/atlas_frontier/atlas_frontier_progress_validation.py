@@ -71,9 +71,8 @@ def credited_obligation_keys(
         )
         bound_closure = replace(
             bound_closure, closure_sha256=bound_closure.expected_digest())
-        requested_before = owner.requested_before_keys(credit, current)
         _, ranked = _ranked_ready_targets(
-            bound_snapshot, bound_closure, tuple(sorted(requested_before)))
+            bound_snapshot, bound_closure, credit.requested_obligation_keys)
         if (not ranked or min(ranked)[3] != semantic_id
                 or credit.introduced_capability_count
                    > min(9, bound_snapshot.budget.max_candidates)

@@ -10,6 +10,9 @@ from bilqis_mlx.factory.atlas_frontier_progress import FrontierStatus, plan_fron
 from bilqis_mlx.factory.atlas_frontier_progress_audit import (
     rehydrate_frontier_progress,
 )
+from bilqis_mlx.factory.atlas_frontier_progress_metrics import (
+    frontier_verification_measurement,
+)
 from bilqis_mlx.factory.atlas_frontier_selection import select_frontier_delta
 from bilqis_mlx.factory.skos_curriculum import IMPLEMENTATION_UNCOVERED
 from bilqis_mlx.factory.tests.curriculum.frontier.atlas_frontier_closure_fixtures import rehash
@@ -275,6 +278,16 @@ class AtlasFrontierProgressRegressionTests(ProjectionAuthorityFixture, unittest.
             resumed.pending_staged_receipt_sha256,
             prior.pending_staged_receipt_sha256,
         )
+        self.assertFalse(hasattr(resumed, "pending_receipt"))
+        self.assertEqual(
+            resumed.pending_staged_successor_sha256,
+            receipt.staged_successor_sha256,
+        )
+        self.assertEqual(resumed.pending_semantic_id, selection.selected_semantic_id)
+        observed = []
+        with frontier_verification_measurement(observed.append):
+            resumed.verify()
+        self.assertEqual(observed[0].historical_bytes_serialized, 0)
 
 
 if __name__ == "__main__":

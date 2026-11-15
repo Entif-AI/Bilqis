@@ -11,14 +11,23 @@ from bilqis_mlx.factory.atlas_frontier_progress_audit import (
 from bilqis_mlx.factory.atlas_frontier_progress_metrics import (
     frontier_verification_measurement,
 )
+from bilqis_mlx.factory.atlas_frontier_progress_validation import (
+    credited_obligation_keys, current_obligations, obligation_digest,
+)
+from bilqis_mlx.factory.atlas_frontier_selection import (
+    select_frontier_delta_for_projection,
+)
 from bilqis_mlx.factory.tests.curriculum.frontier.atlas_frontier_closure_fixtures import (
     rehash,
 )
 from bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_progress import (
-    ProjectionAuthorityFixture, _ready, _staged_ready,
+    ProjectionAuthorityFixture, _ready, _stage, _staged_ready,
 )
 from bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection import (
-    _candidate, _closure,
+    _candidate, _closure, _options, _snapshot,
+)
+from bilqis_mlx.factory.tests.curriculum.frontier.test_candidate_staging import (
+    CandidateStagingFixture,
 )
 from bilqis_mlx.runtime.priority_qualification import (
     PriorityPlanningInput, _planning,
@@ -81,6 +90,42 @@ def _lineage(steps: int, *, admission: bool = False):
 
 
 class FrontierHistoryIndexTests(ProjectionAuthorityFixture, unittest.TestCase):
+    def test_compact_credit_preserves_original_accepted_requested_context(self):
+        fixture = CandidateStagingFixture()
+        fixture.setUp()
+        staged = fixture.stage()
+        release = fixture.current
+        snapshot = rehash(
+            _snapshot(release),
+            staged_factory_release_sha256s=(staged.successor.release_sha256,))
+        closure = _closure_for(snapshot)
+        capabilities = {
+            "z.op.0": ("Z.N0",),
+            "z.op.1": ("Z.N1",),
+            "z.op.2": staged.successor.transition.added_capabilities,
+        }
+        projections = _options(
+            snapshot, release, closure, capabilities=capabilities,
+            identities={identity: () for identity in snapshot.source_eligible_concept_ids})
+        z0_rows = tuple(
+            row for row in closure.candidates if row.semantic_id == "z.op.0")
+        requested = (("z.op.0", obligation_digest(z0_rows)),)
+        projection = next(
+            item for item in projections if item.semantic_id == "z.op.2")
+        selection = select_frontier_delta_for_projection(
+            snapshot, closure, release, projection, requested)
+        self.assertEqual(selection.selected_semantic_id, "z.op.2")
+        receipt = _stage(
+            selection, projection, release, staged.successor, snapshot)
+        receipt.verify()
+        progress = plan_frontier_progress(
+            snapshot, closure, selection, current_release=release,
+            selected_projection=projection, staged_receipt=receipt)
+        current = current_obligations(closure)
+        self.assertIn(
+            ("z.op.2", current["z.op.2"]),
+            credited_obligation_keys(snapshot, closure, progress, current))
+
     def test_hot_progress_holds_only_current_payloads_and_compact_head(self):
         _release, progress, _closure, snapshots, _totals = _lineage(32)
         self.assertFalse(hasattr(progress, "snapshot_history"))

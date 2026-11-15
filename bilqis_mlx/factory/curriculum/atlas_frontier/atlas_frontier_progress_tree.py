@@ -67,6 +67,25 @@ def insert(root, key: str, value: tuple):
         root.left, insert(root.right, key, value))
 
 
+def upsert(root, key: str, value: tuple):
+    """Persistently set one key while preserving deterministic tree shape."""
+    if root is None:
+        return _node(key, value, _priority(key))
+    if key == root.key:
+        return _node(key, value, root.priority, root.left, root.right)
+    priority = _priority(key)
+    if (priority, key) > (root.priority, root.key):
+        left, right = _split(root, key)
+        return _node(key, value, priority, left, right)
+    if key < root.key:
+        return _node(
+            root.key, root.value, root.priority,
+            upsert(root.left, key, value), root.right)
+    return _node(
+        root.key, root.value, root.priority,
+        root.left, upsert(root.right, key, value))
+
+
 def lookup(root, key: str):
     current = root
     while current is not None:
@@ -102,5 +121,5 @@ def _collect(root, result, *, value):
 
 __all__ = (
     "IndexNode", "ZERO_DIGEST", "insert", "keys", "lookup",
-    "root_digest", "values",
+    "root_digest", "upsert", "values",
 )

@@ -140,7 +140,7 @@ class FrontierProgress:
     history_head: FrontierHistoryHead
     status: FrontierStatus
     proposal_selection_sha256: str | None
-    pending_receipt: StagedSelectionReceipt | None
+    pending_staged_receipt_sha256: str | None
     source_held_count: int
     implementation_uncovered_count: int
     waiting_for_evidence_count: int
@@ -170,18 +170,23 @@ class FrontierProgress:
         return _history_owner(self).receipt_semantic_ids(self.history_head)
 
     @property
-    def pending_staged_receipt_sha256(self) -> str | None:
-        return None if self.pending_receipt is None else self.pending_receipt.receipt_sha256
-
-    @property
     def pending_staged_successor_sha256(self) -> str | None:
-        receipt = self.pending_receipt
-        return None if receipt is None else receipt.staged_successor_sha256
+        credit = self._pending_credit()
+        return None if credit is None else credit.staged_successor_sha256
 
     @property
     def pending_semantic_id(self) -> str | None:
-        receipt = self.pending_receipt
-        return None if receipt is None else receipt.selected_semantic_id
+        credit = self._pending_credit()
+        return None if credit is None else credit.selected_semantic_id
+
+    def _pending_credit(self):
+        if self.pending_staged_receipt_sha256 is None:
+            return None
+        credit = _history_owner(self).receipt_credit(
+            self.history_head, self.pending_staged_receipt_sha256)
+        if credit is None:
+            _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_INVALID")
+        return credit
 
     def requested_obligation_keys(
             self, current: dict[str, str],
@@ -230,15 +235,12 @@ class FrontierProgress:
                 or min(self.source_held_count, self.implementation_uncovered_count,
                        self.waiting_for_evidence_count, self.ready_count) < 0):
             _fail("BAMF_PLANNER_PROGRESS_INVALID")
-        if self.pending_receipt is not None:
-            note_snapshot_rehash()
-            self.pending_receipt.verify()
+        if self.pending_staged_receipt_sha256 is not None:
+            credit = self._pending_credit()
             if (self.status is not FrontierStatus.LEASE_REQUIRED
-                    or not owner.contains_receipt(
-                        self.history_head, self.pending_receipt.receipt_sha256)
-                    or self.pending_receipt.staged_successor_sha256
+                    or credit.staged_successor_sha256
                        not in self.planning_snapshot.staged_factory_release_sha256s
-                    or self.pending_receipt.staged_successor_sha256
+                    or credit.staged_successor_sha256
                        == self.planning_snapshot.admitted_factory_release_sha256):
                 _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_INVALID")
         elif self.status is FrontierStatus.LEASE_REQUIRED:

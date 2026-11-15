@@ -9,7 +9,7 @@ from .atlas_frontier_progress_metrics import (
     note_receipt_history_lookup, note_snapshot_rehash,
 )
 from .atlas_frontier_progress_tree import (
-    IndexNode, ZERO_DIGEST, insert, keys, lookup, root_digest, values,
+    IndexNode, ZERO_DIGEST, insert, keys, lookup, root_digest, upsert, values,
 )
 
 _ZERO = ZERO_DIGEST
@@ -67,7 +67,7 @@ def _snapshot_value(snapshot: CurriculumSnapshot, ordinal: int) -> tuple:
     )
 
 
-def _receipt_value(receipt, anchor: tuple, requested_before_sha256: str) -> tuple:
+def _receipt_value(receipt, anchor: tuple) -> tuple:
     from .atlas_frontier_progress_validation import obligation_digest
     return (
         receipt.selection.snapshot_sha256,
@@ -79,7 +79,7 @@ def _receipt_value(receipt, anchor: tuple, requested_before_sha256: str) -> tupl
         anchor[3],
         len(receipt.selection.introduced_capability_ids),
         len(receipt.selection.introduced_semantic_ids),
-        requested_before_sha256,
+        receipt.selection.requested_obligation_keys,
     )
 
 
@@ -95,8 +95,22 @@ class CompactReceiptCredit:
     cursor: int
     introduced_capability_count: int
     introduced_semantic_count: int
-    requested_before_index_sha256: str
-    _requested_before: IndexNode | None
+    requested_obligation_keys: tuple[tuple[str, str], ...]
+
+    @property
+    def index_value(self) -> tuple:
+        return (
+            self.selection_snapshot_sha256,
+            self.selected_semantic_id,
+            self.obligation_sha256,
+            self.staged_successor_sha256,
+            self.predecessor_release_sha256,
+            self.policy_epoch,
+            self.cursor,
+            self.introduced_capability_count,
+            self.introduced_semantic_count,
+            self.requested_obligation_keys,
+        )
 
 
 @dataclass(frozen=True)
@@ -189,8 +203,7 @@ class FrontierHistoryOwner:
         anchor = lookup(state.snapshots, receipt.selection.snapshot_sha256)
         if anchor is None:
             _fail("BAMF_PLANNER_HISTORY_RECEIPT_ANCESTOR_MISSING")
-        value = _receipt_value(
-            receipt, anchor, root_digest(state.requested))
+        value = _receipt_value(receipt, anchor)
         existing = lookup(state.receipts, receipt.receipt_sha256)
         if existing is not None:
             if existing != value:
@@ -203,10 +216,10 @@ class FrontierHistoryOwner:
             state.successors, receipt.staged_successor_sha256,
             (receipt.receipt_sha256,))
         request_key = _request_key(value[1], value[2])
-        requested = insert(
+        requested = upsert(
             state.requested, request_key, (receipt.receipt_sha256,))
         self._receipt_credits[receipt.receipt_sha256] = CompactReceiptCredit(
-            receipt.receipt_sha256, *value, state.requested)
+            receipt.receipt_sha256, *value)
         next_head = _make_head(
             head.root_snapshot_sha256, head.head_snapshot_sha256,
             head.snapshot_chain_sha256, state.snapshots,
@@ -244,24 +257,27 @@ class FrontierHistoryOwner:
             state.requested, _request_key(semantic_id, obligation_sha256))
         if value is None:
             return None
-        credit = self._receipt_credits.get(value[0])
-        if credit is None:
+        return self._require_credit(state, value[0])
+
+    def receipt_credit(
+            self, head: FrontierHistoryHead,
+            receipt_sha256: str,
+    ) -> CompactReceiptCredit | None:
+        state = self.require(head)
+        note_receipt_history_lookup()
+        if lookup(state.receipts, receipt_sha256) is None:
+            return None
+        return self._require_credit(state, receipt_sha256)
+
+    def _require_credit(
+            self, state: _State, receipt_sha256: str,
+    ) -> CompactReceiptCredit:
+        credit = self._receipt_credits.get(receipt_sha256)
+        if (credit is None
+                or lookup(state.receipts, credit.receipt_sha256)
+                   != credit.index_value):
             _fail("BAMF_PLANNER_HISTORY_RECEIPT_CREDIT_MISSING")
         return credit
-
-    def requested_before_keys(
-            self, credit: CompactReceiptCredit,
-            current: dict[str, str],
-    ) -> set[tuple[str, str]]:
-        if root_digest(credit._requested_before) != credit.requested_before_index_sha256:
-            _fail("BAMF_PLANNER_HISTORY_RECEIPT_CREDIT_INVALID")
-        result = set()
-        for semantic_id, obligation_sha256 in current.items():
-            if lookup(
-                    credit._requested_before,
-                    _request_key(semantic_id, obligation_sha256)) is not None:
-                result.add((semantic_id, obligation_sha256))
-        return result
 
     def receipt_semantic_ids(self, head: FrontierHistoryHead) -> tuple[str, ...]:
         return tuple(sorted({

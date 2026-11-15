@@ -126,6 +126,7 @@ class EventCandidateAtlasIntegrationTests(EventCandidateRealizationFixture, unit
         selection = select_frontier_delta_for_projection(
             snapshot, closure, current, projection, requested)
         receipt = staged_selection_receipt(epoch, selection, projection, staged)
+        self._last_staged_selection_receipt = receipt
         pending = plan_frontier_progress(
             snapshot, closure, selection, current_release=current,
             selected_projection=projection, prior=prior, staged_receipt=receipt,
@@ -302,8 +303,7 @@ class EventCandidateAtlasIntegrationTests(EventCandidateRealizationFixture, unit
         state = (self.current, self.parent_graph, {"A.IDENTITY"}, None, None)
         _current, _graph, _mastered, prior, _snapshot = self._stage_capability(
             candidate, source_frontier, policy, state, "D.EVENT_OCCURRENCE")
-        receipt = prior.pending_receipt
-        self.assertIsNotNone(receipt)
+        receipt = self._last_staged_selection_receipt
         selected = receipt.selection.selected_obligations
         forged_rows = (
             replace(selected[0], source_evidence_sha256="c" * 64),
