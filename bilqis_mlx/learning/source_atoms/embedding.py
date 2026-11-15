@@ -36,13 +36,7 @@ def source_atom_vectors(
         )
         authority = require_b11_source_execution_authority(
             source_execution_authority, compiled, config, source)
-        if snapshot is not None and (
-                snapshot.release_sha256,
-                snapshot.bundle_id,
-                snapshot.source_bundle_id) != (
-                    authority.snapshot.release_sha256,
-                    authority.snapshot.bundle_id,
-                    authority.snapshot.source_bundle_id):
+        if snapshot is not None and snapshot is not authority.snapshot:
             invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
         snapshot = authority.snapshot
         handoff = authority.source_handoff
