@@ -167,12 +167,33 @@ production OOM restore/retry path are wired and verified on the actual execution
 path. Never use a test-harness memory accident as evidence that production training
 is safe, and never use the analytical planner alone as proof of measured peak RAM.
 
-Run `npm run verify:premerge` only at an actual integration/turn-in boundary or when
-a change can invalidate broad prior evidence. That gate executes the repository's
-existing aggregate runner. A new source/configuration change,
-failed test, changed dependency/toolchain, or altered test policy can invalidate the
-prior broad receipt; prose-only progress and unchanged code cannot. Install the
-optional accelerator dependencies with `python3 -m pip install -e '.[test]'`.
+Run `npm run verify:premerge` only when the changed dependency closure is genuinely
+broad enough to justify the repository aggregate runner, or when the human explicitly
+requests a fresh whole-repository qualification. An integration/turn-in boundary by
+itself is **not** sufficient reason to run thousands of unrelated tests. Prefer the
+smallest owner/regression set that proves the changed contracts, plus hosted PR checks.
+A new source/configuration change, failed affected test, changed dependency/toolchain,
+or altered test policy can invalidate prior evidence; prose-only progress and unchanged
+code cannot. Install the optional accelerator dependencies with
+`python3 -m pip install -e '.[test]'`.
+
+**Legacy fixture boundary and verification-scope discipline — 2026-11-15:** The
+historical checkpoint
+`vendor/legacy-v16/runs/primitive-consolidation-v16-triplets/student-116760-7e9af4651f28.pt`
+is under the gitignored `runs/` boundary and is **not expected to exist in ordinary
+issue worktrees or the reviewed unified worktree**. The canonical provisioned legacy
+copy lives in
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/vendor/legacy-v16/runs/primitive-consolidation-v16-triplets/student-116760-7e9af4651f28.pt`.
+Do not classify absence of that file in an ordinary worktree as a candidate regression,
+and do not launch a broad aggregate suite merely to rediscover that environment fact.
+First classify the issue's actual dependency surface. If the changed contract truly
+depends on the historical checkpoint, run the smallest explicit legacy-dependent
+witness against the canonical authority path after
+`python3 -B scripts/check_legacy_trainer_authority.py --live`; never copy, fabricate,
+or silently substitute the checkpoint.
+If the changed contract does not depend on it, exclude unrelated legacy-dependent suites
+from turn-in evidence. Expand verification only when a concrete affected failure or
+dependency edge justifies the expansion.
 
 Open the lane-to-unified PR only after the candidate is otherwise ready to merge:
 the design review is complete, required differential evidence is green or validly
@@ -559,8 +580,12 @@ already-approved design does not require a whole-design review.
 
 ### Integration turn-in
 
-Run `npm run verify:premerge` only at an actual integration boundary and only when no
-reusable valid receipt already covers the relevant state.
+At an integration boundary, require the **minimum sufficient evidence set** for the
+actual changed contracts. Reuse valid receipts, run focused owner/regression tests for
+newly affected surfaces, and use hosted PR checks as the final integration proof. Run
+`npm run verify:premerge` only when the change genuinely invalidates broad repository
+evidence or the human explicitly asks for a fresh aggregate qualification; do not run
+the aggregate suite solely because a PR is about to be opened.
 
 Before opening a PR require:
 

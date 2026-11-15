@@ -200,11 +200,18 @@ def wide_shape_patch(row_count: int):
 class PreNeuralJourneySupport(MixedWitnessSupport):
     @staticmethod
     def host_registry():
-        return patch(
+        stack = ExitStack()
+        stack.enter_context(patch(
             "bilqis_mlx.runtime.bamf_bundle.source_authority_custody."
             "read_host_system_source_authority_registry",
             return_value=COMBINED_REGISTRY,
-        )
+        ))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.bamf_bundle.source_authority_custody.currentness."
+            "_trust_root_snapshot",
+            return_value=("HOST_SYSTEM_V1", 1, 1, 1, 1, 1),
+        ))
+        return stack
 
     def journey_mounts(self, snapshot, schema, features, selection):
         stack = ExitStack()
