@@ -1,5 +1,6 @@
 export const HOME_MESSAGES = Object.freeze({
   "home.observed.provisional": "Observed · provisional",
+  "home.observed.terminated": "Observed · terminated",
   "home.observed.disconnected": "Disconnected · last observed",
   "home.observed.phase": "Observed phase",
   "home.observed.outcome": "Observed outcome",
@@ -12,9 +13,12 @@ export const HOME_MESSAGES = Object.freeze({
   "home.observed.cpu": "Measured process CPU time",
   "home.observed.memory": "Measured process peak RSS",
   "home.observed.disk": "Measured disk free",
+  "home.observed.errorCode": "Termination code",
+  "home.observed.errorDetail": "Termination detail",
   "home.observed.acceptedGeneration": "Accepted generation",
   "home.observed.acceptedStep": "Accepted optimizer step",
   "home.observed.history": "Observed visit history",
+  "home.observed.historyStep": "candidate {step}/{horizon}",
 
   "home.common.unavailable": "Unavailable",
   "home.common.unknown": "Unknown",

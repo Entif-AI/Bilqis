@@ -160,7 +160,7 @@ def _gradient_path(
 
 def _materialize_gradient(
         objective, params, route_vectorized, holder, backend, row_batches,
-        answer_plans, targets, masks, salience_supervision):
+        answer_plans, targets, masks, salience_supervision, rebind_execution):
     if not route_vectorized:
         mean_loss, gradients = mx.value_and_grad(objective)(params)
         mx.eval(mean_loss, gradients)
@@ -172,7 +172,8 @@ def _materialize_gradient(
     if (type(route_context) is not tuple
             or len(route_context) != _ROUTE_CONTEXT_FIELDS):
         _invalid("B11_MICROBATCH_EXECUTION_MISSING")
-    producer, accepted_cache, execution_binding = route_context
+    producer, accepted_cache, _trace_binding = route_context
+    execution_binding = rebind_execution(params)
     executions = microbatch_trace_from_hidden(
         backend, params, row_batches, answer_plans, targets, masks,
         producer, route_hidden, accepted_cache, execution_binding,
@@ -255,7 +256,7 @@ def _bamf_microbatch_value_and_grad_impl(
 
     mean_loss, gradients, executions, route_trajectory = _materialize_gradient(
         objective, params, route_vectorized, holder, backend, row_batches,
-        answer_plans, targets, masks, salience_supervision)
+        answer_plans, targets, masks, salience_supervision, rebind_execution)
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     return finalize_microbatch_gradient(
         backend, batch, row_batches, preflight_executions,

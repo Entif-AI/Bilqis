@@ -11775,6 +11775,38 @@
           "minimum": 0,
           "type": "integer"
         },
+        "error_code": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "not": {
+                "pattern": "\\n"
+              },
+              "pattern": "\\S",
+              "type": "string",
+              "x-bilqis-unicode-domain": "scalar-values"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error_detail": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "not": {
+                "pattern": "\\n"
+              },
+              "pattern": "\\S",
+              "type": "string",
+              "x-bilqis-unicode-domain": "scalar-values"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "meta": {
           "additionalProperties": false,
           "properties": {
@@ -12094,7 +12126,9 @@
         "retention_role",
         "cpu_seconds",
         "peak_rss_bytes",
-        "disk_free_bytes"
+        "disk_free_bytes",
+        "error_code",
+        "error_detail"
       ],
       "title": "TrainerObservation",
       "type": "object",

@@ -18,6 +18,7 @@ MAX_FUTURE_SKEW_MS = 5_000
 _SCHEMA = 'bilqis.bamf.trainer-observed/v1'
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
+_OPTIONAL_FIELDS = {'error_code', 'error_detail'}
 
 
 def process_exists(pid: int) -> bool:
@@ -55,7 +56,8 @@ def _record(row, runs, now_ms):
     )
     return TrainerObservation(
         meta=meta, posture='OBSERVED', connection_state=state,
-        **{key: row[key] for key in _FIELDS},
+        **{key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
+           for key in _FIELDS},
     )
 
 

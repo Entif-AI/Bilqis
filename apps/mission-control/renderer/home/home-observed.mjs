@@ -25,7 +25,8 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
   const candidate = row.candidate_horizon === null ? unknown : `${row.candidate_step} / ${row.candidate_horizon}`;
   const elapsed = formatDurationSeconds(row.elapsed_ms / 1000, { locale });
   const posture = row.connection_state === "DISCONNECTED" ? t("home.observed.disconnected")
-    : t("home.observed.provisional");
+    : row.outcome === "INTERRUPTED" ? t("home.observed.terminated")
+      : t("home.observed.provisional");
   const observedTime = temporalMarkup({
     unixSeconds: row.meta?.observed_at ?? null,
     nowMs,
@@ -42,12 +43,25 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     ["home.observed.cpu", row.cpu_seconds === null ? null : formatDurationSeconds(row.cpu_seconds, { locale })],
     ["home.observed.memory", row.peak_rss_bytes === null ? null : `${(row.peak_rss_bytes / 1048576).toFixed(1)} MiB`],
     ["home.observed.disk", row.disk_free_bytes === null ? null : `${(row.disk_free_bytes / 1073741824).toFixed(1)} GiB`],
+    ...(row.error_code ? [["home.observed.errorCode", row.error_code]] : []),
+    ...(row.error_detail ? [["home.observed.errorDetail", row.error_detail]] : []),
   ];
+  const historyLine = (item) => {
+    if (item.outcome === "INTERRUPTED") {
+      const step = item.candidate_horizon === null ? null : t("home.observed.historyStep", {
+        step: item.candidate_step, horizon: item.candidate_horizon,
+      });
+      return [item.capability_id ?? unknown, item.outcome, step, item.error_code, item.error_detail]
+        .filter(Boolean).join(" · ");
+    }
+    return [item.capability_id ?? unknown, item.outcome, item.connection_state]
+      .filter(Boolean).join(" · ");
+  };
   return `<div class="home-observed" data-posture="OBSERVED" data-connection="${esc(row.connection_state)}" data-test-id="home-observed">
     <div class="home-observed-head"><strong class="home-observed-badge">${esc(posture)}</strong>${observedTime}</div>
     <p class="home-observed-accepted">${esc(t("home.observed.acceptedGeneration"))}: ${esc(observed.acceptedGeneration ?? unknown)} · ${esc(t("home.observed.acceptedStep"))}: ${esc(observed.acceptedOptimizerStep ?? unknown)}</p>
     <dl>${fields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
 
-    <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(item.capability_id ?? unknown)} · ${esc(item.phase)} · ${esc(item.outcome)} · ${esc(item.connection_state)}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
+    <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(historyLine(item))}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
   </div>`;
 }

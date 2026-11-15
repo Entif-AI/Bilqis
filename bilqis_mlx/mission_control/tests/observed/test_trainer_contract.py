@@ -22,6 +22,7 @@ def observation():
         retention_completed=1, retention_total=4,
         retention_subject='A.IDENTITY', retention_role='parent',
         cpu_seconds=0.4, peak_rss_bytes=4096, disk_free_bytes=100000,
+        error_code=None, error_detail=None,
     )
 
 

@@ -189,6 +189,7 @@ SAMPLES += (
         candidate_step=None, candidate_horizon=None, retention_completed=None,
         retention_total=None, retention_subject=None, retention_role=None,
         cpu_seconds=None, peak_rss_bytes=None, disk_free_bytes=None,
+        error_code=None, error_detail=None,
     ),
 
 )

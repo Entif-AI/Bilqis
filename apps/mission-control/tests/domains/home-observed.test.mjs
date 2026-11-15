@@ -12,6 +12,7 @@ function observation(changes = {}) {
     phase: "RETENTION", outcome: "RUNNING", connection_state: "LIVE", capability_id: "A.IDENTITY",
     candidate_step: 1, candidate_horizon: 1, candidate_optimizer_step: 1,
     retention_completed: 1, retention_total: 4, retention_subject: "A.IDENTITY", retention_role: "parent",
+    error_code: null, error_detail: null,
     elapsed_ms: 1500, cpu_seconds: 0.4, peak_rss_bytes: 1048576, disk_free_bytes: 1073741824,
     ...changes };
 }
@@ -104,6 +105,21 @@ test("accepted, rejected and held observations never change retained counts", ()
     assert.equal(model.observed.history[0].outcome, outcome);
     assert.match(renderHomeMarkup(model), new RegExp(outcome));
   }
+});
+
+test("interrupted visit history renders the observed failure code and detail", () => {
+  const row = observation({
+    phase: "COMPLETED", outcome: "INTERRUPTED", connection_state: "FINISHED",
+    error_code: "SCHOOL.MODEL_TOPOLOGY.INVALID",
+    error_detail: "B11_EXECUTION_BINDING_MISMATCH",
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Observed · terminated/);
+  assert.match(html, /A\.IDENTITY · INTERRUPTED · candidate 1\/1/);
+  assert.match(html, /SCHOOL\.MODEL_TOPOLOGY\.INVALID/);
+  assert.match(html, /B11_EXECUTION_BINDING_MISMATCH/);
+  assert.doesNotMatch(html, /COMPLETED · INTERRUPTED · FINISHED/);
 });
 
 test("historical and wrong-run observations remain absent", () => {
