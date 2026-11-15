@@ -32,6 +32,7 @@ class _SourceBackboneProducerSession:
         self._parameters = dict(parameters)
         self._sources = None
         self._feature_schema = None
+        self._source_execution_authorities = None
         self._artifact_owner = artifact_owner
         self._source_digest = contract_digest(tuple(item.digest for item in handoffs))
         self._topology = ModelTopologySpecV2()
@@ -73,9 +74,15 @@ class _SourceBackboneProducerSession:
         self._motif_seal = None
         self._motif_read = None
 
-    def _bind_authoritative_inputs(self, sources, feature_schema):
+    def _bind_authoritative_inputs(
+            self, sources, feature_schema, source_execution_authorities=None):
+        if (source_execution_authorities is not None
+                and (type(source_execution_authorities) is not tuple
+                     or len(source_execution_authorities) != len(sources))):
+            _invalid_producer_receipt()
         self._sources = sources
         self._feature_schema = feature_schema
+        self._source_execution_authorities = source_execution_authorities
 
     def _receipt_replay(self):
         if self._sources is None or self._feature_schema is None:
@@ -99,7 +106,8 @@ class _SourceBackboneProducerSession:
                 self._compiled, self._parameters, self._sources,
                 self._motif_manifest, spec=topology,
                 extents=self._compiled.extents, site_index=0,
-                hidden=encoded.global_seeds, seal=self._motif_seal)
+                hidden=encoded.global_seeds, seal=self._motif_seal,
+                source_execution_authorities=self._source_execution_authorities)
             if (self._input_motif_read is None
                     or motif.dispositions != self._input_motif_read.dispositions
                     or motif.participating_slots != self._input_motif_read.participating_slots
@@ -183,7 +191,8 @@ class _SourceBackboneProducerSession:
                 self._compiled, self._parameters, self._sources,
                 self._motif_manifest, spec=self._topology,
                 extents=self._compiled.extents, site_index=1,
-                hidden=result.hidden, seal=self._motif_seal)
+                hidden=result.hidden, seal=self._motif_seal,
+                source_execution_authorities=self._source_execution_authorities)
             self._motif_read = motif
             trace_hidden = motif.hidden
         if trace:
