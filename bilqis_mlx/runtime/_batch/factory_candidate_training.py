@@ -15,7 +15,6 @@ from bilqis_mlx.runtime.atlas_model import (
 from bilqis_mlx.runtime.atlas_resources import (
     FrameStats, MemoryBudget, ResourceRow, plan_microbatches,
 )
-from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.bamf_bundle import (
     CompleteStudent, authenticate_bamf_execution_feature_context,
     seal_source_qualified_motif_batch_from_bundle,
@@ -26,7 +25,7 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     admit_uninterrupted_candidate_step, bind_accepted_execution_cache,
 )
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
-    bind_candidate_execution_cache,
+    bind_candidate_execution_cache, bind_execution_generation,
 )
 from bilqis_mlx.runtime.factory_task_authority import (
     bind_factory_task_compiled_batch, factory_task_authority,
@@ -89,7 +88,7 @@ def _execute_prepared_candidate(
         transaction = admit_uninterrupted_candidate_step(
             Path(run_dir), parent, loss_bearing_target=True,
             gradient_execution=gradient, teacher_hparams=teacher_hparams,
-            max_norm=max_norm, candidate=candidate)
+            max_norm=max_norm, candidate=candidate, execution_cache=cache)
         loss_total = gradient.loss_total
     else:
         gradient = accumulate_logical_batch_gradients(resource_plan, execute_row)
@@ -98,7 +97,8 @@ def _execute_prepared_candidate(
             logical_batch_execution=gradient,
             training_batch=prepared.training_batch,
             logical_batch_plan=resource_plan,
-            teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate)
+            teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
+            execution_cache=cache)
         loss_total = gradient.weighted_mean_loss
     if finalize_candidate:
         transaction = _stage_retained_motifs(
@@ -168,12 +168,15 @@ def execute_factory_candidate_step(
     source_context.require_accepted_runtime(Path(run_dir))
     start = time.perf_counter()
     cache = bind_accepted_execution_cache(Path(run_dir))
-    generation = execution_generation_digest(
-        (parent.retained_state.optimizer if candidate is None else candidate.optimizer).parameters,
-        spec=parent.topology, extents=parent.extents)
     if candidate is not None:
         cache = bind_candidate_execution_cache(
             cache, parent, candidate, spec=parent.topology, extents=parent.extents)
+    parameters = (
+        parent.retained_state.optimizer if candidate is None else candidate.optimizer
+    ).parameters
+    generation = bind_execution_generation(
+        cache, parameters, spec=parent.topology,
+        extents=parent.extents).generation_digest
     if cache.generation_binding != generation:
         _invalid("FACTORY_CANDIDATE_STEP_GENERATION_DRIFT")
     prepared = prepare_factory_training_batch(

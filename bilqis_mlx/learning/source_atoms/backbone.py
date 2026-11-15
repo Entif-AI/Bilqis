@@ -10,7 +10,9 @@ from ..atlas_plasticity import adapter_forward, adapter_parameter_view
 from ...runtime.backbone_group_numerical import (
     UnadmittedBackboneSession, _content_digest,
 )
-from ...runtime.backbone_identity import execution_generation_digest
+from ...runtime.backbone_identity import (
+    execution_generation_digest, require_execution_generation_binding,
+)
 from ...runtime.block_attnres import SOURCE_ORDER, depth_select, source_depth_select
 from ...runtime.block_attnres import depth_parameter_view
 from ...runtime.model_topology_v2 import ModelTopologySpecV2
@@ -27,7 +29,7 @@ class _SourceBackboneProducerSession:
 
     def __init__(
         self, encoded, handoffs, parameters, compiled, artifact_owner, *,
-        input_motif_read=None,
+        input_motif_read=None, execution_binding=None,
     ):
         self._compiled = compiled
         self._encoded = encoded
@@ -38,8 +40,13 @@ class _SourceBackboneProducerSession:
         self._artifact_owner = artifact_owner
         self._source_digest = contract_digest(tuple(item.digest for item in handoffs))
         self._topology = ModelTopologySpecV2()
-        self._generation = execution_generation_digest(
-            parameters, spec=self._topology, extents=compiled.extents)
+        self._execution_binding = execution_binding
+        self._generation = (
+            execution_generation_digest(
+                parameters, spec=self._topology, extents=compiled.extents)
+            if execution_binding is None else require_execution_generation_binding(
+                execution_binding, parameters,
+                spec=self._topology, extents=compiled.extents).generation_digest)
         self._prefix = compiled_prefix_digest(compiled)
         valid = mx.array([[position is not None for position in row]
                           for row in encoded.handles], dtype=mx.bool_)
@@ -61,7 +68,8 @@ class _SourceBackboneProducerSession:
             self._initial_hidden, self._parameters,
             spec=self._topology, extents=compiled.extents,
             scope_ids=mx.zeros(valid.shape, dtype=mx.int32), valid=valid,
-            generation=self._generation, prefix_digest=self._prefix)
+            generation=self._generation, prefix_digest=self._prefix,
+            execution_binding=self._execution_binding)
         self._depth_inputs = ()
         self._receipts = ()
         self._receipt_refs = ()
@@ -114,7 +122,8 @@ class _SourceBackboneProducerSession:
             initial_hidden, self._parameters,
             spec=topology, extents=self._compiled.extents,
             scope_ids=mx.zeros(valid.shape, dtype=mx.int32), valid=valid,
-            generation=generation, prefix_digest=prefix)
+            generation=generation, prefix_digest=prefix,
+            execution_binding=self._execution_binding)
         return encoded, source_digest, topology, generation, prefix, replay
 
     def _validated_receipts(self, boundary_group):
@@ -235,20 +244,21 @@ def start_source_backbone_numerical(
 
 
 def start_source_backbone_producer(
-    compiled, parameters, sources, feature_schema, banks, artifact_owner,
+    compiled, parameters, sources, feature_schema, banks, artifact_owner, *,
+    execution_binding=None,
 ):
     """Create the B11 producer only by replaying and revalidating actual source rows."""
     encoded, handoffs = encode_source_compiled_with_handoffs(
         compiled, parameters, sources, feature_schema, banks, artifact_owner)
     return _start_encoded_source_backbone_producer(
         encoded, handoffs, parameters, compiled, sources, feature_schema,
-        artifact_owner)
+        artifact_owner, execution_binding=execution_binding)
 
 
 def _start_encoded_source_backbone_producer(
     encoded, handoffs, parameters, compiled, sources, feature_schema,
     artifact_owner, *, motif_manifest=None, motif_seal=None,
-    input_motif_read=None,
+    input_motif_read=None, execution_binding=None,
 ):
     retained = (
         motif_manifest is not None,
@@ -265,7 +275,7 @@ def _start_encoded_source_backbone_producer(
         _invalid_producer_receipt()
     producer = _SourceBackboneProducerSession(
         encoded, handoffs, parameters, compiled, artifact_owner,
-        input_motif_read=input_motif_read)
+        input_motif_read=input_motif_read, execution_binding=execution_binding)
     producer._bind_authoritative_inputs(sources, feature_schema)
     producer._motif_manifest = motif_manifest
     producer._motif_seal = motif_seal
@@ -329,7 +339,7 @@ def finalize_source_backbone_hidden(producer):
 
 def start_retained_source_backbone_producer(
     compiled, parameters, sources, feature_schema, banks, manifest,
-    artifact_owner, *, seal,
+    artifact_owner, *, seal, execution_binding=None,
 ):
     """B13-only B11 producer whose input and g1 boundaries execute B08 reads."""
     if seal is not _B13_EXECUTION_SEAL or type(manifest) is not MotifManifest:
@@ -346,4 +356,4 @@ def start_retained_source_backbone_producer(
     return _start_encoded_source_backbone_producer(
         encoded, handoffs, parameters, compiled, sources, feature_schema,
         artifact_owner, motif_manifest=manifest, motif_seal=seal,
-        input_motif_read=input_motif_read)
+        input_motif_read=input_motif_read, execution_binding=execution_binding)

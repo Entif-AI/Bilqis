@@ -7,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from bilqis_mlx.errors import BilqisError
+import bilqis_mlx.runtime.backbone_identity as backbone_identity
 from bilqis_mlx.runtime.capability_retention import (
     EvidenceKind, EvaluationCohort, case_census_digest,
     candidate_work_disposition, evaluate_capabilities,
@@ -116,6 +117,30 @@ class FactoryEvaluationBatchingTests(FactoryTrainingBridgeFixture):
             tuple(result.answer for result, _contract in first),
             tuple(result.answer for result, _contract in second),
         )
+
+    def test_generation_digest_is_issued_once_for_batched_and_scalar_fallback(self):
+        instruments = self._instruments()
+        goals = tuple(item.case.goal for item in instruments)
+        original = backbone_identity.bamf_parameter_tree_digest
+
+        with patch.object(
+                backbone_identity, "bamf_parameter_tree_digest",
+                wraps=original) as digest:
+            batched, generation = factory_complete_solver(
+                self.context, self.candidate, str(self.artifact), instruments)
+            self.assertEqual(digest.call_count, 1)
+            batched.evaluate_cases(goals, generation)
+            self.assertEqual(digest.call_count, 1)
+
+        with patch.object(
+                backbone_identity, "bamf_parameter_tree_digest",
+                wraps=original) as digest, patch.object(
+                batching, "_positions", return_value=97):
+            scalar, generation = factory_complete_solver(
+                self.context, self.candidate, str(self.artifact), instruments)
+            self.assertEqual(digest.call_count, 1)
+            scalar.evaluate_cases(goals, generation)
+            self.assertEqual(digest.call_count, 1)
 
     def test_repeated_batch_evaluation_rejects_task_drift_for_cached_goal_id(self):
         instruments = self._instruments()
