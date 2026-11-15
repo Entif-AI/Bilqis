@@ -2,12 +2,14 @@
 from copy import copy
 from dataclasses import replace
 from types import SimpleNamespace
-from unittest import skipUnless
+from unittest import TestCase, skipUnless
+from unittest.mock import patch
 
 import mlx.core as mx
 import numpy as np
 
 from bilqis_mlx.errors import BilqisError
+import bilqis_mlx.learning.source_atoms.backbone_receipt_runtime as receipt_runtime
 import bilqis_mlx.learning.source_atoms.backbone_receipts as receipt_authority
 from bilqis_mlx.learning.source_atoms.backbone import (
     complete_source_backbone_producer,
@@ -26,6 +28,62 @@ from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.semantics.domains import contract_digest
 from bilqis_mlx.source_adapters.tests.atoms.helpers import REAL_BUNDLE
 from bilqis_mlx.learning.source_atoms.tests.backbone_test_support import SourceBackboneTestBase
+
+
+class SourceBackboneReceiptBoundaryTests(TestCase):
+    def test_post_g1_receipt_reuses_bound_source_execution_authorities(self):
+        authority = object()
+        hidden = mx.zeros((1, 1, 768), dtype=mx.float32)
+        expected = SimpleNamespace(
+            hidden=hidden,
+            execution_digest="e" * 64,
+            layer_end=4,
+            full_parameter_tree_digest="p" * 64,
+            scope_content_digest="s" * 64,
+            input_content_digest="i" * 64,
+            cache_chain_digest="c" * 64,
+        )
+        motif = SimpleNamespace(
+            hidden=hidden,
+            participating_slots=(),
+            dispositions=(("QUALIFIED_MISS",),),
+            context_digests=("d" * 64,),
+        )
+        producer = SimpleNamespace(
+            _compiled=SimpleNamespace(extents=object()),
+            _parameters={},
+            _sources=(object(),),
+            _source_execution_authorities=(authority,),
+            _motif_manifest=object(),
+            _motif_seal=object(),
+            _motif_read=None,
+            _receipts=(SimpleNamespace(receipt_digest="r" * 64),),
+        )
+
+        def retained_read(*args, source_execution_authorities, **kwargs):
+            self.assertIs(
+                source_execution_authorities,
+                producer._source_execution_authorities)
+            return motif
+
+        with patch.object(
+                receipt_runtime, "_replay_to_result",
+                return_value=(1, expected)), \
+                patch.object(
+                    receipt_runtime, "_read_retained_compiled_motifs",
+                    side_effect=retained_read):
+            values = receipt_runtime._group_receipt_values(
+                producer,
+                object(),
+                "a" * 64,
+                SimpleNamespace(digest="t" * 64),
+                "g" * 64,
+                "x" * 64,
+                object(),
+            )
+
+        self.assertEqual(values["source_id"], "g1")
+        self.assertIs(producer._motif_read, motif)
 
 
 @skipUnless(REAL_BUNDLE, "real pinned A01 artifact not mounted")
