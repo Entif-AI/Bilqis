@@ -35,11 +35,12 @@ class _IssuanceRegistry:
         self.outputs = WeakValueDictionary()
         self.records = {}
 
-    def issue(self, output, meaning):
+    def issue(self, output, meaning, *, fingerprint=True):
         key = id(output)
         self.outputs[key] = output
         self.records[key] = (
-            tuple((record, record.logits, _logit_fingerprint(record.logits))
+            tuple((record, record.logits,
+                   _logit_fingerprint(record.logits) if fingerprint else None)
                   for record in output.decisions),
             deepcopy(meaning),
         )
@@ -54,7 +55,8 @@ class _IssuanceRegistry:
         return (meaning == frozen_meaning
                 and len(output.decisions) == len(records)
                 and all(record is issued and record.logits is logits
-                        and _logit_fingerprint(record.logits) == fingerprint
+                        and (fingerprint is None
+                             or _logit_fingerprint(record.logits) == fingerprint)
                         for record, (issued, logits, fingerprint) in zip(output.decisions, records)))
 
 
@@ -72,8 +74,8 @@ def issued_output(output):
     return _ISSUANCE.contains(output, _meaning(output))
 
 
-def _issue_output(output):
-    return _ISSUANCE.issue(output, _meaning(output))
+def _issue_output(output, *, fingerprint=True):
+    return _ISSUANCE.issue(output, _meaning(output), fingerprint=fingerprint)
 
 
 class ExecutionMode(str,Enum):
@@ -93,8 +95,7 @@ class DecisionLogits:
                 or type(self.kind) is not DecisionKind or type(self.candidates) is not tuple
                 or not self.candidates or len(set(self.candidates))!=len(self.candidates)
                 or not isinstance(self.logits,mx.array) or self.logits.dtype!=mx.float32
-                or self.logits.shape!=(len(self.candidates),)
-                or not bool(mx.all(mx.isfinite(self.logits)))):
+                or self.logits.shape!=(len(self.candidates),)):
             invalid()
 
 
@@ -161,18 +162,31 @@ def _targets(teacher_targets,plan):
     return {t.decision_id:t.value for t in teacher_targets}
 
 
-def _ready_outputs(memory,state,semantics,parameters,prepared,targets):
+def _ready_outputs(memory,state,semantics,parameters,prepared,targets,*,trace=False):
     records,outputs=[],[]
     for decision in ready_decisions(state):
         z=decision_state(memory,decision,state,semantics,parameters,prepared)
-        if not bool(mx.all(mx.isfinite(z))):
+        if not trace and not bool(mx.all(mx.isfinite(z))):
             return tuple(records),()
         try:
             candidates,logits=decision_logits(z,decision,state,semantics,parameters)
             records.append(DecisionLogits(decision.decision_id,decision.kind,candidates,logits))
         except BilqisError:
             return tuple(records),()
-        value=targets.get(decision.decision_id,candidates[int(mx.argmax(logits).item())])
+        if decision.decision_id in targets:
+            value=targets[decision.decision_id]
+        elif trace and len(candidates)==1:
+            # Sparse supervised plans may omit deterministic ancestors. They
+            # are safe to advance without a device-to-host argmax because the
+            # legal value is already uniquely fixed by the plan contract.
+            value=candidates[0]
+        elif trace:
+            # An unlabeled ambiguous ancestor would require a discrete model
+            # choice inside autodiff. Fail the supervised path explicitly
+            # rather than smuggling a host synchronization back into it.
+            return tuple(records),()
+        else:
+            value=candidates[int(mx.argmax(logits).item())]
         if not any(type(value) is type(v) and value==v for v in candidates):
             invalid()
         outputs.append(DecisionOutput(decision.decision_id,value))
@@ -181,24 +195,25 @@ def _ready_outputs(memory,state,semantics,parameters,prepared,targets):
 
 
 def predict_typed(memory,eligible_context,answer_plan,active_semantics,readout_params,
-                  teacher_targets=None):
+                  teacher_targets=None,*,trace=False):
     validate_decoder_inputs(memory,eligible_context,answer_plan,active_semantics,readout_params)
     targets=_targets(teacher_targets,answer_plan)
     prepared=prepare_memory(memory,readout_params,active_semantics)
     state=start_decoding(answer_plan)
     records=[]
     while state.status is DecodeStatus.ACTIVE:
-        batch,outputs=_ready_outputs(memory,state,active_semantics,readout_params,prepared,targets)
+        batch,outputs=_ready_outputs(
+            memory,state,active_semantics,readout_params,prepared,targets,trace=trace)
         if not outputs:
             return _issue_output(ModelOutput(answer_plan,tuple(records),state.committed,DecodeStatus.UNRESOLVED,
                 ExecutionMode.TEACHER_FORCED if teacher_targets is not None else ExecutionMode.INFERENCE,
-                None,True))
+                None,True),fingerprint=not trace)
         try:
             state=commit_decisions(state,outputs)
         except BilqisError:
             return _issue_output(ModelOutput(answer_plan,tuple(records),state.committed,DecodeStatus.UNRESOLVED,
                 ExecutionMode.TEACHER_FORCED if teacher_targets is not None else ExecutionMode.INFERENCE,
-                None,True))
+                None,True),fingerprint=not trace)
         committed_ids={o.decision_id for o in outputs}
         records.extend(record for record in batch if record.decision_id in committed_ids)
     status,frame=state.status,None
@@ -209,4 +224,4 @@ def predict_typed(memory,eligible_context,answer_plan,active_semantics,readout_p
             status=DecodeStatus.UNRESOLVED
     return _issue_output(ModelOutput(answer_plan,tuple(records),state.committed,status,
         ExecutionMode.TEACHER_FORCED if teacher_targets is not None else ExecutionMode.INFERENCE,
-        frame,status is not DecodeStatus.COMPLETE))
+        frame,status is not DecodeStatus.COMPLETE),fingerprint=not trace)

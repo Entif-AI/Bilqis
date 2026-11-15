@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from bilqis_mlx.errors import BilqisError
 import bilqis_mlx.learning.source_atoms.backbone as backbone
+import bilqis_mlx.learning.source_atoms.backbone_producer_session as producer_session
 
 
 class _Session:
@@ -38,7 +39,7 @@ class BoundaryChainingTests(unittest.TestCase):
         producer = self.producer(completed=2)
         stale_features = SimpleNamespace(boundary_group=1)
         stale_view = SimpleNamespace(boundary_group=1)
-        with patch.object(backbone, "depth_select") as select:
+        with patch.object(producer_session, "depth_select") as select:
             with self.assertRaises(BilqisError):
                 producer.advance(stale_features, stale_view)
         select.assert_not_called()
@@ -54,12 +55,12 @@ class BoundaryChainingTests(unittest.TestCase):
         adapted = object()
         receipt = SimpleNamespace(
             receipt_digest="fixture-receipt", output_digest="fixture-output")
-        with (patch.object(backbone, "depth_select", return_value=selected) as select,
-              patch.object(backbone, "adapter_parameter_view",
+        with (patch.object(producer_session, "depth_select", return_value=selected) as select,
+              patch.object(producer_session, "adapter_parameter_view",
                            return_value=adapter_parameters) as parameter_view,
-              patch.object(backbone, "adapter_forward", return_value=adapted) as adapt,
-              patch.object(backbone, "_content_digest", return_value="fixture-hidden"),
-              patch.object(backbone, "_issue_from_producer", return_value=receipt)):
+              patch.object(producer_session, "adapter_forward", return_value=adapted) as adapt,
+              patch.object(producer_session, "_content_digest", return_value="fixture-hidden"),
+              patch.object(producer_session, "_issue_from_producer", return_value=receipt)):
             actual = producer.advance(features, view)
         select.assert_called_once_with(producer, features, view)
         parameter_view.assert_called_once_with(
@@ -70,6 +71,33 @@ class BoundaryChainingTests(unittest.TestCase):
         self.assertEqual(producer._session.next_inputs, [adapted])
         self.assertEqual(producer._depth_inputs, ((features, view),))
         self.assertEqual(producer._receipts, (receipt,))
+
+    def test_trace_three_group_horizon_never_mints_forensic_receipts(self):
+        producer = self.producer(completed=0)
+        producer._trace = True
+        producer._trace_boundaries = (object(),)
+        producer._motif_manifest = None
+        producer._execution_binding = object()
+        producer._generation = "generation"
+        first_view = SimpleNamespace(boundary_group=1)
+        second_view = SimpleNamespace(boundary_group=2)
+        selected = object()
+        adapted = object()
+        with (patch.object(producer_session, "source_depth_select", return_value=selected),
+              patch.object(producer_session, "adapter_parameter_view", return_value=object()),
+              patch.object(producer_session, "adapter_forward", return_value=adapted),
+              patch.object(producer_session, "_content_digest",
+                           side_effect=AssertionError("content digest entered trace")),
+              patch.object(producer_session, "_issue_from_producer",
+                           side_effect=AssertionError("receipt replay entered trace"))):
+            producer.advance()
+            producer.advance(depth_parameters=first_view)
+            producer.advance(depth_parameters=second_view)
+        self.assertEqual(len(producer._session.results), 3)
+        self.assertEqual(len(producer._session.next_inputs), 3)
+        self.assertEqual(producer._session.next_inputs, [None, adapted, adapted])
+        self.assertEqual(len(producer._trace_boundaries), 4)
+        self.assertEqual(producer._receipts, ())
 
 
 if __name__ == "__main__":

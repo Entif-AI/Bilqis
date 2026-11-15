@@ -9,6 +9,7 @@ import math
 from typing import Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.semantics.frame_schema import ConceptRef, RoleOccurrence
@@ -199,7 +200,8 @@ def decision_hidden(
     weight = parameters.get(FEEDBACK_PARAMETER)
     if (not isinstance(weight, mx.array) or weight.shape != (WIDTH, WIDTH)
             or weight.dtype != mx.float32
-            or not bool(mx.all(mx.isfinite(weight)))):
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(weight))))):
         invalid()
     values = _parent_values(state, decision_id, teacher_targets)
     feedback = (mx.zeros((WIDTH,), dtype=mx.float32) if not values else
@@ -237,7 +239,8 @@ def typed_decision_loss(
         invalid()
     candidates = tuple(_candidate_key(value) for value in head.candidates)
     legal = mx.array([candidate in legal_keys for candidate in candidates], dtype=mx.bool_)
-    if target_key not in candidates or not bool(mx.any(legal)):
+    if target_key not in candidates or not any(
+            candidate in legal_keys for candidate in candidates):
         invalid()
     target_index = candidates.index(target_key)
     masked = mx.where(legal, head.logits, -mx.inf)

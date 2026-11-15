@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.runtime.model_topology_v2 import FEATURE_NONE_ROW, GenerationExtents
 from bilqis_mlx.semantics.atlas_features import AtlasFeatures
@@ -90,7 +91,7 @@ def motif_gate_features(
         types = parameters["features.type"][FEATURE_NONE_ROW]
         roles, schema = terms.mean_role128, terms.schema128
     vector = (types + roles + schema) / 3
-    if not bool(mx.all(mx.isfinite(vector))):
+    if host_tensor_validation_enabled() and not bool(mx.all(mx.isfinite(vector))):
         _invalid()
     return MotifGateFeatures(vector, frame_handle, projection.digest,
                              features.digest, features.semantic_release, requests)
