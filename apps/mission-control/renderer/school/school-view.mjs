@@ -1,36 +1,27 @@
 import {
-  FILTERS,
-  exportSchoolCsv,
-  paginateRows,
-  projectRows,
-  scoreQuad,
-  selectionNeighborhood,
+  FILTERS, exportSchoolCsv, paginateRows, projectRows, selectionNeighborhood,
 } from "./school-model.mjs";
 import { schoolFixtureRows } from "./school-fixture.mjs";
 import { isActivationKey, nextRovingIndex } from "../foundation/accessibility.mjs";
+import { t } from "../foundation/i18n.mjs";
+import { assertUniqueTestIds, testIdAttribute } from "../foundation/test-hooks.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
 
 const rows = schoolFixtureRows();
 const ui = {
-  filters: new Set(),
-  sortKey: "id",
-  direction: "asc",
-  page: 1,
-  pageSize: 50,
-  selectedId: "B.AND",
-  graphEnabled: true,
-  groupByFamily: true,
+  filters: new Set(), sortKey: "id", direction: "asc", page: 1, pageSize: 50,
+  selectedId: "B.AND", groupByFamily: true, secondaryColumns: false,
 };
+
+const slug = (value) => String(value).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const score = (value, total) => t("school.matrix.score", { value, total });
+const empty = (value) => value?.length ? value.join(", ") : t("school.common.none");
 
 function capabilityRelations(id) {
   const neighborhood = selectionNeighborhood(rows, id);
   return [
-    ...neighborhood.prerequisites.map((relatedId) => ({
-      kind: "capability", id: relatedId, relation: "prerequisite",
-    })),
-    ...neighborhood.dependents.map((relatedId) => ({
-      kind: "capability", id: relatedId, relation: "dependent",
-    })),
+    ...neighborhood.prerequisites.map((relatedId) => ({ kind: "capability", id: relatedId, relation: "prerequisite" })),
+    ...neighborhood.dependents.map((relatedId) => ({ kind: "capability", id: relatedId, relation: "dependent" })),
   ];
 }
 
@@ -50,85 +41,90 @@ function statusCell(row) {
   </div>`;
 }
 
-function tableRows(projectedRows) {
+function visibleColumns() {
+  const core = [
+    ["id", "school.matrix.column.capability", "text"],
+    ["grade", "school.matrix.column.grade", "text"],
+    ["prerequisites", "school.matrix.column.prerequisites", "text"],
+    ["was", "school.matrix.column.was", "num"], ["top", "school.matrix.column.top", "num"],
+    ["now", "school.matrix.column.now", "num"], ["total", "school.matrix.column.all", "num"],
+    ["growth", "school.matrix.column.growth", "num"], ["debt", "school.matrix.column.debt", "num"],
+    ["pRet", "school.matrix.column.pret", "num"],
+  ];
+  const secondary = [
+    ["visits", "school.matrix.column.visits", "num"], ["retainedSteps", "school.matrix.column.retainedSteps", "num"],
+    ["lastGain", "school.matrix.column.lastGain", "text"], ["lastRegression", "school.matrix.column.lastRegression", "text"],
+    ["strategy", "school.matrix.column.strategy", "text"], ["sourceFamilies", "school.matrix.column.sources", "text"],
+  ];
+  return [...core, ...(ui.secondaryColumns ? secondary : [])];
+}
+
+function cell(row, key, kind) {
+  if (key === "id") return `<th class="capability-cell" scope="row"><button type="button" data-select-capability="${row.id}" data-focus-key="school:${row.id}" ${testIdAttribute("school", "matrix", "capability", slug(row.id))} title="${t("school.matrix.inspect", { id: row.id })}">${row.id}</button></th>`;
+  if (key === "prerequisites") return `<td>${empty(row.prerequisites)}</td>`;
+  if (["was", "top", "now"].includes(key)) return `<td class="num">${score(row[key], row.total)}</td>`;
+  if (key === "total") return `<td class="num">${row.total}</td>`;
+  if (key === "growth") return `<td class="num" data-delta="${Math.sign(row.growth)}">${row.growth >= 0 ? "+" : ""}${row.growth}</td>`;
+  if (key === "pRet") return `<td class="num">${row.pRet === null ? t("school.common.notMeasured") : row.pRet.toFixed(2)}</td>`;
+  if (key === "sourceFamilies") return `<td>${empty(row.sourceFamilies)}</td>`;
+  return `<td class="${kind === "num" ? "num" : ""}">${row[key]}</td>`;
+}
+
+function tableRows(projectedRows, columnCount) {
   let family = null;
   return projectedRows.map((row) => {
+    const familyRows = projectedRows.filter((candidate) => candidate.family === row.family).length;
     const group = ui.groupByFamily && row.family !== family
-      ? `<tr class="family-row"><th colspan="18">${row.family.toUpperCase()} family</th></tr>`
-      : "";
+      ? `<tr class="family-row"><th colspan="${columnCount + 1}">${t("school.matrix.family", { family: row.family, count: familyRows })}</th></tr>` : "";
     family = row.family;
     const selected = row.id === ui.selectedId ? "true" : "false";
-    return group + `<tr data-capability-id="${row.id}" data-selected="${selected}" ${objectDomAttributes({
-      kind: "capability", id: row.id, relations: capabilityRelations(row.id),
-    })}>
-      <th class="capability-cell" scope="row"><button type="button" data-select-capability="${row.id}" data-focus-key="school:${row.id}" title="Inspect exact capability ${row.id}">${row.id}</button></th>
-      <td>${row.grade}</td>
-      <td title="${row.prerequisites.join(", ") || "none"}">${row.prerequisites.join(", ") || "—"}</td>
-      <td class="num" title="WAS ${row.was}/${row.total}">${row.was}</td>
-      <td class="num" title="TOP ${row.top}/${row.total}">${row.top}</td>
-      <td class="num" title="NOW ${row.now}/${row.total}">${row.now}</td>
-      <td class="num">${row.total}</td>
-      <td class="num" title="Terminal quad ${scoreQuad(row)}">${row.growth >= 0 ? "+" : ""}${row.growth}</td>
-      <td class="num">${row.debt}</td>
-      <td class="num">${row.pRet === null ? "—" : row.pRet.toFixed(2)}</td>
-      <td class="num">${row.visits}</td>
-      <td class="num">${row.retainedSteps}</td>
-      <td>${row.lastGain}</td>
-      <td>${row.lastRegression}</td>
-      <td>${row.strategy}</td>
-      <td>${row.sourceFamilies.join(", ")}</td>
-      <td colspan="2">${statusCell(row)}</td>
+    return group + `<tr data-capability-id="${row.id}" data-selected="${selected}" ${testIdAttribute("school", "matrix", "row", slug(row.id))} ${objectDomAttributes({ kind: "capability", id: row.id, relations: capabilityRelations(row.id) })}>
+      ${visibleColumns().map(([key, _label, kind]) => cell(row, key, kind)).join("")}
+      <td class="school-state-cell">${statusCell(row)}</td>
     </tr>`;
   }).join("");
 }
 
+function sortableHeader(key, labelKey) {
+  const label = t(labelKey);
+  const ariaSort = ui.sortKey === key ? (ui.direction === "asc" ? "ascending" : "descending") : "none";
+  return `<th aria-sort="${ariaSort}"><button type="button" data-sort-key="${key}" data-focus-key="sort:${key}" ${testIdAttribute("school", "sort", slug(key))}>${t("school.matrix.sort", { label })}<span aria-hidden="true">${ui.sortKey === key ? (ui.direction === "asc" ? " ↑" : " ↓") : ""}</span></button></th>`;
+}
+
 function matrix(projectedRows, page) {
-  const headers = [
-    ["id", "Capability"], ["grade", "Class"], ["prerequisites", "Prerequisites"],
-    ["was", "WAS"], ["top", "TOP"], ["now", "NOW"], ["total", "ALL"],
-    ["growth", "Growth"], ["debt", "Debt"], ["pRet", "P(RET)"],
-    ["visits", "Visits"], ["retainedSteps", "Retained steps"], ["lastGain", "Last gain"],
-    ["lastRegression", "Last regression"], ["strategy", "Strategy"], ["sourceFamilies", "Sources"],
-  ];
-  return `<section class="school-panel matrix-panel">
-    <header><div><span class="eyebrow">Exact comparison</span><h2>Capability matrix</h2></div><div class="coverage-counter">${page.start + 1}–${page.end} of ${page.total}</div></header>
-    <div class="matrix-scroll scroll-surface" role="region" aria-label="School capability matrix" tabindex="0">
-      <table class="school-matrix">
-        <thead><tr>${headers.map(([key, label]) => {
-          const ariaSort = ui.sortKey === key ? (ui.direction === "asc" ? "ascending" : "descending") : "none";
-          return `<th aria-sort="${ariaSort}"><button type="button" data-sort-key="${key}" data-focus-key="sort:${key}">Sort by ${label}<span aria-hidden="true">${ui.sortKey === key ? (ui.direction === "asc" ? " ↑" : " ↓") : ""}</span></button></th>`;
-        }).join("")}<th colspan="2">Source / implementation / qualification</th></tr></thead>
-        <tbody>${tableRows(projectedRows)}</tbody>
+  const columns = visibleColumns();
+  const activityCount = ui.secondaryColumns ? 6 : 0;
+  return `<section class="school-panel matrix-panel" ${testIdAttribute("school", "matrix")}>
+    <header><div><span class="eyebrow">${t("school.matrix.eyebrow")}</span><h2>${t("school.matrix.title")}</h2></div><div class="coverage-counter">${t("school.matrix.range", { start: page.start + 1, end: page.end, total: page.total })}</div></header>
+    <div class="matrix-overflow-cue" aria-hidden="true">${t("school.matrix.scrollHint")}</div>
+    <div class="matrix-scroll scroll-surface" role="region" aria-label="${t("school.matrix.aria")}" tabindex="0" ${testIdAttribute("school", "matrix", "scroll")}>
+      <table class="school-matrix" ${testIdAttribute("school", "matrix", "table")}>
+        <thead><tr class="matrix-groups"><th colspan="3">${t("school.matrix.group.identity")}</th><th colspan="4">${t("school.matrix.group.score")}</th><th colspan="3">${t("school.matrix.group.learning")}</th>${activityCount ? `<th colspan="${activityCount}">${t("school.matrix.group.activity")}</th>` : ""}<th>${t("school.matrix.group.provenance")}</th></tr>
+        <tr>${columns.map(([key, label]) => sortableHeader(key, label)).join("")}<th>${t("school.matrix.column.state")}</th></tr></thead>
+        <tbody>${tableRows(projectedRows, columns.length)}</tbody>
       </table>
     </div>
-    <footer class="school-pagination">
-      <button type="button" data-page="-1" data-focus-key="page:previous" ${page.page <= 1 ? "disabled" : ""}>Previous</button>
-      <span>Page ${page.page} / ${page.pages} · complete coverage ${page.total} rows</span>
-      <button type="button" data-page="1" data-focus-key="page:next" ${page.page >= page.pages ? "disabled" : ""}>Next</button>
+    <footer class="school-pagination" ${testIdAttribute("school", "pagination")}>
+      <button type="button" data-page="-1" data-focus-key="page:previous" ${testIdAttribute("school", "page", "previous")} ${page.page <= 1 ? "disabled" : ""}>${t("school.pagination.previous")}</button>
+      <span>${t("school.pagination.status", { page: page.page, pages: page.pages, total: page.total })}</span>
+      <button type="button" data-page="1" data-focus-key="page:next" ${testIdAttribute("school", "page", "next")} ${page.page >= page.pages ? "disabled" : ""}>${t("school.pagination.next")}</button>
     </footer>
   </section>`;
 }
 
 function graphNode(row, neighborhood, index) {
   const isSelected = row.id === neighborhood.selected;
-  const relation = isSelected ? "selected"
-    : neighborhood.prerequisites.includes(row.id) ? "prerequisite"
-    : neighborhood.dependents.includes(row.id) ? "dependent" : "other";
+  const relation = isSelected ? "selected" : neighborhood.prerequisites.includes(row.id) ? "prerequisite" : neighborhood.dependents.includes(row.id) ? "dependent" : "other";
   const x = 80 + (index % 3) * 240;
   const y = 50 + Math.floor(index / 3) * 100;
   const unlocks = rows.filter((candidate) => candidate.prerequisites.includes(row.id)).length;
-  const eligibility = (row.sourceState === "SOURCE_HELD" || row.implementationState === "IMPLEMENTATION_UNCOVERED")
-    ? "blocked"
-    : row.lifecycleState === "READY" ? "eligible" : "other";
+  const eligibility = (row.sourceState === "SOURCE_HELD" || row.implementationState === "IMPLEMENTATION_UNCOVERED") ? "blocked" : row.lifecycleState === "READY" ? "eligible" : "other";
   const mastery = row.qualificationState === "QUALIFIED" ? "mastered" : "learning";
-  return `<g class="dependency-node" data-capability-id="${row.id}" ${objectDomAttributes({
-    kind: "capability", id: row.id, relations: capabilityRelations(row.id),
-  })} data-focus-key="graph:${row.id}" data-relation="${relation}" data-state="${stateCue(row)}" data-lifecycle="${row.lifecycleState}" data-eligibility="${eligibility}" data-mastery="${mastery}" data-observed-debt="${row.observedDebt}" tabindex="0" role="button" aria-pressed="${isSelected}" aria-label="${row.id}; ${row.lifecycleState}; ${unlocks} direct downstream unlocks" transform="translate(${x} ${y})">
-    <title>${row.id}: ${row.lifecycleState}; direct downstream unlocks ${unlocks}</title>
-    <rect width="190" height="62" rx="8"></rect>
-    <text x="12" y="24">${row.id}</text>
-    <text class="node-state" x="12" y="44">${row.sourceState === "SOURCE_HELD" ? "SOURCE_HELD" : row.implementationState === "IMPLEMENTATION_UNCOVERED" ? "IMPLEMENTATION_UNCOVERED" : row.lifecycleState} · debt ${row.observedDebt ? row.debt : "—"} · unlock ${unlocks}</text>
-  </g>`;
+  const debt = row.observedDebt ? row.debt : t("school.common.notMeasured");
+  const state = row.sourceState === "SOURCE_HELD" ? row.sourceState : row.implementationState === "IMPLEMENTATION_UNCOVERED" ? row.implementationState : row.lifecycleState;
+  return `<g class="dependency-node" data-capability-id="${row.id}" ${testIdAttribute("school", "graph", "node", slug(row.id))} ${objectDomAttributes({ kind: "capability", id: row.id, relations: capabilityRelations(row.id) })} data-focus-key="graph:${row.id}" data-relation="${relation}" data-state="${stateCue(row)}" data-lifecycle="${row.lifecycleState}" data-eligibility="${eligibility}" data-mastery="${mastery}" data-observed-debt="${row.observedDebt}" tabindex="0" role="button" aria-pressed="${isSelected}" aria-label="${t("school.dependency.nodeAria", { id: row.id, lifecycle: row.lifecycleState, unlocks })}" transform="translate(${x} ${y})">
+    <title>${t("school.dependency.nodeAria", { id: row.id, lifecycle: row.lifecycleState, unlocks })}</title><rect width="190" height="62" rx="4"></rect>
+    <text x="12" y="24">${row.id}</text><text class="node-state" x="12" y="44">${t("school.dependency.nodeState", { state, debt, unlocks })}</text></g>`;
 }
 
 function graphEdges(neighborhood) {
@@ -139,44 +135,39 @@ function graphEdges(neighborhood) {
   return [...neighborhood.prerequisites, ...neighborhood.dependents].map((id) => {
     const index = rows.findIndex((row) => row.id === id);
     if (index < 0) return "";
-    const tx = 80 + (index % 3) * 240 + 95;
-    const ty = 50 + Math.floor(index / 3) * 100 + 31;
-    return `<line x1="${sx}" y1="${sy}" x2="${tx}" y2="${ty}" data-edge-to="${id}"></line>`;
+    return `<line x1="${sx}" y1="${sy}" x2="${80 + (index % 3) * 240 + 95}" y2="${50 + Math.floor(index / 3) * 100 + 31}" data-edge-to="${id}"></line>`;
   }).join("");
 }
 
 function dependencyTable(neighborhood) {
-  return `<table class="dependency-fallback"><caption>Equivalent table for the selected capability dependency graph</caption><thead><tr><th>Relation</th><th>Capability ID</th></tr></thead><tbody>
-    ${neighborhood.prerequisites.map((id) => `<tr><td>Prerequisite</td><td>${id}</td></tr>`).join("")}
-    ${neighborhood.dependents.map((id) => `<tr><td>Dependent</td><td>${id}</td></tr>`).join("")}
-  </tbody></table>`;
+  const relationRows = [
+    ...neighborhood.prerequisites.map((id) => ["prerequisite", id]),
+    ...neighborhood.dependents.map((id) => ["dependent", id]),
+  ];
+  return `<div class="dependency-table-wrap" ${testIdAttribute("school", "dependency", "table")}><table class="dependency-fallback"><caption>${t("school.dependency.caption", { id: neighborhood.selected })}</caption><thead><tr><th>${t("school.dependency.column.relation")}</th><th>${t("school.dependency.column.capability")}</th></tr></thead><tbody>
+    ${relationRows.map(([relation, id]) => `<tr><td>${t(`school.dependency.relation.${relation}`)}</td><td><button type="button" data-select-capability="${id}" data-focus-key="dependency-table:${id}" ${testIdAttribute("school", "dependency", "row", slug(id))}>${id}</button></td></tr>`).join("") || `<tr><td colspan="2">${t("school.dependency.empty")}</td></tr>`}
+  </tbody></table></div>`;
 }
 
-function dependencyGraph() {
+function dependencyView() {
   const neighborhood = selectionNeighborhood(rows, ui.selectedId);
-  if (!ui.graphEnabled) {
-    return `<section class="school-panel graph-panel"><header><div><span class="eyebrow">Topology</span><h2>Dependency table</h2></div><button type="button" data-toggle-graph data-focus-key="graph:toggle">Enable graph</button></header>${dependencyTable(neighborhood)}</section>`;
-  }
-  return `<section class="school-panel graph-panel"><header><div><span class="eyebrow">Topology</span><h2>Prerequisite graph</h2></div><button type="button" data-toggle-graph data-focus-key="graph:toggle">Use table alternative</button></header>
-    <div class="graph-legend"><span><i data-edge="source"></i>eligible / qualified</span><span><i data-edge="held"></i>SOURCE_HELD</span><span><i data-edge="derived"></i>IMPLEMENTATION_UNCOVERED</span></div>
-    <p id="school-graph-summary" class="sr-only">Interactive prerequisite graph. Arrow keys move between capability nodes. Enter or Space inspects a node. An equivalent relationship table follows the graph.</p>
-    <svg class="school-graph" viewBox="0 0 760 360" role="group" aria-label="Capability prerequisite dependency graph" aria-describedby="school-graph-summary">${graphEdges(neighborhood)}${rows.map((row, index) => graphNode(row, neighborhood, index)).join("")}</svg>
-    ${dependencyTable(neighborhood)}
+  return `<section class="school-panel graph-panel" ${testIdAttribute("school", "dependency")}><header><div><span class="eyebrow">${t("school.dependency.eyebrow")}</span><h2>${t("school.dependency.graphTitle")}</h2></div><div class="graph-legend" aria-label="${t("school.dependency.legend")}"><span><i data-edge="source"></i>${t("school.dependency.legend.qualified")}</span><span><i data-edge="held"></i>${t("school.dependency.legend.held")}</span><span><i data-edge="derived"></i>${t("school.dependency.legend.uncovered")}</span><span><i data-edge="selected"></i>${t("school.dependency.legend.selected")}</span></div></header>
+    <p id="school-graph-summary" class="graph-guidance">${t("school.dependency.summary")}</p>
+    <div class="dependency-peers"><div class="dependency-graph-wrap"><svg class="school-graph" viewBox="0 0 760 360" role="group" aria-label="${t("school.dependency.aria")}" aria-describedby="school-graph-summary" ${testIdAttribute("school", "dependency", "graph")}>${graphEdges(neighborhood)}${rows.map((row, index) => graphNode(row, neighborhood, index)).join("")}</svg></div>${dependencyTable(neighborhood)}</div>
   </section>`;
 }
 
 function filterBar(projectedRows) {
-  return `<div class="school-controls">
-    <div class="filter-set" role="group" aria-label="School filters">${FILTERS.map((filter) => `<button type="button" data-filter="${filter}" data-focus-key="filter:${filter}" aria-pressed="${ui.filters.has(filter)}">${filter}</button>`).join("")}</div>
-    <label><input type="checkbox" data-group-family data-focus-key="group:family" ${ui.groupByFamily ? "checked" : ""}/> Group by family</label>
-    <button type="button" data-export data-focus-key="school:export">Export ${projectedRows.length} displayed identities</button>
+  return `<div class="school-controls" ${testIdAttribute("school", "controls")}>
+    <fieldset class="filter-set"><legend>${t("school.controls.filters")}</legend>${FILTERS.map((filter) => `<button type="button" data-filter="${filter}" data-focus-key="filter:${filter}" ${testIdAttribute("school", "filter", slug(filter))} aria-pressed="${ui.filters.has(filter)}">${t(`school.filter.${filter}`)}</button>`).join("")}</fieldset>
+    <label class="school-group-control"><input type="checkbox" data-group-family data-focus-key="group:family" ${testIdAttribute("school", "group", "family")} ${ui.groupByFamily ? "checked" : ""}/> ${t("school.controls.groupFamily")}</label>
+    <button type="button" class="school-column-control" data-toggle-columns data-focus-key="columns:toggle" ${testIdAttribute("school", "columns", "toggle")} aria-pressed="${ui.secondaryColumns}">${t(ui.secondaryColumns ? "school.controls.hideSecondary" : "school.controls.showSecondary")}</button>
+    <button type="button" class="school-export-control" data-export data-focus-key="school:export" ${testIdAttribute("school", "export")}>${t("school.controls.export", { count: projectedRows.length })}</button>
   </div>`;
 }
 
 function restoreSchoolFocus(container, key) {
-  const target = [...container.querySelectorAll("[data-focus-key]")]
-    .find((candidate) => candidate.dataset.focusKey === key);
-  target?.focus();
+  [...container.querySelectorAll("[data-focus-key]")].find((candidate) => candidate.dataset.focusKey === key)?.focus();
 }
 
 function rerenderFrom(container, inspectCapability, control) {
@@ -189,62 +180,43 @@ function bind(container, inspectCapability) {
   container.querySelectorAll("[data-filter]").forEach((button) => button.addEventListener("click", () => {
     const filter = button.dataset.filter;
     ui.filters.has(filter) ? ui.filters.delete(filter) : ui.filters.add(filter);
-    ui.page = 1;
-    rerenderFrom(container, inspectCapability, button);
+    ui.page = 1; rerenderFrom(container, inspectCapability, button);
   }));
   container.querySelectorAll("[data-sort-key]").forEach((button) => button.addEventListener("click", () => {
     const key = button.dataset.sortKey;
     ui.direction = ui.sortKey === key && ui.direction === "asc" ? "desc" : "asc";
-    ui.sortKey = key;
-    rerenderFrom(container, inspectCapability, button);
+    ui.sortKey = key; rerenderFrom(container, inspectCapability, button);
   }));
   container.querySelectorAll("[data-page]").forEach((button) => button.addEventListener("click", () => {
-    ui.page += Number(button.dataset.page);
-    rerenderFrom(container, inspectCapability, button);
+    ui.page += Number(button.dataset.page); rerenderFrom(container, inspectCapability, button);
   }));
   container.querySelector("[data-group-family]")?.addEventListener("change", (event) => {
-    ui.groupByFamily = event.currentTarget.checked;
-    rerenderFrom(container, inspectCapability, event.currentTarget);
+    ui.groupByFamily = event.currentTarget.checked; rerenderFrom(container, inspectCapability, event.currentTarget);
   });
-  container.querySelector("[data-toggle-graph]")?.addEventListener("click", (event) => {
-    ui.graphEnabled = !ui.graphEnabled;
-    rerenderFrom(container, inspectCapability, event.currentTarget);
+  container.querySelector("[data-toggle-columns]")?.addEventListener("click", (event) => {
+    ui.secondaryColumns = !ui.secondaryColumns; rerenderFrom(container, inspectCapability, event.currentTarget);
   });
   container.querySelectorAll("[data-select-capability], .dependency-node").forEach((node) => {
     const activate = () => {
       ui.selectedId = node.dataset.selectCapability ?? node.dataset.capabilityId;
-      inspectCapability(
-        ui.selectedId,
-        rows.find((row) => row.id === ui.selectedId),
-        selectionNeighborhood(rows, ui.selectedId),
-      );
+      inspectCapability(ui.selectedId, rows.find((row) => row.id === ui.selectedId), selectionNeighborhood(rows, ui.selectedId));
       renderSchoolView(container, inspectCapability);
     };
     node.addEventListener("click", activate);
-    node.addEventListener("keydown", (event) => {
-      if (isActivationKey(event.key)) {
-        event.preventDefault();
-        activate();
-      }
-    });
+    node.addEventListener("keydown", (event) => { if (isActivationKey(event.key)) { event.preventDefault(); activate(); } });
   });
   const graphNodes = [...container.querySelectorAll(".dependency-node")];
   graphNodes.forEach((node, index) => node.addEventListener("keydown", (event) => {
     const next = nextRovingIndex(index, event.key, graphNodes.length);
     if (next === index) return;
-    event.preventDefault();
-    graphNodes[next]?.focus();
+    event.preventDefault(); graphNodes[next]?.focus();
   }));
   container.querySelector("[data-export]")?.addEventListener("click", (event) => {
     const projected = projectRows(rows, { filters: [...ui.filters], sortKey: ui.sortKey, direction: ui.direction, groupByFamily: ui.groupByFamily });
     const blob = new Blob([exportSchoolCsv(projected)], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
-    anchor.href = url;
-    anchor.download = "bilqis-school-filtered.csv";
-    anchor.click();
-    URL.revokeObjectURL(url);
-    event.currentTarget.textContent = "Exported " + projected.length + " identities";
+    const url = URL.createObjectURL(blob); const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = "bilqis-school-filtered.csv"; anchor.click(); URL.revokeObjectURL(url);
+    event.currentTarget.textContent = t("school.controls.exported", { count: projected.length });
   });
 }
 
@@ -252,14 +224,15 @@ export function renderSchoolView(container, inspectCapability, selectedId = null
   if (selectedId && rows.some((row) => row.id === selectedId)) ui.selectedId = selectedId;
   const projected = projectRows(rows, { filters: [...ui.filters], sortKey: ui.sortKey, direction: ui.direction, groupByFamily: ui.groupByFamily });
   const page = paginateRows(projected, ui.page, ui.pageSize);
-  container.innerHTML = `<div class="school-view">
-    <header class="school-heading"><div><span class="eyebrow">GUI04 · School / Curriculum</span><h2>Exact evidence, topology-aware</h2></div><p>Grade labels organize the view only. Eligibility, debt, promotion and scheduling semantics remain evidence-driven and grade-neutral.</p></header>
-    <div class="school-fixture-notice" role="status"><strong>FIXTURE · REPRESENTATIVE TERMINAL METRICS</strong><span>These School rows prove GUI04 behavior and mirror the terminal metric classes; they are not current learner evidence.</span></div>
+  const markup = `<div class="school-view" ${testIdAttribute("school", "root")}>
+    <header class="school-heading"><div><span class="eyebrow">${t("school.heading.eyebrow")}</span><h2>${t("school.heading.title")}</h2></div><p>${t("school.heading.summary")}</p></header>
+    <div class="school-fixture-notice" role="status" ${testIdAttribute("school", "fixture")}><strong>${t("school.fixture.title")}</strong><span>${t("school.fixture.detail")}</span></div>
     ${filterBar(projected)}
-    <div class="ui-glossary" aria-label="Capability matrix metric definitions"><span><strong>WAS</strong> prior measured score.</span><span><strong>TOP</strong> best measured score.</span><span><strong>NOW</strong> current measured score.</span><span><strong>ALL</strong> questions in the panel.</span><span><strong>P(RET)</strong> observed retention probability.</span><span>Scroll the matrix horizontally for later evidence columns.</span></div>
-    ${matrix(page.rows, page)}
-    ${dependencyGraph()}
+    <div class="ui-glossary" aria-label="${t("school.matrix.aria")}" ${testIdAttribute("school", "glossary")}><span>${t("school.glossary.was")}</span><span>${t("school.glossary.top")}</span><span>${t("school.glossary.now")}</span><span>${t("school.glossary.all")}</span><span>${t("school.glossary.pret")}</span><span>${t("school.glossary.scroll")}</span></div>
+    ${matrix(page.rows, page)}${dependencyView()}
   </div>`;
+  assertUniqueTestIds(markup);
+  container.innerHTML = markup;
   bind(container, inspectCapability);
 }
 

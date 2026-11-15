@@ -40,6 +40,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/foundation/i18n.mjs",
     "/foundation/i18n-learning.mjs",
     "/foundation/i18n-model.mjs",
+    "/foundation/i18n-school.mjs",
     "/foundation/i18n-shell.mjs",
     "/foundation/i18n-teacher.mjs",
     "/foundation/primitives.mjs",

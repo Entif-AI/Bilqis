@@ -33,6 +33,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/foundation/i18n-home.mjs", "foundation/i18n-home.mjs"],
   ["/foundation/i18n-learning.mjs", "foundation/i18n-learning.mjs"],
   ["/foundation/i18n-model.mjs", "foundation/i18n-model.mjs"],
+  ["/foundation/i18n-school.mjs", "foundation/i18n-school.mjs"],
   ["/foundation/i18n-shell.mjs", "foundation/i18n-shell.mjs"],
   ["/foundation/i18n-teacher.mjs", "foundation/i18n-teacher.mjs"],
   ["/foundation/primitives.mjs", "foundation/primitives.mjs"],
