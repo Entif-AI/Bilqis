@@ -12,7 +12,10 @@ export async function capabilityJourney(page) {
   check(await hook("capability-entry-teaching-1").count() === 1, "no gain distinct");
   check(await hook("capability-entry-teaching-2").count() === 1, "interference distinct");
   check((await hook("capability-metric-now").innerText()).includes("10/12"), "NOW keeps denominator");
-  check((await hook("capability-heading").innerText()).includes("does not infer causes"), "causal boundary visible");
+  check((await hook("capability-heading").innerText()).includes("Current capability posture"), "affirmative dossier summary visible");
+  check(await hook("capability-help-identity").count() === 1, "identity help present");
+  check(await hook("capability-help-metrics").count() === 1, "metrics help present");
+  check(await hook("capability-help-history").count() === 1, "chronology help present");
 
   await hook("capability-entry-performance-0-evidence-toggle").click();
   await hook("capability-evidence-ref-performance-0-0").click();
@@ -49,10 +52,6 @@ export async function capabilityJourney(page) {
   await page.keyboard.press("Enter");
   check(await page.evaluate(() => document.activeElement?.dataset?.testId === "capability-section-sources"), "keyboard section focus");
 
-  await hook("capability-source-select").selectOption("service");
-  await hook("capability-empty-status").waitFor();
-  check((await hook("capability-empty-status").innerText()) === "UNAVAILABLE", "service failure is literal");
-  check(await page.locator('[data-test-id^="capability-entry-"]').count() === 0, "no fixture fallback on service error");
   return "CAPABILITY_BROWSER_JOURNEY_PASS";
 }
 

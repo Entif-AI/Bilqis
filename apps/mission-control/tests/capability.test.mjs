@@ -88,7 +88,7 @@ test("absent dossier still shows literal projection markers", () => {
   assert.match(html, /EXACT_REASON/);
 });
 
-test("redesigned dossier uses stable semantic hooks and keeps the no-causality boundary visible", async () => {
+test("redesigned dossier uses shared help, readable time, and affirmative operator copy", async () => {
   const { fixtureQuery } = await import("../renderer/capability/fixture.mjs");
   const result = await fixtureQuery(buildQuery(lens));
   const dossier = chooseDossier(result.records, lens, "B.AND");
@@ -102,9 +102,29 @@ test("redesigned dossier uses stable semantic hooks and keeps the no-causality b
     "capability-section-dependencies", "capability-section-history",
     "capability-provenance",
   ]) assert.equal(ids.has(id), true, id);
-  assert.match(html, /Measured chronology and declared evidence only/);
-  assert.match(html, /does not infer causes/);
+  for (const id of ["capability-help-identity", "capability-help-metrics", "capability-help-dependencies",
+    "capability-help-history", "capability-help-navigation", "capability-help-provenance"]) {
+    assert.match(html, new RegExp(`data-test-id="${id}"`), id);
+  }
+  assert.match(html, /Current capability posture/);
+  assert.doesNotMatch(html, /does not (?:infer|establish|prove|imply|demonstrate|mean)/i);
+  assert.match(html, /capability-entry-history-0-time/);
+  assert.match(html, /Time unavailable/);
   assert.match(html, /10\/12/);
+});
+
+test("production dossier uses observed_at for shared temporal markup", () => {
+  const metric = (value) => ({ value, state: "PRESENT", origin: "MEASURED", units: null });
+  const production = { ...row, now: metric(8), top: metric(9), total: metric(12), debt: metric(4),
+    retention: metric("WATCH"), eligibility: metric("ELIGIBLE"), qualification: metric("QUALIFIED"),
+    source_state: metric("ADMITTED"), entries: [{
+      entry_id: "event", section: "history", kind: "gain", label: "Gain recorded", generation: 3,
+      observed_at: 1_700_000_000, values: [], refs: [], related_id: null,
+    }] };
+  const html = renderDossier({ dossier: production, status: "PRESENT", lens, cursor: null, markers: [], fixture: false });
+  assert.match(html, /datetime="2023-11-14T22:13:20.000Z"/);
+  assert.match(html, /data-source-unix-seconds="1700000000"/);
+  assert.doesNotMatch(html, /observed 1700000000/);
 });
 
 test("inline evidence is bounded, uniquely hooked, and offers the full Evidence route", () => {
