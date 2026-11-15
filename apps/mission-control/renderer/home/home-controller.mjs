@@ -21,6 +21,21 @@ export function createHomeController(api, {
   let renderTarget = null, inspectTarget = null, navigateTarget = null;
   let unsubscribe = null, timer = null, epoch = 0, queue = Promise.resolve();
   let disconnected = false, needsSnapshot = false, pending = new Map();
+  let activationKey = null;
+
+  function keyFor(nextContext, nextHistorical) {
+    return JSON.stringify([
+      nextContext?.runId ?? null,
+      nextContext?.generation ?? null,
+      nextContext?.mode ?? null,
+      nextContext?.generationManifest ?? null,
+      nextContext?.factoryRelease ?? null,
+      nextContext?.semanticRelease ?? null,
+      nextContext?.topologyId ?? null,
+      nextContext?.fixture === true,
+      nextHistorical,
+    ]);
+  }
 
   function render({ resetDetails = false } = {}) {
     if (!renderTarget || !model) return;
@@ -150,13 +165,23 @@ export function createHomeController(api, {
     }, 2000);
   }
   async function activate(nextContext, { host, onInspect, onNavigate, defense } = {}) {
+    const nextHistorical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
+    const nextKey = keyFor(nextContext, nextHistorical);
+    if (activationKey === nextKey) {
+      renderTarget = host;
+      inspectTarget = onInspect;
+      navigateTarget = onNavigate;
+      render();
+      return queue;
+    }
     const current = ++epoch;
     if (timer !== null) { cancel(timer); timer = null; }
     const stop = unsubscribe;
     unsubscribe = null;
     queue = Promise.resolve(); pending = new Map();
     renderTarget = host; inspectTarget = onInspect; navigateTarget = onNavigate;
-    historical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
+    historical = nextHistorical;
+    activationKey = nextKey;
     context = { ...nextContext, mode: historical ? "HISTORICAL" : nextContext?.mode }; pages = {}; disconnected = false; needsSnapshot = false;
     model = referenceProjection && nextContext?.fixture === true && !historical ? referenceProjection() : null;
     render({ resetDetails: true });
@@ -173,6 +198,7 @@ export function createHomeController(api, {
   }
   async function deactivate() {
     ++epoch;
+    activationKey = null;
     if (timer !== null) { cancel(timer); timer = null; }
     const stop = unsubscribe;
     unsubscribe = null;

@@ -260,6 +260,45 @@ test("live home uses one family query per CP04 event rather than polling the ful
   await controller.deactivate();
 });
 
+test("same-context home reactivation does not restart the CP01 query and subscription lifecycle", async () => {
+  const calls = [];
+  let subscriptions = 0;
+  let unsubscriptions = 0;
+  const api = {
+    async status() { return { learnerActive: true }; },
+    async query(request) {
+      calls.push(request.family);
+      return emptyPage(request.family);
+    },
+    subscribeEvents() {
+      subscriptions += 1;
+      return async () => { unsubscriptions += 1; };
+    },
+  };
+  const controller = createHomeController(api, { schedule: () => 1, cancel: () => {} });
+  const firstHost = fakeHost();
+  await controller.activate(context, { host: firstHost, onInspect: () => {}, defense: { historical: false } });
+  const baselineCalls = calls.length;
+  assert.equal(subscriptions, 1);
+
+  const secondHost = fakeHost();
+  await controller.activate(context, { host: secondHost, onInspect: () => {}, defense: { historical: false } });
+
+  assert.equal(calls.length, baselineCalls);
+  assert.equal(subscriptions, 1);
+  assert.equal(unsubscriptions, 0);
+  assert.match(secondHost.innerHTML, /Mission Control|Generation|No training|Unavailable|Current Work/i);
+
+  await controller.activate({ ...context, generation: context.generation + 1 }, {
+    host: fakeHost(), onInspect: () => {}, defense: { historical: false },
+  });
+
+  assert.equal(calls.length, baselineCalls * 2);
+  assert.equal(subscriptions, 2);
+  assert.equal(unsubscriptions, 1);
+  await controller.deactivate();
+});
+
 test("historical home never opens a live CP04 subscription", async () => {
   let subscriptions = 0;
   const api = {
