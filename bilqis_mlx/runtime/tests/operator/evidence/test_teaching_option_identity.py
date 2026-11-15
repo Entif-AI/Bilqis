@@ -17,7 +17,8 @@ from bilqis_mlx.runtime.teacher_observation_capture import store_sidecar
 
 
 class CandidateEvidenceIdentityTests(unittest.TestCase):
-    def test_priority_option_does_not_replace_factory_teaching_option(self):
+    @staticmethod
+    def _selection():
         identity = SimpleNamespace(
             visit_id="visit:edge",
             policy_key="policy:edge",
@@ -36,6 +37,10 @@ class CandidateEvidenceIdentityTests(unittest.TestCase):
             ),
             policy={"lr": 0.001},
         )
+        return selection
+
+    @staticmethod
+    def _release():
         execution = SimpleNamespace(
             provider_id="provider:edge",
             provider_implementation_sha256="f" * 64,
@@ -50,80 +55,74 @@ class CandidateEvidenceIdentityTests(unittest.TestCase):
             execution_plan=SimpleNamespace(
                 capability_map={"A.EDGE": execution}),
         )
-        row = {
+        return release
+
+    @staticmethod
+    def _row():
+        return {
             "id": "row:edge",
             "capability": "A.EDGE",
             "tokens": [1, 2, 3],
         }
 
-        with TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            prepare_candidate_evidence_root(root)
-            capture = CandidateEvidenceCapture(
-                root,
-                selection,
-                generation=3,
-                accepted_manifest_sha256="a" * 64,
-                candidate_attempt_ordinal=1,
-                parent_optimizer_step=10,
-            )
-            capture.delivery(
-                release,
-                "A.EDGE",
-                11,
-                (row,),
-                option_rows=(row,),
-                seed=17,
-                controls={
-                    "delivered_content_sha256": content_digest((row,)),
-                },
-            )
-            receipt = capture.finalize(
-                accepted=False,
-                decision={"decision": "REJECTED"},
-            )
-            payload = read_candidate_horizon_evidence(root, receipt)
-            event = {
-                "event": "BAMF_CANDIDATE_REJECTED",
-                "generation": 3,
-                "student_manifest_sha256": "a" * 64,
-                "evidence": {
-                    "schema": "bilqis.bamf.c16.3-rejection/v2",
-                    "rejection_journal_ordinal": 1,
-                    "rejection_attempt_ordinal": 1,
-                    "visit_id": "visit:edge",
-                    "selected_policy_key": "policy:edge",
-                    "selected_option_id": "A.EDGE",
-                    "capability": "A.EDGE",
-                    "candidate_optimizer_step": 11,
-                    "retained_optimizer_step": 10,
-                    "decision": {"decision": "REJECTED"},
-                    "candidate_evidence": receipt,
-                },
-            }
-            validated = validate_candidate_horizon_event(root, event, release)
+    @staticmethod
+    def _event(receipt):
+        return {
+            "event": "BAMF_CANDIDATE_REJECTED",
+            "generation": 3,
+            "student_manifest_sha256": "a" * 64,
+            "evidence": {
+                "schema": "bilqis.bamf.c16.3-rejection/v2",
+                "rejection_journal_ordinal": 1,
+                "rejection_attempt_ordinal": 1,
+                "visit_id": "visit:edge",
+                "selected_policy_key": "policy:edge",
+                "selected_option_id": "A.EDGE",
+                "capability": "A.EDGE",
+                "candidate_optimizer_step": 11,
+                "retained_optimizer_step": 10,
+                "decision": {"decision": "REJECTED"},
+                "candidate_evidence": receipt,
+            },
+        }
 
-        self.assertEqual(payload["proposal"]["selected_option"], "A.EDGE")
-        self.assertEqual(
-            payload["steps"][0]["delivered_teaching"]["option_id"],
-            "source.direct/A.EDGE",
+    def _capture(self, root):
+        row = self._row()
+        release = self._release()
+        capture = CandidateEvidenceCapture(
+            root,
+            self._selection(),
+            generation=3,
+            accepted_manifest_sha256="a" * 64,
+            candidate_attempt_ordinal=1,
+            parent_optimizer_step=10,
         )
-        self.assertEqual(
-            validated["steps"][0]["delivered_teaching"]["option_id"],
-            "source.direct/A.EDGE",
+        capture.delivery(
+            release,
+            "A.EDGE",
+            11,
+            (row,),
+            option_rows=(row,),
+            seed=17,
+            controls={"delivered_content_sha256": content_digest((row,))},
         )
+        receipt = capture.finalize(
+            accepted=False,
+            decision={"decision": "REJECTED"},
+        )
+        return release, receipt
 
+    def _assert_alternate_option_rejected(
+            self, root, payload, receipt, event, release):
         forged = {
             **payload,
-            "steps": [
-                {
-                    **payload["steps"][0],
-                    "delivered_teaching": {
-                        **payload["steps"][0]["delivered_teaching"],
-                        "option_id": "source.alternate/A.EDGE",
-                    },
+            "steps": [{
+                **payload["steps"][0],
+                "delivered_teaching": {
+                    **payload["steps"][0]["delivered_teaching"],
+                    "option_id": "source.alternate/A.EDGE",
                 },
-            ],
+            }],
         }
         forged_receipt = {
             **receipt,
@@ -138,6 +137,26 @@ class CandidateEvidenceIdentityTests(unittest.TestCase):
         }
         with self.assertRaises(ValueError):
             validate_candidate_horizon_event(root, forged_event, release)
+
+    def test_priority_option_does_not_replace_factory_teaching_option(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            prepare_candidate_evidence_root(root)
+            release, receipt = self._capture(root)
+            payload = read_candidate_horizon_evidence(root, receipt)
+            event = self._event(receipt)
+            validated = validate_candidate_horizon_event(root, event, release)
+            self.assertEqual(payload["proposal"]["selected_option"], "A.EDGE")
+            self.assertEqual(
+                payload["steps"][0]["delivered_teaching"]["option_id"],
+                "source.direct/A.EDGE",
+            )
+            self.assertEqual(
+                validated["steps"][0]["delivered_teaching"]["option_id"],
+                "source.direct/A.EDGE",
+            )
+            self._assert_alternate_option_rejected(
+                root, payload, receipt, event, release)
 
 
 if __name__ == "__main__":
