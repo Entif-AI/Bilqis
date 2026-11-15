@@ -115,7 +115,10 @@ def _current_identity(record: WireRecord):
     run = record.meta.run
     if run is None:
         return None
-    base = (run.run_id, type(record))
+    record_type = (
+        TrainerObservation if isinstance(record, TrainerObservation)
+        else type(record))
+    base = (run.run_id, record_type)
     if isinstance(record, TrainerObservation):
         return (*base, record.observation_id)
     if type(record) is CapabilitySnapshot:

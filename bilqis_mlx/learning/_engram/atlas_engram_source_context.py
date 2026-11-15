@@ -28,7 +28,6 @@ from bilqis_mlx.semantics.frame_schema import FrameInstance, validate_frame_bind
 from bilqis_mlx.semantics.released_frame_schemas import (
     lookup_source_pinned_frame_schema,
 )
-from bilqis_mlx.b11_observation import note_atlas_reload
 
 from .atlas_engram import MotifFrameInput, build_motif_input
 from .atlas_engram_identity import _invalid
@@ -127,7 +126,6 @@ def qualify_source_motif_context(
             or type(source_frontier) is not SourceFrontier
             or type(policy) is not ContextPolicy):
         _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
-    note_atlas_reload()
     snapshot = load_pinned_atlas_snapshot(atlas_selection)
     if snapshot.release_sha256 != task_scope.semantic_release:
         _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")

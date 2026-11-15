@@ -65,7 +65,11 @@ def measure_observed_phase(observer, field: str):
     finally:
         if observer is not None:
             try:
-                observer.update(**{field: time.perf_counter() - started})
+                stage = getattr(observer, "stage", None)
+                if callable(stage):
+                    stage(**{field: time.perf_counter() - started})
+                else:
+                    observer.update(**{field: time.perf_counter() - started})
             except Exception:
                 pass
 

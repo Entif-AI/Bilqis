@@ -113,6 +113,12 @@ class TrainerObservation:
                     except OSError:
                         pass
 
+    def stage(self, **fields):
+        """Update best-effort fields without forcing another synchronous write."""
+        with self.lock:
+            if self.enabled:
+                self.record.update(fields)
+
     def bind_parent(self, parent):
         try:
             pointer = json.loads((self.run_dir / 'bamf-state.json').read_text())

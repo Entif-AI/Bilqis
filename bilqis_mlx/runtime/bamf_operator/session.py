@@ -86,7 +86,10 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
     )
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
+        candidate_step_started_at = time.perf_counter()
+        source_prepare_started = candidate_step_started_at
         source_rows = rows if source_lane is None else source_lane.rows(ordinal)
+        source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
         observation = FactoryDeliveryObservation(
             capture, parent.retained_state.optimizer_step + ordinal,
             source_rows, selection.offer.source_seed)
@@ -98,7 +101,9 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
             optimizer_step_seed=_step_seed(selection.visit.identity.visit_id, ordinal),
             max_norm=1.0, candidate=candidate,
             finalize_candidate=(ordinal == horizon),
-            prepared_source_rows=(source_rows if source_lane is not None else None))
+            prepared_source_rows=(source_rows if source_lane is not None else None),
+            candidate_step_started_at=candidate_step_started_at,
+            source_prepare_wall_seconds=source_prepare_wall_seconds)
         candidate = step.transaction
         if candidate.update_steps != ordinal:
             _invalid("BAMF_C16_3_CANDIDATE_HORIZON_DRIFT")

@@ -41,7 +41,8 @@ def _prepared_feature_context(prepared, semantic_context):
 
 
 def _realized_candidate_cost(
-        start, loss_total, prepared, resource_plan, memory_budget, transaction,
+        start, candidate_step_started_at, loss_total, prepared,
+        resource_plan, memory_budget, transaction,
         feature_context, semantic_context_materialized_in_step, c08_metrics,
         stage_metrics, gradient):
     gradient_launches, vectorized_microbatches, materialization_barriers, \
@@ -59,7 +60,7 @@ def _realized_candidate_cost(
     return {
         "wall_seconds": elapsed,
         "candidate_step_wall_seconds": (
-            elapsed + stage_metrics["upstream_currentness_binding_wall_seconds"]),
+            time.perf_counter() - candidate_step_started_at),
         "pre_neural_source_compile_wall_seconds": stage_metrics[
             "pre_neural_source_compile_wall_seconds"],
         "currentness_binding_wall_seconds": stage_metrics[
@@ -159,7 +160,8 @@ def _execute_prepared_candidate(
         time.perf_counter() - motif_started if finalize_candidate else 0.0)
     stage_metrics["candidate_terminal_step"] = finalize_candidate
     cost = _realized_candidate_cost(
-        start, loss_total, prepared, resource_plan, memory_budget, transaction,
+        start, stage_metrics["candidate_step_started_at"], loss_total,
+        prepared, resource_plan, memory_budget, transaction,
         feature_context, semantic_context_materialized_in_step, c08_metrics,
         stage_metrics, gradient)
     evidence_started = time.perf_counter()
@@ -176,7 +178,7 @@ def _execute_prepared_candidate(
     elapsed = time.perf_counter() - start
     cost["wall_seconds"] = elapsed
     cost["candidate_step_wall_seconds"] = (
-        elapsed + stage_metrics["upstream_currentness_binding_wall_seconds"])
+        time.perf_counter() - stage_metrics["candidate_step_started_at"])
     diagnostics = _reporting_diagnostics(gradient, capture_diagnostics)
     return FactoryCandidateStep(
         prepared, resource_plan,
@@ -236,7 +238,9 @@ def execute_factory_candidate_step(
     candidate=None,
     finalize_candidate: bool = True,
     currentness_transaction=None,
+    candidate_step_started_at: float | None = None,
     currentness_binding_wall_seconds: float = 0.0,
+    upstream_pre_neural_source_compile_wall_seconds: float = 0.0,
     semantic_context=None,
     prepared_source=None,
 ) -> FactoryCandidateStep:
@@ -252,12 +256,13 @@ def execute_factory_candidate_step(
             or type(finalize_candidate) is not bool):
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
     start = time.perf_counter()
+    if candidate_step_started_at is None:
+        candidate_step_started_at = start
     binding_started = time.perf_counter()
     cache, generation = _candidate_cache_and_generation(
         run_dir, source_context, parent, candidate, currentness_transaction)
     stage_metrics = {
-        "upstream_currentness_binding_wall_seconds": float(
-            currentness_binding_wall_seconds),
+        "candidate_step_started_at": candidate_step_started_at,
         "currentness_binding_wall_seconds": (
             float(currentness_binding_wall_seconds)
             + time.perf_counter() - binding_started),
@@ -281,7 +286,8 @@ def execute_factory_candidate_step(
         prepared, supervision = prepare_salience_training(
             prepared, source_context, salience_provider(prepared))
     stage_metrics["pre_neural_source_compile_wall_seconds"] = (
-        time.perf_counter() - pre_neural_started)
+        float(upstream_pre_neural_source_compile_wall_seconds)
+        + time.perf_counter() - pre_neural_started)
     return _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows,
         capability=capability, teacher_hparams=teacher_hparams,

@@ -48,7 +48,7 @@ class FactoryCandidateReportingTests(unittest.TestCase):
             "b11_atlas_reload_count": 4,
         })
         stage = {
-            "upstream_currentness_binding_wall_seconds": 0.25,
+            "candidate_step_started_at": 0.75,
             "pre_neural_source_compile_wall_seconds": 0.1,
             "currentness_binding_wall_seconds": 0.3,
             "optimizer_admission_wall_seconds": 0.1,
@@ -60,7 +60,7 @@ class FactoryCandidateReportingTests(unittest.TestCase):
                 "bilqis_mlx.runtime.factory_candidate_training.time.perf_counter",
                 return_value=2.0):
             cost = _realized_candidate_cost(
-                1.0, loss, prepared, resource, budget, transaction,
+                1.0, 0.75, loss, prepared, resource, budget, transaction,
                 feature_context, True, (2, 1, 1, 0, 0.8), stage, gradient)
         self.assertEqual(cost["candidate_step_wall_seconds"], 1.25)
         self.assertEqual(cost["b11_preflight_wall_seconds"], 0.2)
@@ -82,7 +82,7 @@ class FactoryCandidateReportingTests(unittest.TestCase):
                 "bilqis_mlx.runtime.factory_candidate_training.time.perf_counter",
                 return_value=2.0):
             terminal = _realized_candidate_cost(
-                1.0, loss, prepared, resource, budget, transaction,
+                1.0, 0.75, loss, prepared, resource, budget, transaction,
                 feature_context, True, (2, 1, 1, 0, 0.8),
                 terminal_stage, gradient)
         self.assertTrue(terminal["candidate_terminal_step"])

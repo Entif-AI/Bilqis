@@ -8,7 +8,6 @@ from ...semantics.source_atom_binding.common import invalid
 from ...source_adapters.atom_binding import (
     _build_source_atom_handoff_from_snapshot, _require_embedding_ready_from_snapshot,
 )
-from bilqis_mlx.b11_observation import note_atlas_reload
 from ..frame_embeddings import (
     SemanticBankView, _released_factor_terms, _validate_banks,
     embedding_parameter_view,
@@ -31,7 +30,6 @@ def source_atom_vectors(
             or type(artifact_owner) is not AtlasFeatureArtifactOwner):
         invalid("BAMF_SOURCE_ATOM_INPUT_INVALID")
     if snapshot is None:
-        note_atlas_reload()
         snapshot = load_pinned_atlas_snapshot(source.selection)
         expected_features = build_feature_manifest(snapshot, feature_schema)
         if features != expected_features:

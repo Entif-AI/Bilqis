@@ -17,10 +17,10 @@ MAX_BYTES = 64 * 1024
 MAX_VISITS = 8
 MAX_HEARTBEAT_AGE_MS = 10_000
 MAX_FUTURE_SKEW_MS = 5_000
-_SCHEMAS = {
+_SCHEMAS = frozenset({
     'bilqis.bamf.trainer-observed/v1',
     'bilqis.bamf.trainer-observed/v2',
-}
+})
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
 _V2_FIELDS = {field.name for field in fields(TrainerObservationV2)} - {

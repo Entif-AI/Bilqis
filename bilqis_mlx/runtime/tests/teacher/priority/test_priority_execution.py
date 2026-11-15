@@ -145,7 +145,8 @@ def test_execution_reuses_authenticated_planning_parent(priority):
             selected, SimpleNamespace(release=release), 'atlas', 'features',
             teacher_hparams=HParams(0.01, (0.8, 0.9), 1e-8, 0.2),
             observation=Observation(({'id': 'old'},), 0), optimizer_step_seed=3,
-            max_norm=1) == 'step'
+            max_norm=1, candidate_step_started_at=123.0,
+            source_prepare_wall_seconds=0.75) == 'step'
     require_visit.assert_called_once_with(
         'planned-parent', 'planned-cache', selected.visit,
         candidate_identity_sha256='planned-id')
@@ -153,6 +154,9 @@ def test_execution_reuses_authenticated_planning_parent(priority):
     assert execute.call_args.kwargs['semantic_context'] == 'semantic-context'
     assert execute.call_args.kwargs['currentness_transaction'] == 'currentness'
     assert execute.call_args.kwargs['currentness_binding_wall_seconds'] >= 0.0
+    assert execute.call_args.kwargs['candidate_step_started_at'] == 123.0
+    assert execute.call_args.kwargs[
+        'upstream_pre_neural_source_compile_wall_seconds'] >= 0.75
 
 
 def test_accepted_priority_school_derives_all_admitted_grades_and_student(priority):
