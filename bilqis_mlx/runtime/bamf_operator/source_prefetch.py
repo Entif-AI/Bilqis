@@ -23,6 +23,7 @@ from bilqis_mlx.semantics.domains import contract_digest
 
 REQUEST_SCHEMA = "bilqis.bamf.native-source-prefetch-request/v1"
 SERIAL_SOURCE_WORKERS = 0
+FROZEN_MAPPING_ENTRY_WIDTH = 2
 NATIVE_SOURCE_WORKER_COUNTS = (SERIAL_SOURCE_WORKERS, *SOURCE_WORKER_COUNTS)
 
 
