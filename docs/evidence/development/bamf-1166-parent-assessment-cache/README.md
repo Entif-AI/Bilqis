@@ -22,8 +22,8 @@ count at 16, so it performed no additional parent solver work. Candidate
 context calls increased from 12 to 24, which proves that the challenger was
 evaluated again.
 
-The first screen took 245,143,000 ns and the second took 94,939,792 ns on this
-machine. The second screen was 0.387 times the first-screen duration. Both
+The first screen took 279,054,250 ns and the second took 97,147,250 ns on this
+machine. The second screen was 0.348 times the first-screen duration. Both
 screens produced the same retention decision and evidence digest.
 
 The cache receipt binds the exact accepted generation, parent model identity,
