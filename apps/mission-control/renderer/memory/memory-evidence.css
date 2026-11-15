@@ -6,6 +6,29 @@
   color: var(--text-muted);
 }
 
+.memory-production-compare-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin: 12px 0;
+}
+
+.memory-production-compare-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+}
+
+.memory-production-compare-form input {
+  min-height: 36px;
+  min-width: min(280px, 100%);
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
 .memory-delta-table tr[data-delta-kind="created"] {
   border-inline-start: 3px solid var(--accent);
 }
@@ -173,6 +196,17 @@
   .memory-page-nav strong {
     grid-column: 1 / -1;
     grid-row: 1;
+  }
+
+  .memory-tabs,
+  .memory-production-compare-form {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .memory-tabs .ui-control,
+  .memory-production-compare-form .ui-control {
+    width: 100%;
   }
 }
 

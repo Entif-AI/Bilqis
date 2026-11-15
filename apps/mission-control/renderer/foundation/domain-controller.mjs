@@ -7,6 +7,7 @@ import {
 import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
 import { createCorrectionsController } from "../corrections/corrections-controller.mjs";
 import { createProductionLineageController } from "../lineage/production-controller.mjs";
+import { createProductionMemoryController } from "../memory/production-controller.mjs";
 import {
   activateSchoolDomain,
   invalidateSchoolDomainRequests,
@@ -14,6 +15,8 @@ import {
 
 let productionLineageApi = null;
 let productionLineageController = null;
+let productionMemoryApi = null;
+let productionMemoryController = null;
 let correctionsApi = null;
 let correctionsSupport = null;
 let correctionsController = null;
@@ -26,6 +29,16 @@ function lineageControllerFor(api) {
     productionLineageController = createProductionLineageController(api);
   }
   return productionLineageController;
+}
+
+function memoryControllerFor(api) {
+  if (!api) return null;
+  if (productionMemoryApi !== api) {
+    productionMemoryController?.deactivate();
+    productionMemoryApi = api;
+    productionMemoryController = createProductionMemoryController(api);
+  }
+  return productionMemoryController;
 }
 
 function correctionsControllerFor(api, fixtureSupport) {
@@ -141,6 +154,15 @@ export function activateDomainViews({
     });
   } else {
     void productionLineageController?.deactivate();
+  }
+  if (state?.view === "memory" && state.context?.fixture !== true) {
+    void memoryControllerFor(api)?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      defense,
+    });
+  } else {
+    void productionMemoryController?.deactivate();
   }
   if (state?.view === "operate") {
     const operateDefense = Object.freeze({
