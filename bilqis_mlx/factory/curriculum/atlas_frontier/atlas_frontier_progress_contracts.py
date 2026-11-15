@@ -6,6 +6,8 @@ from enum import Enum
 import hashlib
 
 from .atlas_frontier_contracts import CurriculumSnapshot, _bytes, _fail
+from .atlas_frontier_progress_index import FrontierHistoryHead, FrontierHistoryOwner
+from .atlas_frontier_progress_metrics import note_snapshot_rehash
 from .atlas_frontier_selection import FrontierDeltaSelection
 from .atlas_frontier_selection_validation import (
     TargetDeltaProjection,
@@ -128,14 +130,16 @@ def _verify_selection_obligation_identity(
         _fail("BAMF_PLANNER_STAGED_SELECTION_INVALID")
 
 
+_PROGRESS_ISSUER = object()
+
+
 @dataclass(frozen=True)
 class FrontierProgress:
-    input_snapshot_sha256: str
+    input_snapshot: CurriculumSnapshot
     planning_snapshot: CurriculumSnapshot
-    snapshot_history: tuple[CurriculumSnapshot, ...]
+    history_head: FrontierHistoryHead
     status: FrontierStatus
     proposal_selection_sha256: str | None
-    staged_receipts: tuple[StagedSelectionReceipt, ...]
     pending_staged_receipt_sha256: str | None
     source_held_count: int
     implementation_uncovered_count: int
@@ -143,7 +147,11 @@ class FrontierProgress:
     ready_count: int
     remediation: tuple[FrontierRemediation, ...]
     progress_sha256: str
-    schema: str = "bilqis.factory-atlas-frontier-progress/v1"
+    schema: str = "bilqis.factory-atlas-frontier-progress/v2"
+
+    @property
+    def input_snapshot_sha256(self) -> str:
+        return self.input_snapshot.snapshot_sha256
 
     @property
     def snapshot_sha256(self) -> str:
@@ -159,77 +167,98 @@ class FrontierProgress:
 
     @property
     def requested_semantic_ids(self) -> tuple[str, ...]:
-        return tuple(sorted(set(
-            receipt.selected_semantic_id for receipt in self.staged_receipts)))
-
-    @property
-    def pending_receipt(self) -> StagedSelectionReceipt | None:
-        return next((receipt for receipt in self.staged_receipts
-                     if receipt.receipt_sha256
-                     == self.pending_staged_receipt_sha256), None)
+        return _history_owner(self).receipt_semantic_ids(self.history_head)
 
     @property
     def pending_staged_successor_sha256(self) -> str | None:
-        receipt = self.pending_receipt
-        return None if receipt is None else receipt.staged_successor_sha256
+        credit = self._pending_credit()
+        return None if credit is None else credit.staged_successor_sha256
 
     @property
     def pending_semantic_id(self) -> str | None:
-        receipt = self.pending_receipt
-        return None if receipt is None else receipt.selected_semantic_id
+        credit = self._pending_credit()
+        return None if credit is None else credit.selected_semantic_id
+
+    def _pending_credit(self):
+        if self.pending_staged_receipt_sha256 is None:
+            return None
+        credit = _history_owner(self).receipt_credit(
+            self.history_head, self.pending_staged_receipt_sha256)
+        if credit is None:
+            _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_INVALID")
+        return credit
+
+    def requested_obligation_keys(
+            self, current: dict[str, str],
+            ready_semantic_ids: set[str] | None = None,
+    ) -> set[tuple[str, str]]:
+        return _history_owner(self).requested_keys(
+            self.history_head, current, ready_semantic_ids)
+
+    def all_requested_obligation_keys(self) -> tuple[tuple[str, str], ...]:
+        """Enumerate compact credit only for explicit cold/audit operations."""
+        return _history_owner(self).all_requested_keys(self.history_head)
 
     def expected_digest(self) -> str:
         return hashlib.sha256(_bytes({
-            field.name: getattr(self, field.name)
-            for field in fields(self) if field.name != "progress_sha256"
+            "input_snapshot_sha256": self.input_snapshot.snapshot_sha256,
+            "planning_snapshot_sha256": self.planning_snapshot.snapshot_sha256,
+            "history_sha256": self.history_head.history_sha256,
+            "status": self.status,
+            "proposal_selection_sha256": self.proposal_selection_sha256,
+            "pending_staged_receipt_sha256": self.pending_staged_receipt_sha256,
+            "source_held_count": self.source_held_count,
+            "implementation_uncovered_count": self.implementation_uncovered_count,
+            "waiting_for_evidence_count": self.waiting_for_evidence_count,
+            "ready_count": self.ready_count,
+            "remediation": self.remediation,
+            "schema": self.schema,
         })).hexdigest()
 
     def verify(self) -> None:
-        self.planning_snapshot.verify()
-        for snapshot in self.snapshot_history:
-            snapshot.verify()
-        if (self.schema != "bilqis.factory-atlas-frontier-progress/v1"
-                or not self.snapshot_history
-                or self.snapshot_history[-1] != self.planning_snapshot
-                or len({item.snapshot_sha256 for item in self.snapshot_history})
-                   != len(self.snapshot_history)
-                or any(
-                    current.predecessor_sha256 != previous.snapshot_sha256
-                    for previous, current in zip(
-                        self.snapshot_history, self.snapshot_history[1:]))
-                or self.input_snapshot_sha256 not in {
-                    item.snapshot_sha256 for item in self.snapshot_history}
-                or any(
-                    receipt.selection_snapshot.snapshot_sha256 not in {
-                        item.snapshot_sha256 for item in self.snapshot_history}
-                    for receipt in self.staged_receipts)
-                or not self.input_snapshot_sha256
+        owner = _history_owner(self)
+        owner.require(self.history_head)
+        note_snapshot_rehash()
+        self.input_snapshot.verify()
+        if self.planning_snapshot.snapshot_sha256 != self.input_snapshot.snapshot_sha256:
+            note_snapshot_rehash()
+            self.planning_snapshot.verify()
+        if (self.schema != "bilqis.factory-atlas-frontier-progress/v2"
+                or self.history_head.head_snapshot_sha256
+                   != self.planning_snapshot.snapshot_sha256
+                or owner.snapshot_anchor(
+                    self.history_head, self.input_snapshot.snapshot_sha256) is None
                 or (self.planning_snapshot.snapshot_sha256
-                    != self.input_snapshot_sha256
+                    != self.input_snapshot.snapshot_sha256
                     and self.planning_snapshot.predecessor_sha256
-                    != self.input_snapshot_sha256)
-                or self.staged_receipts != tuple(sorted(
-                    self.staged_receipts, key=lambda item: item.receipt_sha256))
-                or len({item.receipt_sha256 for item in self.staged_receipts})
-                   != len(self.staged_receipts)
-                or len({item.staged_successor_sha256 for item in self.staged_receipts})
-                   != len(self.staged_receipts)
+                    != self.input_snapshot.snapshot_sha256)
                 or min(self.source_held_count, self.implementation_uncovered_count,
                        self.waiting_for_evidence_count, self.ready_count) < 0):
             _fail("BAMF_PLANNER_PROGRESS_INVALID")
-        for receipt in self.staged_receipts:
-            receipt.verify()
-        if (self.pending_staged_receipt_sha256 is not None
-                and self.pending_receipt is None):
-            _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_INVALID")
-        if self.pending_receipt is not None:
+        if self.pending_staged_receipt_sha256 is not None:
+            credit = self._pending_credit()
             if (self.status is not FrontierStatus.LEASE_REQUIRED
-                    or self.pending_receipt.staged_successor_sha256
+                    or credit.staged_successor_sha256
                        not in self.planning_snapshot.staged_factory_release_sha256s
-                    or self.pending_receipt.staged_successor_sha256
+                    or credit.staged_successor_sha256
                        == self.planning_snapshot.admitted_factory_release_sha256):
                 _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_INVALID")
         elif self.status is FrontierStatus.LEASE_REQUIRED:
             _fail("BAMF_PLANNER_PROGRESS_PENDING_RECEIPT_REQUIRED")
         if self.progress_sha256 != self.expected_digest():
             _fail("BAMF_PLANNER_PROGRESS_DIGEST_MISMATCH")
+
+
+def _issue_frontier_progress(
+        progress: FrontierProgress, owner: FrontierHistoryOwner) -> FrontierProgress:
+    object.__setattr__(progress, "_history_owner", owner)
+    object.__setattr__(progress, "_issuance", _PROGRESS_ISSUER)
+    return progress
+
+
+def _history_owner(progress: FrontierProgress) -> FrontierHistoryOwner:
+    owner = getattr(progress, "_history_owner", None)
+    if (getattr(progress, "_issuance", None) is not _PROGRESS_ISSUER
+            or type(owner) is not FrontierHistoryOwner):
+        _fail("BAMF_PLANNER_PROGRESS_OWNER_REQUIRED")
+    return owner

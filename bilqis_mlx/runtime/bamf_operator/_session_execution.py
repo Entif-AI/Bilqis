@@ -115,7 +115,9 @@ def retention_result(
     candidate_evidence = capture.finalize(
         accepted=decision.accepted, decision=decision.to_record())
     resource = resource_observation(
-        run_dir, tuple(steps), identity_metrics=identity_metrics)
+        run_dir, tuple(steps),
+        getattr(context, "_source_preparation_metrics", None),
+        identity_metrics=identity_metrics)
     resource.update({
         "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
         "evidence_file_fsyncs": candidate_evidence["persistence"]["file_fsyncs"],

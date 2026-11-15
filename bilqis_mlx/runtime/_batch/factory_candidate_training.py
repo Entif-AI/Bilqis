@@ -197,6 +197,7 @@ def execute_factory_candidate_step(
     finalize_candidate: bool = True,
     currentness_transaction=None,
     semantic_context=None,
+    prepared_source=None,
 ) -> FactoryCandidateStep:
     """Compose C02→C08→B10/B11→candidate custody without publishing state.
 
@@ -220,7 +221,8 @@ def execute_factory_candidate_step(
         source_each=source_each, optimizer_step_seed=optimizer_step_seed,
         visit_provenance=visit_provenance,
         teacher_strategy=teacher_strategy,
-        rehearsal_by_id=rehearsal_by_id, semantic_context=semantic_context)
+        rehearsal_by_id=rehearsal_by_id, semantic_context=semantic_context,
+        prepared_source=prepared_source)
     supervision = None
     if salience_provider is not None:
         from bilqis_mlx.runtime.salience_training import prepare_salience_training

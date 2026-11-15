@@ -75,7 +75,42 @@ _IDENTITY_FLOAT_FIELDS = (
 )
 
 
-def _resource_observation(run_dir: Path, step, *, identity_metrics=None) -> dict:
+def _validated_identity_metrics(identity: dict, identity_metrics) -> dict:
+    if identity_metrics is not None:
+        if not isinstance(identity_metrics, dict):
+            _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+        identity = {
+            name: identity_metrics.get(name, 0)
+            for name in _IDENTITY_INTEGER_FIELDS + _IDENTITY_FLOAT_FIELDS
+        }
+    if (any(type(identity[name]) is not int or identity[name] < 0
+            for name in _IDENTITY_INTEGER_FIELDS)
+            or any(type(identity[name]) not in (int, float)
+                   or type(identity[name]) is bool
+                   or not math.isfinite(identity[name]) or identity[name] < 0
+                   for name in _IDENTITY_FLOAT_FIELDS)):
+        _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+    return identity
+
+
+def _validated_source_metrics(source_metrics) -> tuple[int, int, int]:
+    if source_metrics is None:
+        return 0, 0, 0
+    from bilqis_mlx.runtime.source_execution import SourcePreparationMetrics
+    if type(source_metrics) is not SourcePreparationMetrics:
+        _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+    values = (
+        source_metrics.provider_draws,
+        source_metrics.source_context_builds,
+        source_metrics.compiled_source_builds,
+    )
+    if any(type(value) is not int or value < 0 for value in values):
+        _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+    return values
+
+
+def _resource_observation(
+        run_dir: Path, step, source_metrics=None, *, identity_metrics=None) -> dict:
     """Capture only resource facts the accepted visit can truthfully support."""
     steps = step if type(step) is tuple else (step,)
     if not steps:
@@ -123,20 +158,9 @@ def _resource_observation(run_dir: Path, step, *, identity_metrics=None) -> dict
     optimizer_steps = getattr(final_transaction, "update_steps", len(steps))
     if optimizer_steps != len(steps):
         _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
-    if identity_metrics is not None:
-        if not isinstance(identity_metrics, dict):
-            _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
-        identity = {
-            name: identity_metrics.get(name, 0)
-            for name in _IDENTITY_INTEGER_FIELDS + _IDENTITY_FLOAT_FIELDS
-        }
-    if (any(type(identity[name]) is not int or identity[name] < 0
-            for name in _IDENTITY_INTEGER_FIELDS)
-            or any(type(identity[name]) not in (int, float)
-                   or type(identity[name]) is bool
-                   or not math.isfinite(identity[name]) or identity[name] < 0
-                   for name in _IDENTITY_FLOAT_FIELDS)):
-        _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+    identity = _validated_identity_metrics(identity, identity_metrics)
+    provider_draws, source_context_builds, compiled_source_builds = (
+        _validated_source_metrics(source_metrics))
     disk_used = shutil.disk_usage(Path(run_dir)).used
     return {
         "schema": "bilqis.bamf.c16.3-resource-observation/v2",
@@ -149,4 +173,7 @@ def _resource_observation(run_dir: Path, step, *, identity_metrics=None) -> dict
         "visit_atlas_reload_count": visit_atlas_reloads,
         "visit_feature_manifest_rebuild_count": visit_feature_rebuilds,
         **identity,
+        "provider_draw_count": provider_draws,
+        "source_context_build_count": source_context_builds,
+        "compiled_source_build_count": compiled_source_builds,
     }

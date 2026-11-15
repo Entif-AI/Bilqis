@@ -188,9 +188,14 @@ class CandidateEvidenceCapture:
             self._row_refs(group)
         source_ids = role_ids["selected_option"]
         delivered = [row for row in rows if row["id"] in source_ids]
+        execution = release.execution_plan.capability_map.get(capability)
+        teaching_options = getattr(execution, "teaching_option_ids", ())
+        if not isinstance(teaching_options, tuple) or not teaching_options:
+            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_INVALID")
+        teaching_option = teaching_options[0]
         description = (
             asdict(describe_delivered_teaching(
-                release, capability, self.selected_option, delivered))
+                release, capability, teaching_option, delivered))
             if delivered else None)
         positions = []
         for row in rows:

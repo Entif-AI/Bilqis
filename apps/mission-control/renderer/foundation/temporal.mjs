@@ -84,7 +84,7 @@ export function formatDurationSeconds(
       style: "unit",
       unit: "second",
       unitDisplay: "long",
-      maximumFractionDigits: 3,
+      maximumFractionDigits: 0,
     }).format(secondsValue));
   }
   return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(parts);
