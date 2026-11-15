@@ -5,6 +5,7 @@ retention, source, optimizer, or publication authority.
 """
 from __future__ import annotations
 
+from contextlib import nullcontext
 from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
@@ -38,6 +39,9 @@ from bilqis_mlx.semantics.atlas.feature_io import persist_feature_manifest
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactIdentity
 import bilqis_mlx.semantics.atlas.snapshot as _atlas_snapshot
 from .locking import bamf_operator_lock
+from .source_prefetch import (
+    CandidateSourceLane, NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
+)
 
 
 _MAX_CANDIDATE_HORIZON = 16
@@ -55,6 +59,11 @@ class BamfOperatorResult:
     rejected: int
     generation: int
     optimizer_step: int
+    source_prefetch_workers: int = 0
+    source_prefetch_wait_seconds: float = 0.0
+    source_prefetch_overlap_seconds: float = 0.0
+    source_prefetch_prepared_steps: int = 0
+    source_prefetch_serial_steps: int = 0
 
 
 @dataclass(frozen=True)
@@ -171,7 +180,9 @@ def _emit_progress(progress, message: str) -> None:
 
 def prepare_bamf_visit(
         run_dir: Path, *, steps_per_visit: int = 16,
-        progress=None) -> BamfPreparedVisit:
+        progress=None, source_prefetch_workers: int = 0,
+        source_prefetch_executor=None,
+        source_prefetch_metrics: SourcePrefetchMetrics | None = None) -> BamfPreparedVisit:
     """Compose the production visit through retention without publishing it."""
     if (type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON):
@@ -199,12 +210,19 @@ def prepare_bamf_visit(
         progress,
         f"candidate horizon is atomic for up to {horizon} optimizer steps; "
         "the session time limit is checked between candidate visits")
+    source_lane = None
+    if source_prefetch_metrics is not None or source_prefetch_workers:
+        metrics = source_prefetch_metrics or SourcePrefetchMetrics()
+        source_lane = CandidateSourceLane(
+            selection, context, parent, horizon, workers=source_prefetch_workers,
+            executor=source_prefetch_executor, metrics=metrics)
     capture = _Capture(run_dir, selection)
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
+        source_rows = rows if source_lane is None else source_lane.rows(ordinal)
         observation = FactoryDeliveryObservation(
             capture, parent.retained_state.optimizer_step + ordinal,
-            rows, selection.offer.source_seed)
+            source_rows, selection.offer.source_seed)
         _emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
         step = execute_accepted_priority_candidate(
             selection, context, atlas_path, feature_path,
@@ -212,7 +230,8 @@ def prepare_bamf_visit(
             observation=observation,
             optimizer_step_seed=_step_seed(selection.visit.identity.visit_id, ordinal),
             max_norm=1.0, candidate=candidate,
-            finalize_candidate=(ordinal == horizon))
+            finalize_candidate=(ordinal == horizon),
+            prepared_source_rows=(source_rows if source_lane is not None else None))
         candidate = step.transaction
         if candidate.update_steps != ordinal:
             _invalid("BAMF_C16_3_CANDIDATE_HORIZON_DRIFT")
@@ -242,9 +261,13 @@ def prepare_bamf_visit(
 
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
-           progress=None):
+           progress=None, source_prefetch_workers=0,
+           source_prefetch_executor=None, source_prefetch_metrics=None):
     prepared = prepare_bamf_visit(
-        run_dir, steps_per_visit=steps_per_visit, progress=progress)
+        run_dir, steps_per_visit=steps_per_visit, progress=progress,
+        source_prefetch_workers=source_prefetch_workers,
+        source_prefetch_executor=source_prefetch_executor,
+        source_prefetch_metrics=source_prefetch_metrics)
     if prepared.status in {"HELD", "ACTION_REQUIRED"}:
         return prepared.status
     parent = prepared.parent
@@ -282,24 +305,35 @@ def operate_bamf(
     run_dir: Path, *, minutes: int = 90,
     max_visits: int = 0, steps_per_visit: int = 16,
     reserve_gib: float = 100.0,
+    source_prefetch_workers: int = 2,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
             or max_visits < 0 or type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON
+            or type(source_prefetch_workers) is not int
+            or source_prefetch_workers not in NATIVE_SOURCE_WORKER_COUNTS
             or reserve_gib < 0):
         _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
     run_dir = Path(run_dir).resolve()
     deadline = time.monotonic() + minutes * 60
     visits = accepted = rejected = 0
     status = "TIME_LIMIT"
-    with bamf_operator_lock(run_dir):
+    metrics = SourcePrefetchMetrics()
+    if source_prefetch_workers:
+        from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
+        source_pool = source_prefetch_pool(source_prefetch_workers)
+    else:
+        source_pool = nullcontext(None)
+    with source_pool as source_prefetch_executor, bamf_operator_lock(run_dir):
         while time.monotonic() < deadline and (not max_visits or visits < max_visits):
             _emit_progress(progress, f"starting visit {visits + 1}")
             outcome = _visit(
                 run_dir, reserve_gib, steps_per_visit=steps_per_visit,
-                progress=progress)
+                progress=progress, source_prefetch_workers=source_prefetch_workers,
+                source_prefetch_executor=source_prefetch_executor,
+                source_prefetch_metrics=metrics)
             _emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
             if outcome in {"HELD", "ACTION_REQUIRED"}:
                 status = "PRIORITY_HOLD" if outcome == "HELD" else "ACTION_REQUIRED"
@@ -315,4 +349,9 @@ def operate_bamf(
     current = load_accepted_generation(run_dir)
     return BamfOperatorResult(
         status, visits, accepted, rejected, current.generation,
-        current.retained_state.optimizer_step)
+        current.retained_state.optimizer_step,
+        source_prefetch_workers=source_prefetch_workers,
+        source_prefetch_wait_seconds=metrics.wait_seconds,
+        source_prefetch_overlap_seconds=metrics.overlap_seconds,
+        source_prefetch_prepared_steps=metrics.prepared_steps,
+        source_prefetch_serial_steps=metrics.serial_steps)
