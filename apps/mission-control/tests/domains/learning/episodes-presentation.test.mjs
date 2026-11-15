@@ -3,13 +3,13 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { EPISODE_FIXTURES, EPISODE_STAGES } from "../../renderer/episodes/episode-fixture.mjs";
-import { episodeMarkupForTest } from "../../renderer/episodes/episode-view.mjs";
-import { assertUniqueTestIds, collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
-import { t } from "../../renderer/foundation/i18n.mjs";
+import { EPISODE_FIXTURES, EPISODE_STAGES } from "../../../renderer/episodes/episode-fixture.mjs";
+import { episodeMarkupForTest } from "../../../renderer/episodes/episode-view.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../../../renderer/foundation/test-hooks.mjs";
+import { t } from "../../../renderer/foundation/i18n.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const rendererRoot = path.resolve(here, "../../renderer");
+const rendererRoot = path.resolve(here, "../../../renderer");
 
 test("learning episode UI is read-only evidence replay and contains no hidden-activation narrative labels", () => {
   const source = [

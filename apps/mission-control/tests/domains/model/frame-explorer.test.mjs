@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { assertFramePage, assertFrameRequest } from "../../renderer/frames/frame-contract.mjs";
-import { packingMetrics, visiblePosition } from "../../renderer/frames/frame-model.mjs";
-import { FrameQueryController, renderFrameExample } from "../../renderer/frames/frame-explorer.mjs";
-import { duplicateTestIds } from "../../renderer/foundation/test-hooks.mjs";
+import { assertFramePage, assertFrameRequest } from "../../../renderer/frames/frame-contract.mjs";
+import { packingMetrics, visiblePosition } from "../../../renderer/frames/frame-model.mjs";
+import { FrameQueryController, renderFrameExample } from "../../../renderer/frames/frame-explorer.mjs";
+import { duplicateTestIds } from "../../../renderer/foundation/test-hooks.mjs";
 
-const pages = JSON.parse(readFileSync(new URL("../../fixtures/frame-inspections-v1.json", import.meta.url)));
+const pages = JSON.parse(readFileSync(new URL("../../../fixtures/frame-inspections-v1.json", import.meta.url)));
 const page = () => structuredClone(pages[1]);
 
 test("four source-addressed atoms expand from one position with exact identities", () => {

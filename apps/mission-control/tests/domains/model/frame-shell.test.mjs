@@ -1,9 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { createFrameShell } from "../../renderer/frames/frame-shell.mjs";
+import { createFrameShell } from "../../../renderer/frames/frame-shell.mjs";
 
-const page = JSON.parse(readFileSync(new URL("../../fixtures/frame-inspections-v1.json", import.meta.url)))[1];
+const page = JSON.parse(readFileSync(new URL("../../../fixtures/frame-inspections-v1.json", import.meta.url)))[1];
 
 function harness(t) {
   const previous = { document: globalThis.document, window: globalThis.window };

@@ -3,8 +3,8 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { parseDeepLink } from "../../renderer/deep-link.mjs";
-import { EPISODE_FIXTURES, EPISODE_STAGES } from "../../renderer/episodes/episode-fixture.mjs";
+import { parseDeepLink } from "../../../renderer/deep-link.mjs";
+import { EPISODE_FIXTURES, EPISODE_STAGES } from "../../../renderer/episodes/episode-fixture.mjs";
 import {
   diffRows,
   episodeById,
@@ -15,13 +15,13 @@ import {
   replaySlice,
   retainedTransition,
   rollbackInvariant,
-} from "../../renderer/episodes/episode-model.mjs";
-import { episodeMarkupForTest } from "../../renderer/episodes/episode-view.mjs";
-import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
+} from "../../../renderer/episodes/episode-model.mjs";
+import { episodeMarkupForTest } from "../../../renderer/episodes/episode-view.mjs";
+import { INSPECTOR_OWNERS } from "../../../renderer/shell-state.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, "../../../..");
-const rendererRoot = path.resolve(here, "../../renderer");
+const repoRoot = path.resolve(here, "../../../../..");
+const rendererRoot = path.resolve(here, "../../../renderer");
 
 function fixture(id) {
   const value = EPISODE_FIXTURES.find((episode) => episode.episodeId === id);
