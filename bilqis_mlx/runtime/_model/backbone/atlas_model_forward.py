@@ -45,7 +45,10 @@ def _source_execution_authorities(compiled_batch):
             for item in row_batches)
     else:
         values = (getattr(compiled_batch, "source_execution_authority", None),)
-    return None if not any(item is not None for item in values) else values
+    bound = tuple(item is not None for item in values)
+    if any(bound) and not all(bound):
+        _invalid("B11_SOURCE_EXECUTION_AUTHORITY_PARTIAL")
+    return None if not any(bound) else values
 
 
 def _source_producer(
