@@ -108,7 +108,7 @@
       ],
       "bamf_owner": {"path": "bilqis_mlx/runtime/_custody/bamf_bundle/accepted_runtime.py"},
       "successor_evidence": [
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/test_cold_resume_continuation.py", "test": "test_cold_readback_matches_just_published_in_memory_authority"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/test_invariant_transfer_resume.py", "test": "test_cold_readback_matches_just_published_in_memory_authority"},
         {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/test_cold_resume_continuation.py", "test": "test_uninterrupted_and_cold_continuation_publish_the_same_successor"}
       ]
     },
