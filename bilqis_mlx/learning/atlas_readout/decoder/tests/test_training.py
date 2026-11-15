@@ -9,9 +9,66 @@ from bilqis_mlx.learning.atlas_readout import (
 )
 from bilqis_mlx.learning.atlas_readout.decoder.tests.helpers import case
 from bilqis_mlx.learning.atlas_readout.decoder.tests.test_prediction import role_plan
+from bilqis_mlx.learning.atlas_readout.decoder.replay import predict_typed_replay
 
 
 class DecoderTrainingTests(unittest.TestCase):
+    def test_trace_replay_preserves_inference_conditioned_gradient(self):
+        memory,context,plan,semantics,params=case();plan=role_plan(plan)
+        baseline=predict_typed(memory,context,plan,semantics,params)
+        value_spec=next(item for item in plan.decisions if item.decision_id=='value')
+        role_spec=next(item for item in plan.decisions if item.decision_id=='role')
+        predicted=next(
+            item.value for item in baseline.committed
+            if item.decision_id=='value')
+        opposite=next(value for value in value_spec.legal_values if value!=predicted)
+        targets=(
+            DecisionOutput('control',ControlAction.EMIT_VALUE),
+            DecisionOutput('value',opposite),
+            DecisionOutput('role',role_spec.legal_values[0]),
+            DecisionOutput('end',ControlAction.END_FRAME),
+        )
+        mask={target.decision_id:True for target in targets}
+
+        for parameter in ('readout.feedback','readout.role_query'):
+            with self.subTest(parameter=parameter):
+                def inference_objective(value):
+                    current={**params,parameter:value}
+                    output=predict_typed(memory,context,plan,semantics,current)
+                    return answer_loss(output,targets,mask).total
+
+                def replay_objective(value):
+                    current={**params,parameter:value}
+                    output=predict_typed_replay(
+                        memory,context,plan,semantics,current,baseline)
+                    return answer_loss(output,targets,mask).total
+
+                old_loss,old_gradient=mx.value_and_grad(inference_objective)(
+                    params[parameter])
+                new_loss,new_gradient=mx.value_and_grad(replay_objective)(
+                    params[parameter])
+                mx.eval(old_loss,old_gradient,new_loss,new_gradient)
+                np.testing.assert_allclose(
+                    np.asarray(new_loss),np.asarray(old_loss),
+                    rtol=1e-6,atol=1e-7)
+                np.testing.assert_allclose(
+                    np.asarray(new_gradient),np.asarray(old_gradient),
+                    rtol=1e-5,atol=1e-6)
+
+    def test_trace_replay_never_argmaxes_or_fingerprints(self):
+        memory,context,plan,semantics,params=case();plan=role_plan(plan)
+        baseline=predict_typed(memory,context,plan,semantics,params)
+        with (patch(
+                'bilqis_mlx.learning.atlas_readout.decoder.prediction._logit_fingerprint',
+                side_effect=AssertionError('fingerprint entered replay trace')),
+              patch(
+                'bilqis_mlx.learning.atlas_readout.decoder.prediction.mx.argmax',
+                side_effect=AssertionError('argmax entered replay trace'))):
+            output=predict_typed_replay(
+                memory,context,plan,semantics,params,baseline)
+        self.assertEqual(output.committed,baseline.committed)
+        self.assertEqual(output.status,baseline.status)
+
     def test_trace_sparse_supervision_advances_singleton_ancestors_without_argmax(self):
         memory,context,plan,semantics,params=case()
         target=DecisionOutput('value',plan.decisions[1].legal_values[0])

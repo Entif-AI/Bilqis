@@ -162,7 +162,9 @@ def _targets(teacher_targets,plan):
     return {t.decision_id:t.value for t in teacher_targets}
 
 
-def _ready_outputs(memory,state,semantics,parameters,prepared,targets,*,trace=False):
+def _ready_outputs(
+        memory,state,semantics,parameters,prepared,targets,*,
+        trace=False,replay_values=None):
     records,outputs=[],[]
     for decision in ready_decisions(state):
         z=decision_state(memory,decision,state,semantics,parameters,prepared)
@@ -173,7 +175,11 @@ def _ready_outputs(memory,state,semantics,parameters,prepared,targets,*,trace=Fa
             records.append(DecisionLogits(decision.decision_id,decision.kind,candidates,logits))
         except BilqisError:
             return tuple(records),()
-        if decision.decision_id in targets:
+        if replay_values is not None:
+            if decision.decision_id not in replay_values:
+                continue
+            value=replay_values[decision.decision_id]
+        elif decision.decision_id in targets:
             value=targets[decision.decision_id]
         elif trace and len(candidates)==1:
             # Sparse supervised plans may omit deterministic ancestors. They
