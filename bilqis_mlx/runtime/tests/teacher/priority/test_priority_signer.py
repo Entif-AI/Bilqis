@@ -264,7 +264,7 @@ def test_raw_rejection_journal_cannot_change_priority_without_b13_authority():
         }
         (run_dir / "events.jsonl").write_text(json.dumps(forged) + "\n")
         with pytest.raises(BilqisError) as failure:
-            authority._current_rejections(run_dir, parent, cache)
+            rejection_replay.ordered_rejections(run_dir, parent, cache)
         assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_OUTBOX_INVALID"
 
 
@@ -280,5 +280,5 @@ def test_duplicate_raw_journal_rows_cannot_amplify_one_b13_rejection():
         raw = json.dumps(event) + "\n"
         (run_dir / "events.jsonl").write_text(raw + raw)
         with patch.object(rejection_replay, "data_plane", return_value=plane):
-            rows = authority._current_rejections(run_dir, parent, cache)
+            rows = rejection_replay.current_rejections(run_dir, parent, cache)
     assert rows == (("capability:beta", "visit:beta", "retention_gate", receipt_sha256),)

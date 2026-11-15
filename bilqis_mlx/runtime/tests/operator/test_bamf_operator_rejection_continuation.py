@@ -1,5 +1,6 @@
 """Regression coverage for persistent operation across ordinary rejections."""
 from contextlib import nullcontext
+from dataclasses import replace
 import json
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -169,12 +170,16 @@ class BamfOperatorRejectionReplayIntegrationTests(NativeSourceFixture, unittest.
             replayed = current_rejections(run_dir, parent, cache)
             if prepared_calls == 1:
                 self.assertEqual(replayed, ())
-                return rejected
+                return replace(
+                    rejected, rejection_journal_ordinal=1,
+                    rejection_attempt_ordinal=1)
             if prepared_calls == 2:
                 self.assertEqual(len(replayed), 1)
                 self.assertEqual(replayed[0][:3], (
                     "A.REJECT", visit.identity.visit_id, decision.reason))
-                return rejected
+                return replace(
+                    rejected, rejection_journal_ordinal=2,
+                    rejection_attempt_ordinal=2)
             self.assertEqual(len(replayed), 2)
             return held
 

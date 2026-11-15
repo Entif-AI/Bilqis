@@ -35,6 +35,9 @@ class BamfPreparedVisit:
     capability: str | None = None
     successor: object | None = None
     identity_metrics: dict | None = None
+    candidate_evidence: dict | None = None
+    rejection_journal_ordinal: int | None = None
+    rejection_attempt_ordinal: int | None = None
 
 
 def _execution_context(run_dir: Path, *, currentness_metrics=None):
@@ -48,35 +51,6 @@ def _execution_context(run_dir: Path, *, currentness_metrics=None):
         authenticated.features, run_dir / "operator-artifacts" / "features",
         predecessor=authenticated.construction_predecessor)
     return parent, context, authenticated.selection.path, feature.path
-
-
-class _Capture:
-    """Minimal durable #545 delivery evidence; owns no teacher or source choice."""
-
-    def __init__(self, run_dir: Path, selection):
-        from bilqis_mlx.runtime.teacher_observation_capture import store_sidecar
-        self.run_dir = run_dir
-        self.selected_option = selection.option_id
-        self.attempt_id = sha256(
-            f"bamf-c16.3:{selection.visit.identity.visit_id}".encode()).hexdigest()
-        self.proposal_id = store_sidecar(run_dir, {
-            "schema": "bilqis.bamf.c16.3-priority-proposal/v1",
-            "attempt_id": self.attempt_id,
-            "visit_id": selection.visit.identity.visit_id,
-            "selected_option": selection.option_id,
-        })["sha256"]
-
-    def delivery(self, _release, capability, step, rows, **evidence):
-        from bilqis_mlx.runtime.teacher_observation_capture import store_sidecar
-        store_sidecar(self.run_dir, {
-            "schema": "bilqis.bamf.c16.3-priority-delivery/v1",
-            "attempt_id": self.attempt_id,
-            "proposal_id": self.proposal_id,
-            "capability": capability,
-            "step": step,
-            "row_ids": [row["id"] for row in rows],
-            "seed": evidence.get("seed"),
-        })
 
 
 def _step_seed(visit_id: str, ordinal: int = 1) -> int:

@@ -34,22 +34,31 @@ class SessionObservationTests(unittest.TestCase):
         def assess(*args, observer, **kwargs):
             observer({'retention_completed': 1, 'retention_total': 2,
                       'retention_subject': 'cap', 'retention_role': 'parent'})
-            return 'evaluation'
+            return NS(candidate_state=object(), parent_state=parent.retained_state)
         prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
         patches = {
             '_execution_context': (parent, NS(release='release'), 'atlas', 'feature'),
             'schedule_program_from_executable_release': 'program',
             'accepted_priority_school': 'school', 'select_foundation_priority_visit': selection,
-            '_Capture': 'capture', 'FactoryDeliveryObservation': 'delivery',
-            'bind_accepted_execution_cache': 'cache', 'candidate_step_horizon': 3,
+            '_Capture': NS(finalize=lambda **_kwargs: {
+                'schema': 'bilqis.bamf.c16.3-candidate-evidence-reference/v1',
+                'persistence': {'bytes_written': 1, 'file_fsyncs': 1,
+                                'directory_fsyncs': 1, 'evidence_objects': 1,
+                                'persistence_seconds': 0.0}}),
+            'FactoryDeliveryObservation': 'delivery',
+            'bind_accepted_execution_cache': NS(
+                generation=1, accepted_manifest_sha256='a' * 64),
+            'candidate_step_horizon': 3,
+            'rejection_attempt_ordinals': (1, 1),
+            'prepare_candidate_evidence_root': Path('/tmp/teacher-observations/objects'),
             'currentness_metrics': {
                 'deep_authentication_count': 1,
                 'accepted_cache_currentness_count': 3,
                 'full_candidate_identity_hashes': 1,
                 'bundle_tree_scans': 2,
             },
-            'issue_factory_retention_decision': NS(accepted=False),
-            'resolve_candidate': 'retained',
+            'issue_factory_retention_decision': NS(
+                accepted=False, to_record=lambda: {'decision': 'REJECTED'}),
         }
         from contextlib import ExitStack
         with ExitStack() as stack:
@@ -106,10 +115,13 @@ class SessionObservationTests(unittest.TestCase):
         transactions = [NS(parent=NS(optimizer_step=7), update_steps=1),
                         NS(parent=NS(optimizer_step=7), update_steps=2, motif_transition='stop')]
         prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
-        with patch(prefix + '_Capture'), patch(prefix + 'FactoryDeliveryObservation'), patch(
+        cache = NS(generation=1, accepted_manifest_sha256='a' * 64)
+        with patch(prefix + 'prepare_candidate_evidence_root'), patch(prefix + '_Capture'), patch(
+                prefix + 'FactoryDeliveryObservation'), patch(
                 prefix + 'execute_accepted_priority_candidate', side_effect=[NS(transaction=x) for x in transactions]) as execute:
-            steps = _execute_horizon(Path('/tmp'), selection, NS(), parent, 'atlas', 'feature',
-                                     ({'id': 'row'},), 4, None, 0, None, None, observer)
+            steps, _capture = _execute_horizon(
+                Path('/tmp'), selection, NS(), parent, 'atlas', 'feature',
+                ({'id': 'row'},), 4, cache, 1, None, 0, None, None, observer)
         self.assertEqual(len(steps), 2)
         self.assertEqual(execute.call_count, 2)
         self.assertEqual(events, [{'candidate_step': 1, 'candidate_optimizer_step': 8},

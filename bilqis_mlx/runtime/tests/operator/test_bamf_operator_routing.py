@@ -9,6 +9,17 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_operator.session import _visit, operate_bamf
 
 
+def _evidence_receipt():
+    return {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": 300, "file_fsyncs": 1,
+            "directory_fsyncs": 1, "evidence_objects": 4,
+            "persistence_seconds": 0.005,
+        },
+    }
+
+
 class BamfOperatorRoutingContinuationTests(unittest.TestCase):
     def test_priority_hold_never_counts_as_a_neural_visit(self):
         with TemporaryDirectory() as temporary:
@@ -82,12 +93,23 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
             update_steps=1,
             training_authorities=("authority",),
         )
-        step = SimpleNamespace(transaction=transaction)
+        step = SimpleNamespace(
+            transaction=transaction,
+            realized_cost={
+                "wall_seconds": 1.0, "optimizer_steps": 1,
+                "candidate_optimizer_steps": 1, "c08_memory_budget_bytes": 1,
+            })
         decision = SimpleNamespace(
             accepted=False,
             reason="retention_gate",
             to_record=lambda: {"decision": "REJECTED"},
         )
+        evidence_receipt = _evidence_receipt()
+        capture = SimpleNamespace(finalize=lambda **_kwargs: evidence_receipt)
+        cache = SimpleNamespace(
+            generation=1, accepted_manifest_sha256="a" * 64)
+        evaluation = SimpleNamespace(
+            candidate_state=object(), parent_state=parent.retained_state)
         with patch(
                 "bilqis_mlx.runtime.bamf_operator.session._execution_context",
                 return_value=(parent, context, "atlas", "feature")), patch(
@@ -98,25 +120,24 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                return_value="cache"), patch(
+                return_value=cache), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
                 return_value=(1, 1)), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=1), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value="capture"), patch(
+                return_value=capture), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
                 return_value="observation"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
                 return_value=step), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                return_value="evaluation"), patch(
+                return_value=evaluation), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
                 return_value=decision), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                return_value=parent.retained_state), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.record_bamf_rejection") as rejection:
-            self.assertEqual(_visit("/run", 0.0), "REJECTED")
+            self.assertEqual(_visit(Path("/tmp"), 0.0), "REJECTED")
 
         evidence = rejection.call_args.args[2]
         self.assertEqual(evidence["schema"], "bilqis.bamf.c16.3-rejection/v2")
@@ -128,6 +149,7 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
         self.assertEqual(evidence["candidate_optimizer_step"], 12)
         self.assertEqual(evidence["retained_optimizer_step"], 11)
         self.assertEqual(evidence["retention_reason"], "retention_gate")
+        self.assertEqual(evidence["candidate_evidence"], evidence_receipt)
         self.assertEqual(parent.retained_state.optimizer_step, 11)
 
     def test_operator_executes_c03_selection_without_reading_factory_release_order(self):
@@ -159,11 +181,22 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
             parent=SimpleNamespace(optimizer_step=11), update_steps=1,
             training_authorities=("authority",),
         )
-        step = SimpleNamespace(transaction=transaction)
+        step = SimpleNamespace(
+            transaction=transaction,
+            realized_cost={
+                "wall_seconds": 1.0, "optimizer_steps": 1,
+                "candidate_optimizer_steps": 1, "c08_memory_budget_bytes": 1,
+            })
         decision = SimpleNamespace(
             accepted=False, reason="retention_gate",
             to_record=lambda: {"decision": "REJECTED"},
         )
+        evidence_receipt = _evidence_receipt()
+        capture = SimpleNamespace(finalize=lambda **_kwargs: evidence_receipt)
+        cache = SimpleNamespace(
+            generation=1, accepted_manifest_sha256="a" * 64)
+        evaluation = SimpleNamespace(
+            candidate_state=object(), parent_state=parent.retained_state)
 
         def execute(selected, *_args, **_kwargs):
             self.assertIs(selected, selection)
@@ -180,25 +213,24 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                return_value="cache"), patch(
+                return_value=cache), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
                 return_value=(1, 1)), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=1), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value="capture"), patch(
+                return_value=capture), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
                 return_value="observation"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
                 side_effect=execute), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                return_value="evaluation"), patch(
+                return_value=evaluation), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
                 return_value=decision), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                return_value=parent.retained_state), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.record_bamf_rejection"):
-            self.assertEqual(_visit("/run", 0.0), "REJECTED")
+            self.assertEqual(_visit(Path("/tmp"), 0.0), "REJECTED")
 
 
 if __name__ == "__main__":

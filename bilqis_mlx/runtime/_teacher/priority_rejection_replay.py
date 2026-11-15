@@ -122,6 +122,11 @@ def current_rejections(run_dir, parent, cache):
     return _current_projection(run_dir, parent, cache).rows_view()
 
 
+def ordered_rejections(run_dir, parent, cache):
+    """Rows whose cross-capability order is authenticated by journal ordinals."""
+    return _current_projection(run_dir, parent, cache).ordered_rows_view()
+
+
 def rejection_attempt_ordinals(run_dir, parent, cache, capability):
     """Return next global and per-capability authenticated rejection ordinals."""
     return _current_projection(run_dir, parent, cache).next_ordinals(capability)
@@ -163,6 +168,7 @@ def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps)
 
 
 __all__ = (
-    "candidate_step_horizon", "current_rejections", "rejection_attempt_ordinals",
+    "candidate_step_horizon", "current_rejections", "ordered_rejections",
+    "rejection_attempt_ordinals",
     "rejection_pressure", "rejection_recency",
 )

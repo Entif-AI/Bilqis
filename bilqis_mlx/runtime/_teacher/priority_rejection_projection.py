@@ -18,28 +18,31 @@ from .priority_rejection_journal import (
 class RejectionRows(Sequence):
     """O(1) immutable-length view over append-only projected rows."""
 
-    __slots__ = ("_length", "_rows")
+    __slots__ = ("_length", "_rows", "_start")
 
-    def __init__(self, rows, length):
+    def __init__(self, rows, length, start=0):
         self._rows = rows
         self._length = length
+        self._start = start
 
     def __len__(self):
         return self._length
 
     def __iter__(self) -> Iterator:
-        for index in range(self._length):
+        for index in range(self._start, self._start + self._length):
             yield self._rows[index]
 
     def __getitem__(self, index):
         if isinstance(index, slice):
             start, stop, step = index.indices(self._length)
-            return tuple(self._rows[position] for position in range(start, stop, step))
+            return tuple(
+                self._rows[self._start + position]
+                for position in range(start, stop, step))
         if index < 0:
             index += self._length
         if not 0 <= index < self._length:
             raise IndexError(index)
-        return self._rows[index]
+        return self._rows[self._start + index]
 
     def __eq__(self, other):
         if not isinstance(other, Sequence):
@@ -62,8 +65,9 @@ class RejectionProjection:
     reason_counts: dict[str, dict[str, int]] = field(default_factory=dict)
     consecutive_interference: dict[str, int] = field(default_factory=dict)
     last_positions: dict[str, int] = field(default_factory=dict)
+    legacy_capabilities: set[str] = field(default_factory=set)
     global_order_started: bool = False
-    legacy_capability: str | None = None
+    global_order_start: int | None = None
     lock: Lock = field(default_factory=Lock, repr=False)
 
     def refresh(
@@ -172,7 +176,8 @@ class RejectionProjection:
             0 if reason == "NO_MEASURABLE_TARGET_GAIN"
             else self.consecutive_interference.get(capability, 0) + 1
         )
-        self.last_positions[capability] = expected_global
+        if journal_ordinal is not None or len(self.legacy_capabilities) <= 1:
+            self.last_positions[capability] = expected_global
         self.rows.append(row)
 
     def _require_order(
@@ -180,21 +185,33 @@ class RejectionProjection:
         if journal_ordinal is not None:
             if journal_ordinal != expected_global:
                 invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
+            if not self.global_order_started:
+                self.global_order_start = len(self.rows)
             self.global_order_started = True
         elif self.global_order_started:
             invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
-        elif expected_global == 1:
-            self.legacy_capability = capability
-        elif capability != self.legacy_capability or ordinal is None:
-            # Legacy v2 rows authenticate only per-capability attempt order. A
-            # multi-capability prefix has no authenticated total order and cannot
-            # safely drive C03 recency after cold resume.
-            invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
+        else:
+            self.legacy_capabilities.add(capability)
+            if len(self.legacy_capabilities) > 1:
+                self.last_positions.clear()
+            if ordinal is None and count:
+                # Legacy rows without a global ordinal can still contribute one
+                # independently authenticated rejection per capability. A second
+                # row for that capability needs the per-capability attempt ordinal.
+                invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
         if ordinal is not None and ordinal != count + 1:
             invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
 
     def rows_view(self):
         return RejectionRows(self.rows, len(self.rows))
+
+    def ordered_rows_view(self):
+        start = self.global_order_start
+        if len(self.legacy_capabilities) <= 1:
+            return RejectionRows(self.rows, len(self.rows))
+        if start is None:
+            return RejectionRows(self.rows, 0)
+        return RejectionRows(self.rows, len(self.rows) - start, start)
 
     def next_ordinals(self, capability):
         with self.lock:
@@ -219,8 +236,9 @@ class RejectionProjection:
         self.reason_counts.clear()
         self.consecutive_interference.clear()
         self.last_positions.clear()
+        self.legacy_capabilities.clear()
         self.global_order_started = False
-        self.legacy_capability = None
+        self.global_order_start = None
 
 
 __all__ = ("RejectionProjection", "RejectionRows")
