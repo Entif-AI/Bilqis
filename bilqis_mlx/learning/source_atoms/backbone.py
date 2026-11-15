@@ -52,6 +52,7 @@ def _b14_attention_caches(producer):
 
 def start_source_backbone_numerical(
     compiled, parameters, sources, feature_schema, banks, artifact_owner, *, snapshot=None,
+    source_execution_authorities=None,
 ):
     """Compute h0 and input coordinates internally before constructing a session.
 
@@ -61,7 +62,8 @@ def start_source_backbone_numerical(
     """
     encoding = encode_source_compiled(
         compiled, parameters, sources, feature_schema, banks, artifact_owner,
-        snapshot=snapshot)
+        snapshot=snapshot,
+        source_execution_authorities=source_execution_authorities)
     valid = mx.array([[position is not None for position in row]
                       for row in encoding.handles], dtype=mx.bool_)
     return UnadmittedBackboneSession(
@@ -75,20 +77,24 @@ def start_source_backbone_numerical(
 def start_source_backbone_producer(
     compiled, parameters, sources, feature_schema, banks, artifact_owner, *,
     execution_binding=None, trace=False, snapshot=None,
+    source_execution_authorities=None,
 ):
     """Create the B11 producer only by replaying and revalidating actual source rows."""
     encoded, handoffs = encode_source_compiled_with_handoffs(
         compiled, parameters, sources, feature_schema, banks, artifact_owner,
-        snapshot=snapshot)
+        snapshot=snapshot,
+        source_execution_authorities=source_execution_authorities)
     return _start_encoded_source_backbone_producer(
         encoded, handoffs, parameters, compiled, sources, feature_schema,
-        artifact_owner, execution_binding=execution_binding, trace=trace)
+        artifact_owner, execution_binding=execution_binding, trace=trace,
+        source_execution_authorities=source_execution_authorities)
 
 
 def _start_encoded_source_backbone_producer(
     encoded, handoffs, parameters, compiled, sources, feature_schema,
     artifact_owner, *, motif_manifest=None, motif_seal=None,
     input_motif_read=None, execution_binding=None, trace=False,
+    source_execution_authorities=None,
 ):
     retained = (
         motif_manifest is not None,
@@ -107,7 +113,8 @@ def _start_encoded_source_backbone_producer(
         encoded, handoffs, parameters, compiled, artifact_owner,
         input_motif_read=input_motif_read, execution_binding=execution_binding,
         trace=trace)
-    producer._bind_authoritative_inputs(sources, feature_schema)
+    producer._bind_authoritative_inputs(
+        sources, feature_schema, source_execution_authorities)
     producer._motif_manifest = motif_manifest
     producer._motif_seal = motif_seal
     producer._receipts = ()
@@ -177,6 +184,7 @@ def finalize_source_backbone_hidden(producer):
 def start_retained_source_backbone_producer(
     compiled, parameters, sources, feature_schema, banks, manifest,
     artifact_owner, *, seal, execution_binding=None, trace=False, snapshot=None,
+    source_execution_authorities=None,
 ):
     """B13-only B11 producer whose input and g1 boundaries execute B08 reads."""
     if seal is not _B13_EXECUTION_SEAL or type(manifest) is not MotifManifest:
@@ -185,14 +193,16 @@ def start_retained_source_backbone_producer(
         _invalid_producer_receipt()
     encoded, handoffs = encode_source_compiled_with_handoffs(
         compiled, parameters, sources, feature_schema, banks, artifact_owner,
-        snapshot=snapshot)
+        snapshot=snapshot,
+        source_execution_authorities=source_execution_authorities)
     topology = ModelTopologySpecV2()
     input_motif_read = _read_retained_compiled_motifs(
         compiled, parameters, sources, manifest,
         spec=topology, extents=compiled.extents, site_index=0,
-        hidden=encoded.global_seeds, seal=seal)
+        hidden=encoded.global_seeds, seal=seal,
+        source_execution_authorities=source_execution_authorities)
     return _start_encoded_source_backbone_producer(
         encoded, handoffs, parameters, compiled, sources, feature_schema,
         artifact_owner, motif_manifest=manifest, motif_seal=seal,
         input_motif_read=input_motif_read, execution_binding=execution_binding,
-        trace=trace)
+        trace=trace, source_execution_authorities=source_execution_authorities)
