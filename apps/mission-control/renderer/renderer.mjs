@@ -285,8 +285,24 @@ function syncInspectorWidth(requestedWidth = null, { persist = false } = {}) {
     splitter.setAttribute("aria-valuenow", String(width));
   }
   if (requestedWidth !== null) {
-    shellPreferences = withInspectorWidthPreference(shellPreferences, destination, requestedWidth);
+    shellPreferences = withInspectorWidthPreference(shellPreferences, destination, width);
     if (persist) saveShellPreferences(window.localStorage, shellPreferences);
+  }
+  const open = Boolean(state?.inspectorOpen);
+  const narrowOverlay = open && window.matchMedia?.("(max-width: 980px)")?.matches === true;
+  const panel = document.querySelector("#inspector");
+  if (narrowOverlay) panel?.setAttribute("aria-modal", "true");
+  else panel?.removeAttribute("aria-modal");
+  for (const background of [
+    document.querySelector(".skip-link"),
+    document.querySelector(".rail"),
+    document.querySelector("#main-content"),
+  ]) {
+    if (background) background.inert = narrowOverlay;
+  }
+  if (splitter) {
+    splitter.setAttribute("aria-hidden", String(!open || narrowOverlay));
+    splitter.tabIndex = open && !narrowOverlay ? 0 : -1;
   }
   return width;
 }

@@ -183,6 +183,27 @@ async function fixtureGeometry(page) {
     "narrow inspector exposes desktop splitter");
   check(narrow.mainInert && narrow.railInert && narrow.skipInert,
     "narrow inspector leaves background focusable");
+  await page.setViewportSize({ width: 1440, height: 960 });
+  await page.waitForFunction(() =>
+    document.querySelector("#inspector")?.getAttribute("aria-modal") === null);
+  const widened = await page.evaluate(() => ({
+    modal: document.querySelector("#inspector").getAttribute("aria-modal"),
+    splitterDisplay: getComputedStyle(document.querySelector("#inspector-splitter")).display,
+    splitterTab: document.querySelector("#inspector-splitter").tabIndex,
+    mainInert: document.querySelector("#main-content").inert,
+    railInert: document.querySelector(".rail").inert,
+    skipInert: document.querySelector(".skip-link").inert,
+  }));
+  check(widened.modal === null, "desktop inspector retained narrow aria-modal posture");
+  check(widened.splitterDisplay !== "none" && widened.splitterTab === 0,
+    "desktop inspector did not restore the splitter after viewport expansion");
+  check(!widened.mainInert && !widened.railInert && !widened.skipInert,
+    "desktop inspector retained narrow background inert state");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.waitForFunction(() =>
+    document.querySelector("#inspector")?.getAttribute("aria-modal") === "true");
+  check(await page.locator('[data-test-id="investigation-inspector"]').getAttribute("aria-modal") === "true",
+    "open inspector did not regain modal posture after narrowing the viewport");
   await page.keyboard.press("Escape");
   check(await page.evaluate(() => !document.querySelector("#main-content").inert &&
     !document.querySelector(".rail").inert && !document.querySelector(".skip-link").inert),
