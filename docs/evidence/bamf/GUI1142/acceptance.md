@@ -34,7 +34,7 @@ salience only at the authorization boundary.
 - Development structure: pass, zero violations.
 - Governance integrity: pass, zero violations.
 - Changed-file code-smell delta: zero new findings.
-- Legacy-trainer authority and tests: pass.
+- BAMF retained-authority policy checks and tests: pass.
 - BAMF flow-control and tests: pass.
 - Differential leaf gate: policy skip for this UI-only change set.
 - `git diff --check`: pass.
