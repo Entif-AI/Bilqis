@@ -83,7 +83,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 return_value=retained), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
                 return_value=successor) as derive, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.shutil.disk_usage",
+                "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
                 return_value=SimpleNamespace(used=123)):
             prepared = prepare_bamf_visit(Path("/run"), steps_per_visit=16)
 
@@ -183,19 +183,19 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         authenticated = SimpleNamespace(features="features")
         feature = SimpleNamespace(path="/feature")
         with patch(
-                "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
+                "bilqis_mlx.runtime.bamf_operator.session_support.load_accepted_generation",
                 return_value=parent), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.AcceptedRuntimeHost",
+                "bilqis_mlx.runtime.bamf_operator.session_support.AcceptedRuntimeHost",
                 return_value=host), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.read_accepted_generation_feature_context",
+                "bilqis_mlx.runtime.bamf_operator.session_support.read_accepted_generation_feature_context",
                 return_value=accepted), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.AtlasArtifactIdentity",
+                "bilqis_mlx.runtime.bamf_operator.session_support.AtlasArtifactIdentity",
                 return_value="identity"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._atlas_snapshot.resolve_atlas_artifact_selection",
+                "bilqis_mlx.runtime.bamf_operator.session_support._atlas_snapshot.resolve_atlas_artifact_selection",
                 return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.authenticate_bamf_execution_feature_context",
+                "bilqis_mlx.runtime.bamf_operator.session_support.authenticate_bamf_execution_feature_context",
                 return_value=authenticated), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.persist_feature_manifest",
+                "bilqis_mlx.runtime.bamf_operator.session_support.persist_feature_manifest",
                 return_value=feature):
             self.assertEqual(
                 _execution_context(Path("/run")),

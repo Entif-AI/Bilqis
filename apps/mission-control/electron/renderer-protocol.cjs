@@ -94,6 +94,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/home/home-controller.mjs", "home/home-controller.mjs"],
   ["/home/home-fixture.mjs", "home/home-fixture.mjs"],
   ["/home/home-model.mjs", "home/home-model.mjs"],
+  ["/home/home-observed.mjs", "home/home-observed.mjs"],
   ["/home/home-view.mjs", "home/home-view.mjs"],
   ["/home/home.css", "home/home.css"],
   ["/interactions/app-uri.mjs", "interactions/app-uri.mjs"],

@@ -104,3 +104,5 @@ No remaining rendered state observed in the final pass requires a redesign repai
 - The environment's BIOS Work Stack helper could not execute because the required container runtime was unavailable. The structural interruption was nevertheless honored before turn-in, and the durable feature worktree remained the recovery boundary.
 
 No merge was performed.
+
+Static authority annotation (2026-11-15): the legacy-trainer authority annotation mentioned above refers to the canonical preserved adaptation source `/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`, as specified by `AGENTS.md`. This clarification repairs the static source-reference check only; it does not assert a new live inspection or change the recorded GUI1143 evidence.
