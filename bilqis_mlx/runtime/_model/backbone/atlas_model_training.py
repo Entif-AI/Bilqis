@@ -162,6 +162,58 @@ def _gradient_execution_rebinder(params, cache, *, spec, extents, generation):
         binding, params, spec=spec, extents=extents)
 
 
+def _gradient_preflight(
+        backend, params, compiled_batch, answer_plan, targets, mask, cache,
+        salience_supervision):
+    started = time.perf_counter()
+    _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
+    rebind_execution = _gradient_execution_rebinder(
+        params, cache, spec=backend.topology, extents=compiled_batch.compiled.extents,
+        generation=answer_plan.generation_binding)
+    preflight_binding = rebind_execution(params)
+    preflight_output = _forward_bamf_impl(
+        backend, params, compiled_batch, answer_plan, ExecutionMode.INFERENCE, cache,
+        refinement_training=True, execution_binding=preflight_binding,
+        decoder_trace=False)
+    preflight_execution = loss_bearing_bamf(
+        preflight_output, targets, mask, salience_supervision=salience_supervision)
+    return (
+        rebind_execution, preflight_output, preflight_execution,
+        time.perf_counter() - started,
+    )
+
+
+def _finalize_gradient_execution(
+        backend, compiled_batch, execution, preflight_output, preflight_execution,
+        loss_total, gradients, observation):
+    _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
+    if type(execution) is not BamfLossExecution:
+        _invalid("B11_GRADIENT_EXECUTION_MISSING")
+    if not attest_issued_output(execution.output):
+        _invalid("B11_TRAINING_OUTPUT_ATTESTATION_FAILED")
+    if (execution.output.committed != preflight_output.committed
+            or execution.output.status is not preflight_output.status):
+        _invalid("B11_TRAINING_TRAJECTORY_DRIFT")
+    if not bool(mx.allclose(
+            execution.loss.total, preflight_execution.loss.total,
+            rtol=1e-5, atol=1e-6)):
+        _invalid("B11_TRAINING_LOSS_DRIFT")
+    validate_bamf_parameters(
+        backend.topology, compiled_batch.compiled.extents, gradients)
+    result = object.__new__(BamfGradientExecution)
+    for name, value in (
+        ("execution", execution),
+        ("gradients", gradients),
+        ("loss_total", loss_total),
+        ("schema_version", "bilqis.mlx.b11-gradient-execution/v1"),
+        ("_issuance", _LOSS_EXECUTION_ISSUER),
+    ):
+        object.__setattr__(result, name, value)
+    attach_performance_observation(result, observation)
+    result.__post_init__()
+    return result
+
+
 def _bamf_value_and_grad_impl(
     backend: Backend,
     params,
@@ -179,20 +231,12 @@ def _bamf_value_and_grad_impl(
             _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
         salience_supervision.labels_for(compiled_batch)
     with source_replay_observation() as replay:
-        preflight_started = time.perf_counter()
-        _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
-        rebind_execution = _gradient_execution_rebinder(
-            params, cache, spec=backend.topology, extents=compiled_batch.compiled.extents,
-            generation=answer_plan.generation_binding)
-        preflight_binding = rebind_execution(params)
-        preflight_output = _forward_bamf_impl(
-            backend, params, compiled_batch, answer_plan, ExecutionMode.INFERENCE, cache,
-            refinement_training=True, execution_binding=preflight_binding,
-            decoder_trace=False)
-        preflight_execution = loss_bearing_bamf(
-            preflight_output, targets, mask,
-            salience_supervision=salience_supervision)
-        preflight_wall_seconds = time.perf_counter() - preflight_started
+        (
+            rebind_execution, preflight_output, preflight_execution,
+            preflight_wall_seconds,
+        ) = _gradient_preflight(
+            backend, params, compiled_batch, answer_plan, targets, mask, cache,
+            salience_supervision)
         holder = {}
 
         def objective(current):
@@ -220,38 +264,14 @@ def _bamf_value_and_grad_impl(
         loss_total, gradients = mx.value_and_grad(objective)(params)
         mx.eval(loss_total, gradients)
         autodiff_wall_seconds = time.perf_counter() - autodiff_started
-    _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
-    execution = holder.get("execution")
-    if type(execution) is not BamfLossExecution:
-        _invalid("B11_GRADIENT_EXECUTION_MISSING")
-    if not attest_issued_output(execution.output):
-        _invalid("B11_TRAINING_OUTPUT_ATTESTATION_FAILED")
-    if (execution.output.committed != preflight_output.committed
-            or execution.output.status is not preflight_output.status):
-        _invalid("B11_TRAINING_TRAJECTORY_DRIFT")
-    if not bool(mx.allclose(
-            execution.loss.total, preflight_execution.loss.total,
-            rtol=1e-5, atol=1e-6)):
-        _invalid("B11_TRAINING_LOSS_DRIFT")
-    validate_bamf_parameters(
-        backend.topology, compiled_batch.compiled.extents, gradients)
-    result = object.__new__(BamfGradientExecution)
-    for name, value in (
-        ("execution", execution),
-        ("gradients", gradients),
-        ("loss_total", loss_total),
-        ("schema_version", "bilqis.mlx.b11-gradient-execution/v1"),
-        ("_issuance", _LOSS_EXECUTION_ISSUER),
-    ):
-        object.__setattr__(result, name, value)
-    attach_performance_observation(result, {
+    return _finalize_gradient_execution(
+        backend, compiled_batch, holder.get("execution"), preflight_output,
+        preflight_execution, loss_total, gradients, {
         "b11_preflight_wall_seconds": float(preflight_wall_seconds),
         "b11_autodiff_wall_seconds": float(autodiff_wall_seconds),
         "b11_provider_draw_count": replay["provider_draws"],
         "b11_atlas_reload_count": replay["atlas_reloads"],
     })
-    result.__post_init__()
-    return result
 
 
 def bamf_value_and_grad(
