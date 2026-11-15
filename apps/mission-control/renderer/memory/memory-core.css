@@ -39,7 +39,7 @@
 }
 
 .memory-fixture-notice strong {
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .memory-surface,
