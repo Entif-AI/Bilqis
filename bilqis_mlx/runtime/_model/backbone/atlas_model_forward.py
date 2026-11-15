@@ -81,6 +81,51 @@ def _finalize_source_hidden(
     return hidden
 
 
+def _forward_row_from_hidden(
+    params, compiled_batch, answer_plan, generation, producer, accepted_cache,
+    hidden, *, producer_row_index=0,
+) -> ModelOutput:
+    """Issue one row-scoped B11 output from an already-computed source backbone."""
+    row = compiled_batch.compiled.compiled.rows[0]
+    projection = compiled_batch.compiled._projections[0]
+    if (
+        producer_row_index < 0
+        or producer_row_index >= hidden.shape[0]
+        or projection is not None
+        and type(projection) is not ApprovedContextProjection
+    ):
+        _invalid("B11_APPROVED_CONTEXT_REQUIRED")
+    row_hidden = hidden[producer_row_index, :len(row.positions)]
+    salience_hidden = row_hidden[-1]
+    if row_hidden.shape[0] != len(row.positions):
+        _invalid("B11_HIDDEN_POSITION_MISMATCH")
+    semantics = ReadoutSemantics(
+        compiled_batch.compiled.features,
+        _active_banks(params, compiled_batch, answer_plan),
+        compiled_batch.compiled.extents,
+    )
+    row_hidden, refinement_roles, refinement_executed = _prediction_local_refinement(
+        params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
+        training=True, producer_row_index=producer_row_index)
+    memory = DecoderMemory(
+        row_hidden,
+        tuple(item.cache_identity for item in row.positions),
+        row,
+        generation,
+    )
+    output = predict_typed(
+        memory, projection, answer_plan, semantics, params)
+    if type(output) is not ModelOutput or output.execution_mode is not ExecutionMode.INFERENCE:
+        _invalid("B11_TYPED_OUTPUT_INVALID")
+    return _FORWARD_ISSUANCE.issue(
+        output, replace(_forward_participation(
+            params, compiled_batch, answer_plan, output, producer, accepted_cache,
+            refinement_roles, refinement_executed,
+            producer_row_index=producer_row_index),
+            salience_hidden=salience_hidden, salience_parameters=params,
+            compiled_batch=compiled_batch))
+
+
 def _forward_bamf_impl(
     backend: Backend,
     params,
@@ -119,40 +164,38 @@ def _forward_bamf_impl(
         capture_derived_cache=not refinement_training)
     if hidden.shape[0] != 1:
         _invalid("B11_SINGLE_ROW_FORWARD_REQUIRED")
-    row = compiled_batch.compiled.compiled.rows[0]
-    projection = compiled_batch.compiled._projections[0]
-    if (
-        projection is not None
-        and type(projection) is not ApprovedContextProjection
-    ):
-        _invalid("B11_APPROVED_CONTEXT_REQUIRED")
-    row_hidden = hidden[0]
-    salience_hidden = row_hidden[-1]
-    if row_hidden.shape[0] != len(row.positions):
-        _invalid("B11_HIDDEN_POSITION_MISMATCH")
-    semantics = ReadoutSemantics(
-        compiled_batch.compiled.features,
-        _active_banks(params, compiled_batch, answer_plan),
-        extents,
-    )
-    row_hidden, refinement_roles, refinement_executed = _prediction_local_refinement(
-        params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
-        training=refinement_training)
-    memory = DecoderMemory(
-        row_hidden,
-        tuple(item.cache_identity for item in row.positions),
-        row,
-        generation,
-    )
-    output = predict_typed(
-        memory, projection, answer_plan, semantics, params)
-    if type(output) is not ModelOutput or output.execution_mode is not mode:
-        _invalid("B11_TYPED_OUTPUT_INVALID")
-    return _FORWARD_ISSUANCE.issue(
-        output, replace(_forward_participation(
-            params, compiled_batch, answer_plan, output, producer, accepted_cache,
-            refinement_roles, refinement_executed),
-            salience_hidden=salience_hidden, salience_parameters=params, compiled_batch=compiled_batch))
+    if not refinement_training:
+        # Scalar inference preserves the historical refinement training flag.
+        row = compiled_batch.compiled.compiled.rows[0]
+        projection = compiled_batch.compiled._projections[0]
+        row_hidden = hidden[0]
+        if (projection is not None
+                and type(projection) is not ApprovedContextProjection):
+            _invalid("B11_APPROVED_CONTEXT_REQUIRED")
+        if row_hidden.shape[0] != len(row.positions):
+            _invalid("B11_HIDDEN_POSITION_MISMATCH")
+        salience_hidden = row_hidden[-1]
+        semantics = ReadoutSemantics(
+            compiled_batch.compiled.features,
+            _active_banks(params, compiled_batch, answer_plan), extents)
+        row_hidden, refinement_roles, refinement_executed = _prediction_local_refinement(
+            params, compiled_batch, answer_plan, generation, producer, row_hidden,
+            semantics, training=False)
+        memory = DecoderMemory(
+            row_hidden, tuple(item.cache_identity for item in row.positions), row,
+            generation)
+        output = predict_typed(memory, projection, answer_plan, semantics, params)
+        if type(output) is not ModelOutput or output.execution_mode is not mode:
+            _invalid("B11_TYPED_OUTPUT_INVALID")
+        return _FORWARD_ISSUANCE.issue(
+            output, replace(_forward_participation(
+                params, compiled_batch, answer_plan, output, producer, accepted_cache,
+                refinement_roles, refinement_executed),
+                salience_hidden=salience_hidden, salience_parameters=params,
+                compiled_batch=compiled_batch))
+    return _forward_row_from_hidden(
+        params, compiled_batch, answer_plan, generation, producer, accepted_cache,
+        hidden, producer_row_index=0)
 
 
 def forward_bamf(

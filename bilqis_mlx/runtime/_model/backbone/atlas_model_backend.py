@@ -44,6 +44,15 @@ class Backend:
             self, params, compiled_batch, answer_plan, targets, mask, cache,
             salience_supervision=salience_supervision)
 
+    def microbatch_value_and_grad(
+            self, params, row_batches, answer_plans, targets, masks, cache=None, *,
+            salience_supervision=None):
+        from .atlas_model_microbatch import _bamf_microbatch_value_and_grad_impl
+
+        return _bamf_microbatch_value_and_grad_impl(
+            self, params, row_batches, answer_plans, targets, masks, cache,
+            salience_supervision=salience_supervision)
+
 
 def model_backend(topology) -> Backend:
     """Select the current MLX device without changing the model contract."""

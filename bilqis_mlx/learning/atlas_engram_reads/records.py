@@ -61,6 +61,7 @@ class MotifReadResult:
     dispositions: tuple[tuple[str, ...], ...]
     participating_slots: tuple[int, ...]
     context_digests: tuple[str | None, ...]
+    row_participating_slots: tuple[tuple[int, ...], ...] = ()
     schema_version: str = READ_SCHEMA
 
     def __post_init__(self) -> None:
@@ -85,5 +86,14 @@ class MotifReadResult:
                        and (not isinstance(item, str)
                             or not _SHA.fullmatch(item))
                        for item in self.context_digests)
+                or (self.row_participating_slots
+                    and (len(self.row_participating_slots) != self.hidden.shape[0]
+                         or any(type(row) is not tuple
+                                or row != tuple(sorted(set(row)))
+                                or any(type(slot) is not int or slot < 0 for slot in row)
+                                for row in self.row_participating_slots)
+                         or tuple(sorted({
+                             slot for row in self.row_participating_slots for slot in row
+                         })) != self.participating_slots))
                 or self.schema_version != READ_SCHEMA):
             _invalid()
