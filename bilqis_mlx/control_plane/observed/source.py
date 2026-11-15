@@ -18,7 +18,7 @@ MAX_FUTURE_SKEW_MS = 5_000
 _SCHEMA = 'bilqis.bamf.trainer-observed/v1'
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
-_OPTIONAL_FIELDS = {'error_code', 'error_detail'}
+_OPTIONAL_FIELDS = frozenset(('error_code', 'error_detail'))
 
 
 def process_exists(pid: int) -> bool:
