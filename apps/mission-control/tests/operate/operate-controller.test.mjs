@@ -5,6 +5,8 @@ import { createOperateController } from "../../renderer/operate/operate-controll
 function fakeHost() {
   const handlers = new Map();
   const actionButtons = new Map();
+  const stageHandlers = new Map();
+  const stageButtons = new Map();
   for (const action of ["create", "owner-launch", "resume", "status", "checkpoint-verify", "admission-lease", "pause", "stop"]) {
     const button = {
       dataset: { operateAction: action },
@@ -12,6 +14,22 @@ function fakeHost() {
     };
     actionButtons.set(`${action}:element`, button);
   }
+  for (const stage of ["request", "preflight", "authorization", "outcome"]) {
+    const button = {
+      dataset: { operateStage: stage },
+      addEventListener(type, handler) {
+        if (type === "click") stageHandlers.set(stage, handler);
+      },
+      focus() {},
+    };
+    stageButtons.set(stage, button);
+  }
+  const tabs = {
+    querySelectorAll(selector) {
+      if (["[data-operate-stage]", "[role=tab]"].includes(selector)) return [...stageButtons.values()];
+      return [];
+    },
+  };
   const control = (selector) => ({
     addEventListener(type, handler) { handlers.set(`${selector}:${type}`, handler); },
   });
@@ -23,9 +41,16 @@ function fakeHost() {
       if (selector === "[data-operate-reconcile]") return [];
       return [];
     },
-    querySelector(selector) { return control(selector); },
+    querySelector(selector) {
+      if (selector === '[data-test-id="operate-tabs"]') return tabs;
+      const stageMatch = selector.match(/^\[data-operate-stage="([^"]+)"\]$/);
+      if (stageMatch) return stageButtons.get(stageMatch[1]) ?? null;
+      return control(selector);
+    },
     clickAction(action) { actionButtons.get(action)?.({ currentTarget: actionButtons.get(`${action}:element`) }); },
+    clickStage(stage) { stageHandlers.get(stage)?.({ currentTarget: stageButtons.get(stage) }); },
     changeDryRun(value) { handlers.get("[data-operate-dry-run]:change")?.({ currentTarget: { checked: value } }); },
+    typeParameters(value) { handlers.get("[data-operate-parameters]:input")?.({ currentTarget: { value } }); },
     typeAuthorization(value) { handlers.get("[data-operate-authorization]:input")?.({ currentTarget: { value } }); },
   };
 }
@@ -208,4 +233,41 @@ test("accepted owner launch seeds Stop with the exact active operation identity"
   );
   host.clickAction("resume");
   assert.equal(controller.currentState().parametersText, "{}");
+});
+
+test("permitted stage navigation preserves request, preview, authorization, and reconciled outcome state", async () => {
+  let submitted;
+  const api = {
+    async requestDryRun(wrapper) { return previewFor(wrapper); },
+    async requestCommand(wrapper) { submitted = wrapper; return receipt(wrapper.request); },
+    async fetchReceipt() { return inspection(submitted?.request ?? controller.currentState().preview.request); },
+    subscribeEvents() { return () => {}; },
+  };
+  const host = fakeHost();
+  const controller = createOperateController(api);
+  await controller.activate(context, { target: host, defense });
+  host.clickAction("resume");
+  host.changeDryRun(false);
+  host.typeParameters('{"minutes":30}');
+  await controller.preview();
+  const previewIdentity = controller.currentState().preview.target_ref;
+  assert.equal(controller.currentState().activeStage, "preflight");
+
+  host.clickStage("authorization");
+  host.typeAuthorization("AUTHORIZE RESUME");
+  host.clickStage("request");
+  assert.equal(controller.currentState().parametersText, '{"minutes":30}');
+  assert.equal(controller.currentState().preview.target_ref, previewIdentity);
+  assert.equal(controller.currentState().authorization, "AUTHORIZE RESUME");
+
+  host.clickStage("authorization");
+  await controller.submit();
+  const outcome = controller.currentState().inspection.operation_id;
+  assert.equal(controller.currentState().activeStage, "outcome");
+  host.clickStage("preflight");
+  host.clickStage("outcome");
+  assert.equal(controller.currentState().inspection.operation_id, outcome);
+  assert.equal(controller.currentState().preview.target_ref, previewIdentity);
+  assert.equal(controller.currentState().parametersText, '{"minutes":30}');
+  assert.equal(controller.currentState().authorization, "AUTHORIZE RESUME");
 });

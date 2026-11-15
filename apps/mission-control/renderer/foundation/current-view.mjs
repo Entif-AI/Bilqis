@@ -1,5 +1,6 @@
 import { correctionsT } from "../corrections/corrections-messages.mjs";
 import { evidenceT } from "../evidence/evidence-messages.mjs";
+import { operateT } from "../operate/operate-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
 import { renderEvidenceView } from "../evidence/evidence-view.mjs";
 import { t } from "./i18n.mjs";
@@ -240,6 +241,12 @@ export function renderCurrentView(
   if (state.view === "operate") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.operate.purpose");
+    const available = defense?.mutationAllowed === true && state?.mutationAvailable === true;
+    domain.innerHTML = `<section class="operate-route-pending" data-route-state="${available ? "loading" : "unavailable"}" data-test-id="operate-route-pending" role="status" aria-live="polite">
+      <span class="eyebrow">${esc(operateT("operate.eyebrow"))}</span>
+      <h2>${esc(operateT(available ? "operate.route.loadingTitle" : "operate.route.unavailableTitle"))}</h2>
+      <p>${esc(operateT(available ? "operate.route.loadingDetail" : "operate.route.unavailableDetail"))}</p>
+    </section>`;
     return;
   }
   domain.hidden = false;
