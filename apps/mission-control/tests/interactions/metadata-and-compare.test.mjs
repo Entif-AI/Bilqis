@@ -148,7 +148,7 @@ test("Corrections browser fixture carries the shared inspector anatomy", () => {
   ]) {
     assert.match(fixture, new RegExp(`id=\\"${id}\\"`));
   }
-  const journey = fs.readFileSync(new URL("../browser/corrections-journey.mjs", import.meta.url), "utf8");
+  const journey = fs.readFileSync(new URL("../browser/journeys/corrections-journey.mjs", import.meta.url), "utf8");
   assert.match(journey, /fixture-inspector-summary/);
 });
 

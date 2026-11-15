@@ -12,8 +12,8 @@ import {
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, learningController, onInspect, onSelectionChange, onNavigate, onAnnounce,
-  schoolDomainSupport = null, atlasDomainSupport = null,
+  teacherController, capabilityExplorer, learningController, onInspect, onSelectionChange,
+  onNavigate, onAnnounce, schoolDomainSupport = null, atlasDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
@@ -65,6 +65,17 @@ export function activateDomainViews({
     });
   } else {
     void resourceController?.deactivate();
+  }
+  if (state?.view === "teacher") {
+    void teacherController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void teacherController?.deactivate();
   }
   if (state?.view === "learning" && state.context?.fixture !== true) {
     void learningController?.activate(state.context, {

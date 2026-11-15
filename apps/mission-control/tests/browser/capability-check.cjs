@@ -197,7 +197,7 @@ async function mount(page, moduleUrl, launchMode = "fixtures") {
   result.productionCurrentMode = true;
   await page.evaluate(() => window.__setCapabilityContext({ mode: "HISTORICAL", generation: 3, fixture: false }));
   await page.locator('[data-test-id="capability-name"]').waitFor();
-  const { capabilityJourney } = await import(path.join(root, "apps/mission-control/tests/browser/capability-journey.mjs"));
+  const { capabilityJourney } = await import(path.join(root, "apps/mission-control/tests/browser/journeys/capability-journey.mjs"));
   result.journey = await capabilityJourney(page);
   await page.screenshot({ path: path.join(out, "after-defensive-unavailable.png"), fullPage: true });
   fs.writeFileSync(path.join(out, "browser-result.json"), JSON.stringify(result, null, 2) + "\n");

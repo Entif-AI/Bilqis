@@ -10,8 +10,9 @@ export async function evidenceJourney(page, { modulePath = "/apps/mission-contro
     window.evidenceModule = await import(modulePath);
     window.makeRecord = (id) => ({schema_version: "receipt/v1", meta: {
       record_id: id, authority: "MEASURED", coverage: "COMPLETE", run: {run_id: "fixture-run", generation: 7},
+      materialized_at:1794699300, observed_at:1794699298, as_of:1794699298,
       source_refs: ["source:exact"], evidence_refs: ["evidence:exact"], receipt_refs: [],
-    }, valid: false, absent: null, long_value: "long-exact-identity:" + "z".repeat(300)});
+    }, acknowledged_at:1794699299, valid: false, absent: null, long_value: "long-exact-identity:" + "z".repeat(300)});
     window.a = window.makeRecord("receipt:a"); window.b = window.makeRecord("receipt:b");
     window.reply = (request, overrides = {}) => ({accepted:true, state:"PRESENT", coverage:"COMPLETE", returned:1,total_matches:2,
       records:[],links:[],markers:[],next_cursor:null,truncated:false,request,...overrides});
@@ -28,6 +29,9 @@ export async function evidenceJourney(page, { modulePath = "/apps/mission-contro
     window.resolveRequest(0,{records:[window.a],next_cursor:"next:1",truncated:true});
   }, modulePath);
   await recordButtons().first().waitFor();
+  for (const id of ["evidence-help-search","evidence-help-posture","evidence-help-results"]) {
+    check(await hook(id).count() === 1, `shared contextual help present: ${id}`);
+  }
   // Pagination must complete even when selection begins in the meantime.
   await hook("evidence-more").click();
   await recordButtons().first().click();
@@ -47,6 +51,22 @@ export async function evidenceJourney(page, { modulePath = "/apps/mission-contro
   check(await hook("evidence-query-value").inputValue() === "unsubmitted-exact-reference", "unsent query value preserved");
   check(await hook("evidence-query-value").evaluate(e=>e === document.activeElement && e.selectionStart===3 && e.selectionEnd===8), "query focus and selection preserved");
   check(await hook("evidence-metadata").evaluate(e=>e.open), "disclosure preserved on async completion");
+  for (const id of ["evidence-time-materialized","evidence-time-observed","evidence-time-as-of","evidence-time-field-acknowledged-at"]) {
+    check(await hook(id).count() === 1, `shared temporal control present: ${id}`);
+  }
+  const draftBeforeRerender = await hook("evidence-query-value").inputValue();
+  await page.evaluate(() => {
+    window.evidenceModule.renderEvidenceView(
+      document.querySelector('[data-test-id="fixture-host"]'),
+      {query: request => new Promise((resolve, reject) => window.requests.push({request,resolve,reject}))},
+      {mode:"HISTORICAL",runId:"fixture-run",generation:7},
+      null, null, ()=>window.returnedOrigin=true,
+      {view:"capability",selected:{kind:"capability",id:"B.AND"},context:{mode:"HISTORICAL",runId:"fixture-run",generation:7}},
+    );
+  });
+  check(await hook("evidence-query-value").inputValue() === draftBeforeRerender, "unrelated rerender preserves query draft");
+  check((await hook("evidence-detail-heading").innerText()) === "receipt:a", "unrelated rerender preserves selected record");
+  check(await recordButtons().count() === 2, "unrelated rerender preserves paginated records");
   await hook("evidence-mode-raw").focus(); await page.keyboard.press("Enter");
   check(await hook("evidence-mode-raw").evaluate(e=>e===document.activeElement), "raw mode retains keyboard focus");
   const raw = JSON.parse(await hook("evidence-raw-payload").innerText());
@@ -135,7 +155,17 @@ export async function evidenceJourney(page, { modulePath = "/apps/mission-contro
   await hook("evidence-detail-heading").waitFor();
   await page.evaluate(()=>window.requests[1].reject(new Error("QUERY_DENIED")));
   await hook("evidence-traversal-error").waitFor();
+  await page.evaluate(() => {
+    window.evidenceModule.renderEvidenceView(
+      document.querySelector('[data-test-id="fixture-host"]'),
+      {query: request => new Promise((resolve, reject) => window.requests.push({request,resolve,reject}))},
+      {mode:"HISTORICAL",runId:"fixture-run",generation:7},
+      {kind:"evidence",id:"receipt:a"}, null, ()=>window.returnedOrigin=true,
+      {view:"capability",selected:{kind:"capability",id:"B.AND"},context:{mode:"HISTORICAL",runId:"fixture-run",generation:7}},
+    );
+  });
+  check((await hook("evidence-traversal-error").innerText()).includes("QUERY_DENIED"), "unrelated rerender preserves traversal failure");
   await hook("evidence-mode-raw").click();
   check((await hook("evidence-traversal-error").innerText()).includes("QUERY_DENIED"), "raw mode retains traversal failure");
-  return {passed: true, claims: ["pagination-selection concurrency", "draft/caret/disclosure custody", "bootstrap cancellation", "fresh-query cancellation", "exact traversal/reference", "raw parity", "origin callback", "pagination recovery/focus", "defensive states"]};
+  return {passed: true, claims: ["pagination-selection concurrency", "draft/caret/disclosure custody", "shared help/time", "unrelated-rerender state custody", "bootstrap cancellation", "fresh-query cancellation", "exact traversal/reference", "raw parity", "origin callback", "pagination recovery/focus", "defensive states"]};
 }
