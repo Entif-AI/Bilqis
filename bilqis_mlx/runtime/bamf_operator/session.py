@@ -341,8 +341,7 @@ def operate_bamf(
             visits += 1
             if outcome == "REJECTED":
                 rejected += 1
-                status = "REJECTED_HOLD"
-                break
+                continue
             accepted += 1
         else:
             status = "VISIT_LIMIT" if max_visits and visits >= max_visits else "TIME_LIMIT"

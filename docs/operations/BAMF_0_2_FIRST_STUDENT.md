@@ -235,10 +235,12 @@ fixture-only evidence and is not production authority. Rejected candidates do no
 advance the accepted seed, cursor or teacher epoch.
 
 The operator loop is serialized by the existing run-root operator lock. Once #1010
-supplies C03.4's production authority, a rejected candidate must hold rather than
-silently retry, and completion must be a C03.4/Factory-owned result rather than a
-locally invented grade sequence. Status and dashboard inspection read the accepted
-BAMF generation directly; they do not reconstruct a legacy school.
+supplies C03.4's production authority, a rejected candidate remains on the exact
+accepted parent and its authenticated rejection receipt feeds the next C03.4 priority
+decision; ordinary rejection does not end the human-authorized session. Completion
+must still be a C03.4/Factory-owned result rather than a locally invented grade
+sequence. Status and dashboard inspection read the accepted BAMF generation directly;
+they do not reconstruct a legacy school.
 
 No persistent BAMF student is started as part of C16.3 acceptance. The human owner
 starts and observes the live lineage with the command above. Agent verification of

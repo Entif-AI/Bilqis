@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "5df83f69a4fb07b6c39dea47868934bc0d8e0e62",
-  "updated_at": "2026-11-14T01:27:27.278177+00:00",
+  "observed_unified": "406e30c65c257230b50259d678ed4e1e2a880f14",
+  "updated_at": "2026-11-15T08:07:01.571628+00:00",
   "exception": null,
   "items": [
     {
@@ -420,6 +420,15 @@
       "summary": "Issue #1167 is active on an isolated branch from reviewed unified 2c8cda55. It owns fixed-school C05 MLX evaluation batching only: reduce per-case neural launches while preserving complete-solver semantics, per-case bindings/receipts, deterministic CPU execution, retention decisions, accepted-generation semantics and bounded resource fallback. Pinned EGM design review precedes implementation.",
       "resume_trigger": null,
       "preserved_branch": "codex/1167-retention-mlx-batch-20261115"
+    },
+    {
+      "issue": 1197,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "406e30c65c257230b50259d678ed4e1e2a880f14",
+      "summary": "Issue #1197 is active on an isolated branch from reviewed unified 406e30c6. It owns persistent BAMF operator continuation after ordinary candidate rejection: record and replay the rejection, preserve accepted parent/teacher/optimizer custody, and continue until an actual time/visit/priority/action/authority stop condition.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1197-rejection-continue-20261115"
     }
   ]
 }
