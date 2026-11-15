@@ -1,0 +1,175 @@
+.memory-view {
+  display: grid;
+  gap: 24px;
+  min-width: 0;
+}
+
+.memory-heading,
+.memory-section-heading,
+.memory-fixture-notice {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 16px;
+}
+
+.memory-heading h2,
+.memory-section-heading h3 {
+  margin: 4px 0 0;
+}
+
+.memory-heading p,
+.memory-section-heading p,
+.memory-fixture-notice span,
+.memory-muted,
+.memory-boundary,
+.memory-capability-boundary {
+  color: var(--text-muted);
+}
+
+.memory-heading p {
+  max-width: 680px;
+  margin: 0;
+}
+
+.memory-fixture-notice {
+  padding: 9px 12px;
+  border-inline-start: 3px solid var(--border-strong);
+  background: var(--surface-1);
+}
+
+.memory-fixture-notice strong {
+  white-space: nowrap;
+}
+
+.memory-surface,
+.memory-rejected,
+.memory-historical-unavailable {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
+}
+
+.memory-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 7px;
+  border: 1px solid var(--border-strong);
+  font-size: var(--type-label);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.memory-state::before {
+  content: "◇";
+}
+
+.memory-state[data-memory-state="active"]::before,
+.memory-state[data-memory-state="present"]::before {
+  content: "●";
+}
+
+.memory-state[data-memory-state="held"] {
+  border-style: dashed;
+}
+
+.memory-state[data-memory-state="held"]::before {
+  content: "Ⅱ";
+}
+
+.memory-state[data-memory-state="rejected"] {
+  border-width: 2px;
+}
+
+.memory-state[data-memory-state="rejected"]::before {
+  content: "×";
+}
+
+.memory-metric-band,
+.memory-compare-metrics {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(120px, 1fr));
+  margin: 14px 0 0;
+  border-block: 1px solid var(--border);
+}
+
+.memory-metric-band > div,
+.memory-compare-metrics > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border-inline-end: 1px solid var(--border);
+}
+
+.memory-metric-band > div:last-child,
+.memory-compare-metrics > div:last-child {
+  border-inline-end: 0;
+}
+
+.memory-metric-band dt,
+.memory-compare-metrics dt,
+.memory-dossier dt,
+.memory-rejected-proof dt {
+  color: var(--text-muted);
+  font-size: var(--type-label);
+}
+
+.memory-metric-band dd,
+.memory-compare-metrics dd {
+  margin: 4px 0 0;
+  font-size: var(--type-section);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.memory-metric-band small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+}
+
+.memory-receipts,
+.memory-provenance {
+  margin-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.memory-receipts summary,
+.memory-provenance summary {
+  min-height: 36px;
+  padding-block: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.memory-receipt-list {
+  display: grid;
+  gap: 6px;
+  padding-bottom: 10px;
+}
+
+.memory-receipt-list > div {
+  display: grid;
+  grid-template-columns: minmax(110px, .4fr) minmax(220px, .8fr) minmax(260px, 1fr);
+  gap: 10px;
+  align-items: baseline;
+  padding-block: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.memory-receipt-list code,
+.memory-primary-identity,
+.memory-slot-table code,
+.memory-ref-list code,
+.memory-action-list code,
+.memory-rejected-proof code {
+  overflow-wrap: anywhere;
+}
+
+.memory-boundary,
+.memory-capability-boundary {
+  margin: 12px 0 0;
+}
+

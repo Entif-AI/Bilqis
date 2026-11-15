@@ -150,9 +150,9 @@ export function capabilityInterpretation(slot) {
     retrievalHitRate: slotHitRate(slot),
     capabilityEvidence: slot.capabilityEvidence,
     learnedSuccess: false,
-    label: slot.capabilityEvidence === "INDEPENDENT_EVIDENCE_UNAVAILABLE"
-      ? "Retrieval telemetry only · no independent capability claim"
-      : "Independent capability evidence required",
+    messageKey: slot.capabilityEvidence === "INDEPENDENT_EVIDENCE_UNAVAILABLE"
+      ? "memory.dossier.capabilityUnavailable"
+      : "memory.dossier.capabilityRequired",
   });
 }
 

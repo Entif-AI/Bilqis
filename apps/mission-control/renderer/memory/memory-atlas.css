@@ -1,0 +1,166 @@
+.memory-page-nav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 10px;
+  align-items: center;
+  margin: 12px 0;
+  padding: 8px 0;
+  border-block: 1px solid var(--border);
+}
+
+.memory-page-nav strong {
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.memory-page-nav button,
+.memory-compare-control select {
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.memory-page-nav button {
+  cursor: pointer;
+}
+
+.memory-page-nav button:disabled {
+  cursor: default;
+  opacity: .55;
+}
+
+.memory-table-wrap {
+  min-width: 0;
+  overflow: auto;
+  border: 1px solid var(--border);
+  overscroll-behavior-inline: contain;
+}
+
+.memory-slot-table,
+.memory-delta-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  font-size: var(--type-label);
+}
+
+.memory-slot-table th,
+.memory-slot-table td,
+.memory-delta-table th,
+.memory-delta-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.memory-slot-table thead th,
+.memory-delta-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--surface-2);
+}
+
+.memory-slot-table tbody tr[data-selected="true"] {
+  background: var(--surface-2);
+}
+
+.memory-slot-table tbody tr[data-selected="true"] > td:first-child {
+  border-inline-start: 3px solid var(--accent);
+}
+
+.memory-slot-table tr[data-memory-allocation-state="held"] > td:first-child {
+  border-inline-start-style: dashed;
+}
+
+.memory-slot-action {
+  width: 100%;
+  min-height: 32px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  text-align: start;
+}
+
+.memory-slot-action:hover {
+  color: var(--accent);
+}
+
+.memory-dossier-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin-top: 14px;
+  border-block: 1px solid var(--border);
+}
+
+.memory-dossier-grid > section {
+  min-width: 0;
+  padding: 12px 16px;
+  border-inline-end: 1px solid var(--border);
+}
+
+.memory-dossier-grid > section:first-child {
+  padding-inline-start: 0;
+}
+
+.memory-dossier-grid > section:last-child {
+  padding-inline-end: 0;
+  border-inline-end: 0;
+}
+
+.memory-dossier h4,
+.memory-compare h4,
+.memory-provenance h4 {
+  margin: 0 0 10px;
+}
+
+.memory-dossier dl {
+  margin: 0;
+}
+
+.memory-dossier dl > div {
+  display: grid;
+  grid-template-columns: minmax(110px, .55fr) minmax(0, 1fr);
+  gap: 8px;
+  padding-block: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.memory-dossier dd,
+.memory-rejected-proof dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.memory-provenance {
+  background: var(--surface-2);
+  padding-inline: 12px;
+}
+
+.memory-provenance-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  padding-bottom: 12px;
+}
+
+.memory-ref-list,
+.memory-action-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-inline-start: 18px;
+}
+
+.memory-action-list li {
+  display: grid;
+  gap: 4px;
+}
+
