@@ -54,7 +54,7 @@ async (page) => {
   check(page.url().includes("generation=44238") && page.url().includes("mode=HISTORICAL"),
     "School preserves the exact historical lens while unavailable");
 
-  await page.getByRole("button", {name: "Memory", exact: true}).click();
+  await page.locator('[data-test-id="nav-destination-memory"]').click();
   await page.getByText("motif-read:fixture:g44238:s0", {exact: false}).waitFor();
   check(page.url().includes("generation=44238") && page.url().includes("mode=HISTORICAL"),
     "Memory uses the same historical lens");
@@ -63,7 +63,7 @@ async (page) => {
   check(page.url().includes("generation=7") && page.url().includes("mode=LIVE"),
     "verified current restores exact current route");
 
-  await page.getByRole("button", {name: "Learning", exact: true}).click();
+  await page.locator('[data-test-id="nav-destination-learning"]').click();
   await page.getByRole("button", {
     name: "Inspect candidate · candidate:fixture:retained-44239",
   }).click();
@@ -82,7 +82,7 @@ async (page) => {
   check(candidateTable.includes("Protected committed") &&
     candidateTable.includes("48/48"), "candidate compare keeps protected committed evidence");
 
-  await page.getByRole("button", {name: "Lineage", exact: true}).click();
+  await page.locator('[data-test-id="nav-destination-lineage"]').click();
   await page.getByRole("button", {name: /Generation 44238 Retained candidate progression/}).click();
   await page.locator("#compare-left").click();
   await page.keyboard.press("Escape");

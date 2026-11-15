@@ -43,6 +43,13 @@ test("static shell exposes named landmarks, skip navigation, dedicated announcem
   assert.match(html, /aria-keyshortcuts="Control\+K"/);
 });
 
+test("renderer entrypoint remains syntactically loadable after shell composition changes", async () => {
+  await import("../renderer/renderer.mjs").then(
+    () => assert.fail("renderer entrypoint should require a browser runtime"),
+    (error) => assert.doesNotMatch(String(error), /SyntaxError|already been declared/),
+  );
+});
+
 test("global investigation surface reserves inspector space while the inspector is open", () => {
   const ui = source("foundation/renderer-ui.mjs");
   const css = source("interactions/interactions.css");
@@ -76,6 +83,7 @@ test("renderer blocks Operate unless verified live context is re-established and
     source("foundation/bootstrap-controller.mjs"),
     source("foundation/renderer-ui.mjs"),
     source("foundation/current-view.mjs"),
+    source("foundation/i18n.mjs"),
   ].join("\n");
   assert.match(renderer, /id === "operate" && !state\.mutationAvailable/);
   assert.match(renderer, /loadCachedOperatorView/);
@@ -91,11 +99,11 @@ test("startup reports service learner telemetry and trainer stages without live 
   const i18n = source("foundation/i18n.mjs");
   const html = source("index.html");
   for (const label of ["Local control plane", "Learner discovery", "Mission Control telemetry", "Trainer"]) {
-    assert.match(current, new RegExp(label));
+    assert.match(i18n, new RegExp(label));
   }
   assert.match(bootstrap, /telemetry-pending/);
   assert.match(ui, /foundation\.bootstrap\.telemetryPending\.label/);
   assert.match(i18n, /Learner ready · telemetry starting/);
-  assert.match(current, /fixture data is never substituted for live state/);
+  assert.match(i18n, /fixture data is never substituted for live state/);
   assert.doesNotMatch(html, /fixture:prometheus-disposable/);
 });

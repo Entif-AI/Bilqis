@@ -19,7 +19,7 @@ function mountOwner(t) {
   }]));
   const element = () => ({ innerHTML: "", hidden: false, textContent: "", dataset: {},
     querySelectorAll: () => [], querySelector: key => forms[key] ?? null });
-  const nodes = new Map(["#shell", "#domain-view", ".fixture-card", "#visual-catalog", "#view-summary", "#model-nav", "#domain-context-note"].map(key => [key, element()]));
+  const nodes = new Map(["#shell", "#domain-view", "#domain-context-boundary", "#visual-catalog", "#view-summary", "#model-nav", "#domain-context-note"].map(key => [key, element()]));
   globalThis.document = { querySelector: key => nodes.get(key), querySelectorAll: () => [] };
   globalThis.FormData = class { constructor(form) { this.form = form; } get(key) { return this.form.values[key]; } };
   let resolve; let calls = 0;

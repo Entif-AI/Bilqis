@@ -87,7 +87,7 @@ test("visual regression fixtures cover required safety postures", () => {
 });
 
 test("CSS supplies non-color cues without decorative patterns or retired terminal density", () => {
-  const css = ["visual-tokens.css", "components.css"]
+  const css = ["visual-tokens.css", "components.css", "shell.css"]
     .map((name) => fs.readFileSync(path.join(rendererRoot, name), "utf8"))
     .join("\n");
   assert.match(css, /border-style:\s*dashed/);
@@ -134,6 +134,9 @@ test("shared primitive grammar encodes surface depth and action roles without ch
 test("foundation localization uses stable keys and named parameters", () => {
   const translate = createTranslator();
   assert.equal(translate("foundation.catalog.historical.detail", { generation: 7 }), "Inspection only · generation 7 · not live learner state");
+  assert.equal(translate("shell.nav.group.overviewLearning"), "Overview & learning");
+  assert.equal(translate("shell.context.generationHistorical", { generation: 7 }), "As of generation 7");
+  assert.match(translate("shell.destination.mission-control.purpose"), /Learner health/);
   assert.equal(formatMessage("{count} rows", { count: 3 }), "3 rows");
   assert.throws(() => translate("foundation.unknown"), /I18N_KEY_UNKNOWN/);
   assert.throws(() => formatMessage("Generation {generation}"), /I18N_PARAMETER_MISSING/);

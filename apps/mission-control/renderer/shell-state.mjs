@@ -15,6 +15,29 @@ export const DESTINATIONS = Object.freeze([
   ["operate", "Operate"],
 ]);
 
+export const DESTINATION_GROUPS = Object.freeze([
+  Object.freeze({
+    id: "overview-learning",
+    labelKey: "shell.nav.group.overviewLearning",
+    destinations: Object.freeze(["mission-control", "school", "capability", "learning"]),
+  }),
+  Object.freeze({
+    id: "representation-mechanisms",
+    labelKey: "shell.nav.group.representationMechanisms",
+    destinations: Object.freeze(["atlas", "model", "memory"]),
+  }),
+  Object.freeze({
+    id: "decision-correction",
+    labelKey: "shell.nav.group.decisionCorrection",
+    destinations: Object.freeze(["teacher", "salience", "corrections"]),
+  }),
+  Object.freeze({
+    id: "provenance-operations",
+    labelKey: "shell.nav.group.provenanceOperations",
+    destinations: Object.freeze(["lineage", "resources", "evidence", "operate"]),
+  }),
+]);
+
 export const INSPECTOR_OWNERS = Object.freeze({
   capability: "capability",
   episode: "learning",
