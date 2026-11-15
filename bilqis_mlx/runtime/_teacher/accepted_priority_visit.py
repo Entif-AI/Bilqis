@@ -134,7 +134,8 @@ def select_accepted_priority_visit(
     if not isinstance(learning_settings, Settings):
         _invalid('BAMF_SALIENCE_CONTEXTUAL_SETTINGS_REQUIRED')
     qualified = requalify_priority(run_dir, source_context, parent, frontier, history,
-                                   planning, offers, program, school, epoch, now=now)
+                                   planning, offers, program, school, epoch, now=now,
+                                   planning_generation=planning_generation)
     by_id, evidence = dict(qualified.offers), dict(frontier.evidence)
     holds = list(qualified.holds)
     for option in qualified.ranked.ordered:

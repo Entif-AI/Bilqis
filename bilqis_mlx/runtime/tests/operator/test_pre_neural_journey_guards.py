@@ -218,6 +218,16 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
             with self.assertRaises(ValueError):
                 _require_planning_generation(binding, context, parent)
 
+    def test_priority_requalification_reuses_planning_generation_authority(self):
+        from bilqis_mlx.runtime import priority_qualification
+
+        with patch.object(
+                priority_qualification, "_accepted_correction_registry",
+                side_effect=AssertionError("requalification rebound correction authority")):
+            (_pointer, _before, _after, _context, selected, _rows,
+             _pointer_bytes, _event_bytes) = self.exercise_journey()
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+
     def test_planning_generation_rejects_in_memory_parent_mutation(self):
         from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
 
