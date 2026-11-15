@@ -141,6 +141,56 @@ def read_candidate_horizon_evidence(run_dir, receipt: dict) -> dict:
     return payload
 
 
+def _event_selected_rows(step, payload, capability_map):
+    selected_rows = []
+    for position in step["positions"]:
+        row = payload["source_objects"][position["row"]]
+        owner = capability_map.get(row.get("capability"))
+        if ((owner is None) != (position.get("provider_id") is None)
+                or (owner is not None
+                    and (position.get("provider_id") != owner.provider_id
+                         or position.get("provider_implementation_sha256")
+                         != owner.provider_implementation_sha256))):
+            _invalid("BAMF_C16_3_EVIDENCE_PROVIDER_DRIFT")
+        if "selected_option" in position["roles"]:
+            selected_rows.append(row)
+    return selected_rows
+
+
+def _validate_released_delivery(step, selected_rows, release, capability_map):
+    capability_owner = capability_map.get(step["capability"])
+    teaching_options = getattr(capability_owner, "teaching_option_ids", ())
+    if not isinstance(teaching_options, tuple) or not teaching_options:
+        _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+    expected_option = teaching_options[0]
+    delivered = step.get("delivered_teaching")
+    if selected_rows and not isinstance(delivered, dict):
+        _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+    delivery_option = (
+        delivered.get("option_id") if isinstance(delivered, dict) else None)
+    if selected_rows and delivery_option != expected_option:
+        _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+    expected = (
+        describe_delivered_teaching(
+            release, step["capability"], expected_option, selected_rows)
+        if selected_rows else None)
+    if expected is None:
+        matched = delivered is None
+    else:
+        matched = (
+            isinstance(delivered, dict)
+            and delivered.get("option_id") == expected.option_id
+            and delivered.get("provider_id") == expected.provider_id
+            and delivered.get("provider_implementation_sha256")
+            == expected.provider_implementation_sha256
+            and delivered.get("variation_axes") == list(expected.variation_axes)
+            and delivered.get("specimen_ids") == list(expected.specimen_ids)
+            and delivered.get("specimen_content_sha256")
+            == expected.specimen_content_sha256)
+    if not matched:
+        _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+
+
 def validate_candidate_horizon_event(run_dir, event: dict, release) -> dict:
     """Bind horizon bytes to an already-authoritative accepted/rejection event."""
     if not isinstance(event, dict):
@@ -161,44 +211,8 @@ def validate_candidate_horizon_event(run_dir, event: dict, release) -> dict:
     if not isinstance(capability_map, dict):
         _invalid("BAMF_C16_3_EVIDENCE_RELEASE_INVALID")
     for step in steps:
-        selected_rows = []
-        for position in step["positions"]:
-            row = payload["source_objects"][position["row"]]
-            owner = capability_map.get(row.get("capability"))
-            if ((owner is None) != (position.get("provider_id") is None)
-                    or (owner is not None
-                        and (position.get("provider_id") != owner.provider_id
-                             or position.get("provider_implementation_sha256")
-                             != owner.provider_implementation_sha256))):
-                _invalid("BAMF_C16_3_EVIDENCE_PROVIDER_DRIFT")
-            if "selected_option" in position["roles"]:
-                selected_rows.append(row)
-        delivered = step.get("delivered_teaching")
-        if selected_rows and not isinstance(delivered, dict):
-            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
-        delivery_option = (
-            delivered.get("option_id") if isinstance(delivered, dict) else None)
-        if selected_rows and (not isinstance(delivery_option, str) or not delivery_option):
-            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
-        expected_delivery = (
-            describe_delivered_teaching(
-                release, step["capability"], delivery_option, selected_rows)
-            if selected_rows else None)
-        if expected_delivery is None:
-            matched = delivered is None
-        else:
-            matched = (
-                isinstance(delivered, dict)
-                and delivered.get("option_id") == expected_delivery.option_id
-                and delivered.get("provider_id") == expected_delivery.provider_id
-                and delivered.get("provider_implementation_sha256")
-                == expected_delivery.provider_implementation_sha256
-                and delivered.get("variation_axes") == list(expected_delivery.variation_axes)
-                and delivered.get("specimen_ids") == list(expected_delivery.specimen_ids)
-                and delivered.get("specimen_content_sha256")
-                == expected_delivery.specimen_content_sha256)
-        if not matched:
-            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+        selected_rows = _event_selected_rows(step, payload, capability_map)
+        _validate_released_delivery(step, selected_rows, release, capability_map)
     last_step = steps[-1]["step"]
     if (outcome["accepted"] is not accepted
             or outer.get("capability") != proposal.get("capability")
