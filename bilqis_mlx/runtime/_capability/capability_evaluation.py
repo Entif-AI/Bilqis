@@ -122,13 +122,16 @@ class CompleteSolver:
     """Bind the actual solver to task-local source and one opaque generation ID."""
     context_for: Callable[[TaskGoal, str], SolveContext]
     budget: SolveBudget
+    contexts_for: Callable[[tuple[TaskGoal, ...], str], tuple[SolveContext, ...]] | None = None
+    telemetry_for: Callable[[], dict] | None = None
 
     def __post_init__(self):
-        if not callable(self.context_for) or not isinstance(self.budget, SolveBudget):
+        if (not callable(self.context_for) or not isinstance(self.budget, SolveBudget)
+                or (self.contexts_for is not None and not callable(self.contexts_for))
+                or (self.telemetry_for is not None and not callable(self.telemetry_for))):
             _invalid("BAMF_COMPLETE_SOLVER_INVALID")
 
-    def evaluate(self, goal: TaskGoal, generation: str):
-        context = self.context_for(goal, generation)
+    def _measure(self, goal: TaskGoal, generation: str, context: SolveContext):
         if not isinstance(context, SolveContext):
             _invalid("BAMF_SOLVER_SOURCE_CONTEXT_INVALID")
         binding = GenerationBinding(
@@ -138,6 +141,23 @@ class CompleteSolver:
             "budget": self.budget, "routes": context.route_registry,
             "operators": context.binding.registry})
         return result, tools
+
+    def evaluate(self, goal: TaskGoal, generation: str):
+        return self._measure(goal, generation, self.context_for(goal, generation))
+
+    def evaluate_cases(self, goals: tuple[TaskGoal, ...], generation: str):
+        if (not isinstance(goals, tuple) or not goals
+                or any(not isinstance(goal, TaskGoal) for goal in goals)):
+            _invalid("BAMF_SOLVER_CASES_INVALID")
+        if self.contexts_for is None:
+            return tuple(self.evaluate(goal, generation) for goal in goals)
+        contexts = self.contexts_for(goals, generation)
+        if (not isinstance(contexts, tuple) or len(contexts) != len(goals)
+                or any(not isinstance(context, SolveContext) for context in contexts)):
+            _invalid("BAMF_SOLVER_BATCH_CONTEXT_INVALID")
+        return tuple(
+            self._measure(goal, generation, context)
+            for goal, context in zip(goals, contexts, strict=True))
 
 
 def _answer_identity(answer):
@@ -188,7 +208,8 @@ def evaluate_capabilities(solver, cohort, generation) -> Assessment:
     if (not isinstance(solver, CompleteSolver)
             or not isinstance(cohort, EvaluationCohort) or not _sha(generation)):
         _invalid("BAMF_ASSESSMENT_INPUT_INVALID")
-    measurements = tuple(solver.evaluate(case.goal, generation) for case in cohort.cases)
+    measurements = solver.evaluate_cases(
+        tuple(case.goal for case in cohort.cases), generation)
     return Assessment(cohort, generation, tuple(item[0] for item in measurements),
                       tuple(item[1] for item in measurements))
 
