@@ -1,3 +1,4 @@
+import { correctionsT } from "../corrections/corrections-messages.mjs";
 import { evidenceT } from "../evidence/evidence-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
 import { renderSchoolView } from "../school/school-view.mjs";
@@ -197,32 +198,38 @@ export function renderCurrentView(
       label: strategy?.label ?? id,
       relations,
       details: {
-        Role: strategy?.role ?? "UNKNOWN",
-        Attempts: strategy?.attempts ?? "UNKNOWN",
-        Retained: strategy?.retained ?? "UNKNOWN",
-        "No gain": strategy?.noGain ?? "UNKNOWN",
-        Interference: strategy?.interference ?? "UNKNOWN",
-        "Comparison posture": "Descriptive evidence only",
-        "Policy mutation": "None",
+        [t("teacher.inspector.role")]: strategy?.role ?? "UNKNOWN",
+        [t("teacher.inspector.attempts")]: strategy?.attempts ?? "UNKNOWN",
+        [t("teacher.inspector.retained")]: strategy?.retained ?? "UNKNOWN",
+        [t("teacher.inspector.noGain")]: strategy?.noGain ?? "UNKNOWN",
+        [t("teacher.inspector.interference")]: strategy?.interference ?? "UNKNOWN",
+        [t("teacher.inspector.comparisonPosture")]: t("teacher.inspector.descriptiveOnly"),
+        [t("teacher.inspector.policyMutation")]: t("teacher.inspector.none"),
       },
-    }));
+    }), state.selected?.kind === "strategy" ? state.selected.id : null);
     return;
   }
   if (state.view === "corrections") {
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = t("shell.destination.corrections.purpose");
+    summary.textContent = correctionsT("corrections.summary");
     renderCorrectionsView(domain, (id, node) => onInspect({
-      kind: "correction",
-      id,
+      kind: "correction", id, fixtureBacked: true,
       details: {
-        "Artifact class": node.kind,
-        "Impact state": node.state,
-        "Evidence refs": node.evidenceRefs.length ? node.evidenceRefs : ["UNTRACKED / UNKNOWN"],
-        "Interpretation boundary": "Known exposure and requalification evidence only",
+        [correctionsT("corrections.evidence.details")]: node.kind,
+        [correctionsT("corrections.evidence.state")]: node.state,
+        [correctionsT("corrections.evidence.refs")]: node.evidenceRefs.length ? node.evidenceRefs : [correctionsT("corrections.evidence.none")],
+        [correctionsT("corrections.evidence.projection")]: correctionsT("corrections.fixture.title"),
       },
-    }));
+    }), {onReference: (ref, kind) => onInspect({
+      kind: "correction", id: ref, fixtureBacked: true,
+      details: {
+        [correctionsT("corrections.evidence.reference")]: ref,
+        [correctionsT("corrections.evidence.referenceKind")]: correctionsT(`corrections.reference.${kind}`),
+        [correctionsT("corrections.evidence.projection")]: correctionsT("corrections.fixture.title"),
+      },
+    })});
     return;
   }
   if (state.view === "salience") {

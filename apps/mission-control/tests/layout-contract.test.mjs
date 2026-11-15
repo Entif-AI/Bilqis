@@ -65,16 +65,21 @@ test("operator values and wide School data stay inside their owning surfaces", (
   assert.doesNotMatch(home, /\.home-metric-card/);
   assert.match(school, /\.school-panel\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
   assert.match(school, /\.matrix-scroll\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
-  assert.match(teacher, /\.strategy-card\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
-  assert.match(teacher, /\.strategy-roster\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
-  assert.match(teacher, /\.strategy-metrics\s*\{[^}]*repeat\(2, minmax\(0, 1fr\)\)/s);
+  assert.match(teacher, /\.teacher-table-wrap\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
+  assert.match(teacher, /\.teacher-detail-grid,/);
+  assert.match(teacher, /\.teacher-comparison-controls\s*\{/);
 });
 
 test("operator typography and explanatory surfaces use the shared visual language", () => {
   const tokens = source("visual-tokens.css");
   const shell = source("shell.css");
   const school = source("school/school-view.mjs");
-  const teacher = source("teacher/teacher-view.mjs");
+  const teacher = [
+    source("teacher/teacher-view.mjs"),
+    source("teacher/teacher-roster-view.mjs"),
+    source("teacher/teacher-comparison-view.mjs"),
+    source("teacher/teacher-fidelity-view.mjs"),
+  ].join("\n");
   const salience = source("salience/salience-view.mjs");
   const corrections = source("corrections/corrections-view.mjs");
   const evidence = source("evidence/evidence-markup.mjs");
@@ -89,9 +94,12 @@ test("operator typography and explanatory surfaces use the shared visual languag
   assert.match(shell, /\.context-facts\s*\{[^}]*repeat\(3, minmax\(140px, 1fr\)\)/s);
   assert.doesNotMatch(shell, /\.selector\s*\{/);
   assert.match(shell, /\.ui-glossary\s*\{/);
-  for (const markup of [school, teacher, salience, corrections]) {
+  for (const markup of [school, salience]) {
     assert.match(markup, /class="ui-glossary"/);
   }
+  assert.doesNotMatch(corrections, /class="ui-glossary"/);
+  assert.doesNotMatch(teacher, /class="ui-glossary"/);
+  assert.match(teacher, /teacher-glossary/);
   assert.doesNotMatch(evidence, /class="ui-glossary"/);
   assert.match(source("evidence/evidence-messages.mjs"), /Query unavailable/);
   assert.doesNotMatch(evidence, /QUERY ERROR/);

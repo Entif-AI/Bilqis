@@ -1,6 +1,7 @@
 import { LEARNING_MESSAGES } from "./i18n-learning.mjs";
 import { HOME_MESSAGES } from "./i18n-home.mjs";
 import { SHELL_MESSAGES } from "./i18n-shell.mjs";
+import { TEACHER_MESSAGES } from "./i18n-teacher.mjs";
 
 const EN_US = Object.freeze({
   "foundation.catalog.eyebrow": "GUI02 · reusable system",
@@ -125,6 +126,7 @@ const EN_US = Object.freeze({
   ...SHELL_MESSAGES,
   ...LEARNING_MESSAGES,
   ...HOME_MESSAGES,
+  ...TEACHER_MESSAGES,
 });
 
 export const DEFAULT_LOCALE = "en-US";
