@@ -4,15 +4,11 @@ import {
   invalidateAtlasRequests,
   renderAtlasDomain,
 } from "../atlas/atlas-controller.mjs";
-import {
-  activateSchoolDomain,
-  invalidateSchoolDomainRequests,
-} from "../school/school-domain-controller.mjs";
 import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, onInspect, onNavigate, onAnnounce,
+  capabilityExplorer, onInspect, onNavigate, onAnnounce, schoolDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
@@ -27,15 +23,16 @@ export function activateDomainViews({
   }
   if (state?.view !== "atlas") invalidateAtlasRequests();
   if (state?.view === "school") {
+    if (!schoolDomainSupport || state.context?.fixture !== true) return;
     const context = state.context;
-    activateSchoolDomain({
+    schoolDomainSupport.activateSchoolDomain({
       state,
       api,
       onInspect,
       isActive: () =>
         getState()?.view === "school" && getState().context === context,
     });
-  } else invalidateSchoolDomainRequests();
+  } else schoolDomainSupport?.invalidateSchoolDomainRequests?.();
   if (state?.view === "mission-control") {
     void homeController.activate(state.context, {
       host: document.querySelector("#domain-view"),

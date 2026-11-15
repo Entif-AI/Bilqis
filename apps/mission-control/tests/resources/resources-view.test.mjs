@@ -4,10 +4,10 @@ import { createResourceController } from "../../renderer/resources/resource-cont
 import {
   decomposition,
   historicalResourceQuery,
-  referenceResourceState,
   resourceProfileFromPage,
   resourceQuery,
 } from "../../renderer/resources/resource-model.mjs";
+import { referenceResourceState } from "../../renderer/resources/resource-fixture-state.mjs";
 import { renderResourceMarkup } from "../../renderer/resources/resource-view.mjs";
 import { createShellState, inspect, openSelectionOwner } from "../../renderer/shell-state.mjs";
 
@@ -192,6 +192,17 @@ test("resource query stays read-only and requests no mutation surface", () => {
   ].sort());
   const markup = renderResourceMarkup(referenceResourceState());
   assert.doesNotMatch(markup, /start training|change batch|apply budget|scale hardware/i);
+});
+
+test("missing observation time never borrows materialization time", () => {
+  const sample = record("resource:time-authority");
+  delete sample.meta.observed_at;
+  sample.meta.materialized_at = 999;
+  const profile = resourceProfileFromPage(page([sample]), context);
+  assert.equal(profile.timeline[0].observedAt, null);
+  const markup = renderResourceMarkup({ current: profile });
+  assert.match(markup, /Time unavailable/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="999"/);
 });
 
 test("resource identities route back to the Resources owner surface", () => {

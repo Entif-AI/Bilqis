@@ -55,6 +55,8 @@ const EN_US = Object.freeze({
   "foundation.evidence.inferred": "Estimated / inferred",
   "foundation.authority.source": "Source-authoritative",
   "foundation.authority.derived": "Learned / derived",
+  "foundation.temporal.unavailable": "Time unavailable",
+  "foundation.temporal.exactUtc": "Exact UTC: {value}",
   "foundation.defensive.live.label": "Live service",
   "foundation.defensive.live.description": "Current control-plane context is live and mutation may be offered through the accepted command contract.",
   "foundation.defensive.loading.label": "Loading",
