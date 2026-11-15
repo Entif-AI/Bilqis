@@ -121,7 +121,7 @@ def semantic_bank_views_from_vocabulary_candidate(
 
 def embed_atoms(
     parameters: Mapping[str, mx.array], batch: ConceptBatch, features: AtlasFeatures,
-    *, atlas_selection=None, qualified_feature_rows=None,
+    *, atlas_selection=None, source_execution_authority=None,
 ) -> mx.array:
     """Gather active identities and add the actual released factor composition."""
     if (type(batch) is not ConceptBatch or type(batch.extents) is not GenerationExtents or
@@ -136,7 +136,7 @@ def embed_atoms(
     factors = compose_factor_features(
         parameters, batch.requests, features, extents=batch.extents,
         atlas_selection=atlas_selection,
-        qualified_feature_rows=qualified_feature_rows)
+        source_execution_authority=source_execution_authority)
     identities = []
     active = tuple(frozenset(bank.active_rows) for bank in batch.banks)
     for row in batch.requests:
