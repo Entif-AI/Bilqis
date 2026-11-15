@@ -37,6 +37,17 @@ from .atlas_model_forward_validation import (
 )
 
 
+def _source_execution_authorities(compiled_batch):
+    row_batches = getattr(compiled_batch, "row_batches", None)
+    if row_batches is not None:
+        values = tuple(
+            getattr(item, "source_execution_authority", None)
+            for item in row_batches)
+    else:
+        values = (getattr(compiled_batch, "source_execution_authority", None),)
+    return None if not any(item is not None for item in values) else values
+
+
 def _source_producer(
         params, compiled_batch, generation, cache, execution_binding=None, *,
         trace=False, snapshot=None):
@@ -50,6 +61,7 @@ def _source_producer(
         params, compiled_batch.compiled.extents,
         compiled_batch.compiled.features.semantic_release,
         compiled_batch.active_semantic_rows.active_indices)
+    source_execution_authorities = _source_execution_authorities(compiled_batch)
     if accepted_cache is None:
         return start_source_backbone_producer(
             compiled_batch.compiled,
@@ -61,6 +73,7 @@ def _source_producer(
             execution_binding=execution_binding,
             trace=trace,
             snapshot=snapshot,
+            source_execution_authorities=source_execution_authorities,
         ), None, True
     if (
         accepted_cache.run_id != compiled_batch.active_semantic_rows.run_id
@@ -83,6 +96,7 @@ def _source_producer(
         execution_binding=execution_binding,
         trace=trace,
         snapshot=snapshot,
+        source_execution_authorities=source_execution_authorities,
     )
     # Speculative execution still carries accepted-generation provenance for
     # motif dependency accounting, but it must never write derived attention
