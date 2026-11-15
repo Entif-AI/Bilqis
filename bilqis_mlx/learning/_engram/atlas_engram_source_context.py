@@ -27,7 +27,7 @@ from bilqis_mlx.semantics.frame_adapters.public_formal_schema_rights import (
 from bilqis_mlx.semantics.frame_adapters.public_formal_sources import canonical_graph
 from bilqis_mlx.semantics.frame_schema import FrameInstance, validate_frame_bindings
 from bilqis_mlx.semantics.released_frame_schemas import (
-    lookup_source_pinned_frame_schema,
+    _load_pinned_released_frame_schemas_from_snapshot,
 )
 
 from .atlas_engram import MotifFrameInput, build_motif_input
@@ -51,13 +51,19 @@ def _source_family(adapter_id: str) -> str:
     _invalid("BAMF_MOTIF_SOURCE_FAMILY_UNRELEASED")
 
 
-def _qualify_frame(envelope, snapshot, source_family, atlas_selection,
+def _qualify_frame(envelope, snapshot, pinned_schemas,
                    source_root, graph, adapter_id):
     frame = envelope.frame
-    schema, _witness = lookup_source_pinned_frame_schema(
-        frame.frame_schema_id, frame.frame_schema_revision,
-        source_family=source_family, atlas_selection=atlas_selection,
-    )
+    witness = pinned_schemas.lookup(
+        frame.frame_schema_id, frame.frame_schema_revision)
+    body = next((
+        item for item in pinned_schemas.manifest.bodies
+        if (item.schema_id, item.revision)
+        == (frame.frame_schema_id, frame.frame_schema_revision)
+    ), None)
+    if body is None:
+        _invalid("BAMF_MOTIF_SOURCE_SCHEMA_UNRELEASED")
+    schema = pinned_schemas.require_schema(body.parse(), witness)
     _, authoritative_graph = canonical_graph(
         source_root, graph, adapter_id, frame.source_span)
     validated = validate_frame_bindings(
@@ -87,12 +93,14 @@ def _qualified_motif_inputs(projection, snapshot, source_adapter,
         for envelope in projection.envelopes
         if not isinstance(envelope.frame, FrameInstance)
     }
+    pinned_schemas = _load_pinned_released_frame_schemas_from_snapshot(
+        source_family, atlas_selection, snapshot)
     qualified = {}
     for envelope in projection.envelopes:
         if not isinstance(envelope.frame, FrameInstance):
             continue
         frame, schema = _qualify_frame(
-            envelope, snapshot, source_family, atlas_selection,
+            envelope, snapshot, pinned_schemas,
             source_root, graph, adapter_id)
         if frame.occurrence_id in qualified:
             _invalid("BAMF_MOTIF_CHILD_STRUCTURE_INVALID")
