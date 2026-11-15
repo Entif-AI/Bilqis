@@ -7,7 +7,8 @@ from bilqis_mlx.mission_control import (
     QueryMode, QueryRequest, decode_record, encode_record,
 )
 from bilqis_mlx.mission_control.contracts.trainer import (
-    TrainerObservation, TrainerObservationV2,
+    CandidateStepPerformance, TrainerObservation, TrainerObservationV2,
+    TrainerObservationV3,
 )
 from bilqis_mlx.mission_control.tests.samples import meta
 
@@ -74,6 +75,35 @@ class TrainerContractTests(unittest.TestCase):
         page = MissionControlQueryCatalog((record,)).query(
             QueryRequest(QueryFamily.RUN))
         self.assertEqual(page.records, (record,))
+
+    def test_v3_roundtrip_preserves_completed_step_history(self):
+        base = observation_v2()
+        step = CandidateStepPerformance(
+            candidate_step=1, candidate_optimizer_step=8,
+            candidate_step_wall_seconds=1.0,
+            pre_neural_source_compile_wall_seconds=0.1,
+            currentness_binding_wall_seconds=0.1,
+            b11_preflight_wall_seconds=0.2,
+            b11_autodiff_wall_seconds=0.4,
+            optimizer_admission_wall_seconds=0.1,
+            motif_staging_wall_seconds=0.0,
+            evidence_capture_wall_seconds=0.01,
+            candidate_terminal_step=False,
+            c08_gradient_launches=1,
+            c08_vectorized_microbatches=1,
+            c08_materialization_barriers=1,
+            c08_scalar_fallback_rows=0,
+            c08_logical_batch_wall_seconds=0.7,
+            c08_rows_per_gradient_launch=4.0,
+            b11_provider_draw_count=16,
+            b11_atlas_reload_count=4,
+            logical_rows=4,
+            compiled_positions=32)
+        record = TrainerObservationV3(
+            **{field.name: getattr(base, field.name) for field in fields(TrainerObservationV2)},
+            candidate_steps=(step,))
+        self.assertEqual(decode_record(encode_record(record)), record)
+        self.assertEqual(record.candidate_steps[0].candidate_optimizer_step, 8)
 
     def test_invalid_progress_and_authority_are_rejected(self):
         for change in ({'retention_completed': 5}, {'candidate_step': 2},

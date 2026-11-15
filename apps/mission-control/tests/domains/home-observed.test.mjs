@@ -101,6 +101,46 @@ test("v2 observation exposes completed-step stage timing and hidden B11 multipli
     "bilqis.bamf.mission-control.trainer-observation/v2");
 });
 
+test("v3 observation renders clickable completed and active step timing", () => {
+  const completed = {
+    candidate_step: 1, candidate_optimizer_step: 8,
+    candidate_step_wall_seconds: 1.5,
+    pre_neural_source_compile_wall_seconds: 0.2,
+    currentness_binding_wall_seconds: 0.05,
+    b11_preflight_wall_seconds: 0.3,
+    b11_autodiff_wall_seconds: 0.6,
+    optimizer_admission_wall_seconds: 0.2,
+    motif_staging_wall_seconds: 0.0,
+    evidence_capture_wall_seconds: 0.01,
+    candidate_terminal_step: false,
+    c08_gradient_launches: 2,
+    c08_vectorized_microbatches: 1,
+    c08_materialization_barriers: 1,
+    c08_scalar_fallback_rows: 0,
+    c08_logical_batch_wall_seconds: 0.9,
+    c08_rows_per_gradient_launch: 4,
+    b11_provider_draw_count: 32,
+    b11_atlas_reload_count: 8,
+    logical_rows: 8,
+    compiled_positions: 64,
+  };
+  const row = observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v3",
+    phase: "TRAINING", candidate_step: 2, candidate_horizon: 4,
+    candidate_optimizer_step: 9, candidate_step_wall_seconds: 12.3,
+    candidate_steps: [completed],
+  });
+  const html = renderHomeMarkup(
+    projectionFromPages({ run: runPage(row) }, context),
+    { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Candidate step timing/);
+  assert.match(html, /data-test-id="home-observed-step-1"/);
+  assert.match(html, /Step 1 · 1.5 s/);
+  assert.match(html, /data-test-id="home-observed-step-2"/);
+  assert.match(html, /Step 2 · running · 12 seconds/);
+  assert.match(html, /Source \+ compile<\/th><td>200 ms/);
+});
+
 test("epoch-millisecond trainer heartbeat projected to Unix seconds renders near the real observation time", () => {
   const heartbeatMs = Date.UTC(2026, 10, 15, 13, 0, 0, 123);
   const projectedSeconds = Math.floor(heartbeatMs / 1000);
@@ -190,6 +230,48 @@ test("observed history stays open across a live trainer update", async () => {
   page = runPage(observation({ revision: 4, meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: 1001 } }));
   await listener({ event_family: "run.trainer.observed" });
   assert.equal(renderHost.disclosure("home-observed-history")?.open, true);
+  await controller.deactivate();
+});
+
+test("an open step timing disclosure stays open across live heartbeat refresh", async () => {
+  let listener;
+  const completed = {
+    candidate_step: 1, candidate_optimizer_step: 8, candidate_step_wall_seconds: 1.5,
+    pre_neural_source_compile_wall_seconds: 0.2, currentness_binding_wall_seconds: 0.05,
+    b11_preflight_wall_seconds: 0.3, b11_autodiff_wall_seconds: 0.6,
+    optimizer_admission_wall_seconds: 0.2, motif_staging_wall_seconds: 0.0,
+    evidence_capture_wall_seconds: 0.01, candidate_terminal_step: false,
+    c08_gradient_launches: 2, c08_vectorized_microbatches: 1,
+    c08_materialization_barriers: 1, c08_scalar_fallback_rows: 0,
+    c08_logical_batch_wall_seconds: 0.9, c08_rows_per_gradient_launch: 4,
+    b11_provider_draw_count: 32, b11_atlas_reload_count: 8, logical_rows: 8, compiled_positions: 64,
+  };
+  let page = runPage(observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v3",
+    phase: "TRAINING", candidate_step: 2, candidate_horizon: 4, candidate_optimizer_step: 9,
+    candidate_step_wall_seconds: 2.0, candidate_steps: [completed],
+  }));
+  const renderHost = disclosureHost();
+  const controller = createHomeController({
+    query: async ({ family }) => family === "run"
+      ? page : { accepted: true, state: "EMPTY", records: [] },
+    status: async () => ({ learnerActive: true }),
+    subscribeEvents(next) { listener = next; return () => {}; },
+  }, { schedule: () => 1, cancel: () => {} });
+  await controller.activate(context, { host: renderHost });
+  const step = renderHost.disclosure("home-observed-step-2");
+  assert.ok(step);
+  step.open = true;
+  page = runPage(observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v3", revision: 4,
+    phase: "TRAINING", candidate_step: 2, candidate_horizon: 4, candidate_optimizer_step: 9,
+    candidate_step_wall_seconds: 3.0, candidate_steps: [completed],
+    meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: 1001 },
+  }));
+  await listener({ event_family: "run.trainer.observed" });
+  assert.equal(renderHost.disclosure("home-observed-step-2")?.open, true);
+  assert.match(renderHost.innerHTML, /Step 2 · running · 3 s/);
+  assert.match(renderHost.innerHTML, /Step wall time<\/th><td>3 s/);
   await controller.deactivate();
 });
 

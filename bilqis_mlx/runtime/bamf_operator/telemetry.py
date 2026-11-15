@@ -14,9 +14,11 @@ import uuid
 
 from .performance import PERFORMANCE_FIELDS
 
-SCHEMA = 'bilqis.bamf.trainer-observed/v2'
+SCHEMA = 'bilqis.bamf.trainer-observed/v3'
 LEGACY_SCHEMA = 'bilqis.bamf.trainer-observed/v1'
+LEGACY_SCHEMA_V2 = 'bilqis.bamf.trainer-observed/v2'
 MAX_SNAPSHOT_BYTES = 64 * 1024
+STEP_HISTORY_LIMIT = 64
 
 
 class TrainerObservation:
@@ -28,6 +30,7 @@ class TrainerObservation:
         self.stop = threading.Event()
         self.enabled = True
         self.started = time.monotonic()
+        self.step_started = None
         try:
             pointer = json.loads((self.run_dir / 'bamf-state.json').read_text())
             run_id, manifest = pointer.get('run_id'), pointer.get('manifest_sha256')
@@ -40,14 +43,14 @@ class TrainerObservation:
             outcome='RUNNING', candidate_optimizer_step=None, candidate_step=None,
             candidate_horizon=None, retention_completed=None, retention_total=None,
             retention_subject=None, retention_role=None, cpu_seconds=None,
-            peak_rss_bytes=None, disk_free_bytes=None,
+            peak_rss_bytes=None, disk_free_bytes=None, candidate_steps=[],
             **{name: None for name in PERFORMANCE_FIELDS})
         self.visits = []
         try:
             with self.path.open('rb') as stream:
                 raw = stream.read(MAX_SNAPSHOT_BYTES + 1)
             data = json.loads(raw) if len(raw) <= MAX_SNAPSHOT_BYTES else {}
-            if (data.get('schema') in {LEGACY_SCHEMA, SCHEMA}
+            if (data.get('schema') in {LEGACY_SCHEMA, LEGACY_SCHEMA_V2, SCHEMA}
                     and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
@@ -76,6 +79,10 @@ class TrainerObservation:
             if not self.enabled:
                 return
             self.record.update(fields)
+            if (self.step_started is not None
+                    and self.record.get('phase') == 'TRAINING'):
+                self.record['candidate_step_wall_seconds'] = max(
+                    0.0, time.perf_counter() - self.step_started)
             self.record['revision'] += 1
             self.record['observed_at'] = int(time.time() * 1000)
             self.record['elapsed_ms'] = int((time.monotonic() - self.started) * 1000)
@@ -118,6 +125,45 @@ class TrainerObservation:
         with self.lock:
             if self.enabled:
                 self.record.update(fields)
+
+    def begin_step(self, candidate_step: int, candidate_optimizer_step: int):
+        """Expose one active step immediately; completed history stays immutable."""
+        with self.lock:
+            if not self.enabled:
+                return
+            self.step_started = time.perf_counter()
+            self.record.update(
+                candidate_step=candidate_step,
+                candidate_optimizer_step=candidate_optimizer_step,
+                **{name: None for name in PERFORMANCE_FIELDS
+                   if name not in {'retention_wall_seconds',
+                                   'evidence_finalization_wall_seconds',
+                                   'publishing_wall_seconds'}})
+        self.update()
+
+    def complete_step(self, **fields):
+        """Freeze one completed step for click-through inspection, then publish it."""
+        with self.lock:
+            if not self.enabled:
+                return
+            self.record.update(fields)
+            step_fields = [
+                name for name in PERFORMANCE_FIELDS
+                if name not in {'retention_wall_seconds',
+                                'evidence_finalization_wall_seconds',
+                                'publishing_wall_seconds'}]
+            snapshot = {
+                key: self.record.get(key)
+                for key in ('candidate_step', 'candidate_optimizer_step', *step_fields)
+            }
+            history = [
+                item for item in self.record.get('candidate_steps', [])
+                if item.get('candidate_step') != snapshot['candidate_step']
+            ]
+            history.append(snapshot)
+            self.record['candidate_steps'] = history[-STEP_HISTORY_LIMIT:]
+            self.step_started = None
+        self.update()
 
     def bind_parent(self, parent):
         try:

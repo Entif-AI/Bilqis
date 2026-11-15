@@ -19,17 +19,54 @@ class TrainerObservationTests(unittest.TestCase):
                     obs.update(candidate_step=1)
                     obs.finish('HELD')
             data = json.loads((root / 'trainer-observed.json').read_text())
-            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v2')
+            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v3')
             self.assertEqual(len(data['visits']), 8)
             self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
             self.assertGreater(data['visits'][-1]['revision'], 3)
             self.assertEqual(data['visits'][-1]['candidate_step'], 1)
             self.assertEqual(data['visits'][-1]['run_id'], 'run')
             self.assertIsNone(data['visits'][-1]['b11_preflight_wall_seconds'])
+            self.assertEqual(data['visits'][-1]['candidate_steps'], [])
             with self.assertRaises(KeyboardInterrupt):
                 with TrainerObservation(root, 10):
                     raise KeyboardInterrupt()
             self.assertEqual(json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]['outcome'], 'INTERRUPTED')
+
+    def test_active_step_ticks_live_and_completed_steps_are_retained(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with TrainerObservation(root, 1, heartbeat_seconds=60) as obs:
+                obs.update(phase='TRAINING', capability_id='A.IDENTITY',
+                           candidate_step=0, candidate_horizon=2)
+                obs.begin_step(1, 8)
+                time.sleep(0.002)
+                obs.update()
+                running = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
+                self.assertGreater(running['candidate_step_wall_seconds'], 0)
+                self.assertEqual(running['candidate_step'], 1)
+                obs.complete_step(
+                    candidate_step=1, candidate_optimizer_step=8,
+                    candidate_step_wall_seconds=0.5,
+                    pre_neural_source_compile_wall_seconds=0.1,
+                    currentness_binding_wall_seconds=0.01,
+                    b11_preflight_wall_seconds=0.1,
+                    b11_autodiff_wall_seconds=0.2,
+                    optimizer_admission_wall_seconds=0.05,
+                    motif_staging_wall_seconds=0.0,
+                    evidence_capture_wall_seconds=0.01,
+                    candidate_terminal_step=False,
+                    c08_gradient_launches=1, c08_vectorized_microbatches=1,
+                    c08_materialization_barriers=1, c08_scalar_fallback_rows=0,
+                    c08_logical_batch_wall_seconds=0.3,
+                    c08_rows_per_gradient_launch=4.0,
+                    b11_provider_draw_count=4, b11_atlas_reload_count=1,
+                    logical_rows=4, compiled_positions=32)
+                obs.begin_step(2, 9)
+                final = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
+                self.assertEqual(len(final['candidate_steps']), 1)
+                self.assertEqual(final['candidate_steps'][0]['candidate_step'], 1)
+                self.assertEqual(final['candidate_steps'][0]['candidate_step_wall_seconds'], 0.5)
+                self.assertEqual(final['candidate_step'], 2)
 
     def test_write_failure_does_not_escape(self):
         with TemporaryDirectory() as tmp:
