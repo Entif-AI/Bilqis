@@ -6,11 +6,11 @@ import hashlib
 
 from .atlas_frontier_closure import ClosureStatus, FrontierClosure
 from .atlas_frontier_contracts import CurriculumSnapshot, _bytes, _fail
-from .atlas_frontier_progress_contracts import FrontierProgress, StagedSelectionReceipt
+from .atlas_frontier_progress_contracts import (
+    FrontierProgress, StagedSelectionReceipt, _history_owner,
+)
 from .atlas_frontier_selection import (
-    DeferredClosure,
     FrontierDeltaSelection,
-    _candidate_signature,
     _ranked_ready_targets,
     validate_frontier_selection,
 )
@@ -34,6 +34,56 @@ def current_obligations(closure: FrontierClosure) -> dict[str, str]:
     }
 
 
+def credited_obligation_keys(
+    snapshot: CurriculumSnapshot,
+    closure: FrontierClosure,
+    prior: FrontierProgress,
+    current: dict[str, str],
+) -> set[tuple[str, str]]:
+    """Revalidate compact historical credit against the current closure."""
+    owner = _history_owner(prior)
+    credited = set()
+    for semantic_id, obligation_sha256 in current.items():
+        credit = owner.matching_credit(
+            prior.history_head, semantic_id, obligation_sha256)
+        if credit is None:
+            continue
+        anchor = owner.snapshot_anchor(
+            prior.history_head, credit.selection_snapshot_sha256)
+        if (anchor is None
+                or anchor[1] != credit.predecessor_release_sha256
+                or anchor[2] != credit.policy_epoch
+                or anchor[3] != credit.cursor):
+            _fail("BAMF_PLANNER_HISTORY_RECEIPT_CREDIT_INVALID")
+        bound_snapshot = replace(
+            snapshot,
+            admitted_factory_release_sha256=credit.predecessor_release_sha256,
+            policy_epoch=credit.policy_epoch,
+            cursor=credit.cursor,
+            snapshot_sha256="0" * 64,
+        )
+        bound_snapshot = replace(
+            bound_snapshot, snapshot_sha256=bound_snapshot.expected_digest())
+        bound_closure = replace(
+            closure,
+            snapshot_sha256=bound_snapshot.snapshot_sha256,
+            closure_sha256="0" * 64,
+        )
+        bound_closure = replace(
+            bound_closure, closure_sha256=bound_closure.expected_digest())
+        requested_before = owner.requested_before_keys(credit, current)
+        _, ranked = _ranked_ready_targets(
+            bound_snapshot, bound_closure, tuple(sorted(requested_before)))
+        if (not ranked or min(ranked)[3] != semantic_id
+                or credit.introduced_capability_count
+                   > min(9, bound_snapshot.budget.max_candidates)
+                or credit.introduced_semantic_count
+                   > bound_snapshot.budget.max_identity_rows):
+            continue
+        credited.add((semantic_id, obligation_sha256))
+    return credited
+
+
 def validate_prior(snapshot: CurriculumSnapshot, prior: FrontierProgress | None) -> None:
     if prior is None:
         return
@@ -45,7 +95,7 @@ def validate_prior(snapshot: CurriculumSnapshot, prior: FrontierProgress | None)
             != prior.planning_snapshot.snapshot_sha256):
         _fail("BAMF_PLANNER_PROGRESS_PREDECESSOR_MISMATCH")
     eligible = set(snapshot.source_eligible_concept_ids)
-    if not set(prior.requested_semantic_ids) <= eligible:
+    if not set(prior.planning_snapshot.source_eligible_concept_ids) <= eligible:
         _fail("BAMF_PLANNER_PROGRESS_PREDECESSOR_SCOPE_DRIFT")
 
 
@@ -131,10 +181,9 @@ def requested_keys(
 
 def has_unrequested_ready(
     closure: FrontierClosure,
-    receipts: tuple[StagedSelectionReceipt, ...] | list[StagedSelectionReceipt],
+    requested: set[tuple[str, str]],
     current: dict[str, str],
 ) -> bool:
-    requested = requested_keys(receipts)
     for semantic_id in closure.constituent_order:
         rows = tuple(
             row for row in closure.candidates if row.semantic_id == semantic_id)
@@ -142,120 +191,3 @@ def has_unrequested_ready(
                 and (semantic_id, current[semantic_id]) not in requested):
             return True
     return False
-
-
-def _receipt_obligation_current(
-    receipt: StagedSelectionReceipt,
-    current: dict[str, str],
-) -> bool:
-    return current.get(receipt.selected_semantic_id) == obligation_digest(
-        receipt.selection.selected_obligations)
-
-
-def _validation_context(
-    snapshot: CurriculumSnapshot,
-    closure: FrontierClosure,
-    receipt: StagedSelectionReceipt,
-    planner_predecessor: CurriculumSnapshot,
-) -> tuple[CurriculumSnapshot, FrontierClosure]:
-    comparator = planner_predecessor
-    if (receipt.selection_snapshot != planner_predecessor
-            or receipt.selection.snapshot_sha256
-               != planner_predecessor.snapshot_sha256
-            or receipt.predecessor_release.release_sha256
-               != planner_predecessor.admitted_factory_release_sha256):
-        _fail("BAMF_PLANNER_SELECTION_INVALID")
-    bound_snapshot = replace(
-        snapshot,
-        admitted_factory_release_sha256=receipt.predecessor_release.release_sha256,
-        policy_epoch=comparator.policy_epoch,
-        cursor=comparator.cursor,
-        snapshot_sha256="0" * 64,
-    )
-    bound_snapshot = replace(
-        bound_snapshot, snapshot_sha256=bound_snapshot.expected_digest())
-    bound_closure = replace(
-        closure,
-        snapshot_sha256=bound_snapshot.snapshot_sha256,
-        closure_sha256="0" * 64,
-    )
-    return bound_snapshot, replace(
-        bound_closure, closure_sha256=bound_closure.expected_digest())
-
-
-def _revalidate_receipt_selection(
-    snapshot: CurriculumSnapshot,
-    closure: FrontierClosure,
-    receipt: StagedSelectionReceipt,
-    planner_predecessor: CurriculumSnapshot,
-) -> bool:
-    bound_snapshot, bound_closure = _validation_context(
-        snapshot, closure, receipt, planner_predecessor)
-    _, ranked = _ranked_ready_targets(bound_snapshot, bound_closure)
-    target = next(
-        (item for item in ranked if item[3] == receipt.selected_semantic_id),
-        None,
-    )
-    if target is None:
-        return False
-    slope, neg_unlocks, _, identity, rows = target
-    selected_keys = {(item.semantic_id, item.family_id) for item in rows}
-    deferred = tuple(sorted(DeferredClosure(
-        item.semantic_id,
-        item.family_id,
-        item.status,
-        item.reasons,
-    ) for item in bound_closure.candidates
-        if (item.semantic_id, item.family_id) not in selected_keys))
-    rebound = replace(
-        receipt.selection,
-        snapshot_sha256=bound_snapshot.snapshot_sha256,
-        closure_sha256=bound_closure.closure_sha256,
-        admitted_release_sha256=receipt.predecessor_release.release_sha256,
-        selected_obligations=rows,
-        prerequisite_slope=slope,
-        downstream_unlocks=-neg_unlocks,
-        deferred=deferred,
-        candidate_signature=_candidate_signature(
-            identity,
-            rows,
-            receipt.selection.introduced_capability_ids,
-            receipt.selection.introduced_semantic_ids,
-        ),
-        selection_sha256="0" * 64,
-    )
-    rebound = replace(rebound, selection_sha256=rebound.expected_digest())
-    validate_projection_authority(
-        rebound, receipt.predecessor_release, receipt.projection)
-    validate_frontier_selection(
-        bound_snapshot,
-        bound_closure,
-        rebound,
-        receipt.predecessor_release,
-        receipt.projection,
-    )
-    return True
-
-
-def credited_receipts(
-    snapshot: CurriculumSnapshot,
-    closure: FrontierClosure,
-    receipts: tuple[StagedSelectionReceipt, ...] | list[StagedSelectionReceipt],
-    current: dict[str, str],
-    *,
-    snapshot_history: tuple[CurriculumSnapshot, ...],
-    pending_receipt_sha256: str | None = None,
-) -> list[StagedSelectionReceipt]:
-    del pending_receipt_sha256
-    by_snapshot = {item.snapshot_sha256: item for item in snapshot_history}
-    credited = []
-    for receipt in receipts:
-        if not _receipt_obligation_current(receipt, current):
-            continue
-        comparator = by_snapshot.get(receipt.selection.snapshot_sha256)
-        if comparator is None:
-            continue
-        if _revalidate_receipt_selection(
-                snapshot, closure, receipt, comparator):
-            credited.append(receipt)
-    return credited

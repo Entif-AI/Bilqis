@@ -7,6 +7,9 @@ from bilqis_mlx.factory.atlas_frontier_closure import ClosureReason, ClosureStat
 from bilqis_mlx.factory.atlas_frontier_contracts import PrerequisiteEdge
 from bilqis_mlx.factory.atlas_frontier_events import SourceReleaseEvent, reconcile
 from bilqis_mlx.factory.atlas_frontier_progress import FrontierStatus, plan_frontier_progress
+from bilqis_mlx.factory.atlas_frontier_progress_audit import (
+    rehydrate_frontier_progress,
+)
 from bilqis_mlx.factory.atlas_frontier_selection import select_frontier_delta
 from bilqis_mlx.factory.skos_curriculum import IMPLEMENTATION_UNCOVERED
 from bilqis_mlx.factory.tests.curriculum.frontier.atlas_frontier_closure_fixtures import rehash
@@ -100,21 +103,15 @@ class AtlasFrontierProgressRegressionTests(ProjectionAuthorityFixture, unittest.
         forged_receipt = _stage(
             forged_selection, forged_projection, release, staged.successor,
             forged_snapshot)
-        forged_prior = replace(
-            advanced,
-            staged_receipts=(forged_receipt,),
-            progress_sha256="0" * 64,
-        )
-        forged_prior = replace(
-            forged_prior, progress_sha256=forged_prior.expected_digest())
-
         with self.assertRaises(BilqisError):
-            plan_frontier_progress(
-                advanced.planning_snapshot,
-                _closure(advanced.planning_snapshot, tuple(
-                    _candidate(advanced.planning_snapshot, identity)
-                    for identity in advanced.planning_snapshot.source_eligible_concept_ids)),
-                prior=forged_prior,
+            rehydrate_frontier_progress(
+                replace(advanced),
+                tuple(dict.fromkeys((
+                    snapshot,
+                    advanced.input_snapshot,
+                    advanced.planning_snapshot,
+                ))),
+                (forged_receipt,),
             )
 
     def test_admission_reconciliation_reports_only_direct_implementation_debt(self):

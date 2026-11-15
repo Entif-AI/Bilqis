@@ -72,7 +72,9 @@ def qualification():
 
 def inputs(q, options, offers):
     snapshot = N(snapshot_sha256='snapshot', admitted_factory_release_sha256='release')
-    progress = Progress(verify=lambda: None, snapshot_history=(snapshot,), input_snapshot_sha256='snapshot', proposal_selection_sha256=None)
+    progress = Progress(
+        verify=lambda: None, input_snapshot=snapshot,
+        input_snapshot_sha256='snapshot', proposal_selection_sha256=None)
     closure = Closure(verify=lambda: None, snapshot_sha256='snapshot')
     planning = q.PriorityPlanningInput(progress, closure, None, None)
     release = N(release_sha256='release', execution_plan=N(capability_map={'cap': 1}),
@@ -140,3 +142,14 @@ def test_matching_selection_unlocks_and_unadmitted_capability(qualification):
         args[8].active_grades = ()
         result = qualification.requalify_priority(*args, now=10)
     assert result.holds == (('one', 'CAPABILITY_NOT_ADMITTED'),)
+
+
+def test_priority_visit_reports_planning_verification_metrics(qualification):
+    args = inputs(qualification, (option('one'),), (('one', Offer()),))
+    observed = []
+    qualification.requalify_priority(
+        *args, now=10, planning_observer=observed.append)
+    assert len(observed) == 1
+    assert observed[0].snapshots_rehashed == 0
+    assert observed[0].historical_bytes_serialized == 0
+    assert observed[0].receipt_history_lookups == 0
