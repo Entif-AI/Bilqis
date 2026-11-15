@@ -13,7 +13,8 @@ from bilqis_mlx.runtime.atlas_model_contracts import (
 )
 from bilqis_mlx.runtime.atlas_training_authority import bind_compiled_training_batch
 from bilqis_mlx.runtime.bamf_bundle import (
-    BamfBundleCandidate, authenticate_bamf_execution_feature_context,
+    AuthenticatedGenerationFeatureContext, BamfBundleCandidate,
+    authenticate_bamf_execution_feature_context,
 )
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext
 from bilqis_mlx.semantics.atlas_features.formal import source_family_for_adapter
@@ -29,14 +30,14 @@ from bilqis_mlx.semantics.released_frame_schemas import (
     _load_pinned_released_frame_schemas,
 )
 from bilqis_mlx.source_adapters.atoms.admission import (
-    authorize_public_formal_prefix, public_formal_atom_context,
+    _public_formal_atom_context_from_snapshot, authorize_public_formal_prefix,
 )
 from bilqis_mlx.source_adapters.atoms.authority import canonical_graph_for
 
 from .atlas_training_adapter import compile_training_batch
 from .atlas_training_contracts import BamfTrainingBatch, BamfVisitProvenance, _invalid
 from .factory_training_context import (
-    public_training_context, source_frame_inventory, training_answer_plan,
+    public_training_context, training_answer_plan,
 )
 
 
@@ -95,6 +96,8 @@ class _FactoryMotifPlanningInput:
 @dataclass(frozen=True)
 class _FactorySourceRow:
     row: dict
+    source_id: str
+    frames: tuple
     ast: object
     projection: object
     source_graph: object
@@ -119,11 +122,14 @@ def _prepare_source_row(source_context, authenticated, adapter, manifest,
         source_profile_parameters=profile, course=source_context.release.curriculum)
     if type(projection) is not ApprovedContextProjection:
         _invalid("FACTORY_TRAINING_CONTEXT_HELD")
-    _source_id, frames = source_frame_inventory(
-        source_context, row, authenticated.selection)
+    from bilqis_mlx.runtime.factory_training_context import (
+        _source_frame_inventory_from_context,
+    )
+    source_id, frames = _source_frame_inventory_from_context(
+        source_context, row, authenticated, manifest)
     if frames:
-        atom_ast, atom_config = public_formal_atom_context(
-            authenticated.selection, row, source_graph,
+        atom_ast, atom_config = _public_formal_atom_context_from_snapshot(
+            authenticated.selection, authenticated.snapshot, row, source_graph,
             source_root=source_context.source_root, source_seed=source_seed,
             source_each=source_each, task=task, frontier=frame_frontier,
             policy=policy, course=source_context.release.curriculum,
@@ -135,15 +141,15 @@ def _prepare_source_row(source_context, authenticated, adapter, manifest,
             None, task, current, policy)
         approved = project_context(projection.envelopes, task, current, policy)
     else:
-        atom_ast, atom_config = public_formal_atom_context(
-            authenticated.selection, row, source_graph,
+        atom_ast, atom_config = _public_formal_atom_context_from_snapshot(
+            authenticated.selection, authenticated.snapshot, row, source_graph,
             source_root=source_context.source_root, source_seed=source_seed,
             source_each=source_each, task=task, frontier=frontier,
             policy=policy, course=source_context.release.curriculum,
             source_profile_parameters=profile)
         ast, approved, config, current = atom_ast, None, atom_config, atom_config.frontier
     return _FactorySourceRow(
-        row, ast, approved, source_graph, config, task, current, policy)
+        row, source_id, frames, ast, approved, source_graph, config, task, current, policy)
 
 
 def _motif_planning_input(source_context, authenticated, adapter, profile, item, *,
@@ -207,7 +213,7 @@ def _prepare_factory_source_rows(source_context, authenticated, rows, *, capabil
         source_context, authenticated, adapter, manifest, profile, row,
         capability=capability, source_seed=source_seed, source_each=source_each)
         for row in rows)
-    return adapter, profile, source_rows
+    return adapter, manifest, profile, source_rows
 
 
 def _validated_training_request(
@@ -250,6 +256,7 @@ def prepare_factory_training_batch(
     visit_provenance: BamfVisitProvenance,
     teacher_strategy: dict,
     rehearsal_by_id: dict | None = None,
+    semantic_context=None,
 ) -> PreparedFactoryTrainingBatch:
     """Compile one real Factory draw once, then bind each C02 row into B11.
 
@@ -262,9 +269,14 @@ def prepare_factory_training_batch(
         source_seed=source_seed, source_each=source_each,
         optimizer_step_seed=optimizer_step_seed,
         visit_provenance=visit_provenance, teacher_strategy=teacher_strategy)
-    authenticated = authenticate_bamf_execution_feature_context(
-        candidate, atlas_artifact_path, source_context.run_dir)
-    adapter, profile, source_rows = _prepare_factory_source_rows(
+    authenticated = semantic_context
+    if authenticated is None:
+        authenticated = authenticate_bamf_execution_feature_context(
+            candidate, atlas_artifact_path, source_context.run_dir)
+    elif type(authenticated) is not AuthenticatedGenerationFeatureContext:
+        _invalid("FACTORY_TRAINING_SEMANTIC_CONTEXT_INVALID")
+    authenticated.__post_init__()
+    adapter, manifest, profile, source_rows = _prepare_factory_source_rows(
         source_context, authenticated, rows, capability=capability,
         source_seed=source_seed, source_each=source_each)
     by_tokens = {tuple(item.row["tokens"]): item.ast for item in source_rows}
@@ -292,6 +304,8 @@ def prepare_factory_training_batch(
         task_scope=tuple(item.task for item in source_rows),
         source_frontier=tuple(item.frontier for item in source_rows),
         eligibility_policy=tuple(item.policy for item in source_rows),
+        semantic_context=authenticated,
+        released_manifest=manifest,
         generation_binding=generation_binding,
         atlas_selection=authenticated.selection)
     compiled_rows = _bind_b11_rows(

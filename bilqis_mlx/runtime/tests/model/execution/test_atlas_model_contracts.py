@@ -53,7 +53,9 @@ class BamfCompiledBatchOwnerTests(unittest.TestCase):
         first = mx.zeros((8192, 768), dtype=mx.float32)
         second = mx.ones((8192, 768), dtype=mx.float32)
         batch = SimpleNamespace(
-            sources=(SimpleNamespace(selection=object()),),
+            sources=(SimpleNamespace(selection=AtlasArtifactSelection(
+                "/fixture", snapshot.bundle_id, snapshot.release_sha256,
+                snapshot.source_bundle_id)),),
             compiled=SimpleNamespace(
                 features=SimpleNamespace(semantic_release=snapshot.release_sha256),
                 extents=extents,
@@ -63,7 +65,7 @@ class BamfCompiledBatchOwnerTests(unittest.TestCase):
         plan = SimpleNamespace(snapshot=snapshot)
         with patch(
                 "bilqis_mlx.runtime.atlas_model_participation.load_pinned_atlas_snapshot",
-                return_value=snapshot):
+                side_effect=AssertionError("B11 Atlas reload"), create=True):
             banks = _active_banks(
                 {"identity.bank.0": first, "identity.bank.1": second}, batch, plan)
         self.assertEqual(tuple(bank.active_rows for bank in banks), ((0,), (0,)))

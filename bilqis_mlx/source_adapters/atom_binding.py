@@ -93,6 +93,39 @@ def verify_source_row(
     ), None
 
 
+def _build_source_atom_handoff_from_snapshot(
+    compiled: CompiledFrameBatch,
+    config: FrameCompilerConfig,
+    selection: AtlasArtifactSelection,
+    snapshot,
+    source_row: dict,
+    graph: dict,
+    *,
+    source_root: str | Path,
+    source_seed: int,
+    source_each: int,
+    course=None,
+    source_profile_parameters=None,
+) -> SourceAtomHandoff:
+    if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+          != (selection.release_sha256, selection.bundle_id,
+              selection.source_bundle_id)):
+        _invalid("BAMF_SOURCE_ATOM_SOURCE_DRIFT")
+    witness, reason = verify_source_row(
+        source_row, graph,
+        source_root=source_root,
+        source_seed=source_seed,
+        source_each=source_each,
+        course=course,
+        source_profile_parameters=source_profile_parameters,
+    )
+    if witness is None:
+        _invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_HELD:" + str(reason))
+    source_projection = project_verified_row(source_row, graph, snapshot, witness)
+    return _resolve_visible_atoms(
+        compiled, config, snapshot, witness, graph, source_projection=source_projection)
+
+
 def build_source_atom_handoff(
     compiled: CompiledFrameBatch,
     config: FrameCompilerConfig,
@@ -108,19 +141,27 @@ def build_source_atom_handoff(
 ) -> SourceAtomHandoff:
     """Build the pinned A05-to-B02/B03 handoff without semantic invention."""
     snapshot = load_pinned_atlas_snapshot(selection)
-    witness, reason = verify_source_row(
-        source_row, graph,
-        source_root=source_root,
-        source_seed=source_seed,
-        source_each=source_each,
-        course=course,
-        source_profile_parameters=source_profile_parameters,
-    )
-    if witness is None:
-        _invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_HELD:" + str(reason))
-    source_projection = project_verified_row(source_row, graph, snapshot, witness)
-    return _resolve_visible_atoms(
-        compiled, config, snapshot, witness, graph, source_projection=source_projection)
+    return _build_source_atom_handoff_from_snapshot(
+        compiled, config, selection, snapshot, source_row, graph,
+        source_root=source_root, source_seed=source_seed, source_each=source_each,
+        course=course, source_profile_parameters=source_profile_parameters)
+
+
+def _revalidate_source_atom_handoff_from_snapshot(
+    handoff: SourceAtomHandoff,
+    compiled: CompiledFrameBatch,
+    config: FrameCompilerConfig,
+    selection: AtlasArtifactSelection,
+    snapshot,
+    source_row: dict,
+    graph: dict,
+    **kwargs,
+) -> SourceAtomHandoff:
+    expected = _build_source_atom_handoff_from_snapshot(
+        compiled, config, selection, snapshot, source_row, graph, **kwargs)
+    if handoff != expected:
+        _invalid("BAMF_SOURCE_ATOM_HANDOFF_AUTHORITY_DRIFT")
+    return expected
 
 
 def revalidate_source_atom_handoff(
@@ -138,17 +179,30 @@ def revalidate_source_atom_handoff(
     source_profile_parameters=None,
 ) -> SourceAtomHandoff:
     """Rebuild from sources. A caller-supplied digest cannot authenticate itself."""
-    expected = build_source_atom_handoff(
-        compiled, config, selection, source_row, graph,
-        source_root=source_root,
-        source_seed=source_seed,
-        source_each=source_each,
-        course=course,
-        source_profile_parameters=source_profile_parameters,
-    )
-    if handoff != expected:
-        _invalid("BAMF_SOURCE_ATOM_HANDOFF_AUTHORITY_DRIFT")
-    return expected
+    snapshot = load_pinned_atlas_snapshot(selection)
+    return _revalidate_source_atom_handoff_from_snapshot(
+        handoff, compiled, config, selection, snapshot, source_row, graph,
+        source_root=source_root, source_seed=source_seed, source_each=source_each,
+        course=course, source_profile_parameters=source_profile_parameters)
+
+
+def _require_embedding_ready_from_snapshot(
+    handoff: SourceAtomHandoff,
+    compiled: CompiledFrameBatch,
+    config: FrameCompilerConfig,
+    selection: AtlasArtifactSelection,
+    snapshot,
+    source_row: dict,
+    graph: dict,
+    **kwargs,
+) -> tuple[tuple[int, tuple[str, ...]], ...]:
+    expected = _revalidate_source_atom_handoff_from_snapshot(
+        handoff, compiled, config, selection, snapshot, source_row, graph, **kwargs)
+    if not expected.embedding_ready:
+        _invalid("BAMF_SOURCE_ATOM_BINDING_HELD")
+    return tuple(
+        (item.candidate_abi_index, item.candidate_type_ids)
+        for item in expected.bindings if item.candidate_abi_index is not None)
 
 
 def require_pinned_embedding_ready(
@@ -166,17 +220,8 @@ def require_pinned_embedding_ready(
     source_profile_parameters=None,
 ) -> tuple[tuple[int, tuple[str, ...]], ...]:
     """B02/B03 guard. Rebuild from pins before exposing an ABI coordinate."""
-    expected = revalidate_source_atom_handoff(
-        handoff, compiled, config, selection, source_row, graph,
-        source_root=source_root,
-        source_seed=source_seed,
-        source_each=source_each,
-        course=course,
-        source_profile_parameters=source_profile_parameters,
-    )
-    if not expected.embedding_ready:
-        _invalid("BAMF_SOURCE_ATOM_BINDING_HELD")
-    return tuple(
-        (item.candidate_abi_index, item.candidate_type_ids)
-        for item in expected.bindings
-        if item.candidate_abi_index is not None)
+    snapshot = load_pinned_atlas_snapshot(selection)
+    return _require_embedding_ready_from_snapshot(
+        handoff, compiled, config, selection, snapshot, source_row, graph,
+        source_root=source_root, source_seed=source_seed, source_each=source_each,
+        course=course, source_profile_parameters=source_profile_parameters)

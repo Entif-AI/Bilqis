@@ -27,7 +27,8 @@ from .atlas_admission import ParsedAtlasAdmissionBinding
 from .feature.receipt import AcceptedGenerationFeatureReceipt, is_digest
 from .feature.context import (
     AcceptedGenerationFeatureContext, AuthenticatedCandidateFeatureContext,
-    AuthenticatedGenerationFeatureContext,
+    AuthenticatedGenerationFeatureContext, _issue_candidate_feature_context,
+    _issue_generation_feature_context,
 )
 from .feature.replay_support import (
     artifact_identity as _artifact_identity,
@@ -163,10 +164,7 @@ def authenticate_bamf_candidate_feature_context(
     # strict about active-set drift and C07 still owns admission.
     features = _authenticate_features(
         candidate, artifact_path, require_active_set_match=False)
-    context = AuthenticatedCandidateFeatureContext(
-        selection, snapshot, schema, features)
-    context.__post_init__()
-    return context
+    return _issue_candidate_feature_context(selection, snapshot, schema, features)
 
 
 def authenticate_bamf_generation_feature_context(
@@ -194,10 +192,8 @@ def authenticate_bamf_generation_feature_context(
         identity.release_sha256, identity.source_bundle_id)
     snapshot = load_pinned_atlas_snapshot(selection)
     schema = _feature_schema(student.compiler_features)
-    context = AuthenticatedGenerationFeatureContext(
+    return _issue_generation_feature_context(
         selection, snapshot, schema, accepted.features, receipt)
-    context.__post_init__()
-    return context
 
 
 def authenticate_bamf_execution_feature_context(

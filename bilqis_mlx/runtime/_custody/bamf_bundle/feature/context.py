@@ -1,7 +1,7 @@
 """Typed B13 feature-context records."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from bilqis_mlx.semantics.atlas_features import FeatureSchema
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
@@ -11,7 +11,23 @@ from ..records import invalid
 from .receipt import AcceptedGenerationFeatureReceipt
 
 
-@dataclass(frozen=True)
+_FEATURE_CONTEXT_ISSUER = object()
+
+
+def _validate_materialized_context(selection, snapshot, schema, features) -> None:
+    if (type(selection) is not AtlasArtifactSelection
+            or type(snapshot) is not FrozenAtlasSnapshot
+            or type(schema) is not FeatureSchema
+            or features.semantic_release != selection.release_sha256
+            or features.atlas_bundle_id != selection.bundle_id
+            or features.source_bundle_id != selection.source_bundle_id
+            or snapshot.release_sha256 != selection.release_sha256
+            or snapshot.bundle_id != selection.bundle_id
+            or snapshot.source_bundle_id != selection.source_bundle_id):
+        invalid("BAMF_FEATURE_CONTEXT_INVALID")
+
+
+@dataclass(frozen=True, init=False)
 class AuthenticatedCandidateFeatureContext:
     """Source-replayed feature inputs for pre-acceptance evaluation only."""
 
@@ -19,21 +35,19 @@ class AuthenticatedCandidateFeatureContext:
     snapshot: FrozenAtlasSnapshot
     schema: FeatureSchema
     features: object
+    _issuance: object = field(repr=False, compare=False)
+
+    def __init__(self, *args, **kwargs):
+        invalid("BAMF_FEATURE_CONTEXT_CALLER_CONSTRUCTION_FORBIDDEN")
 
     def __post_init__(self) -> None:
-        if (type(self.selection) is not AtlasArtifactSelection
-                or type(self.snapshot) is not FrozenAtlasSnapshot
-                or type(self.schema) is not FeatureSchema
-                or self.features.semantic_release != self.selection.release_sha256
-                or self.features.atlas_bundle_id != self.selection.bundle_id
-                or self.features.source_bundle_id != self.selection.source_bundle_id
-                or self.snapshot.release_sha256 != self.selection.release_sha256
-                or self.snapshot.bundle_id != self.selection.bundle_id
-                or self.snapshot.source_bundle_id != self.selection.source_bundle_id):
+        if self._issuance is not _FEATURE_CONTEXT_ISSUER:
             invalid("BAMF_FEATURE_CONTEXT_INVALID")
+        _validate_materialized_context(
+            self.selection, self.snapshot, self.schema, self.features)
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, init=False)
 class AuthenticatedGenerationFeatureContext:
     """Source-replayed feature inputs backed by accepted-generation custody."""
 
@@ -42,14 +56,44 @@ class AuthenticatedGenerationFeatureContext:
     schema: FeatureSchema
     features: object
     receipt: AcceptedGenerationFeatureReceipt
+    _issuance: object = field(repr=False, compare=False)
+
+    def __init__(self, *args, **kwargs):
+        invalid("BAMF_ACCEPTED_FEATURE_CONTEXT_CALLER_CONSTRUCTION_FORBIDDEN")
 
     def __post_init__(self) -> None:
-        AuthenticatedCandidateFeatureContext(
+        if self._issuance is not _FEATURE_CONTEXT_ISSUER:
+            invalid("BAMF_ACCEPTED_FEATURE_CONTEXT_INVALID")
+        _validate_materialized_context(
             self.selection, self.snapshot, self.schema, self.features)
         if (type(self.receipt) is not AcceptedGenerationFeatureReceipt
                 or self.receipt.semantic_release != self.features.semantic_release
                 or self.receipt.feature_sha256 != self.features.digest):
             invalid("BAMF_ACCEPTED_FEATURE_CONTEXT_INVALID")
+
+
+def _issue_candidate_feature_context(
+        selection, snapshot, schema, features) -> AuthenticatedCandidateFeatureContext:
+    context = object.__new__(AuthenticatedCandidateFeatureContext)
+    for name, value in (
+            ("selection", selection), ("snapshot", snapshot), ("schema", schema),
+            ("features", features), ("_issuance", _FEATURE_CONTEXT_ISSUER)):
+        object.__setattr__(context, name, value)
+    context.__post_init__()
+    return context
+
+
+def _issue_generation_feature_context(
+        selection, snapshot, schema, features,
+        receipt) -> AuthenticatedGenerationFeatureContext:
+    context = object.__new__(AuthenticatedGenerationFeatureContext)
+    for name, value in (
+            ("selection", selection), ("snapshot", snapshot), ("schema", schema),
+            ("features", features), ("receipt", receipt),
+            ("_issuance", _FEATURE_CONTEXT_ISSUER)):
+        object.__setattr__(context, name, value)
+    context.__post_init__()
+    return context
 
 
 @dataclass(frozen=True)

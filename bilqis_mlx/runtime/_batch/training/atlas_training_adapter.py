@@ -81,10 +81,12 @@ def _answer_plan(plan, head, visible_end, generation_binding):
 
 def _require_semantic_authority(
         compiler_config, task_scope, source_frontier, eligibility_policy,
-        atlas_selection, feature_artifact_path):
+        atlas_selection, feature_artifact_path, semantic_context=None,
+        released_manifest=None):
     return _require_semantic_authority_impl(
         compiler_config, task_scope, source_frontier, eligibility_policy,
-        atlas_selection, feature_artifact_path, rederive_training_authority)
+        atlas_selection, feature_artifact_path, rederive_training_authority,
+        semantic_context, released_manifest)
 
 
 def _compile_model_input(
@@ -93,7 +95,8 @@ def _compile_model_input(
         eligibility_policy: ContextPolicy, compiler_config: FrameCompilerConfig,
         atlas_selection, feature_artifact_path,
         answer_plan_for: Callable, generation_binding: str,
-        atlas_features: AtlasFeatures | None) -> tuple:
+        atlas_features: AtlasFeatures | None, semantic_context=None,
+        released_manifest=None) -> tuple:
     kind, gold = row.get('answer_kind', 'binary'), row.get('gold')
     families = {family.kind: family.values for family in capabilities[capability].answer_families}
     if not isinstance(kind, str) or kind not in families or kind not in heads:
@@ -107,7 +110,9 @@ def _compile_model_input(
         _invalid('CONTEXT_SOURCE_FRAMES_REQUIRED')
     if not frames and getattr(ast, 'frames', ()):
         _invalid('CONTEXT_SOURCE_FRAMES_REQUIRED')
-    _require_source_inventory(ast, source_context, row, atlas_selection)
+    _require_source_inventory(
+        ast, source_context, row, atlas_selection, semantic_context,
+        released_manifest)
     _require_source_lineage(ast, frames, visible, source_context.graph)
     projection = None
     if frames:
@@ -116,7 +121,8 @@ def _compile_model_input(
             _invalid('CONTEXT_NOT_ELIGIBLE')
     current_features = _require_semantic_authority(
         compiler_config, task_scope, source_frontier, eligibility_policy,
-        atlas_selection, feature_artifact_path)
+        atlas_selection, feature_artifact_path, semantic_context,
+        released_manifest)
     if atlas_features is None:
         atlas_features = current_features
     elif current_features != atlas_features:
@@ -213,7 +219,8 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
                            compiler_config, feature_artifact_path, answer_plan_for: Callable,
                            frames_for_ast: Callable, task_scope: TaskScope,
                            source_frontier: SourceFrontier, eligibility_policy: ContextPolicy, generation_binding: str,
-                           sealed_holdout_ids=(), atlas_selection=None) -> BamfTrainingBatch:
+                           sealed_holdout_ids=(), atlas_selection=None,
+                           semantic_context=None, released_manifest=None) -> BamfTrainingBatch:
     """Compile source-oracled delivery through accepted A05/A06 owners."""
     if type(topology) is not ModelTopologySpecV2:
         _invalid('TOPOLOGY_AUTHORITY_REQUIRED')
@@ -261,7 +268,8 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
             compiler_config=compiler_configs[row_index],
             atlas_selection=atlas_selection, feature_artifact_path=feature_artifact_path,
             answer_plan_for=answer_plan_for, generation_binding=generation_binding,
-            atlas_features=atlas_features)
+            atlas_features=atlas_features, semantic_context=semantic_context,
+            released_manifest=released_manifest)
         maximum_decisions = dict(model_input.answer_plan).get('maximum_decisions')
         if (type(maximum_decisions) is not int
                 or len(model_input.prefix.positions) + maximum_decisions
