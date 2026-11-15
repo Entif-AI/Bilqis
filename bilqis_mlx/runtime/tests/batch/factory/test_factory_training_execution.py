@@ -178,11 +178,7 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
             self.assertEqual(
                 result.realized_cost["b11_source_authority_bound_rows"], 1)
             self.assertEqual(
-                result.realized_cost["b11_source_atlas_reload_count"], 0)
-            self.assertEqual(
-                result.realized_cost["b11_source_feature_manifest_rebuild_count"], 0)
-            self.assertEqual(
-                result.realized_cost["b11_source_provider_redraw_count"], 0)
+                result.realized_cost["b11_source_cold_requalification_rows"], 0)
             payload = read_sidecar(run_dir, capture.steps[0])
             self.assertEqual(
                 payload["positions"][0]["row"]["sha256"],
