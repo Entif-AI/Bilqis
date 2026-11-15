@@ -70,6 +70,23 @@ export function classifyLearning({ retained = 0, freshRetainedImprovements = 0, 
   return "NO_FRESH_GAIN";
 }
 
+export function homeStatus(model) {
+  const invalidStates = new Set(["INVALID", "INVALIDITY", "CONFLICT", "DENIED", "REVOKED", "INCOMPATIBLE"]);
+  const regression = model?.learningStatus === "REGRESSION" ||
+    model?.pulse?.some((event) => ["regress", "regression"].includes(event.kind)) === true;
+  const blocked = model?.attention?.some((item) => item.severity === "blocker" || item.kind === "blocked") === true;
+  const invalidity = Object.values(model?.state ?? {}).some((state) => invalidStates.has(state)) ||
+    model?.attention?.some((item) => item.severity === "invalid") === true;
+  return Object.freeze({
+    running: model?.runtime?.running ?? null,
+    learning: model?.learningStatus ?? "NO_FRESH_GAIN",
+    regression,
+    blocked,
+    invalidity,
+    attentionPriority: regression || blocked || invalidity ? "primary" : "secondary",
+  });
+}
+
 export function projectionFromPages(pages, context) {
   const capabilities = pageRecords(pages, "capability");
   const episodes = pageRecords(pages, "episode");
@@ -170,12 +187,16 @@ export function projectionFromPages(pages, context) {
     }))),
     pulse: Object.freeze(decisions.slice(-8).reverse().map((record) => Object.freeze({
       kind: record.outcome === "ACCEPTED" ? "retain" : "reject",
-      label: `${record.outcome}: ${record.capability_id}`,
-      detail: record.reason_code,
+      capabilityId: record.capability_id,
+      reasonCode: record.reason_code,
+      observedAt: record.meta?.observed_at ?? record.meta?.materialized_at ?? null,
       target: Object.freeze({ kind: "capability", id: record.capability_id }),
     }))),
     attention: Object.freeze([
-      ...(correctionDebt ? [{ kind: "correction", label: "Correction debt", detail: `${correctionDebt} requalification item(s) require review`, id: corrections[0]?.meta?.record_id }] : []),
+      ...(correctionDebt ? [{
+        kind: "correction", severity: "invalid", count: correctionDebt, id: corrections[0]?.meta?.record_id,
+        target: { kind: "correction", id: corrections[0]?.meta?.record_id },
+      }] : []),
     ]),
   });
 }
@@ -224,17 +245,17 @@ export function referenceHomeProjection() {
       strategy: row.strategy, recordId: row.id,
     }))),
     pulse: Object.freeze([
-      { kind: "gain", label: `Fresh retained gain · ${retainedEpisode.capabilityId}`, detail: "10/12 → 12/12; child generation committed", target: { kind: "episode", id: retainedEpisode.recordId } },
-      { kind: "regress", label: `Regression · ${regression.id}`, detail: regression.lastRegression, target: { kind: "capability", id: regression.id } },
-      { kind: "retain", label: "Candidate retained", detail: retainedEpisode.retentionReason, target: { kind: "episode", id: retainedEpisode.recordId } },
-      { kind: "reject", label: `Candidate rejected · ${rejected[0].capabilityId}`, detail: rejected[0].retentionReason, target: { kind: "episode", id: rejected[0].recordId } },
-      { kind: "source", label: "Source family held", detail: "future-source · policy/evidence hold", target: { kind: "capability", id: "D.EVENT" } },
-      { kind: "correction", label: "Correction / requalification", detail: "1 fixture correction requires requalification", target: { kind: "correction", id: "correction:fixture:1" } },
+      { kind: "gain", observedAt: 44239, capabilityId: retainedEpisode.capabilityId, before: "10/12", after: "12/12", target: { kind: "episode", id: retainedEpisode.recordId } },
+      { kind: "regress", observedAt: 44238, capabilityId: regression.id, detail: regression.lastRegression, target: { kind: "capability", id: regression.id } },
+      { kind: "retain", observedAt: 44239, capabilityId: retainedEpisode.capabilityId, reasonCode: retainedEpisode.retentionReason, target: { kind: "episode", id: retainedEpisode.recordId } },
+      { kind: "reject", observedAt: 44237, capabilityId: rejected[0].capabilityId, reasonCode: rejected[0].retentionReason, target: { kind: "episode", id: rejected[0].recordId } },
+      { kind: "source", observedAt: 44236, family: "future-source", target: { kind: "capability", id: "D.EVENT" } },
+      { kind: "correction", observedAt: 44235, count: 1, target: { kind: "correction", id: "correction:fixture:1" } },
     ].map(Object.freeze)),
     attention: Object.freeze([
-      Object.freeze({ kind: "stalled", label: "Stale capability debt", detail: "B.IFF and C.NUMBER carry stale observed debt", id: "B.IFF", target: { kind: "capability", id: "B.IFF" } }),
-      Object.freeze({ kind: "held", label: "Held source family", detail: "D.EVENT · future-source remains held", id: "D.EVENT", target: { kind: "capability", id: "D.EVENT" } }),
-      Object.freeze({ kind: "recovery", label: "Outcome reconciliation", detail: `${pending.capabilityId} has partial optimizer evidence and no terminal receipt`, id: pending.recordId, target: { kind: "episode", id: pending.recordId } }),
+      Object.freeze({ kind: "stalled", severity: "attention", capabilities: "B.IFF · C.NUMBER", id: "B.IFF", target: { kind: "capability", id: "B.IFF" } }),
+      Object.freeze({ kind: "held", severity: "attention", capabilityId: "D.EVENT", id: "D.EVENT", target: { kind: "capability", id: "D.EVENT" } }),
+      Object.freeze({ kind: "recovery", severity: "blocker", capabilityId: pending.capabilityId, id: pending.recordId, target: { kind: "episode", id: pending.recordId } }),
     ]),
   });
 }

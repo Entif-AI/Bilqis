@@ -1,4 +1,5 @@
 import { LEARNING_MESSAGES } from "./i18n-learning.mjs";
+import { HOME_MESSAGES } from "./i18n-home.mjs";
 import { SHELL_MESSAGES } from "./i18n-shell.mjs";
 import { TEACHER_MESSAGES } from "./i18n-teacher.mjs";
 
@@ -124,6 +125,7 @@ const EN_US = Object.freeze({
   "foundation.fixture.invalidEvidence": "Invalid evidence",
   ...SHELL_MESSAGES,
   ...LEARNING_MESSAGES,
+  ...HOME_MESSAGES,
   ...TEACHER_MESSAGES,
 });
 
