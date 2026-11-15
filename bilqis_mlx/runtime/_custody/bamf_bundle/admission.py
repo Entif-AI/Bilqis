@@ -39,7 +39,8 @@ from .accepted_runtime import (
 )
 from .codec import load_bamf_bundle
 from .publication import (
-    _pointer_lock, _require_published_acceptance, publish_bamf_generation,
+    _pointer_lock, _read_pointer, _require_published_acceptance,
+    publish_bamf_generation,
 )
 from .publication.authority import authenticate_current_successor_retry
 from .records import (
@@ -231,7 +232,7 @@ def admit_candidate_step(run_dir: Path, gradients=None, *,
 
 
 def _require_source_authority_for_acceptance(
-        run_dir: Path, candidate: BamfBundleCandidate):
+        run_dir: Path, candidate: BamfBundleCandidate, *, parent_witness=None):
     """Authenticate current custody and derive the ordinary successor C09 root."""
     from .source_authority_custody import (
         require_source_authority_successor_inheritance,
@@ -239,8 +240,18 @@ def _require_source_authority_for_acceptance(
 
     run_dir = Path(run_dir)
     with _pointer_lock(run_dir):
-        current, current_child = _read_accepted_locked(run_dir)
-        if current_child.generation == candidate.generation - 1:
+        current = _read_pointer(run_dir / "bamf-state.json")
+        if current is None:
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+        if current["generation"] == candidate.generation - 1:
+            if parent_witness is not None:
+                from .accepted_execution_cache import (
+                    _require_accepted_publication_parent_locked,
+                )
+                current_child = _require_accepted_publication_parent_locked(
+                    run_dir, current, parent_witness).student
+            else:
+                current, current_child = _read_accepted_locked(run_dir)
             if (candidate.run_id != current_child.run_id
                     or candidate.generation != current_child.generation + 1
                     or candidate.parent_manifest_sha256
@@ -254,7 +265,8 @@ def _require_source_authority_for_acceptance(
                 allow_historical_anchor=(
                     candidate.transition.get("kind") == "RETAINED_CANDIDATE"),
             )
-        if current_child.generation == candidate.generation:
+        if current["generation"] == candidate.generation:
+            current, current_child = _read_accepted_locked(run_dir)
             parent, persisted = authenticate_current_successor_retry(
                 run_dir, current, candidate, current_child,
                 load_bundle=load_bamf_bundle,
@@ -276,12 +288,32 @@ def _require_source_authority_for_acceptance(
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
 
 
+def _publication_parent_witness(
+        run_dir: Path, candidate: BamfBundleCandidate):
+    if candidate.generation == 0:
+        return None
+    from .accepted_execution_cache import _bind_accepted_publication_parent_locked
+
+    run_dir = Path(run_dir)
+    with _pointer_lock(run_dir):
+        current = _read_pointer(run_dir / "bamf-state.json")
+        if current is None:
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+        if current["generation"] == candidate.generation:
+            return None
+        if (current["generation"] != candidate.generation - 1
+                or current["manifest_sha256"] != candidate.parent_manifest_sha256):
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+        return _bind_accepted_publication_parent_locked(run_dir, current)
+
+
 def accept_and_publish(run_dir: Path, bundle: BamfBundleCandidate,
                        retained_state: CandidateState, *,
                        decision: CandidateRetentionDecision,
                        feature_sha256: str,
                        reserve_gib: float = 100.0,
-                       training_authorities=None) -> dict:
+                       training_authorities=None,
+                       publication_observer=None) -> dict:
     """Publish a candidate that the retention decision owner has accepted.
 
     Publication does not decide that the candidate was accepted. The retention
@@ -295,18 +327,23 @@ def accept_and_publish(run_dir: Path, bundle: BamfBundleCandidate,
         _require_issued_decision_generation_authority,
     )
 
-    trusted_registry = _require_source_authority_for_acceptance(run_dir, bundle)
-    exact_generation_authority = successor_candidate_identity_digest(bundle)
-    if _issued_decision_generation_authority(decision) is not None:
-        _require_issued_decision_generation_authority(
-            decision, exact_generation_authority)
-    binding = mint_acceptance_binding(
-        decision, retained_state, run_id=bundle.run_id,
-        generation=bundle.generation, feature_sha256=feature_sha256,
-        training_authorities=training_authorities,
-        source_authority_registry_sha256=(
-            trusted_registry.digest if trusted_registry is not None else None),
-        teacher_state_sha256=sha(canonical(dict(bundle.teacher_state))),
-        generation_authority_sha256=exact_generation_authority)
-    return publish_bamf_generation(
-        run_dir, bundle, acceptance=binding, reserve_gib=reserve_gib)
+    from .publication.instrumentation import publication_measurement
+    with publication_measurement(publication_observer):
+        parent_witness = _publication_parent_witness(run_dir, bundle)
+        trusted_registry = _require_source_authority_for_acceptance(
+            run_dir, bundle, parent_witness=parent_witness)
+        exact_generation_authority = successor_candidate_identity_digest(bundle)
+        if _issued_decision_generation_authority(decision) is not None:
+            _require_issued_decision_generation_authority(
+                decision, exact_generation_authority)
+        binding = mint_acceptance_binding(
+            decision, retained_state, run_id=bundle.run_id,
+            generation=bundle.generation, feature_sha256=feature_sha256,
+            training_authorities=training_authorities,
+            source_authority_registry_sha256=(
+                trusted_registry.digest if trusted_registry is not None else None),
+            teacher_state_sha256=sha(canonical(dict(bundle.teacher_state))),
+            generation_authority_sha256=exact_generation_authority)
+        return publish_bamf_generation(
+            run_dir, bundle, acceptance=binding, reserve_gib=reserve_gib,
+            parent_witness=parent_witness)

@@ -32,16 +32,20 @@ from .storage import ACCEPTANCE_DIR
 
 
 def require_accepted_parent(
-        run_dir: Path, candidate, acceptance, *, load_bundle) -> None:
+        run_dir: Path, candidate, acceptance, *, load_bundle,
+        parent: CompleteStudent | None = None) -> None:
     """Verify the C05 parent identity against immutable B13 parent custody."""
     if candidate.generation == 0:
         return
     parent_sha = candidate.parent_manifest_sha256
     if parent_sha is None:
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-    parent = load_bundle(
-        run_dir / "bamf-bundles" / parent_sha,
-        expected_manifest_sha256=parent_sha)
+    if parent is None:
+        parent = load_bundle(
+            run_dir / "bamf-bundles" / parent_sha,
+            expected_manifest_sha256=parent_sha)
+    elif type(parent) is not CompleteStudent:
+        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
     if (parent.run_id != candidate.run_id
             or parent.generation + 1 != candidate.generation
             or parent.run_identity != candidate.run_identity

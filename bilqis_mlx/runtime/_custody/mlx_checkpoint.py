@@ -269,8 +269,13 @@ def save_bamf_state_payload(destination: Path, spec, extents, state, *,
     assert_headroom(destination, required_bytes=expected_bytes + 65536,
                     reserve_gib=reserve_gib)
     mx.save_safetensors(str(destination), arrays)
+    stored_bytes = destination.stat().st_size
+    from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import note_write
+    note_write(stored_bytes)
     with destination.open("rb") as stream:
         os.fsync(stream.fileno())
+    from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import note_fsync
+    note_fsync(stored_bytes)
     return {
         "schema": BAMF_TENSOR_SCHEMA,
         "filename": destination.name,

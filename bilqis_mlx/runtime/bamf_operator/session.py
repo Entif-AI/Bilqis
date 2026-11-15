@@ -235,7 +235,12 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
         run_dir, successor, retained, decision=decision,
         feature_sha256=successor.extents.factor_map_digest,
         reserve_gib=reserve_gib,
-        training_authorities=step.transaction.training_authorities)
+        training_authorities=step.transaction.training_authorities,
+        publication_observer=(
+            (lambda metrics: observer.update(**{
+                "publication_" + key: value
+                for key, value in metrics.to_record().items()}))
+            if observer is not None else None))
     return "ACCEPTED"
 
 def operate_bamf(

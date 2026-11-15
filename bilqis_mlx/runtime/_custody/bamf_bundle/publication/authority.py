@@ -100,7 +100,7 @@ def require_acceptance(
 
 def validate_parent_transition(
         run_dir: Path, pointer: dict | None, candidate: BamfBundleCandidate, *,
-        load_bundle, reconcile) -> CompleteStudent | None:
+        load_bundle, reconcile, parent: CompleteStudent | None = None) -> CompleteStudent | None:
     if pointer is None:
         if candidate.generation != 0 or candidate.parent_manifest_sha256 is not None:
             invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
@@ -109,8 +109,11 @@ def validate_parent_transition(
             or pointer["generation"] != candidate.generation - 1
             or pointer["manifest_sha256"] != candidate.parent_manifest_sha256):
         invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
-    parent = load_bundle(
-        run_dir / pointer["bundle"], expected_manifest_sha256=pointer["manifest_sha256"])
+    if parent is None:
+        parent = load_bundle(
+            run_dir / pointer["bundle"], expected_manifest_sha256=pointer["manifest_sha256"])
+    elif type(parent) is not CompleteStudent:
+        invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
     if (parent.run_id != pointer["run_id"]
             or parent.generation != pointer["generation"]
             or parent.parent_manifest_sha256 != pointer["parent_manifest_sha256"]):
@@ -213,7 +216,9 @@ def authenticate_current_successor_retry(
 def parent_acceptance_for_publication(
         run_dir: Path, candidate: BamfBundleCandidate,
         accepted: AcceptedCandidateBinding, *, pointer_lock, read_pointer,
-        live_manifest, load_bundle, require_published_acceptance):
+        live_manifest, load_bundle, require_published_acceptance,
+        parent_witness=None, bind_parent_witness_locked=None,
+        require_parent_witness_locked=None):
     """Read the exact parent acceptance that the new immutable manifest must bind."""
     pointer_path = Path(run_dir) / "bamf-state.json"
     with pointer_lock(run_dir):
@@ -221,7 +226,7 @@ def parent_acceptance_for_publication(
         if current is None:
             if candidate.generation != 0 or candidate.parent_manifest_sha256 is not None:
                 invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
-            return None
+            return None, None
         if current["generation"] == candidate.generation:
             if (current["run_id"] != candidate.run_id
                     or current["parent_manifest_sha256"] != candidate.parent_manifest_sha256
@@ -229,14 +234,25 @@ def parent_acceptance_for_publication(
                 invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
             manifest = live_manifest(run_dir, current)
             if manifest.get("schema") != ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA:
-                return _UNBOUND_RETRY
-            return manifest.get("parent_acceptance_sha256")
+                return _UNBOUND_RETRY, None
+            return manifest.get("parent_acceptance_sha256"), None
         if (current["run_id"] != candidate.run_id
                 or current["generation"] != candidate.generation - 1
                 or current["manifest_sha256"] != candidate.parent_manifest_sha256):
             invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
+        if parent_witness is None and bind_parent_witness_locked is not None:
+            parent_witness = bind_parent_witness_locked(run_dir, current)
+        if parent_witness is not None:
+            if require_parent_witness_locked is None:
+                invalid("B13_PUBLICATION_PARENT_REQUIRED")
+            witness = require_parent_witness_locked(run_dir, current, parent_witness)
+            if (witness.student.run_id != current["run_id"]
+                    or witness.student.generation != current["generation"]
+                    or witness.manifest_sha256 != current["manifest_sha256"]):
+                invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+            return witness.acceptance_sha256, witness
         parent = load_bundle(
             run_dir / current["bundle"],
             expected_manifest_sha256=current["manifest_sha256"])
         require_published_acceptance(run_dir, current, parent)
-        return current["acceptance_sha256"]
+        return current["acceptance_sha256"], None

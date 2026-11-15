@@ -67,7 +67,12 @@ class BamfBundleCandidate:
 
 @dataclass(frozen=True)
 class CompleteStudent(BamfBundleCandidate):
-    """Cold-loaded immutable generation with exact B12 retained custody."""
+    """Complete immutable generation with exact B12 retained custody.
+
+    Instances normally come from a custody-validated cold load. B13 may also
+    materialize the just-serialized child in memory for same-process outbox
+    reconciliation; persisted retry/recovery still performs a full cold load.
+    """
 
 
 @dataclass(frozen=True)
@@ -263,3 +268,18 @@ def sidecar_records(candidate: BamfBundleCandidate) -> dict:
         records["run_identity"] = candidate.run_identity.to_record()
     validate_sidecars(candidate.extents, candidate.provenance, records)
     return records
+
+
+def complete_student_from_candidate(candidate: BamfBundleCandidate) -> CompleteStudent:
+    """Materialize the exact in-memory child that deterministic B13 serialization writes."""
+    if type(candidate) is not BamfBundleCandidate:
+        invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+    records = sidecar_records(candidate)
+    return CompleteStudent(
+        candidate.run_id, candidate.generation, candidate.parent_manifest_sha256,
+        candidate.implementation_sha256, candidate.topology, candidate.extents,
+        candidate.retained_state, candidate.optimizer_hyperparameters,
+        candidate.provenance, dict(candidate.semantic_abi),
+        dict(candidate.compiler_features), dict(candidate.correction_frontier),
+        dict(candidate.teacher_state), dict(candidate.evaluation_contract),
+        dict(candidate.transition), tuple(records["outbox"]), candidate.run_identity)

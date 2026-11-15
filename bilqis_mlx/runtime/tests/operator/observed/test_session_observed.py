@@ -27,7 +27,8 @@ class SessionObservationTests(unittest.TestCase):
                       update=lambda **fields: events.append(fields))
         parent = NS(retained_state=NS(optimizer_step=4), optimizer_hyperparameters='hp')
         selection = NS(status='TEACHER_SELECTED', offer=NS(
-            capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},)),
+            capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},),
+            _planning_generation=NS(_accepted_currentness='currentness')),
             visit=NS(identity=NS(visit_id='visit')))
         steps = [NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=i)) for i in (1, 2, 3)]
         def assess(*args, observer, **kwargs):
@@ -41,6 +42,12 @@ class SessionObservationTests(unittest.TestCase):
             'accepted_priority_school': 'school', 'select_foundation_priority_visit': selection,
             '_Capture': 'capture', 'FactoryDeliveryObservation': 'delivery',
             'bind_accepted_execution_cache': 'cache', 'candidate_step_horizon': 3,
+            'currentness_metrics': {
+                'deep_authentication_count': 1,
+                'accepted_cache_currentness_count': 3,
+                'full_candidate_identity_hashes': 1,
+                'bundle_tree_scans': 2,
+            },
             'issue_factory_retention_decision': NS(accepted=False),
             'resolve_candidate': 'retained',
         }
@@ -64,6 +71,7 @@ class SessionObservationTests(unittest.TestCase):
     def test_operator_publishes_terminal_only_after_publication(self):
         import json
         from tempfile import TemporaryDirectory
+        from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import PublicationMetrics
         from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
         with TemporaryDirectory() as tmp:
             path = Path(tmp)
@@ -74,6 +82,7 @@ class SessionObservationTests(unittest.TestCase):
             snapshots = []
             def publish(*args, **kwargs):
                 snapshots.append(json.loads((path / 'trainer-observed.json').read_text())['visits'][-1])
+                kwargs['publication_observer'](PublicationMetrics(1, 2, 3, 4, 5))
             prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
             with patch(prefix + 'prepare_bamf_visit', return_value=prepared), patch(
                     prefix + 'accept_and_publish', side_effect=publish), patch(
@@ -82,6 +91,11 @@ class SessionObservationTests(unittest.TestCase):
             final = json.loads((path / 'trainer-observed.json').read_text())['visits'][-1]
             self.assertEqual((snapshots[0]['phase'], snapshots[0]['outcome']), ('PUBLISHING', 'RUNNING'))
             self.assertEqual((final['phase'], final['outcome']), ('COMPLETED', 'ACCEPTED'))
+            self.assertEqual(final['publication_parent_bundle_loads'], 1)
+            self.assertEqual(final['publication_child_bundle_loads'], 2)
+            self.assertEqual(final['publication_tensor_bytes_read'], 3)
+            self.assertEqual(final['publication_write_bytes'], 4)
+            self.assertEqual(final['publication_fsync_bytes'], 5)
 
     def test_horizon_stops_after_real_motif_transition(self):
         from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon
