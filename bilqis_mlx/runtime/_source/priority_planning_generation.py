@@ -6,6 +6,7 @@ import hashlib
 from pathlib import Path
 
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext, _invalid_source_batch
+from bilqis_mlx.semantics.domains import contract_digest
 
 
 _PLANNING_ISSUER = object()
@@ -17,7 +18,7 @@ def _current_cache(source_context, parent):
     from bilqis_mlx.runtime.bamf_bundle import CompleteStudent
     from bilqis_mlx.runtime.bamf_bundle.accepted_runtime import _published_in_memory_identity
     from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
-    from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+    from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_execution_generation
     if type(parent) is not CompleteStudent:
         _invalid_source_batch('BAMF_PRIORITY_SOURCE_CONTEXT_INVALID')
     host = source_context._accepted_runtime_host
@@ -27,11 +28,9 @@ def _current_cache(source_context, parent):
         _invalid_source_batch('BAMF_PRIORITY_SOURCE_CONTEXT_INVALID')
     cache = host._accepted_cache
     _published_in_memory_identity(source_context.run_dir, parent)
-    generation = execution_generation_digest(
-        parent.retained_state.optimizer.parameters,
-        spec=parent.topology,
-        extents=parent.extents,
-    )
+    generation = bind_execution_generation(
+        cache, parent.retained_state.optimizer.parameters,
+        spec=parent.topology, extents=parent.extents).generation_digest
     if (cache.run_id != parent.run_id or cache.generation != parent.generation
             or cache.generation_binding != generation):
         _invalid_source_batch('BAMF_PRIORITY_SOURCE_ACCEPTED_GENERATION_DRIFT')
@@ -80,11 +79,16 @@ class PriorityPlanningGeneration:
     acceptance_sha256: str
     acceptance_file_sha256: str
     run_identity_sha256: str
+    release_sha256: str
+    correction_frontier_sha256: str
+    feature_receipt_sha256: str
     _run_dir: Path = field(repr=False)
     _source_context: object = field(repr=False, compare=False)
     _parent: object = field(repr=False, compare=False)
     _cache: object = field(repr=False, compare=False)
     _authenticated_features: object = field(repr=False, compare=False)
+    _bundle_currentness: object = field(repr=False, compare=False)
+    _source_authority_currentness: object = field(repr=False, compare=False)
     _retained_guard: object = field(repr=False, compare=False)
     _issuance: object = field(repr=False, compare=False)
 
@@ -108,7 +112,6 @@ def _require_planning_generation(binding, source_context, parent):
     if (cache.accepted_manifest_sha256 != binding.accepted_manifest_sha256
             or cache.generation_binding != binding.generation_binding):
         _invalid_source_batch('BAMF_PRIORITY_PLANNING_GENERATION_DRIFT')
-    from bilqis_mlx.runtime.bamf_bundle.codec import validate_bamf_bundle_custody
     run_dir = binding._run_dir
     pointer, acceptance_file_sha256 = _planning_pointer_snapshot(run_dir)
     if (pointer.get('run_id') != cache.run_id
@@ -117,16 +120,24 @@ def _require_planning_generation(binding, source_context, parent):
             or pointer.get('acceptance_sha256') != binding.acceptance_sha256
             or acceptance_file_sha256 != binding.acceptance_file_sha256):
         _invalid_source_batch('BAMF_PRIORITY_PLANNING_GENERATION_DRIFT')
-    validate_bamf_bundle_custody(
-        run_dir / 'bamf-bundles' / binding.accepted_manifest_sha256,
-        expected_manifest_sha256=binding.accepted_manifest_sha256,
-    )
-    from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import (
-        resolve_source_authority_registry,
-    )
-    if (resolve_source_authority_registry(run_dir, parent.correction_frontier)
-            != cache._correction_registry):
+    if (source_context.release.release_sha256 != binding.release_sha256
+            or contract_digest(parent.correction_frontier)
+            != binding.correction_frontier_sha256
+            or binding._authenticated_features.receipt.digest
+            != binding.feature_receipt_sha256
+            or binding._authenticated_features.receipt.generation_manifest_sha256
+            != binding.accepted_manifest_sha256):
         _invalid_source_batch('BAMF_PRIORITY_PLANNING_GENERATION_DRIFT')
+    from bilqis_mlx.runtime.bamf_bundle.bundle_currentness import (
+        require_bamf_bundle_currentness,
+    )
+    require_bamf_bundle_currentness(binding._bundle_currentness)
+    from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import (
+        require_source_authority_currentness,
+    )
+    require_source_authority_currentness(
+        binding._source_authority_currentness, run_dir,
+        parent.correction_frontier, cache._correction_registry)
     return cache, binding._authenticated_features
 
 
@@ -143,6 +154,17 @@ def bind_priority_planning_generation(source_context, parent, atlas_artifact_pat
     from bilqis_mlx.runtime.bamf_bundle import authenticate_bamf_execution_feature_context
     authenticated = authenticate_bamf_execution_feature_context(
         parent, atlas_artifact_path, source_context.run_dir)
+    from bilqis_mlx.runtime.bamf_bundle.bundle_currentness import (
+        bind_bamf_bundle_currentness,
+    )
+    bundle_currentness = bind_bamf_bundle_currentness(
+        run_dir / 'bamf-bundles' / cache.accepted_manifest_sha256,
+        expected_manifest_sha256=cache.accepted_manifest_sha256)
+    from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import (
+        bind_source_authority_currentness,
+    )
+    source_authority_currentness = bind_source_authority_currentness(
+        run_dir, parent.correction_frontier, cache._correction_registry)
     after_pointer, after_acceptance_file = _planning_pointer_snapshot(run_dir)
     if (before_pointer != after_pointer
             or before_acceptance_file != after_acceptance_file
@@ -159,11 +181,16 @@ def bind_priority_planning_generation(source_context, parent, atlas_artifact_pat
         ('acceptance_sha256', after_pointer['acceptance_sha256']),
         ('acceptance_file_sha256', after_acceptance_file),
         ('run_identity_sha256', parent.run_identity.digest),
+        ('release_sha256', source_context.release.release_sha256),
+        ('correction_frontier_sha256', contract_digest(parent.correction_frontier)),
+        ('feature_receipt_sha256', authenticated.receipt.digest),
         ('_run_dir', run_dir),
         ('_source_context', source_context),
         ('_parent', parent),
         ('_cache', cache),
         ('_authenticated_features', authenticated),
+        ('_bundle_currentness', bundle_currentness),
+        ('_source_authority_currentness', source_authority_currentness),
         ('_retained_guard', _retained_object_guard(parent)),
         ('_issuance', _PLANNING_ISSUER),
     ):
