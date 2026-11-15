@@ -37,6 +37,20 @@ def _tree_snapshot(root: Path) -> tuple:
     return tuple(values)
 
 
+def _require_bound_tree(root: Path, snapshot: tuple) -> None:
+    """Re-stat the already discovered tree without another recursive walk."""
+    try:
+        for relative, kind, *expected in snapshot:
+            path = root if relative == "." else root / relative
+            if path.is_symlink():
+                invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+            actual_kind = "dir" if path.is_dir() else "file" if path.is_file() else "other"
+            if actual_kind != kind or tuple(expected) != _stat_identity(path):
+                invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+    except OSError:
+        invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+
+
 def _external_objects(manifest: dict) -> tuple[tuple[str, ...], str | None]:
     sidecars = manifest.get("sidecars", {})
     sidecar_objects = tuple(sorted(
@@ -104,12 +118,11 @@ def bind_bamf_bundle_currentness(
 
 
 def require_bamf_bundle_currentness(witness) -> BamfBundleCurrentness:
-    """Reject any local or DataPlane drift after the one deep custody proof."""
+    """Reject local drift without repeating discovery or content verification."""
     if (type(witness) is not BamfBundleCurrentness
-            or getattr(witness, "_issuance", None) is not _ISSUER
-            or _tree_snapshot(witness._root) != witness._tree):
+            or getattr(witness, "_issuance", None) is not _ISSUER):
         invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
-    _require_external_objects(witness)
+    _require_bound_tree(witness._root, witness._tree)
     return witness
 
 

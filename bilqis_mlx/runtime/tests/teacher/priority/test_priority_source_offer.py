@@ -45,36 +45,33 @@ def test_offer_rejects_context_without_accepted_host():
 
 
 def test_planning_generation_rejects_acceptance_change_during_binding():
-    from bilqis_mlx.runtime import priority_source_offer as offer_module
-    from bilqis_mlx.runtime import priority_planning_generation as generation_module
-    from bilqis_mlx.runtime.source_execution import SourceExecutionContext
+    from bilqis_mlx.runtime.bamf_bundle import currentness_transaction
 
-    pointer = {
-        'run_id': 'run', 'generation': 0,
-        'manifest_sha256': 'a' * 64, 'acceptance_sha256': 'b' * 64,
-    }
     cache = SimpleNamespace(
         run_id='run', generation=0, accepted_manifest_sha256='a' * 64,
         generation_binding='c' * 64, _correction_registry=None,
+        _candidate_identity_sha256='d' * 64,
     )
+    optimizer = SimpleNamespace(
+        parameters={}, m={}, v={}, update_counts={})
+    state = SimpleNamespace(
+        optimizer=optimizer, optimizer_step=0, policy=object(), allocations=object())
     parent = SimpleNamespace(
-        run_identity=SimpleNamespace(digest='d' * 64), correction_frontier={})
-    context = object.__new__(SourceExecutionContext)
-    object.__setattr__(context, 'run_dir', Path('/run'))
+        run_id='run', generation=0, retained_state=state, correction_frontier={})
+    before = ('e' * 64, 'b' * 64, (1, 2, 3, 4, 5))
+    after = ('f' * 64, 'b' * 64, (1, 2, 3, 4, 5))
     with patch.object(
-            SourceExecutionContext, 'require_accepted_runtime', return_value=None), patch.object(
-            generation_module, '_planning_pointer_snapshot',
-            side_effect=((pointer, 'e' * 64), (pointer, 'f' * 64))), patch.object(
-            generation_module, '_current_cache', return_value=cache), patch(
-            'bilqis_mlx.runtime.bamf_bundle.authenticate_bamf_execution_feature_context',
-            return_value=SimpleNamespace(receipt=SimpleNamespace(digest='f' * 64))), patch(
-            'bilqis_mlx.runtime.bamf_bundle.bundle_currentness.'
-            'bind_bamf_bundle_currentness', return_value=object()), patch(
-            'bilqis_mlx.runtime.bamf_bundle.source_authority_custody.'
-            'bind_source_authority_currentness', return_value=object()):
+            currentness_transaction, 'CompleteStudent', SimpleNamespace), patch.object(
+            currentness_transaction, '_pointer_snapshot',
+            side_effect=(before, after)), patch.object(
+            currentness_transaction, 'bind_bamf_bundle_currentness',
+            return_value=object()), patch.object(
+            currentness_transaction, 'bind_source_authority_currentness',
+            return_value=object()):
         with pytest.raises(BilqisError) as error:
-            offer_module.bind_priority_planning_generation(context, parent, '/atlas')
-    assert error.value.context['reason'] == 'BAMF_PRIORITY_PLANNING_GENERATION_INVALID'
+            currentness_transaction.bind_accepted_currentness_transaction(
+                Path('/run'), parent, cache)
+    assert error.value.context['reason'] == 'B13_CURRENTNESS_POINTER_DRIFT'
 
 
 @pytest.mark.parametrize('kind', ['SOURCE', 'RIGHTS'])

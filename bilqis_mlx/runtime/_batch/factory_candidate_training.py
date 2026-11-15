@@ -36,7 +36,7 @@ def _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows, *,
         capability, teacher_hparams, max_norm, observation, memory_budget,
         cache, generation, prepared, start, capture_diagnostics,
-        salience_supervision=None, candidate=None,
+        salience_supervision=None, candidate=None, currentness_transaction=None,
         finalize_candidate=True) -> FactoryCandidateStep:
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
     feature_context = authenticate_bamf_execution_feature_context(
@@ -53,7 +53,8 @@ def _execute_prepared_candidate(
         transaction = admit_uninterrupted_candidate_step(
             Path(run_dir), parent, loss_bearing_target=True,
             gradient_execution=gradient, teacher_hparams=teacher_hparams,
-            max_norm=max_norm, candidate=candidate, execution_cache=cache)
+            max_norm=max_norm, candidate=candidate, execution_cache=cache,
+            currentness_transaction=currentness_transaction)
         loss_total = gradient.loss_total
         gradient_launches, vectorized_microbatches = 1, 0
     else:
@@ -67,7 +68,8 @@ def _execute_prepared_candidate(
             training_batch=prepared.training_batch,
             logical_batch_plan=resource_plan,
             teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
-            execution_cache=cache)
+            execution_cache=cache,
+            currentness_transaction=currentness_transaction)
         loss_total = gradient.weighted_mean_loss
         gradient_launches = gradient.gradient_launches
         vectorized_microbatches = gradient.vectorized_microbatches
@@ -128,6 +130,7 @@ def execute_factory_candidate_step(
     salience_provider=None,
     candidate=None,
     finalize_candidate: bool = True,
+    currentness_transaction=None,
 ) -> FactoryCandidateStep:
     """Compose C02→C08→B10/B11→candidate custody without publishing state.
 
@@ -142,7 +145,14 @@ def execute_factory_candidate_step(
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
     source_context.require_accepted_runtime(Path(run_dir))
     start = time.perf_counter()
-    cache = bind_accepted_execution_cache(Path(run_dir))
+    if currentness_transaction is None:
+        cache = bind_accepted_execution_cache(Path(run_dir))
+    else:
+        from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+            require_accepted_currentness,
+        )
+        cache = require_accepted_currentness(
+            currentness_transaction, parent=parent)._cache
     if candidate is not None:
         cache = bind_candidate_execution_cache(
             cache, parent, candidate, spec=parent.topology, extents=parent.extents)
@@ -176,6 +186,7 @@ def execute_factory_candidate_step(
         cache=cache, generation=generation, prepared=prepared, start=start,
         capture_diagnostics=capture_diagnostics,
         salience_supervision=supervision, candidate=candidate,
+        currentness_transaction=currentness_transaction,
         finalize_candidate=finalize_candidate)
 
 

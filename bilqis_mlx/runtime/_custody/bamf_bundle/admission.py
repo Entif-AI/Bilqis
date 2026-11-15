@@ -23,7 +23,8 @@ from bilqis_mlx.learning.atlas_retention_decision import (
     CandidateRetentionDecision,
 )
 from bilqis_mlx.learning.atlas_candidate import (
-    CandidateState, CandidateTransaction, begin_candidate, resolve_candidate,
+    CandidateState, CandidateTransaction, _begin_candidate_with_parent_identity,
+    resolve_candidate,
 )
 from bilqis_mlx.learning.atlas_plasticity import group_eligibility, next_update_mode
 from bilqis_mlx.learning.atlas_participation import ActiveAdmittedRows
@@ -158,14 +159,14 @@ def _admit_loaded_candidate_step(
             or identity.generation != parent.generation
             or identity.topology_digest != parent.topology.digest
             or identity.extents_digest != parent.extents.digest
-            or identity.optimizer_step != parent.retained_state.optimizer_step
-            or identity.candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or identity.optimizer_step != parent.retained_state.optimizer_step):
         invalid("BAMF_GENERATION_POINTER_DRIFT")
     if candidate is None:
-        candidate = begin_candidate(parent.retained_state)
+        candidate = _begin_candidate_with_parent_identity(
+            parent.retained_state, identity.candidate_identity_sha256)
     elif (type(candidate) is not CandidateTransaction
-            or candidate.parent is not parent.retained_state):
+            or candidate.parent is not parent.retained_state
+            or candidate._parent_identity_sha256 != identity.candidate_identity_sha256):
         invalid("BAMF_CANDIDATE_CONTINUATION_PARENT_DRIFT")
     candidate.__post_init__()
     eligibility, _active_admitted = derive_participation_inputs(parent)
@@ -193,9 +194,13 @@ def admit_uninterrupted_candidate_step(
         loss_bearing_target, gradient_execution=None, logical_batch_execution=None,
         training_batch=None, logical_batch_plan=None, teacher_hparams,
         max_norm: float, candidate: CandidateTransaction | None = None,
-        execution_cache=None) -> CandidateTransaction:
+        execution_cache=None, currentness_transaction=None) -> CandidateTransaction:
     """Continue held state only after full current B13 custody authentication."""
-    identity = _published_in_memory_identity(run_dir, parent)
+    if currentness_transaction is None:
+        identity = _published_in_memory_identity(run_dir, parent)
+    else:
+        from .currentness_transaction import accepted_currentness_identity
+        identity = accepted_currentness_identity(currentness_transaction, parent)
     return _admit_loaded_candidate_step(
         parent, identity, gradients,
         loss_bearing_target=loss_bearing_target,

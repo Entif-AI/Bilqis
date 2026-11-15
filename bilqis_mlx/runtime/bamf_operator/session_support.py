@@ -38,9 +38,9 @@ class BamfPreparedVisit:
     successor: object | None = None
 
 
-def _execution_context(run_dir: Path):
+def _execution_context(run_dir: Path, *, currentness_metrics=None):
     parent = load_accepted_generation(run_dir)
-    host = AcceptedRuntimeHost(run_dir)
+    host = AcceptedRuntimeHost(run_dir, currentness_metrics=currentness_metrics)
     context = host.source_context(source_root=LEGACY_SOURCE.resolve())
     accepted = read_accepted_generation_feature_context(run_dir / "bamf-state.json")
     identity = accepted.receipt

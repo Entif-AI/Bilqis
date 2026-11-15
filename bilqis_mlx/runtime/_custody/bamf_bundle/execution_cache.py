@@ -47,6 +47,8 @@ class AcceptedExecutionCache:
     _source_authority: object | None = field(init=False, repr=False, compare=False)
     _execution_bindings: dict = field(init=False, repr=False, compare=False)
     _execution_binding_lock: object = field(init=False, repr=False, compare=False)
+    _candidate_identity_sha256: str | None = field(init=False, repr=False, compare=False)
+    _currentness_transaction: object | None = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
         _invalid("B13_EXECUTION_CACHE_CALLER_CONSTRUCTION_FORBIDDEN")
@@ -111,6 +113,8 @@ def _new_execution_cache(
         ("_source_authority", None),
         ("_execution_bindings", {}),
         ("_execution_binding_lock", RLock()),
+        ("_candidate_identity_sha256", None),
+        ("_currentness_transaction", None),
     ):
         object.__setattr__(cache, name, value)
     cache.__post_init__()
@@ -214,6 +218,11 @@ def require_accepted_execution_cache(cache) -> AcceptedExecutionCache:
     if type(cache) is not AcceptedExecutionCache:
         _invalid("B13_EXECUTION_CACHE_REQUIRED")
     cache.__post_init__()
+    currentness = getattr(cache, "_currentness_transaction", None)
+    if currentness is not None:
+        from .currentness_transaction import require_accepted_currentness
+        require_accepted_currentness(currentness, cache)
+        return cache
     from bilqis_mlx.runtime.bamf_bundle.accepted_runtime import (
         _require_owned_execution_cache,
     )
