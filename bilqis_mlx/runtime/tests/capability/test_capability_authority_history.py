@@ -45,7 +45,7 @@ class AcceptedProgressionHistoryTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def _publish_support_and_correction(self):
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             publish_support_fixture(
                 self.run,
                 capability="target",
@@ -78,7 +78,7 @@ class AcceptedProgressionHistoryTests(unittest.TestCase):
         )
         if correction_registry is not None:
             authorities["correction_authority_registry"] = correction_registry
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             return evaluate_accepted_progression_authority(
                 self.run, release, "target", target, (), replay, **authorities)
 

@@ -41,6 +41,12 @@ def _bamf_operator_admission_status(report):
 
 
 def _reject_fresh_external_legacy_fallthrough(args, run_dir: Path) -> None:
+    if args.dry_run and args.verify_source:
+        # Source verification is an explicitly neural-inert inspection path.
+        # It may use a disposable target solely to prove that preflight does
+        # not mutate run custody; it is not permission to create or train an
+        # external legacy lineage.
+        return
     legacy_pointer = run_dir / "state.json"
     if (args.resume or args.bamf_v2_foundation_explicit
             or args.model_topology is not None

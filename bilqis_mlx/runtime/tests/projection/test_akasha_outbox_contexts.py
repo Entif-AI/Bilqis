@@ -253,7 +253,7 @@ class AkashaOutboxContextIntegrationTests(CapabilitySupportOwnerFixture):
         owner = self.load_support(AUTHORITY)
         before = self._training_custody()
 
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host = AcceptedRuntimeHost(self.run)
             transition = host.record_context_transition(
                 case.previous, case.contexts)
@@ -271,7 +271,7 @@ class AkashaOutboxContextIntegrationTests(CapabilitySupportOwnerFixture):
             digest="d" * 64,
             eligible=False,
         )
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((result,)))
 

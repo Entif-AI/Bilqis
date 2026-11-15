@@ -165,14 +165,6 @@ def _atlas_features(asts: tuple[StreamingAST, ...], semantic_release: str) -> At
 
 class AtlasTrainingAdapterTest(unittest.TestCase):
     def setUp(self):
-        # Synthetic factory fixtures have no source-pinned A01 artifact.
-        authority = patch('bilqis_mlx.runtime.atlas_training_adapter.rederive_training_authority')
-        self.authority = authority.start()
-        self.addCleanup(authority.stop)
-        inventory = patch(
-            'bilqis_mlx.runtime.training_input_authority.source_frame_inventory')
-        self.inventory = inventory.start()
-        self.addCleanup(inventory.stop)
         course, graph, sources, answers, _ = closed_source_fixture()
         registered = sources.require('fixture.z-generator/v1', 'fixture.z-oracle/v1')
         def draw(**kwargs):
@@ -233,32 +225,40 @@ class AtlasTrainingAdapterTest(unittest.TestCase):
             row['id']: (ast.source_instance_id, ast.frames)
             for row, ast in zip(rows, legitimate_asts)
         }
-        self.inventory.side_effect = lambda _context, row, _selection: inventories[row['id']]
         schema = _training_schema()
         semantic_release = base_task.semantic_release
         compiler_config = FrameCompilerConfig(
             (schema,), SchemaTagMap.from_schemas(semantic_release, (schema,)),
             None,
             base_task, base_frontier, base_policy)
-        self.authority.return_value = _atlas_features(legitimate_asts, semantic_release)
-        return compile_training_batch(rows, context, ModelTopologySpecV2(),
-            delivery=delivery, delivery_capability='Z.C0', delivery_release_sha256=release_sha or context.release.release_sha256,
-            teacher_strategy={'policy': 'focused'}, requested_count=3, optimizer_step_seed=42,
-            visit_provenance=(visit or visit_provenance('Z.C0')),
-            source_authority=context.bind_rows(
-                rows, seed=source_seed, capability='Z.C0', each=len(rows)),
-            rehearsal_by_id={rows[0]['id']: 'prior'}, visible_ends=visible_ends,
-            source_ast_for=source_ast_override or (
-                lambda tokens: source_ast_for(
-                    tokens, context.release.release_sha256,
-                    context.graph)),
-            compiler_config=compiler_config,
-            feature_artifact_path='synthetic:feature-artifact',
-            answer_plan_for=lambda *args: {**answer_plan_for(*args), 'generation_binding': self.model_generation},
-            frames_for_ast=frames_for_ast, task_scope=task,
-            source_frontier=frontier, eligibility_policy=context_policy,
-            generation_binding=generation or self.model_generation,
-            sealed_holdout_ids=sealed, **(extra_kwargs or {}))
+        # Synthetic factory fixtures have neither a source-pinned A01 artifact
+        # nor a production source-frame inventory. Keep both substitutions
+        # scoped to this compilation so one fixture can never leak authority
+        # into a later repository test.
+        with patch(
+                'bilqis_mlx.runtime.atlas_training_adapter.rederive_training_authority',
+                return_value=_atlas_features(legitimate_asts, semantic_release)), patch(
+                    'bilqis_mlx.runtime.training_input_authority.source_frame_inventory',
+                    side_effect=lambda _context, row, _selection:
+                        inventories[row['id']]):
+            return compile_training_batch(rows, context, ModelTopologySpecV2(),
+                delivery=delivery, delivery_capability='Z.C0', delivery_release_sha256=release_sha or context.release.release_sha256,
+                teacher_strategy={'policy': 'focused'}, requested_count=3, optimizer_step_seed=42,
+                visit_provenance=(visit or visit_provenance('Z.C0')),
+                source_authority=context.bind_rows(
+                    rows, seed=source_seed, capability='Z.C0', each=len(rows)),
+                rehearsal_by_id={rows[0]['id']: 'prior'}, visible_ends=visible_ends,
+                source_ast_for=source_ast_override or (
+                    lambda tokens: source_ast_for(
+                        tokens, context.release.release_sha256,
+                        context.graph)),
+                compiler_config=compiler_config,
+                feature_artifact_path='synthetic:feature-artifact',
+                answer_plan_for=lambda *args: {**answer_plan_for(*args), 'generation_binding': self.model_generation},
+                frames_for_ast=frames_for_ast, task_scope=task,
+                source_frontier=frontier, eligibility_policy=context_policy,
+                generation_binding=generation or self.model_generation,
+                sealed_holdout_ids=sealed, **(extra_kwargs or {}))
 
     def test_cross_source_ast_and_frame_substitution_is_rejected(self):
         def forged_ast(tokens):

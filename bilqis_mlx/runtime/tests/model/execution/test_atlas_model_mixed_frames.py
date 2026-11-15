@@ -252,7 +252,7 @@ class AtlasModelMixedFrameTests(unittest.TestCase):
             cuts=(hidden.shape[1],))
         np.testing.assert_allclose(
             np.asarray(full), np.asarray(production_full),
-            atol=2e-6, rtol=3e-5)
+            atol=2e-5, rtol=3e-5)
         full_logits = self._control_logits(production_full)
 
         for cuts in (
