@@ -15,7 +15,7 @@ export async function modelJourney(page, framePages) {
   check((await hook('model-neural-fixture-posture').innerText()).includes('read-only'), 'fixture posture explicit');
   check((await hook('model-neural-ccgqa-layer-7').innerText()).includes('Mask-invalid violations: 2'), 'invalid evidence remains explicit');
   check(await page.evaluate(() => {
-    const ids = [...document.querySelectorAll('[data-test-id="fixture-host"] [data-test-id]')].map(element => element.dataset.testId);
+    const ids = [...document.querySelectorAll('[data-test-id^="model-"]')].map(element => element.dataset.testId);
     return ids.length === new Set(ids).size;
   }), 'neural hooks unique');
 
@@ -42,15 +42,14 @@ export async function modelJourney(page, framePages) {
   await hook('model-frame-result-set').waitFor();
   check((await hook('model-frame-fixture-posture').innerText()).includes('READ ONLY'), 'frame fixture posture explicit');
   check((await hook('model-frame-coverage').innerText()).includes('3 returned fixture receipts'), 'frame coverage literal');
-  const example = await hook('model-frame-example').locator('option').nth(1).getAttribute('value');
-  await hook('model-frame-example').selectOption(example);
+  await hook('model-frame-example').selectOption({ index: 1 });
   await hook('model-frame-selected-metrics').waitFor();
   check(await hook('model-frame-receipt-provenance').evaluate(node => node.open) === false, 'receipt provenance is progressive disclosure');
-  await hook('model-frame-receipt-provenance').locator('summary').click();
+  await hook('model-frame-receipt-provenance-toggle').click();
   check((await hook('model-frame-receipt-provenance').innerText()).includes('Compiler digest'), 'exact compiler receipt remains accessible');
   check(await hook('model-frame-frontier').count() === 1, 'prediction frontier available');
   check(await page.evaluate(() => {
-    const ids = [...document.querySelectorAll('[data-test-id="fixture-host"] [data-test-id]')].map(element => element.dataset.testId);
+    const ids = [...document.querySelectorAll('[data-test-id^="model-"]')].map(element => element.dataset.testId);
     return ids.length === new Set(ids).size;
   }), 'frame hooks unique');
   await hook('model-frame-generation').selectOption('6');

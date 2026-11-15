@@ -18,7 +18,6 @@ function harness(t) {
   const nodes = new Map([
     ['[data-test-id="model-frame-workspace-host"]', host],
     ['[data-test-id="shell-model-subnav"]', element()],
-    ['[data-test-id="shell-reference-context-note"]', element()],
   ]);
   globalThis.document = { querySelector: key => nodes.get(key), querySelectorAll: () => [] };
   let resolve;

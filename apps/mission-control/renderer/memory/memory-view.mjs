@@ -88,11 +88,11 @@ function summaryPanel(snapshot) {
     </header>
     <dl class="memory-metric-band">
       <div data-test-id="memory-summary-allocation"><dt>${t("memory.summary.allocatedCapacity")}</dt><dd>${snapshot.allocatedSlots} / ${snapshot.capacitySlots}</dd></div>
-      <div><dt>${t("memory.summary.eligibleHits")}</dt><dd>${totals.hits}</dd><small>${t("memory.summary.hitBreakdown", { exact: totals.exact, structural: totals.structural })}</small></div>
-      <div><dt>${t("memory.summary.misses")}</dt><dd>${totals.misses}</dd><small>${t("memory.summary.missDetail")}</small></div>
-      <div><dt>${t("memory.summary.hitRate")}</dt><dd>${pct(totals.hitRate)}</dd><small>${t("memory.summary.hitRateDetail")}</small></div>
-      <div><dt>${t("memory.summary.gateRate")}</dt><dd>${pct(totals.gateUseRate)}</dd><small>${t("memory.summary.gateRateDetail", { used: totals.gateUses, eligible: totals.gateEligibleHits })}</small></div>
-      <div><dt>${t("memory.summary.footprint")}</dt><dd>${bytes(snapshot.memoryFootprint.stateBytes)}</dd><small>${t("memory.summary.footprintDetail", { parameters: bytes(snapshot.memoryFootprint.parameterBytes), optimizer: bytes(snapshot.memoryFootprint.optimizerBytes) })}</small></div>
+      <div><dt>${t("memory.summary.eligibleHits")}</dt><dd>${totals.hits}<small>${t("memory.summary.hitBreakdown", { exact: totals.exact, structural: totals.structural })}</small></dd></div>
+      <div><dt>${t("memory.summary.misses")}</dt><dd>${totals.misses}<small>${t("memory.summary.missDetail")}</small></dd></div>
+      <div><dt>${t("memory.summary.hitRate")}</dt><dd>${pct(totals.hitRate)}<small>${t("memory.summary.hitRateDetail")}</small></dd></div>
+      <div><dt>${t("memory.summary.gateRate")}</dt><dd>${pct(totals.gateUseRate)}<small>${t("memory.summary.gateRateDetail", { used: totals.gateUses, eligible: totals.gateEligibleHits })}</small></dd></div>
+      <div><dt>${t("memory.summary.footprint")}</dt><dd>${bytes(snapshot.memoryFootprint.stateBytes)}<small>${t("memory.summary.footprintDetail", { parameters: bytes(snapshot.memoryFootprint.parameterBytes), optimizer: bytes(snapshot.memoryFootprint.optimizerBytes) })}</small></dd></div>
     </dl>
     <details class="memory-receipts" data-test-id="memory-read-site-receipts">
       <summary>${t("memory.summary.receipts", { count: snapshot.readReceipts.length })}</summary>
@@ -128,7 +128,7 @@ function atlasPanel(snapshot) {
       <strong data-test-id="memory-page-position">${t("memory.atlas.page", { current: currentPosition + 1, total: pages.length })}</strong>
       <button type="button" data-memory-page-step="1" data-test-id="memory-page-next" ${currentPosition >= pages.length - 1 ? "disabled" : ""}>${t("memory.atlas.next")}</button>
     </nav>
-    <div class="memory-table-wrap" tabindex="0" role="region" aria-label="${e(t("memory.atlas.title"))}">
+    <div class="memory-table-wrap" tabindex="0" role="region" aria-label="${e(t("memory.atlas.title"))}" data-test-id="memory-atlas-table-wrap">
       <table class="memory-slot-table">
         <thead><tr>
           <th scope="col">${t("memory.atlas.address")}</th>
@@ -234,7 +234,8 @@ function comparePanel(snapshot) {
     <label class="memory-compare-control">${t("memory.compare.from")}
       <select data-memory-compare data-test-id="memory-compare-generation">${candidates.map((item) => `<option value="${item.generation}" ${item.generation === before.generation ? "selected" : ""}>${t("memory.compare.option", { generation: item.generation })}</option>`).join("")}</select>
     </label>
-    <div class="memory-table-wrap">
+    <div class="memory-table-wrap" tabindex="0" role="region"
+         aria-label="${e(t("memory.compare.title"))}" data-test-id="memory-compare-table-wrap">
       <table class="memory-delta-table"><thead><tr><th>${t("memory.compare.dimension")}</th><th>${t("memory.compare.count")}</th><th>${t("memory.compare.identities")}</th></tr></thead>
         <tbody>${rows.map(([kind, key, identities]) => `<tr data-delta-kind="${kind}" data-test-id="memory-compare-${kind}"><th scope="row">${t(key)}</th><td>${identities.length}</td><td>${identities.length ? identities.map((identity) => `<code>${e(identity)}</code>`).join("<br>") : t("memory.value.none")}</td></tr>`).join("")}</tbody>
       </table>

@@ -5,8 +5,7 @@
 .corrections-view h4 { font-size: var(--type-subsection); line-height: var(--line-subsection); }
 .corrections-view :is(code,caption) { font-size: var(--type-data); }
 .corrections-view code { font-family: var(--font-mono); overflow-wrap: anywhere; white-space: normal; font-variant-numeric: tabular-nums; }
-.corrections-heading { display: grid; gap: var(--space-2); }
-.corrections-heading p, .correction-context dt { color: var(--text-muted); }
+.correction-context dt { color: var(--text-muted); }
 .corrections-fixture-notice { display: grid; gap: var(--space-2); padding-inline-start: var(--space-4); border-inline-start: 3px solid var(--border-strong); max-inline-size: 95ch; }
 .corrections-fixture-notice p { font-size: var(--type-body); }
 .correction-context { display: grid; gap: var(--space-3); }

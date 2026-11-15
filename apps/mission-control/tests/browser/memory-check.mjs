@@ -13,15 +13,15 @@ const outputRoot = path.resolve(repoRoot, process.env.BILQIS_MEMORY_EVIDENCE_DIR
 const chromePath = process.env.BILQIS_CHROME_PATH ?? "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
 
 function harnessHtml() {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Memory visual harness</title></head><body><main id="host"></main><pre id="browser-result" hidden></pre><script type="module">
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Memory visual harness</title></head><body><main data-test-id="fixture-host"></main><pre data-test-id="browser-result" hidden></pre><script type="module">
 const q=new URLSearchParams(location.search),source=q.get("source")==="baseline"?"baseline":"current",prefix=source==="baseline"?"/baseline/apps/mission-control/renderer":"/current/apps/mission-control/renderer";
 for(const css of ["visual-tokens.css","shell.css","components.css","memory/memory.css"]){const link=document.createElement("link");link.rel="stylesheet";link.href=\`\${prefix}/\${css}\`;document.head.append(link)}
 document.documentElement.dataset.theme=q.get("theme")||"dark";document.documentElement.dataset.density=q.get("density")||"comfortable";if(q.get("rtl")==="1")document.documentElement.dir="rtl";
 document.body.style.cssText="display:block;padding:32px;box-sizing:border-box;";if(q.get("spacing")==="1")document.body.style.cssText+="line-height:1.5;letter-spacing:.12em;word-spacing:.16em;";
-const{renderMemoryView}=await import(\`\${prefix}/memory/memory-view.mjs\`),context=q.get("historical")==="missing"?{runId:"fixture-run",generation:1,mode:"HISTORICAL"}:null;renderMemoryView(document.querySelector("#host"),()=>{},null,context);
-await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const ids=[...document.querySelectorAll("[data-test-id]")].map(el=>el.dataset.testId),interactive=[...document.querySelectorAll("#host button,#host select,#host summary,#host a")].map(el=>{const r=el.getBoundingClientRect();return{tag:el.tagName,w:r.width,h:r.height,text:(el.textContent||"").trim().slice(0,80)}});
-const result={source,theme:document.documentElement.dataset.theme,density:document.documentElement.dataset.density,rtl:document.documentElement.dir==="rtl",documentOverflow:document.documentElement.scrollWidth>innerWidth,scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,duplicateTestIds:ids.filter((v,i)=>ids.indexOf(v)!==i),details:[...document.querySelectorAll("#host details")].map(d=>({testId:d.dataset.testId||null,open:d.open})),historicalUnavailable:!!document.querySelector('[data-test-id="memory-historical-unavailable"]'),currentSummary:!!document.querySelector('[data-test-id="memory-summary"]'),tables:[...document.querySelectorAll(".memory-table-wrap")].map(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,localOverflow:el.scrollWidth>el.clientWidth})),minInteractive:interactive.length?{w:Math.min(...interactive.map(x=>x.w)),h:Math.min(...interactive.map(x=>x.h))}:null,smallInteractive:interactive.filter(x=>x.w<24||x.h<24)};
-document.querySelector("#browser-result").textContent=JSON.stringify(result);</script></body></html>`;
+const{renderMemoryView}=await import(\`\${prefix}/memory/memory-view.mjs\`),context=q.get("historical")==="missing"?{runId:"fixture-run",generation:1,mode:"HISTORICAL"}:null;renderMemoryView(document.querySelector('[data-test-id="fixture-host"]'),()=>{},null,context);
+await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));const ids=[...document.querySelectorAll('[data-test-id^="memory-"]')].map(el=>el.dataset.testId),interactive=[...document.querySelectorAll('[data-test-id^="memory-"]')].filter(el=>["BUTTON","SELECT","SUMMARY","A"].includes(el.tagName)).map(el=>{const r=el.getBoundingClientRect();return{tag:el.tagName,w:r.width,h:r.height,text:(el.textContent||"").trim().slice(0,80)}});
+const result={source,theme:document.documentElement.dataset.theme,density:document.documentElement.dataset.density,rtl:document.documentElement.dir==="rtl",documentOverflow:document.documentElement.scrollWidth>innerWidth,scrollWidth:document.documentElement.scrollWidth,viewport:innerWidth,duplicateTestIds:ids.filter((v,i)=>ids.indexOf(v)!==i),details:[...document.querySelectorAll('[data-test-id^="memory-"]')].filter(el=>el.tagName==="DETAILS").map(d=>({testId:d.dataset.testId||null,open:d.open})),historicalUnavailable:!!document.querySelector('[data-test-id="memory-historical-unavailable"]'),currentSummary:!!document.querySelector('[data-test-id="memory-summary"]'),tables:["memory-atlas-table-wrap","memory-compare-table-wrap"].map(id=>document.querySelector(\`[data-test-id="\${id}"]\`)).filter(Boolean).map(el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,localOverflow:el.scrollWidth>el.clientWidth})),minInteractive:interactive.length?{w:Math.min(...interactive.map(x=>x.w)),h:Math.min(...interactive.map(x=>x.h))}:null,smallInteractive:interactive.filter(x=>x.w<24||x.h<24)};
+document.querySelector('[data-test-id="browser-result"]').textContent=JSON.stringify(result);</script></body></html>`;
 }
 
 function contentType(file) {
@@ -86,7 +86,7 @@ async function runChrome(url, width, height, screenshotPath, reduced = false) {
   let result;
   for (let i = 0; i < 100; i++) {
     await sleep(50);
-    const observed = await send("Runtime.evaluate", { expression: `document.querySelector("#browser-result")?.textContent||""`, returnByValue: true });
+    const observed = await send("Runtime.evaluate", { expression: `document.querySelector('[data-test-id="browser-result"]')?.textContent||""`, returnByValue: true });
     if (observed.result.value) { result = JSON.parse(observed.result.value); break; }
   }
   assert.ok(result, "Memory browser result timed out");

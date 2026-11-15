@@ -100,7 +100,6 @@ async function mount(page, moduleUrl) {
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
 
   await mount(page, "/baseline/app.mjs");
-  await page.locator(".dossier-heading h2").waitFor();
   await page.screenshot({ path: path.join(out, "before-dark.png"), fullPage: true });
 
   await page.evaluate(() => { document.querySelector("#capability-css").href = "/apps/mission-control/renderer/capability/dossier.css"; });
@@ -141,11 +140,14 @@ async function mount(page, moduleUrl) {
   }
 
   await page.evaluate(() => window.__setCapabilityContext({ mode: "LIVE", generation: 3, runId: "fixture:gui05", fixture: true }));
-  await page.locator('[data-test-id="capability-context"]').filter({ hasText: "LIVE" }).waitFor();
+  const context = page.locator('[data-test-id="capability-context"]');
+  await context.waitFor();
+  if (!(await context.innerText()).includes("LIVE")) throw new Error("CAPABILITY_CONTEXT_LIVE_MISSING");
   await page.screenshot({ path: path.join(out, "after-fixture-live-dark.png"), fullPage: true });
   result.fixtureLiveMode = true;
   await page.evaluate(() => window.__setCapabilityContext({ mode: "HISTORICAL", generation: 3, runId: "fixture:gui05", fixture: true }));
-  await page.locator('[data-test-id="capability-context"]').filter({ hasText: "HISTORICAL" }).waitFor();
+  await context.waitFor();
+  if (!(await context.innerText()).includes("HISTORICAL")) throw new Error("CAPABILITY_CONTEXT_HISTORICAL_MISSING");
 
   await page.setViewportSize({ width: 320, height: 1100 });
   await page.evaluate(() => {

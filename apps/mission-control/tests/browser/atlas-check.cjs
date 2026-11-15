@@ -60,7 +60,7 @@ const server = http.createServer((req, res) => {
     overflow: document.documentElement.scrollWidth > innerWidth,
     width: document.documentElement.scrollWidth,
     viewport: innerWidth,
-    offenders: [...document.querySelectorAll('[data-test-id="atlas-view"] *')].map(element => {
+    offenders: [...document.querySelectorAll('[data-test-id^="atlas-"]')].map(element => {
       const rect = element.getBoundingClientRect();
       return { tag: element.tagName, className: element.className, testId: element.dataset.testId, left: rect.left, right: rect.right, width: rect.width };
     }).filter(item => item.left < -1 || item.right > innerWidth + 1).slice(0, 12),

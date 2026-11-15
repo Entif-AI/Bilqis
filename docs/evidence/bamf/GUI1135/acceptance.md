@@ -105,3 +105,5 @@ Fresh reconciled proof:
 - `git diff --check`: PASS
 
 The first post-merge `verify:leaf` attempt exposed a stale local dependency install: current source already declared `ajv@8.20.0`, while this worktree lacked `node_modules/ajv`. An offline, no-save install restored the declared dependency without changing `package.json` or `package-lock.json`; the exact rerun then passed completely. This was an execution-environment repair, not a product-code change.
+
+Closeout authority annotation (2026-11-14): the legacy-trainer authority named in the proof above resolves to the canonical preserved adaptation run at `/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`. That source annotation is evidence hygiene only; it does not change the GUI1135 implementation or its previously recorded verification.

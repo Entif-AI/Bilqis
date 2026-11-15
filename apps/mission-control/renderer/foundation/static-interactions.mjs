@@ -20,6 +20,17 @@ export function bindStaticInteractions({
   openPalette,
   interactionController,
 }) {
+  const skipMain = document.querySelector('[data-test-id="shell-skip-main"]');
+  const focusMain = (event) => {
+    event.preventDefault();
+    const main = document.querySelector('[data-test-id="shell-main-content"]');
+    main.focus({ preventScroll: true });
+    main.scrollIntoView({ block: "start" });
+  };
+  skipMain.addEventListener("click", focusMain);
+  skipMain.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") focusMain(event);
+  });
   document.querySelector("#inspector-close").addEventListener("click", closeInspector);
   document.querySelector("#open-owner").addEventListener("click", () => {
     const state = getState();

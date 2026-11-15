@@ -1,10 +1,6 @@
 import { escapeText as esc } from "../frames/frame-model.mjs";
 import { buildAppUri } from "../interactions/app-uri.mjs";
 import { DESTINATION_GROUPS, DESTINATIONS, shellPosture, isFixtureCorrectionSelection } from "../shell-state.mjs";
-import {
-  currentMemoryGeneration,
-  stableMemoryIdentity,
-} from "../memory/memory-model.mjs";
 import { defensiveBannerMarkup } from "./defensive-state.mjs";
 import { bindRovingNavigation } from "./accessibility.mjs";
 import { renderCurrentView } from "./current-view.mjs";
@@ -15,18 +11,6 @@ import { testIdAttribute } from "./test-hooks.mjs";
 export { renderCurrentView } from "./current-view.mjs";
 
 const destinationIds = new Set(DESTINATIONS.map(([id]) => id));
-const demoObjects = [
-  ["capability", "B.AND"],
-  ["episode", "episode-record:fixture:retained-44239"],
-  ["semantic", "sem:logic.and"],
-  ["frame", "frame:quad-fast"],
-  ["memory", stableMemoryIdentity(currentMemoryGeneration().slots[0])],
-  ["checkpoint", "generation:44238"],
-  ["evidence", "receipt:fixture-001"],
-  ["correction", "correction:fixture-1"],
-  ["warning", "resource:disk-reserve"],
-];
-
 function compactIdentity(value) {
   return typeof value === "string" && /^[0-9a-f]{64}$/.test(value)
     ? `${value.slice(0, 8)}…${value.slice(-8)}`
@@ -232,23 +216,6 @@ export function renderInspector(state, defense) {
   document.querySelector("#open-evidence").disabled = !selected || fixtureCorrection;
 }
 
-export function renderDemoActions(state, onInspect) {
-  const host = document.querySelector("#demo-actions");
-  if (!state) {
-    host.innerHTML = "";
-    return;
-  }
-  host.innerHTML = demoObjects
-    .map(([kind, id]) => `<button type="button" data-kind="${kind}" data-id="${id}" data-focus-key="demo:${kind}:${id}">Inspect ${kind}</button>`)
-    .join("");
-  host.querySelectorAll("button").forEach((button) => {
-    button.addEventListener("click", () => onInspect({
-      kind: button.dataset.kind,
-      id: button.dataset.id,
-    }));
-  });
-}
-
 export function renderPaletteOptions(state, onNavigate, onCommand = () => {}) {
   const host = document.querySelector("#palette-options");
   const destinationGroups = DESTINATION_GROUPS.map((group) => {
@@ -287,7 +254,6 @@ export function renderChrome(state, defense, displaySettings, handlers, bootstra
   renderDefensiveStatus(defense, handlers.onReconnect, bootstrap);
   renderNavigation(state, handlers.onNavigate);
   renderInspector(state, defense);
-  renderDemoActions(state, handlers.onInspect);
   renderCurrentView(
     state, defense, handlers.onInspect, handlers.api,
     handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,

@@ -31,7 +31,7 @@ export function renderEvidenceMarkup(state, t = evidenceT) {
   const empty = loading ? t("evidence.results.pending") : failed ? t("evidence.query.failure")
     : t(state.criteria.kind === "memory" ? "evidence.results.memoryEmpty" : "evidence.results.empty");
   return `<div class="evidence-view" data-test-id="evidence-workspace">
-    <header class="evidence-heading"><div><h2>${esc(t("evidence.title"))}</h2><p>${esc(t("evidence.summary"))}</p></div>${originMarkup(state, t)}</header>
+    ${originMarkup(state, t)}
     <section class="evidence-query" data-test-id="evidence-query">
       <form class="evidence-search" data-test-id="evidence-query-form"><label>${esc(t("evidence.query.kind"))}<select name="kind" data-test-id="evidence-query-kind">${SEARCH_KINDS.map(([value]) => `<option value="${value}"${state.criteria.kind === value ? " selected" : ""}>${esc(t(`evidence.kind.${value}`))}</option>`).join("")}</select></label>
       <label>${esc(t("evidence.query.identity"))}<input name="value" value="${esc(state.criteria.value)}" autocomplete="off" data-test-id="evidence-query-value" /></label><button type="submit" class="${controlClass("primary")}" data-test-id="evidence-query-submit">${esc(t("evidence.query.submit"))}</button></form>

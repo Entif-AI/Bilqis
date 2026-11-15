@@ -7,9 +7,7 @@
 .evidence-view :is(code, pre) { font-family: var(--font-mono); font-size: var(--type-data); font-variant-numeric: tabular-nums; }
 .evidence-view code { overflow-wrap: anywhere; white-space: pre-wrap; }
 .evidence-view :is(button, input, select) { max-inline-size: 100%; }
-.evidence-heading { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; }
-.evidence-heading p { margin-block-start: var(--space-2); color: var(--text-muted); }
-.evidence-origin { display: grid; justify-items: start; gap: var(--space-1); max-inline-size: 42%; overflow-wrap: anywhere; }
+.evidence-origin { display: grid; justify-items: start; gap: var(--space-1); max-inline-size: 75ch; overflow-wrap: anywhere; }
 .evidence-origin span { color: var(--text-muted); font-size: var(--type-body-sm); }
 .evidence-query { display: grid; gap: var(--space-3); }
 .evidence-search { display: grid; grid-template-columns: minmax(12rem, .7fr) minmax(0, 1.5fr) auto; gap: var(--space-3); align-items: end; }
@@ -59,7 +57,6 @@
 :root[data-density="compact"] .evidence-document { padding: var(--space-4); }
 @media (max-width: 1100px) { .evidence-workbench { grid-template-columns: 1fr; } }
 @media (max-width: 640px) {
-  .evidence-heading { flex-direction: column; }
   .evidence-origin { max-inline-size: 100%; }
   .evidence-search, .evidence-facts, .evidence-fields, .evidence-ref-group { grid-template-columns: minmax(0, 1fr); }
   .evidence-facts dd, .evidence-fields dd { margin-block-end: var(--space-2); }

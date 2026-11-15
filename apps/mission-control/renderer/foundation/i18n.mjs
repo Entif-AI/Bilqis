@@ -26,6 +26,7 @@ const EN_US = Object.freeze({
   "foundation.catalog.metric.sameRubric": "{from} → {to} · same rubric",
   "foundation.catalog.metric.trend": "Trend rose from {from} to {to} percent",
   "foundation.catalog.provenance.learnedProjection": "D · learned projection",
+  "foundation.catalog.provenance.factoryRelease": "S · FactoryRelease",
   "foundation.catalog.identity.runGeneration": "RUN {runId} / GEN {generation}",
   "foundation.catalog.evidence.verifiedChain": "Verified source chain",
   "foundation.catalog.evidence.explanation": "Expandable evidence preserves exact identity and provenance without turning every table row into a wall of metadata.",

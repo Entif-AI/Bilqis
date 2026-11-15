@@ -62,8 +62,7 @@ const server = http.createServer((req, res) => {
         frame.mountFrameExplorer(root.firstElementChild, { querySnapshot: request => Promise.resolve(structuredClone(pages.find(item => item.request.generation === request.generation))), context: { runId: 'fixture-run', generation: 7, mode: 'LIVE', freshness: 'FRESH' }, selectedId: null, onContext() {}, onSelection() {} });
       }, framePages);
       await page.locator('[data-test-id="model-frame-result-set"]').waitFor();
-      const first = await page.locator('[data-test-id="model-frame-example"] option').nth(1).getAttribute('value');
-      await page.locator('[data-test-id="model-frame-example"]').selectOption(first);
+      await page.locator('[data-test-id="model-frame-example"]').selectOption({ index: 1 });
       await page.locator('[data-test-id="model-frame-selected-metrics"]').waitFor();
     }
     const reflow = await page.evaluate(() => ({ overflow: document.documentElement.scrollWidth > innerWidth, width: document.documentElement.scrollWidth, viewport: innerWidth }));
@@ -93,20 +92,24 @@ const server = http.createServer((req, res) => {
         frame.mountFrameExplorer(root.firstElementChild, { querySnapshot: request => Promise.resolve(structuredClone(pages.find(item => item.request.generation === request.generation))), context: { runId: 'fixture-run', generation: 7, mode: 'LIVE', freshness: 'FRESH' }, selectedId: null, onContext() {}, onSelection() {} });
       }, framePages);
       await page.locator('[data-test-id="model-frame-result-set"]').waitFor();
-      const first = await page.locator('[data-test-id="model-frame-example"] option').nth(1).getAttribute('value');
-      await page.locator('[data-test-id="model-frame-example"]').selectOption(first);
+      await page.locator('[data-test-id="model-frame-example"]').selectOption({ index: 1 });
       await page.locator('[data-test-id="model-frame-selected-metrics"]').waitFor();
     }
-    await page.evaluate(() => { document.documentElement.dir = 'rtl'; const node = document.querySelector('[data-test-id="fixture-host"] > *'); node.style.cssText = 'line-height:1.5;letter-spacing:.12em;word-spacing:.16em'; });
+    await page.evaluate(surface => {
+      document.documentElement.dir = 'rtl';
+      const id = surface === 'neural' ? 'model-neural-workspace' : 'model-frame-workspace';
+      const node = document.querySelector(`[data-test-id="${id}"]`);
+      node.style.cssText = 'line-height:1.5;letter-spacing:.12em;word-spacing:.16em';
+    }, surface);
     const spacing = await page.evaluate(() => ({
       overflow: document.documentElement.scrollWidth > innerWidth,
       width: document.documentElement.scrollWidth,
       viewport: innerWidth,
-      boxes: [...document.querySelectorAll('body, body > *, [data-test-id="fixture-host"] > *, .neural-view > *, .neural-primary *, .neural-mechanism-stack > *, .refinement-histogram div, .neural-table-wrap')].map(element => {
+      boxes: [...document.querySelectorAll('[data-test-id^="model-"]')].map(element => {
         const rect = element.getBoundingClientRect();
         return { tag: element.tagName, className: element.className, testId: element.dataset?.testId, left: rect.left, right: rect.right, width: rect.width, scrollWidth: element.scrollWidth, clientWidth: element.clientWidth };
       }),
-      offenders: [...document.querySelectorAll('[data-test-id="fixture-host"] *')].map(element => {
+      offenders: [...document.querySelectorAll('[data-test-id^="model-"]')].map(element => {
         const rect = element.getBoundingClientRect();
         return { tag: element.tagName, className: element.className, testId: element.dataset.testId, left: rect.left, right: rect.right, width: rect.width };
       }).filter(item => item.left < -1 || item.right > innerWidth + 1).slice(0, 16),

@@ -4,6 +4,10 @@
   min-width: 0;
 }
 
+.salience-view > * {
+  min-width: 0;
+}
+
 .salience-view-controls {
   display: grid;
   grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
