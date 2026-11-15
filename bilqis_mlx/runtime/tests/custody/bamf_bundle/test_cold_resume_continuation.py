@@ -32,7 +32,7 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.cold_resume_probe import (
     continue_generation, retained_digest,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
-    candidate, parent_state, publish_candidate, shape_patch,
+    candidate, genesis_preparation, parent_state, publish_candidate, shape_patch,
 )
 
 PROBE = ("bilqis_mlx.runtime.tests.custody.bamf_bundle.cold_resume_probe")
@@ -89,6 +89,31 @@ class BamfColdResumeContinuationTests(unittest.TestCase):
         self.assertEqual(process.returncode, 0, process.stderr)
         return json.loads(process.stdout.strip().splitlines()[-1])
 
+    def readback_probe(self, run=None):
+        """Cold-load accepted custody without continuing or publishing it."""
+        target = Path(run or self.run)
+        code = (
+            "import json,sys; "
+            "from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation; "
+            "from bilqis_mlx.runtime.tests.custody.bamf_bundle.cold_resume_probe "
+            "import retained_digest; "
+            "from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch; "
+            "ctx=shape_patch(); ctx.__enter__(); "
+            "student=load_accepted_generation(sys.argv[1]); "
+            "print(json.dumps({'generation':student.generation,"
+            "'state_digest':retained_digest(student.retained_state),"
+            "'teacher_state':dict(student.teacher_state),"
+            "'optimizer_step':student.retained_state.optimizer_step,"
+            "'run_seed':student.run_identity.run_seed if student.run_identity else None})); "
+            "ctx.__exit__(None,None,None)"
+        )
+        process = subprocess.run(
+            [sys.executable, "-B", "-c", code, str(target)],
+            cwd=str(REPOSITORY_ROOT), capture_output=True, text=True,
+            env=dict(os.environ), timeout=300)
+        self.assertEqual(process.returncode, 0, process.stderr)
+        return json.loads(process.stdout.strip().splitlines()[-1])
+
     def test_cold_resume_continues_the_next_controlled_optimizer_step(self):
         first = self.publish(candidate(parent_state()))
         with shape_patch():
@@ -110,6 +135,29 @@ class BamfColdResumeContinuationTests(unittest.TestCase):
         self.assertEqual(receipt["published"]["generation"], 1)
         self.assertEqual(
             receipt["published"]["parent_manifest_sha256"], first["manifest_sha256"])
+
+    def test_cold_readback_matches_just_published_in_memory_authority(self):
+        from bilqis_mlx.runtime.bamf_bundle import publish_initial_generation
+
+        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            prepared = genesis_preparation()
+            pointer = publish_initial_generation(
+                self.run, prepared, reserve_gib=0.)
+            authoritative = self.in_memory_student(prepared.candidate, pointer)
+        expected = {
+            "generation": authoritative.generation,
+            "state_digest": retained_digest(authoritative.retained_state),
+            "teacher_state": dict(authoritative.teacher_state),
+            "optimizer_step": authoritative.retained_state.optimizer_step,
+            "run_seed": (
+                authoritative.run_identity.run_seed
+                if authoritative.run_identity is not None else None
+            ),
+        }
+
+        cold = self.readback_probe()
+
+        self.assertEqual(cold, expected)
 
     def test_cold_resumed_generation_is_the_published_generation(self):
         first = self.publish(candidate(parent_state()))

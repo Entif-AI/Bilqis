@@ -1,0 +1,161 @@
+{
+  "schema": "bilqis.bamf.invariant-transfer/v1",
+  "version": "1.0.0",
+  "predecessor_authority": {
+    "branch": "codex/337-replay-349-20261026",
+    "commit": "d84d2ab9e2d79817c131ef7e0d4ec0d574e57b32",
+    "live_check": {
+      "command": "python3 -B scripts/check_legacy_trainer_authority.py --live",
+      "status": "RECENT_DURABLE_RECEIPT",
+      "verified_head": "d84d2ab9e2d79817c131ef7e0d4ec0d574e57b32",
+      "receipt": "https://github.com/Entif-AI/Bilqis-MLX/issues/1221#issuecomment-6898415193"
+    }
+  },
+  "invariants": [
+    {
+      "id": "source.spawned-direct-live-equality",
+      "seam": "source-preparation/process-boundary",
+      "status": "TRANSFERRED",
+      "observable_invariant": "A representative live source prepared across the worker boundary is byte/content equivalent to the same direct source authority for the same identity and seed.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_real_source_packet_survives_spawned_process_boundary"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
+        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_rows"}
+      ]
+    },
+    {
+      "id": "source.packet-container-fidelity",
+      "seam": "serialization/immutable-packet",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Transport preserves source row content and container meaning, including empty mappings, ordinary sequences, nested sequences, and pair-shaped sequences, without importing neural or write authority.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_step_packet_is_deterministic_and_rejects_neural_or_write_authority"},
+        {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_real_source_packet_survives_spawned_process_boundary"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/_source/source_packet_codec.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_live_grade_a_rows_survive_immutable_packet_roundtrip_without_content_drift"},
+        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/source/test_source_packet_boundary.py", "test": "test_roundtrip_preserves_empty_mappings_sequences_and_pair_sequences"}
+      ]
+    },
+    {
+      "id": "source.deterministic-redraw-authority",
+      "seam": "deterministic-source-redraw",
+      "status": "TRANSFERRED",
+      "observable_invariant": "A worker redraw is bound to the issued source release, family, binding, capability, seed, and count, and yields the same rows as the direct source owner for that authority.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_step_packet_is_deterministic_and_rejects_neural_or_write_authority"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_native_worker_redraws_only_the_issued_v2_source_authority"}
+      ]
+    },
+    {
+      "id": "candidate.complete-optimizer-step-identity",
+      "seam": "candidate-and-optimizer-step-identity",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Candidate identity is deterministic and changes with optimizer step or any complete retained optimizer-state dimension; restart cannot silently alias distinct state.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_mlx_checkpoint.py", "test": "test_complete_fp32_moments_restart_then_four_steps_match_pytorch"},
+        {"path": "bilqis_mlx/learning/tests/test_championship_identity.py", "test": "test_identity_is_deterministic_and_shape_sensitive"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/learning/_retention/_atlas_candidate/identity.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/learning/_retention/tests/test_candidate_identity.py", "test": "test_documented_raw_framing_matches_independent_oracle"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/learning/_retention/tests/test_candidate_identity.py", "test": "test_each_identity_dimension_changes_digest"},
+        {"kind": "self_consistency", "path": "bilqis_mlx/learning/_retention/tests/test_candidate_identity.py", "test": "test_cold_process_restart"}
+      ]
+    },
+    {
+      "id": "retention.rejection-preserves-accepted-parent",
+      "seam": "accepted-state-rollback/rejection",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Rejected candidate work leaves the accepted parent, optimizer step, teacher state, and published pointer unchanged while preserving rejection evidence.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/learning/tests/test_whole_student_retention.py", "test": "test_regression_keeps_complete_best_checkpoint_and_own_adamw_pointer"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/learning/_retention/_atlas_candidate/transaction.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/learning/_retention/tests/test_atlas_candidate.py", "test": "test_rejection_returns_exact_parent_with_all_custody"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_rejection_continuation.py", "test": "test_real_rejections_replay_and_accumulate_without_parent_drift"}
+      ]
+    },
+    {
+      "id": "retention.comparison-authority-identity",
+      "seam": "retention-comparison/custody",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Retention measurements are reused or compared only under the exact accepted generation, cohort, rubric, source, policy, implementation, topology, extents, and evaluation authority identity.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/learning/tests/test_whole_student_retention.py", "test": "test_expanding_numeric_scope_never_compares_incompatible_examinations"},
+        {"path": "bilqis_mlx/learning/tests/test_whole_student_retention.py", "test": "test_different_cohorts_never_claim_to_be_equivalent"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/_capability/factory/_factory_parent_assessment_cache.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/capability/factory/retention/test_parent_assessment_cache.py", "test": "test_any_authority_identity_drift_forces_parent_remeasurement"}
+      ]
+    },
+    {
+      "id": "resume.cold-checkpoint-readback",
+      "seam": "cold-resume/checkpoint-identity",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Cold readback reconstructs the exact just-published accepted generation and optimizer state from custody, and continuation starts from the next controlled optimizer step.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_mlx_checkpoint.py", "test": "test_complete_fp32_moments_restart_then_four_steps_match_pytorch"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/_custody/bamf_bundle/accepted_runtime.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/test_cold_resume_continuation.py", "test": "test_cold_readback_matches_just_published_in_memory_authority"},
+        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/test_cold_resume_continuation.py", "test": "test_uninterrupted_and_cold_continuation_publish_the_same_successor"}
+      ]
+    },
+    {
+      "id": "execution.batch-scalar-observable-equivalence",
+      "seam": "batching-equivalence",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Batching may reduce launches but cannot change typed per-case results, solver contracts, assessment identity, work disposition, ordering, or fallback semantics relative to the scalar authority path.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_typed_answer_training.py", "test": "test_whole_predecessor_batch_trains_typed_without_collapsing_five_states"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/_capability/factory/factory_evaluation_batching.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/capability/factory/test_factory_evaluation_batching.py", "test": "test_fixed_school_batch_matches_scalar_and_reduces_backbone_launches"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/capability/factory/test_factory_evaluation_batching.py", "test": "test_assessment_and_work_disposition_are_scalar_batch_identical"}
+      ]
+    },
+    {
+      "id": "execution.worker-configuration-preserves-source-result",
+      "seam": "worker-equivalence",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Changing source-preparation worker count changes scheduling only; the issued source identity and representative live-source content remain identical to direct authority.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_human_cli_defaults_to_two_prep_workers_with_serial_escape_hatch"},
+        {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_real_source_packet_survives_spawned_process_boundary"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
+        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_native_operator_preserves_zero_one_two_worker_configuration"}
+      ]
+    },
+    {
+      "id": "cache.identity-drift-invalidates-reuse",
+      "seam": "cache-identity/invalidation",
+      "status": "TRANSFERRED",
+      "observable_invariant": "Cache reuse is exact-identity only: source, semantic, cohort, accepted-generation, candidate/optimizer, topology, policy, or evaluator authority drift forces recomputation rather than stale reuse.",
+      "predecessor_proofs": [
+        {"path": "bilqis_mlx/semantics/tests/test_source_memo.py", "test": "test_mutated_source_input_cannot_reuse_an_old_answer"},
+        {"path": "bilqis_mlx/semantics/tests/test_source_memo.py", "test": "test_source_oracle_and_semantic_revisions_have_separate_caches"}
+      ],
+      "bamf_owner": {"path": "bilqis_mlx/runtime/_capability/factory/_factory_parent_assessment_cache.py"},
+      "successor_evidence": [
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/capability/factory/retention/test_parent_assessment_cache.py", "test": "test_any_authority_identity_drift_forces_parent_remeasurement"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/capability/factory/retention/test_parent_assessment_identity.py", "test": "test_mutable_optimizer_content_invalidates_reuse_for_both_schemes"},
+        {"kind": "self_consistency", "path": "bilqis_mlx/semantics/tests/foundation/test_source_memo.py", "test": "test_source_oracle_and_semantic_revisions_have_separate_caches"}
+      ]
+    }
+  ]
+}
