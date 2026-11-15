@@ -53,8 +53,7 @@ class FactoryEvaluationInstrument:
 def _execution_binding(candidate: BamfBundleCandidate):
     if not isinstance(candidate, BamfBundleCandidate):
         _invalid("BAMF_C05_CANDIDATE_REQUIRED")
-    return issue_execution_generation_binding(
-        candidate.retained_state.optimizer.parameters,
+    return issue_execution_generation_binding(candidate.retained_state.optimizer.parameters,
         spec=candidate.topology, extents=candidate.extents)
 
 
@@ -263,9 +262,7 @@ class _FactoryCompleteSolverBuilder:
         return context
 
     def scalar_context(self, batch, plan, authority):
-        scalar = b11_task_goal_proposer(
-            self.parameters, batch, plan, authority,
-            execution_binding=self.execution_binding)
+        scalar = b11_task_goal_proposer(self.parameters, batch, plan, authority, execution_binding=self.execution_binding)
 
         def proposer(request):
             self.telemetry["scalar_neural_launches"] += 1
@@ -323,8 +320,7 @@ class _FactoryCompleteSolverBuilder:
             prepared = tuple(
                 PreparedFactoryEvaluation(batch, plan, authority)
                 for batch, plan, authority in bound)
-            outputs = batched_factory_outputs(
-                self.parameters, prepared, on_launch=self.on_launch,
+            outputs = batched_factory_outputs(self.parameters, prepared, on_launch=self.on_launch,
                 execution_binding=self.execution_binding)
             for goal, item, output in zip(missing, prepared, outputs, strict=True):
                 self.contexts[goal.goal_id] = self.context_from(item, output)
