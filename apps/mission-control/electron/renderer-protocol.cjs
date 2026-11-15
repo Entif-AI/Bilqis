@@ -90,6 +90,8 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/resources/resource-fixture.mjs", "resources/resource-fixture.mjs"],
   ["/resources/resource-model.mjs", "resources/resource-model.mjs"],
   ["/resources/resource-view.mjs", "resources/resource-view.mjs"],
+  ["/resources/resource-format.mjs", "resources/resource-format.mjs"],
+  ["/resources/resource-messages.mjs", "resources/resource-messages.mjs"],
   ["/resources/resources.css", "resources/resources.css"],
   ["/school/school-fixture.mjs", "school/school-fixture.mjs"],
   ["/school/school-model.mjs", "school/school-model.mjs"],

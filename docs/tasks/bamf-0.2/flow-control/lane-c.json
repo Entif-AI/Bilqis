@@ -400,6 +400,15 @@
       "summary": "GUI08 turned in as ready PR #1101 after current-unified 5df83f69 synchronization. Fixture inspection, exact historical/causal identity and reconnect isolation are verified; 190 Node + 5 Python bridge tests, quality/ABI and browser proof pass. Pinned design/amendments PASS and scoped NO_DRIFT. PM-2026-11-13-002 and PM-2026-11-07-002 native receipts verified; no actual learner mutation. Human review/merge pending.",
       "resume_trigger": null,
       "preserved_branch": "codex/1063-frame-compiler-explorer-20261113"
+    },
+    {
+      "issue": 1140,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "dada27e8b1776e0fb7917c61bd8df141a210f93a",
+      "summary": "Resources redesign: VIEW-D-012 / COMP-D-1201..1206 under ratified #1124 design; implementation and bounded visual/semantic proof in progress.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1140-resources-redesign-20261114"
     }
   ]
 }
