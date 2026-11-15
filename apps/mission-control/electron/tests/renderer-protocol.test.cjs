@@ -78,6 +78,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/evidence/evidence.css",
     "/index.html",
     "/interactions/app-uri.mjs",
+    "/interactions/compare-production.mjs",
     "/interactions/compare.mjs",
     "/interactions/controller.mjs",
     "/interactions/dom-ref.mjs",

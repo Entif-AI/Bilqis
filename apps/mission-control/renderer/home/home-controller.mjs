@@ -3,7 +3,6 @@ import {
   familyForEvent,
   projectionFromPages,
   queryRequest,
-  referenceHomeProjection,
 } from "./home-model.mjs";
 import { bindHomeInteractions, renderHomeMarkup } from "./home-view.mjs";
 
@@ -13,7 +12,7 @@ function contextKey(context) {
     : "none";
 }
 
-export function createHomeController(api) {
+export function createHomeController(api, { referenceProjection = null } = {}) {
   let key = null;
   let pages = {};
   let model = null;
@@ -50,9 +49,9 @@ export function createHomeController(api) {
     }));
     pages = Object.fromEntries(entries);
     model = projectionFromPages(pages, context);
-    if (context?.runId === "fixture-run" && context?.mode !== "HISTORICAL" &&
+    if (referenceProjection && context?.fixture === true && context?.mode !== "HISTORICAL" &&
         HOME_FAMILIES.every((family) => pages[family]?.accepted !== true || pages[family]?.state === "EMPTY")) {
-      model = referenceHomeProjection();
+      model = referenceProjection();
     }
     render();
   }
@@ -111,8 +110,8 @@ export function createHomeController(api) {
     }
     key = nextKey;
     pages = {};
-    model = nextContext?.runId === "fixture-run" && nextContext?.mode !== "HISTORICAL"
-      ? referenceHomeProjection() : null;
+    model = referenceProjection && nextContext?.fixture === true && nextContext?.mode !== "HISTORICAL"
+      ? referenceProjection() : null;
     if (typeof unsubscribe === "function") {
       await unsubscribe();
       unsubscribe = null;

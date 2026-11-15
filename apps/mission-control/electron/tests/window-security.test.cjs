@@ -136,6 +136,10 @@ test("window factory hardens first and requires an explicit renderer load", asyn
   assert.equal(result.window.options.webPreferences.nodeIntegration, false);
   assert.equal(result.window.options.webPreferences.contextIsolation, true);
   assert.equal(result.window.options.webPreferences.sandbox, true);
+  assert.deepEqual(
+    result.window.options.webPreferences.additionalArguments,
+    ["--bilqis-mission-control-mode=production"],
+  );
   assert.equal(result.diagnostic.passed, true);
   await result.loadRenderer();
   assert.equal(result.window.loaded, RENDERER_ENTRY_URL);
@@ -144,6 +148,26 @@ test("window factory hardens first and requires an explicit renderer load", asyn
     result.window.loaded,
     RENDERER_ENTRY_URL + "#/view/capability?kind=capability&id=B.AND",
   );
+});
+
+test("window passes explicit fixture posture to preload without weakening security", () => {
+  function BrowserWindow(options) {
+    this.options = options;
+    this.webContents = webContentsFixture();
+    this.loadURL = () => {};
+  }
+  const result = createMissionControlWindow({
+    BrowserWindow,
+    preloadPath: "/Applications/Bilqis/MissionControl/preload.cjs",
+    launchMode: "fixtures",
+  });
+  assert.deepEqual(
+    result.window.options.webPreferences.additionalArguments,
+    ["--bilqis-mission-control-mode=fixtures"],
+  );
+  assert.equal(result.window.options.webPreferences.nodeIntegration, false);
+  assert.equal(result.window.options.webPreferences.contextIsolation, true);
+  assert.equal(result.window.options.webPreferences.sandbox, true);
 });
 
 test("privileged renderer scheme is secure and does not bypass CSP", () => {

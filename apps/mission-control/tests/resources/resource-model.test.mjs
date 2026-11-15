@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {decomposition, referenceResourceState} from '../../renderer/resources/resource-model.mjs';
+import {decomposition} from '../../renderer/resources/resource-model.mjs';
+import {referenceResourceState} from '../../renderer/resources/resource-fixture-state.mjs';
 const metric = (value) => ({state:'PRESENT',value});
 function profile(aggregate, categories) {
   return {aggregate:{unifiedMemoryUsed:aggregate},memoryDecomposition:categories};
