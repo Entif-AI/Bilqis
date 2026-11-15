@@ -8,6 +8,7 @@ from bilqis_mlx.learning._engram.atlas_engram_source_context import (
     qualify_source_motif_context,
 )
 from bilqis_mlx.learning._engram.atlas_engram_identity import MotifFrameInput
+from bilqis_mlx.learning.frame_embeddings.requests import FeatureRequest
 from bilqis_mlx.learning.source_atoms.inputs import SourceAtomRow
 from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
 from bilqis_mlx.semantics.atlas_features import AtlasFeatures
@@ -219,6 +220,37 @@ def bind_b11_source_execution_authority(
     return authority
 
 
+def require_b11_source_feature_row(
+    authority,
+    request: FeatureRequest,
+) -> FeatureRow:
+    """Return one bind-time qualified A06 row only from an issued authority."""
+    if (
+        type(authority) is not B11SourceExecutionAuthority
+        or authority._issuance is not _ISSUER
+        or type(request) is not FeatureRequest
+    ):
+        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
+    request.__post_init__()
+    matches = tuple(
+        row for frame_handle, member_handle, row in authority.motif_feature_rows
+        if (frame_handle, member_handle)
+        == (request.frame_handle, request.member_handle)
+    )
+    if len(matches) != 1:
+        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
+    row = matches[0]
+    if (
+        row.semantic_id != request.concept.semantic_id
+        or row.abi_index != request.concept.abi_index
+        or row.role_id != request.role_id
+        or row.schema_id != request.schema_id
+        or row.scope != request.scope
+    ):
+        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
+    return row
+
+
 def require_b11_source_execution_authority(
     authority,
     compiled_row: CompiledFrameBatch,
@@ -242,4 +274,5 @@ __all__ = (
     "B11SourceExecutionAuthority",
     "bind_b11_source_execution_authority",
     "require_b11_source_execution_authority",
+    "require_b11_source_feature_row",
 )
