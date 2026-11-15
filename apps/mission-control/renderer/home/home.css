@@ -79,3 +79,10 @@
   .home-attention[data-priority="primary"], .attention-list button[data-severity="blocker"], .attention-list button[data-severity="invalid"] { border-inline-start: 4px double CanvasText; }
 }
 @media (prefers-reduced-motion: reduce) { .home-dashboard * { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
+
+.home-observed { margin-block-start: var(--space-4); padding-block-start: var(--space-3); border-block-start: 2px dashed var(--border-strong); }
+.home-observed-badge { display: inline-block; padding: var(--space-1) var(--space-2); border: 1px solid currentColor; color: var(--text-muted); font-size: var(--type-label); }
+.home-observed[data-connection="DISCONNECTED"] { border-block-start-style: double; }
+.home-observed-accepted { padding-block: var(--space-2); border-block: 1px solid var(--border); font-weight: 650; }
+.home-observed summary { cursor: pointer; min-height: 44px; align-content: center; }
+.home-observed li { padding-block: var(--space-1); overflow-wrap: anywhere; }

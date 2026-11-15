@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from bilqis_mlx.runtime.bamf_operator.telemetry import emit
+
 from ..learning.retention_policy import retention_reason, scaled_loss_allowance
 from ..semantics.domains import contract_digest
 from .capability_evaluation import (
@@ -137,10 +139,19 @@ def _fixed_capability_order(target_capability, policy, fixed):
     return target_group, references, (*same_grade, *other_protected, *remaining)
 
 
-def _parent_case_index(parent_solver, fixed, parent_generation, parent_assessment):
+def _observed_assessment(solver, cohort, generation, observer, completed, total, subject, role):
+    emit(observer, retention_completed=completed, retention_total=total,
+         retention_subject=subject, retention_role=role)
+    result = evaluate_capabilities(solver, cohort, generation)
+    emit(observer, retention_completed=completed + 1, retention_total=total,
+         retention_subject=subject, retention_role=role)
+    return result
+
+
+def _parent_case_index(parent_solver, fixed, parent_generation, parent_assessment, observer, total):
     if parent_assessment is None:
-        parent_assessment = evaluate_capabilities(
-            parent_solver, fixed, parent_generation)
+        parent_assessment = _observed_assessment(
+            parent_solver, fixed, parent_generation, observer, 0, total, "fixed_school", "parent")
     elif (type(parent_assessment) is not Assessment
             or parent_assessment.cohort != fixed
             or parent_assessment.generation_digest != parent_generation):
@@ -192,12 +203,14 @@ def _final_fixed_school_decision(
 def _evaluate_fixed_school(
         parent_solver, candidate_solver, target_capability, policy, fixed,
         parent_generation, candidate_generation, evidence_digest,
-        parent_assessment=None):
+        parent_assessment=None, *, observer=None):
     target_group, references, capability_order = _fixed_capability_order(
         target_capability, policy, fixed)
     groups = dict(fixed.capability_groups)
+    completed = int(parent_assessment is None)
+    total = len(capability_order) + completed
     parent_by_case = _parent_case_index(
-        parent_solver, fixed, parent_generation, parent_assessment)
+        parent_solver, fixed, parent_generation, parent_assessment, observer, total)
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
@@ -213,8 +226,9 @@ def _evaluate_fixed_school(
             tuple(parent_by_case[case.case_id][0] for case in cases),
             tuple(parent_by_case[case.case_id][1] for case in cases),
         )
-        candidate_assessment = evaluate_capabilities(
-            candidate_solver, cohort, candidate_generation)
+        candidate_assessment = _observed_assessment(
+            candidate_solver, cohort, candidate_generation, observer, completed, total, capability, "candidate")
+        completed += 1
         pair = AssessmentPair(parent_subset, candidate_assessment)
         pair_digests.append((parent_subset.digest(), candidate_assessment.digest()))
         for case, result, contract in zip(
@@ -245,7 +259,7 @@ def _evaluate_fixed_school(
 def evaluate_foundation_retention_candidate(
         parent_solver, candidate_solver, target_capability: str,
         policy: RetentionPolicy, cohorts, parent_generation: str,
-        candidate_generation: str) -> Decision:
+        candidate_generation: str, *, observer=None) -> Decision:
     """Evaluate fixed-school authority first and stop on a final protected loss."""
     _cohort_contract(target_capability, policy, cohorts)
     fixed = cohorts[2]
@@ -254,14 +268,14 @@ def evaluate_foundation_retention_candidate(
         parent_generation, candidate_generation,
         lambda pair_digests, blocking: _evidence_digest(
             target_capability, policy, cohorts, pair_digests,
-            blocking_capability=blocking))
+            blocking_capability=blocking), **({"observer": observer} if observer is not None else {}))
 
 
 def evaluate_foundation_fixed_school_candidate(
         parent_solver, candidate_solver, target_capability: str,
         policy: FoundationRetentionPolicy, fixed: EvaluationCohort,
         parent_generation: str, candidate_generation: str, *,
-        parent_assessment: Assessment | None = None) -> Decision:
+        parent_assessment: Assessment | None = None, observer=None) -> Decision:
     """Production foundation path: authorizing fixed school only, no fresh telemetry."""
     _fixed_cohort_contract(target_capability, policy, fixed)
     return _evaluate_fixed_school(
@@ -270,7 +284,7 @@ def evaluate_foundation_fixed_school_candidate(
         lambda pair_digests, blocking: _fixed_evidence_digest(
             target_capability, policy, fixed, pair_digests,
             blocking_capability=blocking),
-        parent_assessment=parent_assessment)
+        parent_assessment=parent_assessment, **({"observer": observer} if observer is not None else {}))
 
 
 __all__ = (

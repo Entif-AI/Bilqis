@@ -1,0 +1,70 @@
+import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
+import time
+import unittest
+
+from bilqis_mlx.runtime.bamf_operator.telemetry import TrainerObservation
+
+
+class TrainerObservationTests(unittest.TestCase):
+    def test_bounded_lifecycle_and_exception(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'bamf-state.json').write_text(json.dumps({'run_id': 'run', 'manifest_sha256': 'a' * 64}))
+            for i in range(9):
+                with TrainerObservation(root, i + 1, heartbeat_seconds=0.01) as obs:
+                    obs.update(phase='TRAINING', capability_id='cap', candidate_step=0, candidate_horizon=1)
+                    time.sleep(0.025)
+                    obs.update(candidate_step=1)
+                    obs.finish('HELD')
+            data = json.loads((root / 'trainer-observed.json').read_text())
+            self.assertEqual(len(data['visits']), 8)
+            self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
+            self.assertGreater(data['visits'][-1]['revision'], 3)
+            self.assertEqual(data['visits'][-1]['candidate_step'], 1)
+            self.assertEqual(data['visits'][-1]['run_id'], 'run')
+            with self.assertRaises(KeyboardInterrupt):
+                with TrainerObservation(root, 10):
+                    raise KeyboardInterrupt()
+            self.assertEqual(json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]['outcome'], 'INTERRUPTED')
+
+    def test_write_failure_does_not_escape(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'trainer-observed.json').mkdir()
+            with TrainerObservation(root, 1) as obs:
+                obs.update(phase='SELECTING')
+                obs.finish('HELD')
+
+    def test_heartbeat_interleaved_with_phase_changes_keeps_complete_snapshots(self):
+        import threading
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            reads = []
+            done = threading.Event()
+            def read_snapshots():
+                while not done.is_set():
+                    try:
+                        reads.append(json.loads((root / 'trainer-observed.json').read_bytes()))
+                    except FileNotFoundError:
+                        pass
+            with TrainerObservation(root, 1, heartbeat_seconds=0.001) as obs:
+                reader = threading.Thread(target=read_snapshots)
+                reader.start()
+                for i in range(12):
+                    obs.update(phase='TRAINING', candidate_step=i, candidate_horizon=12)
+                    time.sleep(0.001)
+                obs.update(phase='RETENTION', retention_completed=2, retention_total=3)
+                time.sleep(0.005)
+                obs.finish('REJECTED')
+                done.set()
+                reader.join()
+            final = json.loads((root / 'trainer-observed.json').read_bytes())['visits'][-1]
+            self.assertTrue(reads)
+            self.assertTrue(all(len(item['visits']) == 1 for item in reads))
+            self.assertEqual((final['phase'], final['retention_completed'], final['candidate_step']),
+                             ('COMPLETED', 2, 11))
+            retention = [item['visits'][-1] for item in reads if item['visits'][-1]['phase'] == 'RETENTION']
+            self.assertTrue(retention)
+            self.assertTrue(all(item['candidate_step'] == 11 and item['retention_completed'] == 2 for item in retention))

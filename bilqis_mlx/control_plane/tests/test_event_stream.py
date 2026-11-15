@@ -43,6 +43,7 @@ class ControlPlaneEventStreamTests(unittest.TestCase):
             [family.value for family in EventFamily],
             [
                 "run.state.changed",
+                "run.trainer.observed",
                 "lesson.visit.started",
                 "lesson.visit.completed",
                 "candidate.started",

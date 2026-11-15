@@ -67,6 +67,8 @@ SEMANTIC_HELD_META = RecordMeta(
 )
 
 
+from bilqis_mlx.mission_control.contracts.trainer import TrainerObservation
+
 SAMPLES = (
     RunContext(meta("run-context"), "READY", 42, "ASSESS_MAIN"),
     OperatorView(meta("operator-view"), "READY", "ASSESS_MAIN", "B.EXAMPLE", ("school",)),
@@ -176,3 +178,17 @@ from bilqis_mlx.mission_control.contracts.dossier import CapabilityDossier
 SAMPLES += (CapabilityDossier(meta("dossier-sample"), "B.EXAMPLE", "Example",
     value(7), value(8), value(12), value(5), value("WATCH"), value("ELIGIBLE"),
     value("QUALIFIED"), value("HELD"), ()),)
+
+SAMPLES += (
+    TrainerObservation(
+        meta=RecordMeta('observed:sample', RUN, 120, 118, None,
+                        CoverageState.PARTIAL, AuthorityClass.MEASURED),
+        observation_id='sample', revision=1, process_id=1, visit_index=1,
+        posture='OBSERVED', phase='PREPARING', outcome='RUNNING', connection_state='LIVE',
+        capability_id=None, elapsed_ms=0, candidate_optimizer_step=None,
+        candidate_step=None, candidate_horizon=None, retention_completed=None,
+        retention_total=None, retention_subject=None, retention_role=None,
+        cpu_seconds=None, peak_rss_bytes=None, disk_free_bytes=None,
+    ),
+
+)
