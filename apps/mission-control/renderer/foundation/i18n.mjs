@@ -3,6 +3,7 @@ import { ATLAS_MESSAGES } from "./i18n-atlas.mjs";
 import { HOME_MESSAGES } from "./i18n-home.mjs";
 import { INVESTIGATION_MESSAGES } from "./i18n-investigation.mjs";
 import { SHELL_MESSAGES } from "./i18n-shell.mjs";
+import { SCHOOL_MESSAGES } from "./i18n-school.mjs";
 import { TEACHER_MESSAGES } from "./i18n-teacher.mjs";
 
 const EN_US = Object.freeze({
@@ -130,6 +131,7 @@ const EN_US = Object.freeze({
   ...SHELL_MESSAGES,
   ...LEARNING_MESSAGES,
   ...HOME_MESSAGES,
+  ...SCHOOL_MESSAGES,
   ...TEACHER_MESSAGES,
 });
 

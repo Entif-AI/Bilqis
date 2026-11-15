@@ -18,6 +18,9 @@ import {
   salienceEventById,
   snapshotById,
 } from "../../renderer/salience/salience-model.mjs";
+import { salienceMarkupForTest } from "../../renderer/salience/salience-view.mjs";
+import { salienceT } from "../../renderer/salience/salience-messages.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
 import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -200,6 +203,9 @@ test("GUI12 source contains no universal score or recommendation control", () =>
     "salience/salience-fixture.mjs",
     "salience/salience-model.mjs",
     "salience/salience-view.mjs",
+    "salience/salience-observation-view.mjs",
+    "salience/salience-aggregation-view.mjs",
+    "salience/salience-routing-view.mjs",
   ].map((name) => fs.readFileSync(path.join(rendererRoot, name), "utf8").toLowerCase()).join("\n");
   for (const forbidden of ["weightedscore", "priorityscore", "best salience", "recommended salience"]) {
     assert.equal(source.includes(forbidden), false, forbidden);
@@ -207,12 +213,106 @@ test("GUI12 source contains no universal score or recommendation control", () =>
 });
 
 test("inspector-opening salience controls preserve keyboard focus identity", () => {
-  const source = fs.readFileSync(
-    path.join(rendererRoot, "salience/salience-view.mjs"),
-    "utf8",
-  );
-  assert.equal(source.includes('data-focus-key="salience:${event.recordId}:${axis}"'), true);
-  assert.equal(source.includes('data-focus-key="salience:aggregate:${id}"'), true);
-  assert.equal(source.includes('data-focus-key="salience:trend:${id}"'), true);
-  assert.equal(source.includes('data-focus-key="salience:routing:${id}"'), true);
+  const markup = salienceMarkupForTest("current");
+  assert.match(markup, /data-focus-key="salience:salience-record:fixture:unlock:inspect"/);
+  assert.match(markup, /data-focus-key="salience:aggregate:salience-record:fixture:negative"/);
+  assert.match(markup, /data-focus-key="salience:trend:salience-record:fixture:negative"/);
+  assert.match(markup, /data-focus-key="salience:routing:salience-record:fixture:urgent"/);
+});
+
+test("salience target markup is table-first and removes the legacy card-lane composition", () => {
+  const markup = salienceMarkupForTest("current");
+  assert.equal(assertUniqueTestIds(markup), true);
+  const ids = new Set(collectTestIds(markup));
+  for (const id of [
+    "salience-view",
+    "salience-controls",
+    "salience-snapshot-select",
+    "salience-observations",
+    "salience-observation-table",
+    "salience-observation-scroll",
+    "salience-axis-guide",
+    "salience-aggregation",
+    "salience-routing",
+    "salience-projection",
+  ]) assert.equal(ids.has(id), true, id);
+  assert.match(markup, /<table class="salience-observation-table"/);
+  assert.doesNotMatch(markup, /class="ui-glossary"/);
+  assert.doesNotMatch(markup, /class="salience-axis-cell"/);
+  assert.doesNotMatch(markup, /class="salience-provenance-grid"/);
+  assert.doesNotMatch(markup, /class="routing-record"/);
+});
+
+test("Impact Exigency and Osmotic Novelty remain independent table columns", () => {
+  const markup = salienceMarkupForTest("current");
+  assert.match(markup, /<th scope="col">Impact<\/th>/);
+  assert.match(markup, /<th scope="col">Exigency<\/th>/);
+  assert.match(markup, /<th scope="col">Osmotic Novelty<\/th>/);
+  assert.match(markup, /No universal salience score is computed/);
+  assert.doesNotMatch(markup.toLowerCase(), /priority score|weighted score|combined score/);
+});
+
+test("per-observation provenance is progressively disclosed with exact source rule and basis values", () => {
+  const markup = salienceMarkupForTest("current");
+  assert.match(markup, /<details class="salience-provenance"/);
+  assert.match(markup, /salience-fact:B\.AND:impact\.declared/);
+  assert.match(markup, /bamf\/foundation\/declared\/v1/);
+  assert.match(markup, /source:curriculum:B\.AND/);
+  assert.match(markup, /Stable observation link/);
+});
+
+test("recursive aggregation is a nested reversible disclosure hierarchy rather than peer cards", () => {
+  const markup = salienceMarkupForTest("current");
+  assert.match(markup, /class="salience-aggregate-node" data-depth="0"/);
+  assert.match(markup, /class="salience-aggregate-node" data-depth="1"/);
+  assert.match(markup, /cluster:fixture:boolean-defect:w20/);
+  assert.match(markup, /pattern:fixture:boolean-defect/);
+  assert.match(markup, /trend:fixture:boolean-defect/);
+  assert.match(markup, /Aggregation remains derived evidence/);
+});
+
+test("routing and projection are lower-depth collapsed disclosures", () => {
+  const markup = salienceMarkupForTest("current");
+  assert.match(markup, /<details class="salience-routing ui-disclosure"/);
+  assert.match(markup, /<details class="salience-projection ui-disclosure"/);
+  assert.doesNotMatch(markup, /<details class="salience-routing ui-disclosure" open/);
+  assert.match(markup, /NOT_EXPOSED_OR_INFERRED/);
+  assert.match(markup, /Private weights are not inferred/);
+});
+
+test("historical snapshot stays exact and does not borrow current aggregation or routing", () => {
+  const markup = salienceMarkupForTest("historical");
+  assert.match(markup, /Historical · generation 44237/);
+  assert.match(markup, /salience:fixture:unlock:g44237/);
+  assert.match(markup, /No retained aggregation exists inside this selected as-of boundary/);
+  assert.match(markup, /No retained routing rationale exists inside this selected as-of boundary/);
+  assert.doesNotMatch(markup, /routing:fixture:urgent-relevant/);
+});
+
+test("salience owned human copy resolves through stable message keys", () => {
+  for (const key of [
+    "salience.summary",
+    "salience.snapshot.label",
+    "salience.action.OBSERVATION",
+    "salience.observations.title",
+    "salience.provenance.source",
+    "salience.aggregation.title",
+    "salience.routing.summary",
+    "salience.projection.summary",
+    "salience.inspector.capability",
+  ]) assert.ok(salienceT(key));
+});
+
+test("salience CSS is analytical, responsive, compact-aware, focus-visible and pattern-free", () => {
+  const css = fs.readFileSync(path.join(rendererRoot, "salience/salience.css"), "utf8");
+  assert.match(css, /\.salience-table-wrap\s*\{[^}]*overflow:\s*auto/s);
+  assert.match(css, /\.salience-observation-table\s*\{[^}]*min-width:/s);
+  assert.match(css, /font-variant-numeric:\s*tabular-nums/);
+  assert.match(css, /:root\[data-density="compact"\]/);
+  assert.match(css, /@media \(max-width: 980px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /@media \(forced-colors: active\)/);
+  assert.doesNotMatch(css, /repeating-linear-gradient/);
+  assert.doesNotMatch(css, /data-density="terminal"/);
+  assert.doesNotMatch(css, /\.salience-lanes/);
 });
