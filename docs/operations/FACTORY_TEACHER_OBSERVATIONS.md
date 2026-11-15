@@ -33,6 +33,45 @@ if the process stopped after state commit but before journal emission. Reconcili
 uses the existing idempotent outbox; the reader never repeats optimizer or teacher
 work. Unpublished sidecars are staging evidence, not durable learner outcomes.
 
+### C16.3 candidate-horizon durability
+
+The persistent BAMF operator applies that same boundary to speculative optimizer
+steps. During one candidate horizon, C16.3 keeps the exact proposal, ordered
+deliveries, realized controls/costs, and content-addressed source-row objects in
+memory. It does not make an independent durability promise after each speculative
+step. After C05 reaches the retention decision, the complete horizon is installed as
+one immutable content-addressed sidecar. Repeated identical row bytes are stored once
+inside that horizon object while step records retain their original order and
+multiplicity by digest reference.
+
+Before candidate execution, the operator durably installs the sidecar directory
+hierarchy once and reuses it for later horizons. That one-time directory setup is not
+charged to per-horizon persistence metrics. A candidate attempt is identified by the
+accepted generation and manifest, C03 visit identity, and the next authenticated
+rejection-journal ordinal. A crash before accepted/rejected publication therefore
+reuses the same attempt identity, while a later same-parent rejection receives the
+next ordinal and cannot collapse into the earlier attempt.
+
+The durability states are explicit:
+
+- before finalization, a crash loses only speculative candidate evidence together
+  with the speculative candidate itself; the accepted parent remains authoritative;
+- a failure while installing the horizon object leaves no declared object reference;
+- after the horizon object is durable but before accepted/rejected event commitment,
+  the object is staging evidence only and carries no learner-outcome authority;
+- the accepted-generation outbox or authenticated rejection event publishes the
+  horizon reference and remains the commit/replay authority;
+- cold replay reuses the same content-addressed object and cannot create a second
+  logical observation or repeat optimizer/teacher work.
+
+C16.3 reports the horizon object's bytes written, file fsyncs, directory fsyncs,
+physical evidence objects written, logical record count, unique source-object count,
+delivery-record count and persistence time. A fresh horizon therefore reports one
+physical object even though that object can contain many logical step records and
+deduplicated source rows; a content-addressed replay can report zero new objects.
+These metrics describe evidence persistence only; they do not replace candidate
+compute/resource telemetry or claim end-to-end training throughput.
+
 ## Identities and missingness
 
 Factory envelope: `bilqis.factory.teacher-observation/v1`.
