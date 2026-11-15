@@ -197,15 +197,15 @@ export function renderCurrentView(
       label: strategy?.label ?? id,
       relations,
       details: {
-        Role: strategy?.role ?? "UNKNOWN",
-        Attempts: strategy?.attempts ?? "UNKNOWN",
-        Retained: strategy?.retained ?? "UNKNOWN",
-        "No gain": strategy?.noGain ?? "UNKNOWN",
-        Interference: strategy?.interference ?? "UNKNOWN",
-        "Comparison posture": "Descriptive evidence only",
-        "Policy mutation": "None",
+        [t("teacher.inspector.role")]: strategy?.role ?? "UNKNOWN",
+        [t("teacher.inspector.attempts")]: strategy?.attempts ?? "UNKNOWN",
+        [t("teacher.inspector.retained")]: strategy?.retained ?? "UNKNOWN",
+        [t("teacher.inspector.noGain")]: strategy?.noGain ?? "UNKNOWN",
+        [t("teacher.inspector.interference")]: strategy?.interference ?? "UNKNOWN",
+        [t("teacher.inspector.comparisonPosture")]: t("teacher.inspector.descriptiveOnly"),
+        [t("teacher.inspector.policyMutation")]: t("teacher.inspector.none"),
       },
-    }));
+    }), state.selected?.kind === "strategy" ? state.selected.id : null);
     return;
   }
   if (state.view === "corrections") {
