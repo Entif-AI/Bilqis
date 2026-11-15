@@ -122,7 +122,8 @@ def _fixed_evidence_digest(
 
 def _evaluate_fixed_school(
         parent_solver, candidate_solver, target_capability, policy, fixed,
-        parent_generation, candidate_generation, evidence_digest):
+        parent_generation, candidate_generation, evidence_digest,
+        parent_assessment=None):
     target_group = dict(policy.capability_groups)[target_capability]
     groups = dict(fixed.capability_groups)
     references = dict(policy.protected_reference_losses)
@@ -139,6 +140,19 @@ def _evaluate_fixed_school(
         if capability not in same_grade and capability not in other_protected)
     capability_order = (*same_grade, *other_protected, *remaining)
 
+    if parent_assessment is None:
+        parent_assessment = evaluate_capabilities(
+            parent_solver, fixed, parent_generation)
+    elif (type(parent_assessment) is not Assessment
+            or parent_assessment.cohort != fixed
+            or parent_assessment.generation_digest != parent_generation):
+        _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_DRIFT")
+    parent_by_case = {
+        case.case_id: (result, contract)
+        for case, result, contract in zip(
+            fixed.cases, parent_assessment.results,
+            parent_assessment.solver_contracts)
+    }
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
@@ -148,13 +162,18 @@ def _evaluate_fixed_school(
             fixed, cases=cases,
             capability_groups=((capability, groups[capability]),),
             expected_case_digest=case_census_digest(cases))
-        parent_assessment = evaluate_capabilities(parent_solver, cohort, parent_generation)
+        parent_subset = Assessment(
+            cohort,
+            parent_generation,
+            tuple(parent_by_case[case.case_id][0] for case in cases),
+            tuple(parent_by_case[case.case_id][1] for case in cases),
+        )
         candidate_assessment = evaluate_capabilities(
             candidate_solver, cohort, candidate_generation)
-        pair = AssessmentPair(parent_assessment, candidate_assessment)
-        pair_digests.append((parent_assessment.digest(), candidate_assessment.digest()))
+        pair = AssessmentPair(parent_subset, candidate_assessment)
+        pair_digests.append((parent_subset.digest(), candidate_assessment.digest()))
         for case, result, contract in zip(
-                cases, parent_assessment.results, parent_assessment.solver_contracts):
+                cases, parent_subset.results, parent_subset.solver_contracts):
             parent_results[case.case_id] = result
             parent_contracts[case.case_id] = contract
         for case, result, contract in zip(
@@ -222,7 +241,8 @@ def evaluate_foundation_retention_candidate(
 def evaluate_foundation_fixed_school_candidate(
         parent_solver, candidate_solver, target_capability: str,
         policy: FoundationRetentionPolicy, fixed: EvaluationCohort,
-        parent_generation: str, candidate_generation: str) -> Decision:
+        parent_generation: str, candidate_generation: str, *,
+        parent_assessment: Assessment | None = None) -> Decision:
     """Production foundation path: authorizing fixed school only, no fresh telemetry."""
     _fixed_cohort_contract(target_capability, policy, fixed)
     return _evaluate_fixed_school(
@@ -230,7 +250,8 @@ def evaluate_foundation_fixed_school_candidate(
         parent_generation, candidate_generation,
         lambda pair_digests, blocking: _fixed_evidence_digest(
             target_capability, policy, fixed, pair_digests,
-            blocking_capability=blocking))
+            blocking_capability=blocking),
+        parent_assessment=parent_assessment)
 
 
 __all__ = (
