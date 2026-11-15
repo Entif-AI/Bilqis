@@ -148,11 +148,11 @@ export function createOperateController(api) {
     onInspect?.({
       kind: "operation", id: receipt.meta.record_id,
       details: {
-        "Operation": receipt.operation_id,
-        "State": receipt.state,
-        "Target": receipt.target_ref,
-        "Postcondition": receipt.postcondition_ref ?? "UNAVAILABLE",
-        "Error": receipt.error_ref ?? "NONE",
+        [t("shell.inspector.detail.operation")]: receipt.operation_id,
+        [t("shell.inspector.detail.state")]: receipt.state,
+        [t("shell.inspector.detail.target")]: receipt.target_ref,
+        [t("shell.inspector.detail.postcondition")]: receipt.postcondition_ref ?? t("shell.inspector.value.unavailable"),
+        [t("shell.inspector.detail.error")]: receipt.error_ref ?? t("shell.inspector.value.none"),
       },
     });
   }

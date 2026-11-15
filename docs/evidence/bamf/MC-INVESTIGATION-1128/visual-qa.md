@@ -2,27 +2,38 @@
 
 Issue: #1128
 
-Final integration/review base: `44b64de2ee772790924cc20ca12aa4d52441c864`
+Exact comparative baseline: `44b64de2ee772790924cc20ca12aa4d52441c864`
 
-Pre-implementation visual baseline: `490e86e1a284fd03c3824e0bce656d658df0052c`
-
-The visual baseline predates the final integration base because parallel Mission Control leaves advanced unified during implementation. The investigation-plane rendering files exercised below did not change in the intervening unified delta; final exact-base verification was rerun after merging `44b64de2`.
+The acceptance baseline is the exact unified integration head consumed by the final candidate. An earlier exploratory rendering at `490e86e1a284fd03c3824e0bce656d658df0052c` informed implementation but is not used as final comparative evidence.
 
 ## Acceptance setup
 
-The baseline and candidate were served through the repository's existing Mission Control preview bridge and inspected in the same connected Chrome browser. A fresh localhost origin was used for the candidate after baseline inspection so the browser could not reuse the baseline ES-module graph or stylesheets.
+The exact baseline and candidate were served through the repository's existing Mission Control preview bridge and captured through one reusable headless Chrome DevTools session. Separate localhost origins prevented browser module/style caching from mixing baseline and candidate state. The candidate was also exercised interactively through the connected desktop browser for Inspector, pin, note, compare, and deep-link behavior.
 
 The exercised deep link selected exact object context:
 
 `capability / B.AND / fixture-run / generation 7`
 
-The preview bridge is inspection-only and therefore rendered historical posture, which is useful for this leaf because #1128 must preserve historical/inspection semantics and withhold mutation authority.
+The ordinary preview bridge supplies a disconnected/inspection posture. A bounded alternate bridge for rendering only returned `healthy`, `serviceLive: true`, and `learnerReady: true` while serving the same checked-in fixture snapshot so the verified-live presentation could be exercised without invoking a trainer, control-plane mutation, or neural update.
+
+## Rendered acceptance matrix
+
+| Artifact | Base/head | Theme | Density | Viewport | Posture | Layout result |
+| --- | --- | --- | --- | ---: | --- | --- |
+| `baseline-44b64de2-dark-comfortable-1440.png` | exact baseline `44b64de2` | dark | comfortable | 1440 × 1100 | baseline/disconnected | 1425 px document width; no page overflow |
+| `after-dark-comfortable-live-1440.png` | candidate | dark | comfortable | 1440 × 1100 | verified-live rendering fixture | `Current · generation 7`; 1425 px document width; no page overflow |
+| `after-dark-comfortable-historical-1440.png` | candidate | dark | comfortable | 1440 × 1100 | explicit historical generation 6 + disconnected defense | `Historical · generation 6`; mutation unavailable; no page overflow |
+| `after-light-compact-defensive-1440.png` | candidate | light | compact | 1440 × 1100 | disconnected defensive | 1425 px document width; no page overflow |
+| `after-dark-comfortable-defensive-760.png` | candidate | dark | comfortable | 760 × 1100 | disconnected defensive | 745 px document width; no page overflow |
+| `after-light-compact-defensive-390.png` | candidate | light | compact | 390 × 1100 | disconnected defensive | 375 px document width; no page overflow |
+
+The exact historical rendering showed the defensive banner `Offline`, `Last verified snapshot · inspection only`, and `Mutation unavailable`. The verified-live rendering showed `Live service`, `Current verified snapshot`, and `Operator mutation contract available`. These are fixture-backed presentation checks, not claims of a production learner state.
 
 ## Baseline finding
 
 The baseline investigation plane permanently exposed more chrome than the target composition calls for. Time controls and forensic/deep-link identity occupied the investigation surface rather than behaving as subordinate disclosure. Inspector identity/detail hierarchy was comparatively flat.
 
-Baseline browser capture receipt: `7883864c-635f-4218-989e-676a89f28e10`.
+The checked-in exact-base capture is `baseline-44b64de2-dark-comfortable-1440.png`.
 
 ## Candidate observations
 
@@ -55,15 +66,16 @@ Baseline browser capture receipt: `7883864c-635f-4218-989e-676a89f28e10`.
 - Comparing the selected capability reference to itself did not fabricate comparable facts. The workspace explicitly rendered `Unavailable` with the reason `The selected capability references do not expose a common literal fact set.`
 - Compare state therefore remains literal and adapter-bounded rather than manufacturing false equivalence or a winner.
 
-### Layout containment
+### Layout containment and responsive behavior
 
-At the connected desktop viewport:
+The exact acceptance captures measured:
 
-- `innerWidth`: 1684 px
-- document scroll width: 1669 px
-- body scroll width: 1669 px
-- no page-level horizontal overflow was introduced by the investigation plane or Inspector
-- Inspector width: 420 px
+- 1440 px viewport → 1425 px document/body scroll width
+- 760 px viewport → 745 px document/body scroll width
+- 390 px viewport → 375 px document/body scroll width
+- no page-level horizontal overflow in any rendered variant
+- light/compact and dark/comfortable both preserve the investigation hierarchy and terse toolbar labels
+- the Inspector remains a side plane at desktop width and the investigation surface reflows rather than truncating exact identities at narrow widths
 
 ## Runtime defect caught during QA
 
@@ -76,4 +88,4 @@ Both rules were rechecked in the real browser and are covered by layout-contract
 
 ## Visual acceptance
 
-The candidate satisfies the #1128 composition intent in the exercised desktop/historical state: investigation is subordinate to destination work, exact context remains recoverable, unsupported comparisons remain explicit, and local operator metadata remains visibly non-authoritative.
+The candidate satisfies the #1128 composition intent across the exercised exact-base comparison, dark/light themes, comfortable/compact densities, 1440/760/390 responsive widths, verified-live rendering, explicit historical lens, and disconnected defensive posture. Investigation remains subordinate to destination work; exact context is recoverable without permanent URI chrome; unsupported comparisons remain explicit; and local operator metadata remains visibly non-authoritative.

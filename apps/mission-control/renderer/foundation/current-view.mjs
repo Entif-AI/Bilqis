@@ -79,13 +79,13 @@ export function renderCurrentView(
         })),
       ],
       details: {
-        "WAS/TOP/NOW/ALL": row.was + "/" + row.top + "/" + row.now + "/" + row.total,
-        Debt: row.debt,
-        "P(RET)": row.pRet ?? "NOT MEASURED",
-        Prerequisites: row.prerequisites.length ? row.prerequisites : ["none"],
-        "Source state": row.sourceState,
-        "Implementation state": row.implementationState,
-        "Qualification state": row.qualificationState,
+        [t("shell.inspector.detail.scoreQuad")]: row.was + "/" + row.top + "/" + row.now + "/" + row.total,
+        [t("shell.inspector.detail.debt")]: row.debt,
+        [t("shell.inspector.detail.pret")]: row.pRet ?? t("shell.inspector.value.notMeasured"),
+        [t("shell.inspector.detail.prerequisites")]: row.prerequisites.length ? row.prerequisites : [t("shell.inspector.value.none")],
+        [t("shell.inspector.detail.sourceState")]: row.sourceState,
+        [t("shell.inspector.detail.implementationState")]: row.implementationState,
+        [t("shell.inspector.detail.qualificationState")]: row.qualificationState,
       },
     }), state.selected?.kind === "capability" ? state.selected.id : null);
     return;
@@ -125,8 +125,8 @@ export function renderCurrentView(
       kind: "neural",
       id,
       details: {
-        "Diagnostic class": kind,
-        "Interpretation boundary": "Measured routing/runtime telemetry only",
+        [t("shell.inspector.detail.diagnosticClass")]: kind,
+        [t("shell.inspector.detail.interpretationBoundary")]: t("shell.inspector.detail.measuredRoutingOnly"),
       },
     }));
     return;
@@ -176,13 +176,13 @@ export function renderCurrentView(
         })),
       ],
       details: {
-        "Slot address": `motif.page.${slot.pageIndex}[${slot.rowIndex}]`,
-        "Creation generation": slot.createdGeneration,
-        "Source eligibility": slot.sourceEligibility,
-        "Correction state": slot.correctionState,
-        "Parameter bank": slot.parameterBank,
-        "Related capabilities": slot.capabilities,
-        "Related episodes": slot.episodes,
+        [t("shell.inspector.detail.slotAddress")]: `motif.page.${slot.pageIndex}[${slot.rowIndex}]`,
+        [t("shell.inspector.detail.creationGeneration")]: slot.createdGeneration,
+        [t("shell.inspector.detail.sourceEligibility")]: slot.sourceEligibility,
+        [t("shell.inspector.detail.correctionState")]: slot.correctionState,
+        [t("shell.inspector.detail.parameterBank")]: slot.parameterBank,
+        [t("shell.inspector.detail.relatedCapabilities")]: slot.capabilities,
+        [t("shell.inspector.detail.relatedEpisodes")]: slot.episodes,
       },
     }), state.selected?.kind === "memory" ? state.selected.id : null, state.context);
     return;
@@ -252,16 +252,16 @@ export function renderCurrentView(
     renderLineageView(domain, (id, node) => onInspect({
       kind: "generation",
       id,
-      label: `Generation ${node.generation}`,
+      label: t("shell.inspector.generationLabel", { generation: node.generation }),
       relations: [
         { kind: "checkpoint", id: `checkpoint:${node.checkpointSha256}`, relation: "checkpoint" },
       ],
       details: {
-        Generation: node.generation,
-        "Manifest SHA-256": node.manifestSha256,
-        "Parent manifest": node.parentManifestSha256 ?? "GENESIS",
-        Transition: node.transitionClass,
-        "Checkpoint SHA-256": node.checkpointSha256,
+        [t("shell.inspector.generation")]: node.generation,
+        [t("shell.inspector.detail.manifestSha256")]: node.manifestSha256,
+        [t("shell.inspector.detail.parentManifest")]: node.parentManifestSha256 ?? t("shell.inspector.value.genesis"),
+        [t("shell.inspector.detail.transition")]: node.transitionClass,
+        [t("shell.inspector.detail.checkpointSha256")]: node.checkpointSha256,
       },
     }), ["generation", "checkpoint"].includes(state.selected?.kind) ? state.selected.id : null, state.context);
     return;
