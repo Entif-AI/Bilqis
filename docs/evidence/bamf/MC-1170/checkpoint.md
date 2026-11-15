@@ -41,3 +41,12 @@ owner contracts, amend/review affected design assumptions, then run affected pro
 Leaf/premerge qualification and final current-unified readback remain outstanding.
 No PR, merge, issue closure, real student start, or persistent optimizer update has
 been performed by this work.
+
+## Reconciled intake
+
+Merge `1111a7eb` consumes unified `406e30c65c257230b50259d678ed4e1e2a880f14`.
+The final design amendment and scoped drift review passed. Telemetry now follows
+actual multi-step candidate horizons and cache-aware foundation assessment counts.
+The explicit snapshot mismatch/retry and actual successor-publication observation
+cases pass. Post-intake proof is 28 native/observed tests, 382 renderer tests,
+53 Electron tests and 8 Python bridge tests. Broad gates remain pending.
