@@ -132,6 +132,7 @@ def _read_retained_compiled_motifs(
     site_index: int,
     hidden: mx.array,
     seal,
+    source_execution_authorities=None,
 ) -> MotifReadResult:
     """Execute B08 only for a B13-admitted caller holding the private seal."""
     if (seal is not _B13_EXECUTION_SEAL
@@ -142,28 +143,45 @@ def _read_retained_compiled_motifs(
             or type(spec) is not ModelTopologySpecV2
             or type(extents) is not GenerationExtents
             or manifest.digest != extents.motif_key_map_digest
-            or extents != compiled.extents):
+            or extents != compiled.extents
+            or (source_execution_authorities is not None
+                and (type(source_execution_authorities) is not tuple
+                     or len(source_execution_authorities) != len(sources)))):
         _invalid()
     validate_bamf_parameters(spec, extents, parameters)
     row_positions, row_features = [], []
     padded_width = hidden.shape[1]
     tasks, frontiers, policies = [], [], []
-    for row, config, source in zip(
-            compiled.compiled.rows, compiled.compiler_configs, sources):
+    authorities = (
+        (None,) * len(sources)
+        if source_execution_authorities is None
+        else source_execution_authorities)
+    for row, config, source, source_authority in zip(
+            compiled.compiled.rows, compiled.compiler_configs, sources, authorities):
         if type(source) is not SourceAtomRow:
             _invalid()
-        adapter = _canonical_adapter(source)
-        replayed = source_qualified_motif_context(
-            adapter, source.source_row, source.selection,
-            source_root=source.source_root, graph=source.graph,
-            task_scope=replace(config.task, causal_prefix_end=row.visible_end),
-            source_frontier=config.frontier, policy=config.policy,
-            source_seed=source.source_seed, source_each=source.source_each,
-            source_profile_parameters=source.source_profile_parameters,
-            course=source.course)
-        if isinstance(replayed, ContextHold):
-            _invalid()
-        projection, _motifs, issued_frontier = replayed
+        if source_authority is None:
+            adapter = _canonical_adapter(source)
+            replayed = source_qualified_motif_context(
+                adapter, source.source_row, source.selection,
+                source_root=source.source_root, graph=source.graph,
+                task_scope=replace(config.task, causal_prefix_end=row.visible_end),
+                source_frontier=config.frontier, policy=config.policy,
+                source_seed=source.source_seed, source_each=source.source_each,
+                source_profile_parameters=source.source_profile_parameters,
+                course=source.course)
+            if isinstance(replayed, ContextHold):
+                _invalid()
+            projection, _motifs, issued_frontier = replayed
+        else:
+            from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+                require_b11_source_execution_authority,
+            )
+            authority = require_b11_source_execution_authority(
+                source_authority, row, config, source)
+            adapter = authority.source_adapter
+            projection = authority.motif_projection
+            issued_frontier = authority.motif_frontier
         projection = _execution_projection(row, config, projection, issued_frontier)
         if projection is None:
             positions = (None,) * len(row.positions)
