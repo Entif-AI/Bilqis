@@ -30,7 +30,8 @@ class CandidateEvidenceCaptureTests(unittest.TestCase):
             option_id="option:evidence",
             visit=SimpleNamespace(identity=identity),
             offer=SimpleNamespace(
-                capability_id="capability:evidence", source_seed=17),
+                capability_id="capability:evidence", source_seed=17,
+                release_sha256="b" * 64),
             policy={"lr": 0.001},
         )
 
@@ -42,8 +43,10 @@ class CandidateEvidenceCaptureTests(unittest.TestCase):
             variation_axes=("seed",),
             teaching_option_ids=("option:evidence",),
         )
-        return SimpleNamespace(execution_plan=SimpleNamespace(
-            capability_map={"capability:evidence": execution}))
+        return SimpleNamespace(
+            release_sha256="b" * 64,
+            execution_plan=SimpleNamespace(
+                capability_map={"capability:evidence": execution}))
 
     @classmethod
     def _capture(cls, root, *, candidate_attempt_ordinal=1):
@@ -55,7 +58,7 @@ class CandidateEvidenceCaptureTests(unittest.TestCase):
         )
 
     @classmethod
-    def _deliver(cls, capture, count=16):
+    def _deliver(cls, capture, count=16, *, wall_seconds=0.01):
         row = {
             "id": "row:one", "capability": "capability:evidence",
             "tokens": [1, 2, 3],
@@ -67,7 +70,7 @@ class CandidateEvidenceCaptureTests(unittest.TestCase):
                 option_rows=(row,), priority=(row,), seed=ordinal,
                 controls={
                     "realized_cost": {
-                        "wall_seconds": 0.01,
+                        "wall_seconds": wall_seconds,
                         "optimizer_steps": 1,
                         "candidate_optimizer_steps": ordinal,
                     },
@@ -175,6 +178,44 @@ class CandidateEvidenceCaptureTests(unittest.TestCase):
                 read_candidate_horizon_evidence(root, replay_receipt)["steps"],
                 read_candidate_horizon_evidence(root, first_receipt)["steps"],
             )
+
+    def test_crash_after_staging_durability_does_not_create_observation_credit(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            prepare_candidate_evidence_root(root)
+            first = self._capture(root)
+            self._deliver(first, count=2, wall_seconds=0.01)
+            orphan = first.finalize(
+                accepted=False, decision={"decision": "REJECTED", "reason": "fixture"})
+
+            resumed = self._capture(root)
+            self._deliver(resumed, count=2, wall_seconds=0.02)
+            committed = resumed.finalize(
+                accepted=False, decision={"decision": "REJECTED", "reason": "fixture"})
+            self.assertEqual(orphan["attempt_id"], committed["attempt_id"])
+            self.assertNotEqual(orphan["object"], committed["object"])
+
+            event = {
+                "event": "BAMF_CANDIDATE_REJECTED",
+                "generation": 3,
+                "student_manifest_sha256": "a" * 64,
+                "evidence": {
+                    "schema": "bilqis.bamf.c16.3-rejection/v2",
+                    "rejection_journal_ordinal": 1,
+                    "rejection_attempt_ordinal": 1,
+                    "visit_id": "visit:evidence",
+                    "selected_policy_key": "policy:evidence",
+                    "selected_option_id": "option:evidence",
+                    "capability": "capability:evidence",
+                    "candidate_optimizer_step": 12,
+                    "retained_optimizer_step": 10,
+                    "decision": {"decision": "REJECTED", "reason": "fixture"},
+                    "candidate_evidence": committed,
+                },
+            }
+            payload = validate_candidate_horizon_event(root, event, self._release())
+            self.assertEqual(payload["attempt_id"], committed["attempt_id"])
+            self.assertNotEqual(event["evidence"]["candidate_evidence"]["object"], orphan["object"])
 
     def test_cold_read_rejects_tampered_horizon_bytes(self):
         with TemporaryDirectory() as temporary:

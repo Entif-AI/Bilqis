@@ -9,6 +9,17 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_operator.session import _visit, operate_bamf
 
 
+def _evidence_receipt():
+    return {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": 300, "file_fsyncs": 1,
+            "directory_fsyncs": 1, "evidence_objects": 4,
+            "persistence_seconds": 0.005,
+        },
+    }
+
+
 class BamfOperatorRoutingContinuationTests(unittest.TestCase):
     def test_priority_hold_never_counts_as_a_neural_visit(self):
         with TemporaryDirectory() as temporary:
@@ -88,14 +99,7 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
             reason="retention_gate",
             to_record=lambda: {"decision": "REJECTED"},
         )
-        evidence_receipt = {
-            "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
-            "persistence": {
-                "bytes_written": 300, "file_fsyncs": 1,
-                "directory_fsyncs": 1, "evidence_objects": 4,
-                "persistence_seconds": 0.005,
-            },
-        }
+        evidence_receipt = _evidence_receipt()
         capture = SimpleNamespace(finalize=lambda **_kwargs: evidence_receipt)
         cache = SimpleNamespace(
             generation=1, accepted_manifest_sha256="a" * 64)
@@ -177,14 +181,7 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
             accepted=False, reason="retention_gate",
             to_record=lambda: {"decision": "REJECTED"},
         )
-        evidence_receipt = {
-            "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
-            "persistence": {
-                "bytes_written": 300, "file_fsyncs": 1,
-                "directory_fsyncs": 1, "evidence_objects": 4,
-                "persistence_seconds": 0.005,
-            },
-        }
+        evidence_receipt = _evidence_receipt()
         capture = SimpleNamespace(finalize=lambda **_kwargs: evidence_receipt)
         cache = SimpleNamespace(
             generation=1, accepted_manifest_sha256="a" * 64)

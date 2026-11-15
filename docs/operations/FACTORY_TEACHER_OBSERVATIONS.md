@@ -58,11 +58,14 @@ The durability states are explicit:
   with the speculative candidate itself; the accepted parent remains authoritative;
 - a failure while installing the horizon object leaves no declared object reference;
 - after the horizon object is durable but before accepted/rejected event commitment,
-  the object is staging evidence only and carries no learner-outcome authority;
+  the object is staging evidence only and carries no learner-outcome authority. A
+  cold restart may recompute that still-speculative candidate; an orphaned staging
+  object must never be credited or replayed as an observation;
 - the accepted-generation outbox or authenticated rejection event publishes the
   horizon reference and remains the commit/replay authority;
-- cold replay reuses the same content-addressed object and cannot create a second
-  logical observation or repeat optimizer/teacher work.
+- after that authority is committed, cold outbox/rejection replay reuses the exact
+  referenced content-addressed object and cannot create a second logical observation
+  or repeat optimizer/teacher work.
 
 C16.3 reports the horizon object's bytes written, file fsyncs, directory fsyncs,
 physical evidence objects written, logical record count, unique source-object count,

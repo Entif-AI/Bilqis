@@ -109,41 +109,11 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
             break
     return steps, capture
 
-def prepare_bamf_visit(
-        run_dir: Path, *, steps_per_visit: int = 16,
-        progress=None, source_prefetch_workers: int = 0,
-        source_prefetch_executor=None,
-        source_prefetch_metrics: SourcePrefetchMetrics | None = None, observer=None) -> BamfPreparedVisit:
-    """Compose the production visit through retention without publishing it."""
-    if (type(steps_per_visit) is not int
-            or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON):
-        _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
-    _emit_progress(progress, "validating accepted generation and source custody")
-    visit_currentness_metrics = VisitCurrentnessMetrics()
-    parent, context, atlas_path, feature_path = _execution_context(
-        run_dir, currentness_metrics=visit_currentness_metrics)
-    if observer is not None:
-        observer.bind_parent(parent)
-        observer.update(phase="SELECTING")
-    program = schedule_program_from_executable_release(context.release)
-    accepted_host = getattr(context, "_accepted_runtime_host", None)
-    host_cache = getattr(accepted_host, "_accepted_cache", None)
-    school = accepted_priority_school(
-        parent, program,
-        candidate_identity_sha256=getattr(
-            host_cache, "_candidate_identity_sha256", None))
-    _emit_progress(progress, "planning current candidate frontier and teacher priority")
-    selection = select_foundation_priority_visit(
-        run_dir, context, atlas_path, program=program, school=school,
-        progress=progress)
-    if selection.status != "TEACHER_SELECTED":
-        status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
-        return BamfPreparedVisit(status, parent, selection=selection)
-    rows = selection.offer.rows()
-    _emit_progress(
-        progress,
-        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
-    capability = selection.offer.capability_id
+
+def _candidate_horizon_execution(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer):
     cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
     horizon = candidate_step_horizon(
         run_dir, parent, cache, capability, steps_per_visit)
@@ -154,13 +124,14 @@ def prepare_bamf_visit(
         f"candidate horizon is atomic for up to {horizon} optimizer steps; "
         "the session time limit is checked between candidate visits")
     if observer is not None:
-        observer.update(phase="TRAINING", capability_id=capability, candidate_step=0,
-                        candidate_horizon=horizon, candidate_optimizer_step=parent.retained_state.optimizer_step)
+        observer.update(
+            phase="TRAINING", capability_id=capability, candidate_step=0,
+            candidate_horizon=horizon,
+            candidate_optimizer_step=parent.retained_state.optimizer_step)
     steps, capture = _execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
         cache, rejection_journal_ordinal, progress, source_prefetch_workers,
-        source_prefetch_executor,
-        source_prefetch_metrics, observer)
+        source_prefetch_executor, source_prefetch_metrics, observer)
     if observer is not None:
         metrics = currentness_metrics(
             selection.offer._planning_generation._accepted_currentness)
@@ -172,13 +143,21 @@ def prepare_bamf_visit(
                 "full_candidate_identity_hashes"],
             currentness_bundle_tree_scans=metrics["bundle_tree_scans"],
         )
+    return cache, steps, capture, rejection_journal_ordinal, rejection_attempt_ordinal
+
+
+def _retention_result(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        progress, observer):
     step = steps[-1]
     if observer is not None:
         observer.update(phase="RETENTION")
     _emit_progress(progress, "evaluating retention evidence")
     evaluation = evaluate_factory_retention_candidate(
         context, step.transaction, atlas_path, capability, run_dir=run_dir,
-        **({"observer": lambda fields: observer.update(**fields)} if observer is not None else {}))
+        **({"observer": lambda fields: observer.update(**fields)}
+           if observer is not None else {}))
     decision = issue_factory_retention_decision(evaluation)
     retained = resolve_candidate(step.transaction, accepted=decision.accepted)
     candidate_evidence = capture.finalize(
@@ -215,6 +194,52 @@ def prepare_bamf_visit(
         candidate_evidence=candidate_evidence,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)
+
+
+def prepare_bamf_visit(
+        run_dir: Path, *, steps_per_visit: int = 16,
+        progress=None, source_prefetch_workers: int = 0,
+        source_prefetch_executor=None,
+        source_prefetch_metrics: SourcePrefetchMetrics | None = None, observer=None) -> BamfPreparedVisit:
+    """Compose the production visit through retention without publishing it."""
+    if (type(steps_per_visit) is not int
+            or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON):
+        _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
+    _emit_progress(progress, "validating accepted generation and source custody")
+    visit_currentness_metrics = VisitCurrentnessMetrics()
+    parent, context, atlas_path, feature_path = _execution_context(
+        run_dir, currentness_metrics=visit_currentness_metrics)
+    if observer is not None:
+        observer.bind_parent(parent)
+        observer.update(phase="SELECTING")
+    program = schedule_program_from_executable_release(context.release)
+    accepted_host = getattr(context, "_accepted_runtime_host", None)
+    host_cache = getattr(accepted_host, "_accepted_cache", None)
+    school = accepted_priority_school(
+        parent, program,
+        candidate_identity_sha256=getattr(
+            host_cache, "_candidate_identity_sha256", None))
+    _emit_progress(progress, "planning current candidate frontier and teacher priority")
+    selection = select_foundation_priority_visit(
+        run_dir, context, atlas_path, program=program, school=school,
+        progress=progress)
+    if selection.status != "TEACHER_SELECTED":
+        status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
+        return BamfPreparedVisit(status, parent, selection=selection)
+    rows = selection.offer.rows()
+    _emit_progress(
+        progress,
+        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
+    capability = selection.offer.capability_id
+    horizon_state = _candidate_horizon_execution(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer)
+    cache, steps, capture, rejection_journal_ordinal, rejection_attempt_ordinal = horizon_state
+    return _retention_result(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        progress, observer)
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,

@@ -14,6 +14,37 @@ from bilqis_mlx.runtime.bamf_operator.session import (
 )
 
 
+def _evidence_receipt(bytes_written, evidence_objects, seconds):
+    return {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": bytes_written, "file_fsyncs": 1,
+            "directory_fsyncs": 1, "evidence_objects": evidence_objects,
+            "persistence_seconds": seconds,
+        },
+    }
+
+
+def _candidate_executor(transactions, case):
+    def execute(*_args, candidate=None, **_kwargs):
+        ordinal = len(transactions) + 1
+        case.assertIsNone(candidate) if ordinal == 1 else case.assertIs(
+            candidate, transactions[-1])
+        transaction = SimpleNamespace(
+            parent=SimpleNamespace(optimizer_step=11), update_steps=ordinal,
+            training_authorities=tuple(
+                f"authority-{step}" for step in range(ordinal)))
+        transactions.append(transaction)
+        return SimpleNamespace(
+            transaction=transaction,
+            realized_cost={
+                "wall_seconds": float(ordinal), "optimizer_steps": 1,
+                "candidate_optimizer_steps": ordinal,
+                "c08_memory_budget_bytes": 64 * 1024 ** 3,
+            })
+    return execute
+
+
 class BamfOperatorRoutingTests(unittest.TestCase):
     def test_candidate_horizon_buffers_step_evidence_until_one_boundary_write(self):
         from bilqis_mlx.factory.teaching import content_digest
@@ -29,13 +60,16 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             option_id="option:evidence",
             visit=SimpleNamespace(identity=identity),
             offer=SimpleNamespace(
-                capability_id="capability:evidence", source_seed=17),
+                capability_id="capability:evidence", source_seed=17,
+                release_sha256="b" * 64),
         )
         execution = SimpleNamespace(
             provider_id="provider:evidence", provider_implementation_sha256="f" * 64,
             variation_axes=("seed",), teaching_option_ids=("option:evidence",))
-        release = SimpleNamespace(execution_plan=SimpleNamespace(
-            capability_map={"capability:evidence": execution}))
+        release = SimpleNamespace(
+            release_sha256="b" * 64,
+            execution_plan=SimpleNamespace(
+                capability_map={"capability:evidence": execution}))
         row = {
             "id": "row:one", "capability": "capability:evidence",
             "tokens": [1, 2, 3],
@@ -80,43 +114,12 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             ),
         )
         transactions = []
-
-        def execute(*_args, candidate=None, **_kwargs):
-            ordinal = len(transactions) + 1
-            if ordinal == 1:
-                self.assertIsNone(candidate)
-            else:
-                self.assertIs(candidate, transactions[-1])
-            transaction = SimpleNamespace(
-                parent=SimpleNamespace(optimizer_step=11),
-                update_steps=ordinal,
-                training_authorities=tuple(f"authority-{step}" for step in range(ordinal)),
-            )
-            transactions.append(transaction)
-            return SimpleNamespace(
-                transaction=transaction,
-                realized_cost={
-                    "wall_seconds": float(ordinal),
-                    "optimizer_steps": 1,
-                    "candidate_optimizer_steps": ordinal,
-                    "c08_memory_budget_bytes": 64 * 1024 ** 3,
-                },
-            )
-
+        execute = _candidate_executor(transactions, self)
         decision = SimpleNamespace(
             accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
         retained = SimpleNamespace(optimizer_step=15)
         successor = object()
-        evidence = {
-            "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
-            "persistence": {
-                "bytes_written": 900,
-                "file_fsyncs": 1,
-                "directory_fsyncs": 1,
-                "evidence_objects": 6,
-                "persistence_seconds": 0.01,
-            },
-        }
+        evidence = _evidence_receipt(900, 6, 0.01)
         capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
         with patch(
                 "bilqis_mlx.runtime.bamf_operator.session._execution_context",
@@ -236,16 +239,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
             retained = SimpleNamespace(optimizer_step=12)
             successor = object()
-            evidence = {
-                "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
-                "persistence": {
-                    "bytes_written": 300,
-                    "file_fsyncs": 1,
-                    "directory_fsyncs": 1,
-                    "evidence_objects": 4,
-                    "persistence_seconds": 0.005,
-                },
-            }
+            evidence = _evidence_receipt(300, 4, 0.005)
             capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
             with patch(
                     "bilqis_mlx.runtime.bamf_operator.session._execution_context",

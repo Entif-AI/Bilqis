@@ -16,14 +16,14 @@ EVIDENCE_SCHEMA = "bilqis.bamf.c16.3-candidate-evidence/v1"
 REFERENCE_SCHEMA = "bilqis.bamf.c16.3-candidate-evidence-reference/v1"
 PERSISTENCE_SCHEMA = "bilqis.bamf.c16.3-evidence-persistence/v1"
 _SIDECAR_ROOT = Path("teacher-observations/objects")
-_ROLE_FIELDS = {
-    "option_rows": "selected_option",
-    "priority": "weakness_replay",
-    "preservation": "preservation",
-    "support": "retention_support",
-    "enrichment": "enrichment",
-    "prior": "prior_rehearsal",
-}
+_ROLE_FIELDS = (
+    ("option_rows", "selected_option"),
+    ("priority", "weakness_replay"),
+    ("preservation", "preservation"),
+    ("support", "retention_support"),
+    ("enrichment", "enrichment"),
+    ("prior", "prior_rehearsal"),
+)
 _PREPARED_ROOTS: set[Path] = set()
 
 
@@ -104,11 +104,14 @@ class CandidateEvidenceCapture:
         selected_option = getattr(selection, "option_id", None)
         capability = getattr(getattr(selection, "offer", None), "capability_id", None)
         source_seed = getattr(getattr(selection, "offer", None), "source_seed", None)
+        release_sha256 = getattr(getattr(selection, "offer", None), "release_sha256", None)
         if (not isinstance(visit_id, str) or not visit_id
                 or not isinstance(policy_key, str) or not policy_key
                 or not isinstance(selected_option, str) or not selected_option
                 or not isinstance(capability, str) or not capability
                 or type(source_seed) is not int or source_seed < 0
+                or not isinstance(release_sha256, str) or len(release_sha256) != 64
+                or any(char not in "0123456789abcdef" for char in release_sha256)
                 or type(generation) is not int or generation < 0
                 or not isinstance(accepted_manifest_sha256, str)
                 or len(accepted_manifest_sha256) != 64
@@ -135,6 +138,7 @@ class CandidateEvidenceCapture:
             "candidate_attempt_ordinal": candidate_attempt_ordinal,
             "parent_optimizer_step": parent_optimizer_step,
             "capability": capability,
+            "factory_release_sha256": release_sha256,
             "selected_option": selected_option,
             "selected_policy_key": policy_key,
             "source_seed": source_seed,
@@ -161,6 +165,8 @@ class CandidateEvidenceCapture:
         if (type(step) is not int or step < 1
                 or not isinstance(capability, str) or not capability
                 or capability != self.proposal["capability"]
+                or getattr(release, "release_sha256", None)
+                != self.proposal["factory_release_sha256"]
                 or not isinstance(rows, (tuple, list)) or not rows):
             _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_INVALID")
         if self._steps and step != self._steps[-1]["step"] + 1:
@@ -170,7 +176,7 @@ class CandidateEvidenceCapture:
         if type(seed) is not int or seed < 0 or not isinstance(controls, dict):
             _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_INVALID")
         role_ids = {}
-        for name, role in _ROLE_FIELDS.items():
+        for name, role in _ROLE_FIELDS:
             group = evidence.get(name, ())
             if group is None:
                 group = ()

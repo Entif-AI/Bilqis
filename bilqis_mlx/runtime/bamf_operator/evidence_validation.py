@@ -40,13 +40,7 @@ def _persistence(receipt):
     return persistence
 
 
-def read_candidate_horizon_evidence(run_dir, receipt: dict) -> dict:
-    """Cold-read a staged or committed horizon and verify internal semantics."""
-    if (not isinstance(receipt, dict) or receipt.get("schema") != REFERENCE_SCHEMA
-            or not isinstance(receipt.get("object"), dict)):
-        _invalid("BAMF_C16_3_EVIDENCE_REFERENCE_INVALID")
-    persistence = _persistence(receipt)
-    payload = read_sidecar(run_dir, receipt["object"])
+def _payload_parts(receipt, persistence, payload):
     proposal = payload.get("proposal")
     if (payload.get("schema") != EVIDENCE_SCHEMA
             or not isinstance(proposal, dict)
@@ -71,50 +65,74 @@ def read_candidate_horizon_evidence(run_dir, receipt: dict) -> dict:
             or persistence["delivery_records"] != len(steps)
             or persistence["evidence_objects"] != int(persistence["bytes_written"] > 0)):
         _invalid("BAMF_C16_3_EVIDENCE_PERSISTENCE_INVALID")
+    return proposal, objects, steps, outcome
+
+
+def _validate_objects(objects):
     for digest, value in objects.items():
         if state._fingerprint(value) != digest:
             _invalid("BAMF_C16_3_EVIDENCE_OBJECT_DRIFT")
+
+
+def _step_rows(step, objects, proposal, previous):
+    ordinal = step.get("step") if isinstance(step, dict) else None
+    positions = step.get("positions") if isinstance(step, dict) else None
+    if (type(ordinal) is not int or ordinal != previous + 1
+            or step.get("capability") != proposal.get("capability")
+            or not isinstance(positions, list) or not positions):
+        _invalid("BAMF_C16_3_EVIDENCE_STEP_ORDER_INVALID")
+    rows, selected = [], []
+    for position in positions:
+        reference = position.get("row") if isinstance(position, dict) else None
+        roles = position.get("roles") if isinstance(position, dict) else None
+        if (not isinstance(reference, str) or reference not in objects
+                or not isinstance(roles, list) or not roles):
+            _invalid("BAMF_C16_3_EVIDENCE_OBJECT_DRIFT")
+        row = objects[reference]
+        rows.append(row)
+        if "selected_option" in roles:
+            selected.append((row, position))
+    return ordinal, rows, selected
+
+
+def _validate_step_delivery(step, rows, selected):
+    controls = step.get("controls")
+    if (not isinstance(controls, dict)
+            or controls.get("delivered_content_sha256") != content_digest(rows)):
+        _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+    delivery = step.get("delivered_teaching")
+    if not selected:
+        if delivery is not None:
+            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+        return
+    selected_rows = [item[0] for item in selected]
+    providers = {item[1].get("provider_id") for item in selected}
+    implementations = {
+        item[1].get("provider_implementation_sha256") for item in selected}
+    if (not isinstance(delivery, dict)
+            or delivery.get("specimen_content_sha256") != content_digest(selected_rows)
+            or delivery.get("specimen_ids") != list(dict.fromkeys(
+                row["id"] for row in selected_rows))
+            or providers != {delivery.get("provider_id")}
+            or implementations != {delivery.get("provider_implementation_sha256")}):
+        _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+
+
+def read_candidate_horizon_evidence(run_dir, receipt: dict) -> dict:
+    """Cold-read a staged or committed horizon and verify internal semantics."""
+    if (not isinstance(receipt, dict) or receipt.get("schema") != REFERENCE_SCHEMA
+            or not isinstance(receipt.get("object"), dict)):
+        _invalid("BAMF_C16_3_EVIDENCE_REFERENCE_INVALID")
+    persistence = _persistence(receipt)
+    payload = read_sidecar(run_dir, receipt["object"])
+    proposal, objects, steps, _outcome = _payload_parts(receipt, persistence, payload)
+    _validate_objects(objects)
     previous = proposal.get("parent_optimizer_step")
     if type(previous) is not int or previous < 0:
         _invalid("BAMF_C16_3_EVIDENCE_STEP_ORDER_INVALID")
     for step in steps:
-        ordinal = step.get("step") if isinstance(step, dict) else None
-        positions = step.get("positions") if isinstance(step, dict) else None
-        if (type(ordinal) is not int or ordinal != previous + 1
-                or step.get("capability") != proposal.get("capability")
-                or not isinstance(positions, list) or not positions):
-            _invalid("BAMF_C16_3_EVIDENCE_STEP_ORDER_INVALID")
-        previous = ordinal
-        rows, selected = [], []
-        for position in positions:
-            reference = position.get("row") if isinstance(position, dict) else None
-            roles = position.get("roles") if isinstance(position, dict) else None
-            if (not isinstance(reference, str) or reference not in objects
-                    or not isinstance(roles, list) or not roles):
-                _invalid("BAMF_C16_3_EVIDENCE_OBJECT_DRIFT")
-            row = objects[reference]
-            rows.append(row)
-            if "selected_option" in roles:
-                selected.append((row, position))
-        controls = step.get("controls")
-        if (not isinstance(controls, dict)
-                or controls.get("delivered_content_sha256") != content_digest(rows)):
-            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
-        delivery = step.get("delivered_teaching")
-        if selected:
-            selected_rows = [item[0] for item in selected]
-            providers = {item[1].get("provider_id") for item in selected}
-            implementations = {
-                item[1].get("provider_implementation_sha256") for item in selected}
-            if (not isinstance(delivery, dict)
-                    or delivery.get("specimen_content_sha256") != content_digest(selected_rows)
-                    or delivery.get("specimen_ids") != list(dict.fromkeys(
-                        row["id"] for row in selected_rows))
-                    or providers != {delivery.get("provider_id")}
-                    or implementations != {delivery.get("provider_implementation_sha256")}):
-                _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
-        elif delivery is not None:
-            _invalid("BAMF_C16_3_EVIDENCE_DELIVERY_DRIFT")
+        previous, rows, selected = _step_rows(step, objects, proposal, previous)
+        _validate_step_delivery(step, rows, selected)
     return payload
 
 
@@ -131,6 +149,8 @@ def validate_candidate_horizon_event(run_dir, event: dict, release) -> dict:
         _invalid("BAMF_C16_3_EVIDENCE_EVENT_INVALID")
     payload = read_candidate_horizon_evidence(run_dir, receipt)
     proposal, steps, outcome = payload["proposal"], payload["steps"], payload["outcome"]
+    if getattr(release, "release_sha256", None) != proposal.get("factory_release_sha256"):
+        _invalid("BAMF_C16_3_EVIDENCE_RELEASE_DRIFT")
     plan = getattr(release, "execution_plan", None)
     capability_map = getattr(plan, "capability_map", None)
     if not isinstance(capability_map, dict):
