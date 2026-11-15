@@ -5,6 +5,9 @@ import unittest
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.factory.atlas_frontier_contracts import _bytes
 from bilqis_mlx.factory.atlas_frontier_progress import plan_frontier_progress
+from bilqis_mlx.factory.atlas_frontier_progress_audit import (
+    rehydrate_frontier_progress,
+)
 from bilqis_mlx.factory.atlas_frontier_selection import (
     DeferredClosure,
     _candidate_signature,
@@ -126,13 +129,9 @@ class AtlasFrontierProjectionCustodyTests(ProjectionAuthorityFixture, unittest.T
             receipt,
             projection=forged_projection,
         ), "receipt_sha256")
-        forged_prior = _rehash(replace(
-            prior,
-            staged_receipts=(forged_receipt,),
-            pending_staged_receipt_sha256=forged_receipt.receipt_sha256,
-        ), "progress_sha256")
         with self.assertRaises(BilqisError):
-            plan_frontier_progress(snapshot, closure, prior=forged_prior)
+            rehydrate_frontier_progress(
+                replace(prior), (snapshot,), (forged_receipt,))
 
     def test_historical_receipt_requires_authenticated_staging_membership(self):
         _, snapshot, _, _, receipt = _staged_ready()
@@ -202,15 +201,10 @@ class AtlasFrontierProjectionCustodyTests(ProjectionAuthorityFixture, unittest.T
             selection=forged_selection,
             projection=projection,
         ), "receipt_sha256")
-        forged_prior = _rehash(replace(
-            prior,
-            staged_receipts=(forged_receipt,),
-            pending_staged_receipt_sha256=forged_receipt.receipt_sha256,
-        ), "progress_sha256")
         forged_receipt.verify()
-        forged_prior.verify()
         with self.assertRaises(BilqisError):
-            plan_frontier_progress(snapshot, closure, prior=forged_prior)
+            rehydrate_frontier_progress(
+                replace(prior), (snapshot,), (forged_receipt,))
 
     def test_cold_resume_rejects_alternate_ready_cursor_laundering(self):
         fixture = CandidateStagingFixture()
@@ -262,10 +256,5 @@ class AtlasFrontierProjectionCustodyTests(ProjectionAuthorityFixture, unittest.T
         forged_receipt = _stage(
             forged_selection, forged_projection, release, staged.successor,
             forged_snapshot)
-        forged_prior = _rehash(replace(
-            prior,
-            staged_receipts=(forged_receipt,),
-            pending_staged_receipt_sha256=forged_receipt.receipt_sha256,
-        ), "progress_sha256")
         with self.assertRaises(BilqisError):
             forged_receipt.verify()

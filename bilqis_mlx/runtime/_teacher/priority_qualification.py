@@ -45,12 +45,10 @@ def _planning(planning, release):
         _invalid('BAMF_PRIORITY_PLANNING_INVALID')
     progress.verify()
     closure.verify()
-    snapshots = [s for s in progress.snapshot_history
-                 if s.snapshot_sha256 == progress.input_snapshot_sha256]
-    if (len(snapshots) != 1 or closure.snapshot_sha256 != progress.input_snapshot_sha256
-            or snapshots[0].admitted_factory_release_sha256 != release.release_sha256):
+    snapshot = progress.input_snapshot
+    if (closure.snapshot_sha256 != progress.input_snapshot_sha256
+            or snapshot.admitted_factory_release_sha256 != release.release_sha256):
         _invalid('BAMF_PRIORITY_PLANNING_DRIFT')
-    snapshot = snapshots[0]
     validate_closure_structure(snapshot, closure)
     selection, projection = planning.selection, planning.selected_projection
     if (selection is None) != (projection is None):
@@ -80,9 +78,20 @@ def _grade(program, school, capability):
     return grades[0] if len(grades) == 1 and grades[0] in school.active_grades else None
 
 
+def _verify_planning(planning, release, observer):
+    if observer is None:
+        _planning(planning, release)
+        return
+    from bilqis_mlx.factory.atlas_frontier_progress_metrics import (
+        frontier_verification_measurement,
+    )
+    with frontier_verification_measurement(observer):
+        _planning(planning, release)
+
+
 def requalify_priority(run_dir, source_context, parent, frontier, history,
                        planning, offers, program, school, teacher_epoch, *, now,
-                       planning_generation=None):
+                       planning_generation=None, planning_observer=None):
     from bilqis_mlx.runtime.priority_source_offer import PreparedPrioritySourceOffer
 
     if planning_generation is None:
@@ -96,7 +105,7 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
     if (frontier.snapshot.registry.digest != registry.digest
             or frontier.snapshot.as_of != now or school.course_digest != program.digest()):
         _invalid('BAMF_PRIORITY_AUTHORITY_DRIFT')
-    _planning(planning, source_context.release)
+    _verify_planning(planning, source_context.release, planning_observer)
     completed_windows(history)
     evidence = dict(frontier.evidence)
     # Reverify every source fact and policy before applying per-option holds.
