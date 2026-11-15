@@ -64,9 +64,16 @@ def encode_source_compiled_with_handoffs(
         atom_rows.append(vectors)
         handoffs.append(handoff)
         if requests:
+            qualified_feature_rows = (
+                None if source_authority is None else {
+                    (frame_handle, member_handle): feature_row
+                    for frame_handle, member_handle, feature_row
+                    in source_authority.motif_feature_rows
+                })
             members = embed_atoms(
                 parameters, ConceptBatch((requests,), row_banks, compiled.extents),
-                compiled.features, atlas_selection=source.selection)[0]
+                compiled.features, atlas_selection=source.selection,
+                qualified_feature_rows=qualified_feature_rows)[0]
             member_rows.append(tuple(MemberEmbedding(request, members[index])
                                      for index, request in enumerate(requests)))
         else:
