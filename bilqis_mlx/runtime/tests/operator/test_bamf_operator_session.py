@@ -5,7 +5,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from bilqis_mlx.runtime.bamf_operator.session import (
     _execution_context, _visit, operate_bamf, prepare_bamf_visit,
@@ -127,7 +127,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         self.assertEqual(result.visits, 0)
         self.assertEqual(result.accepted, 0)
         self.assertEqual(result.rejected, 0)
-        visit.assert_called_once_with(Path(temporary).resolve(), 0.0, progress=progress.append)
+        visit.assert_called_once_with(Path(temporary).resolve(), 0.0, progress=progress.append, observer=ANY)
         self.assertEqual(progress, ["starting visit 1", "visit 1 outcome: HELD"])
 
     def test_no_admissible_priority_selection_never_executes_candidate(self):

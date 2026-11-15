@@ -25,6 +25,10 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
 class NativeSourceFixture(GenerationAcceptanceFixture):
     """Small source-authenticated lineage used across CP07 production tests."""
 
+    def publish(self, source, **kwargs):
+        kwargs.setdefault("reserve_gib", 0)
+        return super().publish(source, **kwargs)
+
     def bound_native_visit(self, parent, *, capability="A.REJECT"):
         school = SimpleNamespace(
             stage="RECOVERY_1",

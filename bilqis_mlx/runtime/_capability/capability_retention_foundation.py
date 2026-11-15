@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
+from bilqis_mlx.runtime.bamf_operator.telemetry import emit
+
 from ..learning.retention_policy import retention_reason, scaled_loss_allowance
 from ..semantics.domains import contract_digest
 from .capability_evaluation import (
@@ -120,9 +122,18 @@ def _fixed_evidence_digest(
     })
 
 
+def _observed_assessment(solver, cohort, generation, observer, completed, total, subject, role):
+    emit(observer, retention_completed=completed, retention_total=total,
+         retention_subject=subject, retention_role=role)
+    assessment = evaluate_capabilities(solver, cohort, generation)
+    emit(observer, retention_completed=completed + 1, retention_total=total,
+         retention_subject=subject, retention_role=role)
+    return assessment
+
+
 def _evaluate_fixed_school(
         parent_solver, candidate_solver, target_capability, policy, fixed,
-        parent_generation, candidate_generation, evidence_digest):
+        parent_generation, candidate_generation, evidence_digest, *, observer=None):
     target_group = dict(policy.capability_groups)[target_capability]
     groups = dict(fixed.capability_groups)
     references = dict(policy.protected_reference_losses)
@@ -142,15 +153,18 @@ def _evaluate_fixed_school(
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
+    completed, total = 0, 2 * len(capability_order)
     for capability in capability_order:
         cases = tuple(case for case in fixed.cases if case.capability_id == capability)
         cohort = replace(
             fixed, cases=cases,
             capability_groups=((capability, groups[capability]),),
             expected_case_digest=case_census_digest(cases))
-        parent_assessment = evaluate_capabilities(parent_solver, cohort, parent_generation)
-        candidate_assessment = evaluate_capabilities(
-            candidate_solver, cohort, candidate_generation)
+        parent_assessment = _observed_assessment(
+            parent_solver, cohort, parent_generation, observer, completed, total, capability, "parent")
+        candidate_assessment = _observed_assessment(
+            candidate_solver, cohort, candidate_generation, observer, completed + 1, total, capability, "candidate")
+        completed += 2
         pair = AssessmentPair(parent_assessment, candidate_assessment)
         pair_digests.append((parent_assessment.digest(), candidate_assessment.digest()))
         for case, result, contract in zip(
@@ -207,7 +221,7 @@ def _evaluate_fixed_school(
 def evaluate_foundation_retention_candidate(
         parent_solver, candidate_solver, target_capability: str,
         policy: RetentionPolicy, cohorts, parent_generation: str,
-        candidate_generation: str) -> Decision:
+        candidate_generation: str, *, observer=None) -> Decision:
     """Evaluate fixed-school authority first and stop on a final protected loss."""
     _cohort_contract(target_capability, policy, cohorts)
     fixed = cohorts[2]
@@ -216,13 +230,13 @@ def evaluate_foundation_retention_candidate(
         parent_generation, candidate_generation,
         lambda pair_digests, blocking: _evidence_digest(
             target_capability, policy, cohorts, pair_digests,
-            blocking_capability=blocking))
+            blocking_capability=blocking), **({"observer": observer} if observer is not None else {}))
 
 
 def evaluate_foundation_fixed_school_candidate(
         parent_solver, candidate_solver, target_capability: str,
         policy: FoundationRetentionPolicy, fixed: EvaluationCohort,
-        parent_generation: str, candidate_generation: str) -> Decision:
+        parent_generation: str, candidate_generation: str, *, observer=None) -> Decision:
     """Production foundation path: authorizing fixed school only, no fresh telemetry."""
     _fixed_cohort_contract(target_capability, policy, fixed)
     return _evaluate_fixed_school(
@@ -230,7 +244,7 @@ def evaluate_foundation_fixed_school_candidate(
         parent_generation, candidate_generation,
         lambda pair_digests, blocking: _fixed_evidence_digest(
             target_capability, policy, fixed, pair_digests,
-            blocking_capability=blocking))
+            blocking_capability=blocking), **({"observer": observer} if observer is not None else {}))
 
 
 __all__ = (

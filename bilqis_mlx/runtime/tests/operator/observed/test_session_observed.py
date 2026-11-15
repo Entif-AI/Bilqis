@@ -1,0 +1,81 @@
+from pathlib import Path
+from types import SimpleNamespace as NS
+import unittest
+from unittest.mock import patch
+
+from bilqis_mlx.runtime.bamf_operator.session import _visit
+
+
+class SessionObservationTests(unittest.TestCase):
+    def test_publication_before_accepted_and_failure_propagates(self):
+        events = []
+        observer = NS(update=lambda **v: events.append(v))
+        decision = NS(accepted=True)
+        prepared = NS(status='ACCEPTED', parent=object(), selection=object(),
+                      step=NS(transaction=NS(training_authorities=())), decision=decision,
+                      retained=object(), capability='cap', successor=NS(extents=NS(factor_map_digest='x')))
+        with patch('bilqis_mlx.runtime.bamf_operator.session.prepare_bamf_visit', return_value=prepared), patch(
+                'bilqis_mlx.runtime.bamf_operator.session.accept_and_publish', side_effect=RuntimeError('publish')):
+            with self.assertRaises(RuntimeError):
+                _visit(Path('/tmp'), 0, observer=observer)
+        self.assertEqual(events, [{'phase': 'PUBLISHING'}])
+
+    def test_preparation_emits_observed_training_and_retention(self):
+        from bilqis_mlx.runtime.bamf_operator.session import prepare_bamf_visit
+        events = []
+        observer = NS(bind_parent=lambda parent: events.append({'bound': parent}),
+                      update=lambda **fields: events.append(fields))
+        parent = NS(retained_state=NS(optimizer_step=4), optimizer_hyperparameters='hp')
+        selection = NS(status='TEACHER_SELECTED', offer=NS(
+            capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},)),
+            visit=NS(identity=NS(visit_id='visit')))
+        step = NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=1))
+        def assess(*args, observer, **kwargs):
+            observer({'retention_completed': 1, 'retention_total': 2,
+                      'retention_subject': 'cap', 'retention_role': 'parent'})
+            return 'evaluation'
+        prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
+        patches = {
+            '_execution_context': (parent, NS(release='release'), 'atlas', 'feature'),
+            'schedule_program_from_executable_release': 'program',
+            'accepted_priority_school': 'school', 'select_foundation_priority_visit': selection,
+            '_Capture': 'capture', 'FactoryDeliveryObservation': 'delivery',
+            'execute_accepted_priority_candidate': step,
+            'issue_factory_retention_decision': NS(accepted=False),
+            'resolve_candidate': 'retained',
+        }
+        from contextlib import ExitStack
+        with ExitStack() as stack:
+            for name, value in patches.items():
+                stack.enter_context(patch(prefix + name, return_value=value))
+            stack.enter_context(patch(prefix + 'evaluate_factory_retention_candidate', side_effect=assess))
+            result = prepare_bamf_visit(Path('/tmp'), observer=observer)
+        self.assertEqual(result.status, 'REJECTED')
+        self.assertEqual([e.get('phase') for e in events if 'phase' in e],
+                         ['SELECTING', 'TRAINING', 'RETENTION'])
+        self.assertIn({'phase': 'RETENTION', 'candidate_step': 1,
+                       'candidate_optimizer_step': 5}, events)
+        self.assertIn({'retention_completed': 1, 'retention_total': 2,
+                       'retention_subject': 'cap', 'retention_role': 'parent'}, events)
+
+    def test_operator_publishes_terminal_only_after_publication(self):
+        import json
+        from tempfile import TemporaryDirectory
+        from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
+        with TemporaryDirectory() as tmp:
+            path = Path(tmp)
+            (path / 'bamf-state.json').write_text(json.dumps({'run_id': 'run', 'manifest_sha256': 'a' * 64}))
+            prepared = NS(status='ACCEPTED', parent=object(), selection=object(),
+                          step=NS(transaction=NS(training_authorities=())), decision=NS(accepted=True),
+                          retained=object(), capability='cap', successor=NS(extents=NS(factor_map_digest='x')))
+            snapshots = []
+            def publish(*args, **kwargs):
+                snapshots.append(json.loads((path / 'trainer-observed.json').read_text())['visits'][-1])
+            prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
+            with patch(prefix + 'prepare_bamf_visit', return_value=prepared), patch(
+                    prefix + 'accept_and_publish', side_effect=publish), patch(
+                    prefix + 'load_accepted_generation', return_value=NS(generation=1, retained_state=NS(optimizer_step=1))):
+                operate_bamf(path, minutes=1, max_visits=1, reserve_gib=0)
+            final = json.loads((path / 'trainer-observed.json').read_text())['visits'][-1]
+            self.assertEqual((snapshots[0]['phase'], snapshots[0]['outcome']), ('PUBLISHING', 'RUNNING'))
+            self.assertEqual((final['phase'], final['outcome']), ('COMPLETED', 'ACCEPTED'))

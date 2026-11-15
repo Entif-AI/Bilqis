@@ -37,6 +37,7 @@ from bilqis_mlx.semantics.atlas.feature_io import persist_feature_manifest
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactIdentity
 import bilqis_mlx.semantics.atlas.snapshot as _atlas_snapshot
 from .locking import bamf_operator_lock
+from .telemetry import TrainerObservation
 
 
 def _invalid(reason: str):
@@ -149,10 +150,13 @@ def _emit_progress(progress, message: str) -> None:
         progress(message)
 
 
-def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
+def prepare_bamf_visit(run_dir: Path, *, progress=None, observer=None) -> BamfPreparedVisit:
     """Compose the production visit through retention without publishing it."""
     _emit_progress(progress, "validating accepted generation and source custody")
     parent, context, atlas_path, feature_path = _execution_context(run_dir)
+    if observer is not None:
+        observer.bind_parent(parent)
+        observer.update(phase="SELECTING")
     program = schedule_program_from_executable_release(context.release)
     school = accepted_priority_school(parent, program)
     _emit_progress(progress, "planning current candidate frontier and teacher priority")
@@ -169,6 +173,10 @@ def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
     observation = FactoryDeliveryObservation(
         _Capture(run_dir, selection), parent.retained_state.optimizer_step + 1,
         rows, selection.offer.source_seed)
+    if observer is not None:
+        observer.update(phase="TRAINING", capability_id=selection.offer.capability_id,
+                        candidate_step=0, candidate_horizon=1,
+                        candidate_optimizer_step=parent.retained_state.optimizer_step)
     _emit_progress(progress, "executing selected neural candidate")
     step = execute_accepted_priority_candidate(
         selection, context, atlas_path, feature_path,
@@ -177,9 +185,14 @@ def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
         optimizer_step_seed=_step_seed(selection.visit.identity.visit_id),
         max_norm=1.0)
     capability = selection.offer.capability_id
+    if observer is not None:
+        observer.update(phase="RETENTION", candidate_step=1,
+                        candidate_optimizer_step=(step.transaction.parent.optimizer_step
+                                                  + step.transaction.update_steps))
     _emit_progress(progress, "evaluating retention evidence")
     evaluation = evaluate_factory_retention_candidate(
-        context, step.transaction, atlas_path, capability, run_dir=run_dir)
+        context, step.transaction, atlas_path, capability, run_dir=run_dir,
+        **({"observer": lambda fields: observer.update(**fields)} if observer is not None else {}))
     decision = issue_factory_retention_decision(evaluation)
     retained = resolve_candidate(step.transaction, accepted=decision.accepted)
     successor = None
@@ -197,8 +210,9 @@ def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
         parent, selection, step, decision, retained, capability, successor)
 
 
-def _visit(run_dir: Path, reserve_gib: float, *, progress=None):
-    prepared = prepare_bamf_visit(run_dir, progress=progress)
+def _visit(run_dir: Path, reserve_gib: float, *, progress=None, observer=None):
+    prepared = prepare_bamf_visit(run_dir, progress=progress,
+        **({"observer": observer} if observer is not None else {}))
     if prepared.status in {"HELD", "ACTION_REQUIRED"}:
         return prepared.status
     parent = prepared.parent
@@ -223,6 +237,8 @@ def _visit(run_dir: Path, reserve_gib: float, *, progress=None):
         })
         return "REJECTED"
     successor = prepared.successor
+    if observer is not None:
+        observer.update(phase="PUBLISHING")
     _emit_progress(progress, "publishing accepted successor checkpoint")
     accept_and_publish(
         run_dir, successor, retained, decision=decision,
@@ -248,7 +264,9 @@ def operate_bamf(
     with bamf_operator_lock(run_dir):
         while time.monotonic() < deadline and (not max_visits or visits < max_visits):
             _emit_progress(progress, f"starting visit {visits + 1}")
-            outcome = _visit(run_dir, reserve_gib, progress=progress)
+            with TrainerObservation(run_dir, visits + 1) as observer:
+                outcome = _visit(run_dir, reserve_gib, progress=progress, observer=observer)
+                observer.finish(outcome)
             _emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
             if outcome in {"HELD", "ACTION_REQUIRED"}:
                 status = "PRIORITY_HOLD" if outcome == "HELD" else "ACTION_REQUIRED"

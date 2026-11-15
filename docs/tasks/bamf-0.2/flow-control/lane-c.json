@@ -411,6 +411,15 @@
       "preserved_branch": "codex/1140-resources-narrow-followup-20261114",
       "head_sha_role": "Exact ready narrow-screen follow-up candidate before this inventory-only receipt; initial PR #1155 merged at 490e86e1.",
       "merged_pr": 1155
+    },
+    {
+      "issue": 1170,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "2c8cda55d1344626bc6c6f11d9b5db5836a36604",
+      "preserved_branch": "codex/1170-live-trainer-telemetry-20261115",
+      "summary": "Implement structured observed trainer telemetry, CP04 delivery/reconnect and Home progress under issue #1170. Accepted custody remains authoritative.",
+      "resume_trigger": null
     }
   ]
 }
