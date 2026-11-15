@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib
 import json
+import os
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -153,3 +154,31 @@ def test_generation_change_rebuilds_only_the_new_generation_projection(monkeypat
     generation_three = rejection_replay.current_rejections(tmp_path, parent, _cache(3))
 
     assert [row[1] for row in generation_three] == ["visit:capability:beta:1"]
+
+
+def test_hydrated_projection_fails_closed_if_verified_journal_prefix_is_rewritten(
+        monkeypatch, tmp_path):
+    plane = CountingPlane()
+    monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
+    journal = tmp_path / "events.jsonl"
+    parent, cache = _parent(), _cache()
+    first = _rejection(plane, 1)
+    second = _rejection(plane, 2)
+    _append(journal, first)
+    _append(journal, second)
+    assert len(rejection_replay.current_rejections(tmp_path, parent, cache)) == 2
+
+    before = journal.stat().st_mtime_ns
+    journal.write_text(
+        "".join(
+            json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n"
+            for event in (second, first)
+        ),
+        encoding="utf-8",
+    )
+    os.utime(journal, ns=(journal.stat().st_atime_ns, before + 1_000_000_000))
+
+    with pytest.raises(BilqisError) as failure:
+        rejection_replay.current_rejections(tmp_path, parent, cache)
+
+    assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_JOURNAL_INVALID"
