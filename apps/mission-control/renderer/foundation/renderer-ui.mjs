@@ -23,7 +23,7 @@ function destinationLabel(id) {
 }
 
 export function inspectorEvidenceLabelKey(state, defense, fixtureCorrection = false) {
-  if (fixtureCorrection) return "shell.inspector.fixture";
+  if (fixtureCorrection || state?.context?.fixture === true) return "shell.inspector.fixture";
   const historical = state?.context?.mode === "HISTORICAL" ||
     state?.context?.historicalPinned === true || defense?.historical === true;
   return historical ? "shell.inspector.historicalEvidence" : "shell.inspector.currentEvidence";
@@ -67,8 +67,9 @@ function shellStateLabel(value) {
   return key ? t(key) : String(value ?? "");
 }
 
-export function renderContext(state, defense, bootstrap = null) {
+export function renderContext(state, defense, bootstrap = null, launchMode = "production") {
   const shell = document.querySelector("#shell");
+  shell.dataset.launchMode = launchMode;
   const contextBar = document.querySelector(".context-bar");
   const contextFacts = document.querySelector("#context-facts");
   document.querySelector("#context-help-host").innerHTML = contextHelpMarkup({
@@ -80,9 +81,9 @@ export function renderContext(state, defense, bootstrap = null) {
   if (!state) {
     shell.dataset.posture = defense.id;
     const connection = bootstrap?.connection ?? null;
-    document.querySelector("#mode-badge").textContent = connection?.serviceLive
-      ? t("shell.context.bootstrapMode")
-      : t("shell.context.inspectionMode");
+    document.querySelector("#mode-badge").textContent = launchMode === "fixtures"
+      ? t("shell.launchMode.fixtures")
+      : connection?.serviceLive ? t("shell.context.bootstrapMode") : t("shell.context.inspectionMode");
     document.querySelector("#run-id").textContent = connection?.runId ?? t("shell.context.discoveringLearner");
     document.querySelector("#generation-id").textContent = Number.isSafeInteger(connection?.generation)
       ? t("shell.context.generationBootstrap", { generation: connection.generation })
@@ -101,7 +102,9 @@ export function renderContext(state, defense, bootstrap = null) {
   }
   const { context } = state;
   shell.dataset.posture = shellPosture(context);
-  document.querySelector("#mode-badge").textContent = shellStateLabel(context.mode);
+  document.querySelector("#mode-badge").textContent = launchMode === "fixtures"
+    ? t("shell.launchMode.fixtures")
+    : shellStateLabel(context.mode);
   document.querySelector("#run-id").textContent = context.runId;
   document.querySelector("#run-id").title = context.runId;
   const generationIdentity = document.querySelector("#generation-id");
@@ -271,13 +274,14 @@ export function renderChrome(
 ) {
   localizeShellStatic();
   renderRailControl(shellPreferences);
-  renderContext(state, defense, bootstrap);
+  renderContext(state, defense, bootstrap, handlers.launchMode);
   renderDefensiveStatus(defense, handlers.onReconnect, bootstrap);
   renderNavigation(state, handlers.onNavigate);
   renderInspector(state, defense);
   renderCurrentView(
     state, defense, handlers.onInspect, handlers.api,
     handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,
+    handlers.fixtureSupport?.currentViews ?? null,
   );
   const currentView = state?.view ?? "mission-control";
   document.querySelector("#view-title").textContent = destinationLabel(currentView);

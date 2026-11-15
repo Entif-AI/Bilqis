@@ -42,6 +42,20 @@ import { createBootstrapController } from "./foundation/bootstrap-controller.mjs
 import { bindStaticInteractions } from "./foundation/static-interactions.mjs";
 import { t } from "./foundation/i18n.mjs";
 
+const launchMode = window.bamfMissionControl.launchMode === "fixtures" ? "fixtures" : "production";
+const fixtureSupport = launchMode === "fixtures"
+  ? await import("./fixture-support.mjs")
+  : null;
+const routeForLaunchMode = (route) => route?.context
+  ? {
+      ...route,
+      context: Object.freeze({
+        ...route.context,
+        fixture: launchMode === "fixtures",
+      }),
+    }
+  : route;
+
 let state = null;
 let verifiedLiveContext = null;
 let displaySettings;
@@ -51,8 +65,8 @@ let defense = defensiveState("loading");
 let bootstrapState = Object.freeze({ phase: "connecting", connection: null, error: null });
 let focusReturnToken = null;
 let paletteReturnToken = null;
-const homeController = createHomeController(window.bamfMissionControl);
-const resourceController = createResourceController(window.bamfMissionControl);
+const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
+const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
 const interactionController = createInteractionController({
   document,
   storage: window.localStorage,
@@ -67,7 +81,8 @@ const interactionController = createInteractionController({
     render();
   },
   canUseCurrent: () => Boolean(verifiedLiveContext),
-  onOpenRef: (ref) => { state = withRoute(state, routeForObjectRef(ref)); render(); },
+  onOpenRef: (ref) => { state = withRoute(state, routeForLaunchMode(routeForObjectRef(ref))); render(); },
+  compareRefs: fixtureSupport?.interactions?.compareRefs,
   copyText: async (value) => {
     if (!navigator.clipboard?.writeText) return false;
     try {
@@ -88,6 +103,7 @@ const frameShell = createFrameShell({
 });
 const { establishSnapshot } = createBootstrapController({
   api: window.bamfMissionControl,
+  launchMode,
   storage: window.localStorage,
   getState: () => state,
   setState: (next) => { state = next; },
@@ -102,12 +118,15 @@ const { establishSnapshot } = createBootstrapController({
 const capabilityExplorer = createCapabilityExplorer({
   host: document.querySelector("#domain-view"),
   serviceQuery: request => window.bamfMissionControl.querySnapshot(request),
+  launchMode,
+  fixtureSupport: fixtureSupport?.capability ?? null,
   changeLens: (lens, capabilityId) => {
     if (!state) return;
     state = {
       ...state,
       context: Object.freeze({
         ...state.context, ...lens,
+        fixture: launchMode === "fixtures",
         historicalPinned: lens.mode === "HISTORICAL",
         generationManifest: "UNKNOWN", topologyId: "UNKNOWN",
         factoryRelease: "UNKNOWN", semanticRelease: "UNKNOWN",
@@ -169,6 +188,8 @@ function render() {
   frameShell.beforeRender();
   renderChrome(state, defense, displaySettings, shellPreferences, {
     api: window.bamfMissionControl,
+    launchMode,
+    fixtureSupport,
     onEvidenceSelect: selectEvidenceRecord,
     onEvidenceReturn: returnEvidenceOrigin,
     onReconnect: () => establishSnapshot({ preserveRoute: true }),
@@ -181,6 +202,7 @@ function render() {
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
     capabilityExplorer, onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
+    schoolDomainSupport: fixtureSupport?.school ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;

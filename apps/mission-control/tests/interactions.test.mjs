@@ -242,14 +242,28 @@ test("app URI round-trips exact run generation object and trusted internal route
   assert.equal(parseAppUri(buildAppUri(operation)).view, "operate");
 });
 
-test("inspector evidence posture follows the exact historical lens rather than stale live defense", () => {
+test("inspector evidence posture keeps launch-owned fixture custody distinct from production history", () => {
   assert.equal(
     inspectorEvidenceLabelKey({ context }, { historical: false }),
-    "shell.inspector.currentEvidence",
+    "shell.inspector.fixture",
   );
   assert.equal(
     inspectorEvidenceLabelKey(
       { context: { ...context, mode: "HISTORICAL", historicalPinned: true } },
+      { historical: false },
+    ),
+    "shell.inspector.fixture",
+  );
+  assert.equal(
+    inspectorEvidenceLabelKey(
+      { context: { ...context, fixture: false } },
+      { historical: false },
+    ),
+    "shell.inspector.currentEvidence",
+  );
+  assert.equal(
+    inspectorEvidenceLabelKey(
+      { context: { ...context, fixture: false, mode: "HISTORICAL", historicalPinned: true } },
       { historical: false },
     ),
     "shell.inspector.historicalEvidence",

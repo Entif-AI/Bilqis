@@ -127,6 +127,6 @@ test("startup reports service learner telemetry and trainer stages without live 
   assert.match(bootstrap, /telemetry-pending/);
   assert.match(ui, /foundation\.bootstrap\.telemetryPending\.label/);
   assert.match(i18n, /Learner ready · telemetry starting/);
-  assert.match(i18n, /fixture data is never substituted for live state/);
+  assert.match(i18n, /reference fixtures use the explicit fixture launch mode/);
   assert.doesNotMatch(html, /fixture:prometheus-disposable/);
 });

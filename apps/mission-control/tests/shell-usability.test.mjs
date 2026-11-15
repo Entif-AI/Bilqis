@@ -15,6 +15,7 @@ import {
   temporalMarkup,
 } from "../renderer/foundation/temporal.mjs";
 import { createTranslator } from "../renderer/foundation/i18n.mjs";
+import { constrainRouteToLaunchMode } from "../renderer/foundation/bootstrap-controller.mjs";
 
 const source = (relative) => readFileSync(
   new URL(`../renderer/${relative}`, import.meta.url),
@@ -112,6 +113,24 @@ test("shared shell has no permanent command trigger and exposes a global keyboar
   assert.match(html, /id="primary-nav"[^>]*aria-keyshortcuts="Control\+K Meta\+K"/);
   assert.match(html, /data-test-id="shell-command-shortcut-hint"/);
   assert.match(html, /id="rail-toggle"[^>]*data-test-id="shell-rail-toggle"/);
+});
+
+test("fixture provenance is launch-owned and cannot be promoted by a deep-link flag", () => {
+  const route = {
+    view: "memory",
+    context: {
+      runId: "fixture:claimed",
+      generation: 9,
+      mode: "LIVE",
+      fixture: true,
+    },
+  };
+  assert.equal(constrainRouteToLaunchMode(route, "production").context.fixture, false);
+  assert.equal(constrainRouteToLaunchMode({ ...route, context: { ...route.context, fixture: false } }, "fixtures").context.fixture, true);
+  const bootstrap = source("foundation/bootstrap-controller.mjs");
+  assert.match(bootstrap, /if \(!fixtureMode\) cacheOperatorView/);
+  assert.match(bootstrap, /!fixtureMode && operatorView === null/);
+  assert.match(bootstrap, /mutationAvailable: fixtureMode \? false/);
 });
 
 test("shell interactions make context popovers exclusive and reset only changed primary destinations", () => {

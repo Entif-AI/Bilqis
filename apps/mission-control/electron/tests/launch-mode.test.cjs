@@ -40,3 +40,11 @@ test("package scripts expose distinct production and fixture launch commands", (
     "electron apps/mission-control/main.cjs --mission-control-fixtures",
   );
 });
+
+test("main process owns launch mode for adapter, window, and renderer protocol", () => {
+  const main = fs.readFileSync(path.resolve(__dirname, "../../main.cjs"), "utf8");
+  assert.match(main, /resolveLaunchMode\(process\.argv\)/);
+  assert.match(main, /launchMode === LAUNCH_MODE_FIXTURES[\s\S]*FixtureControlPlaneAdapter/);
+  assert.match(main, /createMissionControlWindow\(\{[\s\S]*launchMode,/);
+  assert.match(main, /registerMissionControlProtocol\(\{[\s\S]*launchMode,/);
+});

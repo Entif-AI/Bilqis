@@ -7,9 +7,11 @@ const path = require("node:path");
 
 const { RENDERER_ENTRY_URL } = require("../renderer-location.cjs");
 const {
+  FIXTURE_ONLY_ASSETS,
   RENDERER_ASSETS,
   assetPathForRendererRequest,
   registerMissionControlProtocol,
+  rendererAssetsForLaunchMode,
 } = require("../renderer-protocol.cjs");
 
 test("renderer protocol resolves only the checked-in Mission Control asset allowlist", () => {
@@ -76,6 +78,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/evidence/evidence-query.mjs",
     "/evidence/evidence-markup.mjs",
     "/evidence/evidence.css",
+    "/fixture-support.mjs",
     "/index.html",
     "/interactions/app-uri.mjs",
     "/interactions/compare-production.mjs",
@@ -113,11 +116,13 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/foundation/temporal.mjs",
     "/foundation/test-hooks.mjs",
     "/home/home-controller.mjs",
+    "/home/home-fixture.mjs",
     "/home/home-model.mjs",
     "/home/home-view.mjs",
     "/home/home.css",
     "/renderer.mjs",
     "/resources/resource-controller.mjs",
+    "/resources/resource-fixture-state.mjs",
     "/resources/resource-fixture.mjs",
     "/resources/resource-model.mjs",
     "/resources/resource-view.mjs",
@@ -166,6 +171,41 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/visual-language.mjs",
     "/visual-tokens.css",
   ].sort());
+});
+
+test("production protocol excludes fixture-only assets while fixture mode admits them", () => {
+  const root = "/Applications/Bilqis/MissionControl/renderer";
+  const production = rendererAssetsForLaunchMode("production");
+  const fixtures = rendererAssetsForLaunchMode("fixtures");
+  for (const requestPath of FIXTURE_ONLY_ASSETS) {
+    assert.equal(production.has(requestPath), false, requestPath);
+    assert.equal(fixtures.has(requestPath), true, requestPath);
+    assert.equal(assetPathForRendererRequest(`bamf-mc://app${requestPath}`, root, "production"), null);
+    assert.equal(
+      assetPathForRendererRequest(`bamf-mc://app${requestPath}`, root, "fixtures"),
+      path.join(root, RENDERER_ASSETS.get(requestPath)),
+    );
+  }
+});
+
+test("production renderer static dependency graph is fixture-free", () => {
+  const root = path.resolve(__dirname, "../../renderer");
+  const production = rendererAssetsForLaunchMode("production");
+  const pending = ["/renderer.mjs"];
+  const seen = new Set();
+  while (pending.length > 0) {
+    const requestPath = pending.pop();
+    if (seen.has(requestPath)) continue;
+    seen.add(requestPath);
+    assert.equal(FIXTURE_ONLY_ASSETS.has(requestPath), false, requestPath);
+    const relative = production.get(requestPath);
+    assert.ok(relative, `production asset missing: ${requestPath}`);
+    const source = fs.readFileSync(path.join(root, relative), "utf8");
+    for (const match of source.matchAll(/(?:from\s+|import\s*)["'](\.\.?\/[^"']+)["']/g)) {
+      const resolved = "/" + path.posix.normalize(path.posix.join(path.posix.dirname(relative), match[1]));
+      pending.push(resolved);
+    }
+  }
 });
 
 test("renderer protocol refuses traversal, query aliases and untrusted origins", () => {

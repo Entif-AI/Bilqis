@@ -105,7 +105,7 @@ test("the domain activation owner binds Atlas completion to the current shell st
   assert.equal(fixture.host.innerHTML, markup);
 });
 
-test("production shell routes completed GUI domains into the real view host", () => {
+test("production shell routes accepted domains and keeps fixture-only views behind launch support", () => {
   const index = fs.readFileSync(path.join(rendererRoot, "index.html"), "utf8");
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
@@ -117,7 +117,8 @@ test("production shell routes completed GUI domains into the real view host", ()
     /<section id="view-host" class="view-host"[\s\S]*<section id="domain-view" class="domain-view"/,
   );
 
-  assert.match(renderer, /createHomeController\(window\.bamfMissionControl\)/);
+  assert.match(renderer, /createHomeController\(window\.bamfMissionControl, fixtureSupport\?\.home\)/);
+  assert.match(renderer, /launchMode === "fixtures"[\s\S]*import\("\.\/fixture-support\.mjs"\)/);
   assert.match(renderer, /createCapabilityExplorer\(/);
   assert.match(renderer, /activateDomainViews\(\{/);
   assert.match(renderer, /homeController, resourceController, operateController/);
@@ -131,13 +132,10 @@ test("production shell routes completed GUI domains into the real view host", ()
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);
 
-  for (const [view, owner] of [
-    ["model", "renderNeuralView"],
-    ["memory", "renderMemoryView"],
-    ["lineage", "renderLineageView"],
-    ["evidence", "renderEvidenceView"],
-  ]) {
+  for (const view of ["model", "memory", "lineage"]) {
     assert.match(current, new RegExp('state\\.view === "' + view + '"'));
-    assert.match(current, new RegExp(owner + '\\('));
+    assert.match(current, /productionProjectionMarkup\(/);
   }
+  assert.match(current, /state\.view === "evidence"/);
+  assert.match(current, /renderEvidenceView\(/);
 });

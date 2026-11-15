@@ -6,6 +6,10 @@ const { app, BrowserWindow, ipcMain, net, protocol } = require("electron");
 const { AcceptedControlPlaneAdapter } = require(
   "./electron/accepted-control-plane-adapter.cjs",
 );
+const {
+  LAUNCH_MODE_FIXTURES,
+  resolveLaunchMode,
+} = require("./electron/launch-mode.cjs");
 const { createAcceptedValidators } = require("./electron/accepted-contracts.cjs");
 const { ControlPlaneBridge } = require("./electron/control-plane-bridge.cjs");
 const { registerMissionControlIpc } = require("./electron/main-ipc.cjs");
@@ -19,6 +23,7 @@ registerRendererSchemePrivileges(protocol);
 
 let missionControlWindow = null;
 let pendingAppUri = appUriArgument(process.argv);
+const launchMode = resolveLaunchMode(process.argv);
 
 async function openAppUri(raw) {
   const hash = await rendererHashForAppUri(raw);
@@ -36,7 +41,9 @@ async function openAppUri(raw) {
 async function createWindow() {
   const { assertOperatorView } = await import("./renderer/shell-state.mjs");
   const frameContracts = await import("./renderer/frames/frame-contract.mjs");
-  const adapter = new AcceptedControlPlaneAdapter();
+  const adapter = launchMode === LAUNCH_MODE_FIXTURES
+    ? new (require("./electron/fixture-control-plane-adapter.cjs").FixtureControlPlaneAdapter)()
+    : new AcceptedControlPlaneAdapter();
   const bridge = new ControlPlaneBridge(
     adapter,
     createAcceptedValidators(assertOperatorView, frameContracts),
@@ -50,6 +57,7 @@ async function createWindow() {
       minWidth: 760,
       minHeight: 620,
     },
+    launchMode,
   });
   const disposeIpc = registerMissionControlIpc({
     ipcMain,
@@ -84,6 +92,7 @@ app.whenReady().then(async () => {
     protocol,
     net,
     assetRoot: path.join(__dirname, "renderer"),
+    launchMode,
   });
   await createWindow();
   app.on("activate", () => {
