@@ -64,23 +64,16 @@ def _released_categorical_factors(parameters, row):
 
 
 def _source_qualified_feature_row(
-        features, request, atlas_selection=None, qualified_feature_rows=None):
+        features, request, atlas_selection=None, source_execution_authority=None):
     if type(request) is not FeatureRequest:
         _invalid()
     request.__post_init__()
-    if qualified_feature_rows is not None:
-        if not isinstance(qualified_feature_rows, Mapping):
-            _invalid()
-        row = qualified_feature_rows.get(
-            (request.frame_handle, request.member_handle))
-        if (row is None
-                or row.semantic_id != request.concept.semantic_id
-                or row.abi_index != request.concept.abi_index
-                or row.role_id != request.role_id
-                or row.schema_id != request.schema_id
-                or row.scope != request.scope):
-            _invalid()
-        return row
+    if source_execution_authority is not None:
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
+            require_b11_source_feature_row,
+        )
+        return require_b11_source_feature_row(
+            source_execution_authority, request)
     frame = request.projection.frame(request.frame_handle)
     return source_qualified_feature_row(
         features, request.concept, request.role_id, frame, request.scope,
@@ -98,9 +91,9 @@ def _released_factor_terms(parameters, row):
 
 def _compose_one(
         parameters, request, features, atlas_selection=None,
-        qualified_feature_rows=None):
+        source_execution_authority=None):
     row = _source_qualified_feature_row(
-        features, request, atlas_selection, qualified_feature_rows)
+        features, request, atlas_selection, source_execution_authority)
     terms = _released_factor_terms(parameters, row)
     type_role = terms[FactorGate.TYPE] + terms[FactorGate.ROLE]
     factors = (type_role + terms[FactorGate.SCHEMA] + terms[FactorGate.GRAPH] +
@@ -112,7 +105,7 @@ def compose_factor_features(
         requests: tuple[tuple[FeatureRequest, ...], ...],
         features: AtlasFeatures, *, extents: GenerationExtents,
         atlas_selection: AtlasArtifactSelection | None = None,
-        qualified_feature_rows=None) -> FactorComposition:
+        source_execution_authority=None) -> FactorComposition:
     """Use actual A06 rows and shared B01 tables; never accept anonymous feature tensors.
 
     Each projected type/role/schema/graph term has its learned sigmoid gate.
@@ -123,7 +116,8 @@ def compose_factor_features(
     """
     _validate_composer(parameters, requests, features, extents)
     composed = [[_compose_one(
-        parameters, request, features, atlas_selection, qualified_feature_rows)
+        parameters, request, features, atlas_selection,
+        source_execution_authority)
         for request in batch] for batch in requests]
     type_role = mx.stack([mx.stack([item[0] for item in batch]) for batch in composed])
     all_factors = mx.stack([mx.stack([item[1] for item in batch]) for batch in composed])
