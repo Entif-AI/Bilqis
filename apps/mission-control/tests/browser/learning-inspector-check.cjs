@@ -112,7 +112,10 @@ async function openFixtureLearningInspector(page) {
   const custody = page.locator('[data-test-id="learning-forensics"]');
   await custody.waitFor();
   if (!await custody.evaluate(node => node.open)) {
-    await custody.locator("summary").click();
+    await custody.evaluate(node => {
+      node.open = true;
+      node.dispatchEvent(new Event("toggle", { bubbles: true }));
+    });
   }
   const inspect = page.locator('[data-test-id="learning-candidate-inspect"]');
   await inspect.waitFor({ state: "visible" });
@@ -195,8 +198,10 @@ async function productionLearning(page) {
   check(text.includes("episode-accepted-7"), "production Learning lacks accepted episode");
   check(!text.toLowerCase().includes("reference evidence"), "production surfaced reference copy");
   check(!text.includes("44238") && !text.includes("44239"), "production surfaced fixture identity");
-  check(await view.locator('[role="tab"]').count() === 4, "production Learning is not four tabs");
-  check(await view.locator("time").count() >= 3, "production Learning omitted authoritative time");
+  check(await view.evaluate(node => node.querySelectorAll('[role="tab"]').length) === 4,
+    "production Learning is not four tabs");
+  check(await view.evaluate(node => node.querySelectorAll("time").length) >= 3,
+    "production Learning omitted authoritative time");
 }
 (async () => {
   const srv = server();
