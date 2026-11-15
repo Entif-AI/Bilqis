@@ -34,9 +34,10 @@ test("semantic inventory covers every GUI02 state with non-color markers", () =>
   for (const state of expected) {
     const html = statusBadge(state);
     assert.match(html, new RegExp('data-state="' + state + '"'));
-    assert.match(html, new RegExp('data-test-id="status-' + state + '"'));
+    assert.doesNotMatch(html, /data-test-id=/);
     assert.match(html, /<span aria-hidden="true">.+<\/span>/);
   }
+  assert.match(statusBadge("healthy", "", { testId: "foundation-status-healthy" }), /data-test-id="foundation-status-healthy"/);
 });
 
 test("measured/inferred and source/derived carry independent textual and structural cues", () => {
@@ -106,10 +107,17 @@ test("dark and light themes expose the same semantic token surface", () => {
 
 test("shared primitive grammar encodes surface depth and action roles without changing semantics", () => {
   assert.deepEqual(SURFACE_LEVELS, ["canvas", "surface-1", "surface-2", "surface-3"]);
-  assert.deepEqual(CONTROL_ROLES, ["navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status"]);
-  assert.equal(surfaceClass("surface-2"), "ui-surface ui-surface-2 ui-surface--bounded");
+  assert.deepEqual(CONTROL_ROLES, ["navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status", "mode", "link", "read-only"]);
+  assert.equal(surfaceClass("surface-2"), "ui-surface ui-surface-2");
+  assert.equal(surfaceClass("surface-2", { bounded: true }), "ui-surface ui-surface-2 ui-surface--bounded");
   assert.equal(controlClass("mutate"), "ui-control ui-control--mutate");
-  assert.match(panelMarkup({ title: "Panel", body: "Body", testId: "foundation-test-panel" }), /ui-panel/);
+  assert.equal(controlClass("mode"), "ui-control ui-control--mode");
+  assert.equal(controlClass("link"), "ui-control ui-control--link");
+  assert.equal(controlClass("read-only"), "ui-control ui-control--read-only");
+  const ordinaryPanel = panelMarkup({ title: "Panel", body: "Body", testId: "foundation-test-panel" });
+  assert.match(ordinaryPanel, /ui-panel/);
+  assert.doesNotMatch(ordinaryPanel, /ui-surface--bounded/);
+  assert.match(panelMarkup({ title: "Bounded", body: "Body", testId: "foundation-test-bounded", bounded: true }), /ui-surface--bounded/);
   assert.match(disclosureMarkup({ summary: "More", body: "Detail", testId: "foundation-test-disclosure" }), /<details/);
   assert.match(stateMarkup({ title: "Unavailable", detail: "No data", testId: "foundation-test-state", kind: "error" }), /role="alert"/);
   assert.throws(() => controlClass("mystery"), /CONTROL_ROLE_INVALID/);

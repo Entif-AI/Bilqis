@@ -100,14 +100,16 @@ export function defensiveCatalogMarkup() {
 export function defensiveBannerMarkup(profile) {
   const source = profile.snapshotAvailable
     ? profile.snapshotSource === "cache"
-      ? "Cached verified snapshot · inspection only"
+      ? t("foundation.defensive.snapshot.cached")
       : profile.historical
-        ? "Last verified snapshot · inspection only"
-        : "Current verified snapshot"
-    : "No verified snapshot available";
-  const mutation = profile.mutationAllowed ? "Operator mutation contract available" : "Mutation unavailable";
+        ? t("foundation.defensive.snapshot.last")
+        : t("foundation.defensive.snapshot.current")
+    : t("foundation.defensive.snapshot.none");
+  const mutation = profile.mutationAllowed
+    ? t("foundation.defensive.mutation.available")
+    : t("foundation.defensive.mutation.unavailable");
   const reconnect = profile.reconnectAvailable
-    ? `<button type="button" data-reconnect>Reconnect</button>`
+    ? `<button type="button" data-reconnect data-test-id="foundation-reconnect">${t("foundation.defensive.reconnect")}</button>`
     : "";
   return `<div class="defensive-copy"><strong>${profile.label}</strong><span>${profile.description}</span><small>${source} · ${mutation}</small></div>${reconnect}`;
 }

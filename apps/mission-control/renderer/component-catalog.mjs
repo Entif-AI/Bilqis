@@ -7,22 +7,24 @@ import { assertUniqueTestIds, testIdAttribute } from "./foundation/test-hooks.mj
 
 function metricTile() {
   return `<article class="metric-tile" ${testIdAttribute("foundation", "metric", "retained-accuracy")}>
-    <header><span>${t("foundation.catalog.metric.retainedAccuracy")}</span><span class="provenance-chip" data-authority="source">S · source</span></header>
+    <header><span>${t("foundation.catalog.metric.retainedAccuracy")}</span><span class="provenance-chip" data-authority="source">${t("foundation.catalog.metric.sourceAuthority")}</span></header>
     ${evidenceValue("91.7", "measured", "source", "%")}
-    <div class="trend" aria-label="Trend rose from 86 to 92 percent"><span data-height="35"></span><span data-height="48"></span><span data-height="62"></span><span data-height="79"></span></div>
+    <div class="trend" aria-label="${t("foundation.catalog.metric.trend", { from: 86, to: 92 })}"><span data-height="35"></span><span data-height="48"></span><span data-height="62"></span><span data-height="79"></span></div>
   </article>`;
 }
 
 function deltaCard() {
   return `<article class="comparison-card" ${testIdAttribute("foundation", "metric", "generation-comparison")}>
-    <header><span>${t("foundation.catalog.metric.generationComparison")}</span><span class="provenance-chip" data-authority="derived">D · derived</span></header>
+    <header><span>${t("foundation.catalog.metric.generationComparison")}</span><span class="provenance-chip" data-authority="derived">${t("foundation.catalog.metric.derivedAuthority")}</span></header>
     <strong>+3.2 pp</strong>
-    <small>44217 → 44238 · same rubric</small>
+    <small>${t("foundation.catalog.metric.sameRubric", { from: 44217, to: 44238 })}</small>
   </article>`;
 }
 
 function statePanel() {
-  const states = semanticStateInventory().map((state) => statusBadge(state)).join("");
+  const states = semanticStateInventory()
+    .map((state) => statusBadge(state, "", { testId: `foundation-status-${state}` }))
+    .join("");
   return panelMarkup({
     title: t("foundation.catalog.status.title"),
     body: `<div class="badge-grid">${states}</div>`,
@@ -72,7 +74,7 @@ function graphLegend() {
 
 function fixtureStrip() {
   return Object.entries(VISUAL_FIXTURES)
-    .map(([name, fixture]) => `<div class="fixture-state" data-fixture="${name}" data-state="${fixture.state}"><strong>${fixture.label}</strong><small>${fixture.mode} · ${fixture.freshness}</small></div>`)
+    .map(([name, fixture]) => `<div class="fixture-state" data-fixture="${name}" data-state="${fixture.state}"><strong>${t(fixture.labelKey)}</strong><small>${fixture.mode} · ${fixture.freshness}</small></div>`)
     .join("");
 }
 
@@ -85,7 +87,7 @@ export function renderComponentCatalog() {
     ${evidencePanel()}
     ${panelMarkup({
       title: t("foundation.catalog.provenance.title"),
-      body: `<div class="identity-row"><span class="run-identity">RUN fixture:prometheus-disposable / GEN 44238</span><span class="provenance-chip" data-authority="source">S · FactoryRelease</span><span class="provenance-chip" data-authority="derived">D · learned projection</span></div><div class="alert" data-state="attention"><strong>! ${t("foundation.catalog.alert.attention")}</strong><span>${t("foundation.catalog.alert.diskReserve")}</span></div>${evidenceRow()}${graphLegend()}`,
+      body: `<div class="identity-row"><span class="run-identity">RUN fixture:prometheus-disposable / GEN 44238</span><span class="provenance-chip" data-authority="source">S · FactoryRelease</span><span class="provenance-chip" data-authority="derived">${t("foundation.catalog.provenance.learnedProjection")}</span></div><div class="alert" data-state="attention"><strong>! ${t("foundation.catalog.alert.attention")}</strong><span>${t("foundation.catalog.alert.diskReserve")}</span></div>${evidenceRow()}${graphLegend()}`,
       testId: "foundation-provenance-alerting",
       level: "surface-1",
     })}

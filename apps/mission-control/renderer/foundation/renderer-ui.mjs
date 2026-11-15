@@ -7,6 +7,7 @@ import {
 import { defensiveBannerMarkup } from "./defensive-state.mjs";
 import { bindRovingNavigation } from "./accessibility.mjs";
 import { renderCurrentView } from "./current-view.mjs";
+import { t } from "./i18n.mjs";
 
 export { renderCurrentView } from "./current-view.mjs";
 
@@ -117,7 +118,8 @@ export function renderDefensiveStatus(defense, onReconnect, bootstrap = null) {
     host.dataset.state = bootstrap.phase;
     host.setAttribute("role", bootstrap.phase === "failed" ? "alert" : "status");
     host.hidden = false;
-    host.innerHTML = `<div class="defensive-copy"><strong>${esc(copy[0])}</strong><span>${esc(copy[1])}</span><small>${connection?.runId ? `Run ${esc(connection.runId)} · ` : ""}${Number.isSafeInteger(connection?.generation) ? `generation ${connection.generation} · ` : ""}${detail ? `Detail: ${esc(detail)}` : "No error reported"}</small></div>${bootstrap.phase === "failed" || bootstrap.phase === "learner-unavailable" ? '<button type="button" data-reconnect>Reconnect</button>' : ""}`;
+    const reconnect = `<button type="button" data-reconnect data-test-id="foundation-reconnect">${esc(t("foundation.defensive.reconnect"))}</button>`;
+    host.innerHTML = `<div class="defensive-copy"><strong>${esc(copy[0])}</strong><span>${esc(copy[1])}</span><small>${connection?.runId ? `Run ${esc(connection.runId)} · ` : ""}${Number.isSafeInteger(connection?.generation) ? `generation ${connection.generation} · ` : ""}${detail ? `Detail: ${esc(detail)}` : "No error reported"}</small></div>${bootstrap.phase === "failed" || bootstrap.phase === "learner-unavailable" ? reconnect : ""}`;
     host.querySelector("[data-reconnect]")?.addEventListener("click", onReconnect);
     return;
   }

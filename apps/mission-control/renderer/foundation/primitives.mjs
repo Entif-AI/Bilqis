@@ -3,6 +3,7 @@ import { testIdAttribute } from "./test-hooks.mjs";
 export const SURFACE_LEVELS = Object.freeze(["canvas", "surface-1", "surface-2", "surface-3"]);
 export const CONTROL_ROLES = Object.freeze([
   "navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status",
+  "mode", "link", "read-only",
 ]);
 
 function enumValue(value, allowed, label) {
@@ -10,7 +11,7 @@ function enumValue(value, allowed, label) {
   return value;
 }
 
-export function surfaceClass(level = "surface-1", { bounded = true } = {}) {
+export function surfaceClass(level = "surface-1", { bounded = false } = {}) {
   enumValue(level, SURFACE_LEVELS, "SURFACE_LEVEL_INVALID");
   return `ui-surface ui-${level}${bounded ? " ui-surface--bounded" : ""}`;
 }
@@ -20,8 +21,8 @@ export function controlClass(role = "inspect") {
   return `ui-control ui-control--${role}`;
 }
 
-export function panelMarkup({ title, body, testId: id, level = "surface-1", classes = "" }) {
-  return `<section class="${surfaceClass(level)} ui-panel${classes ? ` ${classes}` : ""}" ${testIdAttribute(id)}><h3>${title}</h3>${body}</section>`;
+export function panelMarkup({ title, body, testId: id, level = "surface-1", bounded = false, classes = "" }) {
+  return `<section class="${surfaceClass(level, { bounded })} ui-panel${classes ? ` ${classes}` : ""}" ${testIdAttribute(id)}><h3>${title}</h3>${body}</section>`;
 }
 
 export function disclosureMarkup({ summary, body, testId: id }) {

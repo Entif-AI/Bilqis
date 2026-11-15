@@ -6,7 +6,7 @@ async (page) => {
   await page.evaluate(() => {
     window.bamfMissionControl.connect = async () => ({state: "healthy"});
   });
-  await page.locator("[data-reconnect]").click();
+  await page.locator('[data-test-id="foundation-reconnect"]').click();
   await page.getByTitle("Inspect exact capability B.AND").waitFor();
 
   await page.getByTitle("Inspect exact capability B.AND").click();

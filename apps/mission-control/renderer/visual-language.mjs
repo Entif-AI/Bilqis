@@ -33,10 +33,11 @@ export const STATUS_META = Object.freeze({
   historical: ["◷", "foundation.status.historical"],
 });
 
-export function statusBadge(status, detail = "") {
+export function statusBadge(status, detail = "", { testId: id = null } = {}) {
   const known = STATUS_META[status];
   const [marker, label] = known ? [known[0], t(known[1])] : ["?", String(status)];
-  return `<span class="status-badge" data-state="${status}" ${testIdAttribute("status", status)}><span aria-hidden="true">${marker}</span><span>${label}</span>${detail ? `<small>${detail}</small>` : ""}</span>`;
+  const testHook = id ? ` ${testIdAttribute(id)}` : "";
+  return `<span class="status-badge" data-state="${status}"${testHook}><span aria-hidden="true">${marker}</span><span>${label}</span>${detail ? `<small>${detail}</small>` : ""}</span>`;
 }
 
 export function evidenceValue(value, evidenceKind, authorityKind, unit = "") {

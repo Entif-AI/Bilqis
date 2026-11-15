@@ -79,6 +79,12 @@ test("shared primitive layer preserves canvas separation and canonical density m
   assert.match(components, /\.ui-table-wrap\s*\{/);
   assert.match(components, /\.ui-disclosure\s*\{/);
   assert.match(components, /\.ui-state--error\s*\{/);
+  assert.match(components, /\.ui-control--mode\s*\{/);
+  assert.match(components, /\.ui-control--link\s*\{/);
+  assert.match(components, /\.ui-control--read-only\s*\{/);
+  assert.match(components, /aria-pressed="true"/);
+  assert.match(components, /data-align="numeric"/);
+  assert.match(components, /forced-colors:\s*active/);
   assert.match(settings, /\["comfortable",\s*"compact"\]/);
   assert.doesNotMatch(tokens, /data-density="terminal"/);
 });
