@@ -133,6 +133,14 @@ class BamfOperatorRejectionContinuationTests(unittest.TestCase):
         self.assertEqual(visit.call_count, 3)
 
 
+def _rejected_resource_fixture():
+    return {
+        "schema": "bilqis.bamf.c16.3-resource-observation/v2",
+        "memory_budget_bytes": 1, "disk_used_bytes": 1,
+        "optimizer_steps": 1, "wall_seconds": 1.0,
+    }
+
+
 class BamfOperatorRejectionReplayIntegrationTests(NativeSourceFixture, unittest.TestCase):
     def test_real_rejections_replay_and_accumulate_without_parent_drift(self):
         parent = self.parent()
@@ -144,12 +152,18 @@ class BamfOperatorRejectionReplayIntegrationTests(NativeSourceFixture, unittest.
             accepted=False, parent=parent.retained_state,
             retained=parent.retained_state)
         selection = SimpleNamespace(option_id="A.REJECT", visit=visit)
-        step = SimpleNamespace(transaction=SimpleNamespace(
-            parent=parent.retained_state, update_steps=1))
+        step = SimpleNamespace(
+            transaction=SimpleNamespace(parent=parent.retained_state, update_steps=1),
+            realized_cost={
+                "wall_seconds": 1.0,
+                "optimizer_steps": 1,
+                "candidate_optimizer_steps": 1,
+                "c08_memory_budget_bytes": 1,
+            })
         rejected = BamfPreparedVisit(
             "REJECTED", parent, selection=selection, step=step,
             decision=decision, retained=parent.retained_state,
-            capability="A.REJECT")
+            capability="A.REJECT", resource=_rejected_resource_fixture())
         held = BamfPreparedVisit("HELD", parent)
         pointer = json.loads(pointer_before)
         cache = SimpleNamespace(

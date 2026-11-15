@@ -4,8 +4,10 @@ from __future__ import annotations
 from bilqis_mlx.factory.executable_release import (
     ExecutableAdmissionReceipt, ExecutableFactoryRelease,
 )
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.atlas_candidate import CandidateState
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    bind_candidate_identity_or_fallback,
+)
 from bilqis_mlx.learning.atlas_engram import INITIAL_MOTIF_CAPACITY, MotifManifest
 from bilqis_mlx.learning.atlas_engram_transaction import MotifAllocationSnapshot
 from bilqis_mlx.learning.atlas_plasticity import PlasticityPolicy
@@ -56,11 +58,13 @@ def _build_initial_candidate(
         optimizer, PlasticityPolicy(
             "FOUNDATION", 0, initial_foundation_row_ages(foundation_features)),
         allocations, 0)
+    state_digest = bind_candidate_identity_or_fallback(
+        state, topology.digest, extents.digest)
     identity = BamfRunIdentity(
         run_id, run_seed, origin_checkpoint.sha256, origin_checkpoint.filename,
         origin_checkpoint.optimizer_step,
         release.release_sha256, admission.semantic_graph_sha256,
-        candidate_identity_digest(state), topology.digest, extents.digest,
+        state_digest, topology.digest, extents.digest,
         implementation_sha256, provenance.source_identity, provenance.release_digest,
         provenance.teacher_identity, provenance.teacher_epoch)
     return BamfBundleCandidate(

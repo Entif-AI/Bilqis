@@ -6,7 +6,10 @@ from pathlib import Path
 
 from bilqis_mlx.data_plane import DataPlaneError, SHA256_HEX_LENGTH
 from bilqis_mlx.learning.atlas_acceptance import (
-    AcceptedCandidateBinding, ParsedAcceptedCandidateBinding, candidate_identity_digest,
+    AcceptedCandidateBinding, ParsedAcceptedCandidateBinding,
+)
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
 )
 
 from ..atlas_admission import AtlasAdmissionBinding, ParsedAtlasAdmissionBinding
@@ -43,8 +46,8 @@ def _same_initial_candidate(student, candidate: BamfBundleCandidate) -> bool:
         and student.implementation_sha256 == candidate.implementation_sha256
         and student.topology == candidate.topology
         and student.extents == candidate.extents
-        and candidate_identity_digest(student.retained_state)
-        == candidate_identity_digest(candidate.retained_state)
+        and candidate_identity_for_canonical_consumer(student.retained_state)
+        == candidate_identity_for_canonical_consumer(candidate.retained_state)
         and student.provenance == candidate.provenance
         and student.transition == candidate.transition
         and student.run_identity == candidate.run_identity

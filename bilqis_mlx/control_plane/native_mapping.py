@@ -169,7 +169,10 @@ def _append_resource_sample(generation, run, native, records, events) -> bool:
     optimizer_steps = resource.get("optimizer_steps") if isinstance(resource, dict) else None
     wall_seconds = resource.get("wall_seconds") if isinstance(resource, dict) else None
     if (not isinstance(resource, dict)
-            or resource.get("schema") != "bilqis.bamf.c16.3-resource-observation/v1"
+            or resource.get("schema") not in {
+                "bilqis.bamf.c16.3-resource-observation/v1",
+                "bilqis.bamf.c16.3-resource-observation/v2",
+            }
             or type(budget) is not int or budget <= 0
             or type(disk_used) is not int or disk_used < 0
             or type(optimizer_steps) is not int or optimizer_steps < 1

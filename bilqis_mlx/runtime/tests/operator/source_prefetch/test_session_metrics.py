@@ -43,9 +43,12 @@ def test_retention_threads_source_metrics_into_resource_observation():
         compiled_source_builds=1)
     context = SimpleNamespace(_source_preparation_metrics=source_metrics)
     step = SimpleNamespace(transaction="candidate")
+    retained = SimpleNamespace(optimizer_step=12)
+    evaluation = SimpleNamespace(
+        candidate_state=retained,
+        parent_state=SimpleNamespace(optimizer_step=11))
     decision = SimpleNamespace(
         accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
-    retained = SimpleNamespace(optimizer_step=12)
     successor = object()
     evidence = {
         "persistence": {
@@ -68,19 +71,20 @@ def test_retention_threads_source_metrics_into_resource_observation():
     }
     with patch(
             "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-            return_value="evaluation"), patch(
+            return_value=evaluation), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
                 return_value=decision), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                    return_value=retained), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.candidate_identity_metrics_delta",
+                    return_value={}), patch(
                         "bilqis_mlx.runtime.bamf_operator.session._resource_observation",
                         return_value=resource) as observe, patch(
                             "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
                             return_value=successor):
         prepared = _retention_result(
             Path("/run"), object(), context, "atlas", selection, "capability:metrics",
-            cache, (step,), capture, 1, 1, None, None)
-    observe.assert_called_once_with(Path("/run"), (step,), source_metrics)
+            cache, (step,), capture, 1, 1, {}, None, None)
+    observe.assert_called_once_with(
+        Path("/run"), (step,), source_metrics, identity_metrics={})
     assert prepared.status == "ACCEPTED"
     assert prepared.successor is successor
     assert prepared.candidate_evidence is evidence

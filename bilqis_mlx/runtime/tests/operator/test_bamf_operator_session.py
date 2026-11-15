@@ -144,11 +144,10 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
                 side_effect=execute) as execute_candidate, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                return_value="evaluation") as evaluate, patch(
+                return_value=SimpleNamespace(
+                    candidate_state=retained, parent_state=parent.retained_state)) as evaluate, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
                 return_value=decision) as decide, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                return_value=retained), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
                 return_value=successor) as derive, patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
@@ -167,8 +166,9 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             Path("/run"), parent, cache, "capability:horizon", 16)
         evaluate.assert_called_once_with(
             context, transactions[-1], "atlas", "capability:horizon", run_dir=Path("/run"))
-        decide.assert_called_once_with("evaluation")
+        decide.assert_called_once_with(evaluate.return_value)
         event = derive.call_args.kwargs["delivery_events"][0]
+        self.assertIs(prepared.resource, event["resource"])
         self.assertEqual(event["resource"]["optimizer_steps"], 4)
         self.assertEqual(event["resource"]["wall_seconds"], 10.0)
         self.assertEqual(event["visit_id"], "visit:horizon")
@@ -263,11 +263,10 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                     "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
                     return_value=step), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                    return_value="evaluation"), patch(
+                    return_value=SimpleNamespace(
+                        candidate_state=retained, parent_state=parent.retained_state)), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
                     return_value=decision), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                    return_value=retained), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
                     return_value=successor) as derive:
                 prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
@@ -275,7 +274,9 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         event = derive.call_args.kwargs["delivery_events"][0]
         self.assertEqual(event["event"], "BAMF_C16_3_ACCEPTED")
         resource = event["resource"]
-        self.assertEqual(resource["schema"], "bilqis.bamf.c16.3-resource-observation/v1")
+        self.assertEqual(resource["schema"], "bilqis.bamf.c16.3-resource-observation/v2")
+        self.assertEqual(resource["candidate_identity_full_computations"], 0)
+        self.assertEqual(resource["candidate_identity_numerical_bytes_hashed"], 0)
         self.assertEqual(resource["memory_budget_bytes"], 64 * 1024 ** 3)
         self.assertGreater(resource["disk_used_bytes"], 0)
         self.assertEqual(resource["optimizer_steps"], 1)
@@ -284,6 +285,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         self.assertEqual(resource["evidence_file_fsyncs"], 1)
         self.assertEqual(resource["evidence_directory_fsyncs"], 1)
         self.assertEqual(resource["evidence_objects"], 4)
+        self.assertEqual(resource["evidence_persistence_seconds"], 0.005)
         self.assertEqual(event["candidate_evidence"], evidence)
 
     def test_execution_context_uses_accepted_release_without_requiring_c07_lease(self):
