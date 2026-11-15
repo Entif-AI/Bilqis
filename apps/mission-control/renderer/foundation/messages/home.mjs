@@ -103,6 +103,7 @@ export const HOME_MESSAGES = Object.freeze({
   "home.school.eyebrow": "Accepted capability snapshot",
   "home.school.title": "School Snapshot",
   "home.school.rows": "{count} rows",
+  "home.school.tableAria": "School snapshot capability table",
   "home.school.capability": "Capability",
   "home.school.now": "Now",
   "home.school.best": "Best",

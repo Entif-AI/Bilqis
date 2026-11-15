@@ -46,6 +46,7 @@ test("Home uses the governed five-state band and target overview regions", () =>
   }
   assert.match(markup, /Fixture evidence/);
   assert.match(markup, /School Snapshot/);
+  assert.match(markup, /class="home-school-table-wrap"[^>]*tabindex="0"[^>]*data-test-id="home-school-scroll"/);
   assert.match(markup, /Observed · provisional/);
   assert.match(markup, /Accepted capability snapshot/);
   assert.equal(model.learningStatus, "IMPROVING");

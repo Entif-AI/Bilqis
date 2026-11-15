@@ -69,7 +69,7 @@
 .home-health-group dd { text-align: end; }
 .home-quiet, .home-empty { margin: var(--space-3) 0 0; color: var(--text-muted); line-height: var(--line-body); }
 
-.home-dashboard :is(button,summary):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+.home-dashboard :is(button,summary,[tabindex="0"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 @media (max-width: 980px) {
   .home-status-band { grid-template-columns: 1fr; gap: var(--space-3); }
   .home-status-band dl { grid-template-columns: repeat(5,minmax(0,1fr)); }
