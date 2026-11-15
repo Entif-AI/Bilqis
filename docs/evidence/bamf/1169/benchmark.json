@@ -1,0 +1,70 @@
+{
+  "measurements": [
+    {
+      "cpu_seconds": 5.018382,
+      "digest": "fbcce34fd4dc8da37977334509d117da6018459861e8757ce01bf498424ccbbf",
+      "extents_sha256": "9d64a5140fadb58df27c4e751a4905608bb074ec9863d8b87f590793be9dcf94",
+      "mlx_cache_limit_bytes": 0,
+      "mlx_memory_limit_bytes": 6442450944,
+      "mode": "original",
+      "parameter_count": 79469798,
+      "peak_rss_bytes": 5606146048,
+      "scope": "DISPOSABLE_FULL_B01_IDENTITY_ONLY_ZERO_OPTIMIZER_UPDATES",
+      "setup_peak_rss_bytes": 446889984,
+      "tensor_bytes": 953848264,
+      "tensor_count": 856,
+      "topology_sha256": "4ea0a04087596dc243a667ed17138ff0ffb3df8b4339759ddf533cdad7e0bd96",
+      "wall_seconds": 5.280629625078291
+    },
+    {
+      "cpu_seconds": 1.293939,
+      "digest": "fbcce34fd4dc8da37977334509d117da6018459861e8757ce01bf498424ccbbf",
+      "extents_sha256": "9d64a5140fadb58df27c4e751a4905608bb074ec9863d8b87f590793be9dcf94",
+      "mlx_cache_limit_bytes": 0,
+      "mlx_memory_limit_bytes": 6442450944,
+      "mode": "legacy-stream",
+      "parameter_count": 79469798,
+      "peak_rss_bytes": 1084899328,
+      "scope": "DISPOSABLE_FULL_B01_IDENTITY_ONLY_ZERO_OPTIMIZER_UPDATES",
+      "setup_peak_rss_bytes": 448528384,
+      "tensor_bytes": 953848264,
+      "tensor_count": 856,
+      "topology_sha256": "4ea0a04087596dc243a667ed17138ff0ffb3df8b4339759ddf533cdad7e0bd96",
+      "wall_seconds": 1.348085000179708
+    },
+    {
+      "cpu_seconds": 0.391,
+      "digest": "a47a93132de7639e5f44c3fd6c8251dc572401590ad018d5c08c300e079f6a6a",
+      "extents_sha256": "9d64a5140fadb58df27c4e751a4905608bb074ec9863d8b87f590793be9dcf94",
+      "mlx_cache_limit_bytes": 0,
+      "mlx_memory_limit_bytes": 6442450944,
+      "mode": "raw-v2",
+      "parameter_count": 79469798,
+      "peak_rss_bytes": 1083097088,
+      "scope": "DISPOSABLE_FULL_B01_IDENTITY_ONLY_ZERO_OPTIMIZER_UPDATES",
+      "setup_peak_rss_bytes": 447037440,
+      "tensor_bytes": 953848264,
+      "tensor_count": 856,
+      "topology_sha256": "4ea0a04087596dc243a667ed17138ff0ffb3df8b4339759ddf533cdad7e0bd96",
+      "wall_seconds": 0.42091579199768603
+    },
+    {
+      "cpu_seconds": 0.3990560000000001,
+      "digest": "a47a93132de7639e5f44c3fd6c8251dc572401590ad018d5c08c300e079f6a6a",
+      "extents_sha256": "9d64a5140fadb58df27c4e751a4905608bb074ec9863d8b87f590793be9dcf94",
+      "mlx_cache_limit_bytes": 0,
+      "mlx_memory_limit_bytes": 6442450944,
+      "mode": "raw-v2",
+      "parameter_count": 79469798,
+      "peak_rss_bytes": 1083670528,
+      "scope": "DISPOSABLE_FULL_B01_IDENTITY_ONLY_ZERO_OPTIMIZER_UPDATES",
+      "setup_peak_rss_bytes": 447610880,
+      "tensor_bytes": 953848264,
+      "tensor_count": 856,
+      "topology_sha256": "4ea0a04087596dc243a667ed17138ff0ffb3df8b4339759ddf533cdad7e0bd96",
+      "wall_seconds": 0.4271967501845211
+    }
+  ],
+  "raw_cpu_speedup": 12.834736572890025,
+  "raw_peak_rss_reduction_fraction": 0.8068018423482927
+}

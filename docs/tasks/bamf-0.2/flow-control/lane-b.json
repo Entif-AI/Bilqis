@@ -505,6 +505,15 @@
         "authority": "Direct project-owner priority change on 2026-11-09 plus AGENTS.md historical/draft-PR preservation policy.",
         "expires_when": "PR #949 merges or closes, or the owner explicitly reactivates #948/#949."
       }
+    },
+    {
+      "issue": 1169,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "2c8cda55d1344626bc6c6f11d9b5db5836a36604",
+      "summary": "Owner-requested streaming optimizer identity; isolated issue branch, design and historical custody verification in progress.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1169-streaming-state-identity-20261115"
     }
   ]
 }

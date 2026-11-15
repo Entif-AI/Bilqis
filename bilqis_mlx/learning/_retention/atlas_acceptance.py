@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 from .atlas_retention_decision import CandidateRetentionDecision
+from bilqis_mlx.learning._retention.candidate_identity import candidate_identity_digest
 from ._atlas_acceptance_records import (
     ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
     EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
@@ -108,19 +109,6 @@ def _source_anchors(training_authorities, state) -> tuple[tuple, ...]:
             _dependency_record(member),
         ) for member in members)
     return tuple(anchors)
-
-
-def candidate_identity_digest(state) -> str:
-    """Digest the full candidate optimizer state, including native AdamW."""
-    import numpy as np
-    optimizer = state.optimizer
-    parts = {}
-    for group in ("parameters", "m", "v", "update_counts"):
-        parts[group] = {
-            name: np.asarray(value).tobytes().hex()
-            for name, value in sorted(getattr(optimizer, group).items())}
-    return hashlib.sha256(_canonical({
-        "state": parts, "optimizer_step": state.optimizer_step})).hexdigest()
 
 
 @dataclass(frozen=True)

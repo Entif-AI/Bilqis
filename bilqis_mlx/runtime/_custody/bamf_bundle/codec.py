@@ -9,6 +9,9 @@ from pathlib import Path
 import bilqis_mlx.runtime.mlx_checkpoint as _mlx_checkpoint
 from bilqis_mlx.data_plane import DataPlaneError, data_plane
 from bilqis_mlx.runtime.disk import assert_headroom
+from bilqis_mlx.learning._retention.candidate_identity import (
+    IDENTITY_SCHEMES, LEGACY_IDENTITY_SCHEME,
+)
 from .records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_BUNDLE_SCHEMA, SIDECARS,
     BamfBundleCandidate,
@@ -95,7 +98,10 @@ def save_bamf_bundle(candidate: BamfBundleCandidate, destination: Path, *,
         candidate.implementation_sha256, candidate.topology.to_record(),
         candidate.extents.to_record(), candidate.provenance.to_record(), tensor,
         {"schema": retained.optimizer.schema_version, "step": retained.optimizer_step,
-         "hyperparameters": asdict(hp)}, candidate.transition, bindings,
+         "hyperparameters": asdict(hp),
+         **({"identity_scheme": retained.identity_scheme}
+            if retained.identity_scheme != LEGACY_IDENTITY_SCHEME else {})},
+        candidate.transition, bindings,
         parent_acceptance_sha256 if publication_bound else None,
         ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA if publication_bound
         else BAMF_BUNDLE_SCHEMA).to_record()
@@ -152,7 +158,11 @@ def validate_bamf_bundle_custody(
     required = set(SIDECARS) - {"run_identity"}
     if (recorded not in (set(SIDECARS), set(SIDECARS) - {"step_proofs"},
                          required, required - {"step_proofs"})
-            or set(manifest["optimizer"]) != {"schema", "step", "hyperparameters"}
+            or set(manifest["optimizer"]) not in (
+                {"schema", "step", "hyperparameters"},
+                {"schema", "step", "hyperparameters", "identity_scheme"})
+            or manifest["optimizer"].get(
+                "identity_scheme", LEGACY_IDENTITY_SCHEME) not in IDENTITY_SCHEMES
             or manifest["optimizer"]["step"] != manifest.get("tensors", {}).get("optimizer_step")):
         invalid()
     for name in recorded:

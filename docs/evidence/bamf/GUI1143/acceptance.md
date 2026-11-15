@@ -104,3 +104,11 @@ No remaining rendered state observed in the final pass requires a redesign repai
 - The environment's BIOS Work Stack helper could not execute because the required container runtime was unavailable. The structural interruption was nevertheless honored before turn-in, and the durable feature worktree remained the recovery boundary.
 
 No merge was performed.
+
+## Legacy-trainer authority pointer
+
+The legacy-trainer reference above describes a documentation gate. Current
+adaptation authority remains `codex/337-replay-349-20261026`, worktree
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026`, run
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`. This UI acceptance record does not select trainer
+policy or change that authority.
