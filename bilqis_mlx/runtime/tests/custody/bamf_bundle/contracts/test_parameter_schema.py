@@ -8,10 +8,20 @@ from unittest.mock import patch
 
 import mlx.core as mx
 
+import bilqis_mlx.runtime.bamf_bundle.publication as publication
+import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_candidate import CandidateState
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
-from bilqis_mlx.runtime.bamf_bundle import load_bamf_bundle, save_bamf_bundle
+from bilqis_mlx.runtime.bamf_bundle import (
+    load_bamf_bundle, publish_bamf_generation, save_bamf_bundle,
+)
+from bilqis_mlx.runtime.bamf_bundle.accepted_runtime import (
+    _reset_execution_cache_owner_for_tests,
+)
+from bilqis_mlx.runtime.bamf_bundle.admission import (
+    derive_successor_bundle, load_accepted_generation,
+)
 from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import (
     publication_bundle_load, publication_measurement,
 )
@@ -21,7 +31,13 @@ from bilqis_mlx.runtime.model_topology_v2 import (
     expected_bamf_shapes,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
-    candidate, parent_state,
+    candidate, parent_state, publish_genesis,
+)
+from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
+    genesis_feature_source_patch,
+)
+from bilqis_mlx.runtime.tests.custody.bamf_bundle.publication.publication_helpers import (
+    acceptance, host_source_authority_patch,
 )
 
 
@@ -113,6 +129,77 @@ class ParameterSchemaTests(unittest.TestCase):
                 self.assertEqual(restored.extents, extents)
                 self.assertEqual(restored.teacher_state, value.teacher_state)
                 self.assertEqual(restored.retained_state.allocations, retained.allocations)
+
+    def test_realistic_publication_reuses_hot_state_and_cold_retry_rehydrates(self):
+        previous_device = mx.default_device()
+        mx.set_default_device(mx.cpu)
+        try:
+            with TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                run = root / "run"
+                with patch.dict(os.environ, {"BILQIS_DATA_PLANE": str(root / "plane.db")}), patch.object(
+                        mlx_checkpoint, "assert_headroom"), genesis_feature_source_patch(), \
+                        host_source_authority_patch():
+                    pointer = publish_genesis(run)
+                    _reset_execution_cache_owner_for_tests()
+                    parent = load_accepted_generation(run)
+                    expected_bytes = sum(
+                        array.nbytes
+                        for tree in (
+                            parent.retained_state.optimizer.parameters,
+                            parent.retained_state.optimizer.m,
+                            parent.retained_state.optimizer.v,
+                            parent.retained_state.optimizer.update_counts,
+                        )
+                        for array in tree.values())
+                    self.assertGreater(expected_bytes, 900_000_000)
+
+                    successor = self._successor(parent, pointer, "FULL_HOT")
+                    steady = []
+                    pointer = publish_bamf_generation(
+                        run, successor,
+                        acceptance=acceptance(successor, parent=parent.retained_state),
+                        reserve_gib=0., publication_observer=steady.append)
+                    self.assertEqual(steady[0].parent_bundle_loads, 0)
+                    self.assertEqual(steady[0].child_bundle_loads, 0)
+                    self.assertEqual(steady[0].tensor_bytes_read, 0)
+                    self.assertGreaterEqual(steady[0].write_bytes, expected_bytes)
+
+                    parent = load_accepted_generation(run)
+                    retry = self._successor(parent, pointer, "FULL_RETRY")
+                    with patch.object(publication, "_atomic_pointer", side_effect=RuntimeError("crash")):
+                        with self.assertRaisesRegex(RuntimeError, "crash"):
+                            publish_bamf_generation(
+                                run, retry,
+                                acceptance=acceptance(retry, parent=parent.retained_state),
+                                reserve_gib=0.)
+
+                    _reset_execution_cache_owner_for_tests()
+                    recovered = []
+                    published = publish_bamf_generation(
+                        run, retry,
+                        acceptance=acceptance(retry, parent=parent.retained_state),
+                        reserve_gib=0., publication_observer=recovered.append)
+                    self.assertEqual(published["generation"], retry.generation)
+                    # Cold generation-2 recovery authenticates generation 1 and
+                    # its generation-0 acceptance ancestor before trusting the
+                    # already-written generation-2 child.
+                    self.assertEqual(recovered[0].parent_bundle_loads, 2)
+                    self.assertEqual(recovered[0].child_bundle_loads, 1)
+                    self.assertEqual(recovered[0].tensor_bytes_read, expected_bytes * 3)
+        finally:
+            _reset_execution_cache_owner_for_tests()
+            mx.set_default_device(previous_device)
+
+    @staticmethod
+    def _successor(parent, pointer, event):
+        retained = replace(
+            parent.retained_state,
+            optimizer_step=parent.retained_state.optimizer_step + 1)
+        return derive_successor_bundle(
+            parent, retained,
+            parent_manifest_sha256=pointer["manifest_sha256"],
+            delivery_events=({"event": event},))
 
     def _reject_parameter_drift(self, root, spec, extents, numerical):
         for kind in ("missing", "extra", "misowned"):
