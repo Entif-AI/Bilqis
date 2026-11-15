@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 272,
-  "legacy_raw_raise_count": 2100,
+  "legacy_raw_file_count": 271,
+  "legacy_raw_raise_count": 2098,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -11019,20 +11019,6 @@
       "exception": "ValueError",
       "expression": "'STAGNATION_ROUTINE_EVALUATION_HAS_NO_ACTIVE_CAPABILITIES'",
       "path": "bilqis_mlx/runtime/assessment.py"
-    },
-    {
-      "code_hint": "accepted pointer changed",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'accepted pointer changed'",
-      "path": "bilqis_mlx/runtime/bamf_operator/telemetry.py"
-    },
-    {
-      "code_hint": "observation exceeds bounded snapshot",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'observation exceeds bounded snapshot'",
-      "path": "bilqis_mlx/runtime/bamf_operator/telemetry.py"
     },
     {
       "code_hint": "HUMAN_TRAINER_OUTBOX_ADVANCE_SOURCE_DRIFT",

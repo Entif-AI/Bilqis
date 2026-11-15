@@ -24,7 +24,7 @@ retention/batching tests; 9 optional cases skipped in that existing owner ring.
 Required observed integration cases did not skip. No real student was started.
 
 Broader leaf/premerge gates remain separate obligations. The leaf selector names
-250 files and 1,241 test functions. Representative native integration took 22.4s
+250 files and 1,241 test functions; pytest collected 1,336 cases successfully. Representative native integration took 22.4s
 for 28 cases; an expected 20–60 minute leaf run is bounded by a 90-minute owned
 process-group watchdog, below the two-hour ceiling. MLX verification stays serial
 with explicit allocator/cache policy. Detached receipts must be reconciled before

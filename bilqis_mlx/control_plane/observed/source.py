@@ -13,6 +13,8 @@ from bilqis_mlx.mission_control.contracts.trainer import TrainerObservation
 
 MAX_BYTES = 64 * 1024
 MAX_VISITS = 8
+MAX_HEARTBEAT_AGE_MS = 10_000
+MAX_FUTURE_SKEW_MS = 5_000
 _SCHEMA = 'bilqis.bamf.trainer-observed/v1'
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
@@ -33,7 +35,7 @@ def _connection(row, now_ms):
         return 'FINISHED'
     age = now_ms - row['observed_at']
     pid = row.get('process_id')
-    if type(pid) is not int or pid <= 0 or age > 10000 or age < -5000:
+    if type(pid) is not int or pid <= 0 or age > MAX_HEARTBEAT_AGE_MS or age < -MAX_FUTURE_SKEW_MS:
         return 'DISCONNECTED'
     return 'LIVE' if process_exists(pid) else 'DISCONNECTED'
 

@@ -50,3 +50,14 @@ actual multi-step candidate horizons and cache-aware foundation assessment count
 The explicit snapshot mismatch/retry and actual successor-publication observation
 cases pass. Post-intake proof is 28 native/observed tests, 382 renderer tests,
 53 Electron tests and 8 Python bridge tests. Broad gates remain pending.
+
+Canonical legacy-trainer reference for the static authority discussion above:
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`.
+This annotation records the repository's declared source; telemetry implementation
+does not adapt or assert a new inspection of that trainer.
+
+Scope-drift audit at the fourth feature-owned commit: the remaining delta names
+existing freshness/size bounds and replaces private, swallowed control-flow
+exceptions with equivalent non-throwing branches. This restores the existing
+operator-contract quality gate without changing acceptance or authority.
+Every obligation remains inherited from #1170; `new_acceptance=false`.

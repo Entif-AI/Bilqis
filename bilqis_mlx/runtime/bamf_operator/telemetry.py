@@ -13,6 +13,7 @@ import time
 import uuid
 
 SCHEMA = 'bilqis.bamf.trainer-observed/v1'
+MAX_SNAPSHOT_BYTES = 64 * 1024
 
 
 class TrainerObservation:
@@ -40,8 +41,8 @@ class TrainerObservation:
         self.visits = []
         try:
             with self.path.open('rb') as stream:
-                raw = stream.read(65537)
-            data = json.loads(raw) if len(raw) <= 65536 else {}
+                raw = stream.read(MAX_SNAPSHOT_BYTES + 1)
+            data = json.loads(raw) if len(raw) <= MAX_SNAPSHOT_BYTES else {}
             if (data.get('schema') == SCHEMA and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
@@ -87,12 +88,13 @@ class TrainerObservation:
             try:
                 payload = json.dumps({'schema': SCHEMA, 'visits': [*self.visits, self.record]},
                                      allow_nan=False).encode()
-                while len(payload) > 65536 and self.visits:
+                while len(payload) > MAX_SNAPSHOT_BYTES and self.visits:
                     self.visits.pop(0)
                     payload = json.dumps({'schema': SCHEMA, 'visits': [*self.visits, self.record]},
                                          allow_nan=False).encode()
-                if len(payload) > 65536:
-                    raise ValueError('observation exceeds bounded snapshot')
+                if len(payload) > MAX_SNAPSHOT_BYTES:
+                    self.enabled = False
+                    return
                 fd, temporary = tempfile.mkstemp(prefix='.trainer-observed-', dir=self.run_dir)
                 with os.fdopen(fd, 'wb') as stream:
                     stream.write(payload)
@@ -110,7 +112,8 @@ class TrainerObservation:
         try:
             pointer = json.loads((self.run_dir / 'bamf-state.json').read_text())
             if pointer.get('run_id') != parent.run_id or pointer.get('generation') != parent.generation:
-                raise ValueError('accepted pointer changed')
+                self.update(run_id=None, parent_manifest_sha256=None)
+                return
             self.update(run_id=parent.run_id, parent_manifest_sha256=pointer['manifest_sha256'],
                         candidate_optimizer_step=parent.retained_state.optimizer_step)
         except (OSError, ValueError, KeyError, AttributeError, TypeError):
