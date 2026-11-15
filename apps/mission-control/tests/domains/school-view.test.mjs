@@ -145,7 +145,7 @@ test("matrix orientation and peer dependency representations are explicit", () =
   assert.match(source, /data-toggle-columns/);
   assert.match(source, /dependency-peers/);
   assert.match(source, /dependency-fallback/);
-  assert.match(source, /school\.dependency\.nodeAria/);
+  assert.match(source, /aria-label="\$\{esc\(accessibleName\)\}"/);
   assert.match(source, /school\.pagination\.status/);
   assert.match(source, /data-eligibility=/);
   assert.match(source, /data-mastery=/);

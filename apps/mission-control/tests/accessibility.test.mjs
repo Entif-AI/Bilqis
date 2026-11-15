@@ -86,7 +86,7 @@ test("focus is visibly retained and reduced-motion plus forced-colors modes are 
 
 test("School graph remains keyboard interactive while exposing an equivalent relationship table", () => {
   const school = source("school/school-view.mjs");
-  assert.match(school, /role="group" aria-label="\$\{t\("school\.dependency\.aria"\)\}"/);
+  assert.match(school, /role="group" aria-label="\$\{esc\(t\("school\.dependency\.aria"\)\)\}"/);
   assert.match(school, /school\.dependency\.caption/);
   assert.match(school, /testIdAttribute\("school", "dependency", "graph"\)/);
   assert.match(school, /testIdAttribute\("school", "dependency", "table"\)/);

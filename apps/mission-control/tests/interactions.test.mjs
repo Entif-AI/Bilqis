@@ -24,6 +24,7 @@ import {
   parseAppUri,
 } from "../renderer/interactions/app-uri.mjs";
 import { compareStableRefs } from "../renderer/interactions/compare.mjs";
+import { compareStableRefs as compareFixtureRefs } from "../renderer/interactions/fixture-compare.mjs";
 import { renderInvestigationMarkup } from "../renderer/interactions/view.mjs";
 import { inspectorEvidenceLabelKey } from "../renderer/foundation/renderer-ui.mjs";
 
@@ -283,7 +284,7 @@ test("generation compare exposes literal incompatibility and candidate compare k
   const rightGeneration = {
     kind: "generation", id: "generation:44241", runId: "fixture-run", generation: 44241,
   };
-  const generation = compareStableRefs(leftGeneration, rightGeneration);
+  const generation = compareFixtureRefs(leftGeneration, rightGeneration);
   assert.equal(generation.state, "PRESENT");
   assert.equal(generation.rows.some((item) =>
     item.label === "Resource profile" && item.state === "UNAVAILABLE"), true);
@@ -296,7 +297,7 @@ test("generation compare exposes literal incompatibility and candidate compare k
     kind: "candidate", id: "candidate:fixture:interference-reject",
     runId: "fixture-run", generation: 44238,
   };
-  const candidate = compareStableRefs(leftCandidate, rightCandidate);
+  const candidate = compareFixtureRefs(leftCandidate, rightCandidate);
   assert.deepEqual(
     candidate.rows.find((item) => item.label === "Target committed"),
     { key: "target-committed", label: "Target committed", left: "12/12", right: "8/12", state: "DIFFERENT", reason: null },
@@ -324,7 +325,7 @@ test("mixed object classes stay explicitly incompatible", () => {
 });
 
 test("strategy compare presents the two literal metric sets side by side", () => {
-  const compared = compareStableRefs(
+  const compared = compareFixtureRefs(
     {
       kind: "strategy",
       id: "strategy:fixture:incumbent-deep-contrast",

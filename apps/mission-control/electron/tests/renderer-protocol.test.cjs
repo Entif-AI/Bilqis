@@ -48,6 +48,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/corrections/corrections.css",
     "/deep-link.mjs",
     "/foundation/defensive-state.mjs",
+    "/foundation/fixture-current-view.mjs",
     "/foundation/fixture-mode.mjs",
     "/foundation/domain-controller.mjs",
     "/foundation/messages/atlas.mjs",
@@ -82,6 +83,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/interactions/app-uri.mjs",
     "/interactions/compare.mjs",
     "/interactions/controller.mjs",
+    "/interactions/fixture-compare.mjs",
     "/interactions/dom-ref.mjs",
     "/interactions/interactions.css",
     "/interactions/model.mjs",
@@ -113,11 +115,13 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/foundation/static-interactions.mjs",
     "/foundation/test-hooks.mjs",
     "/home/home-controller.mjs",
+    "/home/home-fixture.mjs",
     "/home/home-model.mjs",
     "/home/home-view.mjs",
     "/home/home.css",
     "/renderer.mjs",
     "/resources/resource-controller.mjs",
+    "/resources/resource-fixture-state.mjs",
     "/resources/resource-fixture.mjs",
     "/resources/resource-model.mjs",
     "/resources/resource-view.mjs",
@@ -168,7 +172,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
   ].sort());
 });
 
-test("production protocol refuses School fixture modules while fixture mode admits them", () => {
+test("production protocol refuses fixture-only renderer modules while fixture mode admits them", () => {
   const root = "/Applications/Bilqis/MissionControl/renderer";
   for (const asset of FIXTURE_ONLY_RENDERER_ASSETS) {
     assert.equal(assetPathForRendererRequest(`bamf-mc://app${asset}`, root, "production"), null, asset);

@@ -7,8 +7,8 @@ import {
   homeStatus,
   projectionFromPages,
   queryRequest,
-  referenceHomeProjection,
 } from "../../renderer/home/home-model.mjs";
+import { referenceHomeProjection } from "../../renderer/home/home-fixture.mjs";
 import { createHomeController } from "../../renderer/home/home-controller.mjs";
 import { renderHomeMarkup } from "../../renderer/home/home-view.mjs";
 import { collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
@@ -90,6 +90,14 @@ test("fresh retained improvement is distinct and exact regression event retains 
   const gain = model.pulse.find((event) => event.kind === "gain");
   assert.equal(gain.target.kind, "episode");
   assert.match(gain.target.id, /^episode-record:/);
+});
+
+test("reference Home events do not treat generation coordinates as wall-clock time", () => {
+  const model = referenceHomeProjection();
+  for (const event of model.pulse) {
+    assert.equal(event.observedAt, null);
+    assert.equal(event.materializedAt, null);
+  }
 });
 
 test("attention queue contains actionable conditions rather than ordinary healthy telemetry", () => {

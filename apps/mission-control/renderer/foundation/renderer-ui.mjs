@@ -256,7 +256,7 @@ export function renderChrome(state, defense, displaySettings, handlers, bootstra
   renderInspector(state, defense);
   renderCurrentView(
     state, defense, handlers.onInspect, handlers.api,
-    handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,
+    handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap, handlers.launchMode,
   );
   const currentView = state?.view ?? "mission-control";
   document.querySelector("#view-title").textContent = destinationLabel(currentView);

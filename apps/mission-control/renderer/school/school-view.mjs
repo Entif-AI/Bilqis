@@ -129,10 +129,11 @@ function graphNode(row, neighborhood, index, rows) {
   const mastery = row.qualificationState === "QUALIFIED" ? "mastered" : "learning";
   const debt = row.observedDebt ? row.debt : t("school.common.notMeasured");
   const state = row.sourceState === "SOURCE_HELD" ? row.sourceState : row.implementationState === "IMPLEMENTATION_UNCOVERED" ? row.implementationState : row.lifecycleState;
-  const nodeAria = t("school.dependency.nodeAria", { id: row.id, lifecycle: row.lifecycleState, unlocks });
-  return `<g class="dependency-node" data-capability-id="${esc(row.id)}" ${testIdAttribute("school", "graph", "node", slug(row.id))} ${objectDomAttributes({ kind: "capability", id: row.id, relations: capabilityRelations(rows, row.id) })} data-focus-key="graph:${esc(row.id)}" data-relation="${relation}" data-state="${stateCue(row)}" data-lifecycle="${esc(row.lifecycleState)}" data-eligibility="${eligibility}" data-mastery="${mastery}" data-observed-debt="${row.observedDebt}" tabindex="0" role="button" aria-pressed="${isSelected}" aria-label="${esc(nodeAria)}" transform="translate(${x} ${y})">
-    <title>${esc(nodeAria)}</title><rect width="190" height="62" rx="4"></rect>
-    <text x="12" y="24">${esc(row.id)}</text><text class="node-state" x="12" y="44">${esc(t("school.dependency.nodeState", { state, debt, unlocks }))}</text></g>`;
+  const stateText = t("school.dependency.nodeState", { state, debt, unlocks });
+  const accessibleName = `${row.id}${stateText}`;
+  return `<g class="dependency-node" data-capability-id="${esc(row.id)}" ${testIdAttribute("school", "graph", "node", slug(row.id))} ${objectDomAttributes({ kind: "capability", id: row.id, relations: capabilityRelations(rows, row.id) })} data-focus-key="graph:${esc(row.id)}" data-relation="${relation}" data-state="${stateCue(row)}" data-lifecycle="${esc(row.lifecycleState)}" data-eligibility="${eligibility}" data-mastery="${mastery}" data-observed-debt="${row.observedDebt}" tabindex="0" role="button" aria-pressed="${isSelected}" aria-label="${esc(accessibleName)}" transform="translate(${x} ${y})">
+    <rect width="190" height="62" rx="4"></rect>
+    <text x="12" y="24">${esc(row.id)}</text><text class="node-state" x="12" y="44">${esc(stateText)}</text></g>`;
 }
 
 function graphEdges(neighborhood, rows) {

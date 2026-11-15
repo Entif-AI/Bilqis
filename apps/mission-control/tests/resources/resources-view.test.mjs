@@ -4,10 +4,10 @@ import { createResourceController } from "../../renderer/resources/resource-cont
 import {
   decomposition,
   historicalResourceQuery,
-  referenceResourceState,
   resourceProfileFromPage,
   resourceQuery,
 } from "../../renderer/resources/resource-model.mjs";
+import { referenceResourceState } from "../../renderer/resources/resource-fixture-state.mjs";
 import { renderResourceMarkup } from "../../renderer/resources/resource-view.mjs";
 import { createShellState, inspect, openSelectionOwner } from "../../renderer/shell-state.mjs";
 

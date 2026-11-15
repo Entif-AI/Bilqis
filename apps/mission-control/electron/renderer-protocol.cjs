@@ -29,6 +29,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/foundation/current-view.mjs", "foundation/current-view.mjs"],
   ["/foundation/defensive-state.mjs", "foundation/defensive-state.mjs"],
   ["/foundation/fixture-mode.mjs", "foundation/fixture-mode.mjs"],
+  ["/foundation/fixture-current-view.mjs", "foundation/fixture-current-view.mjs"],
   ["/foundation/domain-controller.mjs", "foundation/domain-controller.mjs"],
   ["/foundation/messages/atlas.mjs", "foundation/messages/atlas.mjs"],
   ["/foundation/i18n.mjs", "foundation/i18n.mjs"],
@@ -88,12 +89,14 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/foundation/static-interactions.mjs", "foundation/static-interactions.mjs"],
   ["/foundation/test-hooks.mjs", "foundation/test-hooks.mjs"],
   ["/home/home-controller.mjs", "home/home-controller.mjs"],
+  ["/home/home-fixture.mjs", "home/home-fixture.mjs"],
   ["/home/home-model.mjs", "home/home-model.mjs"],
   ["/home/home-view.mjs", "home/home-view.mjs"],
   ["/home/home.css", "home/home.css"],
   ["/interactions/app-uri.mjs", "interactions/app-uri.mjs"],
   ["/interactions/compare.mjs", "interactions/compare.mjs"],
   ["/interactions/controller.mjs", "interactions/controller.mjs"],
+  ["/interactions/fixture-compare.mjs", "interactions/fixture-compare.mjs"],
   ["/interactions/dom-ref.mjs", "interactions/dom-ref.mjs"],
   ["/interactions/interactions.css", "interactions/interactions.css"],
   ["/interactions/model.mjs", "interactions/model.mjs"],
@@ -101,6 +104,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/interactions/view.mjs", "interactions/view.mjs"],
   ["/renderer.mjs", "renderer.mjs"],
   ["/resources/resource-controller.mjs", "resources/resource-controller.mjs"],
+  ["/resources/resource-fixture-state.mjs", "resources/resource-fixture-state.mjs"],
   ["/resources/resource-fixture.mjs", "resources/resource-fixture.mjs"],
   ["/resources/resource-model.mjs", "resources/resource-model.mjs"],
   ["/resources/resource-view.mjs", "resources/resource-view.mjs"],
@@ -151,10 +155,9 @@ const RENDERER_ASSETS = Object.freeze(new Map([
 ]));
 
 const FIXTURE_ONLY_RENDERER_ASSETS = Object.freeze(new Set([
-  "/foundation/fixture-mode.mjs",
-  "/school/school-fixture.mjs",
-  "/school/curriculum-atlas-fixture.mjs",
+  ...[...RENDERER_ASSETS.keys()].filter((asset) => /fixture/i.test(asset)),
   "/school/curriculum-atlas-markup.mjs",
+  "/school/curriculum-atlas-model.mjs",
   "/school/curriculum-atlas-view.mjs",
 ]));
 

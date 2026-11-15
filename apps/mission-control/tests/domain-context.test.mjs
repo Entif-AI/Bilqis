@@ -109,6 +109,10 @@ test("production shell routes completed GUI domains into the real view host", ()
   const index = fs.readFileSync(path.join(rendererRoot, "index.html"), "utf8");
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
+  const fixtureCurrent = fs.readFileSync(
+    path.join(rendererRoot, "foundation/fixture-current-view.mjs"),
+    "utf8",
+  );
   const activation = fs.readFileSync(path.join(rendererRoot, "foundation/domain-controller.mjs"), "utf8");
   const capability = fs.readFileSync(path.join(rendererRoot, "capability/app.mjs"), "utf8");
 
@@ -117,7 +121,8 @@ test("production shell routes completed GUI domains into the real view host", ()
     /<section id="view-host" class="view-host"[\s\S]*<section id="domain-view" class="domain-view"/,
   );
 
-  assert.match(renderer, /createHomeController\(window\.bamfMissionControl\)/);
+  assert.match(renderer, /createHomeController\(window\.bamfMissionControl, \{/);
+  assert.match(renderer, /launchMode: window\.bamfMissionControl\.launchMode/);
   assert.match(renderer, /createCapabilityExplorer\(/);
   assert.match(renderer, /activateDomainViews\(\{/);
   assert.match(renderer, /homeController, resourceController, operateController/);
@@ -131,13 +136,16 @@ test("production shell routes completed GUI domains into the real view host", ()
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);
 
+  assert.match(current, /import\("\.\/fixture-current-view\.mjs"\)/);
+  assert.match(current, /launchMode === "fixtures"/);
+  assert.match(current, /renderEvidenceView\(/);
+
   for (const [view, owner] of [
     ["model", "renderNeuralView"],
     ["memory", "renderMemoryView"],
     ["lineage", "renderLineageView"],
-    ["evidence", "renderEvidenceView"],
   ]) {
-    assert.match(current, new RegExp('state\\.view === "' + view + '"'));
-    assert.match(current, new RegExp(owner + '\\('));
+    assert.match(fixtureCurrent, new RegExp('state\\.view === "' + view + '"'));
+    assert.match(fixtureCurrent, new RegExp(owner + '\\('));
   }
 });

@@ -1,14 +1,13 @@
 import {
-  historicalResourceQuery, referenceResourceState, resourceProfileFromPage, resourceQuery,
+  historicalResourceQuery, resourceProfileFromPage, resourceQuery,
 } from "./resource-model.mjs";
-import { historicalResourceFixture } from "./resource-fixture.mjs";
 import { bindResourceInteractions, renderResourceMarkup } from "./resource-view.mjs";
 
 function contextKey(context) {
   return context ? [context.runId, context.generation, context.mode].join(":") : "none";
 }
 
-export function createResourceController(api) {
+export function createResourceController(api, { launchMode = "production" } = {}) {
   let key = null;
   let context = null;
   let state = null;
@@ -20,6 +19,9 @@ export function createResourceController(api) {
   let epoch = 0;
   let currentRequest = 0;
   let comparisonRequest = 0;
+  let fixtureStatePromise = null;
+  const fixtureEnabled = launchMode === "fixtures";
+  const fixtureState = () => fixtureStatePromise ??= import("./resource-fixture-state.mjs");
 
   function render(preserve = true) {
     if (!host) return;
@@ -58,24 +60,32 @@ export function createResourceController(api) {
     const runEpoch = epoch;
     const request = ++currentRequest;
     const requestContext = context;
-    const fixture = requestContext?.runId === "fixture-run";
+    const fixture = fixtureEnabled && requestContext?.runId === "fixture-run";
     const valid = () => runEpoch === epoch && request === currentRequest;
     try {
       const page = await api.query(resourceQuery(requestContext));
       if (!valid()) return;
-      if (fixture && historical && requestContext.generation === historicalResourceFixture().generation) {
-        state = { current: historicalResourceFixture(), ...comparisonFields() };
+      const fixtures = fixture ? await fixtureState() : null;
+      if (fixture && historical &&
+          requestContext.generation === fixtures.historicalResourceFixture().generation) {
+        state = { current: fixtures.historicalResourceFixture(), ...comparisonFields() };
       } else if (fixture && !historical && (page?.accepted !== true || page?.state === "EMPTY")) {
-        state = { ...referenceResourceState(), ...comparisonFields() };
+        state = { ...fixtures.referenceResourceState(), ...comparisonFields() };
       } else {
         state = { current: resourceProfileFromPage(page, requestContext), ...comparisonFields() };
       }
     } catch (_error) {
       if (!valid()) return;
-      if (fixture && historical && requestContext.generation === historicalResourceFixture().generation) {
-        state = { current: historicalResourceFixture(), ...comparisonFields() };
-      } else if (fixture && !historical) state = { ...referenceResourceState(), ...comparisonFields() };
-      else state = { current: null, currentState: "UNAVAILABLE", ...comparisonFields() };
+      if (fixture) {
+        const fixtures = await fixtureState();
+        if (historical && requestContext.generation === fixtures.historicalResourceFixture().generation) {
+          state = { current: fixtures.historicalResourceFixture(), ...comparisonFields() };
+        } else if (!historical) {
+          state = { ...fixtures.referenceResourceState(), ...comparisonFields() };
+        } else {
+          state = { current: null, currentState: "UNAVAILABLE", ...comparisonFields() };
+        }
+      } else state = { current: null, currentState: "UNAVAILABLE", ...comparisonFields() };
     }
     state = Object.freeze(state);
     render();
@@ -89,10 +99,17 @@ export function createResourceController(api) {
     const request = ++comparisonRequest;
     state = Object.freeze({ ...state, comparison: null, comparisonState: "LOADING", comparisonGeneration: generation });
     render();
-    if (requestContext.runId === "fixture-run" && generation === historicalResourceFixture().generation) {
-      state = Object.freeze({ ...state, comparison: historicalResourceFixture(), comparisonState: "PRESENT" });
-      render();
-      return;
+    if (fixtureEnabled && requestContext.runId === "fixture-run") {
+      const fixtures = await fixtureState();
+      if (generation === fixtures.historicalResourceFixture().generation) {
+        state = Object.freeze({
+          ...state,
+          comparison: fixtures.historicalResourceFixture(),
+          comparisonState: "PRESENT",
+        });
+        render();
+        return;
+      }
     }
     try {
       const page = await api.query(query);
@@ -134,8 +151,7 @@ export function createResourceController(api) {
     context = nextContext;
     historical = nextHistorical;
     key = nextKey;
-    state = nextContext?.runId === "fixture-run" && !historical ? referenceResourceState()
-      : { current: null, currentState: "LOADING", comparison: null, comparisonState: "EMPTY" };
+    state = { current: null, currentState: "LOADING", comparison: null, comparisonState: "EMPTY" };
     render(false);
     if (typeof stop === "function") await stop();
     if (runEpoch !== epoch) return;

@@ -46,8 +46,12 @@ let bootstrapState = Object.freeze({ phase: "connecting", connection: null, erro
 let focusReturnToken = null;
 let paletteReturnToken = null;
 let renderLaunchModePosture = () => {};
-const homeController = createHomeController(window.bamfMissionControl);
-const resourceController = createResourceController(window.bamfMissionControl);
+const homeController = createHomeController(window.bamfMissionControl, {
+  launchMode: window.bamfMissionControl.launchMode,
+});
+const resourceController = createResourceController(window.bamfMissionControl, {
+  launchMode: window.bamfMissionControl.launchMode,
+});
 const interactionController = createInteractionController({
   document,
   storage: window.localStorage,
@@ -97,6 +101,7 @@ const { establishSnapshot } = createBootstrapController({
 const capabilityExplorer = createCapabilityExplorer({
   host: document.querySelector("#domain-view"),
   serviceQuery: request => window.bamfMissionControl.querySnapshot(request),
+  launchMode: window.bamfMissionControl.launchMode,
   changeLens: (lens, capabilityId) => {
     if (!state) return;
     state = {
@@ -163,6 +168,7 @@ function render() {
     onReconnect: () => establishSnapshot({ preserveRoute: true }),
     onNavigate: navigateTo,
     onInspect: openInspector,
+    launchMode: window.bamfMissionControl.launchMode,
   }, bootstrapState);
   renderLaunchModePosture(document);
   frameShell.afterRender();
@@ -236,8 +242,12 @@ async function bootstrap() {
   displaySettings = loadDisplaySettings(window.localStorage);
   applyDisplaySettings(document.documentElement, displaySettings);
   if (window.bamfMissionControl.launchMode === "fixtures") {
-    ({ renderFixtureModePosture: renderLaunchModePosture } =
-      await import("./foundation/fixture-mode.mjs"));
+    const [fixtureMode, fixtureCompare] = await Promise.all([
+      import("./foundation/fixture-mode.mjs"),
+      import("./interactions/fixture-compare.mjs"),
+    ]);
+    renderLaunchModePosture = fixtureMode.renderFixtureModePosture;
+    interactionController.setComparator(fixtureCompare.compareStableRefs);
   }
   bindStaticInteractions({
     document,

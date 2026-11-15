@@ -1,8 +1,3 @@
-import {
-  currentResourceFixture,
-  historicalResourceFixture,
-} from "./resource-fixture.mjs";
-
 const QUERY_SCHEMA = "bilqis.bamf.control-plane.query/v1";
 const RESOURCE_SCHEMA = "bilqis.bamf.mission-control.resource-sample/v1";
 const PRESENT = "PRESENT";
@@ -48,7 +43,7 @@ export function resourceQuery(context, overrides = {}) {
     as_of: null,
     reference: null,
     cursor: null,
-    limit: 64,
+    limit: 32,
     ...overrides,
   });
 }
@@ -158,12 +153,4 @@ export function resourceComparison(before, after) {
       Number.isFinite(left.value) && Number.isFinite(right.value) && left.units === right.units;
     return Object.freeze({ key, before: left ?? absent(), after: right ?? absent(), delta: comparable ? right.value - left.value : null });
   }));
-}
-
-export function referenceResourceState() {
-  return Object.freeze({
-    current: currentResourceFixture(),
-    comparison: historicalResourceFixture(),
-    comparisonState: "PRESENT",
-  });
 }

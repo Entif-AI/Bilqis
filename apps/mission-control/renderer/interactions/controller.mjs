@@ -44,6 +44,7 @@ export function createInteractionController({
   let interaction = createInteractionState();
   let metadata = loadOperatorMetadata(storage);
   let hovered = null;
+  let compareRefs = compareStableRefs;
 
   const currentRef = () => {
     const state = getState();
@@ -61,7 +62,7 @@ export function createInteractionController({
     const state = getState();
     const ref = currentRef();
     const host = document.querySelector("#investigation-strip");
-    const comparison = compareStableRefs(interaction.compare.left, interaction.compare.right);
+    const comparison = compareRefs(interaction.compare.left, interaction.compare.right);
     host.innerHTML = renderInvestigationMarkup({
       state, interaction, metadata, currentRef: ref, comparison,
       currentAvailable: canUseCurrent(),
@@ -191,6 +192,11 @@ export function createInteractionController({
   return Object.freeze({
     bindStatic,
     render,
+    setComparator(next) {
+      if (typeof next !== "function") throw new TypeError("INVESTIGATION_COMPARATOR_REQUIRED");
+      compareRefs = next;
+      render();
+    },
     currentInteraction: () => interaction,
     currentMetadata: () => metadata,
   });
