@@ -16,16 +16,10 @@ from ...runtime.model_topology_v2 import ModelTopologySpecV2
 from .inputs import SourceAtomRow
 
 
-def source_atom_vectors(
-    parameters, compiled, config, source, features, feature_schema, extents,
-    banks, artifact_owner, *, snapshot=None, source_execution_authority=None,
+def _source_embedding_authority(
+    compiled, config, source, features, feature_schema, artifact_owner,
+    snapshot, source_execution_authority,
 ):
-    """Recheck source/rights before gathering any identity tensor.
-
-    Native formal signatures remain source metadata. A06 alone owns categorical
-    feature types. Unframed atoms use its existing NONE role/schema and local
-    slot zero, without casting the atom to a caller-created ConceptRef.
-    """
     if (type(source) is not SourceAtomRow
             or type(artifact_owner) is not AtlasFeatureArtifactOwner):
         invalid("BAMF_SOURCE_ATOM_INPUT_INVALID")
@@ -38,24 +32,12 @@ def source_atom_vectors(
             source_execution_authority, compiled, config, source)
         if snapshot is not None and snapshot is not authority.snapshot:
             invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
-        snapshot = authority.snapshot
-        handoff = authority.source_handoff
+        snapshot, handoff = authority.snapshot, authority.source_handoff
     elif snapshot is None:
         snapshot = load_pinned_atlas_snapshot(source.selection)
         expected_features = build_feature_manifest(snapshot, feature_schema)
         if features != expected_features:
             invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
-    selection = source.selection
-    if (snapshot.release_sha256 != selection.release_sha256
-            or snapshot.bundle_id != selection.bundle_id
-            or snapshot.source_bundle_id != selection.source_bundle_id
-            or features.semantic_release != selection.release_sha256
-            or features.atlas_bundle_id != selection.bundle_id
-            or features.source_bundle_id != selection.source_bundle_id
-            or extents.factor_map_digest != features.digest
-            or type(banks) is not tuple or not banks
-            or any(type(bank) is not SemanticBankView for bank in banks)):
-        invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
     artifact_owner.require(features)
     if handoff is None:
         handoff = _build_source_atom_handoff_from_snapshot(
@@ -68,6 +50,23 @@ def source_atom_vectors(
         handoff.__post_init__()
         if not handoff.embedding_ready:
             invalid("BAMF_SOURCE_ATOM_BINDING_HELD")
+    return snapshot, handoff
+
+
+def _source_embedding_parameters(
+    parameters, source, features, extents, banks, snapshot,
+):
+    selection = source.selection
+    if (snapshot.release_sha256 != selection.release_sha256
+            or snapshot.bundle_id != selection.bundle_id
+            or snapshot.source_bundle_id != selection.source_bundle_id
+            or features.semantic_release != selection.release_sha256
+            or features.atlas_bundle_id != selection.bundle_id
+            or features.source_bundle_id != selection.source_bundle_id
+            or extents.factor_map_digest != features.digest
+            or type(banks) is not tuple or not banks
+            or any(type(bank) is not SemanticBankView for bank in banks)):
+        invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
     spec = ModelTopologySpecV2()
     owned = embedding_parameter_view(parameters, spec=spec, extents=extents)
     _validate_banks(banks)
@@ -83,6 +82,12 @@ def source_atom_vectors(
                    or snapshot.abi_entries[index].index != index
                    for index in active_indices)):
         invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
+    return spec, owned
+
+
+def _source_binding_vectors(
+    handoff, config, features, banks, spec, owned,
+):
     vectors = []
     for binding in handoff.bindings:
         row = features.features_for(
@@ -99,7 +104,28 @@ def source_atom_vectors(
         value = value + owned["features.local_slot"][0]
         vectors.append(value)
     combined = mx.stack(vectors)
-    vectors = combined * mx.rsqrt(
-        mx.mean(combined * combined, axis=-1, keepdims=True) + spec.rms_norm_epsilon
+    return combined * mx.rsqrt(
+        mx.mean(combined * combined, axis=-1, keepdims=True)
+        + spec.rms_norm_epsilon
     ) * owned["features.norm"]
+
+
+def source_atom_vectors(
+    parameters, compiled, config, source, features, feature_schema, extents,
+    banks, artifact_owner, *, snapshot=None, source_execution_authority=None,
+):
+    """Recheck source/rights before gathering any identity tensor.
+
+    Native formal signatures remain source metadata. A06 alone owns categorical
+    feature types. Unframed atoms use its existing NONE role/schema and local
+    slot zero, without casting the atom to a caller-created ConceptRef.
+    """
+    snapshot, handoff = _source_embedding_authority(
+        compiled, config, source, features, feature_schema, artifact_owner,
+        snapshot, source_execution_authority)
+    spec, owned = _source_embedding_parameters(
+        parameters, source, features, extents, banks, snapshot)
+    vectors = _source_binding_vectors(
+        handoff, config, features, banks, spec, owned)
     return vectors, banks, handoff
+
