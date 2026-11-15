@@ -45,6 +45,7 @@ let defense = defensiveState("loading");
 let bootstrapState = Object.freeze({ phase: "connecting", connection: null, error: null });
 let focusReturnToken = null;
 let paletteReturnToken = null;
+let renderLaunchModePosture = () => {};
 const homeController = createHomeController(window.bamfMissionControl);
 const resourceController = createResourceController(window.bamfMissionControl);
 const interactionController = createInteractionController({
@@ -163,12 +164,14 @@ function render() {
     onNavigate: navigateTo,
     onInspect: openInspector,
   }, bootstrapState);
+  renderLaunchModePosture(document);
   frameShell.afterRender();
   setHash();
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
     capabilityExplorer, onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
+    launchMode: window.bamfMissionControl.launchMode,
   });
   window.queueMicrotask(() => interactionController.render());
 }
@@ -232,6 +235,10 @@ function openPalette() {
 async function bootstrap() {
   displaySettings = loadDisplaySettings(window.localStorage);
   applyDisplaySettings(document.documentElement, displaySettings);
+  if (window.bamfMissionControl.launchMode === "fixtures") {
+    ({ renderFixtureModePosture: renderLaunchModePosture } =
+      await import("./foundation/fixture-mode.mjs"));
+  }
   bindStaticInteractions({
     document,
     window,

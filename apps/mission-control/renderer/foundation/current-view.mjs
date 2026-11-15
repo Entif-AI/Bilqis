@@ -1,7 +1,6 @@
 import { correctionsT } from "../corrections/corrections-messages.mjs";
 import { evidenceT } from "../evidence/evidence-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
-import { renderSchoolView } from "../school/school-view.mjs";
 import { renderNeuralView } from "../neural/neural-view.mjs";
 import { renderEpisodesView } from "../episodes/episode-view.mjs";
 import { renderMemoryView } from "../memory/memory-view.mjs";
@@ -55,33 +54,7 @@ export function renderCurrentView(
   if (state.view === "school") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.school.purpose");
-    if (state.context.mode === "HISTORICAL") {
-      domain.innerHTML = `<section class="fixture-card" data-test-id="school-historical-unavailable"><span class="eyebrow">${esc(t("shell.school.historical.eyebrow"))}</span><h2>${esc(t("shell.school.historical.title"))}</h2>
-        <p>${esc(t("shell.school.historical.summary", { generation: state.context.generation }))}</p></section>`;
-      return;
-    }
-    renderSchoolView(domain, (id, row, neighborhood) => onInspect({
-      kind: "capability",
-      id,
-      label: id,
-      relations: [
-        ...neighborhood.prerequisites.map((relatedId) => ({
-          kind: "capability", id: relatedId, relation: "prerequisite",
-        })),
-        ...neighborhood.dependents.map((relatedId) => ({
-          kind: "capability", id: relatedId, relation: "dependent",
-        })),
-      ],
-      details: {
-        [t("shell.inspector.detail.scoreQuad")]: row.was + "/" + row.top + "/" + row.now + "/" + row.total,
-        [t("shell.inspector.detail.debt")]: row.debt,
-        [t("shell.inspector.detail.pret")]: row.pRet ?? t("shell.inspector.value.notMeasured"),
-        [t("shell.inspector.detail.prerequisites")]: row.prerequisites.length ? row.prerequisites : [t("shell.inspector.value.none")],
-        [t("shell.inspector.detail.sourceState")]: row.sourceState,
-        [t("shell.inspector.detail.implementationState")]: row.implementationState,
-        [t("shell.inspector.detail.qualificationState")]: row.qualificationState,
-      },
-    }), state.selected?.kind === "capability" ? state.selected.id : null);
+    domain.innerHTML = `<section class="school-loading" role="status" data-test-id="school-loading">${esc(t("school.production.loading"))}</section>`;
     return;
   }
   if (state.view === "mission-control") {

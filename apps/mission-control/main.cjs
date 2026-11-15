@@ -14,9 +14,14 @@ const { registerMissionControlProtocol } = require("./electron/renderer-protocol
 const { createMissionControlWindow } = require("./electron/window-security.cjs");
 const { appUriArgument, rendererHashForAppUri } = require("./electron/app-routing.cjs");
 const { rendererEntryUrl } = require("./electron/renderer-location.cjs");
+const {
+  launchModeArgument,
+  resolveMissionControlMode,
+} = require("./electron/launch-mode.cjs");
 
 registerRendererSchemePrivileges(protocol);
 
+const LAUNCH_MODE = resolveMissionControlMode(process.env.BILQIS_MISSION_CONTROL_MODE);
 let missionControlWindow = null;
 let pendingAppUri = appUriArgument(process.argv);
 
@@ -49,6 +54,9 @@ async function createWindow() {
       height: 920,
       minWidth: 760,
       minHeight: 620,
+      webPreferences: {
+        additionalArguments: [launchModeArgument(LAUNCH_MODE)],
+      },
     },
   });
   const disposeIpc = registerMissionControlIpc({
@@ -84,6 +92,7 @@ app.whenReady().then(async () => {
     protocol,
     net,
     assetRoot: path.join(__dirname, "renderer"),
+    launchMode: LAUNCH_MODE,
   });
   await createWindow();
   app.on("activate", () => {

@@ -6,7 +6,7 @@ const vm = require("node:vm");
 
 const PRELOAD = path.join(__dirname, "..", "preload.cjs");
 
-function loadSandboxedPreload(ipcRenderer) {
+function loadSandboxedPreload(ipcRenderer, argv = []) {
   const source = fs.readFileSync(PRELOAD, "utf8");
   let exposed;
   const contextBridge = {
@@ -15,6 +15,7 @@ function loadSandboxedPreload(ipcRenderer) {
     },
   };
   const context = vm.createContext({
+    process: Object.freeze({ argv: Object.freeze([...argv]) }),
     require(specifier) {
       if (specifier !== "electron") {
         throw new Error(`SANDBOX_PRELOAD_REQUIRE_DENIED:${specifier}`);

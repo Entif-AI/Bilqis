@@ -7,6 +7,7 @@ const path = require("node:path");
 
 const { RENDERER_ENTRY_URL } = require("../renderer-location.cjs");
 const {
+  FIXTURE_ONLY_RENDERER_ASSETS,
   RENDERER_ASSETS,
   assetPathForRendererRequest,
   registerMissionControlProtocol,
@@ -47,6 +48,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/corrections/corrections.css",
     "/deep-link.mjs",
     "/foundation/defensive-state.mjs",
+    "/foundation/fixture-mode.mjs",
     "/foundation/domain-controller.mjs",
     "/foundation/messages/atlas.mjs",
     "/foundation/messages/home.mjs",
@@ -123,6 +125,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/resources/resource-messages.mjs",
     "/resources/resources.css",
     "/school/school-fixture.mjs",
+    "/school/school-live.mjs",
     "/school/school-model.mjs",
     "/school/school-view.mjs",
     "/school/school.css",
@@ -163,6 +166,18 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/visual-language.mjs",
     "/visual-tokens.css",
   ].sort());
+});
+
+test("production protocol refuses School fixture modules while fixture mode admits them", () => {
+  const root = "/Applications/Bilqis/MissionControl/renderer";
+  for (const asset of FIXTURE_ONLY_RENDERER_ASSETS) {
+    assert.equal(assetPathForRendererRequest(`bamf-mc://app${asset}`, root, "production"), null, asset);
+    assert.equal(
+      assetPathForRendererRequest(`bamf-mc://app${asset}`, root, "fixtures"),
+      path.join(root, RENDERER_ASSETS.get(asset)),
+      asset,
+    );
+  }
 });
 
 test("renderer protocol refuses traversal, query aliases and untrusted origins", () => {

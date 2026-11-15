@@ -38,6 +38,7 @@ test("preload exposes only the enumerated Mission Control capability surface", (
   assert.deepEqual(Object.keys(api).sort(), [
     "connect",
     "fetchReceipt",
+    "launchMode",
     "query",
     "querySnapshot",
     "requestCommand",
@@ -46,11 +47,22 @@ test("preload exposes only the enumerated Mission Control capability surface", (
     "subscribeEvents",
   ]);
   assert.equal(Object.isFrozen(api), true);
+  assert.equal(api.launchMode, "production");
   assert.equal(api.invoke, undefined);
   assert.equal(api.send, undefined);
   assert.equal(api.readFile, undefined);
   assert.equal(api.shell, undefined);
   assert.equal(api.spawn, undefined);
+});
+
+test("preload exposes fixture mode only from the fixed launch argument", () => {
+  const renderer = fakeRenderer();
+  const api = loadSandboxedPreload(renderer, ["electron", "--bamf-mc-mode=fixtures"]).api;
+  assert.equal(api.launchMode, "fixtures");
+  assert.throws(
+    () => loadSandboxedPreload(renderer, ["electron", "--bamf-mc-mode=demo"]),
+    /BAMF_MISSION_CONTROL_MODE_INVALID/,
+  );
 });
 
 test("preload rejects credential injection and malformed requests before IPC", async () => {

@@ -97,6 +97,9 @@ kbd { color: var(--text-muted); }
 .shell[data-posture="unknown"] .freshness { color: var(--attention); border-style: dotted; background: var(--surface-2); }
 
 .defensive-banner { margin: 0; padding: 12px 18px; border-bottom: 2px dashed var(--attention); background: var(--surface-2); display: flex; justify-content: space-between; gap: var(--space-4); align-items: center; }
+.launch-mode-banner { margin: 0; padding: 9px 18px; border-bottom: 3px double var(--attention); background: var(--surface-2); display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: baseline; }
+.launch-mode-banner[hidden] { display: none; }
+.launch-mode-banner span { color: var(--text-muted); }
 .defensive-banner[hidden] { display: none; }
 .defensive-copy { display: grid; gap: 3px; min-width: 0; }
 .defensive-copy span, .defensive-copy small { color: var(--text-muted); font-size: var(--type-label); line-height: var(--line-label); }

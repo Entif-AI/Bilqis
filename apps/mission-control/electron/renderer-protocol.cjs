@@ -4,6 +4,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const { RENDERER_HOST, RENDERER_SCHEME } = require("./renderer-location.cjs");
+const { FIXTURES, PRODUCTION, resolveMissionControlMode } = require("./launch-mode.cjs");
 
 const RENDERER_ASSETS = Object.freeze(new Map([
   ["/atlas/atlas-controller.mjs", "atlas/atlas-controller.mjs"],
@@ -27,6 +28,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/foundation/bootstrap-controller.mjs", "foundation/bootstrap-controller.mjs"],
   ["/foundation/current-view.mjs", "foundation/current-view.mjs"],
   ["/foundation/defensive-state.mjs", "foundation/defensive-state.mjs"],
+  ["/foundation/fixture-mode.mjs", "foundation/fixture-mode.mjs"],
   ["/foundation/domain-controller.mjs", "foundation/domain-controller.mjs"],
   ["/foundation/messages/atlas.mjs", "foundation/messages/atlas.mjs"],
   ["/foundation/i18n.mjs", "foundation/i18n.mjs"],
@@ -106,6 +108,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/resources/resource-messages.mjs", "resources/resource-messages.mjs"],
   ["/resources/resources.css", "resources/resources.css"],
   ["/school/school-fixture.mjs", "school/school-fixture.mjs"],
+  ["/school/school-live.mjs", "school/school-live.mjs"],
   ["/school/school-model.mjs", "school/school-model.mjs"],
   ["/school/school-view.mjs", "school/school-view.mjs"],
   ["/school/school.css", "school/school.css"],
@@ -147,7 +150,15 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/visual-tokens.css", "visual-tokens.css"],
 ]));
 
-function assetPathForRendererRequest(requestUrl, assetRoot) {
+const FIXTURE_ONLY_RENDERER_ASSETS = Object.freeze(new Set([
+  "/foundation/fixture-mode.mjs",
+  "/school/school-fixture.mjs",
+  "/school/curriculum-atlas-fixture.mjs",
+  "/school/curriculum-atlas-markup.mjs",
+  "/school/curriculum-atlas-view.mjs",
+]));
+
+function assetPathForRendererRequest(requestUrl, assetRoot, launchMode = PRODUCTION) {
   if (typeof assetRoot !== "string" || assetRoot.length === 0 || !path.isAbsolute(assetRoot)) {
     throw new TypeError("BAMF_GUI20_RENDERER_ASSET_ROOT_REQUIRED");
   }
@@ -161,11 +172,13 @@ function assetPathForRendererRequest(requestUrl, assetRoot) {
       request.username || request.password || request.port || request.search) {
     return null;
   }
+  const mode = resolveMissionControlMode(launchMode);
+  if (mode !== FIXTURES && FIXTURE_ONLY_RENDERER_ASSETS.has(request.pathname)) return null;
   const relative = RENDERER_ASSETS.get(request.pathname);
   return relative ? path.join(assetRoot, relative) : null;
 }
 
-function registerMissionControlProtocol({ protocol, net, assetRoot }) {
+function registerMissionControlProtocol({ protocol, net, assetRoot, launchMode = PRODUCTION }) {
   if (!protocol || typeof protocol.handle !== "function") {
     throw new TypeError("BAMF_GUI20_PROTOCOL_REQUIRED");
   }
@@ -173,7 +186,7 @@ function registerMissionControlProtocol({ protocol, net, assetRoot }) {
     throw new TypeError("BAMF_GUI20_NET_REQUIRED");
   }
   protocol.handle(RENDERER_SCHEME, (request) => {
-    const asset = assetPathForRendererRequest(request.url, assetRoot);
+    const asset = assetPathForRendererRequest(request.url, assetRoot, launchMode);
     if (asset === null) {
       return new Response("Not found", {
         status: 404,
@@ -185,6 +198,7 @@ function registerMissionControlProtocol({ protocol, net, assetRoot }) {
 }
 
 module.exports = {
+  FIXTURE_ONLY_RENDERER_ASSETS,
   RENDERER_ASSETS,
   assetPathForRendererRequest,
   registerMissionControlProtocol,
