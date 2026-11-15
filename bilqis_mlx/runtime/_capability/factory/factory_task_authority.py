@@ -139,7 +139,7 @@ def factory_task_authority(
     )
     try:
         lowerer = require_task_goal_lowerer(
-            execution.provider_id, execution.provider_implementation_sha256)
+            execution.provider_id, adapter.descriptor.implementation_sha256)
     except ValueError:
         _invalid("BAMF_C04_SOURCE_TASK_LOWERER_REQUIRED")
     training = compiled_batch.training_authority
@@ -208,8 +208,15 @@ def factory_task_training_goal(
     if (execution is None or row.get("id") != authority.source_row_id
             or source_content_digest((row,)) != authority.source_row_sha256):
         _invalid("BAMF_C04_FACTORY_TASK_TRAINING_TARGET_INVALID")
+    adapter = runtime_adapter_for_release(
+        source_context.source_root, source_context.graph,
+        source_context.release, source_context.source_registry, execution,
+        drift_code="BAMF_C04_FACTORY_TASK_ADAPTER_DRIFT",
+    )
     lowerer = require_task_goal_lowerer(
-        execution.provider_id, execution.provider_implementation_sha256)
+        execution.provider_id, adapter.descriptor.implementation_sha256)
+    if lowerer.implementation_sha256 != authority.lowerer_sha256:
+        _invalid("BAMF_C04_FACTORY_TASK_TRAINING_TARGET_INVALID")
     resolved = lowerer.resolve(
         dict(row), semantic_release=compiled_batch.compiled.features.semantic_release,
         source_root=source_context.source_root, graph=source_context.graph,
