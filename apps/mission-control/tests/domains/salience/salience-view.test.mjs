@@ -8,7 +8,7 @@ import {
   SALIENCE_AGGREGATION,
   SALIENCE_PROJECTION,
   SALIENCE_SNAPSHOTS,
-} from "../../renderer/salience/salience-fixture.mjs";
+} from "../../../renderer/salience/salience-fixture.mjs";
 import {
   aggregationForSnapshot,
   aggregationPathForEvent,
@@ -17,15 +17,15 @@ import {
   routingForSnapshot,
   salienceEventById,
   snapshotById,
-} from "../../renderer/salience/salience-model.mjs";
-import { salienceMarkupForTest } from "../../renderer/salience/salience-view.mjs";
-import { salienceT } from "../../renderer/salience/salience-messages.mjs";
-import { assertUniqueTestIds, collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
-import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
+} from "../../../renderer/salience/salience-model.mjs";
+import { salienceMarkupForTest } from "../../../renderer/salience/salience-view.mjs";
+import { salienceT } from "../../../renderer/salience/salience-messages.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../../../renderer/foundation/test-hooks.mjs";
+import { INSPECTOR_OWNERS } from "../../../renderer/shell-state.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, "../../../..");
-const rendererRoot = path.resolve(here, "../../renderer");
+const repoRoot = path.resolve(here, "../../../../..");
+const rendererRoot = path.resolve(here, "../../../renderer");
 
 test("same salience event preserves three independent ordinal axes", () => {
   const event = salienceEventById("salience-record:fixture:unlock");

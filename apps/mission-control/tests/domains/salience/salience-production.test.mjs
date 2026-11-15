@@ -8,12 +8,12 @@ import {
   loadSalienceSnapshot,
   salienceEventFromRecord,
   salienceQuery,
-} from "../../renderer/salience/salience-live.mjs";
-import { productionSalienceMarkup } from "../../renderer/salience/salience-production-view.mjs";
-import { assertUniqueTestIds, collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
+} from "../../../renderer/salience/salience-live.mjs";
+import { productionSalienceMarkup } from "../../../renderer/salience/salience-production-view.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../../../renderer/foundation/test-hooks.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const rendererRoot = path.resolve(here, "../../renderer");
+const rendererRoot = path.resolve(here, "../../../renderer");
 
 function datum(value, origin, units = "ordinal") {
   return { state: "PRESENT", origin, value, units };

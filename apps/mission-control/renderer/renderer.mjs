@@ -70,12 +70,8 @@ let focusReturnToken = null;
 let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
 const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
-const teacherController = createTeacherController(window.bamfMissionControl, {
-  fixtureSupport: fixtureSupport?.teacher ?? null,
-});
-const salienceController = createSalienceController(window.bamfMissionControl, {
-  fixtureSupport: fixtureSupport?.salience ?? null,
-});
+const teacherController = createTeacherController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.teacher ?? null });
+const salienceController = createSalienceController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.salience ?? null });
 const learningController = createProductionLearningController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
