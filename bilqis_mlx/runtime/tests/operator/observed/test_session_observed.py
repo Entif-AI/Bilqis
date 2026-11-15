@@ -30,7 +30,12 @@ class SessionObservationTests(unittest.TestCase):
             capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},),
             _planning_generation=NS(_accepted_currentness='currentness')),
             visit=NS(identity=NS(visit_id='visit')))
-        steps = [NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=i)) for i in (1, 2, 3)]
+        steps = [NS(
+            transaction=NS(parent=NS(optimizer_step=4), update_steps=i),
+            realized_cost={
+                'wall_seconds': 1.0, 'optimizer_steps': 1,
+                'candidate_optimizer_steps': i, 'c08_memory_budget_bytes': 1,
+            }) for i in (1, 2, 3)]
         def assess(*args, observer, **kwargs):
             observer({'retention_completed': 1, 'retention_total': 2,
                       'retention_subject': 'cap', 'retention_role': 'parent'})
