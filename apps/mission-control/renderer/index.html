@@ -69,7 +69,8 @@
           </div>
         </header>
 
-        <section id="investigation-strip" class="investigation-strip" aria-label="Global investigation tools"></section>
+        <section id="investigation-strip" class="investigation-strip"
+                 data-i18n-aria-label="investigation.toolbar.label"></section>
         <section id="defensive-banner" class="defensive-banner" aria-live="polite" aria-atomic="true"
                  data-test-id="shell-defensive-banner"></section>
         <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"
@@ -100,19 +101,31 @@
         </section>
       </main>
 
-      <aside id="inspector" class="inspector" role="dialog" aria-labelledby="inspector-title" aria-hidden="true" inert>
+      <aside id="inspector" class="inspector" role="dialog" aria-labelledby="inspector-title" aria-hidden="true" inert
+             data-test-id="investigation-inspector">
         <div class="inspector-heading">
-          <div><span class="eyebrow">Global inspector</span><h2 id="inspector-title">No selection</h2></div>
-          <button id="inspector-close" type="button" aria-label="Close inspector">×</button>
+          <div><span class="eyebrow" data-i18n="shell.inspector.eyebrow"></span><h2 id="inspector-title" data-test-id="investigation-inspector-title"></h2></div>
+          <button id="inspector-close" type="button" data-i18n-aria-label="shell.inspector.close"
+                  data-test-id="investigation-inspector-close">×</button>
         </div>
-        <dl id="inspector-details"></dl>
-        <div class="inspector-actions">
-          <button id="open-owner" data-test-id="inspector-open-owner" type="button">Open in owning view</button>
-          <button id="open-evidence" data-test-id="inspector-open-evidence" type="button">Open evidence</button>
-          <button id="pin-selection" type="button">Pin exact object</button>
-          <button id="compare-left" type="button">Set compare left</button>
-          <button id="compare-right" type="button">Set compare right</button>
-          <button id="annotate-selection" type="button">Add operator note</button>
+        <dl id="inspector-summary" class="inspector-summary" data-test-id="investigation-inspector-summary"></dl>
+        <details id="inspector-forensics" class="inspector-forensics" data-test-id="investigation-inspector-forensics">
+          <summary data-i18n="shell.inspector.forensics"></summary>
+          <dl id="inspector-details" data-test-id="investigation-inspector-details"></dl>
+          <div class="inspector-deep-link" data-test-id="investigation-inspector-deep-link">
+            <small data-i18n="shell.inspector.deepLink"></small>
+            <code id="inspector-deep-link-value" data-test-id="investigation-inspector-deep-link-value"></code>
+            <button id="copy-deep-link" type="button" data-i18n="shell.inspector.copyDeepLink"
+                    data-test-id="investigation-inspector-copy-deep-link"></button>
+          </div>
+        </details>
+        <div class="inspector-actions" data-test-id="investigation-inspector-actions">
+          <button id="open-owner" data-test-id="inspector-open-owner" type="button" data-i18n="shell.inspector.openOwner"></button>
+          <button id="open-evidence" data-test-id="inspector-open-evidence" type="button" data-i18n="shell.inspector.openEvidence"></button>
+          <button id="pin-selection" data-test-id="investigation-inspector-pin" type="button" data-i18n="shell.inspector.pin"></button>
+          <button id="compare-left" data-test-id="investigation-inspector-compare-left" type="button" data-i18n="shell.inspector.compareLeft"></button>
+          <button id="compare-right" data-test-id="investigation-inspector-compare-right" type="button" data-i18n="shell.inspector.compareRight"></button>
+          <button id="annotate-selection" data-test-id="investigation-inspector-note" type="button" data-i18n="shell.inspector.addNote"></button>
         </div>
       </aside>
 

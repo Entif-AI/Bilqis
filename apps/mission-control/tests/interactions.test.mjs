@@ -23,6 +23,7 @@ import {
   parseAppUri,
 } from "../renderer/interactions/app-uri.mjs";
 import { compareStableRefs } from "../renderer/interactions/compare.mjs";
+import { renderInvestigationMarkup } from "../renderer/interactions/view.mjs";
 
 const context = Object.freeze({
   runId: "fixture:prometheus-disposable",
@@ -90,6 +91,38 @@ test("compare state records explicit left and right refs", () => {
   assert.equal(complete.panel, "compare");
   assert.equal(complete.compare.left.id, "B.AND");
   assert.equal(complete.compare.right.id, "B.NOT");
+});
+
+test("investigation composition keeps tools terse and deep links out of permanent shell chrome", () => {
+  const currentRef = stableObjectRef({ kind: "capability", id: "B.AND" }, context);
+  const markup = renderInvestigationMarkup({
+    state: { context },
+    interaction: createInteractionState(),
+    metadata: emptyOperatorMetadata(),
+    currentRef,
+    comparison: compareStableRefs(null, null),
+    currentAvailable: true,
+  });
+  assert.match(markup, /data-test-id="investigation-time-toggle"/);
+  assert.match(markup, /data-test-id="investigation-open-compare"/);
+  assert.match(markup, /data-test-id="investigation-open-pins"/);
+  assert.match(markup, /data-test-id="investigation-open-notes"/);
+  assert.doesNotMatch(markup, /bilqis:\/\//);
+  assert.doesNotMatch(markup, /Exact app URI/);
+});
+
+test("compare markup states incompatibility explicitly without comparison cards", () => {
+  const left = stableObjectRef({ kind: "capability", id: "B.AND" }, context);
+  const right = stableObjectRef({ kind: "strategy", id: "strategy:fixture:challenger-balanced" }, context);
+  const interaction = setCompareSide(setCompareSide(createInteractionState(), "left", left), "right", right);
+  const markup = renderInvestigationMarkup({
+    state: { context }, interaction, metadata: emptyOperatorMetadata(), currentRef: right,
+    comparison: compareStableRefs(left, right), currentAvailable: true,
+  });
+  assert.match(markup, /data-test-id="investigation-compare-state"/);
+  assert.match(markup, />Incompatible</);
+  assert.match(markup, /data-test-id="investigation-compare-row-object-class"/);
+  assert.doesNotMatch(markup, /<article/);
 });
 
 test("operator pins and annotations round-trip without becoming authority", () => {
@@ -173,11 +206,11 @@ test("generation compare exposes literal incompatibility and candidate compare k
   const candidate = compareStableRefs(leftCandidate, rightCandidate);
   assert.deepEqual(
     candidate.rows.find((item) => item.label === "Target committed"),
-    { label: "Target committed", left: "12/12", right: "8/12", state: "DIFFERENT", reason: null },
+    { key: "target-committed", label: "Target committed", left: "12/12", right: "8/12", state: "DIFFERENT", reason: null },
   );
   assert.deepEqual(
     candidate.rows.find((item) => item.label === "Protected committed"),
-    { label: "Protected committed", left: "48/48", right: "48/48", state: "SAME", reason: null },
+    { key: "protected-committed", label: "Protected committed", left: "48/48", right: "48/48", state: "SAME", reason: null },
   );
 });
 
@@ -188,6 +221,7 @@ test("mixed object classes stay explicitly incompatible", () => {
   );
   assert.equal(compared.state, "INCOMPATIBLE");
   assert.deepEqual(compared.rows[0], {
+    key: "object-class",
     label: "Object class",
     left: "capability",
     right: "strategy",
@@ -213,11 +247,11 @@ test("strategy compare presents the two literal metric sets side by side", () =>
   );
   assert.deepEqual(
     compared.rows.find((item) => item.label === "Observations"),
-    { label: "Observations", left: "14", right: "11", state: "DIFFERENT", reason: null },
+    { key: "observations", label: "Observations", left: "14", right: "11", state: "DIFFERENT", reason: null },
   );
   assert.deepEqual(
     compared.rows.find((item) => item.label === "Interference"),
-    { label: "Interference", left: "2", right: "4", state: "DIFFERENT", reason: null },
+    { key: "interference", label: "Interference", left: "2", right: "4", state: "DIFFERENT", reason: null },
   );
   assert.match(compared.note, /No strategy ranking is synthesized/);
 });

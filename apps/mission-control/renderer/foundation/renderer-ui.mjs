@@ -1,4 +1,5 @@
 import { escapeText as esc } from "../frames/frame-model.mjs";
+import { buildAppUri } from "../interactions/app-uri.mjs";
 import { DESTINATION_GROUPS, DESTINATIONS, shellPosture, isFixtureCorrectionSelection } from "../shell-state.mjs";
 import {
   currentMemoryGeneration,
@@ -189,21 +190,41 @@ export function renderInspector(state, defense) {
   document.querySelector("#shell").dataset.inspector = open ? "open" : "closed";
   panel.setAttribute("aria-hidden", String(!open));
   panel.inert = !open;
-  document.querySelector("#inspector-title").textContent = selected ? selected.id : "No selection";
+  document.querySelector("#inspector-title").textContent = selected?.label ?? selected?.id ?? t("shell.inspector.noSelection");
   const fixtureCorrection = isFixtureCorrectionSelection(state);
+  const evidencePosture = fixtureCorrection
+    ? t("shell.inspector.fixture")
+    : defense.historical
+      ? t("shell.inspector.historicalEvidence")
+      : t("shell.inspector.currentEvidence");
+  const summary = document.querySelector("#inspector-summary");
   const exact = selected?.details
     ? Object.entries(selected.details).map(([label, value]) =>
       `<dt>${esc(label)}</dt><dd>${esc(Array.isArray(value) ? value.join(", ") : value)}</dd>`,
     ).join("")
     : "";
-  document.querySelector("#inspector-details").innerHTML = selected
-    ? `<dt>Object class</dt><dd>${esc(selected.kind)}</dd>
-       <dt>Identity</dt><dd>${esc(selected.id)}</dd>
-       <dt>Posture</dt><dd>${state.context.mode}</dd>
-       <dt>Generation</dt><dd>${state.context.generation}</dd>
-       <dt>${esc(t("shell.inspector.evidence"))}</dt><dd>${fixtureCorrection ? esc(t("shell.inspector.fixture")) : defense.historical ? "Verified prior evidence · inspection only" : "Current verified fixture/reference"}</dd>
-       ${fixtureCorrection ? `<dt>${esc(t("shell.inspector.navigation"))}</dt><dd data-test-id="corrections-inspector-fixture-note">${esc(t("shell.inspector.fixtureNavigation"))}</dd>` : ""}${exact}`
+  summary.innerHTML = selected
+    ? `<dt>${esc(t("shell.inspector.objectClass"))}</dt><dd>${esc(selected.kind)}</dd>
+       <dt>${esc(t("shell.inspector.posture"))}</dt><dd>${esc(state.context.mode)}</dd>
+       <dt>${esc(t("shell.inspector.evidence"))}</dt><dd>${esc(evidencePosture)}</dd>
+       ${fixtureCorrection ? `<dt>${esc(t("shell.inspector.navigation"))}</dt><dd data-test-id="corrections-inspector-fixture-note">${esc(t("shell.inspector.fixtureNavigation"))}</dd>` : ""}`
     : "";
+  document.querySelector("#inspector-details").innerHTML = selected
+    ? `<dt>${esc(t("shell.inspector.run"))}</dt><dd>${esc(state.context.runId)}</dd>
+       <dt>${esc(t("shell.inspector.generation"))}</dt><dd>${esc(state.context.generation)}</dd>
+       <dt>${esc(t("shell.inspector.objectClass"))}</dt><dd>${esc(selected.kind)}</dd>
+       <dt>${esc(t("shell.inspector.exactId"))}</dt><dd>${esc(selected.id)}</dd>${exact}`
+    : "";
+  const deepLink = selected ? buildAppUri({
+    kind: selected.kind,
+    id: selected.id,
+    label: selected.label ?? selected.id,
+    runId: state.context.runId,
+    generation: state.context.generation,
+    fixture: state.context.fixture === true,
+  }) : "";
+  document.querySelector("#inspector-deep-link-value").textContent = deepLink;
+  document.querySelector("#copy-deep-link").disabled = !selected;
   document.querySelector("#open-owner").disabled = !selected || fixtureCorrection;
   document.querySelector("#open-evidence").disabled = !selected || fixtureCorrection;
 }

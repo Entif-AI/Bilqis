@@ -39,6 +39,8 @@ test("static shell exposes named landmarks, skip navigation, dedicated announcem
   assert.match(html, /id="defensive-banner"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
   assert.match(html, /id="announcer"[^>]*aria-live="polite"/);
   assert.match(html, /id="inspector"[^>]*role="dialog"[^>]*aria-labelledby="inspector-title"[^>]*inert/);
+  assert.match(html, /id="inspector-forensics"[^>]*>\s*<summary data-i18n="shell\.inspector\.forensics"/s);
+  assert.match(html, /id="copy-deep-link"[^>]*data-test-id="investigation-inspector-copy-deep-link"/);
   assert.match(html, /<dialog id="command-palette"[^>]*aria-labelledby="palette-title"/);
   assert.match(html, /aria-keyshortcuts="Control\+K"/);
 });

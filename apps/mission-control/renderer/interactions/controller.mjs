@@ -1,5 +1,7 @@
 import { compareStableRefs } from "./compare.mjs";
+import { buildAppUri } from "./app-uri.mjs";
 import { objectRefFromElement } from "./dom-ref.mjs";
+import { t } from "../foundation/i18n.mjs";
 import {
   createInteractionState,
   explicitHighlightRefs,
@@ -36,6 +38,7 @@ export function createInteractionController({
   onCurrentLens,
   canUseCurrent,
   onOpenRef,
+  copyText = async () => false,
   announce = () => {},
 }) {
   let interaction = createInteractionState();
@@ -50,7 +53,7 @@ export function createInteractionController({
   function save(next) {
     metadata = next;
     if (!saveOperatorMetadata(storage, metadata)) {
-      announce("Operator metadata could not be saved.");
+      announce(t("investigation.announce.metadataSaveFailed"));
     }
   }
 
@@ -81,7 +84,7 @@ export function createInteractionController({
       event.preventDefault();
       const generation = Number(new FormData(event.currentTarget).get("generation"));
       if (!Number.isSafeInteger(generation) || generation < 0) {
-        announce("Generation must be a nonnegative integer.");
+        announce(t("investigation.announce.invalidGeneration"));
         return;
       }
       onTimeLens(generation);
@@ -116,11 +119,11 @@ export function createInteractionController({
       const body = new FormData(event.currentTarget).get("body")?.toString() ?? "";
       const next = addAnnotation(metadata, ref, body);
       if (next === metadata) {
-        announce("Annotation was not saved. Enter a valid nonblank note.");
+        announce(t("investigation.announce.invalidNote"));
         return;
       }
       save(next);
-      announce("Non-authoritative operator note saved locally.");
+      announce(t("investigation.announce.noteSaved"));
       render();
     });
   }
@@ -135,7 +138,7 @@ export function createInteractionController({
       const pinned = ref && metadata.pins.some((item) =>
         item.kind === ref.kind && item.id === ref.id && item.runId === ref.runId &&
         item.generation === ref.generation);
-      pin.textContent = pinned ? "Unpin exact object" : "Pin exact object";
+      pin.textContent = t(pinned ? "shell.inspector.unpin" : "shell.inspector.pin");
     }
   }
 
@@ -144,7 +147,7 @@ export function createInteractionController({
       const ref = currentRef();
       if (!ref) return;
       save(togglePin(metadata, ref));
-      announce("Operator pin updated.");
+      announce(t("investigation.announce.pinUpdated"));
       render();
     });
     document.querySelector("#compare-left")?.addEventListener("click", () => {
@@ -164,6 +167,12 @@ export function createInteractionController({
       interaction = setInteractionPanel(interaction, "annotations");
       render();
       document.querySelector("[data-annotation-form] textarea")?.focus();
+    });
+    document.querySelector("#copy-deep-link")?.addEventListener("click", async () => {
+      const ref = currentRef();
+      if (!ref) return;
+      const copied = await copyText(buildAppUri(ref));
+      announce(t(copied ? "investigation.announce.deepLinkCopied" : "investigation.announce.deepLinkCopyFailed"));
     });
     document.addEventListener("pointerover", (event) => {
       const element = event.target?.closest?.("[data-object-kind][data-object-id]");

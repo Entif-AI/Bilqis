@@ -8,11 +8,13 @@ import {
   STRATEGY_FIXTURES,
 } from "../teacher/teacher-fixture.mjs";
 import { strategyComparison } from "../teacher/teacher-model.mjs";
+import { t } from "../foundation/i18n.mjs";
 
-function row(label, left, right, state = null, reason = null) {
-  const leftText = left ?? "UNAVAILABLE";
-  const rightText = right ?? "UNAVAILABLE";
+function row(key, label, left, right, state = null, reason = null) {
+  const leftText = left ?? t("investigation.state.unavailable");
+  const rightText = right ?? t("investigation.state.unavailable");
   return Object.freeze({
+    key,
     label,
     left: String(leftText),
     right: String(rightText),
@@ -21,9 +23,43 @@ function row(label, left, right, state = null, reason = null) {
   });
 }
 
+const GENERATION_ROWS = Object.freeze({
+  "Capability debt": ["capability-debt", "investigation.compare.row.capabilityDebt"],
+  "Retention disposition": ["retention-disposition", "investigation.compare.row.retentionDisposition"],
+  "Active semantic set": ["active-semantic-set", "investigation.compare.row.activeSemanticSet"],
+  "Active bank count": ["active-bank-count", "investigation.compare.row.activeBankCount"],
+  "Memory allocation/state": ["memory-allocation-state", "investigation.compare.row.memoryAllocation"],
+  "Source/correction frontier": ["source-correction-frontier", "investigation.compare.row.correctionFrontier"],
+  "Teacher epoch": ["teacher-epoch", "investigation.compare.row.teacherEpoch"],
+  "Topology digest/version": ["topology-digest-version", "investigation.compare.row.topology"],
+  "Implementation digest": ["implementation-digest", "investigation.compare.row.implementationDigest"],
+  "Resource profile": ["resource-profile", "investigation.compare.row.resourceProfile"],
+  "Evaluation contract": ["evaluation-contract", "investigation.compare.row.evaluationContract"],
+  "Projection frontier": ["projection-frontier", "investigation.compare.row.projectionFrontier"],
+});
+
+function generationLabel(label) {
+  const row = GENERATION_ROWS[label];
+  return row ? t(row[1]) : label;
+}
+
+function generationReason(reason) {
+  return reason === "Topology/version changed; these resource profiles are not declared comparable."
+    ? t("investigation.compare.topologyUnavailable")
+    : reason;
+}
+
+function relationLabel(value) {
+  return t({
+    DIRECT_PARENT_CHILD: "investigation.compare.relation.directParentChild",
+    SIBLING_BRANCHES: "investigation.compare.relation.siblingBranches",
+    NON_ADJACENT_LINEAGE: "investigation.compare.relation.nonAdjacent",
+  }[value]);
+}
+
 function result(kind, left, right, rows, {
   state = "PRESENT",
-  note = "Literal differences only. No winner is synthesized.",
+  note = t("investigation.compare.literalOnly"),
 } = {}) {
   return Object.freeze({
     state,
@@ -48,18 +84,18 @@ function compareGenerationRefs(left, right) {
   if (!leftNode || !rightNode) {
     return result("generation", left, right, [], {
       state: "UNAVAILABLE",
-      note: "One or both generation identities are not available in the accepted lineage fixture.",
+      note: t("investigation.compare.generationUnavailable"),
     });
   }
   const comparison = compareGenerations(leftNode.manifestSha256, rightNode.manifestSha256);
   const rows = [
-    row("Relation", comparison.relation, comparison.relation, "SAME"),
+    row("relation", t("investigation.compare.row.relation"), relationLabel(comparison.relation), relationLabel(comparison.relation), "SAME"),
     ...comparison.rows.map((item) =>
-      row(item.label, item.before, item.after, item.state, item.reason)),
+      row(GENERATION_ROWS[item.label]?.[0] ?? item.label, generationLabel(item.label), item.before, item.after, item.state, generationReason(item.reason))),
     ...comparison.capabilityChanges.map((item) =>
-      row(`Capability ${item.id}`, item.before, item.after, item.state)),
+      row(`capability-${item.id}`, t("investigation.compare.row.capability", { id: item.id }), item.before, item.after, item.state)),
   ];
-  return result("generation", left, right, rows, { note: comparison.interpretation });
+  return result("generation", left, right, rows, { note: t("investigation.compare.literalOnly") });
 }
 
 function findCandidate(ref) {
@@ -74,26 +110,26 @@ function compareCandidateRefs(left, right) {
   if (!a || !b) {
     return result("candidate", left, right, [], {
       state: "UNAVAILABLE",
-      note: "One or both candidate identities are unavailable.",
+      note: t("investigation.compare.candidateUnavailable"),
     });
   }
   return result("candidate", left, right, [
-    row("Target capability", a.capabilityId, b.capabilityId),
-    row("Parent generation", a.parentGeneration, b.parentGeneration),
-    row("Terminal state", a.terminalState, b.terminalState),
-    row("Retention reason", a.retentionReason, b.retentionReason),
-    row("Target before", scoreText(a.target.before), scoreText(b.target.before)),
-    row("Target challenger", scoreText(a.target.candidateAfter), scoreText(b.target.candidateAfter)),
-    row("Target committed", scoreText(a.target.committedAfter), scoreText(b.target.committedAfter)),
-    row("Protected challenger", scoreText(a.protected.candidateAfter), scoreText(b.protected.candidateAfter)),
-    row("Protected committed", scoreText(a.protected.committedAfter), scoreText(b.protected.committedAfter)),
-    row("Whole-school challenger Δ", a.wholeSchool.candidateDelta, b.wholeSchool.candidateDelta),
-    row("Whole-school committed Δ", a.wholeSchool.committedDelta, b.wholeSchool.committedDelta),
-    row("Debt challenger", a.debt.candidateAfter, b.debt.candidateAfter),
-    row("Debt committed", a.debt.committedAfter, b.debt.committedAfter),
-    row("Attempted optimizer steps", a.attemptedOptimizerSteps, b.attemptedOptimizerSteps),
-    row("Retained optimizer steps", a.retainedOptimizerSteps, b.retainedOptimizerSteps),
-    row("Resulting generation", a.resultingGeneration, b.resultingGeneration),
+    row("target-capability", t("investigation.compare.row.targetCapability"), a.capabilityId, b.capabilityId),
+    row("parent-generation", t("investigation.compare.row.parentGeneration"), a.parentGeneration, b.parentGeneration),
+    row("terminal-state", t("investigation.compare.row.terminalState"), a.terminalState, b.terminalState),
+    row("retention-reason", t("investigation.compare.row.retentionReason"), a.retentionReason, b.retentionReason),
+    row("target-before", t("investigation.compare.row.targetBefore"), scoreText(a.target.before), scoreText(b.target.before)),
+    row("target-challenger", t("investigation.compare.row.targetChallenger"), scoreText(a.target.candidateAfter), scoreText(b.target.candidateAfter)),
+    row("target-committed", t("investigation.compare.row.targetCommitted"), scoreText(a.target.committedAfter), scoreText(b.target.committedAfter)),
+    row("protected-challenger", t("investigation.compare.row.protectedChallenger"), scoreText(a.protected.candidateAfter), scoreText(b.protected.candidateAfter)),
+    row("protected-committed", t("investigation.compare.row.protectedCommitted"), scoreText(a.protected.committedAfter), scoreText(b.protected.committedAfter)),
+    row("whole-school-challenger", t("investigation.compare.row.wholeSchoolChallenger"), a.wholeSchool.candidateDelta, b.wholeSchool.candidateDelta),
+    row("whole-school-committed", t("investigation.compare.row.wholeSchoolCommitted"), a.wholeSchool.committedDelta, b.wholeSchool.committedDelta),
+    row("debt-challenger", t("investigation.compare.row.debtChallenger"), a.debt.candidateAfter, b.debt.candidateAfter),
+    row("debt-committed", t("investigation.compare.row.debtCommitted"), a.debt.committedAfter, b.debt.committedAfter),
+    row("attempted-optimizer-steps", t("investigation.compare.row.attemptedOptimizer"), a.attemptedOptimizerSteps, b.attemptedOptimizerSteps),
+    row("retained-optimizer-steps", t("investigation.compare.row.retainedOptimizer"), a.retainedOptimizerSteps, b.retainedOptimizerSteps),
+    row("resulting-generation", t("investigation.compare.row.resultingGeneration"), a.resultingGeneration, b.resultingGeneration),
   ]);
 }
 
@@ -104,16 +140,16 @@ function compareCapabilityRefs(left, right) {
   if (!keys.length) {
     return result("capability", left, right, [], {
       state: "UNAVAILABLE",
-      note: "The selected capability references do not expose a common literal fact set.",
+      note: t("investigation.compare.capabilityUnavailable"),
     });
   }
   return result("capability", left, right, [
-    row("Capability ID", left.id, right.id),
-    ...keys.map((key) => row(key, leftDetails[key], rightDetails[key],
+    row("capability-id", t("investigation.compare.row.capabilityId"), left.id, right.id),
+    ...keys.map((key, index) => row(`detail-${index}`, key, leftDetails[key], rightDetails[key],
       Object.hasOwn(leftDetails, key) && Object.hasOwn(rightDetails, key)
         ? null : "UNAVAILABLE",
       Object.hasOwn(leftDetails, key) && Object.hasOwn(rightDetails, key)
-        ? null : "Fact is not exposed on both capability references.")),
+        ? null : t("investigation.compare.factUnavailable"))),
   ]);
 }
 
@@ -122,7 +158,7 @@ function compareStrategyRefs(left, right) {
   if (!ids.every((id) => STRATEGY_FIXTURES.some((strategy) => strategy.id === id))) {
     return result("strategy", left, right, [], {
       state: "UNAVAILABLE",
-      note: "One or both strategy identities are unavailable.",
+      note: t("investigation.compare.strategyUnavailable"),
     });
   }
   const comparison = strategyComparison(ids, { kind: "whole-school", value: "ALL" });
@@ -130,21 +166,21 @@ function compareStrategyRefs(left, right) {
   const leftMetrics = leftRow.metrics;
   const rightMetrics = rightRow.metrics;
   return result("strategy", left, right, [
-    row("Strategy identity", leftRow.strategy.id, rightRow.strategy.id),
-    row("Role", leftRow.strategy.role, rightRow.strategy.role),
-    row("Observed contexts", leftRow.matchedContexts.join(", ") || "NONE",
-      rightRow.matchedContexts.join(", ") || "NONE"),
-    row("Observations", leftMetrics.observations, rightMetrics.observations),
-    row("Retained", leftMetrics.retained, rightMetrics.retained),
-    row("No gain", leftMetrics.noGain, rightMetrics.noGain),
-    row("Interference", leftMetrics.interference, rightMetrics.interference),
-    row("Actual capability gain", leftMetrics.actualGain, rightMetrics.actualGain),
-    row("Average wall seconds", leftMetrics.averageWallSeconds, rightMetrics.averageWallSeconds),
-    row("Median wall seconds", leftMetrics.medianWallSeconds, rightMetrics.medianWallSeconds),
-    row("Attempted steps", leftMetrics.attemptedSteps, rightMetrics.attemptedSteps),
-    row("Coverage", leftMetrics.coverage, rightMetrics.coverage),
+    row("strategy-identity", t("investigation.compare.row.strategyIdentity"), leftRow.strategy.id, rightRow.strategy.id),
+    row("role", t("investigation.compare.row.role"), leftRow.strategy.role, rightRow.strategy.role),
+    row("observed-contexts", t("investigation.compare.row.contexts"), leftRow.matchedContexts.join(", ") || t("investigation.value.none"),
+      rightRow.matchedContexts.join(", ") || t("investigation.value.none")),
+    row("observations", t("investigation.compare.row.observations"), leftMetrics.observations, rightMetrics.observations),
+    row("retained", t("investigation.compare.row.retained"), leftMetrics.retained, rightMetrics.retained),
+    row("no-gain", t("investigation.compare.row.noGain"), leftMetrics.noGain, rightMetrics.noGain),
+    row("interference", t("investigation.compare.row.interference"), leftMetrics.interference, rightMetrics.interference),
+    row("actual-capability-gain", t("investigation.compare.row.actualGain"), leftMetrics.actualGain, rightMetrics.actualGain),
+    row("average-wall-seconds", t("investigation.compare.row.averageWall"), leftMetrics.averageWallSeconds, rightMetrics.averageWallSeconds),
+    row("median-wall-seconds", t("investigation.compare.row.medianWall"), leftMetrics.medianWallSeconds, rightMetrics.medianWallSeconds),
+    row("attempted-steps", t("investigation.compare.row.attemptedSteps"), leftMetrics.attemptedSteps, rightMetrics.attemptedSteps),
+    row("coverage", t("investigation.compare.row.coverage"), leftMetrics.coverage, rightMetrics.coverage),
   ], {
-    note: `Whole-school descriptive evidence. Coverage: ${comparison.coverage}. No strategy ranking is synthesized.`,
+    note: t("investigation.compare.strategyNote", { coverage: comparison.coverage }),
   });
 }
 
@@ -154,26 +190,26 @@ function compareIdentityRefs(left, right) {
     ...Object.keys(right.details ?? {}),
   ])].sort();
   return result(left.kind, left, right, [
-    row("Identity", left.id, right.id),
-    ...keys.map((key) => row(key, left.details?.[key], right.details?.[key],
+    row("identity", t("investigation.compare.row.identity"), left.id, right.id),
+    ...keys.map((key, index) => row(`detail-${index}`, key, left.details?.[key], right.details?.[key],
       Object.hasOwn(left.details ?? {}, key) && Object.hasOwn(right.details ?? {}, key)
         ? null : "UNAVAILABLE")),
-  ], { note: "Exact identity and exposed source/release facts only." });
+  ], { note: t("investigation.compare.identityOnly") });
 }
 
 export function compareStableRefs(left, right) {
   if (!left || !right) {
     return result("none", left, right, [], {
       state: "EMPTY",
-      note: "Choose both comparison sides.",
+      note: t("investigation.compare.empty"),
     });
   }
   if (left.kind !== right.kind) {
     return result("mixed", left, right, [
-      row("Object class", left.kind, right.kind, "INCOMPATIBLE"),
+      row("object-class", t("investigation.compare.row.objectClass"), left.kind, right.kind, "INCOMPATIBLE"),
     ], {
       state: "INCOMPATIBLE",
-      note: "Different object classes are not coerced into one comparison.",
+      note: t("investigation.compare.mixed"),
     });
   }
   if (["generation", "checkpoint"].includes(left.kind)) {
@@ -186,9 +222,9 @@ export function compareStableRefs(left, right) {
   if (left.kind === "strategy") return compareStrategyRefs(left, right);
   if (["source", "semantic"].includes(left.kind)) return compareIdentityRefs(left, right);
   return result(left.kind, left, right, [
-    row("Identity", left.id, right.id),
+    row("identity", t("investigation.compare.row.identity"), left.id, right.id),
   ], {
     state: "UNAVAILABLE",
-    note: "This object class has no declared GUI18 comparison adapter.",
+    note: t("investigation.compare.adapterUnavailable"),
   });
 }
