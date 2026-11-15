@@ -80,6 +80,8 @@ export function withHistoricalLens(state, generation) {
   return Object.freeze({
     ...state,
     context: historicalContext(state.context, generation),
+    selected: null,
+    inspectorOpen: false,
     mutationAvailable: false,
   });
 }
