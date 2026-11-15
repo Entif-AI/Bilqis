@@ -8,13 +8,16 @@ from bilqis_mlx.runtime.bamf_bundle import (
     BamfBundleCandidate, authenticate_bamf_execution_feature_context,
 )
 from bilqis_mlx.runtime.capability_retention import CompleteSolver, EvaluationCase
-from bilqis_mlx.runtime.cognitive_solver import SolveBudget, SolveContext
+from bilqis_mlx.runtime.cognitive_solver import NeuralRequest, SolveBudget, SolveContext
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext
 from bilqis_mlx.semantics.cognitive_dag import DAGBudget
 from bilqis_mlx.semantics.cognitive_operators import TypedValue
 from bilqis_mlx.semantics.domains import contract_digest
 
 from .capability_evaluation import _invalid
+from .factory_evaluation_batching import (
+    PreparedFactoryEvaluation, batched_factory_outputs,
+)
 from .factory_evaluation_compiler import (
     CompiledFactoryEvaluationCase, bind_factory_evaluation_case,
     compile_factory_evaluation_case, compiled_case_matches_contract,
@@ -23,7 +26,9 @@ from .factory_compiled_cohort import (
     compiled_cohort_candidates, compiled_cohort_record,
     load_compiled_cohort_cases, seal_compiled_case, seal_compiled_cohort,
 )
-from .task_goal_readout import b11_task_goal_proposer, task_goal_route_plan
+from .task_goal_readout import (
+    b11_task_goal_proposer, proposal_from_task_goal_output, task_goal_route_plan,
+)
 
 
 @dataclass(frozen=True)
@@ -219,18 +224,22 @@ def factory_complete_solver(
         _invalid("BAMF_C05_FACTORY_INSTRUMENT_GOAL_CONFLICT")
     contexts = {}
     parameters = candidate.retained_state.optimizer.parameters
+    telemetry = {
+        "shared_backbone_launches": 0,
+        "shared_backbone_rows": 0,
+        "scalar_neural_launches": 0,
+        "largest_shared_rows": 0,
+        "largest_shared_positions": 0,
+    }
     feature_context = authenticate_bamf_execution_feature_context(
         candidate, artifact_path, source_context.run_dir)
 
-    def context_for(goal, requested_generation):
+    def prepare(goal, requested_generation):
         instrument = by_goal.get(goal.goal_id)
         if requested_generation != generation or instrument is None:
             _invalid("BAMF_C05_FACTORY_SOLVER_GENERATION_OR_TASK_DRIFT")
         if goal != instrument.case.goal:
             _invalid("BAMF_C05_FACTORY_SOLVER_SOURCE_DRIFT")
-        cached = contexts.get(goal.goal_id)
-        if cached is not None:
-            return cached
         batch, authority = bind_factory_evaluation_case(
             source_context, candidate, artifact_path, instrument.compiled_case,
             instrument.source_row, generation=generation,
@@ -242,16 +251,75 @@ def factory_complete_solver(
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_DRIFT")
         plan = task_goal_route_plan(
             authority.goal, batch, feature_context.snapshot, generation)
-        proposer = b11_task_goal_proposer(
-            parameters, batch, plan, authority)
+        return PreparedFactoryEvaluation(batch, plan, authority)
+
+    def context_from(prepared, output=None):
+        authority = prepared.authority
+        if output is None:
+            scalar = b11_task_goal_proposer(
+                parameters, prepared.batch, prepared.plan, authority)
+
+            def proposer(request):
+                telemetry["scalar_neural_launches"] += 1
+                return scalar(request)
+        else:
+            def proposer(request):
+                if (type(request) is not NeuralRequest
+                        or request.goal_id != authority.goal.goal_id
+                        or request.source_binding_digest != authority.source_binding_sha256
+                        or request.generation_digest != authority.generation_binding
+                        or request.allowed_operator_ids != authority.goal.allowed_operator_ids):
+                    _invalid("BAMF_C04_B11_TASK_REQUEST_MISMATCH")
+                return proposal_from_task_goal_output(authority.goal, request, output)
         context = SolveContext(
             authority.binding, neural_proposer=proposer)
         source_context.register_solve_context(context)
+        return context
+
+    def context_for(goal, requested_generation):
+        cached = contexts.get(goal.goal_id)
+        if cached is not None:
+            if requested_generation != generation or goal != by_goal[goal.goal_id].case.goal:
+                _invalid("BAMF_C05_FACTORY_SOLVER_GENERATION_OR_TASK_DRIFT")
+            return cached
+        prepared = prepare(goal, requested_generation)
+        context = context_from(prepared)
         contexts[goal.goal_id] = context
         return context
 
+    def on_launch(rows, positions):
+        telemetry["shared_backbone_launches"] += 1
+        telemetry["shared_backbone_rows"] += rows
+        telemetry["largest_shared_rows"] = max(telemetry["largest_shared_rows"], rows)
+        telemetry["largest_shared_positions"] = max(
+            telemetry["largest_shared_positions"], positions)
+
+    def contexts_for(goals, requested_generation):
+        if requested_generation != generation:
+            _invalid("BAMF_C05_FACTORY_SOLVER_GENERATION_OR_TASK_DRIFT")
+        for goal in goals:
+            instrument = by_goal.get(goal.goal_id)
+            if instrument is None:
+                _invalid("BAMF_C05_FACTORY_SOLVER_GENERATION_OR_TASK_DRIFT")
+            if goal != instrument.case.goal:
+                _invalid("BAMF_C05_FACTORY_SOLVER_SOURCE_DRIFT")
+        missing = tuple(goal for goal in goals if goal.goal_id not in contexts)
+        if missing:
+            prepared = tuple(prepare(goal, requested_generation) for goal in missing)
+            outputs = batched_factory_outputs(parameters, prepared, on_launch=on_launch)
+            for goal, item, output in zip(missing, prepared, outputs, strict=True):
+                contexts[goal.goal_id] = context_from(item, output)
+        result = tuple(contexts.get(goal.goal_id) for goal in goals)
+        if any(context is None for context in result):
+            _invalid("BAMF_C05_FACTORY_BATCH_CONTEXT_MISSING")
+        return result
+
+    def telemetry_for():
+        return dict(telemetry)
+
     budget = SolveBudget(DAGBudget(), max_neural_calls=1)
-    return CompleteSolver(context_for, budget), generation
+    return CompleteSolver(
+        context_for, budget, contexts_for=contexts_for, telemetry_for=telemetry_for), generation
 
 
 __all__ = (
