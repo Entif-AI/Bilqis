@@ -169,7 +169,8 @@ def _require_non_genesis_acceptance_identity(acceptance, pointer, student) -> No
 
 def require_published_acceptance(
         run_dir: Path, pointer: dict, student: CompleteStudent, *,
-        load_bundle, live_manifest):
+        load_bundle, live_manifest,
+        accepted_parent: tuple[str, CompleteStudent] | None = None):
     """Authenticate the generation-specific acceptance bound by one live pointer."""
     if pointer.get("schema") != BAMF_POINTER_SCHEMA:
         invalid("BAMF_GENERATION_ACCEPTANCE_MISSING")
@@ -185,9 +186,14 @@ def require_published_acceptance(
     parent_sha = student.parent_manifest_sha256
     if parent_sha is None:
         invalid("BAMF_RUN_IDENTITY_DRIFT")
-    parent = load_bundle(
-        Path(run_dir) / "bamf-bundles" / parent_sha,
-        expected_manifest_sha256=parent_sha)
+    if accepted_parent is not None and accepted_parent[0] == parent_sha:
+        parent = accepted_parent[1]
+        if type(parent) is not CompleteStudent:
+            invalid("BAMF_RUN_IDENTITY_DRIFT")
+    else:
+        parent = load_bundle(
+            Path(run_dir) / "bamf-bundles" / parent_sha,
+            expected_manifest_sha256=parent_sha)
     if (parent.run_id != student.run_id
             or parent.generation + 1 != student.generation
             or (not legacy_student

@@ -99,6 +99,8 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
                 return_value="cache"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                return_value=(1, 1)), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=1), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._Capture",
@@ -118,6 +120,8 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
 
         evidence = rejection.call_args.args[2]
         self.assertEqual(evidence["schema"], "bilqis.bamf.c16.3-rejection/v2")
+        self.assertEqual(evidence["rejection_journal_ordinal"], 1)
+        self.assertEqual(evidence["rejection_attempt_ordinal"], 1)
         self.assertEqual(evidence["visit_id"], "visit:beta")
         self.assertEqual(evidence["selected_option_id"], "capability:beta")
         self.assertEqual(evidence["selected_policy_key"], "policy:beta")
@@ -177,6 +181,8 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
                 return_value="cache"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                return_value=(1, 1)), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=1), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._Capture",
