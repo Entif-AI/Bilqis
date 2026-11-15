@@ -48,6 +48,22 @@ def numerical_observation(student):
 
 
 class PreCasCompatibilityTests(DataPlaneCase):
+    def setUp(self):
+        super().setUp()
+        from bilqis_mlx.learning.atlas_candidate import CandidateState
+        from bilqis_mlx.learning._retention._atlas_candidate.identity import LEGACY_IDENTITY_SCHEME
+        # Pinned old writers consume historical candidates, not raw-v2 candidates.
+        historical_state = lambda *a, **k: CandidateState(
+            *a, **k, identity_scheme=LEGACY_IDENTITY_SCHEME)
+        for target, options in (
+                ('bilqis_mlx.runtime.bamf_bundle.genesis.preparation.CandidateState',
+                 {'side_effect': historical_state}),
+                ('bilqis_mlx.learning._atlas_candidate.transaction.RAW_IDENTITY_SCHEME',
+                 {'new': LEGACY_IDENTITY_SCHEME})):
+            control = patch(target, **options)
+            control.start()
+            self.addCleanup(control.stop)
+
     def test_legacy_published_cas_cold_read_detaches_surviving_descriptor(self):
         writer = historical_module(
             self.root, LEGACY_CAS, "bilqis_mlx/runtime/_custody/bamf_bundle/codec.py",

@@ -10,7 +10,7 @@ import uuid
 from pathlib import Path
 
 from bilqis_mlx.data_plane import DataPlaneError
-from ..records import invalid
+from ..records import BAMF_BUNDLE_SCHEMA, invalid
 
 ACCEPTANCE_DIR = "bamf-acceptance"
 
