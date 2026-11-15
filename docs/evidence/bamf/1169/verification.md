@@ -109,3 +109,34 @@ Security-stage reconciliation also isolates `BILQIS_ACTIVE_CONTROL_PLANE_DIR`
 from the operator's advertised endpoint: the default-locator test otherwise sees
 the currently running operator instead of its repository-local fallback. This is
 verification environment isolation; no bridge or operator behavior changes.
+
+## First aggregate result and repaired preflight
+
+The immutable-snapshot aggregate at source head `1b8dd162` failed after
+714.564 test seconds (771.206 gate seconds): 4,278 passed, 246 skipped, two
+failures and 16 setup errors; source mutation guard passed. This is a failed
+gate, not a readiness receipt. The two failures were the owner inventory's old
+51-module expectation (the designed helper adds the 52nd owner) and the local
+verification policy eagerly importing MLX before a source-only import test.
+All 16 setup errors were missing historical-parent fixture access.
+
+The inventory now includes the new owner. The resource helper applies its
+6 GiB / zero-cache limits on actual `mlx.core` import, preserving lazy source
+imports; a cold subprocess verifies both absence before import and applied limits
+after import. Read-only independent copies of the SHA-pinned historical parent
+and its required teacher-state fixture were restored for disposable tests;
+original source bytes were verified unchanged. No fixture binaries enter Git.
+
+A named preflight now validates both fixture content identities, invokes all 16
+actual failed setup owners, and runs the layout/framing/custody contracts before
+another aggregate. The first cheap preflight caught the additional missing
+teacher-state sidecar; after restoring it, all 16 setup owners and 21 tests passed,
+with zero skips. Independent bounded review found no material issue in this
+repair. PM-2026-11-15-002 was enriched and native-ledger read back.
+
+Current unified `bb3785a98f1523bab0b91ed0b9988f0ec5bf7a6c` was merged cleanly;
+its affected C05 compilation/reuse owner suite passes 13/13 with zero skips.
+The identity implementation and benchmark surface are unchanged; their earlier
+proof is reused. Full quality checks pass against the consumed unified head.
+The next aggregate remains a separate required gate; no PR is opened before its
+receipt is reconciled.
