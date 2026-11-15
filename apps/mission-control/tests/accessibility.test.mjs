@@ -84,6 +84,7 @@ test("renderer blocks Operate unless verified live context is re-established and
     source("foundation/renderer-ui.mjs"),
     source("foundation/current-view.mjs"),
     source("foundation/i18n.mjs"),
+    source("foundation/i18n-shell.mjs"),
   ].join("\n");
   assert.match(renderer, /id === "operate" && !state\.mutationAvailable/);
   assert.match(renderer, /loadCachedOperatorView/);
@@ -96,7 +97,7 @@ test("startup reports service learner telemetry and trainer stages without live 
   const bootstrap = source("foundation/bootstrap-controller.mjs");
   const current = source("foundation/current-view.mjs");
   const ui = source("foundation/renderer-ui.mjs");
-  const i18n = source("foundation/i18n.mjs");
+  const i18n = [source("foundation/i18n.mjs"), source("foundation/i18n-shell.mjs")].join("\n");
   const html = source("index.html");
   for (const label of ["Local control plane", "Learner discovery", "Mission Control telemetry", "Trainer"]) {
     assert.match(i18n, new RegExp(label));

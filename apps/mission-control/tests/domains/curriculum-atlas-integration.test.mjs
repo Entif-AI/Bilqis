@@ -186,7 +186,7 @@ test("School domain keeps GUI22 as a subview instead of a second curriculum auth
   const controller = fs.readFileSync(
     path.join(rendererRoot, "school", "school-domain-controller.mjs"), "utf8",
   );
-  const i18n = fs.readFileSync(path.join(rendererRoot, "foundation", "i18n.mjs"), "utf8");
+  const i18n = fs.readFileSync(path.join(rendererRoot, "foundation", "i18n-shell.mjs"), "utf8");
   assert.equal(shell.includes('["curriculum-atlas"'), false);
   assert.match(controller, /shell\.school\.matrix/);
   assert.match(controller, /shell\.school\.atlas/);

@@ -37,6 +37,8 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/foundation/bootstrap-controller.mjs",
     "/foundation/current-view.mjs",
     "/foundation/i18n.mjs",
+    "/foundation/i18n-learning.mjs",
+    "/foundation/i18n-shell.mjs",
     "/foundation/primitives.mjs",
     "/component-catalog.mjs",
     "/components.css",
