@@ -123,6 +123,7 @@ def require_bamf_bundle_currentness(witness) -> BamfBundleCurrentness:
             or getattr(witness, "_issuance", None) is not _ISSUER):
         invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
     _require_bound_tree(witness._root, witness._tree)
+    _require_external_objects(witness)
     return witness
 
 
