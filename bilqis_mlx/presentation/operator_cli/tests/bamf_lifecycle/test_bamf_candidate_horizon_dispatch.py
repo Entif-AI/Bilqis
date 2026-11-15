@@ -16,6 +16,7 @@ def test_bamf_resume_forwards_explicit_candidate_horizon():
         max_visits=1,
         steps_per_visit=8,
         reserve_gib=100.0,
+        source_prefetch_workers=2,
     )
     report = {"result": "READY_TO_RESUME"}
     run_dir = Path("/run")
@@ -33,4 +34,24 @@ def test_bamf_resume_forwards_explicit_candidate_horizon():
     assert operate.call_args.kwargs["max_visits"] == 1
     assert operate.call_args.kwargs["steps_per_visit"] == 8
     assert operate.call_args.kwargs["reserve_gib"] == 100.0
+    assert operate.call_args.kwargs["source_prefetch_workers"] == 2
     assert callable(operate.call_args.kwargs["progress"])
+
+
+def test_bamf_resume_preserves_explicit_serial_and_single_worker_modes():
+    report = {"result": "READY_TO_RESUME"}
+    run_dir = Path("/run")
+    result = BamfOperatorResult("VISIT_LIMIT", 1, 0, 1, 0, 0)
+    for workers in (0, 1):
+        args = SimpleNamespace(
+            human_run=True, dry_run=False, minutes=90, max_visits=1,
+            steps_per_visit=8, reserve_gib=100.0,
+            source_prefetch_workers=workers)
+        with patch(
+                "bilqis_mlx.control_plane.active_endpoint.advertise_active_endpoint",
+                return_value=nullcontext()), patch(
+                "bilqis_mlx.runtime.bamf_operator.operate_bamf",
+                return_value=result) as operate:
+            handled, _code, _next = _dispatch_bamf_resume(args, run_dir, report)
+        assert handled is True
+        assert operate.call_args.kwargs["source_prefetch_workers"] == workers
