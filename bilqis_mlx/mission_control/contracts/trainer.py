@@ -81,3 +81,71 @@ class TrainerObservation(WireRecord):
         require(self.cpu_seconds is None or (
             type(self.cpu_seconds) in (int, float) and math.isfinite(self.cpu_seconds)
             and self.cpu_seconds >= 0), 'OBSERVATION_CPU')
+
+
+@dataclass(frozen=True)
+class TrainerObservationV2(TrainerObservation):
+    SCHEMA = 'bilqis.bamf.mission-control.trainer-observation/v2'
+    candidate_step_wall_seconds: float | None
+    pre_neural_source_compile_wall_seconds: float | None
+    currentness_binding_wall_seconds: float | None
+    b11_preflight_wall_seconds: float | None
+    b11_autodiff_wall_seconds: float | None
+    optimizer_admission_wall_seconds: float | None
+    motif_staging_wall_seconds: float | None
+    evidence_capture_wall_seconds: float | None
+    candidate_terminal_step: bool | None
+    c08_gradient_launches: int | None
+    c08_vectorized_microbatches: int | None
+    c08_materialization_barriers: int | None
+    c08_scalar_fallback_rows: int | None
+    c08_logical_batch_wall_seconds: float | None
+    c08_rows_per_gradient_launch: float | None
+    b11_provider_draw_count: int | None
+    b11_atlas_reload_count: int | None
+    logical_rows: int | None
+    compiled_positions: int | None
+    retention_wall_seconds: float | None
+    evidence_finalization_wall_seconds: float | None
+    publishing_wall_seconds: float | None
+
+    def __post_init__(self):
+        super().__post_init__()
+        seconds = (
+            self.candidate_step_wall_seconds,
+            self.pre_neural_source_compile_wall_seconds,
+            self.currentness_binding_wall_seconds,
+            self.b11_preflight_wall_seconds,
+            self.b11_autodiff_wall_seconds,
+            self.optimizer_admission_wall_seconds,
+            self.motif_staging_wall_seconds,
+            self.evidence_capture_wall_seconds,
+            self.c08_logical_batch_wall_seconds,
+            self.retention_wall_seconds,
+            self.evidence_finalization_wall_seconds,
+            self.publishing_wall_seconds,
+        )
+        require(all(value is None or (
+            type(value) in (int, float) and math.isfinite(value) and value >= 0)
+            for value in seconds), 'OBSERVATION_STAGE_SECONDS')
+        require(self.c08_rows_per_gradient_launch is None or (
+            type(self.c08_rows_per_gradient_launch) in (int, float)
+            and math.isfinite(self.c08_rows_per_gradient_launch)
+            and self.c08_rows_per_gradient_launch >= 0),
+            'OBSERVATION_ROWS_PER_LAUNCH')
+        counts = (
+            self.c08_gradient_launches,
+            self.c08_vectorized_microbatches,
+            self.c08_materialization_barriers,
+            self.c08_scalar_fallback_rows,
+            self.b11_provider_draw_count,
+            self.b11_atlas_reload_count,
+            self.logical_rows,
+            self.compiled_positions,
+        )
+        require(all(value is None or (
+            is_wire_integer(value) and value >= 0) for value in counts),
+            'OBSERVATION_STAGE_COUNT')
+        require(self.candidate_terminal_step is None
+                or type(self.candidate_terminal_step) is bool,
+                'OBSERVATION_TERMINAL_STEP')

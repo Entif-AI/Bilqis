@@ -12,7 +12,10 @@ import threading
 import time
 import uuid
 
-SCHEMA = 'bilqis.bamf.trainer-observed/v1'
+from .performance import PERFORMANCE_FIELDS
+
+SCHEMA = 'bilqis.bamf.trainer-observed/v2'
+LEGACY_SCHEMA = 'bilqis.bamf.trainer-observed/v1'
 MAX_SNAPSHOT_BYTES = 64 * 1024
 MAX_ERROR_TEXT = 256
 
@@ -57,13 +60,15 @@ class TrainerObservation:
             candidate_horizon=None, retention_completed=None, retention_total=None,
             retention_subject=None, retention_role=None, cpu_seconds=None,
             peak_rss_bytes=None, disk_free_bytes=None, error_code=None,
-            error_detail=None)
+            error_detail=None,
+            **{name: None for name in PERFORMANCE_FIELDS})
         self.visits = []
         try:
             with self.path.open('rb') as stream:
                 raw = stream.read(MAX_SNAPSHOT_BYTES + 1)
             data = json.loads(raw) if len(raw) <= MAX_SNAPSHOT_BYTES else {}
-            if (data.get('schema') == SCHEMA and isinstance(data.get('visits'), list)
+            if (data.get('schema') in {LEGACY_SCHEMA, SCHEMA}
+                    and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
         except (OSError, ValueError, AttributeError):
@@ -134,6 +139,12 @@ class TrainerObservation:
                         os.unlink(temporary)
                     except OSError:
                         pass
+
+    def stage(self, **fields):
+        """Update best-effort fields without forcing another synchronous write."""
+        with self.lock:
+            if self.enabled:
+                self.record.update(fields)
 
     def bind_parent(self, parent):
         try:

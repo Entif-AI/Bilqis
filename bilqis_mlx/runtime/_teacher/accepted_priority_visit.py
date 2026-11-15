@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import time
 from weakref import WeakKeyDictionary
 
 from bilqis_mlx.factory.teaching import describe_delivered_teaching
@@ -182,7 +183,8 @@ def execute_accepted_priority_candidate(selection, source_context,
         atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
         optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
         capture_diagnostics=False, candidate=None, finalize_candidate=True,
-        prepared_source_rows=None):
+        prepared_source_rows=None, candidate_step_started_at=None,
+        source_prepare_wall_seconds=0.0):
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
@@ -190,6 +192,9 @@ def execute_accepted_priority_candidate(selection, source_context,
     from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
         refresh_accepted_currentness,
     )
+    if candidate_step_started_at is None:
+        candidate_step_started_at = time.perf_counter()
+    currentness_started = time.perf_counter()
     refresh_accepted_currentness(
         planning_generation._accepted_currentness, planning_generation._parent)
     parent, cache = selection.offer.require_current_parent(source_context)
@@ -202,6 +207,8 @@ def execute_accepted_priority_candidate(selection, source_context,
         if prepared_source_rows is None else
         selection.offer.require_current(
             source_context, parent, prepared_rows=prepared_source_rows))
+    currentness_wall_seconds = time.perf_counter() - currentness_started
+    caller_pre_neural_started = time.perf_counter()
     policy = selection.policy
     lr = policy.get('lr') if isinstance(policy, dict) else None
     if (type(teacher_hparams) is not AdamWHyperparameters or type(lr) not in (int, float)
@@ -216,6 +223,9 @@ def execute_accepted_priority_candidate(selection, source_context,
                                             execution.teaching_option_ids[0], rows)
     provenance = BamfVisitProvenance.from_c03_record(selection.visit.identity.to_record())
     observation = replace(observation, option_rows=rows, seed=offer.source_seed)
+    caller_pre_neural_wall_seconds = (
+        float(source_prepare_wall_seconds)
+        + time.perf_counter() - caller_pre_neural_started)
     return execute_factory_candidate_step(Path(selection._run_dir), source_context, parent,
         atlas_artifact_path, feature_artifact_path, rows, capability=capability,
         delivery=delivery, requested_count=len(rows), source_seed=offer.source_seed,
@@ -226,5 +236,8 @@ def execute_accepted_priority_candidate(selection, source_context,
         capture_diagnostics=capture_diagnostics, candidate=candidate,
         finalize_candidate=finalize_candidate,
         currentness_transaction=planning_generation._accepted_currentness,
+        candidate_step_started_at=candidate_step_started_at,
+        currentness_binding_wall_seconds=currentness_wall_seconds,
+        upstream_pre_neural_source_compile_wall_seconds=caller_pre_neural_wall_seconds,
         semantic_context=semantic_context,
         prepared_source=prepared_source)
