@@ -34,9 +34,9 @@ test("fixture mode requires the exact launch-time flag", () => {
 
 test("package scripts expose distinct production and fixture launch commands", () => {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../../../../package.json"), "utf8"));
-  assert.equal(pkg.scripts["mission-control"], "electron apps/mission-control/main.cjs");
+  assert.equal(pkg.scripts.bamf, "electron apps/mission-control/main.cjs");
   assert.equal(
-    pkg.scripts["mission-control:fixtures"],
+    pkg.scripts["bamf:fixtures"],
     "electron apps/mission-control/main.cjs --mission-control-fixtures",
   );
 });

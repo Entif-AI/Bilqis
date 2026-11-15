@@ -13,7 +13,7 @@ from bilqis_mlx.control_plane.active_endpoint import (
     advertise_active_endpoint, default_socket_path, discover_active_endpoint,
 )
 from bilqis_mlx.control_plane.contracts import ControlPlaneState, PROTOCOL_VERSION
-from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 from bilqis_mlx.mission_control.contracts.codec import decode_record, encode_record
 from bilqis_mlx.mission_control.contracts.operator import OperatorActionRequestV2
 from bilqis_mlx.paths import active_run_dir
@@ -22,6 +22,20 @@ from bilqis_mlx.paths import active_run_dir
 _CLIENT_ID = "mission-control-electron"
 MAX_BROKER_REQUEST_BYTES = 64 * 1024
 QUERY_ERROR_SCHEMA = "bamf.gui07.query-error/v1"
+
+
+def _safe_broker_error_code(error: BaseException) -> str:
+    if isinstance(error, BilqisError):
+        return "BAMF_GUI20_CP01_CONTRACT_INVALID"
+    if isinstance(error, PermissionError):
+        return "BAMF_GUI20_CP01_UNAUTHORIZED"
+    if isinstance(error, TimeoutError):
+        return "BAMF_GUI20_CP01_TIMEOUT"
+    if isinstance(error, (ConnectionError, OSError)):
+        return "BAMF_GUI20_CP01_TRANSPORT_UNAVAILABLE"
+    if isinstance(error, (TypeError, ValueError, KeyError)):
+        return "BAMF_GUI20_CP01_CONTRACT_INVALID"
+    return "BAMF_GUI20_CP01_UNAVAILABLE"
 
 
 def _invalid(reason: str):
@@ -277,9 +291,9 @@ def main() -> int:
                 result = bridge.command_inspect(request.get("query"))
             else:
                 result = getattr(bridge, operation)()
-        except Exception:
+        except Exception as error:
             _reply(request.get("id") if isinstance(request, dict) else None,
-                   error="BAMF_GUI20_CP01_UNAVAILABLE")
+                   error=_safe_broker_error_code(error))
             continue
         _reply(identifier, result=result)
     bridge.close()

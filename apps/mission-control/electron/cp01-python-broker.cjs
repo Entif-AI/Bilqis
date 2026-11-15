@@ -4,6 +4,17 @@ const { spawn } = require("node:child_process");
 const path = require("node:path");
 const readline = require("node:readline");
 
+const SAFE_CAUSE_CODES = new Set([
+  "BAMF_GUI20_BROKER_REQUEST_INVALID",
+  "BAMF_GUI20_CP01_CONTRACT_INVALID",
+  "BAMF_GUI20_CP01_PROCESS_UNAVAILABLE",
+  "BAMF_GUI20_CP01_RESPONSE_INVALID",
+  "BAMF_GUI20_CP01_TIMEOUT",
+  "BAMF_GUI20_CP01_TRANSPORT_UNAVAILABLE",
+  "BAMF_GUI20_CP01_UNAUTHORIZED",
+  "BAMF_GUI20_CP01_UNAVAILABLE",
+]);
+
 class Cp01PythonBroker {
   constructor({
     pythonExecutable = "python3",
@@ -129,9 +140,9 @@ class Cp01PythonBroker {
       if (this.process === child) {
         this.process = null;
       }
-      this.#rejectAll();
+      this.#rejectAll("BAMF_GUI20_CP01_PROCESS_UNAVAILABLE");
     });
-    child.once("error", () => this.#rejectAll());
+    child.once("error", () => this.#rejectAll("BAMF_GUI20_CP01_PROCESS_UNAVAILABLE"));
     this.process = child;
     return child;
   }
@@ -142,7 +153,7 @@ class Cp01PythonBroker {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         if (!this.pending.delete(id)) return;
-        reject(this.#unavailable());
+        reject(this.#cause("BAMF_GUI20_CP01_TIMEOUT"));
       }, this.requestTimeoutMs);
       timeout.unref?.();
       this.pending.set(id, {
@@ -159,7 +170,7 @@ class Cp01PythonBroker {
       child.stdin.write(`${JSON.stringify(payload)}\n`, (error) => {
         if (!error) return;
         this.pending.delete(id);
-        reject(this.#unavailable());
+        reject(this.#cause("BAMF_GUI20_CP01_TRANSPORT_UNAVAILABLE"));
       });
     });
   }
@@ -169,7 +180,7 @@ class Cp01PythonBroker {
     try {
       payload = JSON.parse(line);
     } catch (_error) {
-      this.#rejectAll();
+      this.#rejectAll("BAMF_GUI20_CP01_RESPONSE_INVALID");
       return;
     }
     const pending = this.pending.get(payload?.id);
@@ -178,20 +189,21 @@ class Cp01PythonBroker {
     if (payload.ok === true) {
       pending.resolve(payload.result);
     } else {
-      pending.reject(this.#unavailable());
+      pending.reject(this.#cause(payload.error));
     }
   }
 
-  #rejectAll() {
+  #rejectAll(code = "BAMF_GUI20_CP01_UNAVAILABLE") {
     for (const { reject } of this.pending.values()) {
-      reject(this.#unavailable());
+      reject(this.#cause(code));
     }
     this.pending.clear();
   }
 
-  #unavailable() {
-    const error = new Error("BAMF_GUI20_CP01_UNAVAILABLE");
-    error.code = "BAMF_GUI20_CP01_UNAVAILABLE";
+  #cause(code) {
+    const safe = SAFE_CAUSE_CODES.has(code) ? code : "BAMF_GUI20_CP01_UNAVAILABLE";
+    const error = new Error(safe);
+    error.code = safe;
     return error;
   }
 }

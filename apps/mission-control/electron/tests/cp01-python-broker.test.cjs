@@ -198,8 +198,37 @@ test("broker requests fail closed within a bounded timeout when Python wedges", 
   });
   const started = Date.now();
   try {
-    await assert.rejects(broker.disconnect(), /BAMF_GUI20_CP01_UNAVAILABLE/);
+    await assert.rejects(
+      broker.disconnect(),
+      (error) => error.code === "BAMF_GUI20_CP01_TIMEOUT",
+    );
     assert.ok(Date.now() - started < 1000, "broker timeout was not bounded");
+  } finally {
+    broker.close();
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("broker preserves only allowlisted private bridge cause codes", async () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "bilqis-gui20-causes-"));
+  const executable = path.join(root, "cause-python");
+  fs.writeFileSync(executable, [
+    "#!/bin/sh",
+    "while IFS= read -r line; do",
+    "  id=$(printf '%s' \"$line\" | sed -n 's/.*\"id\":\\([0-9][0-9]*\\).*/\\1/p')",
+    "  printf '{\"id\":%s,\"ok\":false,\"error\":\"BAMF_GUI20_CP01_CONTRACT_INVALID\"}\\n' \"$id\"",
+    "done",
+    "",
+  ].join("\n"), { mode: 0o700 });
+  const broker = new Cp01PythonBroker({
+    pythonExecutable: executable,
+    cwd: REPO_ROOT,
+  });
+  try {
+    await assert.rejects(
+      broker.disconnect(),
+      (error) => error.code === "BAMF_GUI20_CP01_CONTRACT_INVALID",
+    );
   } finally {
     broker.close();
     fs.rmSync(root, { recursive: true, force: true });
