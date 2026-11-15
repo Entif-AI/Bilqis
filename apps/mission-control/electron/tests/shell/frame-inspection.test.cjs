@@ -2,41 +2,41 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { AcceptedControlPlaneAdapter } = require("../accepted-control-plane-adapter.cjs");
-const { ControlPlaneBridge } = require("../control-plane-bridge.cjs");
-const { createAcceptedValidators } = require("../accepted-contracts.cjs");
+const { FixtureControlPlaneAdapter } = require("../../fixture-control-plane-adapter.cjs");
+const { ControlPlaneBridge } = require("../../control-plane-bridge.cjs");
+const { createAcceptedValidators } = require("../../accepted-contracts.cjs");
 
 async function setup() {
-  const { assertOperatorView } = await import("../../renderer/shell-state.mjs");
-  const contracts = await import("../../renderer/frames/frame-contract.mjs");
-  let brokerCalls = 0;
-  const broker = { async connect() { brokerCalls += 1; throw Error("offline"); }, close() {} };
-  const bridge = new ControlPlaneBridge(new AcceptedControlPlaneAdapter({ broker }), createAcceptedValidators(assertOperatorView, contracts));
+  const { assertOperatorView } = await import("../../../renderer/shell-state.mjs");
+  const contracts = await import("../../../renderer/frames/frame-contract.mjs");
+  const bridge = new ControlPlaneBridge(
+    new FixtureControlPlaneAdapter(),
+    createAcceptedValidators(assertOperatorView, contracts),
+  );
   await bridge.connect();
-  return { bridge, calls: () => brokerCalls, request: { schemaVersion: contracts.FRAME_QUERY, runId: "fixture-run", generation: 7, mode: "current" } };
+  return { bridge, request: { schemaVersion: contracts.FRAME_QUERY, runId: "fixture-run", generation: 7, mode: "current" } };
 }
 
 test("GUI08 accepted snapshot crosses the existing bridge with exact fixture context", async () => {
-  const { bridge, calls, request } = await setup();
+  const { bridge, request } = await setup();
   const current = await bridge.snapshot(request);
   const past = await bridge.snapshot({ ...request, generation: 6, mode: "historical" });
   assert.equal(current.examples[0].frameId, "frame:quad-fast");
   assert.equal(past.operatorView.meta.run.generation, 6);
   assert.equal(past.request.mode, "historical");
   assert.notEqual(current.examples[0].compiler.digest, past.examples[0].compiler.digest);
-  assert.equal(calls(), 1, "fixture snapshots never invoke the broker or learner");
   current.examples[0].positions = null;
   assert.notEqual((await bridge.snapshot(request)).examples[0].positions, null, "fixtures remain immutable");
 });
 
 test("GUI08 main binds response schema and exact generation to the original query", async () => {
-  const { assertOperatorView } = await import("../../renderer/shell-state.mjs");
-  const contracts = await import("../../renderer/frames/frame-contract.mjs");
-  const { frameFixturePage } = require("../frame-fixtures.cjs");
+  const { assertOperatorView } = await import("../../../renderer/shell-state.mjs");
+  const contracts = await import("../../../renderer/frames/frame-contract.mjs");
+  const { frameFixturePage } = require("../../frame-fixtures.cjs");
   const current = { schemaVersion: contracts.FRAME_QUERY, runId: "fixture-run", generation: 7, mode: "current" };
   const wrong = frameFixturePage({ ...current, generation: 6, mode: "historical" });
   const adapter = {
-    async connect() { return { session: "fixture", publicStatus: require("../accepted-control-plane-adapter.cjs").disconnectedStatus() }; },
+    async connect() { return { session: "fixture", publicStatus: require("../../accepted-control-plane-adapter.cjs").disconnectedStatus() }; },
     async snapshot() { return wrong; },
   };
   const bridge = new ControlPlaneBridge(adapter, createAcceptedValidators(assertOperatorView, contracts));

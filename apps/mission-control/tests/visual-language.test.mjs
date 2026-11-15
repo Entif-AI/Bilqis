@@ -134,7 +134,10 @@ test("shared primitive grammar encodes surface depth and action roles without ch
 test("foundation localization uses stable keys and named parameters", () => {
   const translate = createTranslator();
   assert.equal(translate("foundation.catalog.historical.detail", { generation: 7 }), "Inspection only · generation 7 · not live learner state");
-  assert.equal(translate("shell.nav.group.overviewLearning"), "Overview & learning");
+  assert.equal(translate("shell.nav.group.overviewLearning"), "Curriculum");
+  assert.equal(translate("shell.nav.group.representationMechanisms"), "Semantics");
+  assert.equal(translate("shell.nav.group.decisionCorrection"), "Strategies");
+  assert.equal(translate("shell.nav.group.provenanceOperations"), "Records");
   assert.equal(translate("shell.context.generationHistorical", { generation: 7 }), "As of generation 7");
   assert.equal(translate("shell.context.freshness.connected"), "CONNECTED");
   assert.equal(translate("shell.context.value.notStarted"), "NOT STARTED");

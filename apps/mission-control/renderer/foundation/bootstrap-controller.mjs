@@ -19,8 +19,20 @@ const SNAPSHOT_REQUEST = Object.freeze({
   schema: "bilqis.bamf.mission-control.operator-view/v1",
 });
 
+export function constrainRouteToLaunchMode(route, launchMode = "production") {
+  if (!route?.context) return route;
+  return {
+    ...route,
+    context: Object.freeze({
+      ...route.context,
+      fixture: launchMode === "fixtures",
+    }),
+  };
+}
+
 export function createBootstrapController({
   api,
+  launchMode = "production",
   storage,
   getState,
   setState,
@@ -35,6 +47,7 @@ export function createBootstrapController({
   cancelReconnect = (token) => globalThis.clearTimeout(token),
   reconnectDelayMs = 1000,
 }) {
+  const fixtureMode = launchMode === "fixtures";
   let reconnectToken = null;
 
   function clearReconnect() {
@@ -57,9 +70,10 @@ export function createBootstrapController({
     const modelSection = current?.modelSection;
     resetFrameShell();
     if (current) setState({ ...current, mutationAvailable: false });
-    const route = preserveRoute && current
+    const requestedRoute = preserveRoute && current
       ? routeFromState(current)
       : parseDeepLink(currentHash());
+    const route = constrainRouteToLaunchMode(requestedRoute, launchMode);
     setDefense(defensiveState("loading", {
       snapshotAvailable: Boolean(current),
       snapshotSource: current ? "previous" : "none",
@@ -86,13 +100,13 @@ export function createBootstrapController({
         operatorView = await api.querySnapshot(SNAPSHOT_REQUEST);
         assertOperatorView(operatorView);
         snapshotSource = "service";
-        cacheOperatorView(storage, operatorView);
+        if (!fixtureMode) cacheOperatorView(storage, operatorView);
       } catch (error) {
         snapshotError = error;
       }
     }
 
-    if (operatorView === null && (connection === null || connection.serviceLive !== true)) {
+    if (!fixtureMode && operatorView === null && (connection === null || connection.serviceLive !== true)) {
       const cached = loadCachedOperatorView(storage);
       if (cached !== null) {
         try {
@@ -144,10 +158,18 @@ export function createBootstrapController({
       nextDefense = defensiveState("stale", options);
     }
     setDefense(nextDefense);
-    setVerifiedLiveContext(snapshotSource === "service" && nextDefense.id === "live"
+    setVerifiedLiveContext(!fixtureMode && snapshotSource === "service" && nextDefense.id === "live"
       ? normalizeContext(operatorView)
       : null);
-    setState({ ...withDefensiveState(createShellState(operatorView, route), nextDefense), modelSection });
+    const shellState = withDefensiveState(createShellState(operatorView, route), nextDefense);
+    setState({
+      ...shellState,
+      context: fixtureMode
+        ? Object.freeze({ ...shellState.context, fixture: true })
+        : shellState.context,
+      mutationAvailable: fixtureMode ? false : shellState.mutationAvailable,
+      modelSection,
+    });
     setBootstrap(Object.freeze({ phase: "ready", connection, error: null }));
     render();
     if (snapshotSource !== "service" || connection?.serviceLive !== true) armReconnect();

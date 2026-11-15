@@ -2,6 +2,12 @@
 
 const { contextBridge, ipcRenderer } = require("electron");
 
+const MODE_PREFIX = "--bilqis-mission-control-mode=";
+const launchMode = (process.argv ?? []).find((value) => value.startsWith(MODE_PREFIX))
+  ?.slice(MODE_PREFIX.length) === "fixtures"
+  ? "fixtures"
+  : "production";
+
 // Electron's sandboxed preload environment cannot load this repository's local
 // CommonJS module graph. Keep this entrypoint self-contained; contract tests bind
 // these literals back to the main-process channel registry to prevent drift.
@@ -82,6 +88,7 @@ function assertStableRef(value) {
 }
 
 const api = Object.freeze({
+  launchMode,
   connect: () => ipcRenderer.invoke(CHANNELS.connect),
   status: () => ipcRenderer.invoke(CHANNELS.status),
   querySnapshot: (request) => ipcRenderer.invoke(CHANNELS.snapshot, assertRequestObject(request)),

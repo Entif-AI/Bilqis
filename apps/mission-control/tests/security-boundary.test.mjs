@@ -11,8 +11,8 @@ const require = createRequire(import.meta.url);
 const {
   createSecureWindowOptions,
   securityDiagnostic,
-} = require("../electron/window-security.cjs");
-const { RENDERER_ENTRY_URL } = require("../electron/renderer-location.cjs");
+} = require("../electron/shell/window-security.cjs");
+const { RENDERER_ENTRY_URL } = require("../electron/shell/renderer-location.cjs");
 const { assertRendererSourceSafe } = require("../electron/renderer-boundary.cjs");
 
 function rendererMarkupSources(root) {

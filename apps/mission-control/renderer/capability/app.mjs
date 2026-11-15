@@ -1,6 +1,5 @@
 import { DossierController } from "./controller.mjs";
 import { buildQuery, escapeHtml as e } from "./model.mjs";
-import { fixtureQuery, FIXTURE_RUN } from "./fixture.mjs";
 import { renderDossier, renderEvidence } from "./view.mjs";
 import { controlClass } from "../foundation/primitives.mjs";
 import { t } from "../foundation/i18n.mjs";
@@ -8,27 +7,25 @@ import { testIdAttribute } from "../foundation/test-hooks.mjs";
 
 export function createCapabilityExplorer({
   host, changeLens, openObject, openEvidence, serviceQuery, resolvePins,
+  launchMode = "production", fixtureSupport = null,
 }) {
   let lens;
   let capabilityId;
-  let fixture = false;
+  const fixture = launchMode === "fixtures" && fixtureSupport !== null;
   let key = null;
   let evidenceEpoch = 0;
   let evidencePage;
   let evidenceRef;
   let evidenceEntry;
-  const query = (request) => fixture ? fixtureQuery(request) : serviceQuery(request);
+  const query = (request) => fixture ? fixtureSupport.query(request) : serviceQuery(request);
   const controller = new DossierController(query, () => draw());
 
   function controlsMarkup() {
     return `<div class="capability-tools" aria-label="${e(t("capability.controls.aria"))}"
       ${testIdAttribute("capability", "controls")}>
-      <label>${e(t("capability.controls.source"))}
-        <select ${testIdAttribute("capability", "source", "select")}>
-          <option value="service" ${!fixture ? "selected" : ""}>${e(t("capability.controls.service"))}</option>
-          <option value="fixture" ${fixture ? "selected" : ""}>${e(t("capability.controls.fixture"))}</option>
-        </select>
-      </label>
+      <span ${testIdAttribute("capability", "source", "posture")}>${e(t(
+        fixture ? "capability.controls.fixture" : "capability.controls.service",
+      ))}</span>
       <form class="capability-lens" ${testIdAttribute("capability", "lens", "form")}>
         <label>${e(t("capability.controls.run"))}<input name="run" value="${e(lens.runId)}" required
           ${testIdAttribute("capability", "lens", "run")}></label>
@@ -71,13 +68,6 @@ export function createCapabilityExplorer({
       <section class="capability-evidence-host" aria-live="polite" tabindex="-1"
         aria-label="${e(t("capability.evidence.title"))}" ${testIdAttribute("capability", "evidence", "host")}></section>
     </div>`;
-    host.querySelector('[data-test-id="capability-source-select"]').onchange = (event) => {
-      fixture = event.target.value === "fixture";
-      changeLens({
-        runId: fixture ? FIXTURE_RUN : "", generation: fixture ? 3 : 0,
-        mode: "HISTORICAL", fixture,
-      }, "B.AND");
-    };
     host.querySelector('[data-test-id="capability-lens-form"]').onsubmit = (event) => {
       event.preventDefault();
       const data = new FormData(event.target);
@@ -142,9 +132,16 @@ export function createCapabilityExplorer({
       if (nextKey === key) return;
       evidenceEpoch += 1;
       key = nextKey;
-      lens = state.context;
+      lens = fixture
+        ? Object.freeze({
+            ...state.context,
+            runId: fixtureSupport.runId,
+            generation: fixtureSupport.generation,
+            mode: "HISTORICAL",
+            fixture: true,
+          })
+        : state.context;
       capabilityId = nextId;
-      fixture = Boolean(state.context.fixture);
       void controller.load(lens, capabilityId, fixture);
     },
     hide() {

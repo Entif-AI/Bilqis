@@ -1,19 +1,12 @@
 import { correctionsT } from "../corrections/corrections-messages.mjs";
 import { evidenceT } from "../evidence/evidence-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
-import { renderSchoolView } from "../school/school-view.mjs";
-import { renderNeuralView } from "../neural/neural-view.mjs";
-import { renderEpisodesView } from "../episodes/episode-view.mjs";
-import { renderMemoryView } from "../memory/memory-view.mjs";
-import { renderTeacherView } from "../teacher/teacher-view.mjs";
-import { renderCorrectionsView } from "../corrections/corrections-view.mjs";
-import { renderSalienceView } from "../salience/salience-view.mjs";
-import { renderLineageView } from "../lineage/lineage-view.mjs";
 import { renderEvidenceView } from "../evidence/evidence-view.mjs";
 import { t } from "./i18n.mjs";
 
 export function renderCurrentView(
   state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn, bootstrap = null,
+  fixtureViews = null,
 ) {
   const domain = document.querySelector("#domain-view");
   const summary = document.querySelector("#view-summary");
@@ -60,28 +53,9 @@ export function renderCurrentView(
         <p>${esc(t("shell.school.historical.summary", { generation: state.context.generation }))}</p></section>`;
       return;
     }
-    renderSchoolView(domain, (id, row, neighborhood) => onInspect({
-      kind: "capability",
-      id,
-      label: id,
-      relations: [
-        ...neighborhood.prerequisites.map((relatedId) => ({
-          kind: "capability", id: relatedId, relation: "prerequisite",
-        })),
-        ...neighborhood.dependents.map((relatedId) => ({
-          kind: "capability", id: relatedId, relation: "dependent",
-        })),
-      ],
-      details: {
-        [t("shell.inspector.detail.scoreQuad")]: row.was + "/" + row.top + "/" + row.now + "/" + row.total,
-        [t("shell.inspector.detail.debt")]: row.debt,
-        [t("shell.inspector.detail.pret")]: row.pRet ?? t("shell.inspector.value.notMeasured"),
-        [t("shell.inspector.detail.prerequisites")]: row.prerequisites.length ? row.prerequisites : [t("shell.inspector.value.none")],
-        [t("shell.inspector.detail.sourceState")]: row.sourceState,
-        [t("shell.inspector.detail.implementationState")]: row.implementationState,
-        [t("shell.inspector.detail.qualificationState")]: row.qualificationState,
-      },
-    }), state.selected?.kind === "capability" ? state.selected.id : null);
+    domain.innerHTML = fixtureViews && state.context.fixture === true
+      ? ""
+      : productionProjectionMarkup("school");
     return;
   }
   if (state.view === "mission-control") {
@@ -106,7 +80,11 @@ export function renderCurrentView(
       return;
     }
     summary.textContent = t("shell.destination.model.purpose");
-    renderNeuralView(domain, (id, kind) => onInspect({
+    if (!fixtureViews?.renderNeuralView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("model");
+      return;
+    }
+    fixtureViews.renderNeuralView(domain, (id, kind) => onInspect({
       kind: "neural",
       id,
       details: {
@@ -119,7 +97,11 @@ export function renderCurrentView(
   if (state.view === "learning") {
     domain.hidden = false;
     summary.textContent = t("learning.currentView.summary");
-    renderEpisodesView(domain, (id, kind) => onInspect({
+    if (!fixtureViews?.renderEpisodesView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("learning");
+      return;
+    }
+    fixtureViews.renderEpisodesView(domain, (id, kind) => onInspect({
       kind: "evidence",
       id,
       details: {
@@ -144,7 +126,11 @@ export function renderCurrentView(
   if (state.view === "memory") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.memory.purpose");
-    renderMemoryView(domain, (id, slot) => onInspect({
+    if (!fixtureViews?.renderMemoryView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("memory");
+      return;
+    }
+    fixtureViews.renderMemoryView(domain, (id, slot) => onInspect({
       kind: "memory",
       id,
       label: id,
@@ -171,7 +157,11 @@ export function renderCurrentView(
   if (state.view === "teacher") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.teacher.purpose");
-    renderTeacherView(domain, (id, strategy, relations) => onInspect({
+    if (!fixtureViews?.renderTeacherView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("teacher");
+      return;
+    }
+    fixtureViews.renderTeacherView(domain, (id, strategy, relations) => onInspect({
       kind: "strategy",
       id,
       label: strategy?.label ?? id,
@@ -191,7 +181,11 @@ export function renderCurrentView(
   if (state.view === "corrections") {
     domain.hidden = false;
     summary.textContent = correctionsT("corrections.summary");
-    renderCorrectionsView(domain, (id, node) => onInspect({
+    if (!fixtureViews?.renderCorrectionsView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("corrections");
+      return;
+    }
+    fixtureViews.renderCorrectionsView(domain, (id, node) => onInspect({
       kind: "correction", id, fixtureBacked: true,
       details: {
         [correctionsT("corrections.evidence.details")]: node.kind,
@@ -212,7 +206,11 @@ export function renderCurrentView(
   if (state.view === "salience") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.salience.purpose");
-    renderSalienceView(domain, (id, details) => onInspect({
+    if (!fixtureViews?.renderSalienceView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("salience");
+      return;
+    }
+    fixtureViews.renderSalienceView(domain, (id, details) => onInspect({
       kind: "salience-observation",
       id,
       details,
@@ -222,7 +220,11 @@ export function renderCurrentView(
   if (state.view === "lineage") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.lineage.purpose");
-    renderLineageView(domain, (id, node) => onInspect({
+    if (!fixtureViews?.renderLineageView || state.context.fixture !== true) {
+      domain.innerHTML = productionProjectionMarkup("lineage");
+      return;
+    }
+    fixtureViews.renderLineageView(domain, (id, node) => onInspect({
       kind: "generation",
       id,
       label: t("shell.inspector.generationLabel", { generation: node.generation }),
@@ -261,4 +263,14 @@ export function renderCurrentView(
   domain.hidden = false;
   domain.innerHTML = "";
   summary.textContent = t("shell.destination.fallback.ready");
+}
+
+function productionProjectionMarkup(destination) {
+  return `<section class="fixture-card" data-test-id="production-projection-required-${esc(destination)}">
+    <span class="eyebrow">${esc(t("shell.productionProjection.eyebrow"))}</span>
+    <h2>${esc(t("shell.productionProjection.title"))}</h2>
+    <p>${esc(t("shell.productionProjection.description", {
+      destination: t(`shell.destination.${destination}`),
+    }))}</p>
+  </section>`;
 }
