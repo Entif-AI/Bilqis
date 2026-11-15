@@ -251,17 +251,27 @@ def factory_complete_solver(
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_DRIFT")
         plan = task_goal_route_plan(
             authority.goal, batch, feature_context.snapshot, generation)
-        return PreparedFactoryEvaluation(batch, plan, authority)
+        return batch, plan, authority
+
+    def register_context(authority, proposer):
+        context = SolveContext(authority.binding, neural_proposer=proposer)
+        source_context.register_solve_context(context)
+        return context
+
+    def scalar_context(batch, plan, authority):
+        scalar = b11_task_goal_proposer(parameters, batch, plan, authority)
+
+        def proposer(request):
+            telemetry["scalar_neural_launches"] += 1
+            return scalar(request)
+
+        return register_context(authority, proposer)
 
     def context_from(prepared, output=None):
         authority = prepared.authority
         if output is None:
-            scalar = b11_task_goal_proposer(
-                parameters, prepared.batch, prepared.plan, authority)
-
-            def proposer(request):
-                telemetry["scalar_neural_launches"] += 1
-                return scalar(request)
+            return scalar_context(
+                prepared.batch, prepared.plan, authority)
         else:
             def proposer(request):
                 if (type(request) is not NeuralRequest
@@ -271,10 +281,7 @@ def factory_complete_solver(
                         or request.allowed_operator_ids != authority.goal.allowed_operator_ids):
                     _invalid("BAMF_C04_B11_TASK_REQUEST_MISMATCH")
                 return proposal_from_task_goal_output(authority.goal, request, output)
-        context = SolveContext(
-            authority.binding, neural_proposer=proposer)
-        source_context.register_solve_context(context)
-        return context
+        return register_context(authority, proposer)
 
     def context_for(goal, requested_generation):
         cached = contexts.get(goal.goal_id)
@@ -282,8 +289,8 @@ def factory_complete_solver(
             if requested_generation != generation or goal != by_goal[goal.goal_id].case.goal:
                 _invalid("BAMF_C05_FACTORY_SOLVER_GENERATION_OR_TASK_DRIFT")
             return cached
-        prepared = prepare(goal, requested_generation)
-        context = context_from(prepared)
+        batch, plan, authority = prepare(goal, requested_generation)
+        context = scalar_context(batch, plan, authority)
         contexts[goal.goal_id] = context
         return context
 
@@ -305,7 +312,10 @@ def factory_complete_solver(
                 _invalid("BAMF_C05_FACTORY_SOLVER_SOURCE_DRIFT")
         missing = tuple(goal for goal in goals if goal.goal_id not in contexts)
         if missing:
-            prepared = tuple(prepare(goal, requested_generation) for goal in missing)
+            bound = tuple(prepare(goal, requested_generation) for goal in missing)
+            prepared = tuple(
+                PreparedFactoryEvaluation(batch, plan, authority)
+                for batch, plan, authority in bound)
             outputs = batched_factory_outputs(parameters, prepared, on_launch=on_launch)
             for goal, item, output in zip(missing, prepared, outputs, strict=True):
                 contexts[goal.goal_id] = context_from(item, output)

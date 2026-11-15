@@ -20,18 +20,18 @@ The comparison warmed MLX with one scalar case before measurement so first-dispa
 
 | Metric | Scalar control | Batched |
 | --- | ---: | ---: |
-| Wall time | 52.4365 s | 28.1453 s |
+| Wall time | 43.9659 s | 22.0249 s |
 | Neural/source-backbone launches | 4 | 1 |
 | Rows in shared launches | 0 | 4 |
 | Largest shared rows | 0 | 4 |
 | Largest shared compiled positions | 0 | 17 |
-| MLX peak memory | 1,067,139,592 B | 1,067,139,596 B |
+| MLX peak memory | 1,067,139,596 B | 1,067,139,596 B |
 | MLX active memory at completion | 1,029,390,580 B | 1,029,603,620 B |
 | MLX cache memory at completion | 0 B | 0 B |
 
-Observed wall-clock speedup: **1.863×**. The batched path reduced the four real neural executions to one shared B11 backbone execution.
+Observed wall-clock speedup on the current-unified integrated candidate: **1.996×**. The batched path reduced the four real neural executions to one shared B11 backbone execution.
 
-Peak memory increased by only 4 bytes in this witness and remained at approximately 2.1% of the repository's 48 GiB allocation ceiling. The exercised four-row/17-position chunk is therefore comfortably inside the current trainer envelope.
+Peak memory was identical between scalar and batched measurements in this witness and remained at approximately 2.1% of the repository's 48 GiB allocation ceiling. The exercised four-row/17-position chunk is therefore comfortably inside the current trainer envelope.
 
 ## Semantic equality
 
@@ -55,6 +55,6 @@ BILQIS_ATLAS_REAL_ARTIFACT=/Users/emilie/Code/371-c02-complete-20261106/.local/c
 python3 -m unittest bilqis_mlx.runtime.tests.capability.factory.test_factory_evaluation_batching
 ```
 
-Result on the final focused candidate: `Ran 10 tests in 497.432s — OK`.
+Result on the current-unified integrated candidate: `Ran 10 tests in 423.201s — OK`.
 
 The timing witness used the same fixture and constructed separate scalar (`contexts_for=None`) and batched Factory complete solvers over the same four instruments, measuring wall time plus `mx.get_peak_memory()`, `mx.get_active_memory()`, and `mx.get_cache_memory()` under `training_memory_policy(mx)`.

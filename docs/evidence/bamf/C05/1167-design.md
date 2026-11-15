@@ -38,6 +38,8 @@ Rejected. That would alter a shared B11/C04 interface and task-authority assumpt
 ### Cache or reuse compiled cohorts
 Rejected for this leaf. Persistent/content-addressed compilation reuse is owned by #1168. #1167 may compose with it later but must independently reduce neural execution count.
 
+Current-unified integration note (2026-11-15): #1168 landed before #1167 turn-in. #1167 therefore consumes #1168's immutable `CompiledFactoryEvaluationCase` through `bind_factory_evaluation_case()` when preparing each scalar/task-owned B11 batch. #1167 does not create, persist, validate, or authorize compiled-cohort cache entries; that remains #1168 ownership. The MLX batching layer begins only after the compiled case has been rebound to the exact execution generation and source row, so #1167 still proves launch reduction independently of compilation reuse.
+
 ### Reuse parent predictions across candidates
 Rejected for this leaf. Cross-candidate parent reuse is owned by #1166 and has different invalidation semantics.
 
