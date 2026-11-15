@@ -30,8 +30,8 @@ from bilqis_mlx.semantics.released_frame_schemas import (
     _load_pinned_released_frame_schemas_from_snapshot,
 )
 
-from .atlas_engram import MotifFrameInput, build_motif_input
-from .atlas_engram_identity import _invalid
+from .atlas_engram_identity import MotifFrameInput, _invalid
+from .atlas_engram_keys import build_motif_input
 
 
 _BOOLEAN_SOURCE_ADAPTERS = (
