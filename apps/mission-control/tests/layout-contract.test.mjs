@@ -54,13 +54,15 @@ test("shell target anatomy removes redundant chrome and keeps secondary context 
   assert.doesNotMatch(shell, /font-size:\s*0/);
 });
 
-test("dense values and wide School data stay inside their owning surfaces", () => {
+test("operator values and wide School data stay inside their owning surfaces", () => {
   const home = source("home/home.css");
   const school = source("school/school.css");
   const teacher = source("teacher/teacher.css");
 
-  assert.match(home, /grid-template-columns:minmax\(0,1fr\) max-content/);
-  assert.match(home, /\.home-metric-card dd[^}]*white-space:nowrap/s);
+  assert.match(home, /\.home-current dd[^}]*overflow-wrap:\s*anywhere/s);
+  assert.match(home, /\.home-school-table-wrap[^}]*overflow:\s*auto/s);
+  assert.doesNotMatch(home, /text-overflow:\s*ellipsis/);
+  assert.doesNotMatch(home, /\.home-metric-card/);
   assert.match(school, /\.school-panel\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
   assert.match(school, /\.matrix-scroll\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
   assert.match(teacher, /\.teacher-table-wrap\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);

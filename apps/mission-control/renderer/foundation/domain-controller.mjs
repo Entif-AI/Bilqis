@@ -12,7 +12,7 @@ import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, onInspect, onAnnounce,
+  capabilityExplorer, onInspect, onNavigate, onAnnounce,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
@@ -40,6 +40,7 @@ export function activateDomainViews({
     void homeController.activate(state.context, {
       host: document.querySelector("#domain-view"),
       onInspect,
+      onNavigate,
       defense,
     });
   } else {

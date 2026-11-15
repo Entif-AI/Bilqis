@@ -4,12 +4,14 @@ import {
   HOME_FAMILIES,
   classifyLearning,
   familyForEvent,
+  homeStatus,
   projectionFromPages,
   queryRequest,
   referenceHomeProjection,
 } from "../../renderer/home/home-model.mjs";
 import { createHomeController } from "../../renderer/home/home-controller.mjs";
 import { renderHomeMarkup } from "../../renderer/home/home-view.mjs";
+import { collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
 
 const context = Object.freeze({ runId: "fixture-run", generation: 7, mode: "LIVE" });
 
@@ -32,17 +34,45 @@ function runPage({ generation = 0, optimizerStep = 0, stage = "UNKNOWN" } = {}) 
   };
 }
 
-test("GUI03 reference home answers the five operator questions in one dense view", () => {
+test("Home uses the governed five-state band and target overview regions", () => {
   const model = referenceHomeProjection();
   const markup = renderHomeMarkup(model);
-  for (const label of ["RUNNING", "LEARNING", "WORK", "REGRESSION", "INVALIDITY"]) {
-    assert.match(markup, new RegExp(label));
+  for (const id of ["running", "learning", "regression", "blocked", "invalidity"]) {
+    assert.match(markup, new RegExp(`data-test-id="home-status-${id}"`));
   }
-  for (const section of ["Learning", "Curriculum", "Runtime", "System", "Learning Pulse", "Current Work", "School Map", "Attention Required"]) {
-    assert.match(markup, new RegExp(section));
+  assert.doesNotMatch(markup, /home-status-work/);
+  for (const id of ["home-current-work", "home-attention", "home-pulse", "home-school", "home-health-details"]) {
+    assert.match(markup, new RegExp(`data-test-id="${id}"`));
   }
-  assert.match(markup, /FIXTURE EVIDENCE/);
+  assert.match(markup, /Fixture evidence/);
+  assert.match(markup, /School Snapshot/);
   assert.equal(model.learningStatus, "IMPROVING");
+});
+
+test("Home health is collapsed detail and operator-significant work values remain complete", () => {
+  const markup = renderHomeMarkup(referenceHomeProjection());
+  assert.match(markup, /<details class="home-health" data-test-id="home-health-details">/);
+  assert.doesNotMatch(markup, /home-metric-card|home-health-strip/);
+  assert.match(markup, /paired-screen:source\+prereq/);
+  assert.match(markup, /AWAITING_RECONCILIATION/);
+});
+
+test("serious attention leads the operational row while healthy attention stays secondary", () => {
+  const fixture = referenceHomeProjection();
+  const fixtureMarkup = renderHomeMarkup(fixture);
+  assert.equal(homeStatus(fixture).attentionPriority, "primary");
+  assert.ok(fixtureMarkup.indexOf('data-test-id="home-attention"') < fixtureMarkup.indexOf('data-test-id="home-current-work"'));
+  const healthy = { ...fixture, pulse: Object.freeze([]), attention: Object.freeze([]), learningStatus: "IMPROVING" };
+  const healthyMarkup = renderHomeMarkup(healthy);
+  assert.equal(homeStatus(healthy).attentionPriority, "secondary");
+  assert.ok(healthyMarkup.indexOf('data-test-id="home-current-work"') < healthyMarkup.indexOf('data-test-id="home-attention"'));
+});
+
+test("Home markup exposes unique stable home test hooks", () => {
+  const ids = collectTestIds(renderHomeMarkup(referenceHomeProjection()));
+  assert.equal(new Set(ids).size, ids.length);
+  assert.ok(ids.length > 20);
+  assert.ok(ids.every((id) => id.startsWith("home-")));
 });
 
 test("ten retained no-growth events remain throughput and never become learned success", () => {
@@ -64,8 +94,8 @@ test("fresh retained improvement is distinct and exact regression event retains 
 
 test("attention queue contains actionable conditions rather than ordinary healthy telemetry", () => {
   const model = referenceHomeProjection();
-  assert.equal(model.attention.some((item) => /healthy|hard warnings.*0|memory pressure.*ok/i.test(`${item.label} ${item.detail}`)), false);
   assert.deepEqual(model.attention.map((item) => item.kind), ["stalled", "held", "recovery"]);
+  assert.equal(model.attention.some((item) => item.label !== undefined || item.detail !== undefined), false);
 });
 
 test("stale and partial query states remain explicit instead of becoming healthy zeroes", () => {
@@ -80,15 +110,17 @@ test("stale and partial query states remain explicit instead of becoming healthy
   const markup = renderHomeMarkup(model);
   assert.match(markup, /data-state="STALE"/);
   assert.match(markup, /data-state="PARTIAL"/);
-  assert.match(markup, /UNAVAILABLE/);
+  assert.match(markup, /Unavailable/);
 });
 
 test("RUNNING reflects the live learner-active handshake instead of mere run-record presence", () => {
   const pages = Object.fromEntries(HOME_FAMILIES.map((family) => [family, emptyPage(family)]));
   const stopped = projectionFromPages(pages, { ...context, operatorActive: false });
   const running = projectionFromPages(pages, { ...context, operatorActive: true });
-  assert.match(renderHomeMarkup(stopped), /RUNNING <strong>NO<\/strong>/);
-  assert.match(renderHomeMarkup(running), /RUNNING <strong>YES<\/strong>/);
+  assert.equal(homeStatus(stopped).running, false);
+  assert.equal(homeStatus(running).running, true);
+  assert.match(renderHomeMarkup(stopped), /<dt>Running<\/dt><dd>No<\/dd>/);
+  assert.match(renderHomeMarkup(running), /<dt>Running<\/dt><dd>Yes<\/dd>/);
 });
 
 test("accepted generation zero renders a setup state instead of a wall of unavailable metrics", () => {
@@ -99,9 +131,10 @@ test("accepted generation zero renders a setup state instead of a wall of unavai
   assert.equal(model.startup.state, "GENERATION_ZERO_READY");
   assert.match(markup, /Generation 0 is accepted and ready/);
   assert.match(markup, /Optimizer step<\/dt><dd>0/);
-  assert.match(markup, /Trainer<\/dt><dd>STOPPED/);
-  assert.match(markup, /NO TRAINING EVENTS YET/);
-  assert.doesNotMatch(markup, /UNAVAILABLE/);
+  assert.match(markup, /Trainer<\/dt><dd>Stopped/);
+  assert.match(markup, /No training events yet/);
+  assert.match(markup, /data-test-id="home-startup-operate"/);
+  assert.doesNotMatch(markup, /Unavailable/);
   assert.doesNotMatch(markup, /Latest school score|Whole-school growth|Peak memory/);
 });
 
