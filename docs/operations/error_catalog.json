@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 271,
-  "legacy_raw_raise_count": 2098,
+  "legacy_raw_file_count": 272,
+  "legacy_raw_raise_count": 2099,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -11670,6 +11670,13 @@
       "exception": "AssertionError",
       "expression": "'source-owned context was not approved'",
       "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/correction_runtime/temporal_support.py"
+    },
+    {
+      "code_hint": "missing",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'missing'",
+      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/test_planning_currentness.py"
     },
     {
       "code_hint": "COLD_RESUME_CONTINUATION_REJECTED before=",
