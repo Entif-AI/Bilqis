@@ -27,6 +27,12 @@ import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../../..");
 const rendererRoot = path.resolve(here, "../../renderer");
+const teacherCss = () => [
+  "teacher/teacher.css",
+  "teacher/teacher-core.css",
+  "teacher/teacher-detail.css",
+  "teacher/teacher-comparison.css",
+].map((name) => fs.readFileSync(path.join(rendererRoot, name), "utf8")).join("\n");
 
 test("strategy roster contains incumbent challenger canary and retired fixture roles", () => {
   assert.deepEqual(roleCounts(), {
@@ -49,7 +55,7 @@ test("strategy metrics keep no-gain and interference numerically distinct", () =
   }
   const challenger = strategyById("strategy:fixture:challenger-balanced");
   assert.notEqual(challenger.noGain, challenger.interference);
-  const css = fs.readFileSync(path.join(rendererRoot, "teacher/teacher.css"), "utf8");
+  const css = teacherCss();
   assert.match(css, /\.teacher-no-gain/);
   assert.match(css, /\.teacher-interference/);
 });
@@ -286,7 +292,7 @@ test("teacher owned human copy resolves through stable i18n keys", () => {
 });
 
 test("teacher CSS is table-oriented, responsive, compact-aware, and free of retired decoration", () => {
-  const css = fs.readFileSync(path.join(rendererRoot, "teacher/teacher.css"), "utf8");
+  const css = teacherCss();
   assert.match(css, /\.teacher-table-wrap\s*\{[^}]*overflow:\s*auto/s);
   assert.match(css, /\.teacher-roster-table,/);
   assert.match(css, /font-variant-numeric:\s*tabular-nums/);

@@ -13,7 +13,7 @@ const rendererRoot = path.resolve(here, "../renderer");
 function mountOwner(t) {
   const previous = { document: globalThis.document, window: globalThis.window, FormData: globalThis.FormData };
   t.after(() => Object.assign(globalThis, previous));
-  const forms = Object.fromEntries(["#atlas-search-form", "#atlas-abi-form"].map(key => [key, {
+  const forms = Object.fromEntries(['[data-test-id="atlas-search-form"]', '[data-test-id="atlas-abi-form"]'].map(key => [key, {
     handlers: {}, values: { semanticId: "fixture:semantic", bank: "0", row: "1" },
     addEventListener(event, callback) { this.handlers[event] = callback; },
   }]));
@@ -52,10 +52,10 @@ test("real Atlas overview/search/ABI handlers cannot repaint Frames or School af
     for (const destination of ["model", "school"]) {
       await t.test(`${operation} -> ${destination}`, async t => {
         const fixture = mountOwner(t);
-        const form = fixture.forms[operation === "search" ? "#atlas-search-form" : "#atlas-abi-form"];
+        const form = fixture.forms[operation === "search" ? '[data-test-id="atlas-search-form"]' : '[data-test-id="atlas-abi-form"]'];
         const completion = operation === "overview" ? fixture.owner.ensureAtlasOverview()
           : form.handlers.submit({ preventDefault() {}, currentTarget: form });
-        assert.match(fixture.host.innerHTML, /Loading semantic/);
+        assert.match(fixture.host.innerHTML, /data-test-id="atlas-request-loading"/);
         fixture.navigate(destination);
         if (destination === "model") assert.equal(fixture.host.hidden, true);
         const destinationMarkup = fixture.host.innerHTML;
@@ -73,8 +73,8 @@ test("real Atlas handlers keep the newest request's outcome", async t => {
   const fixture = mountOwner(t);
   const requests = [];
   globalThis.window.bamfMissionControl.query = () => new Promise((_resolve, reject) => requests.push(reject));
-  const search = fixture.forms["#atlas-search-form"];
-  const abi = fixture.forms["#atlas-abi-form"];
+  const search = fixture.forms['[data-test-id="atlas-search-form"]'];
+  const abi = fixture.forms['[data-test-id="atlas-abi-form"]'];
   const older = search.handlers.submit({ preventDefault() {}, currentTarget: search });
   const newer = abi.handlers.submit({ preventDefault() {}, currentTarget: abi });
   requests[1](new Error("newest request outcome")); await newer;
@@ -97,7 +97,7 @@ test("the domain activation owner binds Atlas completion to the current shell st
   let state = { view: "atlas", context: { runId: "fixture-run", generation: 7, mode: "LIVE", semanticRelease: "1".repeat(64) } };
   activateDomainViews({ state, getState: () => state, defense: { id: "live" }, api: window.bamfMissionControl,
     homeController: { async activate() {}, async deactivate() {} }, onInspect() {} });
-  assert.match(fixture.host.innerHTML, /Loading semantic/);
+  assert.match(fixture.host.innerHTML, /data-test-id="atlas-request-loading"/);
   state = { ...state, view: "school" };
   renderCurrentView(state, { id: "live" }, () => {});
   const markup = fixture.host.innerHTML;

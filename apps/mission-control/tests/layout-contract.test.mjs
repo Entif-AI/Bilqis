@@ -7,6 +7,12 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../renderer");
 const source = (name) => fs.readFileSync(path.join(rendererRoot, name), "utf8");
+const teacherCss = () => [
+  "teacher/teacher.css",
+  "teacher/teacher-core.css",
+  "teacher/teacher-detail.css",
+  "teacher/teacher-comparison.css",
+].map(source).join("\n");
 
 test("shared shell owns stable grouped navigation and compact destination geometry", () => {
   const tokens = source("visual-tokens.css");
@@ -57,7 +63,7 @@ test("shell target anatomy removes redundant chrome and keeps secondary context 
 test("operator values and wide School data stay inside their owning surfaces", () => {
   const home = source("home/home.css");
   const school = source("school/school.css");
-  const teacher = source("teacher/teacher.css");
+  const teacher = teacherCss();
 
   assert.match(home, /\.home-current dd[^}]*overflow-wrap:\s*anywhere/s);
   assert.match(home, /\.home-school-table-wrap[^}]*overflow:\s*auto/s);
