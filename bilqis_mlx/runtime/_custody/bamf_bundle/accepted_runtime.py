@@ -6,6 +6,7 @@ from pathlib import Path
 
 from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 
 from .codec import load_bamf_bundle
 from .publication import (
@@ -38,7 +39,8 @@ class AcceptedGenerationIdentity:
     candidate_identity_sha256: str
 
 
-def _read_accepted_locked(run_dir: Path):
+def _read_accepted_locked(
+        run_dir: Path, *, accepted_parent: tuple[str, CompleteStudent] | None = None):
     run_dir = Path(run_dir)
     pointer_path = run_dir / "bamf-state.json"
     pointer = _read_pointer(pointer_path)
@@ -51,7 +53,8 @@ def _read_accepted_locked(run_dir: Path):
             or student.generation != pointer["generation"]
             or student.parent_manifest_sha256 != pointer["parent_manifest_sha256"]):
         invalid("BAMF_GENERATION_POINTER_DRIFT")
-    _require_published_acceptance(run_dir, pointer, student)
+    _require_published_acceptance(
+        run_dir, pointer, student, accepted_parent=accepted_parent)
     return pointer, student
 
 
@@ -59,11 +62,6 @@ def _read_accepted(run_dir: Path):
     run_dir = Path(run_dir)
     with _pointer_lock(run_dir):
         return _read_accepted_locked(run_dir)
-
-
-def load_accepted_generation(run_dir: Path) -> CompleteStudent:
-    """Load the currently published accepted generation under the pointer lock."""
-    return _read_accepted(run_dir)[1]
 
 
 def _identity_from_pointer(
@@ -89,7 +87,9 @@ def _identity_from_pointer(
 
 
 def _published_in_memory_identity_locked(
-        run_dir: Path, student: CompleteStudent, pointer: dict,
+        run_dir: Path, student: CompleteStudent, pointer: dict, *,
+        accepted_parent: tuple[str, CompleteStudent] | None = None,
+        acceptance_verified: bool = False,
 ) -> AcceptedGenerationIdentity:
     run_dir = Path(run_dir)
     if type(student) is not CompleteStudent:
@@ -114,7 +114,9 @@ def _published_in_memory_identity_locked(
         if (not isinstance(stored, dict)
                 or stored.get("sha256") != sha(canonical(record))):
             invalid("BAMF_GENERATION_POINTER_DRIFT")
-    _require_published_acceptance(run_dir, pointer, student)
+    if not acceptance_verified:
+        _require_published_acceptance(
+            run_dir, pointer, student, accepted_parent=accepted_parent)
     return identity
 
 
@@ -130,7 +132,7 @@ def _published_in_memory_identity(
 
 from .accepted_execution_cache import (
     _require_owned_execution_cache, _reset_execution_cache_owner_for_tests,
-    bind_accepted_execution_cache,
+    bind_accepted_execution_cache, load_accepted_generation,
 )
 
 
