@@ -171,13 +171,14 @@ def source_depth_select_with_diagnostics(producer, params):
     encoded = producer._encoded
     if (encoded.global_seeds.shape != receipts[0].hidden.shape
             or len(encoded.features) != encoded.global_seeds.shape[0]
-            or any(len(row) != encoded.global_seeds.shape[1]
+            or any(not 0 < len(row) <= encoded.global_seeds.shape[1]
                    for row in encoded.features)):
         _invalid()
     rows = []
     for row in encoded.features:
         values = []
-        for factor in row:
+        padded = row + (None,) * (encoded.global_seeds.shape[1] - len(row))
+        for factor in padded:
             if factor is None:
                 values.append(mx.zeros((WIDTH,), dtype=mx.float32))
             elif type(factor) in (FrameFactorTerms, EmptyFrameFactorTerms):

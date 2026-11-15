@@ -30,6 +30,11 @@ from .atlas_model_contracts import (
 )
 from .atlas_model_participation import _active_banks, _forward_participation
 from .atlas_model_refinement import _prediction_local_refinement
+from .atlas_model_forward_validation import (
+    validate_decode_row_custody,
+    validate_decode_row_input,
+    validate_task_plan_custody,
+)
 
 
 def _source_producer(params, compiled_batch, generation, cache):
@@ -91,32 +96,51 @@ def _finalize_source_hidden(
     return hidden
 
 
-def _forward_row_from_hidden(
-    params, compiled_batch, answer_plan, generation, producer, accepted_cache,
-    hidden, *, producer_row_index=0,
+def _decode_bamf_producer_row(
+    backend: Backend,
+    params,
+    compiled_batch: BamfCompiledBatch,
+    answer_plan: AnswerPlan,
+    producer,
+    final_hidden,
+    row_index: int,
+    accepted_cache=None,
+    *,
+    refinement_training: bool = False,
 ) -> ModelOutput:
-    """Issue one row-scoped B11 output from an already-computed source backbone."""
+    """Decode one task-owned row from a B11 source producer and issue its provenance."""
+    validate_decode_row_input(
+        backend, compiled_batch, answer_plan, final_hidden, row_index)
+    spec = backend.topology
+    extents = compiled_batch.compiled.extents
+    validate_bamf_parameters(spec, extents, params)
+    generation = execution_generation_digest(params, spec=spec, extents=extents)
+    validate_decode_row_custody(
+        compiled_batch, answer_plan, producer, row_index, generation)
+    validate_task_plan_custody(compiled_batch, answer_plan)
+    if (compiled_batch.training_authority is not None
+            and compiled_batch.training_authority.generation_binding != generation):
+        _invalid("B11_TRAINING_AUTHORITY_GENERATION_MISMATCH")
+
     row = compiled_batch.compiled.compiled.rows[0]
+    row_hidden = final_hidden[row_index, :len(row.positions)]
+    if row_hidden.shape != (len(row.positions), spec.width):
+        _invalid("B11_HIDDEN_POSITION_MISMATCH")
     projection = compiled_batch.compiled._projections[0]
     if (
-        producer_row_index < 0
-        or producer_row_index >= hidden.shape[0]
-        or projection is not None
+        projection is not None
         and type(projection) is not ApprovedContextProjection
     ):
         _invalid("B11_APPROVED_CONTEXT_REQUIRED")
-    row_hidden = hidden[producer_row_index, :len(row.positions)]
     salience_hidden = row_hidden[-1]
-    if row_hidden.shape[0] != len(row.positions):
-        _invalid("B11_HIDDEN_POSITION_MISMATCH")
     semantics = ReadoutSemantics(
         compiled_batch.compiled.features,
         _active_banks(params, compiled_batch, answer_plan),
-        compiled_batch.compiled.extents,
+        extents,
     )
     row_hidden, refinement_roles, refinement_executed = _prediction_local_refinement(
         params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
-        training=True, producer_row_index=producer_row_index)
+        training=refinement_training, producer_row_index=row_index)
     memory = DecoderMemory(
         row_hidden,
         tuple(item.cache_identity for item in row.positions),
@@ -131,7 +155,7 @@ def _forward_row_from_hidden(
         output, replace(_forward_participation(
             params, compiled_batch, answer_plan, output, producer, accepted_cache,
             refinement_roles, refinement_executed,
-            producer_row_index=producer_row_index),
+            producer_row_index=row_index),
             salience_hidden=salience_hidden, salience_parameters=params,
             compiled_batch=compiled_batch))
 
@@ -174,38 +198,9 @@ def _forward_bamf_impl(
         capture_derived_cache=capture_derived_cache and not refinement_training)
     if hidden.shape[0] != 1:
         _invalid("B11_SINGLE_ROW_FORWARD_REQUIRED")
-    if not refinement_training:
-        # Scalar inference preserves the historical refinement training flag.
-        row = compiled_batch.compiled.compiled.rows[0]
-        projection = compiled_batch.compiled._projections[0]
-        row_hidden = hidden[0]
-        if (projection is not None
-                and type(projection) is not ApprovedContextProjection):
-            _invalid("B11_APPROVED_CONTEXT_REQUIRED")
-        if row_hidden.shape[0] != len(row.positions):
-            _invalid("B11_HIDDEN_POSITION_MISMATCH")
-        salience_hidden = row_hidden[-1]
-        semantics = ReadoutSemantics(
-            compiled_batch.compiled.features,
-            _active_banks(params, compiled_batch, answer_plan), extents)
-        row_hidden, refinement_roles, refinement_executed = _prediction_local_refinement(
-            params, compiled_batch, answer_plan, generation, producer, row_hidden,
-            semantics, training=False)
-        memory = DecoderMemory(
-            row_hidden, tuple(item.cache_identity for item in row.positions), row,
-            generation)
-        output = predict_typed(memory, projection, answer_plan, semantics, params)
-        if type(output) is not ModelOutput or output.execution_mode is not mode:
-            _invalid("B11_TYPED_OUTPUT_INVALID")
-        return _FORWARD_ISSUANCE.issue(
-            output, replace(_forward_participation(
-                params, compiled_batch, answer_plan, output, producer, accepted_cache,
-                refinement_roles, refinement_executed),
-                salience_hidden=salience_hidden, salience_parameters=params,
-                compiled_batch=compiled_batch))
-    return _forward_row_from_hidden(
-        params, compiled_batch, answer_plan, generation, producer, accepted_cache,
-        hidden, producer_row_index=0)
+    return _decode_bamf_producer_row(
+        backend, params, compiled_batch, answer_plan, producer, hidden, 0,
+        accepted_cache, refinement_training=refinement_training)
 
 
 def forward_bamf(

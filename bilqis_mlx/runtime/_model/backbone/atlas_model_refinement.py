@@ -28,7 +28,7 @@ def _refinement_role_vector(request, semantics, params):
     return role_id_vector(identifier, semantics, params), (identifier,)
 
 
-def _selected_frame_index(row, encoded, config, choice, *, producer_row_index=0):
+def _selected_frame_index(row, encoded, config, choice, *, row_index=0):
     matches = tuple(
         (index, position) for index, position in enumerate(row.positions)
         if position.kind is PositionKind.CLOSURE
@@ -39,9 +39,11 @@ def _selected_frame_index(row, encoded, config, choice, *, producer_row_index=0)
     index, position = matches[0]
     position.__post_init__()
     if (
-        position.packed is None
+        type(row_index) is not int
+        or not 0 <= row_index < len(encoded.handles)
+        or position.packed is None
         or position.packed.sidecar.occurrence_id != choice.occurrence_id
-        or encoded.handles[producer_row_index][index] != position
+        or encoded.handles[row_index][index] != position
         or config.approved is None
     ):
         _invalid("B11_REFINEMENT_FRAME_BINDING_INVALID")
@@ -53,12 +55,10 @@ def _selected_frame_index(row, encoded, config, choice, *, producer_row_index=0)
     if (
         envelope is None
         or envelope.frame.occurrence_id != choice.occurrence_id
-        or encoded.global_seeds[producer_row_index, index].shape
-        != (ModelTopologySpecV2.width,)
-        or encoded.members[producer_row_index][index].ndim != REFINEMENT_MEMBER_RANK
-        or encoded.members[producer_row_index][index].shape[1]
-        != ModelTopologySpecV2.width
-        or encoded.members[producer_row_index][index].shape[0] != len(envelope.members)
+        or encoded.global_seeds[row_index, index].shape != (ModelTopologySpecV2.width,)
+        or encoded.members[row_index][index].ndim != REFINEMENT_MEMBER_RANK
+        or encoded.members[row_index][index].shape[1] != ModelTopologySpecV2.width
+        or encoded.members[row_index][index].shape[0] != len(envelope.members)
     ):
         _invalid("B11_REFINEMENT_FRAME_BINDING_INVALID")
     return index
@@ -81,11 +81,11 @@ def _prediction_local_refinement(
     config = compiled.compiler_configs[0]
     source_asts = compiled.source_asts
     if (
-        source_asts is None
+        type(producer_row_index) is not int
+        or not 0 <= producer_row_index < len(producer._encoded.compiled.rows)
+        or source_asts is None
         or len(source_asts) != 1
         or config.approved is None
-        or producer_row_index < 0
-        or producer_row_index >= len(producer._encoded.compiled.rows)
         or producer._encoded.compiled.rows[producer_row_index]
         != compiled.compiled.rows[0]
     ):
@@ -122,7 +122,7 @@ def _prediction_local_refinement(
     for choice in selection.selected:
         index = _selected_frame_index(
             row, producer._encoded, config, choice,
-            producer_row_index=producer_row_index)
+            row_index=producer_row_index)
         if choice.passes == 0:
             continue
         members = producer._encoded.members[producer_row_index][index]

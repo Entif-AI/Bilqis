@@ -15,7 +15,7 @@ from .atlas_model_contracts import (
     _MICROBATCH_EXECUTION_ISSUER, _invalid,
 )
 from .atlas_model_forward import (
-    _finalize_source_hidden, _forward_row_from_hidden, _source_producer,
+    _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
 )
 from .atlas_model_training import loss_bearing_bamf
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
@@ -150,9 +150,9 @@ def _bamf_microbatch_value_and_grad_impl(
         total = mx.array(0.0, dtype=mx.float32)
         for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
                 row_batches, answer_plans, targets, masks)):
-            output = _forward_row_from_hidden(
-                current, row_batch, plan, generation, producer, accepted_cache,
-                hidden, producer_row_index=index)
+            output = _decode_bamf_producer_row(
+                backend, current, row_batch, plan, producer, hidden, index,
+                accepted_cache, refinement_training=True)
             execution = loss_bearing_bamf(
                 output, row_targets, mask,
                 salience_supervision=salience_supervision)
