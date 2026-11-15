@@ -69,6 +69,67 @@ class SalienceEvidenceArtifactOwner:
         self._context_changed = False
 
     @classmethod
+    def for_source_qualification(cls, authority, rows, semantic_release):
+        """Track row/source/rights dependencies without compiling source prefixes."""
+        from bilqis_mlx.runtime.source_execution import SourceBatchAuthority, source_content_digest
+        from bilqis_mlx.runtime.factory_training_context import public_training_context
+        if (type(authority) is not SourceBatchAuthority or type(rows) is not tuple
+                or not rows or len(rows) != authority.each
+                or any(type(row) is not dict for row in rows)
+                or not isinstance(semantic_release, str) or not semantic_release):
+            _invalid('BAMF_PRIORITY_SOURCE_OFFER_EVIDENCE_INVALID')
+        authority.__post_init__()
+        if source_content_digest(rows) != authority.content_sha256:
+            _invalid('BAMF_PRIORITY_SOURCE_OFFER_EVIDENCE_INVALID')
+        refs = set()
+        for row in rows:
+            row_id, source_id = row.get('id'), row.get('source_id')
+            operation_id = row.get('operation_id')
+            if operation_id is None and isinstance(row.get('record'), dict):
+                operation_id = row['record'].get('operator')
+            if (not isinstance(row_id, str) or not row_id
+                    or row.get('capability') != authority.capability_id
+                    or any(value is not None and (not isinstance(value, str) or not value)
+                           for value in (source_id, operation_id))):
+                _invalid('BAMF_PRIORITY_SOURCE_OFFER_EVIDENCE_INVALID')
+            task, frontier, policy = public_training_context(
+                semantic_release, authority.capability_id, len(row.get('tokens', ())))
+            refs.update((
+                DependencyRef(DependencyKind.SOURCE, row_id),
+                DependencyRef(DependencyKind.RELEASE, 'release:' + semantic_release),
+                DependencyRef(
+                    DependencyKind.POLICY,
+                    'policy:' + contract_digest((
+                        task.scope, policy.policy_id, policy.policy_epoch))),
+                DependencyRef(
+                    DependencyKind.RIGHTS,
+                    'rights:' + contract_digest((
+                        policy.rights_epoch, frontier.correction_generation))),
+            ))
+            if source_id is not None:
+                refs.add(DependencyRef(DependencyKind.SOURCE, source_id))
+            if operation_id is not None:
+                refs.add(DependencyRef(
+                    DependencyKind.OPERATOR, 'operator:' + operation_id))
+        content = (
+            authority.release_sha256, authority.capability_id, authority.provider_id,
+            authority.provider_implementation_sha256, authority.seed, authority.each,
+            authority.content_sha256, authority.source_family_id, authority.episode_ids,
+            semantic_release, tuple(sorted(refs)),
+        )
+        digest = contract_digest(content)
+        priority = owner_priority(ArtifactKind.SALIENCE_EVIDENCE)
+        identity = 'priority-source-qualification:' + digest
+        node = ArtifactNode(identity, ArtifactKind.SALIENCE_EVIDENCE, digest,
+                            True, tuple(sorted(refs)), *priority)
+        owner = object.__new__(cls)
+        owner._index = DependencyIndex.build((node,))
+        owner._artifact_id = identity
+        owner._queue = None
+        owner._context_changed = False
+        return owner
+
+    @classmethod
     def for_source_offer(cls, authority, rows, prefixes):
         """Track C02-equivalent dependencies even for prefixes with no packed frames."""
         from bilqis_mlx.runtime.source_execution import SourceBatchAuthority, source_content_digest

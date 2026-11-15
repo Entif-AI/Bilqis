@@ -11,7 +11,10 @@ from bilqis_mlx.factory.execution import CurriculumProfile
 from bilqis_mlx.factory.teaching import describe_delivered_teaching
 from bilqis_mlx.factory.tests.test_teaching import closed_source_fixture
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext
-from bilqis_mlx.runtime.atlas_training_adapter import BamfTarget, compile_training_batch, require_current_release
+from bilqis_mlx.runtime.atlas_training_adapter import (
+    BamfTarget, PreparedModelSourceInput, compile_training_batch,
+    require_current_release,
+)
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.tests.batch.training.visit_provenance_support import visit_provenance
 from bilqis_mlx.semantics.atlas_features import AtlasFeatures, ConceptFeature
@@ -203,7 +206,8 @@ class AtlasTrainingAdapterTest(unittest.TestCase):
                 generation=None, sealed=(), context_mutator=None,
                 frames_override=None, source_ast_override=None,
                 delivery_override=None, extra_kwargs=None,
-                source_context=None, source_seed=17, visit=None):
+                source_context=None, source_seed=17, visit=None,
+                optimizer_step_seed=42):
         context = source_context or self.context
         delivery = delivery_override or describe_delivered_teaching(
             context.release, 'Z.C0', 'source.direct/Z.C0', rows)
@@ -243,7 +247,8 @@ class AtlasTrainingAdapterTest(unittest.TestCase):
                         inventories[row['id']]):
             return compile_training_batch(rows, context, ModelTopologySpecV2(),
                 delivery=delivery, delivery_capability='Z.C0', delivery_release_sha256=release_sha or context.release.release_sha256,
-                teacher_strategy={'policy': 'focused'}, requested_count=3, optimizer_step_seed=42,
+                teacher_strategy={'policy': 'focused'}, requested_count=3,
+                optimizer_step_seed=optimizer_step_seed,
                 visit_provenance=(visit or visit_provenance('Z.C0')),
                 source_authority=context.bind_rows(
                     rows, seed=source_seed, capability='Z.C0', each=len(rows)),
@@ -259,6 +264,29 @@ class AtlasTrainingAdapterTest(unittest.TestCase):
                 source_frontier=frontier, eligibility_policy=context_policy,
                 generation_binding=generation or self.model_generation,
                 sealed_holdout_ids=sealed, **(extra_kwargs or {}))
+
+    def test_prepared_source_prefix_is_reused_while_step_provenance_changes(self):
+        first = self.compile(self.rows, optimizer_step_seed=42)
+        model = first.rows[0].model_input
+        prepared = PreparedModelSourceInput(
+            self.rows[0]['id'], (1, 2), model.prefix,
+            model.features, model.eligibility_digest)
+        with patch(
+                'bilqis_mlx.runtime.atlas_training_adapter.compile_prefix',
+                side_effect=AssertionError('candidate step rebuilt source prefix')):
+            identical = self.compile(
+                self.rows, optimizer_step_seed=42,
+                extra_kwargs={'prepared_model_sources': (prepared,)})
+            second = self.compile(
+                self.rows, optimizer_step_seed=43,
+                extra_kwargs={'prepared_model_sources': (prepared,)})
+        self.assertEqual(identical, first)
+        self.assertIs(second.rows[0].model_input.prefix, model.prefix)
+        self.assertEqual(first.rows[0].provenance.optimizer_step_seed, 42)
+        self.assertEqual(second.rows[0].provenance.optimizer_step_seed, 43)
+        self.assertEqual(
+            first.rows[0].provenance.source_row_content_sha256,
+            second.rows[0].provenance.source_row_content_sha256)
 
     def test_cross_source_ast_and_frame_substitution_is_rejected(self):
         def forged_ast(tokens):

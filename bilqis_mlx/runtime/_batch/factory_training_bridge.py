@@ -245,6 +245,42 @@ def _validated_training_request(
     return rows
 
 
+def _prepared_source_inputs(
+        prepared_source, source_context, authenticated, rows, *, capability,
+        source_seed, source_each):
+    if prepared_source is None:
+        adapter, manifest, profile, source_rows = _prepare_factory_source_rows(
+            source_context, authenticated, rows, capability=capability,
+            source_seed=source_seed, source_each=source_each)
+        return (
+            source_context.bind_rows(
+                rows, seed=source_seed, capability=capability, each=source_each),
+            adapter, manifest, profile, source_rows, None, None,
+        )
+    from bilqis_mlx.runtime.priority_source_materialization import (
+        PreparedPrioritySourceMaterialization,
+    )
+    if (type(prepared_source) is not PreparedPrioritySourceMaterialization
+            or prepared_source.semantic_context is not authenticated
+            or prepared_source.offer.capability_id != capability
+            or prepared_source.offer.source_seed != source_seed
+            or prepared_source.offer.source_each != source_each
+            or prepared_source.rows != rows):
+        _invalid("FACTORY_TRAINING_PREPARED_SOURCE_INVALID")
+    prepared_source.require_current()
+    source_context.require_bound_rows(
+        rows, prepared_source.offer.source_authority)
+    return (
+        prepared_source.offer.source_authority,
+        prepared_source.adapter,
+        prepared_source.manifest,
+        prepared_source.profile,
+        prepared_source.source_rows,
+        prepared_source.model_sources,
+        prepared_source.motif_inputs,
+    )
+
+
 def prepare_factory_training_batch(
     source_context: SourceExecutionContext,
     candidate: BamfBundleCandidate,
@@ -263,6 +299,7 @@ def prepare_factory_training_batch(
     teacher_strategy: dict,
     rehearsal_by_id: dict | None = None,
     semantic_context=None,
+    prepared_source=None,
 ) -> PreparedFactoryTrainingBatch:
     """Compile one real Factory draw once, then bind each C02 row into B11.
 
@@ -282,9 +319,10 @@ def prepare_factory_training_batch(
     elif type(authenticated) is not AuthenticatedGenerationFeatureContext:
         _invalid("FACTORY_TRAINING_SEMANTIC_CONTEXT_INVALID")
     authenticated.__post_init__()
-    adapter, manifest, profile, source_rows = _prepare_factory_source_rows(
-        source_context, authenticated, rows, capability=capability,
-        source_seed=source_seed, source_each=source_each)
+    (source_authority, adapter, manifest, profile, source_rows,
+     prepared_model_sources, prepared_motif_inputs) = _prepared_source_inputs(
+        prepared_source, source_context, authenticated, rows,
+        capability=capability, source_seed=source_seed, source_each=source_each)
     by_tokens = {tuple(item.row["tokens"]): item.ast for item in source_rows}
     if len(by_tokens) != len(rows):
         _invalid("FACTORY_TRAINING_AMBIGUOUS_SOURCE_PREFIX")
@@ -296,8 +334,7 @@ def prepare_factory_training_batch(
         teacher_strategy=teacher_strategy,
         requested_count=requested_count, optimizer_step_seed=optimizer_step_seed,
         visit_provenance=visit_provenance,
-        source_authority=source_context.bind_rows(
-            rows, seed=source_seed, capability=capability, each=source_each),
+        source_authority=source_authority,
         rehearsal_by_id=(rehearsal_by_id or {}),
         visible_ends={row["id"]: len(row["tokens"]) for row in rows},
         source_ast_for=lambda tokens: by_tokens[tuple(tokens)],
@@ -313,14 +350,17 @@ def prepare_factory_training_batch(
         semantic_context=authenticated,
         released_manifest=manifest,
         generation_binding=generation_binding,
-        atlas_selection=authenticated.selection)
+        atlas_selection=authenticated.selection,
+        prepared_model_sources=prepared_model_sources)
     compiled_rows = _bind_b11_rows(
         source_context, candidate, authenticated, training, source_rows, profile,
         source_seed=source_seed, source_each=source_each)
-    motif_inputs = tuple(_motif_planning_input(
-        source_context, authenticated, adapter, profile, item,
-        source_seed=source_seed, source_each=source_each)
-        for item in source_rows)
+    motif_inputs = (
+        prepared_motif_inputs if prepared_motif_inputs is not None else
+        tuple(_motif_planning_input(
+            source_context, authenticated, adapter, profile, item,
+            source_seed=source_seed, source_each=source_each)
+            for item in source_rows))
     prepared = PreparedFactoryTrainingBatch(
         training, compiled_rows, motif_inputs, authenticated)
     prepared.__post_init__()

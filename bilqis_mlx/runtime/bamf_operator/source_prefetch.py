@@ -4,11 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 import hashlib
 import json
-from pathlib import Path
 import time
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from bilqis_mlx.runtime.source_execution import SourceExecutionContext
+from bilqis_mlx.runtime.source_execution import source_content_digest
 from bilqis_mlx.runtime.source_prefetch import (
     FORBIDDEN_AUTHORITY_KEYS,
     ImmutableSourcePacket,
@@ -17,8 +16,6 @@ from bilqis_mlx.runtime.source_prefetch import (
     freeze_source_packet,
     thaw_source_packet,
 )
-from bilqis_mlx.source_adapters.school import live_source_registry
-from bilqis_mlx.factory.live_answers import live_answer_registry
 from bilqis_mlx.semantics.domains import contract_digest
 
 
@@ -43,16 +40,22 @@ def priority_source_request(selection, source_context, parent, ordinal: int) -> 
     offer = selection.offer
     if type(ordinal) is not int or ordinal < 1:
         _invalid("BAMF_SOURCE_PREFETCH_STEP_INVALID")
-    binding = {
-        "schema": REQUEST_SCHEMA,
-        "accepted_manifest_sha256": offer.accepted_manifest_sha256,
-        "generation_binding": offer.generation_binding,
+    content_binding = {
         "release_sha256": offer.release_sha256,
         "capability": offer.capability_id,
         "source_seed": offer.source_seed,
         "source_each": offer.source_each,
         "source_family_id": offer.source_family_id,
         "source_binding_digest": offer.source_binding_digest,
+        "source_content_sha256": offer.source_authority.content_sha256,
+    }
+    content_identity = _fingerprint(content_binding)
+    binding = {
+        "schema": REQUEST_SCHEMA,
+        "accepted_manifest_sha256": offer.accepted_manifest_sha256,
+        "generation_binding": offer.generation_binding,
+        **content_binding,
+        "content_identity": content_identity,
         "visit_id": selection.visit.identity.visit_id,
         "candidate_step": ordinal,
         "parent_optimizer_step": parent.retained_state.optimizer_step,
@@ -60,58 +63,47 @@ def priority_source_request(selection, source_context, parent, ordinal: int) -> 
     return {
         **binding,
         "identity": _fingerprint(binding),
-        "source_root": (
-            None if source_context.source_root is None
-            else str(source_context.source_root)),
-        "graph": source_context.graph,
         "executable_release": source_context.release,
+        "source_rows": offer.rows(),
     }
 
 
 def prepare_priority_source_packet(request: dict) -> ImmutableSourcePacket:
-    """Redraw an issued source offer in a spawned, neural-inert worker."""
+    """Transport one already-authorized source batch without executing its provider."""
     required = {
         "schema", "identity", "accepted_manifest_sha256", "generation_binding",
         "release_sha256", "capability", "source_seed", "source_each",
-        "source_family_id", "source_binding_digest", "visit_id",
-        "candidate_step", "parent_optimizer_step", "source_root", "graph",
-        "executable_release",
+        "source_family_id", "source_binding_digest", "source_content_sha256",
+        "content_identity", "visit_id", "candidate_step", "parent_optimizer_step",
+        "executable_release", "source_rows",
     }
     if (not isinstance(request, dict) or set(request) != required
             or FORBIDDEN_AUTHORITY_KEYS & set(request)
             or request.get("schema") != REQUEST_SCHEMA):
         _invalid("BAMF_SOURCE_PREFETCH_REQUEST_INVALID")
     binding = {key: request[key] for key in (
-        "schema", "accepted_manifest_sha256", "generation_binding",
-        "release_sha256", "capability", "source_seed", "source_each",
-        "source_family_id", "source_binding_digest", "visit_id",
-        "candidate_step", "parent_optimizer_step",
+        "schema", "accepted_manifest_sha256", "generation_binding", "release_sha256",
+        "capability", "source_seed", "source_each", "source_family_id",
+        "source_binding_digest", "source_content_sha256", "content_identity",
+        "visit_id", "candidate_step", "parent_optimizer_step",
     )}
     if request["identity"] != _fingerprint(binding):
         _invalid("BAMF_SOURCE_PREFETCH_IDENTITY_INVALID")
+    content_binding = {key: request[key] for key in (
+        "release_sha256", "capability", "source_seed", "source_each",
+        "source_family_id", "source_binding_digest", "source_content_sha256",
+    )}
+    if request["content_identity"] != _fingerprint(content_binding):
+        _invalid("BAMF_SOURCE_PREFETCH_CONTENT_IDENTITY_INVALID")
     release = request["executable_release"]
     if (release.release_sha256 != request["release_sha256"]
             or contract_digest(release.source_bindings.by_capability[
                 request["capability"]]) != request["source_binding_digest"]):
         _invalid("BAMF_SOURCE_PREFETCH_RELEASE_DRIFT")
-    context = SourceExecutionContext(
-        release=release,
-        graph=request["graph"],
-        source_root=(
-            None if request["source_root"] is None
-            else Path(request["source_root"])),
-        source_registry=live_source_registry(),
-        answer_registry=live_answer_registry(),
-    )
-    context.require_capabilities((request["capability"],))
-    rows = context.draw_rows(
-        seed=request["source_seed"], capability=request["capability"],
-        each=request["source_each"])
-    authority = context.bind_rows(
-        rows, seed=request["source_seed"], capability=request["capability"],
-        each=request["source_each"])
-    if (authority.source_family_id != request["source_family_id"]
-            or authority.release_sha256 != request["release_sha256"]):
+    rows = tuple(request["source_rows"])
+    if (len(rows) != request["source_each"]
+            or any(type(row) is not dict for row in rows)
+            or source_content_digest(rows) != request["source_content_sha256"]):
         _invalid("BAMF_SOURCE_PREFETCH_SOURCE_DRIFT")
     return freeze_source_packet({
         "schema": SCHEMA,

@@ -177,7 +177,9 @@ def prepare_bamf_visit(
                 "event": "BAMF_C16_3_ACCEPTED",
                 "optimizer_step": retained.optimizer_step,
                 "capability": capability,
-                "resource": _resource_observation(run_dir, tuple(steps)),
+                "resource": _resource_observation(
+                    run_dir, tuple(steps),
+                    getattr(context, "_source_preparation_metrics", None)),
             },))
     return BamfPreparedVisit(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,

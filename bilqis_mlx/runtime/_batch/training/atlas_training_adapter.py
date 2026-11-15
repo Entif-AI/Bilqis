@@ -1,7 +1,7 @@
 """Release-bound, source-visible BAMF input preparation."""
 from __future__ import annotations
 
-from dataclasses import asdict, replace
+from dataclasses import asdict, dataclass, replace
 from graphlib import CycleError, TopologicalSorter
 from typing import Callable
 
@@ -45,6 +45,26 @@ from .atlas_training_delivery import (
 )
 
 
+@dataclass(frozen=True)
+class PreparedModelSourceInput:
+    """Candidate-independent C02 source/formal/prefix compilation."""
+
+    row_id: str
+    visible: tuple
+    prefix: object
+    features: tuple
+    eligibility_digest: str
+
+    def __post_init__(self):
+        if (not isinstance(self.row_id, str) or not self.row_id
+                or type(self.visible) is not tuple
+                or type(self.features) is not tuple
+                or not isinstance(self.eligibility_digest, str)
+                or not self.eligibility_digest):
+            _invalid("PREPARED_SOURCE_MODEL_INPUT_INVALID")
+        self.prefix.__post_init__()
+
+
 def _answer_plan(plan, head, visible_end, generation_binding):
     fields = {'modalityID', 'input_prefix_end', 'decisions', 'allowedOutputSchema',
               'maximum_decisions', 'generation_binding'}
@@ -79,6 +99,72 @@ def _answer_plan(plan, head, visible_end, generation_binding):
     return _freeze(plan)
 
 
+def prepare_model_source_input(
+        row, capability: str, visible: tuple, *, source_context,
+        source_ast, frames: tuple, task_scope: TaskScope,
+        source_frontier: SourceFrontier, eligibility_policy: ContextPolicy,
+        compiler_config: FrameCompilerConfig, atlas_selection,
+        feature_artifact_path, semantic_context=None, released_manifest=None,
+        atlas_features: AtlasFeatures | None = None):
+    """Compile source-owned model context once, excluding candidate generation."""
+    if (not isinstance(row, dict) or row.get("capability") != capability
+            or type(visible) is not tuple):
+        _invalid("PREPARED_SOURCE_MODEL_INPUT_INVALID")
+    if (type(frames) is not tuple
+            or any(type(frame) is not ContextEligibility for frame in frames)):
+        _invalid("CONTEXT_SOURCE_FRAMES_REQUIRED")
+    if not frames and getattr(source_ast, "frames", ()):
+        _invalid("CONTEXT_SOURCE_FRAMES_REQUIRED")
+    _require_source_inventory(
+        source_ast, source_context, row, atlas_selection, semantic_context,
+        released_manifest)
+    _require_source_lineage(source_ast, frames, visible, source_context.graph)
+    projection = None
+    if frames:
+        projection = project_context(
+            frames, task_scope, source_frontier, eligibility_policy)
+        if type(projection) is not ApprovedContextProjection:
+            _invalid("CONTEXT_NOT_ELIGIBLE")
+    current_features = _require_semantic_authority(
+        compiler_config, task_scope, source_frontier, eligibility_policy,
+        atlas_selection, feature_artifact_path, semantic_context,
+        released_manifest)
+    if atlas_features is None:
+        atlas_features = current_features
+    elif current_features != atlas_features:
+        _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
+    prefix = compile_prefix(
+        source_ast, len(visible), task_scope.semantic_release,
+        compiler_config if projection is None
+        else replace(compiler_config, approved=projection))
+    features = (() if projection is None
+                else _source_features(projection, atlas_features, atlas_selection))
+    eligibility_digest = (
+        projection.digest if projection is not None else contract_digest({
+            "schema": "bilqis.mlx.c02-atomic-eligibility/v1",
+            "task": asdict(task_scope), "frontier": asdict(source_frontier),
+            "policy": asdict(eligibility_policy),
+            "source_instance_id": source_ast.source_instance_id,
+            "visible_end": len(visible),
+        }))
+    prepared = PreparedModelSourceInput(
+        row["id"], visible, prefix, features, eligibility_digest)
+    prepared.__post_init__()
+    return prepared, atlas_features
+
+
+def _answer_contract(row, capability, capabilities, heads, source_context):
+    kind, gold = row.get("answer_kind", "binary"), row.get("gold")
+    families = {
+        family.kind: family.values
+        for family in capabilities[capability].answer_families
+    }
+    if not isinstance(kind, str) or kind not in families or kind not in heads:
+        _invalid("ANSWER_NOT_RELEASED")
+    source_context.answer_registry.require(kind)
+    return kind, gold, families, heads[kind]
+
+
 def _require_semantic_authority(
         compiler_config, task_scope, source_frontier, eligibility_policy,
         atlas_selection, feature_artifact_path, semantic_context=None,
@@ -96,54 +182,32 @@ def _compile_model_input(
         atlas_selection, feature_artifact_path,
         answer_plan_for: Callable, generation_binding: str,
         atlas_features: AtlasFeatures | None, semantic_context=None,
-        released_manifest=None) -> tuple:
-    kind, gold = row.get('answer_kind', 'binary'), row.get('gold')
-    families = {family.kind: family.values for family in capabilities[capability].answer_families}
-    if not isinstance(kind, str) or kind not in families or kind not in heads:
-        _invalid('ANSWER_NOT_RELEASED')
-    source_context.answer_registry.require(kind)
-    head = heads[kind]
-    ast = source_ast_for(visible)
-    frames = frames_for_ast(ast)
-    if (type(frames) is not tuple or
-            any(type(frame) is not ContextEligibility for frame in frames)):
-        _invalid('CONTEXT_SOURCE_FRAMES_REQUIRED')
-    if not frames and getattr(ast, 'frames', ()):
-        _invalid('CONTEXT_SOURCE_FRAMES_REQUIRED')
-    _require_source_inventory(
-        ast, source_context, row, atlas_selection, semantic_context,
-        released_manifest)
-    _require_source_lineage(ast, frames, visible, source_context.graph)
-    projection = None
-    if frames:
-        projection = project_context(frames, task_scope, source_frontier, eligibility_policy)
-        if type(projection) is not ApprovedContextProjection:
-            _invalid('CONTEXT_NOT_ELIGIBLE')
-    current_features = _require_semantic_authority(
-        compiler_config, task_scope, source_frontier, eligibility_policy,
-        atlas_selection, feature_artifact_path, semantic_context,
-        released_manifest)
-    if atlas_features is None:
-        atlas_features = current_features
-    elif current_features != atlas_features:
-        _invalid('UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH')
-    prefix = compile_prefix(
-        ast, len(visible), task_scope.semantic_release,
-        compiler_config if projection is None
-        else replace(compiler_config, approved=projection))
-    features = (() if projection is None
-                else _source_features(projection, atlas_features, atlas_selection))
-    eligibility_digest = (projection.digest if projection is not None else contract_digest({
-        'schema': 'bilqis.mlx.c02-atomic-eligibility/v1',
-        'task': asdict(task_scope), 'frontier': asdict(source_frontier),
-        'policy': asdict(eligibility_policy),
-        'source_instance_id': ast.source_instance_id,
-        'visible_end': len(visible),
-    }))
+        released_manifest=None, prepared_source=None) -> tuple:
+    kind, gold, families, head = _answer_contract(
+        row, capability, capabilities, heads, source_context)
+    if prepared_source is None:
+        ast = source_ast_for(visible)
+        frames = frames_for_ast(ast)
+        prepared_source, atlas_features = prepare_model_source_input(
+            row, capability, visible, source_context=source_context,
+            source_ast=ast, frames=frames, task_scope=task_scope,
+            source_frontier=source_frontier, eligibility_policy=eligibility_policy,
+            compiler_config=compiler_config, atlas_selection=atlas_selection,
+            feature_artifact_path=feature_artifact_path,
+            semantic_context=semantic_context, released_manifest=released_manifest,
+            atlas_features=atlas_features)
+    elif (type(prepared_source) is not PreparedModelSourceInput
+          or prepared_source.row_id != row.get("id")
+          or prepared_source.visible != visible):
+        _invalid("PREPARED_SOURCE_MODEL_INPUT_INVALID")
+    else:
+        prepared_source.__post_init__()
+    prefix = prepared_source.prefix
     plan = _answer_plan(answer_plan_for(
         prefix, source_context.release, capabilities[capability], kind),
         head, len(visible), generation_binding)
-    model_input = BamfModelInput(prefix, features, eligibility_digest, plan)
+    model_input = BamfModelInput(
+        prefix, prepared_source.features, prepared_source.eligibility_digest, plan)
     return kind, gold, families, head, plan, model_input, atlas_features
 
 def _compile_target(row, *, kind, gold, families, head, plan) -> BamfTarget:
@@ -170,6 +234,17 @@ def _compile_native_target(row, *, kind: str, gold, head, source_context: Source
             native.get('identity') != source_context.graph['tokens'][native_token_id]):
         _invalid('NATIVE_TARGET_MISMATCH')
     return BamfTarget('semantic_token', native['identity'], native['token_id'], True)
+
+
+def _prepared_sources(prepared_model_sources, row_count):
+    if prepared_model_sources is None:
+        return None
+    if (type(prepared_model_sources) is not tuple
+            or len(prepared_model_sources) != row_count
+            or any(type(item) is not PreparedModelSourceInput
+                   for item in prepared_model_sources)):
+        _invalid("PREPARED_SOURCE_MODEL_INPUT_INVALID")
+    return prepared_model_sources
 
 
 def source_prefix_dependencies(
@@ -220,7 +295,8 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
                            frames_for_ast: Callable, task_scope: TaskScope,
                            source_frontier: SourceFrontier, eligibility_policy: ContextPolicy, generation_binding: str,
                            sealed_holdout_ids=(), atlas_selection=None,
-                           semantic_context=None, released_manifest=None) -> BamfTrainingBatch:
+                           semantic_context=None, released_manifest=None,
+                           prepared_model_sources=None) -> BamfTrainingBatch:
     """Compile source-oracled delivery through accepted A05/A06 owners."""
     if type(topology) is not ModelTopologySpecV2:
         _invalid('TOPOLOGY_AUTHORITY_REQUIRED')
@@ -238,6 +314,7 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
         eligibility_policy=eligibility_policy, generation_binding=generation_binding,
         sealed_holdout_ids=sealed_holdout_ids)
     row_count = len(delivered_rows)
+    prepared_model_sources = _prepared_sources(prepared_model_sources, row_count)
     compiler_configs = _row_contexts(
         compiler_config, FrameCompilerConfig, row_count,
         'UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH')
@@ -269,7 +346,9 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
             atlas_selection=atlas_selection, feature_artifact_path=feature_artifact_path,
             answer_plan_for=answer_plan_for, generation_binding=generation_binding,
             atlas_features=atlas_features, semantic_context=semantic_context,
-            released_manifest=released_manifest)
+            released_manifest=released_manifest,
+            prepared_source=(None if prepared_model_sources is None
+                             else prepared_model_sources[row_index]))
         maximum_decisions = dict(model_input.answer_plan).get('maximum_decisions')
         if (type(maximum_decisions) is not int
                 or len(model_input.prefix.positions) + maximum_decisions

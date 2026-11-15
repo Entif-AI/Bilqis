@@ -149,7 +149,7 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
             holds.append((option.stable_id, 'A09_PLANNING_UNAVAILABLE'))
             continue
         try:
-            offer.require_current(source_context, parent)
+            offer.require_qualified_current(source_context, parent)
         except ValueError:
             holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
             continue
