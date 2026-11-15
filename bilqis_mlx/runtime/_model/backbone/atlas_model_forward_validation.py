@@ -123,8 +123,14 @@ def finalize_microbatch_gradient(
     executions, mean_loss, gradients,
 ):
     """Verify replay parity and issue one post-autodiff microbatch result."""
+    from bilqis_mlx.learning.atlas_readout.decoder.prediction import (
+        attest_issued_output,
+    )
+
     if (type(executions) is not tuple or len(executions) != len(row_batches)):
         _invalid("B11_MICROBATCH_EXECUTION_MISSING")
+    if any(not attest_issued_output(execution.output) for execution in executions):
+        _invalid("B11_MICROBATCH_OUTPUT_ATTESTATION_FAILED")
     if any(
             execution.output.committed != preflight.output.committed
             or execution.output.status is not preflight.output.status

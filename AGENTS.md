@@ -195,6 +195,16 @@ If the changed contract does not depend on it, exclude unrelated legacy-dependen
 from turn-in evidence. Expand verification only when a concrete affected failure or
 dependency edge justifies the expansion.
 
+**BAMF autodiff and evidence boundary — 2026-11-15:** Differentiated execution may
+perform structural validation that does not force MLX tensor values to the host.
+Tensor-content validation, numerical fingerprints, forensic hashing, receipt replay,
+and other host-synchronizing evidence checks must remain outside `mx.value_and_grad`
+and `mx.grad`. Deferring an evidence check does not waive it: after differentiated
+tensors materialize, complete the deferred validation before the result gains
+evidence-plane authority. Causal replay inside autodiff must reuse model-derived
+inference choices from the exact issued execution context. Supervision targets and
+masks affect loss only and must not replace the model's causal branch history.
+
 Open the lane-to-unified PR only after the candidate is otherwise ready to merge:
 the design review is complete, required differential evidence is green or validly
 reused, required detached witnesses are reconciled, design-to-code drift is
