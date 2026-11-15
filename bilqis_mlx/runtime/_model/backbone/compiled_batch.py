@@ -32,6 +32,8 @@ class BamfCompiledBatch:
     visit_provenance: BamfVisitProvenance | None = None
     task_authority: object | None = None
     schema_version: str = "bilqis.mlx.b11-compiled-batch/v1"
+    source_execution_authority: object | None = field(
+        default=None, repr=False, compare=False)
     atlas_feature_artifact_owner: AtlasFeatureArtifactOwner = field(init=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -65,6 +67,16 @@ class BamfCompiledBatch:
                    for index in self.active_semantic_rows.active_indices)
         ):
             _invalid("B11_ACTIVE_SEMANTIC_ROWS_GENERATION_MISMATCH")
+        if self.source_execution_authority is not None:
+            from .source_execution_authority import (
+                require_b11_source_execution_authority,
+            )
+            require_b11_source_execution_authority(
+                self.source_execution_authority,
+                self.compiled.compiled.rows[0],
+                self.compiled.compiler_configs[0],
+                self.sources[0],
+            )
         if self.task_authority is not None:
             from bilqis_mlx.runtime.factory_task_authority import FactoryTaskAuthority
             if type(self.task_authority) is not FactoryTaskAuthority:
