@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import re
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.answers import RegisteredAnswerModality
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
@@ -131,7 +132,8 @@ class TypedHeadLogits:
                 or len(set(self.candidates)) != len(self.candidates)
                 or len({type(c) for c in self.candidates}) != 1
                 or self.logits.shape[-1] != len(self.candidates)
-                or not bool(mx.all(mx.isfinite(self.logits)))):
+                or (host_tensor_validation_enabled()
+                    and not bool(mx.all(mx.isfinite(self.logits))))):
             invalid()
         for candidate in self.candidates:
             if type(candidate) in (ConceptRef, RoleOccurrence, RoleCandidate):

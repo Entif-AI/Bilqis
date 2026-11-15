@@ -16,7 +16,7 @@ from typing import Mapping
 import mlx.core as mx
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from .atlas_attention import AttentionCache, AttentionScope, ccgqa
+from .atlas_attention import AttentionCache
 from .backbone_identity import (
     bamf_parameter_tree_digest, require_execution_generation_binding,
     tensor_content_digest,
@@ -25,21 +25,16 @@ from .backbone_group_inputs import validated_group_parameters
 from .model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, expected_bamf_shapes,
 )
+from .backbone_group_trace import (
+    BackboneGroupTrace, BackboneTraceSession, run_backbone_group_trace,
+)
 
 
 UNADMITTED_NUMERICAL = "UNADMITTED_NUMERICAL"
-_ATTENTION_PARAMETERS = (
-    "query", "key", "value", "output", "conv_q", "conv_k", "conv_v")
 
 
 def _invalid() -> None:
     ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID)
-
-
-def _norm(hidden: mx.array, scale: mx.array, epsilon: float) -> mx.array:
-    return (hidden * mx.rsqrt(
-        mx.mean(hidden * hidden, axis=-1, keepdims=True) + epsilon)
-        * scale)
 
 
 @dataclass(frozen=True)
@@ -127,8 +122,14 @@ def run_backbone_group_numerical(
     """Execute standalone numerical group; caller predecessors are never authority."""
     if prior is not None:
         _invalid()
-    start, end, required = validated_group_parameters(
-        hidden, parameters, group_index, spec, extents, scope_ids, valid, sequence_starts)
+    trace = run_backbone_group_trace(
+        hidden, parameters, group_index=group_index, spec=spec, extents=extents,
+        scope_ids=scope_ids, valid=valid, generation=generation,
+        prefix_digest=prefix_digest, sequence_starts=sequence_starts)
+    start, end = trace.layer_start, trace.layer_end
+    _start, _end, required = validated_group_parameters(
+        hidden, parameters, group_index, spec, extents, scope_ids, valid,
+        sequence_starts)
     parameter_digest = _group_parameter_digest(parameters, tuple(sorted(required)))
     full_digest = _owned_parameter_tree_digest(
         parameters, spec, extents, execution_binding)
@@ -139,29 +140,8 @@ def run_backbone_group_numerical(
                                  "valid": _content_digest(valid),
                                  "starts": None if sequence_starts is None else _content_digest(sequence_starts),
                                  "generation": generation, "prefix": prefix_digest})
-    caches = []
-    current = hidden
-    for layer in range(start, end):
-        prefix = f"blocks.{layer}."
-        attn_input = _norm(
-            current, parameters[prefix + "attn_norm"],
-            spec.rms_norm_epsilon)
-        scope = AttentionScope(
-            scope_ids, layer, generation, prefix_digest, sequence_starts=sequence_starts)
-        attention, cache = ccgqa({
-                name: parameters[prefix + name]
-                for name in _ATTENTION_PARAMETERS},
-            attn_input, valid, scope)
-        current = current + attention
-        feed_input = _norm(
-            current, parameters[prefix + "ffn_norm"],
-            spec.rms_norm_epsilon)
-        activated = mx.maximum(
-            feed_input @ parameters[prefix + "ffn_in"].T, 0)
-        current = current + (
-            (activated * activated) @ parameters[prefix + "ffn_out"].T)
-        caches.append(cache)
-    cache_digest = _cache_chain_digest(tuple(caches))
+    current = trace.hidden
+    cache_digest = _cache_chain_digest(trace.attention_caches)
     predecessor = prior.execution_digest if prior is not None else _content_digest(hidden)
     execution_digest = _hash_record({
         "group": group_index, "layer_start": start, "layer_end": end,
@@ -172,7 +152,7 @@ def run_backbone_group_numerical(
         "input": _content_digest(hidden), "output": _content_digest(current),
         "predecessor": predecessor, "status": UNADMITTED_NUMERICAL,
     })
-    return UnadmittedGroupNumerical(current, group_index, start, end, tuple(caches),
+    return UnadmittedGroupNumerical(current, group_index, start, end, trace.attention_caches,
                                     parameter_digest, full_digest, scope_digest,
                                     _content_digest(hidden), cache_digest, predecessor, execution_digest)
 

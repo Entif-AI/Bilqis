@@ -1,17 +1,22 @@
 """B11.1a fixed group execution, without producer admission."""
 from dataclasses import replace
 import unittest
+from unittest.mock import patch
 
 import mlx.core as mx
 import numpy as np
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.backbone_group_numerical import (
-    UnadmittedGroupNumerical, UnadmittedBackboneSession, run_backbone_group_numerical,
+    BackboneGroupTrace, UnadmittedGroupNumerical, UnadmittedBackboneSession,
+    run_backbone_group_numerical, run_backbone_group_trace,
 )
+from bilqis_mlx.runtime import backbone_group_numerical as backbone_numerical
 from bilqis_mlx.runtime.model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, expected_bamf_shapes,
 )
+from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
+from .autodiff_hot_path_probe import HotPathProbe
 
 
 SPEC = ModelTopologySpecV2()
@@ -44,6 +49,49 @@ def _run(hidden, params, group_index=1):
 
 
 class BackboneGroupNumericalTests(unittest.TestCase):
+    def test_live_trace_keeps_tensor_content_attestation_out_of_autodiff(self):
+        params = _params()
+        hidden = mx.arange(4 * SPEC.width, dtype=mx.float32).reshape(
+            1, 4, SPEC.width) / 1000
+
+        def objective(input_hidden):
+            with patch(
+                "bilqis_mlx.runtime.backbone_group_numerical._content_digest",
+                side_effect=AssertionError("forensic content digest entered live trace"),
+            ):
+                result = run_backbone_group_trace(
+                    input_hidden, params, group_index=1, spec=SPEC, extents=EXTENTS,
+                    scope_ids=mx.zeros(input_hidden.shape[:2], dtype=mx.int32),
+                    valid=mx.ones(input_hidden.shape[:2], dtype=mx.bool_),
+                    generation="d" * 64, prefix_digest="e" * 64)
+                self.assertIs(type(result), BackboneGroupTrace)
+                return mx.sum(result.hidden)
+
+        gradient = mx.grad(objective)(hidden)
+        self.assertEqual(gradient.shape, hidden.shape)
+        self.assertTrue(bool(mx.all(mx.isfinite(gradient))))
+
+    def test_disposable_hot_path_probe_reports_trace_cost_classes(self):
+        params = _params()
+        hidden = mx.arange(4 * SPEC.width, dtype=mx.float32).reshape(
+            1, 4, SPEC.width) / 1000
+
+        def synthetic_step():
+            with defer_host_tensor_validation():
+                return backbone_numerical.run_backbone_group_trace(
+                    hidden, params, group_index=1, spec=SPEC, extents=EXTENTS,
+                    scope_ids=mx.zeros(hidden.shape[:2], dtype=mx.int32),
+                    valid=mx.ones(hidden.shape[:2], dtype=mx.bool_),
+                    generation="d" * 64, prefix_digest="e" * 64)
+
+        result, report = HotPathProbe().measure_step(synthetic_step)
+        self.assertIs(type(result), BackboneGroupTrace)
+        self.assertEqual(report.forward_group_executions, 1)
+        self.assertEqual(report.host_readbacks, 0)
+        self.assertEqual(report.full_tree_hashes, 0)
+        self.assertEqual(report.validation_synchronizations, 0)
+        self.assertGreater(report.wall_seconds, 0.0)
+
     def test_four_real_layers_emit_only_unadmitted_numerical_result(self):
         params = _params()
         hidden = mx.arange(4 * SPEC.width, dtype=mx.float32).reshape(
