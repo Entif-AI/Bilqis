@@ -13,6 +13,8 @@ from bilqis_mlx.semantics.cognitive_dependencies import (
     DependencyKind, DependencyRef,
 )
 from bilqis_mlx.learning.atlas_readout import DecisionKind, ExecutionMode
+import bilqis_mlx.learning.atlas_engram_reads.source_owner as motif_read_impl
+import bilqis_mlx.semantics.atlas_features.formal as formal_features_impl
 from bilqis_mlx.runtime.atlas_model import bind_compiled_training_batch, forward_bamf
 from bilqis_mlx.runtime.atlas_training_authority import (
     bind_logical_batch_training_authority,
@@ -104,6 +106,41 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
                             compiled.sources[0]),
                         compiled.source_execution_authority)
                     self.assertEqual(index, rows.index(source_row))
+
+    def test_four_bound_rows_reuse_source_authority_at_both_motif_sites(self):
+        _rows, prepared = self.prepare("A.IDENTITY", 37124, 4)
+        parameters = self.candidate.retained_state.optimizer.parameters
+        manifest = self.candidate.retained_state.allocations.manifest
+        with patch.object(
+                motif_read_impl, "source_qualified_motif_context",
+                side_effect=AssertionError("B08 redrew motif source")), \
+                patch.object(
+                    motif_read_impl, "lookup_source_pinned_frame_schema",
+                    side_effect=AssertionError("B08 reopened frame schemas")), \
+                patch.object(
+                    formal_features_impl, "load_pinned_atlas_snapshot",
+                    side_effect=AssertionError("B08 reopened formal Atlas")), \
+                patch.object(
+                    formal_features_impl, "lookup_source_pinned_frame_schema",
+                    side_effect=AssertionError("B08 reopened formal schema")), \
+                patch.object(
+                    formal_features_impl, "source_graph_for_adapter",
+                    side_effect=AssertionError("B08 reopened formal source graph")):
+            for site_index in (0, 1):
+                for compiled in prepared.compiled_rows:
+                    row = compiled.compiled.compiled.rows[0]
+                    hidden = mx.zeros(
+                        (1, len(row.positions), self.candidate.topology.width),
+                        dtype=mx.float32)
+                    result = motif_read_impl._read_retained_compiled_motifs(
+                        compiled.compiled, parameters, compiled.sources, manifest,
+                        spec=self.candidate.topology,
+                        extents=self.candidate.extents,
+                        site_index=site_index, hidden=hidden,
+                        seal=motif_read_impl._B13_EXECUTION_SEAL,
+                        source_execution_authorities=(
+                            compiled.source_execution_authority,))
+                    self.assertEqual(result.hidden.shape, hidden.shape)
 
     def test_training_bridge_registers_every_compiled_row_with_source_custody(self):
         with patch.object(
