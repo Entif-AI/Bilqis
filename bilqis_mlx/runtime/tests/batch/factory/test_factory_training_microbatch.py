@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 import bilqis_mlx.runtime.atlas_model_microbatch as microbatch_impl
 import bilqis_mlx.learning._engram.atlas_engram_source_context as motif_context_impl
+import bilqis_mlx.learning.atlas_engram_reads.source_owner as motif_read_impl
 import bilqis_mlx.learning.source_atoms.embedding as source_embedding_impl
 from bilqis_mlx.runtime.factory_candidate_microbatch import (
     execute_factory_logical_batch,
@@ -25,6 +26,9 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
                 patch.object(
                     motif_context_impl, "public_formal_context",
                     side_effect=AssertionError("B11 redrew motif source")) as motif_redraw, \
+                patch.object(
+                    motif_read_impl, "lookup_source_pinned_frame_schema",
+                    side_effect=AssertionError("B11 reopened released frame schemas")) as schema_reload, \
                 patch.object(
                     source_embedding_impl, "_build_source_atom_handoff_from_snapshot",
                     side_effect=AssertionError("B11 rebuilt source handoff")) as atom_redraw, \
@@ -51,6 +55,7 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
         self.assertGreaterEqual(gradient.wall_seconds, 0.0)
         self.assertEqual(atlas_reload.call_count, 0)
         self.assertEqual(motif_redraw.call_count, 0)
+        self.assertEqual(schema_reload.call_count, 0)
         self.assertEqual(atom_redraw.call_count, 0)
         self.assertEqual(atom_recheck.call_count, 0)
         self.assertEqual(row_decode.call_count, 0)
