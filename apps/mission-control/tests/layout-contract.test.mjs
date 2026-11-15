@@ -13,6 +13,12 @@ const teacherCss = () => [
   "teacher/teacher-detail.css",
   "teacher/teacher-comparison.css",
 ].map(source).join("\n");
+const salienceCss = () => [
+  "salience/salience.css",
+  "salience/salience-core.css",
+  "salience/salience-evidence.css",
+  "salience/salience-analysis.css",
+].map(source).join("\n");
 
 test("shared shell owns stable grouped navigation and compact destination geometry", () => {
   const tokens = source("visual-tokens.css");
@@ -64,7 +70,7 @@ test("operator values and wide School data stay inside their owning surfaces", (
   const home = source("home/home.css");
   const school = source("school/school.css");
   const teacher = teacherCss();
-  const salience = source("salience/salience.css");
+  const salience = salienceCss();
 
   assert.match(home, /\.home-current dd[^}]*overflow-wrap:\s*anywhere/s);
   assert.match(home, /\.home-school-table-wrap[^}]*overflow:\s*auto/s);
