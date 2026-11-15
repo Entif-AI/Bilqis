@@ -20,7 +20,7 @@ from .kernel import (
 
 def _encode_compiled(
         compiled, vectors, parameters, *, atlas_selections=None,
-        qualified_feature_rows_by_row=None):
+        source_execution_authorities=None):
     compiled.__post_init__()
     _validate_encoder_parameters(parameters, compiled.extents)
     if (type(vectors) is not CompiledEmbeddingVectors or
@@ -37,20 +37,20 @@ def _encode_compiled(
     if (type(atlas_selections) is not tuple
             or len(atlas_selections) != len(compiled.compiled.rows)):
         _invalid()
-    if qualified_feature_rows_by_row is None:
-        qualified_feature_rows_by_row = (
+    if source_execution_authorities is None:
+        source_execution_authorities = (
             (None,) * len(compiled.compiled.rows))
-    if (type(qualified_feature_rows_by_row) is not tuple
-            or len(qualified_feature_rows_by_row) != len(compiled.compiled.rows)):
+    if (type(source_execution_authorities) is not tuple
+            or len(source_execution_authorities) != len(compiled.compiled.rows)):
         _invalid()
     seeds, members, factors = [], [], []
     width = len(compiled.compiled.padded_positions[0])
     for (row, groups, projection, atoms, supplied, expected, atomic_frames,
-         atomic_handles, atlas_selection, qualified_feature_rows) in zip(
+         atomic_handles, atlas_selection, source_execution_authority) in zip(
             compiled.compiled.rows, compiled._groups, compiled._projections,
             vectors.atoms, vectors.members, compiled.member_requests, atomic_rows,
             compiled.atomic_handles, atlas_selections,
-            qualified_feature_rows_by_row):
+            source_execution_authorities):
         if (not isinstance(atoms, mx.array) or atoms.shape != (row.visible_end, WIDTH) or atoms.dtype != mx.float32 or
                 (host_tensor_validation_enabled() and not bool(mx.all(mx.isfinite(atoms)))) or type(supplied) is not tuple or
                 any(type(item) is not MemberEmbedding for item in supplied) or
@@ -75,7 +75,7 @@ def _encode_compiled(
                 seed, matrix, factor, cursor = encode_group(
                     group, supplied, cursor, closure_outputs, compiled, parameters,
                     atlas_selection=atlas_selection,
-                    qualified_feature_rows=qualified_feature_rows)
+                    source_execution_authority=source_execution_authority)
                 row_seeds.append(seed)
                 closure_outputs[position.frame_handle] = seed
                 row_factors.append(factor)
