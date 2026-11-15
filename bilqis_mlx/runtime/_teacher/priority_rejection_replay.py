@@ -1,5 +1,6 @@
 """B13-authenticated rejection replay for C03.4 priority recency."""
 import hashlib
+from functools import lru_cache
 from pathlib import Path
 
 from bilqis_mlx.data_plane import data_plane
@@ -10,12 +11,15 @@ from .priority_rejection_projection import RejectionProjection
 
 
 SHA256_HEX_LENGTH = 64
-_REJECTION_JOURNAL_INVALID = "BAMF_PRIORITY_REJECTION_JOURNAL_INVALID"
-_PROJECTIONS = {}
 
 
 def _invalid(reason):
     ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+
+
+@lru_cache(maxsize=16)
+def _projection(_identity):
+    return RejectionProjection()
 
 
 def _validated_rejection(event, parent, cache):
@@ -100,10 +104,7 @@ def current_rejections(run_dir, parent, cache):
         cache.accepted_manifest_sha256,
         parent.retained_state.optimizer_step,
     )
-    for stale in tuple(_PROJECTIONS):
-        if stale[0] == path_key and stale != identity:
-            del _PROJECTIONS[stale]
-    projection = _PROJECTIONS.setdefault(identity, RejectionProjection())
+    projection = _projection(identity)
     return projection.refresh(
         journal,
         lambda event: _validated_rejection(event, parent, cache),
