@@ -77,7 +77,7 @@ def current_rejections(run_dir, parent, cache):
             _invalid("BAMF_PRIORITY_REJECTION_RECEIPT_INVALID")
         if stored_receipt != receipt_raw:
             _invalid("BAMF_PRIORITY_REJECTION_RECEIPT_DRIFT")
-        selected = evidence.get("selected_option_id")
+        selected = evidence.get("capability")
         visit_id = evidence.get("visit_id")
         candidate_step = evidence.get("candidate_optimizer_step")
         retained_step = evidence.get("retained_optimizer_step")
@@ -96,4 +96,37 @@ def current_rejections(run_dir, parent, cache):
     return tuple(rows)
 
 
-__all__ = ("current_rejections",)
+def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps):
+    """Project authenticated C16.3 rejection pressure into the teacher horizon rule.
+
+    Rejections do not mutate the accepted teacher state.  The accepted-generation
+    journal is therefore the authoritative pressure source for the current
+    speculative lineage.  Feed only that bounded projection into the existing
+    candidate-step policy rather than inventing a second shortening cadence.
+    """
+    from bilqis_mlx.learning.learning_experiment import candidate_step_budget
+
+    reasons = {}
+    consecutive_interference = 0
+    for selected, _visit_id, reason, _receipt in current_rejections(
+            run_dir, parent, cache):
+        if selected != capability:
+            continue
+        reasons[reason] = reasons.get(reason, 0) + 1
+        consecutive_interference = (
+            0 if reason == "NO_MEASURABLE_TARGET_GAIN"
+            else consecutive_interference + 1)
+    projected_teacher = {
+        "causal_experiment": {
+            "capability_stagnation": {
+                capability + "|": {
+                    "current_rejection_reasons": reasons,
+                    "consecutive_interference_rejections": consecutive_interference,
+                },
+            },
+        },
+    }
+    return candidate_step_budget(configured_steps, projected_teacher, capability)
+
+
+__all__ = ("candidate_step_horizon", "current_rejections")

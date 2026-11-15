@@ -82,23 +82,27 @@ def training_authority(
 
 
 def source_qualified_state(
-        parent=None, *, authority=None, extents=None, spec=None, **authority_kwargs):
+        parent=None, *, authority=None, extents=None, spec=None, steps=1,
+        **authority_kwargs):
     parent = parent_state() if parent is None else parent
     transaction = begin_candidate(parent)
     authority = training_authority(**authority_kwargs) if authority is None else authority
     spec = ModelTopologySpecV2() if spec is None else spec
     extents = extents or GenerationExtents(
         1, 1, "a" * 64, parent.allocations.manifest.digest, "c" * 64)
+    if type(steps) is not int or steps < 1:
+        raise ValueError("steps must be a positive integer")
     with shape_patch():
-        transaction = candidate_step(
-            transaction,
-            {NAME: mx.array([[3., 4.], [0., 0.]], dtype=mx.float32)},
-            execution_provenance(
-                transaction.parent, rows=(0,),
-                candidate_step=transaction.update_steps + 1,
-                extents=extents),
-            HP, spec=spec, extents=extents, loss_bearing=True, max_norm=1.,
-            training_authority=authority)
+        for _ in range(steps):
+            transaction = candidate_step(
+                transaction,
+                {NAME: mx.array([[3., 4.], [0., 0.]], dtype=mx.float32)},
+                execution_provenance(
+                    transaction.parent, rows=(0,),
+                    candidate_step=transaction.update_steps + 1,
+                    extents=extents),
+                HP, spec=spec, extents=extents, loss_bearing=True, max_norm=1.,
+                training_authority=authority)
     return parent, transaction, resolve_candidate(transaction, accepted=True), authority
 
 

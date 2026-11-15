@@ -29,7 +29,7 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     load_accepted_generation,
 )
 from bilqis_mlx.runtime.factory_candidate_training import (
-    FactoryDeliveryObservation, _frame_stats,
+    FactoryDeliveryObservation, _frame_stats, execute_factory_candidate_step,
 )
 from bilqis_mlx.runtime.factory_complete_solver import factory_evaluation_instrument
 from bilqis_mlx.runtime.factory_task_authority import (
@@ -175,6 +175,58 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
                 payload["positions"][0]["row"]["sha256"],
                 store_sidecar(run_dir, rows[0])["sha256"])
             self.assertEqual(payload["controls"]["realized_cost"]["optimizer_steps"], 1)
+
+    def test_candidate_continuation_executes_second_step_from_speculative_weights(self):
+        rows, delivery = draw(self, "B.IDBOOLOPS", 37119, 1)
+        with TemporaryDirectory() as run_dir_value:
+            run_dir = Path(run_dir_value)
+            publish(self, run_dir)
+            source_context = self.accepted_source_context(run_dir)
+            parent = load_accepted_generation(run_dir)
+            capture, first_observation = observation(
+                run_dir, "B.IDBOOLOPS", rows, 37119)
+            first = execute_factory_candidate_step(
+                run_dir, source_context, parent, str(self.artifact),
+                self.feature_receipt.path, rows,
+                capability="B.IDBOOLOPS", delivery=delivery,
+                requested_count=2, source_seed=37119, source_each=1,
+                optimizer_step_seed=21,
+                visit_provenance=visit_provenance("B.IDBOOLOPS"),
+                teacher_strategy={"policy": "candidate-horizon"},
+                teacher_hparams=HP, max_norm=1.0,
+                observation=first_observation, finalize_candidate=False)
+            self.assertEqual(first.transaction.update_steps, 1)
+            self.assertIsNone(first.transaction.motif_transition)
+            second_observation = FactoryDeliveryObservation(
+                capture, parent.retained_state.optimizer_step + 2,
+                rows, 37119)
+            with patch(
+                    "bilqis_mlx.runtime.factory_candidate_training.bamf_value_and_grad",
+                    wraps=bamf_value_and_grad) as gradient:
+                second = execute_factory_candidate_step(
+                    run_dir, source_context, parent, str(self.artifact),
+                    self.feature_receipt.path, rows,
+                    capability="B.IDBOOLOPS", delivery=delivery,
+                    requested_count=2, source_seed=37119, source_each=1,
+                    optimizer_step_seed=22,
+                    visit_provenance=visit_provenance("B.IDBOOLOPS"),
+                    teacher_strategy={"policy": "candidate-horizon"},
+                    teacher_hparams=HP, max_norm=1.0,
+                    observation=second_observation,
+                    candidate=first.transaction, finalize_candidate=True)
+            second_params = gradient.call_args.args[0]
+            for name, value in first.transaction.optimizer.parameters.items():
+                self.assertTrue(bool(mx.array_equal(second_params[name], value)))
+            self.assertEqual(second.transaction.update_steps, 2)
+            self.assertEqual(len(second.transaction.step_proofs), 2)
+            self.assertEqual(len(second.transaction.training_authorities), 2)
+            self.assertEqual(
+                tuple(proof.training_authority_sha256 for proof in second.transaction.step_proofs),
+                tuple(authority.digest for authority in second.transaction.training_authorities))
+            deltas = tuple(
+                after - parent.retained_state.optimizer.update_counts[name]
+                for name, after in second.transaction.optimizer.update_counts.items())
+            self.assertTrue(any(bool(mx.any(delta == 2)) for delta in deltas))
 
     def test_persisted_correction_holds_training_batch_before_gradient_read(self):
         rows, delivery = draw(self, "B.IDBOOLOPS", 37118, 1)
