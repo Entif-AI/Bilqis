@@ -65,14 +65,14 @@ export function diffRows(episode) {
   const scalar = (value) => value ?? "UNAVAILABLE";
   return Object.freeze([
     Object.freeze({
-      label: "Target score",
+      labelKey: "learning.comparison.targetScore",
       before: scoreText(episode.target.before),
       challenger: scoreText(episode.target.candidateAfter),
       committed: scoreText(episode.target.committedAfter),
       state: episode.target.candidateAfter ? "PRESENT" : "PARTIAL",
     }),
     Object.freeze({
-      label: "Protected score",
+      labelKey: "learning.comparison.protectedScore",
       before: scoreText(episode.protected.before),
       challenger: scoreText(episode.protected.candidateAfter),
       committed: scoreText(episode.protected.committedAfter),
@@ -81,28 +81,28 @@ export function diffRows(episode) {
         : episode.protected.candidateAfter ? "PRESENT" : "PARTIAL",
     }),
     Object.freeze({
-      label: "Whole-school relevant delta",
+      labelKey: "learning.comparison.wholeSchoolDelta",
       before: "0",
       challenger: episode.wholeSchool.candidateDelta ?? "UNAVAILABLE",
       committed: episode.wholeSchool.committedDelta ?? "UNAVAILABLE",
       state: episode.wholeSchool.state,
     }),
     Object.freeze({
-      label: "Capability debt",
+      labelKey: "learning.comparison.capabilityDebt",
       before: episode.debt.before,
       challenger: episode.debt.candidateAfter ?? "UNAVAILABLE",
       committed: episode.debt.committedAfter ?? "UNAVAILABLE",
       state: episode.debt.candidateAfter === null ? "PARTIAL" : "PRESENT",
     }),
     Object.freeze({
-      label: "Memory bytes",
+      labelKey: "learning.comparison.memoryBytes",
       before: scalar(episode.memory.beforeBytes),
       challenger: scalar(episode.memory.candidateAfterBytes),
       committed: scalar(episode.memory.committedAfterBytes),
       state: episode.memory.state,
     }),
     Object.freeze({
-      label: "Allocation slots",
+      labelKey: "learning.comparison.allocationSlots",
       before: scalar(episode.allocation.beforeSlots),
       challenger: scalar(episode.allocation.candidateAfterSlots),
       committed: scalar(episode.allocation.committedAfterSlots),
