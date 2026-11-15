@@ -19,6 +19,13 @@ from .atlas_frontier_selection_validation import catalog_digest, obligation_sign
 from .candidate_realizations import project_realized_target
 from .executable_release import ExecutableFactoryRelease
 
+_ANCHOR_RELEASE_INDEX = 1
+_ANCHOR_POLICY_INDEX = 2
+_ANCHOR_CURSOR_INDEX = 3
+_RANKED_IDENTITY_INDEX = 3
+_MAX_CAPABILITY_DELTA = 9
+_ZERO_SHA256 = "0" * hashlib.sha256().digest_size * 2
+
 
 def obligation_digest(rows) -> str:
     return hashlib.sha256(_bytes(tuple(
@@ -44,42 +51,46 @@ def credited_obligation_keys(
     owner = _history_owner(prior)
     credited = set()
     for semantic_id, obligation_sha256 in current.items():
-        credit = owner.matching_credit(
+        credits = owner.matching_credits(
             prior.history_head, semantic_id, obligation_sha256)
-        if credit is None:
+        if not credits:
             continue
-        anchor = owner.snapshot_anchor(
-            prior.history_head, credit.selection_snapshot_sha256)
-        if (anchor is None
-                or anchor[1] != credit.predecessor_release_sha256
-                or anchor[2] != credit.policy_epoch
-                or anchor[3] != credit.cursor):
-            _fail("BAMF_PLANNER_HISTORY_RECEIPT_CREDIT_INVALID")
-        bound_snapshot = replace(
-            snapshot,
-            admitted_factory_release_sha256=credit.predecessor_release_sha256,
-            policy_epoch=credit.policy_epoch,
-            cursor=credit.cursor,
-            snapshot_sha256="0" * 64,
-        )
-        bound_snapshot = replace(
-            bound_snapshot, snapshot_sha256=bound_snapshot.expected_digest())
-        bound_closure = replace(
-            closure,
-            snapshot_sha256=bound_snapshot.snapshot_sha256,
-            closure_sha256="0" * 64,
-        )
-        bound_closure = replace(
-            bound_closure, closure_sha256=bound_closure.expected_digest())
-        _, ranked = _ranked_ready_targets(
-            bound_snapshot, bound_closure, credit.requested_obligation_keys)
-        if (not ranked or min(ranked)[3] != semantic_id
-                or credit.introduced_capability_count
-                   > min(9, bound_snapshot.budget.max_candidates)
-                or credit.introduced_semantic_count
-                   > bound_snapshot.budget.max_identity_rows):
-            continue
-        credited.add((semantic_id, obligation_sha256))
+        for credit in credits:
+            anchor = owner.snapshot_anchor(
+                prior.history_head, credit.selection_snapshot_sha256)
+            if (anchor is None
+                    or anchor[_ANCHOR_RELEASE_INDEX]
+                       != credit.predecessor_release_sha256
+                    or anchor[_ANCHOR_POLICY_INDEX] != credit.policy_epoch
+                    or anchor[_ANCHOR_CURSOR_INDEX] != credit.cursor):
+                _fail("BAMF_PLANNER_HISTORY_RECEIPT_CREDIT_INVALID")
+            bound_snapshot = replace(
+                snapshot,
+                admitted_factory_release_sha256=credit.predecessor_release_sha256,
+                policy_epoch=credit.policy_epoch,
+                cursor=credit.cursor,
+                snapshot_sha256=_ZERO_SHA256,
+            )
+            bound_snapshot = replace(
+                bound_snapshot, snapshot_sha256=bound_snapshot.expected_digest())
+            bound_closure = replace(
+                closure,
+                snapshot_sha256=bound_snapshot.snapshot_sha256,
+                closure_sha256=_ZERO_SHA256,
+            )
+            bound_closure = replace(
+                bound_closure, closure_sha256=bound_closure.expected_digest())
+            _, ranked = _ranked_ready_targets(
+                bound_snapshot, bound_closure, credit.requested_obligation_keys)
+            if (ranked and min(ranked)[_RANKED_IDENTITY_INDEX] == semantic_id
+                    and credit.introduced_capability_count
+                       <= min(
+                           _MAX_CAPABILITY_DELTA,
+                           bound_snapshot.budget.max_candidates)
+                    and credit.introduced_semantic_count
+                       <= bound_snapshot.budget.max_identity_rows):
+                credited.add((semantic_id, obligation_sha256))
+                break
     return credited
 
 
