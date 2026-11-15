@@ -181,12 +181,17 @@ button:disabled, select:disabled { opacity: .65; }
   .shell { grid-template-columns: minmax(0, 1fr); }
   .shell[data-inspector="open"] { grid-template-columns: minmax(0, 1fr); }
   .shell[data-inspector="open"] .inspector-splitter { display: none; }
+  .shell[data-inspector="open"] .inspector {
+    grid-column: auto;
+    position: fixed;
+    align-self: auto;
+  }
   .inspector {
     display: block;
     position: fixed;
     top: 0;
     right: 0;
-    width: min(var(--inspector-width, 360px), 92vw);
+    width: min(92vw, 480px);
     box-shadow: -24px 0 70px var(--shadow);
     transform: translateX(100%);
     transition: transform 160ms ease;

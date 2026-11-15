@@ -172,6 +172,9 @@ async function fixtureGeometry(page) {
   await openFixtureLearningInspector(page);
   const narrow = await page.evaluate(() => ({
     modal: document.querySelector("#inspector").getAttribute("aria-modal"),
+    inspectorWidth: document.querySelector("#inspector").getBoundingClientRect().width,
+    viewportWidth: innerWidth,
+    documentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
     splitterDisplay: getComputedStyle(document.querySelector("#inspector-splitter")).display,
     splitterTab: document.querySelector("#inspector-splitter").tabIndex,
     mainInert: document.querySelector("#main-content").inert,
@@ -179,6 +182,9 @@ async function fixtureGeometry(page) {
     skipInert: document.querySelector(".skip-link").inert,
   }));
   check(narrow.modal === "true", "narrow inspector is not modal");
+  check(!narrow.documentOverflow, "narrow inspector created document overflow");
+  check(narrow.inspectorWidth >= narrow.viewportWidth * 0.8,
+    "narrow inspector did not use a deliberate wide overlay posture");
   check(narrow.splitterDisplay === "none" && narrow.splitterTab === -1,
     "narrow inspector exposes desktop splitter");
   check(narrow.mainInert && narrow.railInert && narrow.skipInert,

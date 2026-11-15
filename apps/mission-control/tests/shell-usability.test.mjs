@@ -234,6 +234,7 @@ test("shared CSS gives rail, help, temporal, and context controls explicit acces
   assert.match(shell, /\.context-disclosure > summary[^}]*background:\s*var\(--surface-2\)/s);
   assert.match(shell, /\.shell\[data-inspector="open"\][^{]*\{[^}]*grid-template-columns:[^}]*var\(--inspector-width/s);
   assert.match(shell, /@media \(max-width:\s*980px\)[\s\S]*\.shell\[data-inspector="open"\][^{]*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(shell, /@media \(max-width:\s*980px\)[\s\S]*\.shell\[data-inspector="open"\] \.inspector\s*\{[^}]*grid-column:\s*auto[^}]*position:\s*fixed[^}]*\}[\s\S]*\.inspector\s*\{[^}]*width:\s*min\(92vw, 480px\)/s);
   assert.match(components, /\.ui-context-help__trigger/);
   assert.match(components, /\.ui-context-help__content:popover-open/);
   assert.match(components, /\.ui-temporal__detail:popover-open/);
