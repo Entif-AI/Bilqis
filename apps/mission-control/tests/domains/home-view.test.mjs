@@ -339,6 +339,56 @@ test("failed unsubscribe does not make a changed context look successfully activ
   await controller.deactivate();
 });
 
+test("concurrent changed-context activation waits for failed teardown and retries it", async () => {
+  const calls = [];
+  let subscriptions = 0;
+  let stopCalls = 0;
+  let rejectFirstStop;
+  const api = {
+    async status() { return { learnerActive: true }; },
+    async query(request) {
+      calls.push(request.family);
+      return emptyPage(request.family);
+    },
+    subscribeEvents() {
+      subscriptions += 1;
+      return async () => {
+        stopCalls += 1;
+        if (stopCalls === 1) {
+          await new Promise((resolve, reject) => {
+            rejectFirstStop = reject;
+          });
+        }
+      };
+    },
+  };
+  const controller = createHomeController(api, { schedule: () => 1, cancel: () => {} });
+  await controller.activate(context, {
+    host: fakeHost(), onInspect: () => {}, defense: { historical: false },
+  });
+  assert.equal(calls.length, 9);
+  assert.equal(subscriptions, 1);
+
+  const changed = { ...context, generation: context.generation + 1 };
+  const first = controller.activate(changed, {
+    host: fakeHost(), onInspect: () => {}, defense: { historical: false },
+  });
+  const rejected = assert.rejects(first, /TRANSIENT_UNSUBSCRIBE_FAILURE/);
+  await new Promise((resolve) => setImmediate(resolve));
+  const second = controller.activate(changed, {
+    host: fakeHost(), onInspect: () => {}, defense: { historical: false },
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  rejectFirstStop(new Error("TRANSIENT_UNSUBSCRIBE_FAILURE"));
+
+  await rejected;
+  await second;
+  assert.equal(stopCalls, 2);
+  assert.equal(calls.length, 18);
+  assert.equal(subscriptions, 2);
+  await controller.deactivate();
+});
+
 test("historical home never opens a live CP04 subscription", async () => {
   let subscriptions = 0;
   const api = {

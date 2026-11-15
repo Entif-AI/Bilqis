@@ -19,7 +19,7 @@ export function createHomeController(api, {
 } = {}) {
   let pages = {}, model = null, context = null, historical = false;
   let renderTarget = null, inspectTarget = null, navigateTarget = null;
-  let unsubscribe = null, timer = null, epoch = 0, queue = Promise.resolve();
+  let unsubscribe = null, teardown = null, timer = null, epoch = 0, queue = Promise.resolve();
   let disconnected = false, needsSnapshot = false, pending = new Map();
   let activationKey = null;
 
@@ -164,9 +164,42 @@ export function createHomeController(api, {
       startTimer(current);
     }, 2000);
   }
+
+  async function stopSubscription() {
+    while (typeof unsubscribe === "function") {
+      if (teardown !== null) {
+        try {
+          await teardown;
+        } catch {
+          // The caller that owns the failed teardown reports it. A concurrent
+          // lifecycle transition retries the still-owned subscription below.
+        }
+        continue;
+      }
+      const stop = unsubscribe;
+      const pendingStop = Promise.resolve().then(() => stop());
+      teardown = pendingStop;
+      try {
+        await pendingStop;
+        if (unsubscribe === stop) unsubscribe = null;
+        return;
+      } finally {
+        if (teardown === pendingStop) teardown = null;
+      }
+    }
+  }
+
   async function activate(nextContext, { host, onInspect, onNavigate, defense } = {}) {
     const nextHistorical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
     const nextKey = keyFor(nextContext, nextHistorical);
+    if (teardown !== null) {
+      try {
+        await teardown;
+      } catch {
+        // Re-evaluate the requested context after the owning caller observes
+        // the teardown failure; stopSubscription() will retry if still needed.
+      }
+    }
     if (activationKey === nextKey) {
       renderTarget = host;
       inspectTarget = onInspect;
@@ -176,15 +209,13 @@ export function createHomeController(api, {
     }
     const current = ++epoch;
     if (timer !== null) { cancel(timer); timer = null; }
-    const stop = unsubscribe;
-    unsubscribe = null;
     queue = Promise.resolve(); pending = new Map();
     renderTarget = host; inspectTarget = onInspect; navigateTarget = onNavigate;
     historical = nextHistorical;
     context = { ...nextContext, mode: historical ? "HISTORICAL" : nextContext?.mode }; pages = {}; disconnected = false; needsSnapshot = false;
     model = referenceProjection && nextContext?.fixture === true && !historical ? referenceProjection() : null;
     render({ resetDetails: true });
-    if (typeof stop === "function") await stop();
+    await stopSubscription();
     if (current !== epoch) return;
     activationKey = nextKey;
     await enqueue(current, async () => {
@@ -200,10 +231,8 @@ export function createHomeController(api, {
     ++epoch;
     activationKey = null;
     if (timer !== null) { cancel(timer); timer = null; }
-    const stop = unsubscribe;
-    unsubscribe = null;
     renderTarget = null; inspectTarget = null; navigateTarget = null;
-    if (typeof stop === "function") await stop();
+    await stopSubscription();
   }
   return Object.freeze({ activate, deactivate, currentModel: () => model });
 }
