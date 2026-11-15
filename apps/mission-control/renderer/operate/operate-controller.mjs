@@ -5,12 +5,14 @@ import {
   buildSubmitRequest,
   contextConflicts,
   initialOperateState,
+  operateStageAvailable,
   parseParameters,
   terminalReceipt,
 } from "./operate-model.mjs";
 import { bindOperateInteractions, renderOperateMarkup } from "./operate-view.mjs";
 import { operateT } from "./operate-messages.mjs";
 import { t } from "../foundation/i18n.mjs";
+import { focusToken, restoreFocus } from "../foundation/accessibility.mjs";
 
 function sameContext(left, right) {
   return Boolean(left && right) && left.runId === right.runId &&
@@ -45,9 +47,18 @@ export function createOperateController(api) {
   let active = false;
   let activeTrainingOperationId = null;
 
-  function setState(next) {
+  function setState(next, { focusStage = null } = {}) {
+    const activeElement = typeof document !== "undefined" ? document.activeElement : null;
+    const token = activeElement && typeof host?.contains === "function" && host.contains(activeElement)
+      ? focusToken(activeElement)
+      : null;
     state = Object.freeze(next);
     render();
+    if (focusStage) {
+      queueMicrotask(() => host?.querySelector(`[data-operate-stage="${focusStage}"]`)?.focus?.());
+    } else if (token && typeof document !== "undefined") {
+      queueMicrotask(() => restoreFocus(document, token, "#domain-view"));
+    }
   }
 
   function render() {
@@ -56,8 +67,9 @@ export function createOperateController(api) {
     host.innerHTML = renderOperateMarkup(state, defense);
     bindOperateInteractions(host, {
       onAction: selectAction,
-      onDryRun: (value) => setState({ ...state, dryRun: value, preview: null, inspection: null, conflicts: [], authorization: "", phase: "IDLE", error: null }),
-      onParameters: (value) => { state = Object.freeze({ ...state, parametersText: value, preview: null, inspection: null, conflicts: [], authorization: "", phase: "IDLE", error: null }); },
+      onStage: selectStage,
+      onDryRun: (value) => setState({ ...state, activeStage: "request", dryRun: value, preview: null, inspection: null, conflicts: [], authorization: "", phase: "IDLE", error: null }),
+      onParameters: (value) => { state = Object.freeze({ ...state, activeStage: "request", parametersText: value, preview: null, inspection: null, conflicts: [], authorization: "", phase: "IDLE", error: null }); },
       onAuthorization: (value) => {
         state = Object.freeze({ ...state, authorization: value });
         const submit = host?.querySelector("[data-operate-submit]");
@@ -72,6 +84,11 @@ export function createOperateController(api) {
       onOpenReceipt: openReceipt,
       onOpenPostcondition: openPostcondition,
     });
+  }
+
+  function selectStage(stage) {
+    if (!operateStageAvailable(state, stage)) return;
+    setState({ ...state, activeStage: stage }, { focusStage: stage });
   }
 
   function selectAction(action) {
@@ -93,21 +110,21 @@ export function createOperateController(api) {
     try {
       parameters = parseParameters(state.parametersText);
     } catch (error) {
-      setState({ ...state, error: publicError(error), phase: "ERROR" });
+      setState({ ...state, activeStage: "request", error: publicError(error), phase: "ERROR" });
       return;
     }
-    setState({ ...state, phase: "PREVIEWING", preview: null, inspection: null, conflicts: [], authorization: "", error: null });
+    setState({ ...state, activeStage: "preflight", phase: "PREVIEWING", preview: null, inspection: null, conflicts: [], authorization: "", error: null }, { focusStage: "preflight" });
     try {
       const request = buildPreviewRequest({ action: state.action, dryRun: state.dryRun, parameters, context });
       const reviewed = await api.requestDryRun(request);
       const conflicts = contextConflicts(context, reviewed);
       setState({
-        ...state, preview: reviewed, conflicts, authorization: "",
+        ...state, activeStage: "preflight", preview: reviewed, conflicts, authorization: "",
         phase: conflicts.length ? "STALE_CONTEXT" : "REVIEW", error: null,
       });
       onAnnounce?.(operateT(conflicts.length ? "operate.announce.stale" : "operate.announce.ready"));
     } catch (error) {
-      setState({ ...state, phase: "ERROR", error: publicError(error) });
+      setState({ ...state, activeStage: "preflight", phase: "ERROR", error: publicError(error) });
     }
   }
 
@@ -119,7 +136,7 @@ export function createOperateController(api) {
     if (["create", "owner-launch", "resume"].includes(state.action)) {
       activeTrainingOperationId = state.preview.operation_id;
     }
-    setState({ ...state, phase: "SUBMITTING", error: null });
+    setState({ ...state, activeStage: "outcome", phase: "SUBMITTING", error: null }, { focusStage: "outcome" });
     try {
       const receipt = await api.requestCommand(request);
       let inspection;
@@ -147,7 +164,7 @@ export function createOperateController(api) {
   async function reconcile() {
     const operationId = state.inspection?.operation_id ?? state.preview?.operation_id;
     if (!operationId) return;
-    setState({ ...state, phase: "RECONCILING", error: null });
+    setState({ ...state, activeStage: "outcome", phase: "RECONCILING", error: null }, { focusStage: "outcome" });
     try {
       const inspection = await api.fetchReceipt(operationId);
       setState({ ...state, inspection, phase: terminalReceipt(inspection.receipt?.state) ? "TERMINAL" : "PENDING", error: null });

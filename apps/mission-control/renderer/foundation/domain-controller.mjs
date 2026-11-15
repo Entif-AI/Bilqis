@@ -121,11 +121,15 @@ export function activateDomainViews({
     void productionLineageController?.deactivate();
   }
   if (state?.view === "operate") {
+    const operateDefense = Object.freeze({
+      ...defense,
+      mutationAllowed: defense?.mutationAllowed === true && state?.mutationAvailable === true,
+    });
     void operateController?.activate(state.context, {
       target: document.querySelector("#domain-view"),
       onInspect,
       onAnnounce,
-      defense,
+      defense: operateDefense,
     });
   } else {
     void operateController?.deactivate();
