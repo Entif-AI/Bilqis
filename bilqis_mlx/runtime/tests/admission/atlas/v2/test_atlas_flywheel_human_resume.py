@@ -125,7 +125,8 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
         output, errors = io.StringIO(), io.StringIO()
 
         def cold_operator_probe(
-                run_dir, *, minutes, max_visits, steps_per_visit, reserve_gib, progress=None):
+                run_dir, *, minutes, max_visits, steps_per_visit, reserve_gib,
+                source_prefetch_workers, progress=None):
             from bilqis_mlx.runtime.bamf_operator import BamfOperatorResult
             from bilqis_mlx.runtime.bamf_operator.session import _execution_context
 
@@ -152,7 +153,7 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
         self.assertEqual((code, errors.getvalue()), (0, ""))
         operate.assert_called_once_with(
             self.run, minutes=90, max_visits=1, steps_per_visit=16, reserve_gib=100.0,
-            progress=ANY)
+            source_prefetch_workers=2, progress=ANY)
         return self._json_records(output.getvalue())[-1]
 
     def test_human_resume_runs_real_parameter_flywheel_from_accepted_custody(self):
