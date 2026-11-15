@@ -6,7 +6,6 @@ from pathlib import Path
 
 from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
-from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 
 from .codec import load_bamf_bundle
 from .publication import (
@@ -19,9 +18,7 @@ from .records import (
 
 
 def _accepted_source_authority_registry(run_dir: Path, student: CompleteStudent):
-    from .source_authority_custody import (
-        resolve_source_authority_registry,
-    )
+    from .source_authority_custody import resolve_source_authority_registry
     return resolve_source_authority_registry(
         run_dir, student.correction_frontier)
 
@@ -37,7 +34,6 @@ class AcceptedGenerationIdentity:
     extents_digest: str
     optimizer_step: int
     candidate_identity_sha256: str
-
 
 def _read_accepted_locked(
         run_dir: Path, *, accepted_parent: tuple[str, CompleteStudent] | None = None):

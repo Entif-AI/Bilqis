@@ -2,7 +2,9 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
+import bilqis_mlx.runtime.atlas_model_microbatch as microbatch_impl
 from bilqis_mlx.runtime.factory_candidate_microbatch import (
     execute_factory_logical_batch,
 )
@@ -15,15 +17,26 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
     def test_four_distinct_factory_rows_use_one_vectorized_gradient_launch(self):
         rows, prepared = self.prepare("A.IDENTITY", 37172, 4)
         resource_plan, _ = _resource_plan(prepared, self.candidate, None)
-        gradient, authorities, targets = execute_factory_logical_batch(
-            dict(self.candidate.retained_state.optimizer.parameters),
-            prepared, self.context, self.feature_context.snapshot,
-            self.generation, None, resource_plan)
+        with patch.object(
+                microbatch_impl, "_decode_bamf_producer_row",
+                wraps=microbatch_impl._decode_bamf_producer_row) as row_decode, \
+                patch.object(
+                    microbatch_impl, "loss_bearing_bamf",
+                    wraps=microbatch_impl.loss_bearing_bamf) as row_loss:
+            gradient, authorities, targets = execute_factory_logical_batch(
+                dict(self.candidate.retained_state.optimizer.parameters),
+                prepared, self.context, self.feature_context.snapshot,
+                self.generation, None, resource_plan)
         row_ids = tuple(row["id"] for row in rows)
 
         self.assertEqual(resource_plan.groups, ((0, 1, 2, 3),))
         self.assertEqual(gradient.gradient_launches, 1)
         self.assertEqual(gradient.vectorized_microbatches, 1)
+        self.assertEqual(gradient.materialization_barriers, 1)
+        self.assertEqual(gradient.scalar_fallback_rows, 0)
+        self.assertGreaterEqual(gradient.wall_seconds, 0.0)
+        self.assertEqual(row_decode.call_count, 0)
+        self.assertEqual(row_loss.call_count, 0)
         self.assertEqual(len(gradient.loss_executions), 4)
         self.assertEqual(len(targets), 4)
         self.assertEqual(
