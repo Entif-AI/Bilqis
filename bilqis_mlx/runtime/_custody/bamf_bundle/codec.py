@@ -40,8 +40,12 @@ class _ValidatedBundleParts:
 def _write_file(path: Path, raw: bytes) -> str:
     with path.open("xb") as stream:
         stream.write(raw)
+        from .publication.instrumentation import note_write
+        note_write(len(raw))
         stream.flush()
         os.fsync(stream.fileno())
+        from .publication.instrumentation import note_fsync
+        note_fsync(len(raw))
     return sha(raw)
 
 
@@ -113,7 +117,7 @@ def save_bamf_bundle(candidate: BamfBundleCandidate, destination: Path, *,
         os.fsync(directory)
     finally:
         os.close(directory)
-    load_bamf_bundle(destination, expected_manifest_sha256=digest)
+    validate_bamf_bundle_custody(destination, expected_manifest_sha256=digest)
     return {**manifest, "manifest_sha256": digest}
 
 
@@ -258,6 +262,8 @@ def load_bamf_bundle(root: Path, *, expected_manifest_sha256: str | None = None)
         expected_manifest_sha256 = sha(manifest_path.read_bytes())
     retained, parts = _load_retained_candidate_state_with_parts(
         root, expected_manifest_sha256=expected_manifest_sha256)
+    from .publication.instrumentation import note_bundle_load
+    note_bundle_load(parts.manifest)
     manifest = parts.manifest
     student = CompleteStudent(
         manifest["run_id"], manifest["generation"], manifest["parent_manifest_sha256"],

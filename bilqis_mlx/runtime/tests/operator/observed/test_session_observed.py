@@ -64,6 +64,7 @@ class SessionObservationTests(unittest.TestCase):
     def test_operator_publishes_terminal_only_after_publication(self):
         import json
         from tempfile import TemporaryDirectory
+        from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import PublicationMetrics
         from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
         with TemporaryDirectory() as tmp:
             path = Path(tmp)
@@ -74,6 +75,7 @@ class SessionObservationTests(unittest.TestCase):
             snapshots = []
             def publish(*args, **kwargs):
                 snapshots.append(json.loads((path / 'trainer-observed.json').read_text())['visits'][-1])
+                kwargs['publication_observer'](PublicationMetrics(1, 2, 3, 4, 5))
             prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
             with patch(prefix + 'prepare_bamf_visit', return_value=prepared), patch(
                     prefix + 'accept_and_publish', side_effect=publish), patch(
@@ -82,6 +84,11 @@ class SessionObservationTests(unittest.TestCase):
             final = json.loads((path / 'trainer-observed.json').read_text())['visits'][-1]
             self.assertEqual((snapshots[0]['phase'], snapshots[0]['outcome']), ('PUBLISHING', 'RUNNING'))
             self.assertEqual((final['phase'], final['outcome']), ('COMPLETED', 'ACCEPTED'))
+            self.assertEqual(final['publication_parent_bundle_loads'], 1)
+            self.assertEqual(final['publication_child_bundle_loads'], 2)
+            self.assertEqual(final['publication_tensor_bytes_read'], 3)
+            self.assertEqual(final['publication_write_bytes'], 4)
+            self.assertEqual(final['publication_fsync_bytes'], 5)
 
     def test_horizon_stops_after_real_motif_transition(self):
         from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon
