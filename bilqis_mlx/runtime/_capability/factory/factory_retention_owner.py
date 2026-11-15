@@ -158,7 +158,8 @@ def _foundation_retention_screen(
         source_context, parent, cache, fixed_cohort, parent_solver,
         parent_generation)
     parent_assessment, parent_assessment_cache = use_parent_assessment(
-        parent_identity, parent_solver, fixed_cohort, parent_generation)
+        parent_identity, parent_solver, fixed_cohort, parent_generation,
+        scope=cache)
     candidate_solver, candidate_generation = factory_complete_solver(
         source_context, candidate_bundle, artifact_path, fixed_instruments)
     decision = evaluate_foundation_fixed_school_candidate(

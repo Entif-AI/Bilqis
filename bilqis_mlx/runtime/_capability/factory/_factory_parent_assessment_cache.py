@@ -115,14 +115,20 @@ class _CacheEntry:
 class _ParentAssessmentCache:
     def __init__(self):
         self._lock = threading.RLock()
-        self._by_run: dict[str, _CacheEntry] = {}
+        self._by_scope: dict[object, tuple[object | None, _CacheEntry]] = {}
 
     def use(
-            self, identity: ParentAssessmentCacheIdentity, solver: CompleteSolver,
-            cohort: EvaluationCohort, generation: str,
+            self, scope: object, identity: ParentAssessmentCacheIdentity,
+            solver: CompleteSolver, cohort: EvaluationCohort, generation: str,
     ) -> tuple[Assessment, ParentAssessmentCacheReceipt]:
         with self._lock:
-            current = self._by_run.get(identity.run_id)
+            scope_key = scope if isinstance(scope, str) else id(scope)
+            scoped = self._by_scope.get(scope_key)
+            current = None
+            if scoped is not None:
+                retained_scope, retained_entry = scoped
+                if retained_scope is None or retained_scope is scope:
+                    current = retained_entry
             if current is not None and current.identity == identity:
                 assessment = _require_assessment(
                     current.assessment, cohort, generation)
@@ -135,12 +141,13 @@ class _ParentAssessmentCache:
                 cohort, generation)
             entry = _CacheEntry(
                 identity, assessment, _entry_digest(identity, assessment))
-            self._by_run[identity.run_id] = entry
+            retained_scope = None if isinstance(scope, str) else scope
+            self._by_scope[scope_key] = (retained_scope, entry)
             return assessment, _receipt(entry, False)
 
     def clear(self) -> None:
         with self._lock:
-            self._by_run.clear()
+            self._by_scope.clear()
 
 
 _CACHE = _ParentAssessmentCache()
@@ -182,6 +189,8 @@ def use_parent_assessment(
         solver: CompleteSolver,
         cohort: EvaluationCohort,
         generation: str,
+        *,
+        scope: object | None = None,
 ) -> tuple[Assessment, ParentAssessmentCacheReceipt]:
     """Reuse only one exact accepted-parent assessment per run identity."""
     if (
@@ -197,7 +206,8 @@ def use_parent_assessment(
     ):
         _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_INPUT_INVALID")
     identity.__post_init__()
-    return _CACHE.use(identity, solver, cohort, generation)
+    cache_scope = identity.run_id if scope is None else scope
+    return _CACHE.use(cache_scope, identity, solver, cohort, generation)
 
 
 def factory_parent_assessment_identity(
