@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const root = path.resolve(__dirname, "../../../..");
-const baseRef = process.env.BILQIS_CAPABILITY_BASE_REF || "df57fe448af9c79db8f9a6a2704564baec7e4c84";
+const baseRef = process.env.BILQIS_CAPABILITY_BASE_REF || "a68961296b9ae4dc40b8813b2b91fd1633453c73";
 const { assetPathForRendererRequest } = require("../../electron/renderer-protocol.cjs");
 const fromBase = relative => execFileSync("git", ["show", `${baseRef}:${relative}`], {
   cwd: root, encoding: "utf8",

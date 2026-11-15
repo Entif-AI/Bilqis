@@ -1,7 +1,9 @@
 # Mission Control Capability Explorer rendered acceptance evidence
 
-Issue #1131 redesigns `VIEW-D-003` from unified baseline
-`df57fe448af9c79db8f9a6a2704564baec7e4c84`.
+Issue #1131 redesigns `VIEW-D-003`. Development began from unified baseline
+`df57fe448af9c79db8f9a6a2704564baec7e4c84`; final integration and rendered
+acceptance were refreshed against unified baseline
+`a68961296b9ae4dc40b8813b2b91fd1633453c73`.
 
 All screenshots use the repository's checked-in Capability Explorer fixture. They
 are rendered interface evidence only and do not represent live learner state.
