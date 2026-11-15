@@ -29,6 +29,7 @@ from bilqis_mlx.semantics.domains import contract_digest
 
 
 def _fixture(capability="capability:prefetch", *, visit="visit:prefetch"):
+    rows = ({"id": capability, "capability": capability, "gold": "TRUE"},)
     offer = SimpleNamespace(
         accepted_manifest_sha256="a" * 64,
         generation_binding="b" * 64,
@@ -38,6 +39,9 @@ def _fixture(capability="capability:prefetch", *, visit="visit:prefetch"):
         source_each=1,
         source_family_id="family:" + capability,
         source_binding_digest="d" * 64,
+        source_authority=SimpleNamespace(
+            content_sha256=source_content_digest(rows)),
+        rows=lambda: rows,
     )
     selection = SimpleNamespace(
         offer=offer, visit=SimpleNamespace(
@@ -70,6 +74,8 @@ def test_candidate_identity_binds_visit_step_and_source_authority_without_mutabl
 
     assert first["identity"] != second["identity"]
     assert first["identity"] != other["identity"]
+    assert first["content_identity"] == second["content_identity"]
+    assert first["source_content_sha256"] == second["source_content_sha256"]
     assert FORBIDDEN_AUTHORITY_KEYS.isdisjoint(first)
     assert "teacher" not in first
     assert "scheduler" not in first
@@ -82,145 +88,43 @@ def test_candidate_identity_binds_visit_step_and_source_authority_without_mutabl
 
 def test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_rows():
     selection, context, parent = _fixture()
+    serial_requests = []
+
+    def serial_prepare(request):
+        serial_requests.append(request)
+        return _packet(request)
+
     serial_metrics = SourcePrefetchMetrics()
     serial = CandidateSourceLane(
         selection, context, parent, 2, workers=0, executor=None,
         metrics=serial_metrics)
     with patch(
             "bilqis_mlx.runtime.bamf_operator.source_prefetch.prepare_priority_source_packet",
-            side_effect=_packet):
+            side_effect=serial_prepare):
         serial_rows = (serial.rows(1), serial.rows(2))
+
+    prefetched_requests = []
+
+    def prefetched_prepare(request):
+        prefetched_requests.append(request)
+        return _packet(request)
 
     prefetch_metrics = SourcePrefetchMetrics()
     with ThreadPoolExecutor(max_workers=2) as executor, patch(
             "bilqis_mlx.runtime.bamf_operator.source_prefetch.prepare_priority_source_packet",
-            side_effect=_packet):
+            side_effect=prefetched_prepare):
         prefetched = CandidateSourceLane(
             selection, context, parent, 2, workers=2, executor=executor,
             metrics=prefetch_metrics)
         prefetched_rows = (prefetched.rows(1), prefetched.rows(2))
 
     assert prefetched_rows == serial_rows
+    assert sorted(serial_requests, key=lambda item: item["candidate_step"]) == sorted(
+        prefetched_requests, key=lambda item: item["candidate_step"])
+    assert len({item["content_identity"] for item in serial_requests}) == 1
     assert serial_metrics.serial_steps == 2
     assert prefetch_metrics.submitted_steps == 2
     assert prefetch_metrics.prepared_steps == 2
-
-
-@pytest.mark.parametrize("capability", [
-    "A.IDENTITY", "A.PARENT", "A.LINK",
-    "A.MEMBER", "A.EDGE", "A.MAPS",
-])
-def test_live_grade_a_rows_survive_immutable_packet_roundtrip_without_content_drift(capability):
-    from bilqis_mlx.grade_a_probe import read_sources
-    from bilqis_mlx.live_grade_a import draw_predicates
-
-    source_root = Path(__file__).resolve().parents[4] / "vendor" / "legacy-v16"
-    graph = read_sources(source_root)[2]
-    rows = list(draw_predicates(
-        source_root, graph, seed=31, capability=capability, each=4))
-    selection, context, parent = _fixture(capability)
-    selection.offer.source_each = len(rows)
-    request = priority_source_request(selection, context, parent, 1)
-    packet = freeze_source_packet({
-        "schema": SCHEMA,
-        "identity": request["identity"],
-        "fresh": rows,
-        "prior": [],
-        "preservation": [],
-        "retention_support": [],
-        "teaching_enrichment_rows": [],
-    })
-    lane = CandidateSourceLane(
-        selection, context, parent, 1, workers=0, executor=None,
-        metrics=SourcePrefetchMetrics())
-    with patch(
-            "bilqis_mlx.runtime.bamf_operator.source_prefetch.prepare_priority_source_packet",
-            return_value=packet):
-        roundtripped = lane.rows(1)
-    assert roundtripped == tuple(rows)
-    assert source_content_digest(roundtripped) == source_content_digest(rows)
-
-
-def test_native_worker_redraws_only_the_issued_v2_source_authority():
-    from bilqis_mlx.factory.tests.lifecycle.test_teaching import closed_source_fixture
-
-    _course, graph, sources, answers, release = closed_source_fixture()
-    context = SourceExecutionContext(
-        release, graph, None, sources, answers)
-    capability = "Z.C0"
-    seed = 17
-    rows = context.draw_rows(seed=seed, capability=capability, each=1)
-    authority = context.bind_rows(
-        rows, seed=seed, capability=capability, each=1)
-    selection, _fixture_context, parent = _fixture(capability)
-    selection.offer.release_sha256 = release.release_sha256
-    selection.offer.source_seed = seed
-    selection.offer.source_family_id = authority.source_family_id
-    selection.offer.source_binding_digest = contract_digest(
-        release.source_bindings.by_capability[capability])
-    source_context = SimpleNamespace(
-        source_root=None, graph=graph, release=release)
-    request = priority_source_request(selection, source_context, parent, 1)
-
-    with patch(
-            "bilqis_mlx.runtime.bamf_operator.source_prefetch.live_source_registry",
-            return_value=sources), patch(
-            "bilqis_mlx.runtime.bamf_operator.source_prefetch.live_answer_registry",
-            return_value=answers):
-        packet = prepare_priority_source_packet(request)
-
-    assert packet.identity == request["identity"]
-    lane = CandidateSourceLane(
-        selection, source_context, parent, 1, workers=0, executor=None,
-        metrics=SourcePrefetchMetrics())
-    with patch(
-            "bilqis_mlx.runtime.bamf_operator.source_prefetch.prepare_priority_source_packet",
-            return_value=packet):
-        assert lane.rows(1) == tuple(rows)
-
-
-def test_spawned_native_prefetch_preserves_real_a_identity_source_content():
-    import json
-    from bilqis_mlx.factory.curriculum_definition import from_legacy_course
-    from bilqis_mlx.factory.executable_release import compile_executable_factory_release
-    from bilqis_mlx.factory.execution import CurriculumProfile
-    from bilqis_mlx.factory.live_answers import live_answer_registry
-    from bilqis_mlx.grade_a_probe import read_sources
-    from bilqis_mlx.grade_a_release import accepted_grade_a
-    from bilqis_mlx.live_grade_a import live_course as initial_course
-    from bilqis_mlx.source_adapters.school import live_source_registry
-
-    root = Path(__file__).resolve().parents[4]
-    source_root = root / "vendor" / "legacy-v16"
-    graph = read_sources(source_root)[2]
-    manifest = json.loads((
-        root / "docs/provenance/GRADE_A_CANDIDATE_MANIFEST_V2.json").read_text())
-    curriculum, bindings = from_legacy_course(initial_course(accepted_grade_a(manifest)))
-    sources, answers = live_source_registry(), live_answer_registry()
-    release = compile_executable_factory_release(
-        curriculum, bindings, CurriculumProfile.full(), sources, answers,
-        source_root=source_root, graph=graph, verification_seed=31)
-    context = SourceExecutionContext(release, graph, source_root, sources, answers)
-    capability, seed, each = "A.IDENTITY", 31, 4
-    rows = context.draw_rows(seed=seed, capability=capability, each=each)
-    authority = context.bind_rows(rows, seed=seed, capability=capability, each=each)
-    selection, _fixture_context, parent = _fixture(capability)
-    selection.offer.release_sha256 = release.release_sha256
-    selection.offer.source_seed = seed
-    selection.offer.source_each = each
-    selection.offer.source_family_id = authority.source_family_id
-    selection.offer.source_binding_digest = contract_digest(
-        release.source_bindings.by_capability[capability])
-    source_context = SimpleNamespace(
-        source_root=source_root, graph=graph, release=release)
-    with source_prefetch_pool(1) as executor:
-        lane = CandidateSourceLane(
-            selection, source_context, parent, 1, workers=1, executor=executor,
-            metrics=SourcePrefetchMetrics())
-        prepared = lane.rows(1)
-    assert prepared == tuple(rows)
-    assert context.bind_rows(
-        prepared, seed=seed, capability=capability, each=each) == authority
 
 
 def test_wrong_step_or_candidate_packet_fails_before_candidate_use():

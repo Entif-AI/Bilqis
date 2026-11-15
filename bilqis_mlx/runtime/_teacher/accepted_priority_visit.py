@@ -197,11 +197,11 @@ def execute_accepted_priority_candidate(selection, source_context,
     _require_current_visit(
         parent, cache, selection.visit,
         candidate_identity_sha256=planning_generation.parent_candidate_identity_sha256)
-    if prepared_source_rows is None:
+    prepared_source = (
         selection.offer.require_current(source_context, parent)
-    else:
+        if prepared_source_rows is None else
         selection.offer.require_current(
-            source_context, parent, prepared_rows=prepared_source_rows)
+            source_context, parent, prepared_rows=prepared_source_rows))
     policy = selection.policy
     lr = policy.get('lr') if isinstance(policy, dict) else None
     if (type(teacher_hparams) is not AdamWHyperparameters or type(lr) not in (int, float)
@@ -226,4 +226,5 @@ def execute_accepted_priority_candidate(selection, source_context,
         capture_diagnostics=capture_diagnostics, candidate=candidate,
         finalize_candidate=finalize_candidate,
         currentness_transaction=planning_generation._accepted_currentness,
-        semantic_context=semantic_context)
+        semantic_context=semantic_context,
+        prepared_source=prepared_source)

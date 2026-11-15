@@ -17,6 +17,13 @@ _SOURCE_BATCH_ISSUER = object()
 _DERIVED_ROW_KEYS = frozenset(("grade", "native_output", "auxiliary_labels"))
 
 
+@dataclass
+class SourcePreparationMetrics:
+    provider_draws: int = 0
+    source_context_builds: int = 0
+    compiled_source_builds: int = 0
+
+
 def _invalid_source_batch(reason: str):
     ErrorBus.raise_(SCHOOL.BAMF_TRAINING_ADAPTER.INVALID, reason=reason)
 
@@ -106,6 +113,9 @@ class SourceExecutionContext:
         default=None, init=False, repr=False, compare=False)
     _accepted_feature_context: object | None = field(
         default=None, init=False, repr=False, compare=False)
+    _source_preparation_metrics: SourcePreparationMetrics = field(
+        default_factory=SourcePreparationMetrics, init=False, repr=False,
+        compare=False)
 
     @classmethod
     def from_admitted_release(
@@ -218,25 +228,26 @@ class SourceExecutionContext:
         """Draw only the bound release's admitted capability/provider scope."""
         from ..factory.generation import draw_executable_release_rows
 
+        self._source_preparation_metrics.provider_draws += 1
         return draw_executable_release_rows(
             self.source_root, self.graph, self.release, self.source_registry,
             seed=seed, capability=capability, each=each)
 
-    def bind_rows(self, rows, *, seed: int, capability: str,
-                  each: int) -> SourceBatchAuthority:
-        """Issue process-live authority only for an exact owner-redrawn batch."""
-        if (not isinstance(rows, (tuple, list)) or not rows
-                or type(seed) is not int or seed < 0
+    def draw_bound_rows(self, *, seed: int, capability: str,
+                        each: int) -> tuple[tuple[dict, ...], SourceBatchAuthority]:
+        """Draw once and issue process-live authority for that exact source batch."""
+        if (type(seed) is not int or seed < 0
                 or not isinstance(capability, str) or not capability
                 or type(each) is not int or each < 1):
             _invalid_source_batch("FACTORY_SOURCE_BATCH_BINDING_INVALID")
-        expected = self.draw_rows(seed=seed, capability=capability, each=each)
-        if _source_content(rows) != _source_content(expected):
-            _invalid_source_batch("FACTORY_SOURCE_BATCH_CONTENT_DRIFT")
+        self.require_capabilities((capability,))
+        rows = tuple(self.draw_rows(seed=seed, capability=capability, each=each))
+        if len(rows) != each or any(type(row) is not dict for row in rows):
+            _invalid_source_batch("FACTORY_SOURCE_BATCH_BINDING_INVALID")
         execution = self.release.execution_plan.capability_map[capability]
-        content = _source_content(expected)
-        family = _source_family_for_rows(execution, expected)
-        episodes = tuple(_source_episode(family, row) for row in expected)
+        content = _source_content(rows)
+        family = _source_family_for_rows(execution, rows)
+        episodes = tuple(_source_episode(family, row) for row in rows)
         authority = object.__new__(SourceBatchAuthority)
         for name, value in (
                 ("release_sha256", self.release.release_sha256),
@@ -249,9 +260,51 @@ class SourceExecutionContext:
                 ("_issuance", _SOURCE_BATCH_ISSUER)):
             object.__setattr__(authority, name, value)
         authority.__post_init__()
+        return rows, authority
+
+    def require_bound_rows(
+            self, rows, authority: SourceBatchAuthority) -> SourceBatchAuthority:
+        """Verify exact rows against owner-issued authority without redrawing them."""
+        if (type(authority) is not SourceBatchAuthority
+                or not isinstance(rows, (tuple, list))):
+            _invalid_source_batch("FACTORY_SOURCE_BATCH_AUTHORITY_INVALID")
+        authority.__post_init__()
+        rows = tuple(rows)
+        if (authority.release_sha256 != self.release.release_sha256
+                or authority.capability_id
+                not in self.release.execution_plan.capability_map
+                or len(rows) != authority.each
+                or any(type(row) is not dict for row in rows)):
+            _invalid_source_batch("FACTORY_SOURCE_BATCH_AUTHORITY_INVALID")
+        execution = self.release.execution_plan.capability_map[
+            authority.capability_id]
+        family = _source_family_for_rows(execution, rows)
+        episodes = tuple(_source_episode(family, row) for row in rows)
+        if (authority.provider_id != execution.provider_id
+                or authority.provider_implementation_sha256
+                != execution.provider_implementation_sha256
+                or authority.content_sha256 != _source_content(rows)
+                or authority.source_family_id != family
+                or authority.episode_ids != episodes):
+            _invalid_source_batch("FACTORY_SOURCE_BATCH_CONTENT_DRIFT")
+        return authority
+
+    def bind_rows(self, rows, *, seed: int, capability: str,
+                  each: int) -> SourceBatchAuthority:
+        """Issue process-live authority only for an exact owner-redrawn batch."""
+        if (not isinstance(rows, (tuple, list)) or not rows
+                or type(seed) is not int or seed < 0
+                or not isinstance(capability, str) or not capability
+                or type(each) is not int or each < 1):
+            _invalid_source_batch("FACTORY_SOURCE_BATCH_BINDING_INVALID")
+        expected, authority = self.draw_bound_rows(
+            seed=seed, capability=capability, each=each)
+        if _source_content(rows) != _source_content(expected):
+            _invalid_source_batch("FACTORY_SOURCE_BATCH_CONTENT_DRIFT")
         return authority
 
 
 __all__ = (
-    "SourceBatchAuthority", "SourceExecutionContext", "source_content_digest",
+    "SourceBatchAuthority", "SourceExecutionContext", "SourcePreparationMetrics",
+    "source_content_digest",
 )

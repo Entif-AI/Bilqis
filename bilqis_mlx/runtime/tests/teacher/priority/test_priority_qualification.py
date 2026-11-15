@@ -41,6 +41,7 @@ class Offer:
     def require_current(self, context, parent):
         if self.held:
             raise ValueError('held')
+    require_qualified_current = require_current
 
 @pytest.fixture
 def qualification():
