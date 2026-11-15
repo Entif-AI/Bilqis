@@ -77,6 +77,9 @@ jobs:
       - name: Check BAMF flow-control policy
         run: |
           python3 -B scripts/check_bamf_flow_control.py
+      - name: Check BAMF predecessor invariant transfer
+        run: |
+          python3 -B scripts/check_bamf_invariant_transfer.py
       - name: Install historical semantic integrity dependencies
         if: steps.test-impact.outputs.expensive_tests == 'true'
         run: python3 -m pip install -r lib/ithkuil/requirements-semantic.txt
