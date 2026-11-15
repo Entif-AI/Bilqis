@@ -18,10 +18,16 @@ export function parseDeepLink(hash = "") {
   const originView = params.get("originView");
   const originKind = params.get("originKind");
   const originId = params.get("originId");
+  const modelSection = params.get("section");
+  const modelDiagnosticMode = params.get("diagnostic");
   const route = {
     ...(context ? { context } : {}),
     view,
     selected: kind && id ? { kind, id } : null,
+    ...(view === "model" && ["neural", "frames"].includes(modelSection)
+      ? { modelSection } : {}),
+    ...(view === "model" && ["current", "historical"].includes(modelDiagnosticMode)
+      ? { modelDiagnosticMode } : {}),
   };
   if (originView) {
     route.evidenceOrigin = {
@@ -42,6 +48,12 @@ export function buildDeepLink(state) {
     params.set("generation", state.context.generation);
     params.set("mode", state.context.historicalPinned ? "HISTORICAL" : "LIVE");
     if (state.context.fixture) params.set("fixture", "true");
+  }
+  if (state.view === "model" && ["neural", "frames"].includes(state.modelSection)) {
+    params.set("section", state.modelSection);
+  }
+  if (state.view === "model" && ["current", "historical"].includes(state.modelDiagnosticMode)) {
+    params.set("diagnostic", state.modelDiagnosticMode);
   }
   if (state.view === "evidence" && state.evidenceOrigin?.view) {
     params.set("originView", state.evidenceOrigin.view);

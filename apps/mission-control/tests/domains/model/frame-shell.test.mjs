@@ -1,11 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { mountFrameExplorer } from "../../../renderer/frames/frame-explorer.mjs";
 import { createFrameShell } from "../../../renderer/frames/frame-shell.mjs";
 
 const page = JSON.parse(readFileSync(new URL("../../../fixtures/frame-inspections-v1.json", import.meta.url)))[1];
 
-function harness(t) {
+function harness(t, { fixture = true } = {}) {
   const previous = { document: globalThis.document, window: globalThis.window };
   t.after(() => Object.assign(globalThis, previous));
   const element = () => ({ hidden: true, value: "7", innerHTML: "", textContent: "", replaceChildren() {}, addEventListener() {} });
@@ -20,15 +21,25 @@ function harness(t) {
     ['[data-test-id="shell-model-subnav"]', element()],
   ]);
   globalThis.document = { querySelector: key => nodes.get(key), querySelectorAll: () => [] };
-  let resolve;
-  globalThis.window = { bamfMissionControl: { querySnapshot: () => new Promise(done => { resolve = done; }) } };
-  const originalContext = { runId: "fixture-run", generation: 7, mode: "LIVE", freshness: "FRESH" };
+  let resolve; let queries = 0;
+  globalThis.window = { bamfMissionControl: { querySnapshot: () => { queries += 1; return new Promise(done => { resolve = done; }); } } };
+  const originalContext = { runId: fixture ? "fixture-run" : "production-run", generation: 7, mode: "LIVE", freshness: "FRESH", fixture };
   let state = { view: "model", modelSection: "frames", selected: null, context: originalContext, mutationAvailable: true };
   let defense = { id: "live", mutationAllowed: true, historical: false };
   const shell = createFrameShell({ getState: () => state, setState: next => { state = next; }, getDefense: () => defense,
-    render() {}, refresh() {}, onInspect() {} });
-  return { shell, originalContext, state: () => state, set: next => { state = next; }, defend: next => { defense = next; }, finish: () => resolve(structuredClone(page)) };
+    render() {}, refresh() {}, onInspect() {}, fixtureSupport: fixture ? { mountFrameExplorer } : null });
+  return { shell, host, originalContext, state: () => state, set: next => { state = next; }, defend: next => { defense = next; }, queries: () => queries, finish: () => resolve?.(structuredClone(page)) };
 }
+
+test("production Frames fail closed without loading fixture explorer data", t => {
+  const production = harness(t, { fixture: false });
+  production.shell.beforeRender(); production.shell.afterRender();
+  assert.equal(production.queries(), 0);
+  assert.equal(production.state().context, production.originalContext);
+  assert.match(production.host.innerHTML, /model-frame-production-unavailable/);
+  assert.match(production.host.innerHTML, /Frame compiler detail unavailable/);
+  assert.doesNotMatch(production.host.innerHTML, /ILLUSTRATIVE FIXTURE|fixture-run|current fixture|historical fixture/i);
+});
 
 test("reconnect discards the old return context and pending frame response", async t => {
   const fixture = harness(t);

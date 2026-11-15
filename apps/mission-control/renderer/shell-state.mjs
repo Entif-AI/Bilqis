@@ -212,6 +212,14 @@ export function withRoute(state, route = {}) {
   const evidenceOrigin = (
     view === "evidence" && origin && destinations.has(origin.view)
   ) ? origin : null;
+  const modelSection = view === "model"
+    ? (["neural", "frames"].includes(route.modelSection)
+      ? route.modelSection : state.modelSection ?? "neural")
+    : state.modelSection;
+  const modelDiagnosticMode = view === "model"
+    ? (["current", "historical"].includes(route.modelDiagnosticMode)
+      ? route.modelDiagnosticMode : state.modelDiagnosticMode ?? "current")
+    : state.modelDiagnosticMode;
   return {
     ...state,
     view,
@@ -219,6 +227,8 @@ export function withRoute(state, route = {}) {
       generationManifest: "UNKNOWN", topologyId: "UNKNOWN", factoryRelease: "UNKNOWN",
       semanticRelease: "UNKNOWN", coverage: "UNKNOWN", freshness: "UNKNOWN" }) : state.context,
     selected: route.selected ?? null,
+    modelSection,
+    modelDiagnosticMode,
     evidenceOrigin,
     inspectorOpen: Boolean(route.selected) && view !== "capability",
   };
@@ -230,6 +240,8 @@ export function navigate(state, view, selected = null) {
   return {
     ...state,
     view,
+    modelSection: view === "model" ? state.modelSection ?? "neural" : state.modelSection,
+    modelDiagnosticMode: view === "model" ? state.modelDiagnosticMode ?? "current" : state.modelDiagnosticMode,
     selected,
     evidenceOrigin: view === "evidence" ? state.evidenceOrigin : null,
     inspectorOpen: selected !== null,

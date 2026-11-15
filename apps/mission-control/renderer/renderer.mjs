@@ -43,6 +43,7 @@ import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
 import { createInteractionController } from "./interactions/controller.mjs";
 import { createProductionLearningController } from "./learning/controller.mjs";
+import { createProductionNeuralController } from "./neural/neural-controller.mjs";
 import { routeForObjectRef } from "./interactions/app-uri.mjs";
 import { withHistoricalLens } from "./interactions/model.mjs";
 import {
@@ -73,6 +74,7 @@ const teacherController = createTeacherController(window.bamfMissionControl, {
   fixtureSupport: fixtureSupport?.teacher ?? null,
 });
 const learningController = createProductionLearningController(window.bamfMissionControl);
+const neuralController = createProductionNeuralController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
   storage: window.localStorage,
@@ -104,7 +106,8 @@ const operateController = createOperateController(window.bamfMissionControl);
 
 const frameShell = createFrameShell({
   getState: () => state, setState: next => { state = next; }, getDefense: () => defense,
-  render, onInspect: openInspector,
+  render, onInspect: openInspector, fixtureSupport: fixtureSupport?.frame ?? null,
+  contextForNeuralMode: fixtureSupport?.neural?.contextForMode ?? null,
   refresh: () => { renderContext(state, defense); renderNavigation(state, navigateTo); renderInspector(state, defense); setHash(); },
 });
 const { establishSnapshot } = createBootstrapController({
@@ -201,6 +204,14 @@ function render() {
     onReconnect: () => establishSnapshot({ preserveRoute: true }),
     onNavigate: navigateTo,
     onInspect: openInspector,
+    onModelDiagnosticMode: (mode) => {
+      if (!state || state.view !== "model" || !["current", "historical"].includes(mode)) return;
+      const context = launchMode === "fixtures"
+        ? fixtureSupport?.neural?.contextForMode?.(state.context, mode) ?? state.context
+        : state.context;
+      state = { ...state, context, modelDiagnosticMode: mode, selected: null, inspectorOpen: false };
+      render();
+    },
   }, bootstrapState);
   syncInspectorWidth();
   frameShell.afterRender();
@@ -209,7 +220,7 @@ function render() {
     state, getState: () => state, defense, api: window.bamfMissionControl, homeController,
     resourceController, operateController, teacherController, capabilityExplorer,
     onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
-    learningController, schoolDomainSupport: fixtureSupport?.school ?? null,
+    learningController, neuralController, schoolDomainSupport: fixtureSupport?.school ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;

@@ -81,7 +81,6 @@ export function createBootstrapController({
   async function establishSnapshot({ preserveRoute = false } = {}) {
     clearReconnect();
     const current = getState();
-    const modelSection = current?.modelSection;
     resetFrameShell();
     if (current) setState({ ...current, mutationAvailable: false });
     const requestedRoute = preserveRoute && current
@@ -182,7 +181,6 @@ export function createBootstrapController({
         ? Object.freeze({ ...shellState.context, fixture: true })
         : shellState.context,
       mutationAvailable: fixtureMode ? false : shellState.mutationAvailable,
-      modelSection,
     });
     setBootstrap(Object.freeze({ phase: "ready", connection, error: null }));
     render();

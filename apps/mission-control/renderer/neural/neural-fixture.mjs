@@ -35,7 +35,7 @@ export const HISTORICAL_TOPOLOGY = Object.freeze({
 
 export const CURRENT_NEURAL_SAMPLE = Object.freeze({
   schema: "bilqis.bamf.mission-control.neural-runtime-sample/v1",
-  generation: 44238,
+  generation: 7,
   optimizerStep: 8112,
   stepDurationMs: 12.5,
   activeParameters: 173_948_416,
@@ -46,7 +46,7 @@ export const CURRENT_NEURAL_SAMPLE = Object.freeze({
 
 export const HISTORICAL_NEURAL_SAMPLE = Object.freeze({
   schema: "bilqis.bamf.mission-control.neural-runtime-sample/v1",
-  generation: 116760,
+  generation: 6,
   optimizerStep: 116760,
   stepDurationMs: null,
   activeParameters: null,
@@ -55,10 +55,29 @@ export const HISTORICAL_NEURAL_SAMPLE = Object.freeze({
   authority: "MEASURED",
 });
 
+export const NEURAL_FIXTURE_CONTEXTS = Object.freeze({
+  current: Object.freeze({
+    generation: 7,
+    generationManifest: "1111111111111111111111111111111111111111111111111111111111111111",
+    topologyId: "4444444444444444444444444444444444444444444444444444444444444444",
+    factoryRelease: "2222222222222222222222222222222222222222222222222222222222222222",
+    semanticRelease: "3333333333333333333333333333333333333333333333333333333333333333",
+    recordId: "operator-view:fixture-run:7",
+  }),
+  historical: Object.freeze({
+    generation: 6,
+    generationManifest: "8b5b2005ccf1656a56b35d817936c17816837d404cb92ce5231ff17947ac43f7",
+    topologyId: "da4f158d564c8439cdb8889a043847af3083795bd09e02faf44022fefe9d426f",
+    factoryRelease: "b2215733a09f850e07dd8bf0a9c79b2548aefb8fc61dd51f3efcdac96c619895",
+    semanticRelease: "5dde68833e1139b237456ad0a01c36c3cab559db6365d73c367af749e34163f0",
+    recordId: "operator-view:fixture-run:6",
+  }),
+});
+
 export const CCGQA_FIXTURE = Object.freeze([
   Object.freeze({
     layer: 3,
-    evidenceId: "fixture:ccgqa:g44238:l3",
+    evidenceId: "fixture:ccgqa:g7:l3",
     contract: "bilqis_mlx.runtime._model.backbone.atlas_attention.ccgqa",
     qUtilization: 0.91,
     kUtilization: 0.88,
@@ -76,7 +95,7 @@ export const CCGQA_FIXTURE = Object.freeze([
   }),
   Object.freeze({
     layer: 7,
-    evidenceId: "fixture:ccgqa:g44238:l7:mask-invalid",
+    evidenceId: "fixture:ccgqa:g7:l7:mask-invalid",
     contract: "bilqis_mlx.runtime._model.backbone.atlas_attention.ccgqa",
     qUtilization: 0.93,
     kUtilization: 0.90,
@@ -102,7 +121,7 @@ export const ATTNRES_FIXTURE = Object.freeze([
     sourceOrder: Object.freeze(["h0", "g1"]),
     weights: Object.freeze([0.61, 0.39]),
     gate: 0.014,
-    evidenceId: "fixture:depth:g44238:b1",
+    evidenceId: "fixture:depth:g7:b1",
   }),
   Object.freeze({
     boundaryGroup: 2,
@@ -111,7 +130,7 @@ export const ATTNRES_FIXTURE = Object.freeze([
     sourceOrder: Object.freeze(["h0", "g1", "g2"]),
     weights: Object.freeze([0.22, 0.31, 0.47]),
     gate: 0.027,
-    evidenceId: "fixture:depth:g44238:b2",
+    evidenceId: "fixture:depth:g7:b2",
   }),
   Object.freeze({
     boundaryGroup: 3,
@@ -120,7 +139,7 @@ export const ATTNRES_FIXTURE = Object.freeze([
     sourceOrder: Object.freeze(["h0", "g1", "g2", "g3"]),
     weights: Object.freeze([0.14, 0.19, 0.28, 0.39]),
     gate: 0.033,
-    evidenceId: "fixture:depth:g44238:b3",
+    evidenceId: "fixture:depth:g7:b3",
   }),
 ]);
 

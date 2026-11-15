@@ -302,6 +302,7 @@ export function renderChrome(
     state, defense, handlers.onInspect, handlers.api,
     handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,
     handlers.fixtureSupport?.currentViews ?? null,
+    handlers.onModelDiagnosticMode ?? null,
   );
   const currentView = state?.view ?? "mission-control";
   document.querySelector("#view-title").textContent = destinationLabel(currentView);

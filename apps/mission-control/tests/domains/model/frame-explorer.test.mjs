@@ -140,7 +140,7 @@ test("frame detail markup exposes stable unique hooks with progressive receipt d
   const example = page().examples[0];
   const html = renderFrameExample(example, 4);
   assert.deepEqual(duplicateTestIds(html), []);
-  for (const id of ["model-frame-receipt-provenance", "model-frame-position-0", "model-frame-position-0-table-wrap"]) {
+  for (const id of ["model-frame-help-provenance-trigger", "model-frame-receipt-provenance", "model-frame-position-0", "model-frame-position-0-table-wrap"]) {
     assert.match(html, new RegExp(`data-test-id="${id}"`), id);
   }
   assert.match(html, /<details class="frame-disclosure"/);

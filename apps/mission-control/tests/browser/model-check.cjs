@@ -16,7 +16,7 @@ const server = http.createServer((req, res) => {
     res.setHeader('Content-Type', name.endsWith('.css') ? 'text/css' : 'text/javascript'); res.end(source); return;
   }
   const prefix = '/apps/mission-control/renderer';
-  const asset = req.url.startsWith(prefix + '/') ? assetPathForRendererRequest('bamf-mc://app' + req.url.slice(prefix.length), path.join(root, 'apps/mission-control/renderer')) : null;
+  const asset = req.url.startsWith(prefix + '/') ? assetPathForRendererRequest('bamf-mc://app' + req.url.slice(prefix.length), path.join(root, 'apps/mission-control/renderer'), 'fixtures') : null;
   if (req.url !== '/' && !asset) { res.statusCode = 404; res.end(); return; }
   if (req.url === '/') {
     res.setHeader('Content-Type', 'text/html');

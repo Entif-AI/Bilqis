@@ -12,7 +12,10 @@ export async function modelJourney(page, framePages) {
   check(await hook('model-neural-workspace').count() === 1, 'neural workspace present');
   check(await hook('model-neural-topology-runtime').count() === 1, 'topology/runtime leads');
   check(await hook('model-neural-ccgqa-table').count() === 1, 'CCGQA analytical table present');
+  check(await hook('model-neural-help-topology-trigger').count() === 1, 'topology help present');
+  check(await hook('model-neural-help-instrumentation-trigger').count() === 1, 'instrumentation help present');
   check((await hook('model-neural-fixture-posture').innerText()).includes('read-only'), 'fixture posture explicit');
+  await hook('model-neural-ccgqa-disclosure').locator('summary').click();
   check((await hook('model-neural-ccgqa-layer-7').innerText()).includes('Mask-invalid violations: 2'), 'invalid evidence remains explicit');
   check(await page.evaluate(() => {
     const ids = [...document.querySelectorAll('[data-test-id^="model-"]')].map(element => element.dataset.testId);
@@ -42,6 +45,9 @@ export async function modelJourney(page, framePages) {
   await hook('model-frame-result-set').waitFor();
   check((await hook('model-frame-fixture-posture').innerText()).includes('READ ONLY'), 'frame fixture posture explicit');
   check((await hook('model-frame-coverage').innerText()).includes('3 returned fixture receipts'), 'frame coverage literal');
+  check(await hook('model-frame-help-concepts-trigger').count() === 1, 'frame concepts help present');
+  check(await hook('model-frame-help-controls-trigger').count() === 1, 'frame controls help present');
+  check(await page.locator('[data-source-unix-seconds]').count() >= 2, 'frame source timestamps use shared temporal primitive');
   await hook('model-frame-example').selectOption({ index: 1 });
   await hook('model-frame-selected-metrics').waitFor();
   check(await hook('model-frame-receipt-provenance').evaluate(node => node.open) === false, 'receipt provenance is progressive disclosure');

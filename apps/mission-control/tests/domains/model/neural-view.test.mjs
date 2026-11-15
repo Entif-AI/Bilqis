@@ -20,6 +20,7 @@ import {
   topologyPath,
 } from "../../../renderer/neural/neural-model.mjs";
 import { renderNeuralMarkup } from "../../../renderer/neural/neural-view.mjs";
+import { DEFAULT_LOCALE, FOUNDATION_MESSAGES } from "../../../renderer/foundation/i18n.mjs";
 import { duplicateTestIds } from "../../../renderer/foundation/test-hooks.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -87,6 +88,7 @@ test("historical generation uses its own v1 topology contract and no v2 diagnost
   assert.equal(source.includes("CURRENT_DEFAULT_TOPOLOGY = ModelTopologySpec("), true);
   assert.equal(source.includes("layers=6, heads=24, width=384, ffn_dimension=1536, context=96"), true);
   const fixture = neuralFixture("historical");
+  assert.equal(fixture.telemetry.generation, 6);
   assert.equal(fixture.ccgqa, null);
   assert.equal(fixture.attnres, null);
   assert.equal(fixture.refinementReceipts, null);
@@ -124,13 +126,34 @@ test("mask-invalid violation is invalid evidence, not a normal warning", () => {
 
 test("neural workspace uses stable unique hooks and mechanism-first hierarchy", () => {
   const markup = renderNeuralMarkup("current");
+  assert.equal(neuralFixture("current").telemetry.generation, 7);
   assert.deepEqual(duplicateTestIds(markup), []);
   for (const id of [
     "model-neural-workspace", "model-neural-fixture-posture", "model-neural-topology-runtime",
     "model-neural-ccgqa", "model-neural-attnres", "model-neural-refinement", "model-neural-instrumentation",
+    "model-neural-help-posture-trigger", "model-neural-help-topology-trigger",
+    "model-neural-help-authority-trigger", "model-neural-help-ccgqa-trigger",
+    "model-neural-help-attnres-trigger", "model-neural-help-refinement-trigger",
+    "model-neural-help-instrumentation-trigger",
   ]) assert.match(markup, new RegExp(`data-test-id="${id}"`), id);
   assert.ok(markup.indexOf('data-test-id="model-neural-topology-runtime"') < markup.indexOf('data-test-id="model-neural-ccgqa"'));
   assert.ok(markup.indexOf('data-test-id="model-neural-ccgqa"') < markup.indexOf('data-test-id="model-neural-refinement"'));
+  assert.match(markup, /data-test-id="model-neural-ccgqa-disclosure"/);
+  assert.match(markup, /data-test-id="model-neural-attnres-disclosure"/);
+  assert.match(markup, /data-test-id="model-neural-refinement-disclosure"/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds=/);
+  assert.doesNotMatch(markup, /does not prove|does not mean|does not imply/i);
+});
+
+test("production i18n catalog does not load Model fixture-only user-facing strings", () => {
+  const production = JSON.stringify(FOUNDATION_MESSAGES[DEFAULT_LOCALE]);
+  for (const fixtureOnly of [
+    "FIXTURE-BACKED DIAGNOSTICS",
+    "ILLUSTRATIVE FIXTURE · READ ONLY",
+    "Current BAMF v2 fixture",
+    "No live compiler producer is attached to this surface.",
+    "returned fixture receipts",
+  ]) assert.equal(production.includes(fixtureOnly), false, fixtureOnly);
 });
 
 test("historical neural fixture keeps unsupported instrumentation explicitly unavailable", () => {
