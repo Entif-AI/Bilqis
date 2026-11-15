@@ -83,3 +83,10 @@ test('unsafe generation gets localized recovery feedback', () => {
   assert.equal(validity, 'Enter a whole generation from 0 to 9007199254740991.');
   assert.equal(reported, true);
 });
+
+test('all analytical tables expose stable identity-column measurement hooks', () => {
+  const html = renderResourceMarkup(referenceResourceState());
+  const hooks = [...html.matchAll(/data-test-id="(resources-(?:decomposition|compute|length|timeline|comparison)-identity)"/g)];
+  assert.equal(hooks.length, 5);
+  assert.equal(new Set(hooks.map(match => match[1])).size, 5);
+});

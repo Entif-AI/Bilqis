@@ -403,13 +403,14 @@
     },
     {
       "issue": 1140,
-      "pr": 1155,
+      "pr": 1156,
       "state": "TURNED_IN",
-      "head_sha": "7f5d01e327220044d0d262bd220d89b7d0622c8f",
-      "summary": "Resources redesign turned in as ready PR #1155. Pinned design PASS, seven drift findings resolved, 30 Resources regressions, full leaf and 41 post-sync checks passed. Four rendered variants, expanded copy, keyboard/focus and axe evidence passed. PR mergeable; hosted gates and human review/merge remain pending.",
+      "head_sha": "40dc67c4335000b842ad239bc611fa6119951f77",
+      "summary": "PR #1155 is merged. Final same-acceptance Resources narrow-screen correction is turned in as ready PR #1156 on unified 490e86e1. 31 Resources regressions / 42 scoped tests, bounded sticky-column browser regression, updated renders and axe checks pass; scoped NO_DRIFT. Follow-up hosted gates and human review/merge pending.",
       "resume_trigger": null,
-      "preserved_branch": "codex/1140-resources-redesign-20261114",
-      "head_sha_role": "Review-ready candidate before this inventory-only receipt; Resources runtime/style remain at e5d19a4c with b621e1bb unified consumed."
+      "preserved_branch": "codex/1140-resources-narrow-followup-20261114",
+      "head_sha_role": "Exact ready narrow-screen follow-up candidate before this inventory-only receipt; initial PR #1155 merged at 490e86e1.",
+      "merged_pr": 1155
     }
   ]
 }

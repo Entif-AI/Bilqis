@@ -19,14 +19,16 @@
       "density": "comfortable",
       "width": 390,
       "scroll": 390,
-      "font": 12
+      "font": 12,
+      "maxIdentityWidth": 156
     },
     {
       "theme": "light",
       "density": "compact",
       "width": 320,
       "scroll": 320,
-      "font": 12
+      "font": 12,
+      "maxIdentityWidth": 128
     }
   ],
   "checks": [
