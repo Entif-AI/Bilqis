@@ -18,8 +18,8 @@ from bilqis_mlx.runtime.factory_retention_owner import (
 from bilqis_mlx.runtime._factory_parent_assessment_cache import ParentAssessmentCacheReceipt
 from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import _screen_inputs
 from bilqis_mlx.runtime.capability_retention import Decision, DecisionStatus
-from bilqis_mlx.runtime.tests.capability.factory.retention import factory_retention_target_diagnostic as diagnostic
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_fixed_diagnostic import (
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics import factory_retention_target_diagnostic as diagnostic
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_fixed_diagnostic import (
     _optimizer_delta_summary,
 )
 import mlx.core as mx
