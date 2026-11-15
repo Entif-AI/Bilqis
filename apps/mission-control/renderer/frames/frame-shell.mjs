@@ -36,13 +36,13 @@ export function createFrameShell({ getState, setState, getDefense, render, refre
     },
     afterRender() {
       const state = getState();
-      const host = document.querySelector("#frame-explorer");
+      const host = document.querySelector('[data-test-id="model-frame-workspace-host"]');
       host.hidden = !active();
-      document.querySelector("#model-nav").hidden = state?.view !== "model";
+      document.querySelector('[data-test-id="shell-model-subnav"]').hidden = state?.view !== "model";
       document.querySelectorAll("[data-model-section]").forEach(button => {
         button.setAttribute("aria-pressed", String(button.dataset.modelSection === state?.modelSection));
       });
-      document.querySelector("#domain-context-note").hidden = !["school", "learning", "model", "memory", "teacher"].includes(state?.view) || active();
+      document.querySelector('[data-test-id="shell-reference-context-note"]').hidden = !["school", "learning", "model", "memory", "teacher"].includes(state?.view) || active();
       if (!active()) return;
       const selectedId = state.selected?.kind === "frame" ? state.selected.id : null;
       if (mounted && (!selectedId || routeId === selectedId)) return;

@@ -1,3 +1,5 @@
+import { t } from "../foundation/i18n.mjs";
+import { testIdAttribute } from "../foundation/test-hooks.mjs";
 import { INSTRUMENTATION_STATES } from "./neural-fixture.mjs";
 import {
   ccgqaEvidenceState,
@@ -7,155 +9,151 @@ import {
 } from "./neural-model.mjs";
 
 const ui = { mode: "current", selected: "fixture:ccgqa:g44238:l3" };
+const esc = value => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+const pct = value => `${(100 * value).toFixed(1)}%`;
+const unavailable = () => t("model.neural.unavailable");
 
-function stateBadge(state) {
-  const normalized = state.toLowerCase().replaceAll("_", "-");
-  return `<span class="neural-state" data-neural-state="${normalized}">${state}</span>`;
+function stateBadge(state, ...hook) {
+  const normalized = String(state).toLowerCase().replaceAll("_", "-");
+  return `<span class="neural-state" data-neural-state="${esc(normalized)}" ${testIdAttribute("model", ...hook)}>${esc(state)}</span>`;
 }
 
-function topologyPanel(fixture) {
-  const topology = fixture.topology;
-  const fields = topology.schema.endsWith("/v2")
-    ? [
-      ["Architecture", topology.architectureId],
-      ["Layers", topology.layers],
-      ["Width", topology.width],
-      ["FFN", topology.ffnDimension],
-      ["Q heads", topology.queryHeads],
-      ["KV heads", topology.kvHeads],
-      ["Head dim", topology.headDimension],
-      ["Context", topology.context],
-      ["Convolution", topology.convolution + " k=" + topology.convolutionKernel],
-      ["Depth groups", topology.depthGroups],
-    ]
-    : [
-      ["Layers", topology.layers],
-      ["Heads", topology.heads],
-      ["Width", topology.width],
-      ["FFN", topology.ffnDimension],
-      ["Context", topology.context],
-    ];
-  return `<section class="neural-panel">
-    <header><div><span class="eyebrow">Exact topology manifest</span><h3>${topology.schema}</h3></div>${stateBadge("PRESENT")}</header>
-    <div class="topology-path">${fixture.path.map((stage, index) => `<div><span>${index + 1}</span><strong>${stage}</strong></div>`).join("")}</div>
-    <dl class="topology-facts">${fields.map(([label, value]) => `<div><dt>${label}</dt><dd>${value}</dd></div>`).join("")}</dl>
+function topologyFields(topology) {
+  if (topology.schema.endsWith("/v2")) return [
+    [t("model.neural.architecture"), topology.architectureId], [t("model.neural.layers"), topology.layers],
+    [t("model.neural.width"), topology.width], [t("model.neural.ffn"), topology.ffnDimension],
+    [t("model.neural.qHeads"), topology.queryHeads], [t("model.neural.kvHeads"), topology.kvHeads],
+    [t("model.neural.headDim"), topology.headDimension], [t("model.neural.context"), topology.context],
+    [t("model.neural.convolution"), `${topology.convolution} k=${topology.convolutionKernel}`],
+    [t("model.neural.depthGroups"), topology.depthGroups],
+  ];
+  return [
+    [t("model.neural.layers"), topology.layers], [t("model.neural.heads"), topology.heads],
+    [t("model.neural.width"), topology.width], [t("model.neural.ffn"), topology.ffnDimension],
+    [t("model.neural.context"), topology.context],
+  ];
+}
+
+function topologyPathLabel(fixture, index) {
+  if (fixture.topology.schema.endsWith("/v1")) {
+    return [
+      t("model.neural.path.v1.input"),
+      t("model.neural.path.v1.attention", { layers: fixture.topology.layers }),
+      t("model.neural.path.v1.output"),
+    ][index];
+  }
+  return [
+    "input", "ccgqa14", "attn1", "ccgqa58", "attn2", "ccgqa912", "attn3", "output",
+  ].map(key => t(`model.neural.path.v2.${key}`))[index];
+}
+
+function topologyRuntime(fixture) {
+  const sample = fixture.telemetry;
+  const metrics = [
+    [t("model.neural.optimizerStep"), sample.optimizerStep],
+    [t("model.neural.stepDuration"), sample.stepDurationMs === null ? unavailable() : `${sample.stepDurationMs} ms`],
+    [t("model.neural.activeParameters"), sample.activeParameters === null ? unavailable() : sample.activeParameters.toLocaleString()],
+    [t("model.neural.refinementFraction"), sample.refinementFraction === null ? unavailable() : pct(sample.refinementFraction)],
+  ];
+  return `<section class="neural-section neural-primary" ${testIdAttribute("model", "neural", "topology-runtime")}>
+    <header class="neural-section-heading"><div><span class="eyebrow">${esc(t("model.neural.topologyEyebrow"))}</span><h3>${esc(t("model.neural.topologyTitle"))}</h3></div>${stateBadge(sample.coverage, "neural", "runtime", "state")}</header>
+    <div class="neural-runtime-grid">
+      <div><h4>${esc(t("model.neural.topologyManifest"))}</h4><code class="neural-manifest">${esc(fixture.topology.schema)}</code>
+        <ol class="topology-path" ${testIdAttribute("model", "neural", "topology", "path")}>${fixture.path.map((_stage, index) => `<li><span>${index + 1}</span><strong>${esc(topologyPathLabel(fixture, index))}</strong></li>`).join("")}</ol>
+        <dl class="topology-facts">${topologyFields(fixture.topology).map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>
+      </div>
+      <div><h4>${esc(t("model.neural.runtimeProjection"))}</h4><code class="neural-manifest">${esc(sample.schema)}</code>
+        <dl class="runtime-metrics">${metrics.map(([label, value]) => `<div><dt>${esc(label)}</dt><dd>${esc(value)}<small>${esc(sample.authority)} · ${esc(sample.coverage)}</small></dd></div>`).join("")}</dl>
+      </div>
+    </div>
   </section>`;
 }
 
-function runtimeSummary(fixture) {
-  const sample = fixture.telemetry;
-  const values = [
-    ["Optimizer step", sample.optimizerStep],
-    ["Step duration", sample.stepDurationMs === null ? "UNAVAILABLE" : sample.stepDurationMs + " ms"],
-    ["Active parameters", sample.activeParameters === null ? "UNAVAILABLE" : sample.activeParameters.toLocaleString()],
-    ["Refinement fraction", sample.refinementFraction === null ? "UNAVAILABLE" : (100 * sample.refinementFraction).toFixed(1) + "%"],
-  ];
-  return `<section class="neural-panel runtime-summary">
-    <header><div><span class="eyebrow">Mission Control projection</span><h3>${sample.schema}</h3></div>${stateBadge(sample.coverage)}</header>
-    <div class="runtime-metrics">${values.map(([label, value]) => `<div><small>${label}</small><strong>${value}</strong></div>`).join("")}</div>
+function quietUnavailable(eyebrow, title, detail, hook) {
+  return `<section class="neural-section neural-unavailable" ${testIdAttribute("model", "neural", hook, "unavailable")}>
+    <header class="neural-section-heading"><div><span class="eyebrow">${esc(eyebrow)}</span><h3>${esc(title)}</h3></div>${stateBadge("UNAVAILABLE", "neural", hook, "state")}</header>
+    <p>${esc(detail)}</p>
   </section>`;
 }
 
 function ccgqaPanel(fixture) {
-  if (!fixture.ccgqa) {
-    return `<section class="neural-panel unavailable-panel"><header><div><span class="eyebrow">CCGQA diagnostics</span><h3>Instrumentation unavailable for this topology</h3></div>${stateBadge("UNAVAILABLE")}</header><p>The historical v1 topology does not claim the BAMF CCGQA diagnostic contract. No Q/K/V, entropy, cache, or mask values are synthesized.</p></section>`;
-  }
-  return `<section class="neural-panel">
-    <header><div><span class="eyebrow">CCGQA · measured-style fixture</span><h3>Utilization, mask, sequence and cache health</h3></div></header>
-    <div class="ccgqa-grid">${fixture.ccgqa.map((sample) => {
-      const state = ccgqaEvidenceState(sample);
-      return `<article class="ccgqa-card" data-evidence-state="${state.toLowerCase()}">
-        <header><strong>Layer ${sample.layer}</strong>${stateBadge(state)}</header>
-        ${state === "INVALID" ? `<div class="invalid-evidence-banner"><strong>INVALID EVIDENCE</strong><span>mask-invalid violations: ${sample.maskInvalidViolations}</span></div>` : ""}
-        <dl>
-          <div><dt>Q utilization</dt><dd>${(100 * sample.qUtilization).toFixed(1)}%</dd></div>
-          <div><dt>K utilization</dt><dd>${(100 * sample.kUtilization).toFixed(1)}%</dd></div>
-          <div><dt>V utilization</dt><dd>${(100 * sample.vUtilization).toFixed(1)}%</dd></div>
-          <div><dt>Channel utilization</dt><dd>${(100 * sample.channelUtilization).toFixed(1)}%</dd></div>
-          <div><dt>Conv health</dt><dd>${sample.convolutionHealth}</dd></div>
-          <div><dt>Entropy μ / p95</dt><dd>${sample.entropyMean.toFixed(2)} / ${sample.entropyP95.toFixed(2)}</dd></div>
-          <div><dt>Active sequence / frames</dt><dd>${sample.activeSequenceLength} / ${sample.activeFrameLength}</dd></div>
-          <div><dt>Cache</dt><dd>${sample.cacheState} · ${(100 * sample.cacheUsage).toFixed(1)}%</dd></div>
-          <div><dt>Finite health</dt><dd>${sample.finite ? "FINITE" : "NONFINITE"}</dd></div>
-        </dl>
-        <button type="button" data-neural-inspect="${sample.evidenceId}" data-kind="ccgqa">Inspect fixture evidence</button>
-      </article>`;
-    }).join("")}</div>
+  if (!fixture.ccgqa) return quietUnavailable(t("model.neural.ccgqaEyebrow"), t("model.neural.ccgqaUnavailable"), t("model.neural.ccgqaUnavailableDetail"), "ccgqa");
+  return `<section class="neural-section" ${testIdAttribute("model", "neural", "ccgqa")}>
+    <header class="neural-section-heading"><div><span class="eyebrow">${esc(t("model.neural.ccgqaEyebrow"))}</span><h3>${esc(t("model.neural.ccgqaTitle"))}</h3></div></header>
+    <div class="neural-table-wrap" tabindex="0" ${testIdAttribute("model", "neural", "ccgqa", "table", "wrap")}><table class="neural-table" ${testIdAttribute("model", "neural", "ccgqa", "table")}>
+      <thead><tr><th scope="col">${esc(t("model.neural.layer"))}</th><th scope="col">${esc(t("model.neural.evidence"))}</th><th scope="col">${esc(t("model.neural.q"))}</th><th scope="col">${esc(t("model.neural.k"))}</th><th scope="col">${esc(t("model.neural.v"))}</th><th scope="col">${esc(t("model.neural.channel"))}</th><th scope="col">${esc(t("model.neural.convHealth"))}</th><th scope="col">${esc(t("model.neural.entropy"))}</th><th scope="col">${esc(t("model.neural.sequenceFrames"))}</th><th scope="col">${esc(t("model.neural.cache"))}</th><th scope="col">${esc(t("model.neural.finite"))}</th><th scope="col"></th></tr></thead>
+      <tbody>${fixture.ccgqa.map(sample => {
+        const state = ccgqaEvidenceState(sample);
+        return `<tr data-evidence-state="${state.toLowerCase()}" ${testIdAttribute("model", "neural", "ccgqa", "layer", sample.layer)}><th scope="row">${sample.layer}</th><td>${stateBadge(state, "neural", "ccgqa", "layer", sample.layer, "state")}${state === "INVALID" ? `<small class="invalid-evidence-note">${esc(t("model.neural.maskViolations", { count: sample.maskInvalidViolations }))}</small>` : ""}</td><td>${pct(sample.qUtilization)}</td><td>${pct(sample.kUtilization)}</td><td>${pct(sample.vUtilization)}</td><td>${pct(sample.channelUtilization)}</td><td>${esc(sample.convolutionHealth)}</td><td>${sample.entropyMean.toFixed(2)} / ${sample.entropyP95.toFixed(2)}</td><td>${sample.activeSequenceLength} / ${sample.activeFrameLength}</td><td>${esc(sample.cacheState)} · ${pct(sample.cacheUsage)}</td><td>${esc(sample.finite ? "FINITE" : "NONFINITE")}</td><td><button type="button" data-neural-inspect="${esc(sample.evidenceId)}" data-kind="ccgqa" ${testIdAttribute("model", "neural", "ccgqa", "layer", sample.layer, "inspect")}>${esc(t("model.neural.inspectFixture"))}</button></td></tr>`;
+      }).join("")}</tbody>
+    </table></div>
   </section>`;
 }
 
 function attnResPanel(fixture) {
-  if (!fixture.attnres) {
-    return `<section class="neural-panel unavailable-panel"><header><div><span class="eyebrow">Block AttnRes</span><h3>Not part of inspected historical topology</h3></div>${stateBadge("UNAVAILABLE")}</header><p>No depth-selection weights are invented for a topology that does not declare the v2 depth contract.</p></section>`;
-  }
-  return `<section class="neural-panel">
-    <header><div><span class="eyebrow">Block AttnRes · direct diagnostic fixture</span><h3>Routing / mixture telemetry</h3></div>${stateBadge("PRESENT")}</header>
-    <p class="neural-doctrine">These weights are routing telemetry from <code>DepthSelectionDiagnostics.alpha</code>. They carry no semantic interpretation.</p>
-    <div class="attnres-grid">${fixture.attnres.map((entry) => `<article>
-      <header><strong>Boundary ${entry.boundaryGroup} · layer ${entry.completedLayer}</strong><span>Σ ${entry.weightSum.toFixed(2)} · gate ${entry.gate.toFixed(3)}</span></header>
-      <div class="mixture-bars">${entry.pairs.map((pair) => `<div><span>${pair.source}</span><progress max="1" value="${pair.weight}"></progress><strong>${pair.weight.toFixed(2)}</strong></div>`).join("")}</div>
-      <button type="button" data-neural-inspect="${entry.evidenceId}" data-kind="attnres">Inspect recorded weights</button>
-    </article>`).join("")}</div>
+  if (!fixture.attnres) return quietUnavailable(t("model.neural.attnEyebrow"), t("model.neural.attnUnavailable"), t("model.neural.attnUnavailableDetail"), "attnres");
+  return `<section class="neural-section" ${testIdAttribute("model", "neural", "attnres")}>
+    <header class="neural-section-heading"><div><span class="eyebrow">${esc(t("model.neural.attnEyebrow"))}</span><h3>${esc(t("model.neural.attnTitle"))}</h3></div>${stateBadge("PRESENT", "neural", "attnres", "state")}</header>
+    <p class="neural-doctrine">${esc(t("model.neural.attnDoctrine"))}</p>
+    <div class="neural-table-wrap" tabindex="0" ${testIdAttribute("model", "neural", "attnres", "table", "wrap")}><table class="neural-table attnres-table"><thead><tr><th scope="col">${esc(t("model.neural.attnBoundaryColumn"))}</th><th scope="col">${esc(t("model.neural.attnBasis"))}</th><th scope="col">${esc(t("model.neural.attnWeightSum"))}</th><th scope="col">${esc(t("model.neural.attnGate"))}</th><th scope="col"></th></tr></thead><tbody>
+      ${fixture.attnres.map(entry => `<tr ${testIdAttribute("model", "neural", "attnres", "boundary", entry.boundaryGroup)}><th scope="row">${esc(t("model.neural.attnBoundary", { group: entry.boundaryGroup, layer: entry.completedLayer }))}</th><td><div class="mixture-bars">${entry.pairs.map(pair => `<div><span>${esc(pair.source)}</span><progress max="1" value="${pair.weight}"></progress><strong>${pair.weight.toFixed(2)}</strong></div>`).join("")}</div></td><td>${entry.weightSum.toFixed(2)}</td><td>${entry.gate.toFixed(3)}</td><td><button type="button" data-neural-inspect="${esc(entry.evidenceId)}" data-kind="attnres" ${testIdAttribute("model", "neural", "attnres", "boundary", entry.boundaryGroup, "inspect")}>${esc(t("model.neural.inspectWeights"))}</button></td></tr>`).join("")}
+    </tbody></table></div>
   </section>`;
 }
 
 function refinementPanel(fixture) {
-  if (!fixture.refinementReceipts) {
-    return `<section class="neural-panel unavailable-panel"><header><div><span class="eyebrow">Local refinement</span><h3>Receipts unavailable</h3></div>${stateBadge("UNAVAILABLE")}</header><p>No refinement distribution is projected for this historical topology.</p></section>`;
-  }
+  if (!fixture.refinementReceipts) return quietUnavailable(t("model.neural.refinementEyebrow"), t("model.neural.refinementUnavailable"), t("model.neural.refinementUnavailableDetail"), "refinement");
   const histogram = refinementHistogram(fixture.refinementReceipts);
   const cost = refinementCostSummary(fixture.refinementReceipts);
-  return `<section class="neural-panel">
-    <header><div><span class="eyebrow">Local refinement · receipt reconciliation</span><h3>Expansion passes and resource cost</h3></div>${stateBadge("PRESENT")}</header>
-    <div class="refinement-histogram">
-      <div><span>No expansion</span><strong>${histogram.none}</strong><progress max="${histogram.total}" value="${histogram.none}"></progress></div>
-      <div><span>One pass</span><strong>${histogram.one}</strong><progress max="${histogram.total}" value="${histogram.one}"></progress></div>
-      <div><span>Multiple passes</span><strong>${histogram.multiple}</strong><progress max="${histogram.total}" value="${histogram.multiple}"></progress></div>
-    </div>
-    <p class="reconciliation-note">Histogram total ${histogram.total} = ${fixture.refinementReceipts.length} frame/episode receipts. Active refinement cost ${cost.totalCostMs.toFixed(1)} ms across ${cost.activeFrames} frames; mean active frame density ${cost.averageFrameDensity.toFixed(2)}.</p>
-    <div class="refinement-table-wrap"><table class="refinement-table"><thead><tr><th>Frame</th><th>Episode receipt</th><th>Eligible</th><th>Quota</th><th>Passes</th><th>Frame density</th><th>Cost ms</th></tr></thead><tbody>
-      ${fixture.refinementReceipts.map((row) => `<tr><td>${row.frameId}</td><td><button type="button" data-neural-inspect="${row.episodeReceipt}" data-kind="refinement">${row.episodeReceipt}</button></td><td>${row.eligibleFrames}</td><td>${row.quota}</td><td>${row.passes}</td><td>${row.frameDensity.toFixed(2)}</td><td>${row.resourceCostMs.toFixed(1)}</td></tr>`).join("")}
+  const bins = [[t("model.neural.noExpansion"), histogram.none], [t("model.neural.onePass"), histogram.one], [t("model.neural.multiplePasses"), histogram.multiple]];
+  return `<section class="neural-section" ${testIdAttribute("model", "neural", "refinement")}>
+    <header class="neural-section-heading"><div><span class="eyebrow">${esc(t("model.neural.refinementEyebrow"))}</span><h3>${esc(t("model.neural.refinementTitle"))}</h3></div>${stateBadge("PRESENT", "neural", "refinement", "state")}</header>
+    <div class="refinement-summary"><div class="refinement-histogram">${bins.map(([label, value], index) => `<div ${testIdAttribute("model", "neural", "refinement", "bin", index)}><span>${esc(label)}</span><progress max="${histogram.total}" value="${value}"></progress><strong>${value}</strong></div>`).join("")}</div><p>${esc(t("model.neural.refinementSummary", { total: histogram.total, active: cost.activeFrames, cost: cost.totalCostMs.toFixed(1), density: cost.averageFrameDensity.toFixed(2) }))}</p></div>
+    <div class="neural-table-wrap" tabindex="0"><table class="neural-table"><thead><tr><th scope="col">${esc(t("model.neural.frame"))}</th><th scope="col">${esc(t("model.neural.episodeReceipt"))}</th><th scope="col">${esc(t("model.neural.eligible"))}</th><th scope="col">${esc(t("model.neural.quota"))}</th><th scope="col">${esc(t("model.neural.passes"))}</th><th scope="col">${esc(t("model.neural.frameDensity"))}</th><th scope="col">${esc(t("model.neural.costMs"))}</th></tr></thead><tbody>
+      ${fixture.refinementReceipts.map((row, index) => `<tr ${testIdAttribute("model", "neural", "refinement", "receipt", index)}><td>${esc(row.frameId)}</td><td><button type="button" data-neural-inspect="${esc(row.episodeReceipt)}" data-kind="refinement" ${testIdAttribute("model", "neural", "refinement", "receipt", index, "inspect")}>${esc(row.episodeReceipt)}</button></td><td>${row.eligibleFrames}</td><td>${row.quota}</td><td>${row.passes}</td><td>${row.frameDensity.toFixed(2)}</td><td>${row.resourceCostMs.toFixed(1)}</td></tr>`).join("")}
     </tbody></table></div>
   </section>`;
 }
 
 function instrumentationPanel(fixture) {
   const states = fixture.mode === "historical"
-    ? INSTRUMENTATION_STATES.map((item) => ({ ...item, state: "UNAVAILABLE", source: "not present in inspected historical topology" }))
+    ? INSTRUMENTATION_STATES.map(item => ({ ...item, state: "UNAVAILABLE" }))
     : INSTRUMENTATION_STATES;
-  return `<section class="neural-panel instrumentation-panel">
-    <header><div><span class="eyebrow">Instrumentation coverage</span><h3>Never synthesize absent metrics</h3></div></header>
-    <div>${states.map((item) => `<article><div><strong>${item.label}</strong><small>${item.source}</small></div>${stateBadge(item.state)}</article>`).join("")}</div>
+  return `<section class="neural-section instrumentation-panel" ${testIdAttribute("model", "neural", "instrumentation")}>
+    <header class="neural-section-heading"><div><span class="eyebrow">${esc(t("model.neural.instrumentationEyebrow"))}</span><h3>${esc(t("model.neural.instrumentationTitle"))}</h3></div></header>
+    <div class="neural-table-wrap" tabindex="0"><table class="neural-table"><thead><tr><th scope="col">${esc(t("model.neural.instrument"))}</th><th scope="col">${esc(t("model.neural.source"))}</th><th scope="col">${esc(t("model.neural.state"))}</th></tr></thead><tbody>
+      ${states.map((item, index) => `<tr ${testIdAttribute("model", "neural", "instrument", index)}><th scope="row">${esc(t(`model.neural.instrument.${item.id}.label`))}</th><td>${esc(fixture.mode === "historical" ? t("model.neural.instrument.historicalUnavailable") : t(`model.neural.instrument.${item.id}.source`))}</td><td>${stateBadge(item.state, "neural", "instrument", index, "state")}</td></tr>`).join("")}
+    </tbody></table></div>
   </section>`;
 }
 
 function bind(container, inspect) {
-  container.querySelectorAll("[data-neural-mode]").forEach((button) => button.addEventListener("click", () => {
+  container.querySelectorAll("[data-neural-mode]").forEach(button => button.addEventListener("click", () => {
     ui.mode = button.dataset.neuralMode;
     renderNeuralView(container, inspect);
   }));
-  container.querySelectorAll("[data-neural-inspect]").forEach((button) => button.addEventListener("click", () => {
+  container.querySelectorAll("[data-neural-inspect]").forEach(button => button.addEventListener("click", () => {
     ui.selected = button.dataset.neuralInspect;
     inspect(button.dataset.neuralInspect, button.dataset.kind);
   }));
 }
 
-export function renderNeuralView(container, inspect) {
-  const fixture = neuralFixture(ui.mode);
-  container.innerHTML = `<div class="neural-view">
-    <header class="neural-heading"><div><span class="eyebrow">GUI09 · Neural Runtime</span><h2>Measured mechanisms, bounded claims</h2></div><p>Inspect topology, routing, attention health and local refinement strictly as recorded runtime telemetry.</p></header>
-    <div class="neural-fixture-notice"><strong>FIXTURE-BACKED DIAGNOSTICS</strong><span>Rich CCGQA/AttnRes/refinement details are literal, provenance-labeled fixtures because the accepted Electron bridge currently projects only the bounded Mission Control runtime summary.</span></div>
-    <div class="neural-mode-switch" role="group" aria-label="Inspected generation fixture">
-      <button type="button" data-neural-mode="current" aria-pressed="${ui.mode === "current"}">Current BAMF v2 fixture</button>
-      <button type="button" data-neural-mode="historical" aria-pressed="${ui.mode === "historical"}">Historical v1 fixture</button>
+export function renderNeuralMarkup(mode = ui.mode) {
+  const fixture = neuralFixture(mode);
+  return `<div class="neural-view" ${testIdAttribute("model", "neural", "workspace")}>
+    <header class="neural-heading"><div><span class="eyebrow">${esc(t("model.neural.eyebrow"))}</span><h2>${esc(t("model.neural.title"))}</h2></div><p>${esc(t("model.neural.summary"))}</p></header>
+    <section class="neural-fixture-posture" ${testIdAttribute("model", "neural", "fixture", "posture")}><div><strong>${esc(t("model.neural.fixtureLabel"))}</strong><span>${esc(t("model.neural.fixturePosture", { generation: fixture.telemetry.generation }))}</span></div><p>${esc(t("model.neural.fixtureDetail"))}</p></section>
+    <div class="neural-mode-switch" role="group" aria-label="${esc(t("model.neural.fixtureGroup"))}">
+      <button type="button" data-neural-mode="current" aria-pressed="${mode === "current"}" ${testIdAttribute("model", "neural", "fixture", "current")}>${esc(t("model.neural.currentFixture"))}</button>
+      <button type="button" data-neural-mode="historical" aria-pressed="${mode === "historical"}" ${testIdAttribute("model", "neural", "fixture", "historical")}>${esc(t("model.neural.historicalFixture"))}</button>
     </div>
-    ${topologyPanel(fixture)}
-    ${runtimeSummary(fixture)}
-    ${ccgqaPanel(fixture)}
-    ${attnResPanel(fixture)}
-    ${refinementPanel(fixture)}
-    ${instrumentationPanel(fixture)}
+    ${topologyRuntime(fixture)}
+    <div class="neural-mechanism-stack">${ccgqaPanel(fixture)}${attnResPanel(fixture)}${refinementPanel(fixture)}${instrumentationPanel(fixture)}</div>
   </div>`;
+}
+
+export function renderNeuralView(container, inspect) {
+  container.innerHTML = renderNeuralMarkup(ui.mode);
   bind(container, inspect);
 }
 

@@ -19,6 +19,8 @@ import {
   refinementHistogram,
   topologyPath,
 } from "../../renderer/neural/neural-model.mjs";
+import { renderNeuralMarkup } from "../../renderer/neural/neural-view.mjs";
+import { duplicateTestIds } from "../../renderer/foundation/test-hooks.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../../..");
@@ -114,9 +116,29 @@ test("mask-invalid violation is invalid evidence, not a normal warning", () => {
   const invalid = CCGQA_FIXTURE.find((sample) => sample.maskInvalidViolations > 0);
   assert.ok(invalid);
   assert.equal(ccgqaEvidenceState(invalid), "INVALID");
-  const viewSource = fs.readFileSync(path.join(rendererRoot, "neural", "neural-view.mjs"), "utf8");
-  assert.equal(viewSource.includes("INVALID EVIDENCE"), true);
-  assert.equal(viewSource.includes("invalid-evidence-banner"), true);
+  const markup = renderNeuralMarkup("current");
+  assert.match(markup, /data-evidence-state="invalid"/);
+  assert.match(markup, /Mask-invalid violations: 2/);
+  assert.match(markup, /data-neural-state="invalid"/);
+});
+
+test("neural workspace uses stable unique hooks and mechanism-first hierarchy", () => {
+  const markup = renderNeuralMarkup("current");
+  assert.deepEqual(duplicateTestIds(markup), []);
+  for (const id of [
+    "model-neural-workspace", "model-neural-fixture-posture", "model-neural-topology-runtime",
+    "model-neural-ccgqa", "model-neural-attnres", "model-neural-refinement", "model-neural-instrumentation",
+  ]) assert.match(markup, new RegExp(`data-test-id="${id}"`), id);
+  assert.ok(markup.indexOf('data-test-id="model-neural-topology-runtime"') < markup.indexOf('data-test-id="model-neural-ccgqa"'));
+  assert.ok(markup.indexOf('data-test-id="model-neural-ccgqa"') < markup.indexOf('data-test-id="model-neural-refinement"'));
+});
+
+test("historical neural fixture keeps unsupported instrumentation explicitly unavailable", () => {
+  const markup = renderNeuralMarkup("historical");
+  for (const id of ["ccgqa", "attnres", "refinement"]) {
+    assert.match(markup, new RegExp(`data-test-id="model-neural-${id}-unavailable"`));
+  }
+  assert.doesNotMatch(markup, /0\.0%/);
 });
 
 test("AttnRes display uses only directly recorded alpha source order and normalized weights", () => {

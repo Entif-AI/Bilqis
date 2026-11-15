@@ -125,8 +125,8 @@ export function renderCurrentView(
       kind: "neural",
       id,
       details: {
-        "Diagnostic class": kind,
-        "Interpretation boundary": "Measured routing/runtime telemetry only",
+        [t("model.inspector.diagnosticClass")]: kind,
+        [t("model.inspector.interpretationBoundary")]: t("model.inspector.telemetryOnly"),
       },
     }));
     return;
