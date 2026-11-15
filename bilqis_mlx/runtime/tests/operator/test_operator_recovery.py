@@ -1,10 +1,21 @@
 """Every residual operator error gets a safe resolution posture."""
 from unittest import TestCase
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.operator_recovery import error_code, recovery_advice
 
 
 class OperatorRecoveryTests(TestCase):
+    def test_rejection_order_failure_has_rejection_specific_recovery(self):
+        try:
+            ErrorBus.Raise(
+                SCHOOL.MODEL_TOPOLOGY.INVALID,
+                reason="BAMF_PRIORITY_REJECTION_ORDER_INVALID")
+        except ValueError as error:
+            advice = recovery_advice(error)
+        self.assertEqual(advice.disposition, "PRESERVE_AND_DIAGNOSE")
+        self.assertIn("rejection journal", advice.next_action.lower())
+
     def test_known_operator_configuration_error_has_exact_action(self):
         advice = recovery_advice(ValueError(
             "HUMAN_TRAINER_NEW_RUN_HAS_EXISTING_CONTENT"))
