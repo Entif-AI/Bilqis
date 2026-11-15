@@ -166,11 +166,6 @@ def bind_priority_planning_generation(source_context, parent, atlas_artifact_pat
     )
     source_authority_currentness = bind_source_authority_currentness(
         run_dir, parent.correction_frontier, cache._correction_registry)
-    from bilqis_mlx.runtime.accepted_correction_runtime import (
-        _bind_accepted_target_registrar,
-    )
-    target_registrar = _bind_accepted_target_registrar(
-        source_context._accepted_runtime_host, cache)
     after_pointer, after_acceptance_file = _planning_pointer_snapshot(run_dir)
     if (before_pointer != after_pointer
             or before_acceptance_file != after_acceptance_file
@@ -180,6 +175,11 @@ def bind_priority_planning_generation(source_context, parent, atlas_artifact_pat
             or not isinstance(after_pointer.get('acceptance_sha256'), str)
             or parent.run_identity is None):
         _invalid_source_batch('BAMF_PRIORITY_PLANNING_GENERATION_INVALID')
+    from bilqis_mlx.runtime.accepted_correction_runtime import (
+        _bind_accepted_target_registrar,
+    )
+    target_registrar = _bind_accepted_target_registrar(
+        source_context._accepted_runtime_host, cache)
     result = object.__new__(PriorityPlanningGeneration)
     for name, value in (
         ('accepted_manifest_sha256', cache.accepted_manifest_sha256),
