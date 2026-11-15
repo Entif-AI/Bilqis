@@ -19,21 +19,25 @@ export const DESTINATION_GROUPS = Object.freeze([
   Object.freeze({
     id: "overview-learning",
     labelKey: "shell.nav.group.overviewLearning",
+    helpKey: "shell.help.nav.curriculum",
     destinations: Object.freeze(["mission-control", "school", "capability", "learning"]),
   }),
   Object.freeze({
     id: "representation-mechanisms",
     labelKey: "shell.nav.group.representationMechanisms",
+    helpKey: "shell.help.nav.semantics",
     destinations: Object.freeze(["atlas", "model", "memory"]),
   }),
   Object.freeze({
     id: "decision-correction",
     labelKey: "shell.nav.group.decisionCorrection",
+    helpKey: "shell.help.nav.strategies",
     destinations: Object.freeze(["teacher", "salience", "corrections"]),
   }),
   Object.freeze({
     id: "provenance-operations",
     labelKey: "shell.nav.group.provenanceOperations",
+    helpKey: "shell.help.nav.records",
     destinations: Object.freeze(["lineage", "resources", "evidence", "operate"]),
   }),
 ]);

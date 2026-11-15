@@ -14,6 +14,10 @@ import {
   applyDisplaySettings,
   loadDisplaySettings,
 } from "./settings.mjs";
+import {
+  applyShellPreferences,
+  loadShellPreferences,
+} from "./shell-preferences.mjs";
 import { defensiveState } from "./foundation/defensive-state.mjs";
 import {
   renderChrome,
@@ -41,6 +45,8 @@ import { t } from "./foundation/i18n.mjs";
 let state = null;
 let verifiedLiveContext = null;
 let displaySettings;
+let shellPreferences;
+let lastRenderedView = null;
 let defense = defensiveState("loading");
 let bootstrapState = Object.freeze({ phase: "connecting", connection: null, error: null });
 let focusReturnToken = null;
@@ -154,8 +160,14 @@ function announce(message) {
 }
 
 function render() {
+  const nextView = state?.view ?? null;
+  const primaryDestinationChanged = (
+    lastRenderedView !== null &&
+    nextView !== null &&
+    lastRenderedView !== nextView
+  );
   frameShell.beforeRender();
-  renderChrome(state, defense, displaySettings, {
+  renderChrome(state, defense, displaySettings, shellPreferences, {
     api: window.bamfMissionControl,
     onEvidenceSelect: selectEvidenceRecord,
     onEvidenceReturn: returnEvidenceOrigin,
@@ -170,7 +182,15 @@ function render() {
     homeController, resourceController, operateController,
     capabilityExplorer, onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
   });
+  if (primaryDestinationChanged) resetPrimaryScroll();
+  lastRenderedView = nextView;
   window.queueMicrotask(() => interactionController.render());
+}
+
+function resetPrimaryScroll() {
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  const main = document.querySelector("#main-content");
+  if (main) main.scrollTop = 0;
 }
 
 function selectEvidenceRecord(selected) {
@@ -220,18 +240,16 @@ function closeInspector() {
 function openPalette() {
   const dialog = document.querySelector("#command-palette");
   paletteReturnToken = focusToken(document.activeElement);
-  renderPaletteOptions(state, navigateTo, (command) => {
-    if (command === "theme") document.querySelector("#theme-trigger")?.click();
-    if (command === "density") document.querySelector("#density-trigger")?.click();
-    dialog.close();
-  });
+  renderPaletteOptions(state, navigateTo);
   if (!dialog.open) dialog.showModal();
   window.queueMicrotask(() => dialog.querySelector("button:not(:disabled)")?.focus());
 }
 
 async function bootstrap() {
   displaySettings = loadDisplaySettings(window.localStorage);
+  shellPreferences = loadShellPreferences(window.localStorage);
   applyDisplaySettings(document.documentElement, displaySettings);
+  applyShellPreferences(document.documentElement, shellPreferences);
   bindStaticInteractions({
     document,
     window,
@@ -239,6 +257,8 @@ async function bootstrap() {
     setState: (next) => { state = next; },
     getDisplaySettings: () => displaySettings,
     setDisplaySettings: (next) => { displaySettings = next; },
+    getShellPreferences: () => shellPreferences,
+    setShellPreferences: (next) => { shellPreferences = next; },
     render,
     closeInspector,
     openPalette,
