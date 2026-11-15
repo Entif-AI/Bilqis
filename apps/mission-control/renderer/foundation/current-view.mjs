@@ -1,3 +1,4 @@
+import { evidenceT } from "../evidence/evidence-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
 import { renderSchoolView } from "../school/school-view.mjs";
 import { renderNeuralView } from "../neural/neural-view.mjs";
@@ -250,10 +251,10 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Exact Mission Control records, provenance links, bounded pagination and literal raw payloads.";
+    summary.textContent = evidenceT("evidence.summary");
     renderEvidenceView(
       domain, api, state.context, state.selected, onEvidenceSelect,
-      state.evidenceOrigin ? onEvidenceReturn : null,
+      state.evidenceOrigin ? onEvidenceReturn : null, state.evidenceOrigin,
     );
     return;
   }
