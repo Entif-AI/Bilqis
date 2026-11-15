@@ -24,7 +24,7 @@ from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, Dependen
 from bilqis_mlx.semantics.domains import contract_digest
 from .priority_planning_owner import priority_planning as _priority_planning
 from .priority_rejection_replay import (
-    current_rejections as _current_rejections,
+    ordered_rejections as _ordered_rejections,
     rejection_recency as _rejection_recency,
 )
 
@@ -200,7 +200,7 @@ def issue_foundation_priority_authority(
         planning_generation)
     if progress is not None:
         progress("teacher: ranking priority options")
-    rejections = _current_rejections(run_dir, parent, cache)
+    rejections = _ordered_rejections(run_dir, parent, cache)
     rejection_count, rejection_positions = _rejection_recency(run_dir, parent, cache)
     option_ids = {capability for capability, _ in offers}
     if not set(rejection_positions).issubset(option_ids):

@@ -184,8 +184,13 @@ class PreNeuralProductionJourneyTests(PreNeuralJourneySupport, unittest.TestCase
                 selected = select_foundation_priority_visit(
                     self.run, context, atlas_path, program=program, school=school)
                 rows = selected.offer.rows()
+                cache = selected.offer._planning_generation._cache
                 observation = FactoryDeliveryObservation(
-                    _Capture(self.run, selected),
+                    _Capture(
+                        self.run, selected, generation=cache.generation,
+                        accepted_manifest_sha256=cache.accepted_manifest_sha256,
+                        candidate_attempt_ordinal=1,
+                        parent_optimizer_step=parent.retained_state.optimizer_step),
                     parent.retained_state.optimizer_step + 1,
                     rows,
                     selected.offer.source_seed,

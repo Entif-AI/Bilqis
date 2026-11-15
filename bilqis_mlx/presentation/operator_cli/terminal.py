@@ -122,6 +122,11 @@ def _render_stopped_board(board, build, args, result: dict) -> int | None:
 
 def _report_operator_blocked(err, trace_path) -> int:
     print("OPERATOR BLOCKED: " + str(err), file=sys.stderr)
+    context = getattr(err, "context", None)
+    if context:
+        details = ", ".join(
+            f"{key}={value}" for key, value in sorted(context.items()))
+        print("DETAILS: " + details, file=sys.stderr)
     from bilqis_mlx.runtime.operator_recovery import recovery_advice
     advice = recovery_advice(err)
     if advice.explanation:
