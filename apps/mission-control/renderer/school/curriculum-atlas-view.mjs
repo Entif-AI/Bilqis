@@ -19,7 +19,7 @@ import {
   toolbarMarkup,
 } from "./curriculum-atlas-markup.mjs";
 import { t } from "../foundation/i18n.mjs";
-import { testIdAttribute } from "../foundation/test-hooks.mjs";
+import { assertUniqueTestIds, testIdAttribute } from "../foundation/test-hooks.mjs";
 
 const ui = {
   selectedId: null, traceMode: "both", grade: "all", state: "all", family: "all",
@@ -115,7 +115,7 @@ function bind(container, context, api, onInspect, onModeChange, isActive) {
     ui.searchStatus = null;
     if (matches.length === 0 && ui.search.trim()) {
       const token = ++semanticEpoch;
-      ui.searchStatus = "Resolving source-canonical labels and exact identity…";
+      ui.searchStatus = t("curriculum.search.resolving");
       rerender(key);
       try {
         const hydrated = await resolveGraphSemanticBindings(api, context, graph);
@@ -137,20 +137,20 @@ function bind(container, context, api, onInspect, onModeChange, isActive) {
             matches = graph.nodes.filter((node) => node.id === ui.selectedId);
           }
         } else {
-          ui.searchStatus = matches.length + " source-canonical/display match" +
-            (matches.length === 1 ? "" : "es");
+          ui.searchStatus = t("curriculum.search.sourceMatches", { count: matches.length });
         }
       } catch (error) {
         if (token !== semanticEpoch || !isActive()) return;
-        ui.searchStatus = "UNAVAILABLE · " +
-          (error?.code ?? error?.message ?? "SEMANTIC_SEARCH_FAILED");
+        ui.searchStatus = t("curriculum.search.unavailable", {
+          reason: error?.code ?? error?.message ?? "SEMANTIC_SEARCH_FAILED",
+        });
       }
     }
     if (matches.length === 1) {
       ui.selectedId = matches[0].id;
       inspectNode(matches[0]);
     } else if (matches.length > 1 && !ui.searchStatus) {
-      ui.searchStatus = matches.length + " fixture/display matches";
+      ui.searchStatus = t("curriculum.search.fixtureMatches", { count: matches.length });
     }
     rerender(key);
   });
@@ -240,8 +240,10 @@ export function renderCurriculumAtlasView(
   const layout = stableLayout(graph);
   const strata = strataFor(graph);
   const semanticBinding = ui.semanticBindings.get(selected.id) ?? null;
-  const status = selected.id + "; " + trace.visibleUpstream.size + " upstream; " +
-    trace.visibleDownstream.size + " downstream; trace " + trace.mode;
+  const status = t("curriculum.trace.status", {
+    id: selected.id, upstream: trace.visibleUpstream.size,
+    downstream: trace.visibleDownstream.size, mode: trace.mode,
+  });
   const edges = graph.edges.map((edge) => edgeMarkup(edge, layout, trace)).join("");
   const nodes = graph.nodes.map((node) =>
     nodeCard(
@@ -252,14 +254,14 @@ export function renderCurriculumAtlasView(
       ui.semanticBindings.get(node.id) ?? null,
     )).join("");
 
-  container.innerHTML =
-    '<div class="curriculum-atlas">' +
-      '<div class="curriculum-fixture-notice"><strong>FIXTURE · SHARED SCHOOL TOPOLOGY</strong>' +
-        '<span>Capability metrics and prerequisite edges derive from GUI04 shared School fixture. ' +
-        'Display semantic IDs are fixture-only until exact-release GUI07 identity resolves.</span>' +
-        '<span>' + esc(snapshot.label) + ' · ' + esc(snapshot.fixtureBoundary) +
-        ' · shell generation ' + esc(context?.generation ?? "unknown") + ' · ' +
-        esc(context?.mode ?? "LIVE") + '</span></div>' +
+  const markup =
+    '<div class="curriculum-atlas" ' + testIdAttribute("curriculum", "root") + '>' +
+      '<div class="curriculum-fixture-notice" ' + testIdAttribute("curriculum", "fixture") + '><strong>' + esc(t("curriculum.fixture.title")) + '</strong>' +
+        '<span>' + esc(t("curriculum.fixture.detail")) + '</span>' +
+        '<span>' + esc(t("curriculum.fixture.context", {
+          label: t(snapshot.id === "historical" ? "curriculum.fixture.historical" : "curriculum.fixture.current"), boundary: snapshot.fixtureBoundary,
+          generation: context?.generation ?? "unknown", mode: context?.mode ?? "LIVE",
+        })) + '</span></div>' +
       '<nav class="school-subnav" aria-label="' + esc(t("shell.school.subnav")) + '" data-test-id="shell-school-subnav">' +
         '<button type="button" class="ui-control ui-control--peer-tab" data-school-mode="matrix" data-focus-key="school-mode:matrix" ' +
           testIdAttribute("shell", "school-mode", "matrix") + '>' + esc(t("shell.school.matrix")) + '</button>' +
@@ -267,37 +269,34 @@ export function renderCurriculumAtlasView(
           testIdAttribute("shell", "school-mode", "atlas") + '>' + esc(t("shell.school.atlas")) + '</button></nav>' +
       toolbarMarkup(graph, snapshot, ui) +
       (ui.searchStatus
-        ? '<p class="curriculum-search-status" role="status">' + esc(ui.searchStatus) + '</p>'
+        ? '<p class="curriculum-search-status" role="status" ' + testIdAttribute("curriculum", "search", "status") + '>' + esc(ui.searchStatus) + '</p>'
         : '') +
       '<p class="sr-only" role="status" aria-live="polite" aria-atomic="true" ' +
-        'data-trace-status data-message="' + esc(status) + '">' + esc(status) + '</p>' +
-      '<section class="curriculum-graph-panel"><header><div><span class="eyebrow">Temporal dependency atlas</span>' +
-        '<h2>Declared curriculum topology</h2></div><div class="curriculum-legend">' +
-        '<span>✓ qualified</span><span>◉ active</span><span>◌ eligible</span>' +
-        '<span>! held/uncovered</span><span>◇ future</span></div></header>' +
-        '<p>Grade strata organize time. Arrows are declared prerequisite relationships only. ' +
-        'Learned similarity is not rendered as a prerequisite edge.</p>' +
-        '<div class="curriculum-scroll" tabindex="0" role="region" aria-label="Curriculum dependency graph; ' +
-        'use the table below for an equivalent non-visual representation"><div class="curriculum-canvas" ' +
+        'data-trace-status data-message="' + esc(status) + '" ' + testIdAttribute("curriculum", "trace", "status") + '>' + esc(status) + '</p>' +
+      '<div class="curriculum-topology-grid" ' + testIdAttribute("curriculum", "topology") + '>' +
+      '<section class="curriculum-graph-panel" ' + testIdAttribute("curriculum", "graph") + '><header><div><span class="eyebrow">' + esc(t("curriculum.graph.eyebrow")) + '</span>' +
+        '<h2>' + esc(t("curriculum.graph.title")) + '</h2></div><div class="curriculum-legend">' +
+        '<span>' + esc(t("curriculum.graph.legend.qualified")) + '</span><span>' + esc(t("curriculum.graph.legend.active")) + '</span><span>' + esc(t("curriculum.graph.legend.eligible")) + '</span>' +
+        '<span>' + esc(t("curriculum.graph.legend.blocked")) + '</span><span>' + esc(t("curriculum.graph.legend.future")) + '</span></div></header>' +
+        '<p>' + esc(t("curriculum.graph.description")) + '</p>' +
+        '<div class="curriculum-scroll" tabindex="0" role="region" aria-label="' + esc(t("curriculum.graph.aria")) + '" ' + testIdAttribute("curriculum", "graph", "scroll") + '><div class="curriculum-canvas" ' +
         'data-height="' + layout.height + '">' +
-          '<div class="curriculum-stratum foundation"><strong>GRADUATED FOUNDATION</strong><span>' +
-            strata.foundation.length + ' qualified prior semantics</span></div>' +
-          '<div class="curriculum-stratum current"><strong>CURRENT GRADE · G' + esc(snapshot.currentGrade) +
-            '</strong><span>new semantics + older unfinished learning</span></div>' +
-          '<div class="curriculum-stratum forward"><strong>FORWARD CURRICULUM</strong><span>' +
-            strata.forward.length + ' later-grade semantics</span></div>' +
+          '<div class="curriculum-stratum foundation"><strong>' + esc(t("curriculum.graph.foundation")) + '</strong><span>' + esc(t("curriculum.graph.foundationDetail", { count: strata.foundation.length })) + '</span></div>' +
+          '<div class="curriculum-stratum current"><strong>' + esc(t("curriculum.graph.current", { grade: snapshot.currentGrade })) + '</strong><span>' + esc(t("curriculum.graph.currentDetail")) + '</span></div>' +
+          '<div class="curriculum-stratum forward"><strong>' + esc(t("curriculum.graph.forward")) + '</strong><span>' + esc(t("curriculum.graph.forwardDetail", { count: strata.forward.length })) + '</span></div>' +
           '<svg class="curriculum-edges" viewBox="0 0 1010 ' + layout.height +
-            '" aria-label="Declared prerequisite relationships"><defs><marker id="curriculum-arrow" ' +
+            '" aria-label="' + esc(t("curriculum.graph.edgesAria")) + '"><defs><marker id="curriculum-arrow" ' +
             'viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">' +
             '<path d="M 0 0 L 10 5 L 0 10 z"></path></marker></defs>' + edges + '</svg>' +
           nodes + '</div></div>' +
-        '<div class="relationship-summary"><span>Prerequisites: ' +
-          (selected.prerequisites.length ? esc(selected.prerequisites.join(", ")) : "none") +
-          '</span><span>Dependents: ' + esc(dependentsFor(graph, selected.id).join(", ") || "none") +
+        '<div class="relationship-summary"><span>' + esc(t("curriculum.relationship.prerequisites", { value: selected.prerequisites.length ? selected.prerequisites.join(", ") : t("school.common.none") })) +
+          '</span><span>' + esc(t("curriculum.relationship.dependents", { value: dependentsFor(graph, selected.id).join(", ") || t("school.common.none") })) +
           '</span></div></section>' +
+      tableMarkup(graph, visibility, ui.semanticBindings, selected.id) + '</div>' +
       dossierMarkup(graph, selected, semanticBinding, ui) +
-      tableMarkup(graph, visibility, ui.semanticBindings) +
       scaleMarkup(ui) +
     '</div>';
+  assertUniqueTestIds(markup);
+  container.innerHTML = markup;
   bind(container, context, api, onInspect, onModeChange, isActive);
 }

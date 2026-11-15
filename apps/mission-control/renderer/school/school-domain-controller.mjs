@@ -61,18 +61,18 @@ export function activateSchoolDomain({ state, api, onInspect, isActive = () => t
             kind: "capability",
             id,
             details: {
-              "Semantic display identity": concept
-                ? concept.semantic_id + " · " + (preferred?.value ?? node.label) + " · SOURCE CANONICAL"
-                : node.semanticId + " · FIXTURE DISPLAY ONLY",
-              Grade: node.grade,
-              "First introduced": node.firstIntroducedGrade,
-              "Lifecycle / qualification": node.lifecycleState + " / " + node.qualificationState,
-              "NOW / TOP / debt": node.now + "/" + node.total + " · " +
+              [t("school.inspector.semanticDisplay")]: concept
+                ? concept.semantic_id + " · " + (preferred?.value ?? node.label) + " · " + t("curriculum.authority.sourceCanonical")
+                : node.semanticId + " · " + t("curriculum.authority.fixtureDisplay"),
+              [t("school.inspector.grade")]: node.grade,
+              [t("school.inspector.firstIntroduced")]: node.firstIntroducedGrade,
+              [t("school.inspector.lifecycleQualification")]: node.lifecycleState + " / " + node.qualificationState,
+              [t("school.inspector.nowTopDebt")]: node.now + "/" + node.total + " · " +
                 node.top + "/" + node.total + " · " + node.debt,
-              Prerequisites: node.prerequisites.length ? node.prerequisites : ["none"],
-              "Source state": node.sourceState,
-              "Implementation state": node.implementationState,
-              "Source refs": node.sourceRefs,
+              [t("school.inspector.prerequisites")]: node.prerequisites.length ? node.prerequisites : [t("school.common.none")],
+              [t("school.inspector.sourceState")]: node.sourceState,
+              [t("school.inspector.implementationState")]: node.implementationState,
+              [t("school.inspector.sourceRefs")]: node.sourceRefs,
             },
           });
         },
@@ -89,13 +89,13 @@ export function activateSchoolDomain({ state, api, onInspect, isActive = () => t
         kind: "capability",
         id,
         details: {
-          "WAS/TOP/NOW/ALL": row.was + "/" + row.top + "/" + row.now + "/" + row.total,
-          Debt: row.debt,
-          "P(RET)": row.pRet ?? "NOT MEASURED",
-          Prerequisites: row.prerequisites.length ? row.prerequisites : ["none"],
-          "Source state": row.sourceState,
-          "Implementation state": row.implementationState,
-          "Qualification state": row.qualificationState,
+          [t("school.inspector.scoreQuad")]: row.was + "/" + row.top + "/" + row.now + "/" + row.total,
+          [t("school.inspector.debt")]: row.debt,
+          [t("school.inspector.pret")]: row.pRet ?? t("school.common.notMeasured"),
+          [t("school.inspector.prerequisites")]: row.prerequisites.length ? row.prerequisites : [t("school.common.none")],
+          [t("school.inspector.sourceState")]: row.sourceState,
+          [t("school.inspector.implementationState")]: row.implementationState,
+          [t("school.inspector.qualificationState")]: row.qualificationState,
         },
       });
     }, schoolSelectedId);
