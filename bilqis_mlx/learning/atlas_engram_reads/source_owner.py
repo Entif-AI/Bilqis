@@ -89,6 +89,12 @@ def _row_read_inputs(
     positions, vectors = [], []
     family = _source_family(adapter.descriptor.adapter_id)
     qualified_schemas = _qualified_schema_map(source_execution_authority)
+    qualified_feature_rows = (
+        None if source_execution_authority is None else {
+            (frame_handle, member_handle): row
+            for frame_handle, member_handle, row
+            in source_execution_authority.motif_feature_rows
+        })
     for position in compiled_row.positions:
         if position.kind is not PositionKind.CLOSURE:
             positions.append(None)
@@ -119,7 +125,8 @@ def _row_read_inputs(
         positions.append(MotifReadPosition(envelope, schema, family))
         vectors.append(motif_gate_features(
             parameters, projection, position.frame_handle, features,
-            extents=extents, atlas_selection=source.selection).vector128)
+            extents=extents, atlas_selection=source.selection,
+            qualified_feature_rows=qualified_feature_rows).vector128)
     return tuple(positions), mx.stack(tuple(vectors))
 
 
