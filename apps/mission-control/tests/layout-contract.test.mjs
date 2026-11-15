@@ -60,10 +60,11 @@ test("operator typography and explanatory surfaces use the shared visual languag
   assert.match(shell, /\.context-actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*align-items:\s*flex-end/s);
   assert.match(shell, /\.context-facts\[hidden\]\s*\{\s*display:\s*none/s);
   assert.match(shell, /\.ui-glossary\s*\{/);
-  for (const markup of [school, teacher, salience, corrections, evidence]) {
+  for (const markup of [school, teacher, salience, corrections]) {
     assert.match(markup, /class="ui-glossary"/);
   }
-  assert.match(evidence, /QUERY UNAVAILABLE/);
+  assert.doesNotMatch(evidence, /class="ui-glossary"/);
+  assert.match(source("evidence/evidence-messages.mjs"), /Query unavailable/);
   assert.doesNotMatch(evidence, /QUERY ERROR/);
 });
 

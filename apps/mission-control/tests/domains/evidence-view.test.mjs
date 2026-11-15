@@ -93,7 +93,7 @@ test("rejected bootstrap clears evidence and announces query unavailability", as
   const host = container();
   renderEvidenceView(host, api, { ...context, generation: 72 }, { kind: "capability", id: "B.AND" });
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.ok(host.innerHTML.includes("QUERY UNAVAILABLE"));
+  assert.ok(host.innerHTML.includes("Query unavailable"));
   assert.ok(host.innerHTML.includes("QUERY_DENIED"));
   assert.ok(host.innerHTML.includes('role="alert"'));
   assert.equal(host.innerHTML.includes("capability:and"), false);
@@ -108,9 +108,9 @@ test("deep-linked exact evidence restores detail after hydration", async () => {
   const host = container();
   renderEvidenceView(host, api, { ...context, generation: 73 }, { kind: "evidence", id: receipt.meta.record_id });
   await new Promise((resolve) => setTimeout(resolve, 0));
-  assert.ok(host.innerHTML.includes("Exact evidence item"));
+  assert.ok(host.innerHTML.includes("Exact record"));
   assert.ok(host.innerHTML.includes(receipt.meta.record_id));
-  assert.ok(host.innerHTML.includes("Raw structured payload"));
+  assert.ok(host.innerHTML.includes("Raw payload"));
 });
 
 test("secondary provenance hydration failure is explicit, not reported as no links", async () => {
@@ -124,7 +124,7 @@ test("secondary provenance hydration failure is explicit, not reported as no lin
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.ok(host.innerHTML.includes("Provenance traversal unavailable"));
   assert.ok(host.innerHTML.includes("QUERY_UNAVAILABLE"));
-  assert.ok(host.innerHTML.includes("LINK HYDRATION UNAVAILABLE"));
+  assert.ok(host.innerHTML.includes("Provenance traversal unavailable"));
   assert.equal(host.innerHTML.includes("No resolvable links reported."), false);
 });
 
@@ -145,7 +145,7 @@ test("readable and raw views expose the same literal receipt values", () => {
     assert.ok(readable.includes(literal));
     assert.ok(raw.includes(literal));
   }
-  assert.ok(readable.includes("NOT SEPARATELY REPORTED"));
+  assert.ok(readable.includes("Not separately reported"));
 });
 
 test("missing denied conflicting and partial evidence remain distinct", () => {
@@ -155,8 +155,8 @@ test("missing denied conflicting and partial evidence remain distinct", () => {
     page: page(request, { state: "MISSING", coverage: "UNKNOWN" }),
     records: [], links: [], selected: null, selectedLinks: null, raw: false, error: null,
   });
-  assert.ok(missing.includes("MISSING · UNKNOWN"));
-  assert.ok(missing.replaceAll("MISSING", "DENIED").includes("DENIED · UNKNOWN"));
+  assert.ok(missing.includes("State: MISSING"));
+  assert.ok(missing.replaceAll("MISSING", "DENIED").includes("State: DENIED"));
 
   const partial = {
     schema_version: "bilqis.bamf.mission-control.partial/v1", meta: meta("partial:capability"),
@@ -170,7 +170,7 @@ test("missing denied conflicting and partial evidence remain distinct", () => {
   });
   assert.ok(degraded.includes("grader_receipt"));
   assert.ok(degraded.includes("capability:conflict"));
-  assert.ok(degraded.includes("PARTIAL · PARTIAL"));
+  assert.ok(degraded.includes("Coverage: PARTIAL"));
 });
 
 test("query state is aria-live and memory producer absence is explicit", () => {
@@ -194,7 +194,7 @@ test("evidence markup exposes explicit return control when origin is retained", 
     selected: null, selectedLinks: null, raw: false, error: null,
     traversalError: null, returnAvailable: true,
   });
-  assert.ok(markup.includes("Return to inspected object"));
+  assert.ok(markup.includes("Return to origin"));
   assert.ok(markup.includes("data-evidence-return"));
 });
 
