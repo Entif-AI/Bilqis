@@ -120,24 +120,7 @@ class B11SourceExecutionAuthority:
         self.source_handoff.__post_init__()
 
 
-def bind_b11_source_execution_authority(
-    compiled_row: CompiledFrameBatch,
-    config: FrameCompilerConfig,
-    source: SourceAtomRow,
-    source_adapter,
-    snapshot: FrozenAtlasSnapshot,
-    features: AtlasFeatures,
-) -> B11SourceExecutionAuthority:
-    """Qualify one source row once before B11 enters the neural hot path."""
-    if (
-        type(compiled_row) is not CompiledFrameBatch
-        or type(config) is not FrameCompilerConfig
-        or type(source) is not SourceAtomRow
-        or type(snapshot) is not FrozenAtlasSnapshot
-        or type(features) is not AtlasFeatures
-    ):
-        _invalid("B11_SOURCE_EXECUTION_AUTHORITY_INPUT_INVALID")
-    task_scope = replace(config.task, causal_prefix_end=compiled_row.visible_end)
+def _bind_source_handoff(compiled_row, config, source, snapshot):
     handoff = _build_source_atom_handoff_from_snapshot(
         compiled_row,
         config,
@@ -149,6 +132,13 @@ def bind_b11_source_execution_authority(
     )
     if not handoff.embedding_ready:
         _invalid("B11_SOURCE_EXECUTION_HANDOFF_HELD")
+    return handoff
+
+
+def _bind_motif_context(
+    compiled_row, config, source, source_adapter, snapshot,
+):
+    task_scope = replace(config.task, causal_prefix_end=compiled_row.visible_end)
     replayed = qualify_source_motif_context(
         source_adapter,
         source.source_row,
@@ -167,25 +157,32 @@ def bind_b11_source_execution_authority(
     if isinstance(replayed, ContextHold):
         _invalid("B11_SOURCE_EXECUTION_MOTIF_CONTEXT_HELD")
     projection, motifs, frontier = replayed
-    schema_by_occurrence = {}
+    return task_scope, projection, motifs, frontier
 
-    def collect_schema(item):
-        previous = schema_by_occurrence.get(item.frame.occurrence_id)
+
+def _motif_schema_map(motifs):
+    schemas = {}
+
+    def collect(item):
+        previous = schemas.get(item.frame.occurrence_id)
         if previous is not None and previous != item.schema:
             _invalid("B11_SOURCE_EXECUTION_MOTIF_SCHEMA_DRIFT")
-        schema_by_occurrence[item.frame.occurrence_id] = item.schema
+        schemas[item.frame.occurrence_id] = item.schema
         for child in item.children:
-            collect_schema(child)
+            collect(child)
 
     for motif in motifs:
-        collect_schema(motif)
+        collect(motif)
+    return schemas
 
-    feature_rows = []
+
+def _bind_motif_feature_rows(projection, motifs, features, source):
+    schemas = _motif_schema_map(motifs)
+    rows = []
     for envelope in projection.envelopes:
         if type(envelope.frame) is not FrameInstance:
             continue
-        schema = schema_by_occurrence.get(envelope.frame.occurrence_id)
-        if schema is None:
+        if schemas.get(envelope.frame.occurrence_id) is None:
             _invalid("B11_SOURCE_EXECUTION_MOTIF_SCHEMA_MISSING")
         for binding in envelope.frame.bindings:
             if binding.concept is None:
@@ -200,8 +197,15 @@ def bind_b11_source_execution_authority(
                 envelope.scope, source.selection,
                 invalid=lambda: _invalid(
                     "B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID"))
-            feature_rows.append(
+            rows.append(
                 (envelope.frame_handle, member.source_handle, feature_row))
+    return tuple(rows)
+
+
+def _issue_b11_source_execution_authority(
+    compiled_row, config, source, source_adapter, snapshot, handoff,
+    task_scope, projection, motifs, feature_rows, frontier,
+):
     authority = object.__new__(B11SourceExecutionAuthority)
     for name, value in (
         ("snapshot", snapshot),
@@ -209,7 +213,7 @@ def bind_b11_source_execution_authority(
         ("source_handoff", handoff),
         ("motif_projection", projection),
         ("motif_inputs", motifs),
-        ("motif_feature_rows", tuple(feature_rows)),
+        ("motif_feature_rows", feature_rows),
         ("motif_frontier", frontier),
         ("task_scope", task_scope),
         ("source_digest", _source_digest(source)),
@@ -222,6 +226,33 @@ def bind_b11_source_execution_authority(
     authority.__post_init__()
     return authority
 
+
+def bind_b11_source_execution_authority(
+    compiled_row: CompiledFrameBatch,
+    config: FrameCompilerConfig,
+    source: SourceAtomRow,
+    source_adapter,
+    snapshot: FrozenAtlasSnapshot,
+    features: AtlasFeatures,
+) -> B11SourceExecutionAuthority:
+    """Qualify one source row once before B11 enters the neural hot path."""
+    if (
+        type(compiled_row) is not CompiledFrameBatch
+        or type(config) is not FrameCompilerConfig
+        or type(source) is not SourceAtomRow
+        or type(snapshot) is not FrozenAtlasSnapshot
+        or type(features) is not AtlasFeatures
+    ):
+        _invalid("B11_SOURCE_EXECUTION_AUTHORITY_INPUT_INVALID")
+    handoff = _bind_source_handoff(
+        compiled_row, config, source, snapshot)
+    task_scope, projection, motifs, frontier = _bind_motif_context(
+        compiled_row, config, source, source_adapter, snapshot)
+    feature_rows = _bind_motif_feature_rows(
+        projection, motifs, features, source)
+    return _issue_b11_source_execution_authority(
+        compiled_row, config, source, source_adapter, snapshot, handoff,
+        task_scope, projection, motifs, feature_rows, frontier)
 
 def require_b11_source_feature_row(
     authority,
