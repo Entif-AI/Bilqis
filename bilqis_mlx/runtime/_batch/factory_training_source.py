@@ -9,7 +9,7 @@ from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
 from bilqis_mlx.learning.source_atoms import SourceAtomRow
 from bilqis_mlx.runtime.atlas_model_contracts import bind_candidate_active_semantic_rows
 from bilqis_mlx.runtime.atlas_training_authority import bind_compiled_training_batch
-from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+from bilqis_mlx.runtime.b11_source_execution_authority import (
     bind_b11_source_execution_authority,
 )
 from bilqis_mlx.semantics.atlas_features.formal import source_family_for_adapter
