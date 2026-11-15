@@ -28,7 +28,6 @@ export function lineageEdges() {
       parentGeneration: parent.generation,
       childGeneration: node.generation,
       transitionClass: node.transitionClass,
-      label: node.transitionLabel,
     })] : [];
   }));
 }
@@ -77,16 +76,16 @@ export function capabilityChanges(before, after) {
   }));
 }
 
-const literal = (label, before, after, source, availability = "AVAILABLE", reason = null) =>
+const literal = (key, before, after, sourceKey, availability = "AVAILABLE", reasonKey = null) =>
   Object.freeze({
-    label,
+    key,
     before: String(before),
     after: String(after),
     state: availability === "AVAILABLE"
       ? (String(before) === String(after) ? "SAME" : "DIFFERENT")
       : "UNAVAILABLE",
-    source,
-    reason,
+    sourceKey,
+    reasonKey,
   });
 
 export function compareGenerations(beforeIdentity, afterIdentity) {
@@ -95,23 +94,23 @@ export function compareGenerations(beforeIdentity, afterIdentity) {
   const sameRun = before.runId === after.runId;
   const topologyComparable = before.compare.topologyVersion === after.compare.topologyVersion;
   const rows = [
-    literal("Capability debt", before.compare.debt, after.compare.debt, "generation manifests + capability evidence"),
-    literal("Retention disposition", before.compare.retention, after.compare.retention, "acceptance receipts"),
-    literal("Active semantic set", before.compare.activeSetDigest, after.compare.activeSetDigest, "semantic ABI sidecar"),
-    literal("Active bank count", before.compare.bankCount, after.compare.bankCount, "semantic ABI sidecar"),
-    literal("Memory allocation/state", before.compare.memory, after.compare.memory, "motif allocation sidecar"),
-    literal("Source/correction frontier", before.compare.correctionFrontier, after.compare.correctionFrontier, "correction frontier sidecar"),
-    literal("Teacher epoch", before.compare.teacherEpoch, after.compare.teacherEpoch, "teacher state sidecar"),
-    literal("Topology digest/version",
+    literal("debt", before.compare.debt, after.compare.debt, "generationCapability"),
+    literal("retention", before.compare.retention, after.compare.retention, "acceptance"),
+    literal("activeSemanticSet", before.compare.activeSetDigest, after.compare.activeSetDigest, "semanticAbi"),
+    literal("bankCount", before.compare.bankCount, after.compare.bankCount, "semanticAbi"),
+    literal("memory", before.compare.memory, after.compare.memory, "motif"),
+    literal("correctionFrontier", before.compare.correctionFrontier, after.compare.correctionFrontier, "correction"),
+    literal("teacherEpoch", before.compare.teacherEpoch, after.compare.teacherEpoch, "teacher"),
+    literal("topology",
       `${before.compare.topologyDigest} · ${before.compare.topologyVersion}`,
       `${after.compare.topologyDigest} · ${after.compare.topologyVersion}`,
-      "generation manifest"),
-    literal("Implementation digest", before.compare.implementationDigest, after.compare.implementationDigest, "generation manifest"),
-    literal("Resource profile", before.compare.resources, after.compare.resources, "resource sample",
+      "generationManifest"),
+    literal("implementation", before.compare.implementationDigest, after.compare.implementationDigest, "generationManifest"),
+    literal("resources", before.compare.resources, after.compare.resources, "resource",
       topologyComparable ? "AVAILABLE" : "UNAVAILABLE",
-      topologyComparable ? null : "Topology/version changed; these resource profiles are not declared comparable."),
-    literal("Evaluation contract", before.compare.evaluationContract, after.compare.evaluationContract, "evaluation contract sidecar"),
-    literal("Projection frontier", before.compare.projectionFrontier, after.compare.projectionFrontier, "outbox + C10 projection receipt"),
+      topologyComparable ? null : "topologyMismatch"),
+    literal("evaluation", before.compare.evaluationContract, after.compare.evaluationContract, "evaluation"),
+    literal("projection", before.compare.projectionFrontier, after.compare.projectionFrontier, "projection"),
   ];
   return Object.freeze({
     before,
@@ -124,7 +123,7 @@ export function compareGenerations(beforeIdentity, afterIdentity) {
         : "NON_ADJACENT_LINEAGE",
     capabilityChanges: capabilityChanges(before, after),
     rows: Object.freeze(rows),
-    interpretation: "Literal differences only. No overall winner is synthesized.",
+    interpretationKey: "literalOnly",
   });
 }
 
