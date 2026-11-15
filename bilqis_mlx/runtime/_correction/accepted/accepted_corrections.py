@@ -79,12 +79,11 @@ class AcceptedRuntimeHost:
         """Mint context for the Factory release bound by accepted B13 custody."""
         self.source_authority()
         from bilqis_mlx.factory.live_answers import live_answer_registry
-        from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
+        from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
         from bilqis_mlx.runtime.source_execution import SourceExecutionContext
         from bilqis_mlx.source_adapters.school import live_source_registry
 
-        student, _manifest_sha256 = load_bamf_generation_authority(
-            self.run_dir / "bamf-state.json")
+        student = load_accepted_generation(self.run_dir)
         from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
         release = read_accepted_atlas_factory_release(self.run_dir)
         release_sha256 = release.release_sha256

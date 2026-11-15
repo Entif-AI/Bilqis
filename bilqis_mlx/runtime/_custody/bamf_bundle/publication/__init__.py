@@ -45,10 +45,12 @@ from .storage import (
 
 
 def _require_published_acceptance(
-        run_dir: Path, pointer: dict, student: CompleteStudent):
+        run_dir: Path, pointer: dict, student: CompleteStudent, *,
+        accepted_parent: tuple[str, CompleteStudent] | None = None):
     return _require_published_acceptance_impl(
         run_dir, pointer, student,
-        load_bundle=load_bamf_bundle, live_manifest=_live_bundle_manifest)
+        load_bundle=load_bamf_bundle, live_manifest=_live_bundle_manifest,
+        accepted_parent=accepted_parent)
 
 
 def _load_generation_locked(pointer_path: Path) -> tuple[CompleteStudent, dict]:
