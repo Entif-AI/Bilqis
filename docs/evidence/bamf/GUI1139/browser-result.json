@@ -1,0 +1,57 @@
+{
+  "schema": "bilqis.bamf.gui1139.render-evidence/v1",
+  "baseline": {
+    "sha": "df57fe448af9c79db8f9a6a2704564baec7e4c84",
+    "theme": "dark",
+    "density": "comfortable",
+    "viewport_width": 1440,
+    "viewport_height": 900,
+    "domain_height": 3364.515625,
+    "document_height": 3753,
+    "document_width": 1425
+  },
+  "redesign_dark_current": {
+    "theme": "dark",
+    "density": "comfortable",
+    "viewport_width": 1440,
+    "viewport_height": 900,
+    "domain_height": 3655.96875,
+    "document_height": 4044,
+    "document_width": 1425,
+    "local_overflow": {
+      "graph": {"client_width": 1138, "scroll_width": 1138},
+      "accepted_table": {"client_width": 1140, "scroll_width": 1140},
+      "manifest_table": {"client_width": 1140, "scroll_width": 1702},
+      "dimension_diff": {"client_width": 1140, "scroll_width": 1582},
+      "capability_diff": {"client_width": 1140, "scroll_width": 1140}
+    }
+  },
+  "redesign_light_compact_historical_390": {
+    "theme": "light",
+    "density": "compact",
+    "generation": 44238,
+    "viewport_width": 390,
+    "viewport_height": 844,
+    "domain_height": 4466.96875,
+    "document_height": 5219,
+    "document_width": 375,
+    "enabled_generation_controls": 2,
+    "local_overflow": {
+      "graph": {"client_width": 322, "scroll_width": 863},
+      "accepted_table": {"client_width": 324, "scroll_width": 860},
+      "manifest_table": {"client_width": 324, "scroll_width": 1626},
+      "dimension_diff": {"client_width": 324, "scroll_width": 1582},
+      "capability_diff": {"client_width": 324, "scroll_width": 1040}
+    }
+  },
+  "redesign_historical_unavailable_390": {
+    "requested_generation": 999999,
+    "viewport_width": 390,
+    "viewport_height": 844,
+    "domain_height": 417,
+    "document_width": 375,
+    "accepted_lineage_rendered": false,
+    "generation_dossier_rendered": false,
+    "current_generation_substituted": false
+  }
+}
