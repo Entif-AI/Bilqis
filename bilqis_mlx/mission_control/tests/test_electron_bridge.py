@@ -13,7 +13,10 @@ from bilqis_mlx.control_plane import ControlPlaneService
 from bilqis_mlx.control_plane.__main__ import _default_socket
 from bilqis_mlx.control_plane.contracts import ControlPlaneState
 from bilqis_mlx.control_plane.tests.support import start_service
-from bilqis_mlx.mission_control.electron.bridge import ElectronBridge, _socket_path, stream_events
+from bilqis_mlx.errors import BilqisError, SCHOOL
+from bilqis_mlx.mission_control.electron.bridge import (
+    ElectronBridge, _safe_broker_error_code, _socket_path, stream_events,
+)
 from bilqis_mlx.mission_control.envelopes import EventEnvelope
 from bilqis_mlx.mission_control.query_catalog import MissionControlQueryCatalog
 from bilqis_mlx.mission_control.query_contracts import QueryFamily, QueryRequest
@@ -24,6 +27,25 @@ from bilqis_mlx.paths import active_run_dir
 
 
 class ElectronBridgeTests(unittest.TestCase):
+    def test_private_broker_error_codes_are_bounded_and_do_not_include_exception_text(self):
+        typed = BilqisError(
+            SCHOOL.BAMF_CONTROL_PLANE.INVALID,
+            {"reason": "token=super-secret /Users/operator/private-run"},
+        )
+        cases = (
+            (typed, "BAMF_GUI20_CP01_CONTRACT_INVALID"),
+            (PermissionError("/private/socket"), "BAMF_GUI20_CP01_UNAUTHORIZED"),
+            (TimeoutError("slow /private/socket"), "BAMF_GUI20_CP01_TIMEOUT"),
+            (ConnectionError("token=secret"), "BAMF_GUI20_CP01_TRANSPORT_UNAVAILABLE"),
+            (RuntimeError("token=secret"), "BAMF_GUI20_CP01_UNAVAILABLE"),
+        )
+        for error, expected in cases:
+            with self.subTest(expected=expected):
+                code = _safe_broker_error_code(error)
+                self.assertEqual(code, expected)
+                self.assertNotIn("secret", code)
+                self.assertNotIn("/private", code)
+
     def test_command_bridge_decodes_v2_and_never_exposes_private_session_identity(self):
         action = request(action="resume", dry_run=False, human_authorized=False)
         client = Mock()
@@ -155,7 +177,11 @@ class ElectronBridgeTests(unittest.TestCase):
         client.close.assert_called_once_with(preserve_state=True)
 
     def test_default_socket_path_matches_accepted_cp01_locator(self):
-        with patch.dict(os.environ, {"BILQIS_CONTROL_PLANE_SOCKET": ""}):
+        with patch.dict(os.environ, {
+                "BILQIS_CONTROL_PLANE_SOCKET": "", "RUN_DIR": "",
+        }), patch(
+                "bilqis_mlx.mission_control.electron.bridge.discover_active_endpoint",
+                return_value=None):
             self.assertEqual(_socket_path(), _default_socket(active_run_dir()))
 
     def test_default_socket_path_prefers_discovered_active_operator(self):
