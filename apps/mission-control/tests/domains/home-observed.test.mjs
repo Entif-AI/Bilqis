@@ -26,13 +26,15 @@ const host = () => ({ innerHTML: "", querySelectorAll: () => [] });
 
 test("generation zero shows observed retention and separates accepted coordinates", () => {
   const model = projectionFromPages({ run: runPage() }, context);
-  const html = renderHomeMarkup(model);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
   assert.equal(model.startup, null);
   assert.equal(model.observed.current.phase, "RETENTION");
   assert.match(html, /Observed · provisional/);
   assert.match(html, /1 \/ 4 assessments/);
   assert.match(html, /Accepted generation/);
   assert.match(html, /Candidate optimizer step/);
+  assert.match(html, /data-source-unix-seconds="1000"/);
+  assert.match(html, />5 minutes ago</);
   assert.doesNotMatch(html, /Waiting for the first accepted/);
   assert.equal(model.runtime.retainedCandidates, 0);
 });

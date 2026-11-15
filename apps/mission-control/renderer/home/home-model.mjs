@@ -177,6 +177,8 @@ export function projectionFromPages(pages, context) {
       targetAssessment: null,
       protectedAssessment: null,
       recordId: activeEpisode?.meta?.record_id ?? null,
+      observedAt: activeEpisode?.meta?.observed_at ?? null,
+      materializedAt: activeEpisode?.meta?.materialized_at ?? null,
     }),
     schoolRows: Object.freeze(capabilityRows.slice(0, 8).map((record) => Object.freeze({
       id: record.capability_id,
@@ -190,13 +192,16 @@ export function projectionFromPages(pages, context) {
       kind: record.outcome === "ACCEPTED" ? "retain" : "reject",
       capabilityId: record.capability_id,
       reasonCode: record.reason_code,
-      observedAt: record.meta?.observed_at ?? record.meta?.materialized_at ?? null,
+      observedAt: record.meta?.observed_at ?? null,
+      materializedAt: record.meta?.materialized_at ?? null,
       target: Object.freeze({ kind: "capability", id: record.capability_id }),
     }))),
     attention: Object.freeze([
       ...(correctionDebt ? [{
         kind: "correction", severity: "invalid", count: correctionDebt, id: corrections[0]?.meta?.record_id,
         target: { kind: "correction", id: corrections[0]?.meta?.record_id },
+        observedAt: corrections[0]?.meta?.observed_at ?? null,
+        materializedAt: corrections[0]?.meta?.materialized_at ?? null,
       }] : []),
     ]),
   });
