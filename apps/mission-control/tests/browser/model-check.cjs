@@ -39,7 +39,7 @@ const server = http.createServer((req, res) => {
   });
   await page.screenshot({ path: 'output/playwright/1134/before-dark.png', fullPage: true });
 
-  const { modelJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/model-journey.mjs'));
+  const { modelJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/journeys/model-journey.mjs'));
   await page.evaluate(() => { document.querySelector('#neural-css').href = '/apps/mission-control/renderer/neural/neural.css'; document.querySelector('[data-test-id="fixture-host"]').innerHTML = ''; });
   const result = await modelJourney(page, framePages);
   const axePath = process.env.BILQIS_AXE_MODULE;

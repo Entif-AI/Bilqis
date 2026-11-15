@@ -37,6 +37,7 @@ import {
 } from "./foundation/accessibility.mjs";
 import { createHomeController } from "./home/home-controller.mjs";
 import { createResourceController } from "./resources/resource-controller.mjs";
+import { createTeacherController } from "./teacher/teacher-controller.mjs";
 import { createOperateController } from "./operate/operate-controller.mjs";
 import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
@@ -68,6 +69,9 @@ let focusReturnToken = null;
 let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
 const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
+const teacherController = createTeacherController(window.bamfMissionControl, {
+  fixtureSupport: fixtureSupport?.teacher ?? null,
+});
 const learningController = createProductionLearningController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
@@ -202,11 +206,10 @@ function render() {
   frameShell.afterRender();
   setHash();
   activateDomainViews({
-    state, getState: () => state, defense, api: window.bamfMissionControl,
-    homeController, resourceController, operateController,
-    capabilityExplorer, learningController, onInspect: openInspector,
-    onNavigate: navigateTo, onAnnounce: announce,
-    schoolDomainSupport: fixtureSupport?.school ?? null,
+    state, getState: () => state, defense, api: window.bamfMissionControl, homeController,
+    resourceController, operateController, teacherController, capabilityExplorer,
+    onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
+    learningController, schoolDomainSupport: fixtureSupport?.school ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;

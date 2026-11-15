@@ -33,6 +33,7 @@ export const currentViews = Object.freeze({
 export const home = Object.freeze({ referenceProjection: referenceHomeProjection });
 export const interactions = Object.freeze({ compareRefs: compareStableRefs });
 export const resources = Object.freeze({ fixtureSupport: RESOURCE_FIXTURE_SUPPORT });
+export const teacher = Object.freeze({ renderTeacherView });
 export const school = Object.freeze({
   activateSchoolDomain,
   invalidateSchoolDomainRequests,

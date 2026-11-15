@@ -37,7 +37,7 @@ const server = http.createServer((req, res) => {
     document.querySelector('[data-test-id="fixture-host"]').innerHTML = atlas.renderAtlasMarkup({ status: 'ready', overview, selection, lens: 'canonical', selectedBank: 0 });
   });
   await page.screenshot({ path: 'output/playwright/1133/before-dark.png', fullPage: true });
-  const { atlasJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/atlas-journey.mjs'));
+  const { atlasJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/journeys/atlas-journey.mjs'));
   await page.evaluate(() => { document.querySelector('#atlas-css').href = '/apps/mission-control/renderer/atlas/semantic-atlas.css'; document.querySelector('[data-test-id="fixture-host"]').innerHTML = ''; });
   const result = await atlasJourney(page);
   const axePath = process.env.BILQIS_AXE_MODULE;
