@@ -109,10 +109,55 @@ neural competence or semantic-source correctness. Automated axe output is not a
 universal WCAG certification, and no real screen-reader or human usability study
 was performed in this leaf.
 
+## Structural interruption required by AGENTS.md
+
+Before final qualification, #1134 consumed current unified
+`7b79ef85b1b7fad87918066b8ca2e048ddc24936`. That merge was conflict-free, but
+the newly landed Salience redesign introduced a 566-line project-authored
+`salience.css`. Repository governance requires an immediate structural repair
+when such a file is encountered during integration review, so the already
+committed #1134 state was preserved and the dependent repair was completed before
+Model verification resumed.
+
+The Salience stylesheet is now presentation-only split into:
+
+- `salience-core.css`: 220 lines;
+- `salience-evidence.css`: 120 lines;
+- `salience-analysis.css`: 226 lines;
+- `salience.css`: 3 ordered imports.
+
+The Electron renderer allowlist and the two tests that inspect the full Salience
+style surface were updated for the split. No Salience selector, declaration,
+view logic or product behavior was intentionally changed. The independent
+structural-interruption seam passed **37/37** tests, and all authored stylesheet
+modules are below the repository threshold.
+
 ## Final qualification
 
-Final unified composition, leaf-wrapper, Mission Control Python, hosted checks and
-exact review head are recorded at turn-in after this initial implementation
-receipt is committed. No new design deficiency requiring an amendment to #1124
-was discovered during this implementation pass. Human review and merge remain a
-separate boundary.
+Final composed-tree qualification against unified
+`7b79ef85b1b7fad87918066b8ca2e048ddc24936`:
+
+- focused Model/Frames/domain-context/renderer-protocol seam: **43/43 PASS**;
+- final comparative Playwright/axe matrix: **PASS** with zero document overflow
+  and zero owned-surface WCAG 2/2.1/2.2 A/AA violations in every recorded
+  theme/density/width variant;
+- `verify:leaf`: **PASS**;
+- Mission Control renderer: **335/335 PASS**;
+- Electron security: **53/53 PASS**;
+- Python bridge: **6/6 PASS**;
+- structure/governance: **PASS**;
+- static adaptation-source authority: **PASS**, companion tests **7/7 PASS**;
+- BAMF flow control: **PASS**, companion tests **15/15 PASS**;
+- Mission Control Python discovery: **80/80 PASS**;
+- `git diff --check`: **PASS**.
+
+The fresh worktree initially lacked the lockfile dependency tree. `npm ci
+--ignore-scripts` restored the checked-in Node dependencies before the security
+gate; no dependency versions were changed. Python 3.14 emitted `ResourceWarning`
+messages for unclosed SQLite connections during Mission Control test teardown;
+the suite still exited `0`, and this UI leaf does not modify that backend
+lifecycle.
+
+No new design deficiency requiring an amendment to #1124 was discovered during
+implementation. Hosted CI status and the exact immutable review head are recorded
+on the issue/PR after push. Human review and merge remain a separate boundary.
