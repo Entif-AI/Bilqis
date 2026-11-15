@@ -11,6 +11,7 @@ class FrontierVerificationMetrics:
     snapshots_rehashed: int = 0
     historical_bytes_serialized: int = 0
     receipt_history_lookups: int = 0
+    history_index_nodes_written: int = 0
 
 
 _ACTIVE = ContextVar("bilqis_frontier_verification_metrics", default=None)
@@ -29,6 +30,12 @@ def note_receipt_history_lookup() -> None:
         state["receipt_history_lookups"] += 1
 
 
+def note_history_index_node_write() -> None:
+    state = _ACTIVE.get()
+    if state is not None:
+        state["history_index_nodes_written"] += 1
+
+
 @contextmanager
 def frontier_verification_measurement(observer):
     """Measure planner verification work without granting the metrics authority."""
@@ -39,6 +46,7 @@ def frontier_verification_measurement(observer):
         "snapshots_rehashed": 0,
         "historical_bytes_serialized": 0,
         "receipt_history_lookups": 0,
+        "history_index_nodes_written": 0,
     }
     token = _ACTIVE.set(state)
     try:
@@ -54,5 +62,6 @@ def frontier_verification_measurement(observer):
 
 __all__ = (
     "FrontierVerificationMetrics", "frontier_verification_measurement",
-    "note_receipt_history_lookup", "note_snapshot_rehash",
+    "note_history_index_node_write", "note_receipt_history_lookup",
+    "note_snapshot_rehash",
 )

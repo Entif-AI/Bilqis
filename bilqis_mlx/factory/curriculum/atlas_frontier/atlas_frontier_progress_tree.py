@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import hashlib
 
 from .atlas_frontier_contracts import _bytes, _fail
+from .atlas_frontier_progress_metrics import note_history_index_node_write
 
 ZERO_DIGEST = "0" * 64
 
@@ -28,6 +29,7 @@ def _priority(key: str) -> int:
 
 
 def _node(key, value, priority, left=None, right=None):
+    note_history_index_node_write()
     return IndexNode(
         key, value, priority, left, right,
         _digest((

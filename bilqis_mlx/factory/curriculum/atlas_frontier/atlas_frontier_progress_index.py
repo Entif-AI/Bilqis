@@ -30,6 +30,8 @@ class FrontierHistoryHead:
     receipt_index_sha256: str
     successor_index_sha256: str
     requested_index_sha256: str
+    requested_semantic_index_sha256: str
+    requested_semantic_count: int
     receipt_count: int
     history_sha256: str
     schema: str = _SCHEMA
@@ -45,13 +47,16 @@ class FrontierHistoryHead:
             self.root_snapshot_sha256, self.head_snapshot_sha256,
             self.snapshot_chain_sha256, self.snapshot_index_sha256,
             self.receipt_index_sha256, self.successor_index_sha256,
-            self.requested_index_sha256, self.history_sha256,
+            self.requested_index_sha256, self.requested_semantic_index_sha256,
+            self.history_sha256,
         )
         if (self.schema != _SCHEMA
                 or any(type(item) is not str or len(item) != 64
                        or any(char not in "0123456789abcdef" for char in item)
                        for item in digests)
                 or type(self.snapshot_count) is not int or self.snapshot_count < 1
+                or type(self.requested_semantic_count) is not int
+                or self.requested_semantic_count < 0
                 or type(self.receipt_count) is not int or self.receipt_count < 0
                 or self.history_sha256 != self.expected_digest()):
             _fail("BAMF_PLANNER_HISTORY_HEAD_INVALID")
@@ -120,6 +125,7 @@ class _State:
     receipts: IndexNode | None
     successors: IndexNode | None
     requested: IndexNode | None
+    requested_semantics: IndexNode | None
 
 
 class FrontierHistoryOwner:
@@ -136,9 +142,9 @@ class FrontierHistoryOwner:
         chain = _digest(("root", snapshot.predecessor_sha256, snapshot.snapshot_sha256))
         head = _make_head(
             snapshot.snapshot_sha256, snapshot.snapshot_sha256, chain,
-            snapshots, None, None, None, 1, 0)
+            snapshots, None, None, None, None, 1, 0, 0)
         self._states = {head.history_sha256: _State(
-            head, snapshots, None, None, None)}
+            head, snapshots, None, None, None, None)}
         self._receipt_credits: dict[str, CompactReceiptCredit] = {}
 
     @property
@@ -181,9 +187,12 @@ class FrontierHistoryOwner:
         next_head = _make_head(
             head.root_snapshot_sha256, snapshot.snapshot_sha256, chain,
             snapshots, state.receipts, state.successors,
-            state.requested, head.snapshot_count + 1, head.receipt_count)
+            state.requested, state.requested_semantics,
+            head.snapshot_count + 1, head.requested_semantic_count,
+            head.receipt_count)
         self._states[next_head.history_sha256] = _State(
-            next_head, snapshots, state.receipts, state.successors, state.requested)
+            next_head, snapshots, state.receipts, state.successors,
+            state.requested, state.requested_semantics)
         return next_head
 
     def append_receipt(
@@ -200,6 +209,7 @@ class FrontierHistoryOwner:
                     len(receipt.selection_snapshot.digest_bytes())
                     if historical else 0))
             receipt.verify()
+        note_receipt_history_lookup()
         anchor = lookup(state.snapshots, receipt.selection.snapshot_sha256)
         if anchor is None:
             _fail("BAMF_PLANNER_HISTORY_RECEIPT_ANCESTOR_MISSING")
@@ -218,15 +228,23 @@ class FrontierHistoryOwner:
         request_key = _request_key(value[1], value[2])
         requested = upsert(
             state.requested, request_key, (receipt.receipt_sha256,))
+        semantic_seen = lookup(
+            state.requested_semantics, receipt.selected_semantic_id) is not None
+        requested_semantics = insert(
+            state.requested_semantics, receipt.selected_semantic_id,
+            ("requested",))
         self._receipt_credits[receipt.receipt_sha256] = CompactReceiptCredit(
             receipt.receipt_sha256, *value)
         next_head = _make_head(
             head.root_snapshot_sha256, head.head_snapshot_sha256,
             head.snapshot_chain_sha256, state.snapshots,
-            receipts, successors, requested,
-            head.snapshot_count, head.receipt_count + 1)
+            receipts, successors, requested, requested_semantics,
+            head.snapshot_count,
+            head.requested_semantic_count + (0 if semantic_seen else 1),
+            head.receipt_count + 1)
         self._states[next_head.history_sha256] = _State(
-            next_head, state.snapshots, receipts, successors, requested)
+            next_head, state.snapshots, receipts, successors, requested,
+            requested_semantics)
         return next_head
 
     def snapshot_anchor(self, head: FrontierHistoryHead, snapshot_sha256: str):
@@ -280,8 +298,15 @@ class FrontierHistoryOwner:
         return credit
 
     def receipt_semantic_ids(self, head: FrontierHistoryHead) -> tuple[str, ...]:
-        return tuple(sorted({
-            value[1] for value in values(self.require(head).receipts)}))
+        return tuple(sorted(keys(self.require(head).requested_semantics)))
+
+    def requested_semantics_within(
+            self, head: FrontierHistoryHead, eligible: set[str]) -> bool:
+        state = self.require(head)
+        matched = sum(
+            lookup(state.requested_semantics, semantic_id) is not None
+            for semantic_id in eligible)
+        return matched == head.requested_semantic_count
 
     def all_requested_keys(
             self, head: FrontierHistoryHead) -> tuple[tuple[str, str], ...]:
@@ -299,7 +324,8 @@ def _request_key(semantic_id: str, obligation_sha256: str) -> str:
 
 
 def _make_head(root_snapshot_sha256, head_snapshot_sha256, chain, snapshots,
-               receipts, successors, requested, snapshot_count, receipt_count):
+               receipts, successors, requested, requested_semantics,
+               snapshot_count, requested_semantic_count, receipt_count):
     draft = FrontierHistoryHead(
         root_snapshot_sha256=root_snapshot_sha256,
         head_snapshot_sha256=head_snapshot_sha256,
@@ -309,6 +335,8 @@ def _make_head(root_snapshot_sha256, head_snapshot_sha256, chain, snapshots,
         receipt_index_sha256=root_digest(receipts),
         successor_index_sha256=root_digest(successors),
         requested_index_sha256=root_digest(requested),
+        requested_semantic_index_sha256=root_digest(requested_semantics),
+        requested_semantic_count=requested_semantic_count,
         receipt_count=receipt_count,
         history_sha256=_ZERO,
     )

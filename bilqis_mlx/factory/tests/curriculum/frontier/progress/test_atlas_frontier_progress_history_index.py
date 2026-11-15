@@ -72,7 +72,7 @@ def _successor(snapshot, index: int, *, admission: bool = False):
 def _lineage(steps: int, *, admission: bool = False):
     release, snapshot, closure = _held_root()
     progress = plan_frontier_progress(snapshot, closure)
-    totals = [0, 0, 0]
+    totals = [0, 0, 0, 0]
     snapshots = [snapshot]
     for index in range(1, steps + 1):
         snapshot = _successor(snapshot, index, admission=admission)
@@ -85,6 +85,7 @@ def _lineage(steps: int, *, admission: bool = False):
         totals[0] += metrics.snapshots_rehashed
         totals[1] += metrics.historical_bytes_serialized
         totals[2] += metrics.receipt_history_lookups
+        totals[3] += metrics.history_index_nodes_written
         snapshots.append(snapshot)
     return release, progress, closure, tuple(snapshots), tuple(totals)
 
@@ -143,6 +144,8 @@ class FrontierHistoryIndexTests(ProjectionAuthorityFixture, unittest.TestCase):
         self.assertEqual(large_work[1], 0)
         self.assertLessEqual(large_work[0], small_work[0] * 2 + 4)
         self.assertLessEqual(large_work[2], small_work[2] * 2 + 4)
+        self.assertGreater(small_work[3], 0)
+        self.assertLess(large_work[3], small_work[3] * 3)
         self.assertEqual(small.history_head.snapshot_count, 33)
         self.assertEqual(large.history_head.snapshot_count, 65)
 

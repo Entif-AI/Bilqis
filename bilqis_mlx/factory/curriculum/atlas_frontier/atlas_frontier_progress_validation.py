@@ -94,7 +94,8 @@ def validate_prior(snapshot: CurriculumSnapshot, prior: FrontierProgress | None)
             != prior.planning_snapshot.snapshot_sha256):
         _fail("BAMF_PLANNER_PROGRESS_PREDECESSOR_MISMATCH")
     eligible = set(snapshot.source_eligible_concept_ids)
-    if not set(prior.planning_snapshot.source_eligible_concept_ids) <= eligible:
+    if not _history_owner(prior).requested_semantics_within(
+            prior.history_head, eligible):
         _fail("BAMF_PLANNER_PROGRESS_PREDECESSOR_SCOPE_DRIFT")
 
 
