@@ -119,6 +119,7 @@ def frame_factor_terms(
     requests: tuple[FrameConstituentRequest, ...],
     features: AtlasFeatures, *, extents: GenerationExtents,
     atlas_selection: AtlasArtifactSelection | None = None,
+    qualified_feature_rows=None,
 ) -> FrameFactorTerms:
     """Gather actual A06 factors for concepts and typed child closures."""
     validate_frame_members(requests)
@@ -128,7 +129,8 @@ def frame_factor_terms(
         if type(request) is ChildFrameRequest:
             values.append(_child_factor_terms(parameters, request, features))
             continue
-        row = _source_qualified_feature_row(features, request, atlas_selection)
+        row = _source_qualified_feature_row(
+            features, request, atlas_selection, qualified_feature_rows)
         terms = _released_factor_terms(parameters, row)
         values.append((
             _factor_vector(
