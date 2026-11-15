@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+from bilqis_mlx.runtime.backbone_identity import issue_execution_generation_binding
 from bilqis_mlx.runtime.bamf_bundle import (
     BamfBundleCandidate, authenticate_bamf_execution_feature_context,
 )
@@ -50,11 +50,10 @@ class FactoryEvaluationInstrument:
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_INVALID")
 
 
-def _generation(candidate: BamfBundleCandidate) -> str:
+def _execution_binding(candidate: BamfBundleCandidate):
     if not isinstance(candidate, BamfBundleCandidate):
         _invalid("BAMF_C05_CANDIDATE_REQUIRED")
-    return execution_generation_digest(
-        candidate.retained_state.optimizer.parameters,
+    return issue_execution_generation_binding(candidate.retained_state.optimizer.parameters,
         spec=candidate.topology, extents=candidate.extents)
 
 
@@ -221,7 +220,8 @@ class _FactoryCompleteSolverBuilder:
         self.source_context = source_context
         self.candidate = candidate
         self.artifact_path = artifact_path
-        self.generation = _generation(candidate)
+        self.execution_binding = _execution_binding(candidate)
+        self.generation = self.execution_binding.generation_digest
         self.by_goal = {item.case.goal.goal_id: item for item in instruments}
         if len(self.by_goal) != len(instruments):
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_GOAL_CONFLICT")
@@ -262,7 +262,7 @@ class _FactoryCompleteSolverBuilder:
         return context
 
     def scalar_context(self, batch, plan, authority):
-        scalar = b11_task_goal_proposer(self.parameters, batch, plan, authority)
+        scalar = b11_task_goal_proposer(self.parameters, batch, plan, authority, execution_binding=self.execution_binding)
 
         def proposer(request):
             self.telemetry["scalar_neural_launches"] += 1
@@ -320,8 +320,8 @@ class _FactoryCompleteSolverBuilder:
             prepared = tuple(
                 PreparedFactoryEvaluation(batch, plan, authority)
                 for batch, plan, authority in bound)
-            outputs = batched_factory_outputs(
-                self.parameters, prepared, on_launch=self.on_launch)
+            outputs = batched_factory_outputs(self.parameters, prepared, on_launch=self.on_launch,
+                execution_binding=self.execution_binding)
             for goal, item, output in zip(missing, prepared, outputs, strict=True):
                 self.contexts[goal.goal_id] = self.context_from(item, output)
         result = tuple(self.contexts.get(goal.goal_id) for goal in goals)

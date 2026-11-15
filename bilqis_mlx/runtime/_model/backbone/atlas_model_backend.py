@@ -29,11 +29,14 @@ class Backend:
         ):
             _invalid("B11_BACKEND_INVALID")
 
-    def forward(self, params, compiled_batch, answer_plan, mode, cache=None):
+    def forward(
+            self, params, compiled_batch, answer_plan, mode, cache=None, *,
+            execution_binding=None):
         from .atlas_model_forward import _forward_bamf_impl
 
         return _forward_bamf_impl(
-            self, params, compiled_batch, answer_plan, mode, cache)
+            self, params, compiled_batch, answer_plan, mode, cache,
+            execution_binding=execution_binding)
 
     def value_and_grad(
             self, params, compiled_batch, answer_plan, targets, mask, cache=None, *,

@@ -10,6 +10,7 @@ from bilqis_mlx.learning.source_atoms.backbone import (
     finalize_source_backbone_hidden,
     start_source_backbone_producer,
 )
+from bilqis_mlx.runtime.backbone_identity import require_execution_generation_binding
 from bilqis_mlx.runtime.atlas_model_backend import model_backend
 from bilqis_mlx.runtime.atlas_model_forward import _decode_bamf_producer_row
 from bilqis_mlx.runtime.atlas_model_contracts import BamfCompiledBatch
@@ -108,6 +109,7 @@ def _execute_chunk(
     parameters,
     items: tuple[PreparedFactoryEvaluation, ...],
     on_launch: Callable[[int, int], None] | None,
+    execution_binding,
 ) -> tuple[ModelOutput, ...]:
     if len(items) < _MIN_SHARED_BATCH_ROWS or any(not _batchable(item) for item in items):
         _invalid("BAMF_C05_BATCH_CHUNK_INVALID")
@@ -119,6 +121,10 @@ def _execute_chunk(
     combined = _combine(items)
     first = items[0].batch
     first.atlas_feature_artifact_owner.require(combined.features)
+    backend = model_backend(ModelTopologySpecV2())
+    require_execution_generation_binding(
+        execution_binding, parameters,
+        spec=backend.topology, extents=combined.extents)
     banks = semantic_bank_views(
         parameters, combined.extents, combined.features.semantic_release,
         first.active_semantic_rows.active_indices)
@@ -129,15 +135,15 @@ def _execute_chunk(
         first.feature_schema,
         banks,
         first.atlas_feature_artifact_owner,
+        execution_binding=execution_binding,
     )
     hidden = finalize_source_backbone_hidden(producer)
-    backend = model_backend(ModelTopologySpecV2())
     if on_launch is not None:
         on_launch(len(items), max(_positions(item) for item in items))
     return tuple(
         _decode_bamf_producer_row(
             backend, parameters, item.batch, item.plan,
-            producer, hidden, index)
+            producer, hidden, index, execution_binding=execution_binding)
         for index, item in enumerate(items)
     )
 
@@ -147,6 +153,7 @@ def batched_factory_outputs(
     prepared: tuple[PreparedFactoryEvaluation, ...],
     *,
     on_launch: Callable[[int, int], None] | None = None,
+    execution_binding=None,
 ) -> tuple[ModelOutput | None, ...]:
     """Return issued outputs where sharing is lawful; None selects the scalar path."""
     if (not isinstance(prepared, tuple) or not prepared
@@ -172,7 +179,8 @@ def batched_factory_outputs(
             chunk.append(candidate)
             index += 1
         if len(chunk) > 1:
-            issued = _execute_chunk(parameters, tuple(chunk), on_launch)
+            issued = _execute_chunk(
+                parameters, tuple(chunk), on_launch, execution_binding)
             outputs[cursor:cursor + len(chunk)] = issued
             cursor += len(chunk)
         else:
