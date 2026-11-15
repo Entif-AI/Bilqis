@@ -118,31 +118,97 @@ def microbatch_trace_preflight(
     return tuple(executions)
 
 
+def microbatch_trace_from_hidden(
+    backend, params, row_batches, answer_plans, targets, masks,
+    producer, hidden, accepted_cache, execution_binding, salience_supervision,
+):
+    """Issue row evidence from one already-executed source backbone."""
+    from .atlas_model_forward import _decode_bamf_producer_row
+    from .atlas_model_training import loss_bearing_bamf
+
+    if hidden.shape[0] != len(row_batches):
+        _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
+    executions = []
+    for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
+            row_batches, answer_plans, targets, masks)):
+        output = _decode_bamf_producer_row(
+            backend, params, row_batch, plan, producer, hidden, index,
+            accepted_cache, execution_binding, refinement_training=True,
+            trace=False)
+        executions.append(loss_bearing_bamf(
+            output, row_targets, mask,
+            salience_supervision=salience_supervision))
+    return tuple(executions)
+
+
+def _validate_route_trajectory(answer_plans, executions, trajectory):
+    if (type(answer_plans) is not tuple or type(executions) is not tuple
+            or type(trajectory) is not tuple
+            or len(answer_plans) != len(executions)):
+        _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+    ordered = tuple(
+        tuple({item.decision_id: item for item in plan.decisions}[key]
+              for key in plan.execution_order)
+        for plan in answer_plans)
+    if len(trajectory) != max(len(items) for items in ordered):
+        _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+    committed = tuple(
+        {item.decision_id: item.value for item in execution.output.committed}
+        for execution in executions)
+    for index, observed in enumerate(trajectory):
+        expected = []
+        for items, values in zip(ordered, committed):
+            if index >= len(items):
+                expected.append(0)
+                continue
+            decision = items[index]
+            if decision.decision_id not in values:
+                _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+            value = values[decision.decision_id]
+            try:
+                expected.append(decision.legal_values.index(value))
+            except ValueError:
+                _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+        expected_array = mx.array(tuple(expected), dtype=observed.dtype)
+        if not bool(mx.all(observed == expected_array)):
+            _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+
+
 def finalize_microbatch_gradient(
     backend, batch, row_batches, preflight_executions,
-    executions, mean_loss, gradients,
+    executions, mean_loss, gradients, *, answer_plans=None, route_trajectory=None,
 ):
     """Verify row evidence, numerical parity and issue one microbatch result."""
     from bilqis_mlx.learning.atlas_readout.decoder.prediction import (
         attest_issued_output,
     )
 
-    reused_preflight_evidence = executions is None
-    if reused_preflight_evidence:
-        executions = preflight_executions
-    elif type(executions) is not tuple or len(executions) != len(row_batches):
+    if preflight_executions is None:
+        if (type(executions) is not tuple or len(executions) != len(row_batches)
+                or route_trajectory is None):
+            _invalid("B11_MICROBATCH_EXECUTION_MISSING")
+        _validate_route_trajectory(answer_plans, executions, route_trajectory)
+        reference_executions = executions
+    else:
+        reused_preflight_evidence = executions is None
+        if reused_preflight_evidence:
+            executions = preflight_executions
+        elif type(executions) is not tuple or len(executions) != len(row_batches):
+            _invalid("B11_MICROBATCH_EXECUTION_MISSING")
+        if not reused_preflight_evidence and any(
+                execution.output.committed != preflight.output.committed
+                or execution.output.status is not preflight.output.status
+                for execution, preflight in zip(executions, preflight_executions)):
+            _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+        reference_executions = preflight_executions
+    if type(executions) is not tuple or len(executions) != len(row_batches):
         _invalid("B11_MICROBATCH_EXECUTION_MISSING")
     if any(not attest_issued_output(execution.output) for execution in executions):
         _invalid("B11_MICROBATCH_OUTPUT_ATTESTATION_FAILED")
-    if not reused_preflight_evidence and any(
-            execution.output.committed != preflight.output.committed
-            or execution.output.status is not preflight.output.status
-            for execution, preflight in zip(executions, preflight_executions)):
-        _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
-    preflight_mean = sum(
-        (execution.loss.total for execution in preflight_executions),
-        mx.array(0.0, dtype=mx.float32)) / len(preflight_executions)
-    if not bool(mx.allclose(mean_loss, preflight_mean, rtol=1e-5, atol=1e-6)):
+    reference_mean = sum(
+        (execution.loss.total for execution in reference_executions),
+        mx.array(0.0, dtype=mx.float32)) / len(reference_executions)
+    if not bool(mx.allclose(mean_loss, reference_mean, rtol=1e-5, atol=1e-6)):
         _invalid("B11_MICROBATCH_LOSS_DRIFT")
     validate_bamf_parameters(
         backend.topology, batch.compiled.extents, gradients)
@@ -160,6 +226,7 @@ def finalize_microbatch_gradient(
 
 __all__ = (
     "finalize_microbatch_gradient",
+    "microbatch_trace_from_hidden",
     "microbatch_trace_preflight",
     "validate_decode_row_custody",
     "validate_decode_row_input",
