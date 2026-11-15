@@ -28,6 +28,7 @@ from .model_topology_v2 import (
 
 
 UNADMITTED_NUMERICAL = "UNADMITTED_NUMERICAL"
+UNADMITTED_TRACE = "UNADMITTED_TRACE"
 _ATTENTION_PARAMETERS = (
     "query", "key", "value", "output", "conv_q", "conv_k", "conv_v")
 
@@ -76,6 +77,37 @@ class UnadmittedGroupNumerical:
             _invalid()
 
 
+@dataclass(frozen=True)
+class BackboneGroupTrace:
+    """One live differentiable group result with no forensic byte attestation.
+
+    The owning session supplies provenance through its already-issued execution
+    generation binding and strict sequential state. Content digests belong to
+    the explicit receipt/replay boundary, not the MLX transform.
+    """
+
+    hidden: mx.array
+    group_index: int
+    layer_start: int
+    layer_end: int
+    attention_caches: tuple[AttentionCache, ...]
+    admission_status: str = UNADMITTED_TRACE
+
+    def __post_init__(self) -> None:
+        if (type(self.hidden) is not mx.array
+                or self.hidden.dtype != mx.float32
+                or self.hidden.ndim != 3
+                or type(self.group_index) is not int
+                or type(self.layer_start) is not int
+                or type(self.layer_end) is not int
+                or self.layer_start < 0
+                or self.layer_end <= self.layer_start
+                or type(self.attention_caches) is not tuple
+                or len(self.attention_caches) != self.layer_end - self.layer_start
+                or self.admission_status != UNADMITTED_TRACE):
+            _invalid()
+
+
 def _hash_record(record: object) -> str:
     return hashlib.sha256(json.dumps(record, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
@@ -109,6 +141,48 @@ def _cache_chain_digest(caches: tuple[AttentionCache, ...]) -> str:
                               value=_content_digest(cache.value)) for cache in caches])
 
 
+def run_backbone_group_trace(
+    hidden: mx.array,
+    parameters: Mapping[str, mx.array],
+    *,
+    group_index: int,
+    spec: ModelTopologySpecV2,
+    extents: GenerationExtents,
+    scope_ids: mx.array,
+    valid: mx.array,
+    generation: str,
+    prefix_digest: str,
+    sequence_starts: mx.array | None = None,
+) -> BackboneGroupTrace:
+    """Execute one group without reading tensor bytes back to the host."""
+    start, end, _required = validated_group_parameters(
+        hidden, parameters, group_index, spec, extents, scope_ids, valid,
+        sequence_starts)
+    caches = []
+    current = hidden
+    for layer in range(start, end):
+        prefix = f"blocks.{layer}."
+        attn_input = _norm(
+            current, parameters[prefix + "attn_norm"], spec.rms_norm_epsilon)
+        scope = AttentionScope(
+            scope_ids, layer, generation, prefix_digest,
+            sequence_starts=sequence_starts)
+        attention, cache = ccgqa({
+                name: parameters[prefix + name]
+                for name in _ATTENTION_PARAMETERS},
+            attn_input, valid, scope)
+        current = current + attention
+        feed_input = _norm(
+            current, parameters[prefix + "ffn_norm"], spec.rms_norm_epsilon)
+        activated = mx.maximum(
+            feed_input @ parameters[prefix + "ffn_in"].T, 0)
+        current = current + (
+            (activated * activated) @ parameters[prefix + "ffn_out"].T)
+        caches.append(cache)
+    return BackboneGroupTrace(
+        current, group_index, start, end, tuple(caches))
+
+
 def run_backbone_group_numerical(
     hidden: mx.array,
     parameters: Mapping[str, mx.array],
@@ -127,8 +201,14 @@ def run_backbone_group_numerical(
     """Execute standalone numerical group; caller predecessors are never authority."""
     if prior is not None:
         _invalid()
-    start, end, required = validated_group_parameters(
-        hidden, parameters, group_index, spec, extents, scope_ids, valid, sequence_starts)
+    trace = run_backbone_group_trace(
+        hidden, parameters, group_index=group_index, spec=spec, extents=extents,
+        scope_ids=scope_ids, valid=valid, generation=generation,
+        prefix_digest=prefix_digest, sequence_starts=sequence_starts)
+    start, end = trace.layer_start, trace.layer_end
+    _start, _end, required = validated_group_parameters(
+        hidden, parameters, group_index, spec, extents, scope_ids, valid,
+        sequence_starts)
     parameter_digest = _group_parameter_digest(parameters, tuple(sorted(required)))
     full_digest = _owned_parameter_tree_digest(
         parameters, spec, extents, execution_binding)
@@ -139,29 +219,8 @@ def run_backbone_group_numerical(
                                  "valid": _content_digest(valid),
                                  "starts": None if sequence_starts is None else _content_digest(sequence_starts),
                                  "generation": generation, "prefix": prefix_digest})
-    caches = []
-    current = hidden
-    for layer in range(start, end):
-        prefix = f"blocks.{layer}."
-        attn_input = _norm(
-            current, parameters[prefix + "attn_norm"],
-            spec.rms_norm_epsilon)
-        scope = AttentionScope(
-            scope_ids, layer, generation, prefix_digest, sequence_starts=sequence_starts)
-        attention, cache = ccgqa({
-                name: parameters[prefix + name]
-                for name in _ATTENTION_PARAMETERS},
-            attn_input, valid, scope)
-        current = current + attention
-        feed_input = _norm(
-            current, parameters[prefix + "ffn_norm"],
-            spec.rms_norm_epsilon)
-        activated = mx.maximum(
-            feed_input @ parameters[prefix + "ffn_in"].T, 0)
-        current = current + (
-            (activated * activated) @ parameters[prefix + "ffn_out"].T)
-        caches.append(cache)
-    cache_digest = _cache_chain_digest(tuple(caches))
+    current = trace.hidden
+    cache_digest = _cache_chain_digest(trace.attention_caches)
     predecessor = prior.execution_digest if prior is not None else _content_digest(hidden)
     execution_digest = _hash_record({
         "group": group_index, "layer_start": start, "layer_end": end,
@@ -172,9 +231,62 @@ def run_backbone_group_numerical(
         "input": _content_digest(hidden), "output": _content_digest(current),
         "predecessor": predecessor, "status": UNADMITTED_NUMERICAL,
     })
-    return UnadmittedGroupNumerical(current, group_index, start, end, tuple(caches),
+    return UnadmittedGroupNumerical(current, group_index, start, end, trace.attention_caches,
                                     parameter_digest, full_digest, scope_digest,
                                     _content_digest(hidden), cache_digest, predecessor, execution_digest)
+
+
+class BackboneTraceSession:
+    """Sequential live B11 execution bound to one already-proven generation."""
+
+    def __init__(self, hidden, parameters, *, spec, extents, scope_ids, valid,
+                 generation, prefix_digest, sequence_starts=None,
+                 execution_binding=None):
+        if (type(spec) is not ModelTopologySpecV2
+                or type(extents) is not GenerationExtents
+                or execution_binding is None):
+            _invalid()
+        owned = require_execution_generation_binding(
+            execution_binding, parameters, spec=spec, extents=extents)
+        if owned.generation_digest != generation:
+            _invalid()
+        self._hidden = hidden
+        self._parameters = dict(parameters)
+        self._spec = spec
+        self._extents = extents
+        self._scope_ids = scope_ids
+        self._valid = valid
+        self._generation = generation
+        self._prefix_digest = prefix_digest
+        self._sequence_starts = sequence_starts
+        self._execution_binding = execution_binding
+        self._results = ()
+
+    @property
+    def results(self):
+        return self._results
+
+    def advance(self, *, next_input=None):
+        if len(self._results) >= self._spec.depth_groups:
+            _invalid()
+        require_execution_generation_binding(
+            self._execution_binding, self._parameters,
+            spec=self._spec, extents=self._extents)
+        if next_input is not None:
+            if (not self._results or type(next_input) is not mx.array
+                    or next_input.shape != self._hidden.shape
+                    or next_input.dtype != mx.float32):
+                _invalid()
+            self._hidden = next_input
+        result = run_backbone_group_trace(
+            self._hidden, self._parameters, group_index=len(self._results) + 1,
+            spec=self._spec, extents=self._extents, scope_ids=self._scope_ids,
+            valid=self._valid, generation=self._generation,
+            prefix_digest=self._prefix_digest,
+            sequence_starts=self._sequence_starts)
+        self._hidden = result.hidden
+        self._results += (result,)
+        return result
 
 
 class UnadmittedBackboneSession:

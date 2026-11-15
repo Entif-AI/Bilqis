@@ -5,6 +5,7 @@ from bilqis_mlx.learning.frame_embeddings import empty_frame_factor_terms
 from bilqis_mlx.semantics.frame_compiler import PositionKind
 from bilqis_mlx.semantics.frame_schema import AtomicFrame
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 from .contracts import (
     COMPILED_VECTORS_SCHEMA, FrameEncoding, WIDTH, _invalid,
 )
@@ -41,7 +42,7 @@ def _encode_compiled(compiled, vectors, parameters, *, atlas_selections=None):
             vectors.atoms, vectors.members, compiled.member_requests, atomic_rows,
             compiled.atomic_handles, atlas_selections):
         if (not isinstance(atoms, mx.array) or atoms.shape != (row.visible_end, WIDTH) or atoms.dtype != mx.float32 or
-                not bool(mx.all(mx.isfinite(atoms))) or type(supplied) is not tuple or
+                (host_tensor_validation_enabled() and not bool(mx.all(mx.isfinite(atoms)))) or type(supplied) is not tuple or
                 any(type(item) is not MemberEmbedding for item in supplied) or
                 tuple(item.request for item in supplied) != expected or type(atomic_frames) is not tuple or
                 any(type(item) is not AtomicFrameEmbedding for item in atomic_frames) or

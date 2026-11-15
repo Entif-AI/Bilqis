@@ -71,6 +71,33 @@ class BoundaryChainingTests(unittest.TestCase):
         self.assertEqual(producer._depth_inputs, ((features, view),))
         self.assertEqual(producer._receipts, (receipt,))
 
+    def test_trace_three_group_horizon_never_mints_forensic_receipts(self):
+        producer = self.producer(completed=0)
+        producer._trace = True
+        producer._trace_boundaries = (object(),)
+        producer._motif_manifest = None
+        producer._execution_binding = object()
+        producer._generation = "generation"
+        first_view = SimpleNamespace(boundary_group=1)
+        second_view = SimpleNamespace(boundary_group=2)
+        selected = object()
+        adapted = object()
+        with (patch.object(backbone, "source_depth_select", return_value=selected),
+              patch.object(backbone, "adapter_parameter_view", return_value=object()),
+              patch.object(backbone, "adapter_forward", return_value=adapted),
+              patch.object(backbone, "_content_digest",
+                           side_effect=AssertionError("content digest entered trace")),
+              patch.object(backbone, "_issue_from_producer",
+                           side_effect=AssertionError("receipt replay entered trace"))):
+            producer.advance()
+            producer.advance(depth_parameters=first_view)
+            producer.advance(depth_parameters=second_view)
+        self.assertEqual(len(producer._session.results), 3)
+        self.assertEqual(len(producer._session.next_inputs), 3)
+        self.assertEqual(producer._session.next_inputs, [None, adapted, adapted])
+        self.assertEqual(len(producer._trace_boundaries), 4)
+        self.assertEqual(producer._receipts, ())
+
 
 if __name__ == "__main__":
     unittest.main()
