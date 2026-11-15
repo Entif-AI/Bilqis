@@ -4,6 +4,65 @@
   min-width: 0;
 }
 
+.memory-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.memory-tabs .ui-control {
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
+.memory-tabs .ui-control[aria-selected="true"] {
+  border-bottom-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+.memory-tabpanel[hidden] {
+  display: none;
+}
+
+.memory-tabpanel {
+  min-width: 0;
+}
+
+.memory-heading-tools {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.memory-production-posture,
+.memory-production-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: baseline;
+}
+
+.memory-production-posture {
+  padding: 9px 12px;
+  border-inline-start: 3px solid var(--border-strong);
+  background: var(--surface-1);
+}
+
+.memory-production-context {
+  margin: 12px 0;
+}
+
+.memory-production-context > div {
+  display: flex;
+  gap: 8px;
+}
+
+.memory-production-context dd {
+  margin: 0;
+}
+
 .memory-heading,
 .memory-section-heading,
 .memory-fixture-notice {

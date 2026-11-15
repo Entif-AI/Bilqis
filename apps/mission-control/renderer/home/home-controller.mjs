@@ -22,10 +22,16 @@ export function createHomeController(api, {
   let unsubscribe = null, timer = null, epoch = 0, queue = Promise.resolve();
   let disconnected = false, needsSnapshot = false, pending = new Map();
 
-  function render() {
+  function render({ resetDetails = false } = {}) {
     if (!renderTarget || !model) return;
+    const openIds = resetDetails ? [] : [...renderTarget.querySelectorAll("details[data-test-id][open]")]
+      .map((item) => item.dataset.testId);
     renderTarget.hidden = false;
     renderTarget.innerHTML = renderHomeMarkup(model, { historical });
+    for (const id of openIds) {
+      const details = renderTarget.querySelector(`[data-test-id="${id}"]`);
+      if (details) details.open = true;
+    }
     bindHomeInteractions(renderTarget, inspectTarget ?? (() => {}), navigateTarget ?? (() => {}));
   }
   function project(fixtureFallback = true) {
@@ -153,7 +159,7 @@ export function createHomeController(api, {
     historical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
     context = { ...nextContext, mode: historical ? "HISTORICAL" : nextContext?.mode }; pages = {}; disconnected = false; needsSnapshot = false;
     model = referenceProjection && nextContext?.fixture === true && !historical ? referenceProjection() : null;
-    render();
+    render({ resetDetails: true });
     if (typeof stop === "function") await stop();
     if (current !== epoch) return;
     await enqueue(current, async () => {

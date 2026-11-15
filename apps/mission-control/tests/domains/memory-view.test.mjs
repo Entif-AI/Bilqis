@@ -19,6 +19,12 @@ import {
   stableMemoryIdentity,
 } from "../../renderer/memory/memory-model.mjs";
 import { renderMemoryView } from "../../renderer/memory/memory-view.mjs";
+import {
+  historicalMemoryQuery,
+  memoryProfileFromPage,
+  memoryQuery,
+} from "../../renderer/memory/production-model.mjs";
+import { productionMemoryMarkup } from "../../renderer/memory/production-view.mjs";
 import { t } from "../../renderer/foundation/i18n.mjs";
 import { parseDeepLink } from "../../renderer/deep-link.mjs";
 import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
@@ -130,14 +136,14 @@ test("correction and requalification state is independent of retrieval hit rate"
   assert.equal(held.sourceEligibility, "HELD");
 });
 
-test("high hit rate never becomes a learned-success claim without independent capability evidence", () => {
+test("high hit rate retains its literal retrieval interpretation", () => {
   const slot = currentMemoryGeneration().slots[0];
   assert.equal(slotHitRate(slot), 0.95);
   const interpretation = capabilityInterpretation(slot);
   assert.equal(interpretation.learnedSuccess, false);
   assert.equal(interpretation.capabilityEvidence, "INDEPENDENT_EVIDENCE_UNAVAILABLE");
   assert.equal(interpretation.messageKey, "memory.dossier.capabilityUnavailable");
-  assert.match(t(interpretation.messageKey), /no independent capability claim/i);
+  assert.match(t(interpretation.messageKey), /retrieval activity recorded/i);
 });
 
 test("memory deep link uses stable BAMF memory identity and owning view", () => {
@@ -149,9 +155,10 @@ test("memory deep link uses stable BAMF memory identity and owning view", () => 
   assert.equal(INSPECTOR_OWNERS.memory, "memory");
 });
 
-test("GUI10 source avoids memory-policy mutation and unsupported success language", () => {
+test("GUI10 source avoids memory-policy mutation and unsolicited negative-capability copy", () => {
   const source = [
     "memory-fixture.mjs", "memory-model.mjs", "memory-view.mjs", "memory-messages.mjs",
+    "production-model.mjs", "production-view.mjs", "production-controller.mjs",
   ].map((name) => fs.readFileSync(
     path.join(rendererRoot, "memory", name), "utf8",
   )).join("\n").toLowerCase();
@@ -159,8 +166,10 @@ test("GUI10 source avoids memory-policy mutation and unsupported success languag
     "allocate memory now", "edit memory", "promote slot", "learned success", "semantic authority from memory",
     "providerrowid", "database row id",
   ]) assert.equal(source.includes(forbidden), false, forbidden);
-  assert.equal(source.includes("retrieval telemetry only"), true);
-  assert.equal(source.includes("semantic or capability authority"), true);
+  for (const defensive of [
+    "does not prove", "does not establish", "does not imply", "does not demonstrate",
+    "does not mean", "not evidence of", "no independent capability claim",
+  ]) assert.equal(source.includes(defensive), false, defensive);
 });
 
 test("Memory target markup is analytical, progressively disclosed, localized, and hook-stable", () => {
@@ -170,6 +179,11 @@ test("Memory target markup is analytical, progressively disclosed, localized, an
   for (const id of [
     "memory-workspace",
     "memory-fixture-posture",
+    "memory-tabs",
+    "memory-tab-overview",
+    "memory-tab-atlas",
+    "memory-tab-dossier",
+    "memory-tab-comparison",
     "memory-summary",
     "memory-page-navigation",
     "memory-atlas",
@@ -179,6 +193,9 @@ test("Memory target markup is analytical, progressively disclosed, localized, an
     "memory-compare-generation",
     "memory-rejected-boundary",
   ]) assert.match(html, new RegExp(`data-test-id="${id}"`), id);
+  assert.equal((html.match(/role="tablist"/g) ?? []).length, 1);
+  assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
+  assert.equal((html.match(/data-test-id="memory-help-[^"]+-trigger"/g) ?? []).length >= 8, true);
   assert.match(html, /<table class="memory-slot-table">/);
   assert.match(html, /<table class="memory-delta-table">/);
   assert.match(html, /<details class="memory-receipts"/);
@@ -196,13 +213,88 @@ test("historical memory absence replaces current content instead of blending it"
     mode: "HISTORICAL",
   });
   assert.match(container.innerHTML, /data-test-id="memory-historical-unavailable"/);
-  assert.match(container.innerHTML, /Exact memory fixture unavailable/);
+  assert.match(container.innerHTML, /Exact memory reference unavailable/);
   assert.doesNotMatch(container.innerHTML, /data-test-id="memory-summary"/);
   assert.doesNotMatch(container.innerHTML, /data-test-id="memory-atlas"/);
 });
 
+test("production Memory builds exact current and historical CP03 queries", () => {
+  const context = { runId: "run-1188", generation: 9, mode: "LIVE" };
+  assert.deepEqual(memoryQuery(context), {
+    schema: "bilqis.bamf.control-plane.query/v1",
+    family: "memory",
+    mode: "current",
+    run_id: "run-1188",
+    record_id: null,
+    schema_version: "bilqis.bamf.mission-control.memory-snapshot/v1",
+    generation: null,
+    frontier_id: null,
+    as_of: null,
+    reference: null,
+    cursor: null,
+    limit: 64,
+  });
+  assert.equal(historicalMemoryQuery(context, 8).mode, "historical");
+  assert.equal(historicalMemoryQuery(context, 8).generation, 8);
+  assert.throws(() => historicalMemoryQuery(context, -1), /GUI10_HISTORICAL_GENERATION_REQUIRED/);
+});
+
+test("production Memory consumes summary-only MemorySnapshot without inventing slots", () => {
+  const profile = memoryProfileFromPage({ accepted: true, state: "PRESENT", records: [{
+    schema_version: "bilqis.bamf.mission-control.memory-snapshot/v1",
+    meta: {
+      record_id: "memory:run-1188:g9",
+      run: { run_id: "run-1188", generation: 9 },
+      observed_at: 1790000118,
+      source_refs: ["source:memory"],
+      evidence_refs: ["evidence:memory"],
+      receipt_refs: ["receipt:memory"],
+    },
+    used_bytes: { state: "PRESENT", value: 1024, units: "bytes", origin: "MEASURED" },
+    budget_bytes: { state: "PRESENT", value: 4096, units: "bytes", origin: "CONFIGURED_LIMIT" },
+    hits: { state: "PRESENT", value: 10, units: "count", origin: "MEASURED" },
+    misses: { state: "PRESENT", value: 2, units: "count", origin: "MEASURED" },
+    requalifications: { state: "PRESENT", value: 1, units: "count", origin: "MEASURED" },
+  }] }, { runId: "run-1188", generation: 9, mode: "LIVE" });
+  assert.equal(profile.generation, 9);
+  assert.equal(profile.observedAt, 1790000118);
+  assert.equal(profile.metrics.hits.value, 10);
+  assert.equal(Object.hasOwn(profile, "slots"), false);
+});
+
+test("production Memory renders one peer-tab layer and truthful slot-detail absence", () => {
+  const current = {
+    provenance: "LIVE_QUERY", pageState: "PRESENT", generation: 9,
+    recordId: "memory:run-1188:g9", observedAt: 1790000118,
+    sourceRefs: [], evidenceRefs: [], receiptRefs: [],
+    metrics: {
+      used: { state: "PRESENT", value: 1024, units: "bytes" },
+      budget: { state: "PRESENT", value: 4096, units: "bytes" },
+      hits: { state: "PRESENT", value: 10, units: "count" },
+      misses: { state: "PRESENT", value: 2, units: "count" },
+      requalifications: { state: "PRESENT", value: 1, units: "count" },
+    },
+  };
+  const html = productionMemoryMarkup({ current, comparison: null, comparisonState: "EMPTY", comparisonGeneration: null });
+  assert.equal((html.match(/role="tablist"/g) ?? []).length, 1);
+  assert.equal((html.match(/role="tab"/g) ?? []).length, 4);
+  assert.match(html, /data-test-id="memory-production-atlas-state"/);
+  assert.match(html, /aggregate memory state only/i);
+  assert.match(html, /data-source-unix-seconds="1790000118"/);
+  assert.doesNotMatch(html, /REFERENCE MEMORY DATA|44239|candidate:fixture/);
+});
+
+test("production Memory dependency graph contains no fixture module", () => {
+  const sources = ["production-controller.mjs", "production-model.mjs", "production-view.mjs"]
+    .map(name => fs.readFileSync(path.join(rendererRoot, "memory", name), "utf8"))
+    .join("\n");
+  assert.doesNotMatch(sources, /memory-fixture|REFERENCE MEMORY DATA|fixture:/);
+});
+
 test("owned Memory human copy is routed through the Memory message catalog", () => {
-  const source = fs.readFileSync(path.join(rendererRoot, "memory/memory-view.mjs"), "utf8");
+  const source = ["memory-view.mjs", "memory-fixture-panels.mjs"]
+    .map(name => fs.readFileSync(path.join(rendererRoot, "memory", name), "utf8"))
+    .join("\n");
   for (const legacyLiteral of ["Engram memory summary", "Aggregate → page → stable motif", "Motif inspector", "Rejected candidate boundary", "Historical memory"]) {
     assert.equal(source.includes(legacyLiteral), false, legacyLiteral);
   }

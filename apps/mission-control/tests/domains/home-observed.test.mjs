@@ -24,6 +24,30 @@ function runPage(row = observation(), generation = 0) {
 }
 const host = () => ({ innerHTML: "", querySelectorAll: () => [] });
 
+function disclosureHost() {
+  let markup = "";
+  let details = new Map();
+  return {
+    hidden: false,
+    get innerHTML() { return markup; },
+    set innerHTML(value) {
+      markup = value;
+      details = new Map([...value.matchAll(/<details\b([^>]*)data-test-id="([^"]+)"([^>]*)>/g)].map((match) => [
+        match[2], { dataset: { testId: match[2] }, open: /\bopen\b/.test(`${match[1]} ${match[3]}`) },
+      ]));
+    },
+    querySelectorAll(selector) {
+      if (selector === "details[data-test-id][open]") return [...details.values()].filter((item) => item.open);
+      return [];
+    },
+    querySelector(selector) {
+      const match = selector.match(/^\[data-test-id="([^"]+)"\]$/);
+      return match ? details.get(match[1]) ?? null : null;
+    },
+    disclosure(id) { return details.get(id) ?? null; },
+  };
+}
+
 test("generation zero shows observed retention and separates accepted coordinates", () => {
   const model = projectionFromPages({ run: runPage() }, context);
   const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
@@ -75,6 +99,26 @@ test("a recovery tick restores a missed terminal event without navigation or ano
   await tick();
   assert.equal(controller.currentModel().observed.current.outcome, "ACCEPTED");
   assert.equal(controller.currentModel().observed.acceptedGeneration, 1);
+  await controller.deactivate();
+});
+
+test("observed history stays open across a live trainer update", async () => {
+  let listener;
+  let page = runPage();
+  const renderHost = disclosureHost();
+  const controller = createHomeController({
+    query: async ({ family }) => family === "run"
+      ? page : { accepted: true, state: "EMPTY", records: [] },
+    status: async () => ({ learnerActive: true }),
+    subscribeEvents(next) { listener = next; return () => {}; },
+  }, { schedule: () => 1, cancel: () => {} });
+  await controller.activate(context, { host: renderHost });
+  const history = renderHost.disclosure("home-observed-history");
+  assert.ok(history);
+  history.open = true;
+  page = runPage(observation({ revision: 4, meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: 1001 } }));
+  await listener({ event_family: "run.trainer.observed" });
+  assert.equal(renderHost.disclosure("home-observed-history")?.open, true);
   await controller.deactivate();
 });
 

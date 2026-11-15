@@ -221,7 +221,8 @@ def _validate_candidate_b01_authority(
             "FOUNDATION", 0, initial_foundation_row_ages(
                 foundation_features))
         expected_state = CandidateState(
-            optimizer, expected_policy, allocations, 0)
+            optimizer, expected_policy, allocations, 0,
+            identity_scheme=candidate.retained_state.identity_scheme)
     except (TypeError, ValueError, KeyError, AttributeError):
         invalid("BAMF_INITIAL_GENERATION_MODEL_AUTHORITY_DRIFT")
     if (candidate.topology.digest != authority.parameter_census.topology_digest
