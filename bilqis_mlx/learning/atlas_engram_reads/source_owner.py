@@ -205,7 +205,7 @@ def _read_retained_compiled_motifs(
                 _invalid()
             projection, _motifs, issued_frontier = replayed
         else:
-            from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+            from bilqis_mlx.runtime.b11_source_execution_authority import (
                 require_b11_source_execution_authority,
             )
             authority = require_b11_source_execution_authority(
