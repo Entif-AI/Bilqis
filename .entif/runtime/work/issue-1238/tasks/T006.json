@@ -1,0 +1,25 @@
+{
+  "attempt_count": 0,
+  "created_at": "2026-11-15T21:31:39.461226Z",
+  "depends_on": [
+    "T005"
+  ],
+  "failure_policy": "reconcile",
+  "idempotency_key": "bilqis-mlx-1238:T006",
+  "input_files": [],
+  "input_refs": [],
+  "input_snapshot": {},
+  "latest_attempt_id": null,
+  "output_files": [],
+  "output_refs": [],
+  "output_snapshot": {},
+  "receipts": [],
+  "schema_version": "0.1",
+  "side_effect_class": "idempotent",
+  "state": "planned",
+  "success_predicate": "Remote head and PR readback match exact verified commit; no merge performed.",
+  "task_id": "T006",
+  "title": "Push and open review-ready PR",
+  "updated_at": "2026-11-15T21:31:39.461227Z",
+  "work_id": "bilqis-mlx-1238"
+}

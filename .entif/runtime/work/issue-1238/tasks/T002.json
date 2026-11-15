@@ -1,0 +1,26 @@
+{
+  "attempt_count": 1,
+  "committed_at": "2026-11-15T21:34:24.393424Z",
+  "created_at": "2026-11-15T21:31:39.460898Z",
+  "depends_on": [
+    "T001"
+  ],
+  "failure_policy": "reconcile",
+  "idempotency_key": "bilqis-mlx-1238:T002",
+  "input_files": [],
+  "input_refs": [],
+  "input_snapshot": {},
+  "latest_attempt_id": "structural-split-1",
+  "output_files": [],
+  "output_refs": [],
+  "output_snapshot": {},
+  "receipts": [],
+  "schema_version": "0.1",
+  "side_effect_class": "none",
+  "state": "committed",
+  "success_predicate": "Factory retention owner remains below 360 LoC and evaluation support moves to a private <240 LoC module.",
+  "task_id": "T002",
+  "title": "Structural split before feature mutation",
+  "updated_at": "2026-11-15T21:34:24.393424Z",
+  "work_id": "bilqis-mlx-1238"
+}

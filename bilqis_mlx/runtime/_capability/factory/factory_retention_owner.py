@@ -1,7 +1,6 @@
 """Production C05 owner: Factory cohorts, policy, solvers and paired screen."""
 from __future__ import annotations
 
-from dataclasses import dataclass
 from pathlib import Path
 
 from bilqis_mlx.fixed_frontier import load_frontier_cohort
@@ -13,7 +12,7 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     load_accepted_generation,
 )
 from bilqis_mlx.runtime.capability_retention import (
-    Decision, EvidenceKind, EvidenceStage,
+    EvidenceKind, EvidenceStage,
     case_census_digest, evaluate_capabilities, evaluate_retention_candidate,
 )
 from bilqis_mlx.state_dag import read_current
@@ -26,87 +25,16 @@ from .capability_retention_foundation import (
 from .factory_complete_solver import factory_complete_solver
 from .factory_fixed_school import _bamf_fixed_school_cohort
 from ._factory_parent_assessment_cache import (
-    ParentAssessmentCacheReceipt,
     factory_parent_assessment_identity,
     use_parent_assessment,
+)
+from ._factory_identity_evaluation import (
+    FactoryRetentionEvaluation, _raw_issue_owner_evaluation,
+    _require_factory_evaluation,
 )
 
 
 CURRENT_EVIDENCE_STAGE = EvidenceStage.FOUNDATION_ACQUISITION
-SHA256_HEX_LENGTH = 64
-
-
-def _new_factory_evaluation_owner():
-    """Keep live C05 evaluation authority in closure-owned object identity."""
-    issued = {}
-
-    def require(value):
-        if issued.get(id(value)) is not value:
-            _invalid("BAMF_C05_FACTORY_EVALUATION_INVALID")
-        return value
-
-    def issue(decision, parent, candidate, parent_assessment_cache=None):
-        from bilqis_mlx.runtime.bamf_bundle.genesis.records import (
-            successor_candidate_identity_digest,
-        )
-        from bilqis_mlx.runtime.bamf_bundle.motif.transition import (
-            is_motif_allocation_transition,
-        )
-        item = object.__new__(FactoryRetentionEvaluation)
-        generation_authority = (
-            successor_candidate_identity_digest(candidate)
-            if is_motif_allocation_transition(getattr(candidate, "transition", {}))
-            else None)
-        for name, value in (
-            ("decision", decision),
-            ("parent_candidate_sha256",
-             candidate_identity_digest(parent.retained_state)),
-            ("candidate_candidate_sha256",
-             candidate_identity_digest(candidate.retained_state)),
-            ("candidate_generation_authority_sha256", generation_authority),
-            ("parent_assessment_cache", parent_assessment_cache),
-        ):
-            object.__setattr__(item, name, value)
-        issued[id(item)] = item
-        item.__post_init__()
-        return item
-
-    return require, issue
-
-
-@dataclass(frozen=True, init=False)
-class FactoryRetentionEvaluation:
-    """Unforgeable evidence that the Factory-owned C05 screen actually ran."""
-    decision: Decision
-    parent_candidate_sha256: str
-    candidate_candidate_sha256: str
-    candidate_generation_authority_sha256: str | None
-    parent_assessment_cache: ParentAssessmentCacheReceipt | None
-
-    def __init__(self, *args, **kwargs):
-        _invalid("BAMF_C05_FACTORY_EVALUATION_CALLER_CONSTRUCTION_FORBIDDEN")
-
-    def __post_init__(self):
-        _require_factory_evaluation(self)
-        cache = getattr(self, "parent_assessment_cache", None)
-        if (type(self.decision) is not Decision
-                or not all(isinstance(value, str)
-                           and len(value) == SHA256_HEX_LENGTH
-                           for value in (self.parent_candidate_sha256,
-                                         self.candidate_candidate_sha256))
-                or (self.candidate_generation_authority_sha256 is not None
-                    and (not isinstance(self.candidate_generation_authority_sha256, str)
-                         or len(self.candidate_generation_authority_sha256)
-                         != SHA256_HEX_LENGTH))
-                or (cache is not None
-                    and type(cache) is not ParentAssessmentCacheReceipt)):
-            _invalid("BAMF_C05_FACTORY_EVALUATION_INVALID")
-        if cache is not None:
-            cache.__post_init__()
-
-
-_require_factory_evaluation, _raw_issue_owner_evaluation = (
-    _new_factory_evaluation_owner())
 
 from ._factory_retention_support import (
     C05_FRESH_LESSON_SEED_OFFSET, C05_FRESH_TARGET_SEED_OFFSET,
@@ -209,11 +137,31 @@ def _adaptive_retention_screen(
 
 def _bind_factory_evaluation_issuer(raw_issue):
     """Bind issuance to the two Factory-owned screens without exporting a mint."""
+    def issue(result):
+        from bilqis_mlx.runtime.bamf_bundle.genesis.records import (
+            successor_candidate_identity_digest,
+        )
+        from bilqis_mlx.runtime.bamf_bundle.motif.transition import (
+            is_motif_allocation_transition,
+        )
+        decision, parent, candidate, cache = result
+        generation_authority = (
+            successor_candidate_identity_digest(candidate)
+            if is_motif_allocation_transition(getattr(candidate, "transition", {}))
+            else None)
+        return raw_issue(
+            decision,
+            candidate_identity_digest(parent.retained_state),
+            candidate_identity_digest(candidate.retained_state),
+            generation_authority,
+            cache,
+        )
+
     def foundation(*args, **kwargs):
-        return raw_issue(*_foundation_retention_screen(*args, **kwargs))
+        return issue(_foundation_retention_screen(*args, **kwargs))
 
     def adaptive(*args, **kwargs):
-        return raw_issue(*_adaptive_retention_screen(*args, **kwargs))
+        return issue(_adaptive_retention_screen(*args, **kwargs))
 
     return foundation, adaptive
 

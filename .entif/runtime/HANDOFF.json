@@ -1,0 +1,87 @@
+{
+  "capability_profile": {
+    "durable_writable_git_worktree": true,
+    "persistent_human_learner_allowed": false,
+    "remote_push_authorized_feature_branch": true,
+    "repository_public": true
+  },
+  "checkpoint": {
+    "branch_head": "cde85fe91e251b65f844befffcd3e2f3f0f47ea3",
+    "persistence": "worktree pending first branch checkpoint push"
+  },
+  "cleanup": {
+    "merge_authorized": false,
+    "merge_candidate_must_remove": ".entif/runtime/",
+    "self_merge": false
+  },
+  "completed": [
+    "Live issue/base/README/AGENTS authority grounded",
+    "Current production candidate_identity_digest census classified",
+    "Pinned EGM design review repaired all substantive findings except final codebase readback still running at checkpoint creation",
+    "Pinned EGM design review passed: Design Critic PASS, Codebase Details PASS, Readiness no Blocker/Major; EGM-Passed label verified."
+  ],
+  "created_at": "2026-11-15T21:31:39.461520Z",
+  "handoff_id": "cp-1238-design-egm",
+  "hydration": {
+    "read_first": [
+      "README.md",
+      "AGENTS.md",
+      ".entif/runtime/HANDOFF.json",
+      ".entif/runtime/work/issue-1238/STATUS.json"
+    ],
+    "read_if_condition": [
+      "If base changes, refetch live #1238 and rerun production callsite census before implementation/turn-in."
+    ],
+    "read_if_needed": [
+      ".local-1238-design.md",
+      "docs/tasks/bamf-0.2/EGM_EXECUTION.md"
+    ]
+  },
+  "kind": "checkpoint",
+  "mission": "Finish GitHub issue #1238: owner-issued full CandidateState identity binding with raw-v2 compatibility, exact cold verification, instrumentation, EGM/drift/premerge proof, and review-ready PR without merge.",
+  "negative_knowledge": [
+    "Do not memoize candidate_identity_digest globally",
+    "Do not steal #1231 visit/step currentness ownership",
+    "Do not steal #1237 publication hydration ordering",
+    "Do not rely on np.asarray inside a patched buffer hook",
+    "Process-local guard does not claim resistance to hostile pre-captured C descriptors/raw-pointer writes"
+  ],
+  "next_safe_operations": [
+    "Perform T002 structural split before feature mutation",
+    "Implement binding core and focused tests",
+    "Thread exact binding through lifecycle",
+    "Verify and run drift/premerge gates"
+  ],
+  "reason": "Structural threshold and long-running feature work require a durable Work Stack checkpoint before implementation.",
+  "refs": {
+    "base_sha": "cde85fe91e251b65f844befffcd3e2f3f0f47ea3",
+    "branch": "codex/1238-candidate-identity-binding-20261115",
+    "egm_sha": "b3a35956759bf7f024af2ff061b2e0b44b438e4c",
+    "issue": "https://github.com/Entif-AI/Bilqis-MLX/issues/1238",
+    "protected_authority": "IPR-0220",
+    "repository": "https://github.com/Entif-AI/Bilqis-MLX"
+  },
+  "runtime_surface": "codex",
+  "schema": "entif.runtime.handoff/v1",
+  "unresolved": [],
+  "verification": [
+    "git status --short",
+    "git rev-parse HEAD",
+    "gh issue view 1238 -R Entif-AI/Bilqis-MLX --json state,labels,url",
+    "validate Work Stack event chain before checkpoint commit"
+  ],
+  "work": {
+    "blocked": [
+      "T003",
+      "T004",
+      "T005",
+      "T006"
+    ],
+    "current": [
+      "T002"
+    ],
+    "location": ".entif/runtime/work/issue-1238",
+    "safe_held": [],
+    "work_id": "bilqis-mlx-1238"
+  }
+}
