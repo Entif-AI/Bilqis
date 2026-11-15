@@ -1,4 +1,4 @@
-import { compareStableRefs } from "./compare.mjs";
+import { compareProductionRefs } from "./compare-production.mjs";
 import { buildAppUri } from "./app-uri.mjs";
 import { objectRefFromElement } from "./dom-ref.mjs";
 import { t } from "../foundation/i18n.mjs";
@@ -38,13 +38,13 @@ export function createInteractionController({
   onCurrentLens,
   canUseCurrent,
   onOpenRef,
+  compareRefs = compareProductionRefs,
   copyText = async () => false,
   announce = () => {},
 }) {
   let interaction = createInteractionState();
   let metadata = loadOperatorMetadata(storage);
   let hovered = null;
-  let compareRefs = compareStableRefs;
 
   const currentRef = () => {
     const state = getState();
@@ -192,11 +192,6 @@ export function createInteractionController({
   return Object.freeze({
     bindStatic,
     render,
-    setComparator(next) {
-      if (typeof next !== "function") throw new TypeError("INVESTIGATION_COMPARATOR_REQUIRED");
-      compareRefs = next;
-      render();
-    },
     currentInteraction: () => interaction,
     currentMetadata: () => metadata,
   });

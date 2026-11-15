@@ -3,6 +3,8 @@ import {
 } from "./school-model.mjs";
 import { isActivationKey, nextRovingIndex } from "../foundation/accessibility.mjs";
 import { t } from "../foundation/i18n.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+import { temporalMarkup } from "../foundation/temporal.mjs";
 import { assertUniqueTestIds, testIdAttribute } from "../foundation/test-hooks.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
@@ -19,6 +21,10 @@ const score = (value, total) => present(value) && present(total)
   ? t("school.matrix.score", { value, total })
   : t("school.common.notExposed");
 const empty = (value) => value?.length ? value.join(", ") : t("school.common.none");
+
+function help(labelKey, bodyKey, id) {
+  return contextHelpMarkup({ label: t(labelKey), description: t(bodyKey), testId: id });
+}
 
 function capabilityRelations(rows, id) {
   const neighborhood = selectionNeighborhood(rows, id);
@@ -37,12 +43,12 @@ function stateCue(row) {
   return "staged";
 }
 
-function statusCell(row) {
-  return `<div class="school-state-stack">
+function statusCell(row, { nowMs, locale } = {}) {
+  return `<div class="school-state-cell-body"><div class="school-state-stack">
     <span data-school-state="${esc(row.sourceState ?? "NOT_EXPOSED")}">${esc(text(row.sourceState))}</span>
     <span data-school-state="${esc(row.implementationState ?? "NOT_EXPOSED")}">${esc(text(row.implementationState))}</span>
     <span data-school-state="${esc(row.qualificationState ?? "NOT_EXPOSED")}">${esc(text(row.qualificationState))}</span>
-  </div>`;
+  </div><div class="school-observed-time"><span>${esc(t("school.matrix.observed"))}</span>${temporalMarkup({ unixSeconds: row.observedAt, nowMs, locale, testId: `school-row-time-${slug(row.id)}` })}</div></div>`;
 }
 
 function visibleColumns() {
@@ -77,7 +83,7 @@ function cell(row, key, kind) {
   return `<td class="${kind === "num" ? "num" : ""}">${esc(text(row[key]))}</td>`;
 }
 
-function tableRows(projectedRows, columnCount, allRows) {
+function tableRows(projectedRows, columnCount, allRows, temporal) {
   let family = null;
   return projectedRows.map((row) => {
     const familyRows = projectedRows.filter((candidate) => candidate.family === row.family).length;
@@ -87,7 +93,7 @@ function tableRows(projectedRows, columnCount, allRows) {
     const selected = row.id === ui.selectedId ? "true" : "false";
     return group + `<tr data-capability-id="${esc(row.id)}" data-selected="${selected}" ${testIdAttribute("school", "matrix", "row", slug(row.id))} ${objectDomAttributes({ kind: "capability", id: row.id, relations: capabilityRelations(allRows, row.id) })}>
       ${visibleColumns().map(([key, _label, kind]) => cell(row, key, kind)).join("")}
-      <td class="school-state-cell">${statusCell(row)}</td>
+      <td class="school-state-cell">${statusCell(row, temporal)}</td>
     </tr>`;
   }).join("");
 }
@@ -98,17 +104,17 @@ function sortableHeader(key, labelKey) {
   return `<th aria-sort="${ariaSort}"><button type="button" data-sort-key="${key}" data-focus-key="sort:${key}" ${testIdAttribute("school", "sort", slug(key))}>${t("school.matrix.sort", { label })}<span aria-hidden="true">${ui.sortKey === key ? (ui.direction === "asc" ? " ↑" : " ↓") : ""}</span></button></th>`;
 }
 
-function matrix(projectedRows, page, allRows) {
+function matrix(projectedRows, page, allRows, temporal) {
   const columns = visibleColumns();
   const activityCount = ui.secondaryColumns ? 6 : 0;
   return `<section class="school-panel matrix-panel" ${testIdAttribute("school", "matrix")}>
-    <header><div><span class="eyebrow">${t("school.matrix.eyebrow")}</span><h2>${t("school.matrix.title")}</h2></div><div class="coverage-counter">${t("school.matrix.range", { start: page.start + 1, end: page.end, total: page.total })}</div></header>
+    <header><div><span class="eyebrow">${t("school.matrix.eyebrow")}</span><h2>${t("school.matrix.title")}</h2></div><div class="school-panel-tools"><span class="coverage-counter">${t("school.matrix.range", { start: page.start + 1, end: page.end, total: page.total })}</span>${help("school.help.matrix.label", "school.help.matrix.body", "school-help-matrix")}</div></header>
     <div class="matrix-overflow-cue" aria-hidden="true">${t("school.matrix.scrollHint")}</div>
     <div class="matrix-scroll scroll-surface" role="region" aria-label="${t("school.matrix.aria")}" tabindex="0" ${testIdAttribute("school", "matrix", "scroll")}>
       <table class="school-matrix" ${testIdAttribute("school", "matrix", "table")}>
         <thead><tr class="matrix-groups"><th colspan="3">${t("school.matrix.group.identity")}</th><th colspan="4">${t("school.matrix.group.score")}</th><th colspan="3">${t("school.matrix.group.learning")}</th>${activityCount ? `<th colspan="${activityCount}">${t("school.matrix.group.activity")}</th>` : ""}<th>${t("school.matrix.group.provenance")}</th></tr>
         <tr>${columns.map(([key, label]) => sortableHeader(key, label)).join("")}<th>${t("school.matrix.column.state")}</th></tr></thead>
-        <tbody>${tableRows(projectedRows, columns.length, allRows)}</tbody>
+        <tbody>${tableRows(projectedRows, columns.length, allRows, temporal)}</tbody>
       </table>
     </div>
     <footer class="school-pagination" ${testIdAttribute("school", "pagination")}>
@@ -160,12 +166,12 @@ function dependencyTable(neighborhood) {
 
 function dependencyView(rows, topologyAvailable) {
   if (!topologyAvailable) {
-    return `<section class="school-panel graph-panel school-topology-unavailable" ${testIdAttribute("school", "dependency")}><header><div><span class="eyebrow">${esc(t("school.dependency.eyebrow"))}</span><h2>${esc(t("school.dependency.graphTitle"))}</h2></div></header><p>${esc(t("school.dependency.productionUnavailable"))}</p></section>`;
+    return `<section class="school-panel graph-panel school-topology-unavailable" ${testIdAttribute("school", "dependency")}><header><div><span class="eyebrow">${esc(t("school.dependency.eyebrow"))}</span><h2>${esc(t("school.dependency.graphTitle"))}</h2></div>${help("school.help.dependencies.label", "school.help.dependencies.body", "school-help-dependencies")}</header><p>${esc(t("school.dependency.productionUnavailable"))}</p></section>`;
   }
   const neighborhood = selectionNeighborhood(rows, ui.selectedId);
-  return `<section class="school-panel graph-panel" ${testIdAttribute("school", "dependency")}><header><div><span class="eyebrow">${esc(t("school.dependency.eyebrow"))}</span><h2>${esc(t("school.dependency.graphTitle"))}</h2></div><div class="graph-legend" aria-label="${esc(t("school.dependency.legend"))}"><span><i data-edge="source"></i>${esc(t("school.dependency.legend.qualified"))}</span><span><i data-edge="held"></i>${esc(t("school.dependency.legend.held"))}</span><span><i data-edge="derived"></i>${esc(t("school.dependency.legend.uncovered"))}</span><span><i data-edge="selected"></i>${esc(t("school.dependency.legend.selected"))}</span></div></header>
+  return `<section class="school-panel graph-panel" ${testIdAttribute("school", "dependency")}><header><div><span class="eyebrow">${esc(t("school.dependency.eyebrow"))}</span><h2>${esc(t("school.dependency.graphTitle"))}</h2></div><div class="school-panel-tools"><div class="graph-legend" aria-label="${esc(t("school.dependency.legend"))}"><span><i data-edge="source"></i>${esc(t("school.dependency.legend.qualified"))}</span><span><i data-edge="held"></i>${esc(t("school.dependency.legend.held"))}</span><span><i data-edge="derived"></i>${esc(t("school.dependency.legend.uncovered"))}</span><span><i data-edge="selected"></i>${esc(t("school.dependency.legend.selected"))}</span></div>${help("school.help.dependencies.label", "school.help.dependencies.body", "school-help-dependencies")}</div></header>
     <p id="school-graph-summary" class="graph-guidance">${esc(t("school.dependency.summary"))}</p>
-    <div class="dependency-peers"><div class="dependency-graph-wrap"><svg class="school-graph" viewBox="0 0 760 360" role="group" aria-label="${esc(t("school.dependency.aria"))}" aria-describedby="school-graph-summary" ${testIdAttribute("school", "dependency", "graph")}>${graphEdges(neighborhood, rows)}${rows.map((row, index) => graphNode(row, neighborhood, index, rows)).join("")}</svg></div>${dependencyTable(neighborhood)}</div>
+    <div class="dependency-peers"><div class="dependency-graph-wrap"><svg class="school-graph" viewBox="0 0 760 360" role="group" aria-label="${t("school.dependency.aria")}" aria-describedby="school-graph-summary" ${testIdAttribute("school", "dependency", "graph")}>${graphEdges(neighborhood, rows)}${rows.map((row, index) => graphNode(row, neighborhood, index, rows)).join("")}</svg></div>${dependencyTable(neighborhood)}</div>
   </section>`;
 }
 
@@ -176,6 +182,7 @@ function filterBar(projectedRows, rows) {
     <label class="school-group-control"><input type="checkbox" data-group-family data-focus-key="group:family" ${testIdAttribute("school", "group", "family")} ${ui.groupByFamily ? "checked" : ""} ${familyAvailable ? "" : "disabled"}/> ${esc(familyAvailable ? t("school.controls.groupFamily") : t("school.controls.groupFamilyUnavailable"))}</label>
     <button type="button" class="school-column-control" data-toggle-columns data-focus-key="columns:toggle" ${testIdAttribute("school", "columns", "toggle")} aria-pressed="${ui.secondaryColumns}">${t(ui.secondaryColumns ? "school.controls.hideSecondary" : "school.controls.showSecondary")}</button>
     <button type="button" class="school-export-control" data-export data-focus-key="school:export" ${testIdAttribute("school", "export")}>${t("school.controls.export", { count: projectedRows.length })}</button>
+    <div class="school-controls-help">${help("school.help.controls.label", "school.help.controls.body", "school-help-controls")}</div>
   </div>`;
 }
 
@@ -240,8 +247,10 @@ export function renderSchoolView(container, inspectCapability, {
   fixture = false,
   topologyAvailable = false,
   queryState = "PRESENT",
+  nowMs = Date.now(),
+  locale,
 } = {}) {
-  const viewState = { rows, selectedId, fixture, topologyAvailable, queryState };
+  const viewState = { rows, selectedId, fixture, topologyAvailable, queryState, nowMs, locale };
   if (selectedId && rows.some((row) => row.id === selectedId)) ui.selectedId = selectedId;
   if (!rows.some((row) => row.id === ui.selectedId)) ui.selectedId = rows[0]?.id ?? null;
   const projected = projectRows(rows, { filters: [...ui.filters], sortKey: ui.sortKey, direction: ui.direction, groupByFamily: ui.groupByFamily });
@@ -251,7 +260,7 @@ export function renderSchoolView(container, inspectCapability, {
     ${fixture ? `<div class="school-fixture-notice" role="status" ${testIdAttribute("school", "fixture")}><strong>${esc(t("school.fixture.title"))}</strong><span>${esc(t("school.fixture.detail"))}</span></div>` : ""}
     ${rows.length ? filterBar(projected, rows) : ""}
     <div class="ui-glossary" aria-label="${esc(t("school.matrix.aria"))}" ${testIdAttribute("school", "glossary")}><span>${esc(t("school.glossary.was"))}</span><span>${esc(t("school.glossary.top"))}</span><span>${esc(t("school.glossary.now"))}</span><span>${esc(t("school.glossary.all"))}</span><span>${esc(t("school.glossary.pret"))}</span><span>${esc(t("school.glossary.scroll"))}</span></div>
-    ${rows.length ? matrix(page.rows, page, rows) : `<section class="school-panel school-empty" ${testIdAttribute("school", "matrix")}><p>${esc(t("school.production.empty", { state: queryState }))}</p></section>`}
+    ${rows.length ? matrix(page.rows, page, rows, { nowMs, locale }) : `<section class="school-panel school-empty" ${testIdAttribute("school", "matrix")}><p>${esc(t("school.production.empty", { state: queryState }))}</p></section>`}
     ${dependencyView(rows, topologyAvailable)}
   </div>`;
   assertUniqueTestIds(markup);

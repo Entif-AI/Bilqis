@@ -17,10 +17,12 @@ import {
   scoreQuad,
   selectionNeighborhood,
 } from "../../renderer/school/school-model.mjs";
+import { renderSchoolView } from "../../renderer/school/school-view.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../../renderer");
 const rows = schoolFixtureRows();
+const host = () => ({ innerHTML: "", querySelectorAll: () => [], querySelector: () => null });
 
 test("literal fixture preserves the terminal-class metric contract", () => {
   assert.deepEqual(SCHOOL_TERMINAL_COLUMNS, [
@@ -154,4 +156,18 @@ test("matrix orientation and peer dependency representations are explicit", () =
   assert.match(css, /\.matrix-scroll[^}]*overflow:\s*auto/s);
   assert.match(css, /\.school-matrix \.capability-cell[^}]*position:\s*sticky/s);
   assert.match(css, /\.dependency-peers[^}]*grid-template-columns/s);
+});
+
+test("School consumes shared contextual help and renders only authoritative observation time", () => {
+  const row = { ...rows[0], observedAt: 1_799_000_100, materializedAt: 1_799_000_105 };
+  const container = host();
+  renderSchoolView(container, () => {}, {
+    rows: [row], topologyAvailable: true, nowMs: 1_799_000_400_000, locale: "en-US",
+  });
+  for (const id of ["matrix", "controls", "dependencies"]) {
+    assert.match(container.innerHTML, new RegExp(`data-test-id="school-help-${id}-trigger"`));
+  }
+  assert.match(container.innerHTML, /data-source-unix-seconds="1799000100"/);
+  assert.match(container.innerHTML, />5 minutes ago</);
+  assert.doesNotMatch(container.innerHTML, /data-source-unix-seconds="1799000105"/);
 });

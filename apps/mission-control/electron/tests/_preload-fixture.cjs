@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 
-const PRELOAD = path.join(__dirname, "..", "preload.cjs");
+const PRELOAD = path.join(__dirname, "..", "shell", "preload.cjs");
 
 function loadSandboxedPreload(ipcRenderer, argv = []) {
   const source = fs.readFileSync(PRELOAD, "utf8");

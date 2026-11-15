@@ -26,6 +26,8 @@
 .curriculum-equivalent h3 { font-size: var(--type-subsection); }
 .curriculum-graph-panel > p { margin: 0; padding: var(--space-3) var(--space-4); color: var(--text-muted); }
 .curriculum-legend { display: flex; flex-wrap: wrap; justify-content: end; gap: 6px 12px; max-width: 52%; color: var(--text-muted); font-size: var(--type-label); }
+.curriculum-graph-tools { display: flex; align-items: start; justify-content: flex-end; gap: var(--space-2); }
+.curriculum-graph-tools .curriculum-legend { max-width: none; }
 .curriculum-scroll { overflow: auto; border-top: 1px solid var(--border); background: var(--canvas); scrollbar-gutter: stable; }
 .curriculum-canvas { position: relative; min-width: 1010px; height: attr(data-height px, 420px); }
 .curriculum-stratum { position: absolute; top: 0; bottom: 0; width: 316px; padding: 14px; border-inline-end: 1px solid var(--border); pointer-events: none; }
@@ -104,6 +106,7 @@
   .curriculum-fixture-notice, .curriculum-dossier-grid { grid-template-columns: 1fr; }
   .curriculum-graph-panel > header, .curriculum-dossier > header { align-items: start; flex-direction: column; }
   .curriculum-legend { max-width: none; justify-content: start; }
+  .curriculum-graph-tools { justify-content: flex-start; }
 }
 @media (max-width: 620px) {
   .curriculum-search, .curriculum-filters { display: grid; grid-template-columns: 1fr; }

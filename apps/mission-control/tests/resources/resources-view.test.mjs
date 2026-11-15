@@ -194,6 +194,17 @@ test("resource query stays read-only and requests no mutation surface", () => {
   assert.doesNotMatch(markup, /start training|change batch|apply budget|scale hardware/i);
 });
 
+test("missing observation time never borrows materialization time", () => {
+  const sample = record("resource:time-authority");
+  delete sample.meta.observed_at;
+  sample.meta.materialized_at = 999;
+  const profile = resourceProfileFromPage(page([sample]), context);
+  assert.equal(profile.timeline[0].observedAt, null);
+  const markup = renderResourceMarkup({ current: profile });
+  assert.match(markup, /Time unavailable/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="999"/);
+});
+
 test("resource identities route back to the Resources owner surface", () => {
   const operatorView = {
     active_capability_id: "B.EXAMPLE", learner_state: "READY", stage: "ASSESS_MAIN",

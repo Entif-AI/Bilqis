@@ -3,8 +3,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { CHANNELS } = require("../channels.cjs");
-const { loadSandboxedPreload } = require("./_preload-fixture.cjs");
+const { CHANNELS } = require("../../channels.cjs");
+const { loadSandboxedPreload } = require("../_preload-fixture.cjs");
 
 const GLOBAL_NAME = "bamfMissionControl";
 
@@ -55,13 +55,21 @@ test("preload exposes only the enumerated Mission Control capability surface", (
   assert.equal(api.spawn, undefined);
 });
 
-test("preload exposes fixture mode only from the fixed launch argument", () => {
+test("preload exposes fixture posture only from the exact launch argument", () => {
   const renderer = fakeRenderer();
-  const api = loadSandboxedPreload(renderer, ["electron", "--bamf-mc-mode=fixtures"]).api;
-  assert.equal(api.launchMode, "fixtures");
-  assert.throws(
-    () => loadSandboxedPreload(renderer, ["electron", "--bamf-mc-mode=demo"]),
-    /BAMF_MISSION_CONTROL_MODE_INVALID/,
+  assert.equal(
+    loadSandboxedPreload(
+      renderer,
+      ["electron", "--bilqis-mission-control-mode=fixtures"],
+    ).api.launchMode,
+    "fixtures",
+  );
+  assert.equal(
+    loadSandboxedPreload(
+      renderer,
+      ["electron", "--bilqis-mission-control-mode=unexpected"],
+    ).api.launchMode,
+    "production",
   );
 });
 

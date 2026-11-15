@@ -105,14 +105,10 @@ test("the domain activation owner binds Atlas completion to the current shell st
   assert.equal(fixture.host.innerHTML, markup);
 });
 
-test("production shell routes completed GUI domains into the real view host", () => {
+test("production shell routes accepted domains and keeps fixture-only data behind launch support", () => {
   const index = fs.readFileSync(path.join(rendererRoot, "index.html"), "utf8");
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
-  const fixtureCurrent = fs.readFileSync(
-    path.join(rendererRoot, "foundation/fixture-current-view.mjs"),
-    "utf8",
-  );
   const activation = fs.readFileSync(path.join(rendererRoot, "foundation/domain-controller.mjs"), "utf8");
   const capability = fs.readFileSync(path.join(rendererRoot, "capability/app.mjs"), "utf8");
 
@@ -121,8 +117,8 @@ test("production shell routes completed GUI domains into the real view host", ()
     /<section id="view-host" class="view-host"[\s\S]*<section id="domain-view" class="domain-view"/,
   );
 
-  assert.match(renderer, /createHomeController\(window\.bamfMissionControl, \{/);
-  assert.match(renderer, /launchMode: window\.bamfMissionControl\.launchMode/);
+  assert.match(renderer, /createHomeController\(window\.bamfMissionControl, fixtureSupport\?\.home\)/);
+  assert.match(renderer, /launchMode === "fixtures"[\s\S]*import\("\.\/fixture-support\.mjs"\)/);
   assert.match(renderer, /createCapabilityExplorer\(/);
   assert.match(renderer, /activateDomainViews\(\{/);
   assert.match(renderer, /homeController, resourceController, operateController/);
@@ -132,20 +128,17 @@ test("production shell routes completed GUI domains into the real view host", ()
   assert.match(activation, /homeController\.activate/);
   assert.match(activation, /state\?\.view === "atlas"/);
   assert.match(activation, /renderAtlasDomain/);
+  assert.match(activation, /state\?\.view === "school"/);
+  assert.match(activation, /launchMode: fixture \? "fixtures" : "production"/);
+  assert.match(activation, /activateSchoolDomain/);
   assert.match(activation, /state\?\.view === "capability"/);
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);
 
-  assert.match(current, /import\("\.\/fixture-current-view\.mjs"\)/);
-  assert.match(current, /launchMode === "fixtures"/);
-  assert.match(current, /renderEvidenceView\(/);
-
-  for (const [view, owner] of [
-    ["model", "renderNeuralView"],
-    ["memory", "renderMemoryView"],
-    ["lineage", "renderLineageView"],
-  ]) {
-    assert.match(fixtureCurrent, new RegExp('state\\.view === "' + view + '"'));
-    assert.match(fixtureCurrent, new RegExp(owner + '\\('));
+  for (const view of ["model", "memory", "lineage"]) {
+    assert.match(current, new RegExp('state\\.view === "' + view + '"'));
+    assert.match(current, /productionProjectionMarkup\(/);
   }
+  assert.match(current, /state\.view === "evidence"/);
+  assert.match(current, /renderEvidenceView\(/);
 });

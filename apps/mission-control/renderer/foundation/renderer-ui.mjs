@@ -5,7 +5,7 @@ import { defensiveBannerMarkup } from "./defensive-state.mjs";
 import { bindRovingNavigation } from "./accessibility.mjs";
 import { renderCurrentView } from "./current-view.mjs";
 import { t } from "./i18n.mjs";
-import { controlClass } from "./primitives.mjs";
+import { contextHelpMarkup, controlClass } from "./primitives.mjs";
 import { testIdAttribute } from "./test-hooks.mjs";
 
 export { renderCurrentView } from "./current-view.mjs";
@@ -23,7 +23,7 @@ function destinationLabel(id) {
 }
 
 export function inspectorEvidenceLabelKey(state, defense, fixtureCorrection = false) {
-  if (fixtureCorrection) return "shell.inspector.fixture";
+  if (fixtureCorrection || state?.context?.fixture === true) return "shell.inspector.fixture";
   const historical = state?.context?.mode === "HISTORICAL" ||
     state?.context?.historicalPinned === true || defense?.historical === true;
   return historical ? "shell.inspector.historicalEvidence" : "shell.inspector.currentEvidence";
@@ -67,17 +67,23 @@ function shellStateLabel(value) {
   return key ? t(key) : String(value ?? "");
 }
 
-export function renderContext(state, defense, bootstrap = null) {
+export function renderContext(state, defense, bootstrap = null, launchMode = "production") {
   const shell = document.querySelector("#shell");
+  shell.dataset.launchMode = launchMode;
   const contextBar = document.querySelector(".context-bar");
   const contextFacts = document.querySelector("#context-facts");
+  document.querySelector("#context-help-host").innerHTML = contextHelpMarkup({
+    label: t("shell.help.run.label"),
+    description: t("shell.help.run.description"),
+    testId: "shell-help-run-context",
+  });
   contextBar.dataset.context = state ? "verified" : "empty";
   if (!state) {
     shell.dataset.posture = defense.id;
     const connection = bootstrap?.connection ?? null;
-    document.querySelector("#mode-badge").textContent = connection?.serviceLive
-      ? t("shell.context.bootstrapMode")
-      : t("shell.context.inspectionMode");
+    document.querySelector("#mode-badge").textContent = launchMode === "fixtures"
+      ? t("shell.launchMode.fixtures")
+      : connection?.serviceLive ? t("shell.context.bootstrapMode") : t("shell.context.inspectionMode");
     document.querySelector("#run-id").textContent = connection?.runId ?? t("shell.context.discoveringLearner");
     document.querySelector("#generation-id").textContent = Number.isSafeInteger(connection?.generation)
       ? t("shell.context.generationBootstrap", { generation: connection.generation })
@@ -96,7 +102,9 @@ export function renderContext(state, defense, bootstrap = null) {
   }
   const { context } = state;
   shell.dataset.posture = shellPosture(context);
-  document.querySelector("#mode-badge").textContent = shellStateLabel(context.mode);
+  document.querySelector("#mode-badge").textContent = launchMode === "fixtures"
+    ? t("shell.launchMode.fixtures")
+    : shellStateLabel(context.mode);
   document.querySelector("#run-id").textContent = context.runId;
   document.querySelector("#run-id").title = context.runId;
   const generationIdentity = document.querySelector("#generation-id");
@@ -163,15 +171,23 @@ export function renderNavigation(state, onNavigate) {
         : "";
       return `<button type="button" class="${controlClass("navigate")}" data-view="${id}" data-focus-key="nav:${id}" aria-current="${active === id ? "page" : "false"}" ${testIdAttribute("nav", "destination", id)} ${blocked ? "disabled" : ""}${reason}>${esc(destinationLabel(id))}</button>`;
     }).join("");
+    const helpId = `nav-help-${group.helpKey.split(".").at(-1)}`;
     return `<section class="nav-group" aria-labelledby="${groupLabelId}" ${testIdAttribute("nav", "group", group.id)}>
-      <h2 id="${groupLabelId}" class="nav-group-label">${esc(t(group.labelKey))}</h2>
+      <div class="nav-group-heading">
+        <h2 id="${groupLabelId}" class="nav-group-label">${esc(t(group.labelKey))}</h2>
+        ${contextHelpMarkup({
+          label: t(`${group.helpKey}.label`),
+          description: t(`${group.helpKey}.description`),
+          testId: helpId,
+        })}
+      </div>
       <div class="nav-group-items">${destinations}</div>
     </section>`;
   }).join("");
-  nav.querySelectorAll("button:not(:disabled)").forEach((button) => {
+  nav.querySelectorAll("button[data-view]:not(:disabled)").forEach((button) => {
     button.addEventListener("click", () => onNavigate(button.dataset.view));
   });
-  bindRovingNavigation(nav);
+  bindRovingNavigation(nav, "button[data-view]:not(:disabled)");
 }
 
 export function renderInspector(state, defense) {
@@ -216,7 +232,7 @@ export function renderInspector(state, defense) {
   document.querySelector("#open-evidence").disabled = !selected || fixtureCorrection;
 }
 
-export function renderPaletteOptions(state, onNavigate, onCommand = () => {}) {
+export function renderPaletteOptions(state, onNavigate) {
   const host = document.querySelector("#palette-options");
   const destinationGroups = DESTINATION_GROUPS.map((group) => {
     const options = group.destinations.map((id) => {
@@ -231,32 +247,41 @@ export function renderPaletteOptions(state, onNavigate, onCommand = () => {}) {
       <div class="palette-group-items">${options}</div>
     </section>`;
   }).join("");
-  host.innerHTML = `${destinationGroups}
-    <section class="palette-group palette-command-group" ${testIdAttribute("palette", "group", "view-commands")}>
-      <h3>${esc(t("shell.command.paletteViewCommands"))}</h3>
-      <div class="palette-group-items">
-        <button type="button" class="${controlClass("mode")}" data-palette-command="theme" ${testIdAttribute("palette", "command", "theme")}>${esc(t("shell.command.paletteToggleTheme"))}</button>
-        <button type="button" class="${controlClass("mode")}" data-palette-command="density" ${testIdAttribute("palette", "command", "density")}>${esc(t("shell.command.paletteToggleDensity"))}</button>
-      </div>
-    </section>`;
+  host.innerHTML = destinationGroups;
   host.querySelectorAll("button:not(:disabled)").forEach((button) => {
-    button.addEventListener("click", () => {
-      if (button.dataset.view) onNavigate(button.dataset.view);
-      else if (button.dataset.paletteCommand) onCommand(button.dataset.paletteCommand);
-    });
+    button.addEventListener("click", () => onNavigate(button.dataset.view));
   });
   bindRovingNavigation(host);
 }
 
-export function renderChrome(state, defense, displaySettings, handlers, bootstrap = null) {
+function renderRailControl(shellPreferences) {
+  const toggle = document.querySelector("#rail-toggle");
+  const collapsed = shellPreferences?.rail === "collapsed";
+  const label = t(collapsed ? "shell.nav.expand" : "shell.nav.collapse");
+  toggle.setAttribute("aria-pressed", String(collapsed));
+  toggle.setAttribute("aria-label", label);
+  toggle.setAttribute("title", label);
+  toggle.querySelector("[aria-hidden]")?.replaceChildren(collapsed ? "›" : "‹");
+}
+
+export function renderChrome(
+  state,
+  defense,
+  displaySettings,
+  shellPreferences,
+  handlers,
+  bootstrap = null,
+) {
   localizeShellStatic();
-  renderContext(state, defense, bootstrap);
+  renderRailControl(shellPreferences);
+  renderContext(state, defense, bootstrap, handlers.launchMode);
   renderDefensiveStatus(defense, handlers.onReconnect, bootstrap);
   renderNavigation(state, handlers.onNavigate);
   renderInspector(state, defense);
   renderCurrentView(
     state, defense, handlers.onInspect, handlers.api,
-    handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap, handlers.launchMode,
+    handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,
+    handlers.fixtureSupport?.currentViews ?? null,
   );
   const currentView = state?.view ?? "mission-control";
   document.querySelector("#view-title").textContent = destinationLabel(currentView);
@@ -268,4 +293,9 @@ export function renderChrome(state, defense, displaySettings, handlers, bootstra
   document.querySelector("#density-trigger").textContent = t("shell.settings.density", { density: displaySettings.density });
   document.querySelector("#theme-trigger").setAttribute("aria-label", t("shell.settings.themeAria", { theme: displaySettings.theme }));
   document.querySelector("#density-trigger").setAttribute("aria-label", t("shell.settings.densityAria", { density: displaySettings.density }));
+  document.querySelector("#context-controls-help-host").innerHTML = contextHelpMarkup({
+    label: t("shell.help.contextControls.label"),
+    description: t("shell.help.contextControls.description"),
+    testId: "shell-help-context-controls",
+  });
 }

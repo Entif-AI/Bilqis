@@ -8,7 +8,9 @@
 .school-fixture-notice { display: grid; grid-template-columns: minmax(220px, auto) minmax(0, 1fr); gap: var(--space-4); align-items: center; padding: var(--space-3); border-inline-start: 4px double var(--attention); background: var(--surface-1); }
 .school-fixture-notice span { color: var(--text-muted); }
 
-.school-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; align-items: end; gap: var(--space-3); padding-block: var(--space-3); border-block: 1px solid var(--border); }
+.school-controls { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto auto; align-items: end; gap: var(--space-3); padding-block: var(--space-3); border-block: 1px solid var(--border); }
+.school-controls-help, .school-panel-tools { display: flex; align-items: center; gap: var(--space-2); }
+.school-panel-tools { justify-content: flex-end; }
 .filter-set { min-width: 0; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; border: 0; }
 .filter-set legend { width: 100%; margin-bottom: 2px; color: var(--text-muted); font-size: var(--type-label); }
 .filter-set button, .school-column-control, .school-export-control { min-height: var(--control-height); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); padding: 5px 8px; }
@@ -36,11 +38,13 @@
 .school-matrix [data-delta="-1"] { text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px; }
 .family-row th { position: static; background: var(--surface-2); color: var(--text-muted); font-weight: 700; letter-spacing: .02em; }
 .school-state-cell { min-width: 260px; }
+.school-state-cell-body { display: grid; gap: var(--space-2); }
 .school-state-stack { display: flex; flex-wrap: wrap; gap: 4px; }
 .school-state-stack span { padding: 2px 5px; border: 1px solid var(--border); font-size: var(--type-label); }
 .school-state-stack [data-school-state="SOURCE_HELD"] { border-style: double; color: var(--attention); }
 .school-state-stack [data-school-state="IMPLEMENTATION_UNCOVERED"] { border-style: dashed; color: var(--invalid); }
 .school-state-stack [data-school-state="QUALIFIED"] { border-style: solid; color: var(--healthy); }
+.school-observed-time { display: flex; justify-content: space-between; align-items: center; gap: var(--space-2); color: var(--text-muted); }
 .school-pagination { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); padding: var(--space-3); color: var(--text-muted); border-top: 1px solid var(--border); }
 .school-pagination span { text-align: center; font-variant-numeric: tabular-nums; }
 .school-pagination button { min-height: var(--control-height); border: 1px solid var(--border); background: var(--surface-2); color: var(--text); }
@@ -76,6 +80,7 @@
 .school-view :is(button,input,select,[tabindex="0"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 @media (max-width: 1040px) {
   .school-controls { grid-template-columns: 1fr 1fr; align-items: start; }
+  .school-controls-help { justify-self: start; }
   .dependency-peers { grid-template-columns: 1fr; }
   .dependency-table-wrap { border-inline-start: 0; border-top: 1px solid var(--border); }
   .graph-legend { max-width: none; justify-content: start; }
@@ -85,6 +90,8 @@
   .school-pagination { grid-template-columns: 1fr; align-items: stretch; }
   .school-pagination span { text-align: start; }
   .school-panel > header { align-items: start; flex-direction: column; }
+  .school-panel-tools { align-items: start; flex-direction: column; }
+  .school-observed-time { align-items: start; flex-direction: column; }
   .matrix-overflow-cue { text-align: start; }
 }
 @media (forced-colors: active) {

@@ -1,6 +1,7 @@
 import { renderSchoolView } from "./school-view.mjs";
 import { loadSchoolRows } from "./school-live.mjs";
 import { t } from "../foundation/i18n.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
 import { testIdAttribute } from "../foundation/test-hooks.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
 
@@ -63,8 +64,7 @@ function matrixInspector(onInspect, id, row) {
 
 function productionAtlas(container) {
   container.innerHTML = `<section class="school-production-atlas" ${testIdAttribute("school", "atlas", "production")}>
-    <span class="eyebrow">${esc(t("school.atlas.production.eyebrow"))}</span>
-    <h2>${esc(t("school.atlas.production.title"))}</h2>
+    <header><div><span class="eyebrow">${esc(t("school.atlas.production.eyebrow"))}</span><h2>${esc(t("school.atlas.production.title"))}</h2></div>${contextHelpMarkup({ label: t("school.help.atlas.label"), description: t("school.help.atlas.body"), testId: "school-help-atlas" })}</header>
     <p>${esc(t("school.atlas.production.summary"))}</p>
   </section>`;
 }

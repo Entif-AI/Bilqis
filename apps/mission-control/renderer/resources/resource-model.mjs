@@ -43,7 +43,7 @@ export function resourceQuery(context, overrides = {}) {
     as_of: null,
     reference: null,
     cursor: null,
-    limit: 32,
+    limit: 64,
     ...overrides,
   });
 }
@@ -61,7 +61,7 @@ export function historicalResourceQuery(context, generation) {
 function liveTimeline(records) {
   return Object.freeze(records.map((record) => Object.freeze({
     id: record.meta?.record_id ?? "resource:unknown",
-    observedAt: record.meta?.observed_at ?? record.meta?.materialized_at ?? null,
+    observedAt: record.meta?.observed_at ?? null,
     unifiedMemoryUsed: record.memory_used_bytes?.state === PRESENT ? record.memory_used_bytes.value : null,
     mlxAllocated: null,
     batchSize: null,

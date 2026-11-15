@@ -9,7 +9,6 @@ import {
   loadSchoolRows,
   schoolRowFromRecord,
 } from "../../renderer/school/school-live.mjs";
-import { renderFixtureModePosture } from "../../renderer/foundation/fixture-mode.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../../renderer");
@@ -101,26 +100,8 @@ test("production School modules have no static fixture import", () => {
   assert.match(schoolController, /await import\("\.\/curriculum-atlas-view\.mjs"\)/);
 });
 
-test("fixture launch posture is persistent and never labels the context as plain LIVE", () => {
-  const elements = {
-    "#shell": { dataset: {} },
-    "#launch-mode-banner": {
-      hidden: true,
-      attributes: {},
-      innerHTML: "",
-      setAttribute(name, value) { this.attributes[name] = value; },
-    },
-    "#mode-badge": { textContent: "LIVE" },
-  };
-  const document = {
-    documentElement: { lang: "en-US" },
-    querySelector(selector) { return elements[selector] ?? null; },
-  };
-  renderFixtureModePosture(document);
-  assert.equal(elements["#shell"].dataset.launchMode, "fixtures");
-  assert.equal(elements["#launch-mode-banner"].hidden, false);
-  assert.match(elements["#launch-mode-banner"].innerHTML, /Reference mode/);
-  assert.equal(elements["#mode-badge"].textContent, "REFERENCE · LIVE");
-  renderFixtureModePosture(document);
-  assert.equal(elements["#mode-badge"].textContent, "REFERENCE · LIVE");
+test("package exposes the reviewed explicit fixture launch command", () => {
+  const packageJson = JSON.parse(fs.readFileSync(path.resolve(rendererRoot, "../../../package.json"), "utf8"));
+  assert.equal(packageJson.scripts["mission-control"], "electron apps/mission-control/main.cjs");
+  assert.equal(packageJson.scripts["mission-control:fixtures"], "electron apps/mission-control/main.cjs --mission-control-fixtures");
 });

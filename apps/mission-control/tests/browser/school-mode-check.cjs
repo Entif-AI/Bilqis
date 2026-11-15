@@ -104,22 +104,52 @@ async function audit(page, launchMode, viewport, theme, density) {
     const firstIdentity = node.querySelector(".school-matrix .capability-cell");
     return { violations: axeResult.violations.map(item => ({ id: item.id, nodes: item.nodes.map(node => ({ target: node.target, html: node.html, failureSummary: node.failureSummary })) })), documentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       matrixOwnsOverflow: Boolean(matrix && matrix.scrollWidth >= matrix.clientWidth), headerPosition: firstHeader ? getComputedStyle(firstHeader).position : null,
-      identityPosition: firstIdentity ? getComputedStyle(firstIdentity).position : null, fixtureNotice: Boolean(node.querySelector('[data-test-id="school-fixture"]')), text: node.innerText };
+      identityPosition: firstIdentity ? getComputedStyle(firstIdentity).position : null, fixtureNotice: Boolean(node.querySelector('[data-test-id="school-fixture"]')),
+      sourceTimes: [...node.querySelectorAll("[data-source-unix-seconds]")].map(item => item.getAttribute("data-source-unix-seconds")), text: node.innerText };
   });
   check(result.violations.length === 0, launchMode + " School axe: " + JSON.stringify(result.violations));
   check(!result.documentOverflow, launchMode + " School created document overflow");
   check(result.matrixOwnsOverflow, launchMode + " matrix lost its owned scroller");
   check(result.headerPosition === "sticky", launchMode + " matrix header is not sticky");
   check(result.identityPosition === "sticky", launchMode + " identity column is not sticky");
+  const firstCapability = page.locator('[data-test-id^="school-matrix-capability-"]').first();
+  await firstCapability.click();
+  const inspector = page.locator('[data-test-id="investigation-inspector"]');
+  await inspector.waitFor();
+  result.inspector = await root.evaluate(node => {
+    const matrix = node.querySelector(".matrix-scroll");
+    return {
+      documentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
+      matrixOwnsOverflow: Boolean(matrix && matrix.scrollWidth >= matrix.clientWidth),
+    };
+  });
+  check(!result.inspector.documentOverflow, launchMode + " inspector opened document overflow");
+  check(result.inspector.matrixOwnsOverflow, launchMode + " inspector displaced matrix overflow ownership");
+  await page.keyboard.press("Escape");
+  await page.waitForFunction(() => {
+    const panel = document.querySelector('[data-test-id="investigation-inspector"]');
+    return panel?.getAttribute("aria-hidden") === "true" && panel.getBoundingClientRect().left >= innerWidth - 1;
+  });
+  for (const id of ["matrix", "controls", "dependencies"]) {
+    check(await page.locator('[data-test-id="school-help-' + id + '-trigger"]').count() === 1, launchMode + " missing shared " + id + " help");
+  }
+  if (launchMode === "production") {
+    check(await page.locator('[data-test-id^="school-row-time-"][data-source-unix-seconds="1794700118"]').count() > 0, "production School omitted authoritative observation time");
+    check(!result.sourceTimes.includes("1794700120"), "production School substituted materialization time");
+  }
   if (launchMode === "production") {
     check(!result.fixtureNotice, "production rendered School fixture notice"); check(result.text.includes("B.PRODUCTION.AND"), "production capability evidence missing");
     check(!/Fixture · representative terminal metrics/.test(result.text), "production rendered fixture copy");
   } else {
     check(result.fixtureNotice, "fixture mode omitted School reference notice");
-    const posture = await page.locator('[data-test-id="shell-launch-mode-banner"]').innerText(); check(/Reference mode/.test(posture), "fixture mode omitted persistent reference posture");
-    const mode = await page.locator('[data-test-id="shell-mode-badge"]').innerText(); check(mode.startsWith("REFERENCE · "), "fixture mode masqueraded as plain current/live mode");
+    const modeBadge = page.locator('[data-test-id="shell-mode-badge"]');
+    const shellLaunchMode = await modeBadge.evaluate(node => node.closest(".shell")?.dataset.launchMode ?? null);
+    check(shellLaunchMode === "fixtures", "fixture mode omitted launch-owned shell posture");
+    const mode = await modeBadge.innerText();
+    check(mode === "REFERENCE FIXTURES", "fixture mode masqueraded as production/current mode");
   }
   result.atlas = await auditAtlas(page, launchMode);
+  check(await page.locator('[data-test-id="school-help-atlas-trigger"]').count() === 1, launchMode + " missing shared Atlas help");
   return result;
 }
 (async () => {

@@ -4,7 +4,10 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 
 const { RENDERER_HOST, RENDERER_SCHEME } = require("./renderer-location.cjs");
-const { FIXTURES, PRODUCTION, resolveMissionControlMode } = require("./launch-mode.cjs");
+const {
+  LAUNCH_MODE_FIXTURES,
+  normalizeLaunchMode,
+} = require("./launch-mode.cjs");
 
 const RENDERER_ASSETS = Object.freeze(new Map([
   ["/atlas/atlas-controller.mjs", "atlas/atlas-controller.mjs"],
@@ -28,8 +31,6 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/foundation/bootstrap-controller.mjs", "foundation/bootstrap-controller.mjs"],
   ["/foundation/current-view.mjs", "foundation/current-view.mjs"],
   ["/foundation/defensive-state.mjs", "foundation/defensive-state.mjs"],
-  ["/foundation/fixture-mode.mjs", "foundation/fixture-mode.mjs"],
-  ["/foundation/fixture-current-view.mjs", "foundation/fixture-current-view.mjs"],
   ["/foundation/domain-controller.mjs", "foundation/domain-controller.mjs"],
   ["/foundation/messages/atlas.mjs", "foundation/messages/atlas.mjs"],
   ["/foundation/i18n.mjs", "foundation/i18n.mjs"],
@@ -62,6 +63,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/evidence/evidence-query.mjs", "evidence/evidence-query.mjs"],
   ["/evidence/evidence-markup.mjs", "evidence/evidence-markup.mjs"],
   ["/evidence/evidence.css", "evidence/evidence.css"],
+  ["/fixture-support.mjs", "fixture-support.mjs"],
   ["/index.html", "index.html"],
   ["/lineage/lineage-fixture.mjs", "lineage/lineage-fixture.mjs"],
   ["/lineage/lineage-messages.mjs", "lineage/lineage-messages.mjs"],
@@ -87,16 +89,18 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/neural/neural.css", "neural/neural.css"],
   ["/foundation/renderer-ui.mjs", "foundation/renderer-ui.mjs"],
   ["/foundation/static-interactions.mjs", "foundation/static-interactions.mjs"],
+  ["/foundation/temporal.mjs", "foundation/temporal.mjs"],
   ["/foundation/test-hooks.mjs", "foundation/test-hooks.mjs"],
   ["/home/home-controller.mjs", "home/home-controller.mjs"],
   ["/home/home-fixture.mjs", "home/home-fixture.mjs"],
   ["/home/home-model.mjs", "home/home-model.mjs"],
+  ["/home/home-observed.mjs", "home/home-observed.mjs"],
   ["/home/home-view.mjs", "home/home-view.mjs"],
   ["/home/home.css", "home/home.css"],
   ["/interactions/app-uri.mjs", "interactions/app-uri.mjs"],
   ["/interactions/compare.mjs", "interactions/compare.mjs"],
+  ["/interactions/compare-production.mjs", "interactions/compare-production.mjs"],
   ["/interactions/controller.mjs", "interactions/controller.mjs"],
-  ["/interactions/fixture-compare.mjs", "interactions/fixture-compare.mjs"],
   ["/interactions/dom-ref.mjs", "interactions/dom-ref.mjs"],
   ["/interactions/interactions.css", "interactions/interactions.css"],
   ["/interactions/model.mjs", "interactions/model.mjs"],
@@ -112,7 +116,6 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/resources/resource-messages.mjs", "resources/resource-messages.mjs"],
   ["/resources/resources.css", "resources/resources.css"],
   ["/school/school-fixture.mjs", "school/school-fixture.mjs"],
-  ["/school/school-live.mjs", "school/school-live.mjs"],
   ["/school/school-model.mjs", "school/school-model.mjs"],
   ["/school/school-view.mjs", "school/school-view.mjs"],
   ["/school/school.css", "school/school.css"],
@@ -122,6 +125,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/school/curriculum-atlas-view.mjs", "school/curriculum-atlas-view.mjs"],
   ["/school/curriculum-atlas.css", "school/curriculum-atlas.css"],
   ["/school/school-domain-controller.mjs", "school/school-domain-controller.mjs"],
+  ["/school/school-live.mjs", "school/school-live.mjs"],
   ["/salience/salience-fixture.mjs", "salience/salience-fixture.mjs"],
   ["/salience/salience-events-fixture.mjs", "salience/salience-events-fixture.mjs"],
   ["/salience/salience-aggregation-view.mjs", "salience/salience-aggregation-view.mjs"],
@@ -136,6 +140,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/salience/salience-evidence.css", "salience/salience-evidence.css"],
   ["/salience/salience.css", "salience/salience.css"],
   ["/settings.mjs", "settings.mjs"],
+  ["/shell-preferences.mjs", "shell-preferences.mjs"],
   ["/shell-state.mjs", "shell-state.mjs"],
   ["/shell.css", "shell.css"],
   ["/teacher/teacher-fixture.mjs", "teacher/teacher-fixture.mjs"],
@@ -154,14 +159,33 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/visual-tokens.css", "visual-tokens.css"],
 ]));
 
-const FIXTURE_ONLY_RENDERER_ASSETS = Object.freeze(new Set([
-  ...[...RENDERER_ASSETS.keys()].filter((asset) => /fixture/i.test(asset)),
-  "/school/curriculum-atlas-markup.mjs",
-  "/school/curriculum-atlas-model.mjs",
-  "/school/curriculum-atlas-view.mjs",
+const FIXTURE_ONLY_ASSETS = Object.freeze(new Set([
+  "/capability/fixture-data.mjs",
+  "/capability/fixture.mjs",
+  "/corrections/corrections-fixture.mjs",
+  "/episodes/episode-fixture.mjs",
+  "/home/home-fixture.mjs",
+  "/interactions/compare.mjs",
+  "/lineage/lineage-fixture.mjs",
+  "/memory/memory-fixture.mjs",
+  "/neural/neural-fixture.mjs",
+  "/resources/resource-fixture-state.mjs",
+  "/resources/resource-fixture.mjs",
+  "/salience/salience-events-fixture.mjs",
+  "/salience/salience-fixture.mjs",
+  "/school/curriculum-atlas-fixture.mjs",
+  "/school/school-fixture.mjs",
+  "/teacher/teacher-fixture.mjs",
+  "/visual-fixtures.mjs",
+  "/fixture-support.mjs",
 ]));
 
-function assetPathForRendererRequest(requestUrl, assetRoot, launchMode = PRODUCTION) {
+function rendererAssetsForLaunchMode(launchMode) {
+  if (normalizeLaunchMode(launchMode) === LAUNCH_MODE_FIXTURES) return RENDERER_ASSETS;
+  return new Map([...RENDERER_ASSETS].filter(([requestPath]) => !FIXTURE_ONLY_ASSETS.has(requestPath)));
+}
+
+function assetPathForRendererRequest(requestUrl, assetRoot, launchMode = "production") {
   if (typeof assetRoot !== "string" || assetRoot.length === 0 || !path.isAbsolute(assetRoot)) {
     throw new TypeError("BAMF_GUI20_RENDERER_ASSET_ROOT_REQUIRED");
   }
@@ -175,13 +199,11 @@ function assetPathForRendererRequest(requestUrl, assetRoot, launchMode = PRODUCT
       request.username || request.password || request.port || request.search) {
     return null;
   }
-  const mode = resolveMissionControlMode(launchMode);
-  if (mode !== FIXTURES && FIXTURE_ONLY_RENDERER_ASSETS.has(request.pathname)) return null;
-  const relative = RENDERER_ASSETS.get(request.pathname);
+  const relative = rendererAssetsForLaunchMode(launchMode).get(request.pathname);
   return relative ? path.join(assetRoot, relative) : null;
 }
 
-function registerMissionControlProtocol({ protocol, net, assetRoot, launchMode = PRODUCTION }) {
+function registerMissionControlProtocol({ protocol, net, assetRoot, launchMode = "production" }) {
   if (!protocol || typeof protocol.handle !== "function") {
     throw new TypeError("BAMF_GUI20_PROTOCOL_REQUIRED");
   }
@@ -201,8 +223,9 @@ function registerMissionControlProtocol({ protocol, net, assetRoot, launchMode =
 }
 
 module.exports = {
-  FIXTURE_ONLY_RENDERER_ASSETS,
+  FIXTURE_ONLY_ASSETS,
   RENDERER_ASSETS,
   assetPathForRendererRequest,
   registerMissionControlProtocol,
+  rendererAssetsForLaunchMode,
 };

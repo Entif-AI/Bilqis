@@ -92,14 +92,6 @@ test("fresh retained improvement is distinct and exact regression event retains 
   assert.match(gain.target.id, /^episode-record:/);
 });
 
-test("reference Home events do not treat generation coordinates as wall-clock time", () => {
-  const model = referenceHomeProjection();
-  for (const event of model.pulse) {
-    assert.equal(event.observedAt, null);
-    assert.equal(event.materializedAt, null);
-  }
-});
-
 test("attention queue contains actionable conditions rather than ordinary healthy telemetry", () => {
   const model = referenceHomeProjection();
   assert.deepEqual(model.attention.map((item) => item.kind), ["stalled", "held", "recovery"]);

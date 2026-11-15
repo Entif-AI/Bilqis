@@ -2,18 +2,11 @@
 
 const { contextBridge, ipcRenderer } = require("electron");
 
-const LAUNCH_MODE_ARGUMENT = "--bamf-mc-mode=";
-
-function launchMode() {
-  const values = (globalThis.process?.argv ?? [])
-    .filter((value) => typeof value === "string" && value.startsWith(LAUNCH_MODE_ARGUMENT))
-    .map((value) => value.slice(LAUNCH_MODE_ARGUMENT.length));
-  if (values.length === 0) return "production";
-  if (values.length !== 1 || !["production", "fixtures"].includes(values[0])) {
-    throw new TypeError("BAMF_MISSION_CONTROL_MODE_INVALID");
-  }
-  return values[0];
-}
+const MODE_PREFIX = "--bilqis-mission-control-mode=";
+const launchMode = (process.argv ?? []).find((value) => value.startsWith(MODE_PREFIX))
+  ?.slice(MODE_PREFIX.length) === "fixtures"
+  ? "fixtures"
+  : "production";
 
 // Electron's sandboxed preload environment cannot load this repository's local
 // CommonJS module graph. Keep this entrypoint self-contained; contract tests bind
@@ -95,7 +88,7 @@ function assertStableRef(value) {
 }
 
 const api = Object.freeze({
-  launchMode: launchMode(),
+  launchMode,
   connect: () => ipcRenderer.invoke(CHANNELS.connect),
   status: () => ipcRenderer.invoke(CHANNELS.status),
   querySnapshot: (request) => ipcRenderer.invoke(CHANNELS.snapshot, assertRequestObject(request)),

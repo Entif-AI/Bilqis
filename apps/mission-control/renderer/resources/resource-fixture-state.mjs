@@ -3,8 +3,6 @@ import {
   historicalResourceFixture,
 } from "./resource-fixture.mjs";
 
-export { historicalResourceFixture };
-
 export function referenceResourceState() {
   return Object.freeze({
     current: currentResourceFixture(),
@@ -12,3 +10,8 @@ export function referenceResourceState() {
     comparisonState: "PRESENT",
   });
 }
+
+export const RESOURCE_FIXTURE_SUPPORT = Object.freeze({
+  referenceState: referenceResourceState,
+  historicalProfile: historicalResourceFixture,
+});

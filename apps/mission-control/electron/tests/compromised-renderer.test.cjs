@@ -6,7 +6,7 @@ const assert = require("node:assert/strict");
 const { CHANNELS } = require("../channels.cjs");
 const { ControlPlaneBridge } = require("../control-plane-bridge.cjs");
 const { registerMissionControlIpc } = require("../main-ipc.cjs");
-const { RENDERER_ENTRY_URL, RENDERER_ORIGIN } = require("../renderer-location.cjs");
+const { RENDERER_ENTRY_URL, RENDERER_ORIGIN } = require("../shell/renderer-location.cjs");
 const { loadSandboxedPreload } = require("./_preload-fixture.cjs");
 const { FIXTURE_VALIDATORS } = require("./_contract-fixture.cjs");
 
