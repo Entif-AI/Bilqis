@@ -110,6 +110,8 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/resources/resource-fixture.mjs",
     "/resources/resource-model.mjs",
     "/resources/resource-view.mjs",
+    "/resources/resource-format.mjs",
+    "/resources/resource-messages.mjs",
     "/resources/resources.css",
     "/school/school-fixture.mjs",
     "/school/school-model.mjs",

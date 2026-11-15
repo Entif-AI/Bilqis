@@ -1,209 +1,78 @@
-import {
-  decomposition,
-  resourceComparison,
-} from "./resource-model.mjs";
+import { createTranslator } from '../foundation/i18n.mjs';
+import { decomposition, resourceComparison } from './resource-model.mjs';
+import { RESOURCE_MESSAGES } from './resource-messages.mjs';
+import { esc, stateText, bytes, metricValue, badge, unit } from './resource-format.mjs';
 
-const PRESENT = "PRESENT";
-
-const LABELS = Object.freeze({
-  unifiedMemoryUsed: "Unified memory used",
-  unifiedMemoryBudget: "Memory budget",
-  forecastMemoryPeak: "Forecast peak",
-  mlxAllocatedMemory: "MLX allocated",
-  mlxCacheMemory: "MLX cache",
-  cpuUtilization: "CPU utilization",
-  preparationWorkers: "Preparation workers",
-  diskFree: "Disk free",
-  diskUsed: "Disk used",
-  diskReserve: "Disk reserve floor",
-  candidateSnapshotFootprint: "Candidate snapshot",
-  acceptedStepsHour: "Accepted optimizer steps / h",
-  sequenceDensity: "Compiled sequence density",
-  frameDensity: "Compiled frame density",
-  batchSize: "Batch size",
-  actualLengthP50: "Actual length p50",
-  actualLengthP95: "Actual length p95",
-  actualLengthMax: "Actual length max",
-  preparationCompileMs: "Preparation / compile",
-  mlxWallMs: "MLX wall time",
-  monetaryCost: "Monetary cost",
-});
-
-function esc(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
-  }[char]));
+const summaryKeys = ['unifiedMemoryUsed', 'unifiedMemoryBudget', 'forecastMemoryPeak'];
+const computeKeys = ['mlxAllocatedMemory', 'mlxCacheMemory', 'cpuUtilization', 'preparationWorkers', 'diskFree', 'diskUsed', 'diskReserve', 'candidateSnapshotFootprint', 'acceptedStepsHour', 'preparationCompileMs', 'mlxWallMs', 'monetaryCost'];
+const lengthKeys = ['sequenceDensity', 'frameDensity', 'batchSize', 'actualLengthP50', 'actualLengthP95', 'actualLengthMax'];
+const hook = id => `data-test-id="${esc(id)}"`;
+const text = (t, key, params) => esc(t(`resource.${key}`, params));
+function label(t, type, id) { try { return text(t, `${type}.${id}`); } catch { return esc(id); } }
+function semantic(metric) { return metric?.state === 'PRESENT' ? metric.semantic ?? metric.origin ?? 'MEASURED' : 'UNAVAILABLE'; }
+function metricRows(t, profile, keys, prefix) {
+  return keys.map(key => {
+    const metric = profile.aggregate[key];
+    return `<tr ${hook(`${prefix}-${key}`)}><th scope="row">${label(t, 'metric', key)}</th><td>${esc(metricValue(t, metric))}</td><td>${badge(t, semantic(metric), true)}</td><td>${badge(t, metric?.state ?? 'UNAVAILABLE')}</td></tr>`;
+  }).join('');
 }
-
-function stateBadge(value) {
-  const state = String(value ?? "UNKNOWN");
-  return `<span class="resource-state" data-resource-state="${esc(state.toLowerCase().replaceAll("_", "-"))}">${esc(state)}</span>`;
+function table(t, title, rows, id) {
+  return `<section class="resource-panel" ${hook(id)}><h3>${text(t, title)}</h3><div class="resource-table-wrap" ${hook(`${id}-scroll`)} tabindex="0" role="region" aria-label="${text(t, title)}"><table class="resource-table"><thead><tr><th>${text(t, 'metric')}</th><th>${text(t, 'value')}</th><th>${text(t, 'semantic')}</th><th>${text(t, 'state')}</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
-
-function semanticBadge(metric) {
-  const semantic = metric?.state === PRESENT ? metric.semantic ?? metric.origin ?? "MEASURED" : "UNAVAILABLE";
-  return `<span class="resource-semantic" data-resource-semantic="${esc(String(semantic).toLowerCase().replaceAll("_", "-"))}">${esc(semantic)}</span>`;
+function summary(t, profile) {
+  return `<section class="resource-panel" ${hook('resources-summary')}><header><h3>${text(t, 'summary')}</h3><span ${hook('resources-page-state')}>${badge(t, profile.pageState ?? 'PRESENT')}</span></header><div class="resource-summary">${summaryKeys.map(key => {
+    const metric = profile.aggregate[key];
+    return `<article ${hook(`resources-summary-${key}`)}><span>${label(t, 'metric', key)}</span><strong>${esc(metricValue(t, metric))}</strong>${badge(t, semantic(metric), true)}</article>`;
+  }).join('')}</div><details ${hook('resources-semantics')}><summary>${text(t, 'semantics')}</summary><p>${text(t, 'semanticDetail')}</p></details><p class="resource-muted">${text(t, 'truth')}</p></section>`;
 }
-
-function bytes(value) {
-  if (!Number.isFinite(value)) return "UNAVAILABLE";
-  const GiB = 1024 ** 3;
-  const MiB = 1024 ** 2;
-  return value >= GiB ? `${(value / GiB).toFixed(1)} GiB` : `${(value / MiB).toFixed(1)} MiB`;
-}
-
-function metricValue(metric) {
-  if (metric?.state !== PRESENT) return "UNAVAILABLE";
-  const value = metric.value;
-  switch (metric.units) {
-    case "bytes": return bytes(value);
-    case "fraction": return `${(100 * value).toFixed(1)}%`;
-    case "percent": return `${Number(value).toFixed(1)}%`;
-    case "ms": return `${Number(value).toFixed(0)} ms`;
-    case "USD": return `$${Number(value).toFixed(2)}`;
-    default: return `${Number.isFinite(value) ? Number(value).toLocaleString() : esc(value)}${metric.units ? ` ${esc(metric.units)}` : ""}`;
-  }
-}
-
-function metricCard(profile, key, note = "") {
-  const metric = profile.aggregate[key] ?? { state: "UNAVAILABLE" };
-  return `<article class="resource-metric" data-metric="${esc(key)}" data-state="${esc(metric.state.toLowerCase())}">
-    <div><small>${esc(LABELS[key] ?? key)}</small>${semanticBadge(metric)}</div>
-    <strong>${metricValue(metric)}</strong>
-    ${note ? `<span>${esc(note)}</span>` : ""}
-  </article>`;
-}
-
-function headline(profile) {
-  return `<section class="resource-panel resource-headline">
-    <header><div><span class="eyebrow">Budget at a glance</span><h3>Measured load, configured limits, and estimates stay separate</h3></div>${stateBadge(profile.pageState ?? "PRESENT")}</header>
-    <div class="resource-metric-grid">
-      ${metricCard(profile, "unifiedMemoryUsed", "aggregate accepted resource sample")}
-      ${metricCard(profile, "mlxAllocatedMemory", "only when directly instrumented")}
-      ${metricCard(profile, "mlxCacheMemory", "only when directly instrumented")}
-      ${metricCard(profile, "diskReserve", "configured floor, not disk used")}
-      ${metricCard(profile, "acceptedStepsHour", "resource throughput, not learning")}
-      ${metricCard(profile, "batchSize", "actual batch evidence only")}
-    </div>
-    <p class="resource-doctrine"><strong>Truth boundary:</strong> high throughput is a resource fact. It is never rendered as capability improvement or retained learning without separate learning evidence.</p>
-  </section>`;
-}
-
-function semanticsPanel(profile) {
-  return `<section class="resource-panel">
-    <header><div><span class="eyebrow">Budget semantics</span><h3>No metric category laundering</h3></div></header>
-    <div class="resource-budget-semantics">
-      <article><span>Measured value</span>${semanticBadge(profile.aggregate.unifiedMemoryUsed)}<strong>${metricValue(profile.aggregate.unifiedMemoryUsed)}</strong><small>Current observed unified memory.</small></article>
-      <article><span>Configured limit</span>${semanticBadge(profile.aggregate.unifiedMemoryBudget)}<strong>${metricValue(profile.aggregate.unifiedMemoryBudget)}</strong><small>Budget value, not a measured peak.</small></article>
-      <article><span>Forecast / estimate</span>${semanticBadge(profile.aggregate.forecastMemoryPeak)}<strong>${metricValue(profile.aggregate.forecastMemoryPeak)}</strong><small>Never promoted into measured evidence.</small></article>
-    </div>
-  </section>`;
-}
-
-function decompositionPanel(profile) {
+function decompositionPanel(t, profile) {
   const totals = decomposition(profile);
-  const aggregate = totals.aggregate === null ? "UNAVAILABLE" : bytes(totals.aggregate);
-  const remainder = totals.remainder === null ? "UNAVAILABLE" : bytes(totals.remainder);
-  return `<section class="resource-panel">
-    <header><div><span class="eyebrow">Memory decomposition</span><h3>Reconcile measured categories to the aggregate</h3></div>${stateBadge(totals.aggregate === null ? "UNAVAILABLE" : totals.complete ? "COMPLETE" : "PARTIAL")}</header>
-    <div class="resource-decomposition">
-      ${profile.memoryDecomposition.map((item) => `<article data-resource-category="${esc(item.id)}" data-state="${esc(item.state.toLowerCase())}">
-        <span>${esc(item.label)}</span><strong>${item.state === PRESENT ? bytes(item.value) : "UNAVAILABLE"}</strong>${stateBadge(item.state)}
-      </article>`).join("")}
-      <article class="resource-remainder"><span>Unallocated / uninstrumented remainder</span><strong>${remainder}</strong>${stateBadge(totals.remainder === 0 ? "RECONCILED" : totals.remainder === null ? "UNAVAILABLE" : "EXPLICIT_REMAINDER")}</article>
-    </div>
-    <p class="resource-reconciliation">Measured decomposition sum ${bytes(totals.allocated)} against aggregate ${aggregate}. Unknown categories remain unknown rather than being forced to zero.</p>
-  </section>`;
+  const state = totals.reconciliationState ?? (totals.aggregate === null ? 'UNAVAILABLE' : totals.complete ? 'COMPLETE' : 'PARTIAL');
+  const rows = profile.memoryDecomposition.map((item, index) => `<tr ${hook(`resources-category-${index}`)} data-resource-category="${esc(item.id)}"><th scope="row">${label(t, 'category', item.id)}</th><td>${esc(item.state === 'PRESENT' ? bytes(t, item.value) : stateText(t, 'UNAVAILABLE'))}</td><td>${badge(t, item.state)}</td></tr>`).join('');
+  const remainderLabel = totals.remainder < 0 ? 'overage' : 'remainder';
+  return `<section class="resource-panel" ${hook('resources-decomposition')}><header><h3>${text(t, 'decomposition')}</h3>${badge(t, state)}</header><div class="resource-table-wrap" ${hook('resources-decomposition-scroll')} tabindex="0" role="region" aria-label="${text(t, 'decomposition')}"><table class="resource-table"><thead><tr><th>${text(t, 'category')}</th><th>${text(t, 'value')}</th><th>${text(t, 'state')}</th></tr></thead><tbody>${rows}<tr ${hook('resources-remainder')}><th scope="row">${text(t, remainderLabel)}</th><td>${esc(bytes(t, totals.remainder))}</td><td>${badge(t, totals.remainder === null ? 'UNAVAILABLE' : totals.complete ? 'RECONCILED' : 'EXPLICIT_REMAINDER')}</td></tr></tbody></table></div><p class="resource-muted">${text(t, 'reconciliation', { sum: bytes(t, totals.allocated), aggregate: bytes(t, totals.aggregate) })}</p></section>`;
 }
-
-function computePanel(profile) {
-  return `<section class="resource-panel">
-    <header><div><span class="eyebrow">Compute and batching</span><h3>Preparation, sequence density, batch shape, and MLX wall</h3></div></header>
-    <div class="resource-compute-grid">
-      ${metricCard(profile, "cpuUtilization")}
-      ${metricCard(profile, "preparationWorkers")}
-      ${metricCard(profile, "candidateSnapshotFootprint")}
-      ${metricCard(profile, "preparationCompileMs")}
-      ${metricCard(profile, "mlxWallMs")}
-      ${metricCard(profile, "monetaryCost", "no price claim without cost evidence")}
-    </div>
-    <div class="resource-length-strip">
-      ${metricCard(profile, "sequenceDensity")}${metricCard(profile, "frameDensity")}${metricCard(profile, "batchSize")}
-      ${metricCard(profile, "actualLengthP50")}${metricCard(profile, "actualLengthP95")}${metricCard(profile, "actualLengthMax")}
-    </div>
-  </section>`;
+function timeline(t, profile) {
+  const rows = profile.timeline.map((row, index) => `<tr ${hook(`resources-timeline-row-${index}`)}><td><button type="button" ${hook(`resources-inspect-${index}`)} data-resource-inspect="${esc(row.id)}">${esc(row.id)}</button><small>${esc(row.observedAt ?? stateText(t, 'UNKNOWN'))}</small></td><td>${esc(bytes(t, row.unifiedMemoryUsed))}</td><td>${esc(bytes(t, row.mlxAllocated))}</td><td>${esc(row.batchSize ?? stateText(t, 'UNAVAILABLE'))}</td><td>${esc(Number.isFinite(row.sequenceDensity) ? t('resource.format.percent', { value: (row.sequenceDensity * 100).toFixed(1) }) : stateText(t, 'UNAVAILABLE'))}</td><td>${esc(row.acceptedStepsHour ?? stateText(t, 'UNAVAILABLE'))}</td><td>${esc(row.expansionCount ?? stateText(t, 'UNAVAILABLE'))}</td></tr>`).join('');
+  return `<section class="resource-panel" ${hook('resources-timeline')}><h3>${text(t, 'timeline')}</h3><p class="resource-muted">${text(t, 'timelineNote')}</p>${rows ? `<div class="resource-table-wrap" ${hook('resources-timeline-scroll')} tabindex="0" role="region" aria-label="${text(t, 'timeline')}"><table class="resource-table"><thead><tr>${['sample','memory','mlx','batch','density','steps','expansion'].map(key => `<th>${text(t, key)}${key === 'sample' ? `<small>${text(t, 'timestamp')}</small>` : ''}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table></div>` : `<p>${text(t, 'noSamples')}</p>`}</section>`;
 }
-
-function spikeDetails(sample) {
-  const safe = (value) => typeof value === "string" ? esc(value) : value;
-  const pairs = [
-    ["Episode", sample.episodeId], ["Batch", sample.batchId], ["Resource sample", sample.id],
-    ["Checkpoint", sample.checkpointId], ["Source / preparation", sample.sourceWorkload],
-    ["Expansion / refinement count", sample.expansionCount],
-  ].filter(([, value]) => value !== null && value !== undefined);
-  if (sample.exactRefs?.length) pairs.push(["Accepted refs", sample.exactRefs.join(", ")]);
-  return Object.fromEntries(pairs.map(([label, value]) => [label, safe(value)]));
+function comparison(t, current, state) {
+  const comparison = state.comparison, generation = state.comparisonGeneration ?? comparison?.generation;
+  const status = state.comparisonState ?? 'EMPTY';
+  const rows = comparison ? resourceComparison(comparison, current).map((row, index) => `<tr ${hook(`resources-comparison-row-${index}`)}><th scope="row">${label(t, 'metric', row.key)}</th><td>${esc(metricValue(t, row.before))}</td><td>${esc(metricValue(t, row.after))}</td><td>${row.delta === null ? esc(stateText(t, 'UNAVAILABLE')) : esc(t('resource.format.delta', { sign: row.delta >= 0 ? '+' : '', value: Number(row.delta).toFixed(row.after.units === 'fraction' ? 3 : 1), unit: unit(t, row.after.units) }))}</td></tr>`).join('') : '';
+  return `<section class="resource-panel" ${hook('resources-comparison')}><header><h3>${text(t, 'compare')}</h3>${badge(t, status)}</header><form class="resource-compare-form" data-resource-compare-form ${hook('resources-compare-form')}><label>${text(t, 'generation')} <input ${hook('resources-compare-generation')} name="generation" type="text" pattern="[0-9]+" required value="${esc(generation ?? '')}" inputmode="numeric"></label><button ${hook('resources-compare-submit')} type="submit">${text(t, 'load')}</button><span>${text(t, 'queryNote')}</span></form><p role="status" ${hook('resources-comparison-status')}>${generation == null ? text(t, 'emptyComparison') : text(t, 'requested', { generation, state: stateText(t, status) })}</p>${comparison ? `<div class="resource-table-wrap" ${hook('resources-comparison-scroll')} tabindex="0" role="region" aria-label="${text(t, 'compare')}"><table class="resource-table"><thead><tr><th>${text(t, 'metric')}</th><th>${text(t, 'columnGeneration', { generation: comparison.generation })}</th><th>${text(t, 'columnGeneration', { generation: current.generation ?? stateText(t, 'UNKNOWN') })}</th><th>${text(t, 'delta')}</th></tr></thead><tbody>${rows}</tbody></table></div>` : ''}</section>`;
 }
-
-function timelinePanel(profile) {
-  if (!profile.timeline.length) {
-    return `<section class="resource-panel"><header><div><span class="eyebrow">Timeline and correlation</span><h3>No resource samples available for this window</h3></div>${stateBadge("UNAVAILABLE")}</header><p class="resource-muted">No episode, batch, refinement, checkpoint, or preparation correlation is synthesized.</p></section>`;
-  }
-  const maxMemory = Math.max(...profile.timeline.map((row) => row.unifiedMemoryUsed ?? -Infinity));
-  return `<section class="resource-panel">
-    <header><div><span class="eyebrow">Timeline and correlation</span><h3>Select a resource sample to inspect its exact related evidence</h3></div><span>${profile.timeline.length} samples</span></header>
-    <div class="resource-table-wrap"><table class="resource-timeline"><thead><tr><th>Sample</th><th>Memory</th><th>MLX</th><th>Batch</th><th>Seq density</th><th>Accepted steps/h</th><th>Expansion</th></tr></thead><tbody>
-      ${profile.timeline.map((row) => `<tr data-resource-spike="${row.unifiedMemoryUsed === maxMemory ? "peak" : "sample"}"><td><button type="button" data-resource-inspect="${esc(row.id)}">${esc(row.id)}</button><small>t=${esc(row.observedAt ?? "UNKNOWN")}</small></td><td>${row.unifiedMemoryUsed === null ? "UNAVAILABLE" : bytes(row.unifiedMemoryUsed)}</td><td>${row.mlxAllocated === null ? "UNAVAILABLE" : bytes(row.mlxAllocated)}</td><td>${row.batchSize ?? "UNAVAILABLE"}</td><td>${row.sequenceDensity === null ? "UNAVAILABLE" : `${(100 * row.sequenceDensity).toFixed(1)}%`}</td><td>${row.acceptedStepsHour ?? "UNAVAILABLE"}</td><td>${row.expansionCount ?? "UNAVAILABLE"}</td></tr>`).join("")}
-    </tbody></table></div>
-  </section>`;
+export function renderResourceMarkup(state, { historical = false, locale, messages = RESOURCE_MESSAGES } = {}) {
+  const t = createTranslator({ locale, messages }), current = state?.current;
+  if (!current) return `<div class="resource-view" ${hook('resources-view')}><section class="resource-panel"><h2>${text(t, state?.currentState === 'LOADING' ? 'loading' : 'unavailable')}</h2>${badge(t, state?.currentState ?? 'UNAVAILABLE')}<p>${text(t, state?.currentState === 'LOADING' ? 'loadingDetail' : 'missing')}</p></section></div>`;
+  const provenance = current.provenance === 'FIXTURE' ? 'fixture' : historical ? 'historical' : 'live';
+  return `<div class="resource-view" ${hook('resources-view')}><header class="resource-heading"><div><span class="eyebrow">${text(t, 'eyebrow')}</span><h2>${text(t, 'title')}</h2></div></header><div class="resource-provenance" data-provenance="${esc(current.provenance.toLowerCase())}" ${hook('resources-provenance')}><strong>${text(t, provenance)}</strong><span>${text(t, 'provenance', { generation: current.generation ?? stateText(t, 'UNKNOWN'), window: current.window === 'accepted CP03 resource page' ? t('resource.acceptedWindow') : current.window })}</span></div>${summary(t, current)}${decompositionPanel(t, current)}<div class="resource-analysis">${table(t, 'compute', metricRows(t, current, computeKeys, 'resources-compute'), 'resources-compute')}${table(t, 'length', metricRows(t, current, lengthKeys, 'resources-length'), 'resources-length')}</div>${timeline(t, current)}${comparison(t, current, state)}</div>`;
 }
-
-function compareCell(metric) {
-  return metricValue(metric ?? { state: "UNAVAILABLE" });
-}
-
-function comparisonPanel(current, comparison, comparisonState) {
-  const rows = comparison ? resourceComparison(comparison, current) : [];
-  return `<section class="resource-panel">
-    <header><div><span class="eyebrow">Historical comparison</span><h3>Exact generation against inspected profile</h3></div>${stateBadge(comparisonState)}</header>
-    <form class="resource-compare-form" data-resource-compare-form>
-      <label>Historical generation <input name="generation" type="number" min="0" step="1" value="${comparison?.generation ?? ""}" inputmode="numeric" /></label>
-      <button type="submit">Load exact generation</button>
-      <span>Read-only CP03 historical query. No generation is inferred.</span>
-    </form>
-    ${comparison ? `<div class="resource-table-wrap"><table class="resource-compare"><thead><tr><th>Metric</th><th>g${esc(comparison.generation)}</th><th>g${esc(current.generation)}</th><th>Delta</th></tr></thead><tbody>${rows.map((row) => `<tr><td>${esc(LABELS[row.key] ?? row.key)}</td><td>${compareCell(row.before)}</td><td>${compareCell(row.after)}</td><td>${row.delta === null ? "UNAVAILABLE" : `${row.delta >= 0 ? "+" : ""}${Number(row.delta).toFixed(row.after.units === "fraction" ? 3 : 1)} ${esc(row.after.units ?? "")}`}</td></tr>`).join("")}</tbody></table></div>` : `<p class="resource-muted">Enter an exact generation to compare. The view does not invent a historical generation catalog.</p>`}
-  </section>`;
-}
-
-export function renderResourceMarkup(state, { historical = false } = {}) {
-  const current = state?.current;
-  if (!current) {
-    return `<div class="resource-view"><section class="resource-panel"><header><div><span class="eyebrow">GUI15 · Resources</span><h2>Resource evidence unavailable</h2></div>${stateBadge(state?.currentState ?? "UNAVAILABLE")}</header><p class="resource-muted">No accepted resource projection is available. Missing metrics are not rendered as zero.</p></section></div>`;
-  }
-  const provenance = current.provenance === "FIXTURE" ? "FIXTURE-BACKED DIAGNOSTICS" : historical ? "HISTORICAL CP03 QUERY" : "LIVE CP03 QUERY";
-  return `<div class="resource-view">
-    <header class="resource-heading"><div><span class="eyebrow">GUI15 · Resources</span><h2>Explain the budget, do not mythologize it</h2></div><p>Memory, compute, batching and preparation are rendered only at the semantic strength their evidence supports.</p></header>
-    <div class="resource-provenance" data-provenance="${esc(current.provenance.toLowerCase())}"><strong>${provenance}</strong><span>Generation ${esc(current.generation ?? "UNKNOWN")} · ${esc(current.window)}</span></div>
-    ${headline(current)}
-    ${semanticsPanel(current)}
-    ${decompositionPanel(current)}
-    ${computePanel(current)}
-    ${timelinePanel(current)}
-    ${comparisonPanel(current, state.comparison, state.comparisonState ?? "EMPTY")}
-  </div>`;
-}
-
-export function bindResourceInteractions(host, { onInspect, onCompare }) {
-  host.querySelectorAll("[data-resource-inspect]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const sample = host.__resourceState?.current?.timeline?.find((row) => row.id === button.dataset.resourceInspect);
-      if (!sample) return;
-      onInspect?.({ kind: "resource", id: sample.id, details: spikeDetails(sample) });
+export function bindResourceInteractions(host, { onInspect, onCompare, locale, messages = RESOURCE_MESSAGES }) {
+  const t = createTranslator({ locale, messages });
+  host.querySelectorAll('[data-resource-inspect]').forEach(button => button.addEventListener('click', () => {
+    const sample = host.__resourceState?.current?.timeline?.find(row => row.id === button.dataset.resourceInspect);
+    if (!sample) return;
+    const pairs = [['episode', sample.episodeId], ['batch', sample.batchId], ['sample', sample.id], ['checkpoint', sample.checkpointId], ['source', sample.sourceWorkload], ['expansion', sample.expansionCount]];
+    const details = Object.fromEntries(pairs.filter(([, value]) => value != null).map(([key, value]) => [t(`resource.inspector.${key}`), value]));
+    const groups = sample.exactRefGroups ?? { accepted: sample.exactRefs ?? [] };
+    for (const [kind, refs] of Object.entries(groups)) refs.forEach((ref, index) => {
+      details[t(`resource.inspector.${kind}Ref`, { index: index + 1 })] = ref;
     });
-  });
-  host.querySelector("[data-resource-compare-form]")?.addEventListener("submit", (event) => {
+    onInspect?.({ kind: 'resource', id: sample.id, details });
+  }));
+  const form = host.querySelector('[data-resource-compare-form]');
+  form?.elements?.generation?.addEventListener?.('input', event => event.target.setCustomValidity(''));
+  form?.addEventListener('submit', event => {
     event.preventDefault();
-    const generation = Number(new FormData(event.currentTarget).get("generation"));
-    if (Number.isSafeInteger(generation) && generation >= 0) onCompare?.(generation);
+    const input = event.currentTarget.elements.generation;
+    const raw = input.value.trim(), generation = Number(raw);
+    if (!/^[0-9]+$/.test(raw) || !Number.isSafeInteger(generation) || generation < 0) {
+      input.setCustomValidity?.(t('resource.invalidGeneration'));
+      input.reportValidity?.();
+      return;
+    }
+    input.setCustomValidity?.('');
+    onCompare?.(generation);
   });
 }

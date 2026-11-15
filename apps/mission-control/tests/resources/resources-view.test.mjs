@@ -78,8 +78,8 @@ test("configured limit, measured value, and estimate have distinct semantic pres
   assert.match(markup, /data-resource-semantic="configured-limit"/);
   assert.match(markup, /data-resource-semantic="estimate"/);
   assert.match(markup, /Measured value/);
-  assert.match(markup, /Configured limit/);
-  assert.match(markup, /Forecast \/ estimate/);
+  assert.match(markup, /CONFIGURED LIMIT/);
+  assert.match(markup, /ESTIMATE/);
 });
 
 test("live CP03 resource projection refuses to fabricate unavailable decomposition", () => {
