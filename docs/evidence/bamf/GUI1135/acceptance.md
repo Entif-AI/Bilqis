@@ -73,6 +73,7 @@ The structural seam passed 21/21 focused Memory/protocol tests plus `DEVELOPMENT
 
 ## Authority and semantic invariants
 
+- Canonical latest legacy-trainer adaptation source remains `/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`; Prometheus remains historical evidence only and is not the current adaptation source.
 - Stable memory identity remains the full motif key digest, not a page/row coordinate.
 - Address, allocation state, source eligibility, correction/requalification, optimizer participation, and receipt identities remain literal fixture values.
 - Memory retrieval and gate-use telemetry do not become source truth, semantic authority, or learned-success claims.
