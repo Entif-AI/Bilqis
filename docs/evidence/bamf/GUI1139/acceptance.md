@@ -73,9 +73,10 @@ ports 8773 (exact baseline) and 8774 (redesign).
 
 ### Redesign, dark comfortable, same current accepted generation
 
+- Re-rendered after reconciling unified `a68961296b9ae4dc40b8813b2b91fd1633453c73`.
 - Viewport: 1440 x 900 CSS px.
 - Domain height: 3655.97 px.
-- Document height: 4044 px.
+- Document height: 4020 px.
 - Document width: 1425 px, below the 1440 px viewport.
 - Accepted generations form an actual parent/child branch tree. The recovery fork
   leaves generation 44238 rather than reading as another equally spaced card.
@@ -91,7 +92,7 @@ ports 8773 (exact baseline) and 8774 (redesign).
 
 - Viewport: 390 x 844 CSS px.
 - Domain height: 4466.97 px.
-- Document height: 5219 px.
+- Document height: 5157 px.
 - Document width: 375 px, below the 390 px viewport.
 - Historical generation 44238 is visibly pinned; other accepted nodes remain
   orientation-only. The only enabled generation selectors are the graph and table

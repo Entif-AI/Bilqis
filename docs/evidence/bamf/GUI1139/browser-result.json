@@ -16,7 +16,7 @@
     "viewport_width": 1440,
     "viewport_height": 900,
     "domain_height": 3655.96875,
-    "document_height": 4044,
+    "document_height": 4020,
     "document_width": 1425,
     "local_overflow": {
       "graph": {"client_width": 1138, "scroll_width": 1138},
@@ -33,7 +33,7 @@
     "viewport_width": 390,
     "viewport_height": 844,
     "domain_height": 4466.96875,
-    "document_height": 5219,
+    "document_height": 5157,
     "document_width": 375,
     "enabled_generation_controls": 2,
     "local_overflow": {
