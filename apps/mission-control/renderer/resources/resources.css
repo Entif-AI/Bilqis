@@ -44,3 +44,7 @@
 .resource-summary article { grid-template-columns: minmax(0, 1fr); }
 .resource-summary article > *, .resource-panel > header > * { min-inline-size: 0; max-inline-size: 100%; }
 .resource-summary .resource-semantic, .resource-panel > header .resource-state { white-space: normal; }
+@media (max-width: 640px) {
+  .resource-table :is(th, td):first-child { inline-size: 40vw; min-inline-size: 40vw; max-inline-size: 40vw; white-space: normal; overflow-wrap: anywhere; }
+  .resource-table button { max-inline-size: 100%; }
+}

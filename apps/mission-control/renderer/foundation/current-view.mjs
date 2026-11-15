@@ -241,7 +241,7 @@ export function renderCurrentView(
       kind: "salience-observation",
       id,
       details,
-    }));
+    }), state.selected?.kind === "salience-observation" ? state.selected.id : null);
     return;
   }
   if (state.view === "lineage") {
