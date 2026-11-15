@@ -10,6 +10,9 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning.atlas_engram import MotifManifest
 
 
+_CANDIDATE_CACHE_ISSUER = object()
+
+
 def _invalid(reason: str) -> None:
     ErrorBus.Raise(SCHOOL.STATE.HISTORICAL_ARTIFACT_INVALID, reason=reason)
 
@@ -56,6 +59,26 @@ class AcceptedExecutionCache:
             _invalid("B13_EXECUTION_CACHE_INVALID")
 
 
+@dataclass(frozen=True, init=False)
+class CandidateExecutionCache:
+    """B13-authenticated cache view for one unpublished candidate transaction."""
+
+    run_id: str
+    generation: int
+    accepted_manifest_sha256: str
+    generation_binding: str
+    motif_manifest: MotifManifest
+    _accepted_cache: AcceptedExecutionCache = field(repr=False, compare=False)
+    _parent: object = field(repr=False, compare=False)
+    _candidate: object = field(repr=False, compare=False)
+    _spec: object = field(repr=False, compare=False)
+    _extents: object = field(repr=False, compare=False)
+    _issuance: object = field(repr=False, compare=False)
+
+    def __init__(self, *args, **kwargs):
+        _invalid("B13_CANDIDATE_EXECUTION_CACHE_CALLER_CONSTRUCTION_FORBIDDEN")
+
+
 def _new_execution_cache(
     *,
     run_id: str,
@@ -81,6 +104,69 @@ def _new_execution_cache(
     ):
         object.__setattr__(cache, name, value)
     cache.__post_init__()
+    return cache
+
+
+def bind_candidate_execution_cache(cache, parent, candidate, *, spec, extents):
+    """Bind speculative neural weights to the current accepted cache authority."""
+    accepted = require_accepted_execution_cache(cache)
+    from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
+    from bilqis_mlx.runtime.bamf_bundle.records import CompleteStudent
+    from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+
+    if (type(parent) is not CompleteStudent
+            or type(candidate) is not CandidateTransaction
+            or candidate.parent is not parent.retained_state):
+        _invalid("B13_CANDIDATE_EXECUTION_CACHE_REQUIRED")
+    candidate.__post_init__()
+    custody = candidate.parent.custody
+    if (custody is None
+            or custody.run_id != accepted.run_id
+            or custody.generation != accepted.generation
+            or custody.manifest_sha256 != accepted.accepted_manifest_sha256
+            or candidate.allocations.manifest.digest != accepted.motif_manifest.digest
+            or custody.topology_digest != spec.digest
+            or custody.extents_digest != extents.digest):
+        _invalid("B13_CANDIDATE_EXECUTION_CACHE_DRIFT")
+    result = object.__new__(CandidateExecutionCache)
+    for name, value in (
+            ("run_id", accepted.run_id), ("generation", accepted.generation),
+            ("accepted_manifest_sha256", accepted.accepted_manifest_sha256),
+            ("generation_binding", execution_generation_digest(
+                candidate.optimizer.parameters, spec=spec, extents=extents)),
+            ("motif_manifest", accepted.motif_manifest),
+            ("_accepted_cache", accepted), ("_parent", parent),
+            ("_candidate", candidate),
+            ("_spec", spec), ("_extents", extents),
+            ("_issuance", _CANDIDATE_CACHE_ISSUER)):
+        object.__setattr__(result, name, value)
+    return result
+
+
+def require_candidate_execution_cache(cache) -> CandidateExecutionCache:
+    if type(cache) is not CandidateExecutionCache:
+        _invalid("B13_CANDIDATE_EXECUTION_CACHE_REQUIRED")
+    accepted = require_accepted_execution_cache(cache._accepted_cache)
+    from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+
+    candidate = cache._candidate
+    candidate.__post_init__()
+    custody = candidate.parent.custody
+    if (cache._issuance is not _CANDIDATE_CACHE_ISSUER
+            or accepted is not cache._accepted_cache
+            or candidate.parent is not cache._parent.retained_state
+            or custody is None
+            or cache.run_id != accepted.run_id
+            or cache.generation != accepted.generation
+            or cache.accepted_manifest_sha256 != accepted.accepted_manifest_sha256
+            or cache.motif_manifest.digest != accepted.motif_manifest.digest
+            or candidate.allocations.manifest.digest != accepted.motif_manifest.digest
+            or custody.topology_digest != cache._spec.digest
+            or custody.extents_digest != cache._extents.digest
+            or cache.generation_binding != execution_generation_digest(
+                candidate.optimizer.parameters,
+                spec=cache._spec, extents=cache._extents)):
+        _invalid("B13_CANDIDATE_EXECUTION_CACHE_DRIFT")
     return cache
 
 
@@ -119,6 +205,7 @@ def bind_motif_artifact_owner(cache, compiled):
 
 
 __all__ = (
-    "AcceptedExecutionCache", "bind_motif_artifact_owner",
-    "require_accepted_execution_cache",
+    "AcceptedExecutionCache", "CandidateExecutionCache",
+    "bind_candidate_execution_cache", "bind_motif_artifact_owner",
+    "require_accepted_execution_cache", "require_candidate_execution_cache",
 )

@@ -16,7 +16,8 @@ from bilqis_mlx.learning.source_atoms.backbone import (
 )
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
-    bind_motif_artifact_owner, require_accepted_execution_cache,
+    CandidateExecutionCache, bind_motif_artifact_owner,
+    require_accepted_execution_cache, require_candidate_execution_cache,
 )
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
@@ -32,7 +33,12 @@ from .atlas_model_refinement import _prediction_local_refinement
 
 
 def _source_producer(params, compiled_batch, generation, cache):
-    accepted_cache = None if cache is None else require_accepted_execution_cache(cache)
+    speculative = type(cache) is CandidateExecutionCache
+    execution_cache = (
+        require_candidate_execution_cache(cache) if speculative
+        else (None if cache is None else require_accepted_execution_cache(cache)))
+    accepted_cache = (
+        execution_cache._accepted_cache if speculative else execution_cache)
     banks = semantic_bank_views(
         params, compiled_batch.compiled.extents,
         compiled_batch.compiled.features.semantic_release,
@@ -45,17 +51,17 @@ def _source_producer(params, compiled_batch, generation, cache):
             compiled_batch.feature_schema,
             banks,
             compiled_batch.atlas_feature_artifact_owner,
-        ), None
+        ), None, True
     if (
         accepted_cache.run_id != compiled_batch.active_semantic_rows.run_id
         or accepted_cache.generation != compiled_batch.active_semantic_rows.generation
-        or accepted_cache.generation_binding != generation
+        or execution_cache.generation_binding != generation
         or accepted_cache.motif_manifest.digest
         != compiled_batch.compiled.extents.motif_key_map_digest
     ):
         _invalid("B11_ACCEPTED_CACHE_GENERATION_MISMATCH")
     bind_motif_artifact_owner(accepted_cache, compiled_batch.compiled)
-    return start_retained_source_backbone_producer(
+    producer = start_retained_source_backbone_producer(
         compiled_batch.compiled,
         params,
         compiled_batch.sources,
@@ -64,7 +70,11 @@ def _source_producer(params, compiled_batch, generation, cache):
         accepted_cache.motif_manifest,
         compiled_batch.atlas_feature_artifact_owner,
         seal=_B13_EXECUTION_SEAL,
-    ), accepted_cache
+    )
+    # Speculative execution still carries accepted-generation provenance for
+    # motif dependency accounting, but it must never write derived attention
+    # caches into accepted-generation custody.
+    return producer, accepted_cache, not speculative
 
 
 def _finalize_source_hidden(
@@ -112,11 +122,11 @@ def _forward_bamf_impl(
             and compiled_batch.training_authority.generation_binding != generation):
         _invalid("B11_TRAINING_AUTHORITY_GENERATION_MISMATCH")
 
-    producer, accepted_cache = _source_producer(
+    producer, accepted_cache, capture_derived_cache = _source_producer(
         params, compiled_batch, generation, cache)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, compiled_batch,
-        capture_derived_cache=not refinement_training)
+        capture_derived_cache=capture_derived_cache and not refinement_training)
     if hidden.shape[0] != 1:
         _invalid("B11_SINGLE_ROW_FORWARD_REQUIRED")
     row = compiled_batch.compiled.compiled.rows[0]
