@@ -38,6 +38,7 @@ class RouteMicrobatchKernel:
     has_salience: bool
     features: object
     extents: object
+    dependency_masks: tuple[mx.array, ...] = ()
 
 
 def _ordered(plan):
@@ -93,34 +94,33 @@ def _padded_candidates(items):
     return mx.stack(padded), mask
 
 
-def _feedback_vector(decision, committed):
-    if decision is None:
-        return mx.zeros((_WIDTH,), dtype=mx.float32)
-    values = tuple(committed[key] for key in decision.depends_on)
-    if any(type(value) is not str for value in values):
-        _invalid("B11_MICROBATCH_ROUTE_FEEDBACK_UNSUPPORTED")
-    if not values:
-        return mx.zeros((_WIDTH,), dtype=mx.float32)
-    return mx.mean(mx.stack(tuple(encode_feedback_value(value) for value in values)), axis=0)
+def _dependency_mask(ordered, decisions, index):
+    rows = []
+    for items, decision in zip(ordered, decisions):
+        dependencies = () if decision is None else decision.depends_on
+        positions = {
+            item.decision_id: position
+            for position, item in enumerate(items[:index])
+        }
+        if any(key not in positions for key in dependencies):
+            _invalid("B11_MICROBATCH_ROUTE_DEPENDENCY_INVALID")
+        rows.append(tuple(position in {positions[key] for key in dependencies}
+                          for position in range(index)))
+    return mx.array(tuple(rows), dtype=mx.bool_)
 
 
 def prepare_route_microbatch_kernel(
-        row_batches, answer_plans, targets, masks, preflight_executions,
+        row_batches, answer_plans, targets, masks, _preflight_executions,
         salience_labels=()):
-    """Freeze route metadata into tensors; no model parameter is captured here."""
+    """Freeze static route geometry; model choices remain runtime authority."""
     if not route_microbatch_compatible(row_batches, answer_plans, targets, masks):
         _invalid("B11_MICROBATCH_ROUTE_KERNEL_INCOMPATIBLE")
-    if len(preflight_executions) != len(row_batches):
-        _invalid("B11_MICROBATCH_ROUTE_PREFLIGHT_REQUIRED")
     ordered = tuple(_ordered(plan) for plan in answer_plans)
     target_maps = tuple(
         {item.decision_id: item.value for item in row_targets}
         for row_targets in targets)
-    committed = tuple(
-        {item.decision_id: item.value for item in execution.output.committed}
-        for execution in preflight_executions)
     steps = max(len(items) for items in ordered)
-    operator_masks, operand_masks = [], []
+    operator_masks, operand_masks, dependency_masks = [], [], []
     occurrences, feedback, candidates, candidate_masks, target_indices = [], [], [], [], []
     for index in range(steps):
         decisions = tuple(
@@ -134,9 +134,8 @@ def prepare_route_microbatch_kernel(
         occurrences.append(mx.stack(tuple(
             (mx.zeros((_WIDTH,), dtype=mx.float32) if item is None
              else occurrence_vector(item.occurrence)) for item in decisions)))
-        feedback.append(mx.stack(tuple(
-            _feedback_vector(item, values)
-            for item, values in zip(decisions, committed))))
+        dependency_masks.append(_dependency_mask(ordered, decisions, index))
+        feedback.append(mx.zeros((len(row_batches), _WIDTH), dtype=mx.float32))
         vectors, candidate_mask = _padded_candidates(decisions)
         candidates.append(vectors)
         candidate_masks.append(candidate_mask)
@@ -164,7 +163,7 @@ def prepare_route_microbatch_kernel(
         mx.array(tuple(sum(item.kind is DecisionKind.OPERAND for item in items)
                        for items in ordered), dtype=mx.int32),
         tuple(salience_targets), has_salience, row_batches[0].compiled.features,
-        row_batches[0].compiled.extents)
+        row_batches[0].compiled.extents, tuple(dependency_masks))
 
 
 def _norm(value, gamma):
@@ -173,8 +172,8 @@ def _norm(value, gamma):
         + ModelTopologySpecV2.rms_norm_epsilon) * gamma
 
 
-def _decision_loss(params, anchors, keys, values, position_mask, role,
-                   occurrence, feedback, candidates, candidate_mask, target_indices):
+def _decision_logits(params, anchors, keys, values, position_mask, role,
+                     occurrence, feedback, candidates, candidate_mask):
     combined = anchors + role[None, :] + occurrence + feedback @ params["readout.feedback"].T
     normalized = combined * mx.rsqrt(
         mx.mean(combined * combined, axis=-1, keepdims=True)
@@ -187,9 +186,72 @@ def _decision_loss(params, anchors, keys, values, position_mask, role,
                 @ params["readout.output"].T)
     state = _norm(normalized + attended, params["readout.output_norm"])
     logits = mx.sum(state[:, None, :] * candidates, axis=-1) / (_WIDTH ** .5)
-    logits = mx.where(candidate_mask, logits, -mx.inf)
+    return mx.where(candidate_mask, logits, -mx.inf)
+
+
+def _decision_loss(logits, target_indices):
     target = mx.take_along_axis(logits, target_indices[:, None], axis=-1)[:, 0]
     return mx.logsumexp(logits, axis=-1) - target
+
+
+def _model_feedback(previous, dependency_mask, rows):
+    if not previous:
+        return mx.zeros((rows, _WIDTH), dtype=mx.float32)
+    values = mx.stack(tuple(previous), axis=1)
+    weights = dependency_mask.astype(mx.float32)
+    count = mx.maximum(mx.sum(weights, axis=1, keepdims=True), 1)
+    return mx.sum(values * weights[..., None], axis=1) / count
+
+
+def route_microbatch_loss_and_trajectory(
+        params, hidden, kernel: RouteMicrobatchKernel, *, salience_hidden=None):
+    """Compute supervised loss while deriving causal route choices on device."""
+    if not kernel.dependency_masks:
+        return route_microbatch_mean_loss(
+            params, hidden, kernel, salience_hidden=salience_hidden), ()
+    position_mask = mx.arange(hidden.shape[1])[None, :] < kernel.lengths[:, None]
+    rows = mx.arange(hidden.shape[0])
+    anchors = hidden[rows, kernel.lengths - 1]
+    keys = hidden @ params["readout.key"].T
+    values = hidden @ params["readout.value"].T
+    role = role_id_vector("NONE", SimpleNamespace(features=kernel.features), params)
+    operator = mx.zeros((hidden.shape[0],), dtype=mx.float32)
+    operand = mx.zeros((hidden.shape[0],), dtype=mx.float32)
+    model_values, trajectory = [], []
+    for operator_mask, operand_mask, occurrence, dependency_mask, candidates, \
+            candidate_mask, targets in zip(
+                kernel.operator_masks, kernel.operand_masks,
+                kernel.occurrences, kernel.dependency_masks,
+                kernel.candidate_vectors, kernel.candidate_masks, kernel.target_indices):
+        feedback = _model_feedback(model_values, dependency_mask, hidden.shape[0])
+        logits = _decision_logits(
+            params, anchors, keys, values, position_mask, role, occurrence, feedback,
+            candidates, candidate_mask)
+        model_indices = mx.argmax(logits, axis=-1)
+        selected = mx.sum(
+            candidates * (mx.arange(candidates.shape[1])[None, :]
+                          == model_indices[:, None])[..., None],
+            axis=1)
+        model_values.append(mx.stop_gradient(selected))
+        trajectory.append(mx.stop_gradient(model_indices))
+        loss = _decision_loss(logits, targets)
+        operator = operator + mx.where(
+            operator_mask, loss, mx.zeros_like(loss))
+        operand = operand + mx.where(
+            operand_mask, loss, mx.zeros_like(loss))
+    operator_denominator = mx.maximum(kernel.operator_counts, 1)
+    operand_denominator = mx.maximum(kernel.operand_counts, 1)
+    row_loss = mx.where(
+        kernel.operator_counts > 0, operator / operator_denominator,
+        mx.zeros_like(operator))
+    row_loss = row_loss + mx.where(
+        kernel.operand_counts > 0, operand / operand_denominator,
+        mx.zeros_like(operand))
+    if kernel.has_salience:
+        if salience_hidden is None:
+            _invalid("B11_MICROBATCH_SALIENCE_HIDDEN_REQUIRED")
+        row_loss = row_loss + _salience_loss(params, salience_hidden, kernel)
+    return mx.mean(row_loss), tuple(trajectory)
 
 
 def _salience_loss(params, hidden, kernel):
@@ -222,9 +284,10 @@ def route_microbatch_mean_loss(
                 kernel.operator_masks, kernel.operand_masks,
                 kernel.occurrences, kernel.feedback, kernel.candidate_vectors,
                 kernel.candidate_masks, kernel.target_indices):
-        loss = _decision_loss(
+        logits = _decision_logits(
             params, anchors, keys, values, position_mask, role, occurrence, feedback,
-            candidates, candidate_mask, targets)
+            candidates, candidate_mask)
+        loss = _decision_loss(logits, targets)
         operator = operator + mx.where(
             operator_mask, loss, mx.zeros_like(loss))
         operand = operand + mx.where(
@@ -246,5 +309,6 @@ def route_microbatch_mean_loss(
 
 __all__ = (
     "RouteMicrobatchKernel", "prepare_route_microbatch_kernel",
-    "route_microbatch_compatible", "route_microbatch_mean_loss",
+    "route_microbatch_compatible", "route_microbatch_loss_and_trajectory",
+    "route_microbatch_mean_loss",
 )
