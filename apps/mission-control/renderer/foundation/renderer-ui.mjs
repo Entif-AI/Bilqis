@@ -108,18 +108,23 @@ export function renderDefensiveStatus(defense, onReconnect, bootstrap = null) {
   if (bootstrap && bootstrap.phase !== "ready") {
     const connection = bootstrap.connection;
     const detail = bootstrap.error?.code ?? bootstrap.error?.message ?? null;
-    const copy = {
-      connecting: ["Connecting to Mission Control", "Opening the local CP01 session and checking learner custody."],
-      discovering: ["Control plane connected", "CP01 is reachable. Discovering the accepted learner and Mission Control projection."],
-      "telemetry-pending": ["Learner ready · telemetry starting", "The accepted learner is healthy, but Mission Control has not received its first operator projection yet. No fixture data is substituted."],
-      "learner-unavailable": ["Control plane connected · learner unavailable", "CP01 is reachable, but the configured target does not currently expose an accepted learner."],
-      failed: ["Mission Control bootstrap failed", "The local control-plane session or telemetry projection could not be established."],
-    }[bootstrap.phase] ?? ["Mission Control starting", "Establishing the local operator view." ];
+    const copyKeys = {
+      connecting: ["foundation.bootstrap.connecting.label", "foundation.bootstrap.connecting.description"],
+      discovering: ["foundation.bootstrap.discovering.label", "foundation.bootstrap.discovering.description"],
+      "telemetry-pending": ["foundation.bootstrap.telemetryPending.label", "foundation.bootstrap.telemetryPending.description"],
+      "learner-unavailable": ["foundation.bootstrap.learnerUnavailable.label", "foundation.bootstrap.learnerUnavailable.description"],
+      failed: ["foundation.bootstrap.failed.label", "foundation.bootstrap.failed.description"],
+    }[bootstrap.phase] ?? ["foundation.bootstrap.starting.label", "foundation.bootstrap.starting.description"];
+    const copy = copyKeys.map((key) => t(key));
     host.dataset.state = bootstrap.phase;
     host.setAttribute("role", bootstrap.phase === "failed" ? "alert" : "status");
     host.hidden = false;
     const reconnect = `<button type="button" data-reconnect data-test-id="foundation-reconnect">${esc(t("foundation.defensive.reconnect"))}</button>`;
-    host.innerHTML = `<div class="defensive-copy"><strong>${esc(copy[0])}</strong><span>${esc(copy[1])}</span><small>${connection?.runId ? `Run ${esc(connection.runId)} · ` : ""}${Number.isSafeInteger(connection?.generation) ? `generation ${connection.generation} · ` : ""}${detail ? `Detail: ${esc(detail)}` : "No error reported"}</small></div>${bootstrap.phase === "failed" || bootstrap.phase === "learner-unavailable" ? reconnect : ""}`;
+    const detailParts = [];
+    if (connection?.runId) detailParts.push(t("foundation.bootstrap.run", { runId: connection.runId }));
+    if (Number.isSafeInteger(connection?.generation)) detailParts.push(t("foundation.bootstrap.generation", { generation: connection.generation }));
+    detailParts.push(detail ? t("foundation.bootstrap.detail", { detail }) : t("foundation.bootstrap.noError"));
+    host.innerHTML = `<div class="defensive-copy"><strong>${esc(copy[0])}</strong><span>${esc(copy[1])}</span><small>${esc(detailParts.join(" · "))}</small></div>${bootstrap.phase === "failed" || bootstrap.phase === "learner-unavailable" ? reconnect : ""}`;
     host.querySelector("[data-reconnect]")?.addEventListener("click", onReconnect);
     return;
   }

@@ -80,8 +80,18 @@ test("shared primitive layer preserves canvas separation and canonical density m
   assert.match(components, /\.ui-disclosure\s*\{/);
   assert.match(components, /\.ui-state--error\s*\{/);
   assert.match(components, /\.ui-control--mode\s*\{/);
+  assert.match(components, /\.ui-control--peer-tab\s*\{/);
+  assert.match(components, /\.ui-control--secondary\s*\{/);
+  assert.match(components, /\.ui-control--tertiary\s*\{/);
+  assert.match(components, /\.ui-control--destructive\s*\{/);
   assert.match(components, /\.ui-control--link\s*\{/);
   assert.match(components, /\.ui-control--read-only\s*\{/);
+  assert.match(components, /\.ui-control--navigate\s*\{[^}]*border-inline-start/s);
+  assert.match(components, /\.ui-control--export\s*\{[^}]*text-decoration/s);
+  assert.match(components, /\.ui-control--compare\s*\{[^}]*double/s);
+  assert.match(components, /\.ui-control--mode\s*\{[^}]*box-shadow/s);
+  assert.match(components, /\.metric-tile \.evidence-value \.value,[\s\S]*\.comparison-card \.evidence-value \.value\s*\{[^}]*var\(--type-metric\)/);
+  assert.match(components, /\.ui-control--read-only[^\n]*:hover\s*\{[^}]*var\(--surface-2\)/s);
   assert.match(components, /aria-pressed="true"/);
   assert.match(components, /data-align="numeric"/);
   assert.match(components, /forced-colors:\s*active/);

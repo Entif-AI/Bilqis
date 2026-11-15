@@ -107,11 +107,19 @@ test("dark and light themes expose the same semantic token surface", () => {
 
 test("shared primitive grammar encodes surface depth and action roles without changing semantics", () => {
   assert.deepEqual(SURFACE_LEVELS, ["canvas", "surface-1", "surface-2", "surface-3"]);
-  assert.deepEqual(CONTROL_ROLES, ["navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status", "mode", "link", "read-only"]);
+  assert.deepEqual(CONTROL_ROLES, [
+    "navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status",
+    "mode", "peer-tab", "secondary", "tertiary", "destructive", "link", "read-only",
+  ]);
   assert.equal(surfaceClass("surface-2"), "ui-surface ui-surface-2");
   assert.equal(surfaceClass("surface-2", { bounded: true }), "ui-surface ui-surface-2 ui-surface--bounded");
+  assert.throws(() => surfaceClass("canvas", { bounded: true }), /CANVAS_SURFACE_CANNOT_BE_BOUNDED/);
   assert.equal(controlClass("mutate"), "ui-control ui-control--mutate");
   assert.equal(controlClass("mode"), "ui-control ui-control--mode");
+  assert.equal(controlClass("peer-tab"), "ui-control ui-control--peer-tab");
+  assert.equal(controlClass("secondary"), "ui-control ui-control--secondary");
+  assert.equal(controlClass("tertiary"), "ui-control ui-control--tertiary");
+  assert.equal(controlClass("destructive"), "ui-control ui-control--destructive");
   assert.equal(controlClass("link"), "ui-control ui-control--link");
   assert.equal(controlClass("read-only"), "ui-control ui-control--read-only");
   const ordinaryPanel = panelMarkup({ title: "Panel", body: "Body", testId: "foundation-test-panel" });

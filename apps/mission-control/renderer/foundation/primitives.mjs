@@ -3,7 +3,7 @@ import { testIdAttribute } from "./test-hooks.mjs";
 export const SURFACE_LEVELS = Object.freeze(["canvas", "surface-1", "surface-2", "surface-3"]);
 export const CONTROL_ROLES = Object.freeze([
   "navigate", "filter", "group", "compare", "export", "inspect", "primary", "mutate", "status",
-  "mode", "link", "read-only",
+  "mode", "peer-tab", "secondary", "tertiary", "destructive", "link", "read-only",
 ]);
 
 function enumValue(value, allowed, label) {
@@ -13,6 +13,7 @@ function enumValue(value, allowed, label) {
 
 export function surfaceClass(level = "surface-1", { bounded = false } = {}) {
   enumValue(level, SURFACE_LEVELS, "SURFACE_LEVEL_INVALID");
+  if (level === "canvas" && bounded) throw new TypeError("CANVAS_SURFACE_CANNOT_BE_BOUNDED");
   return `ui-surface ui-${level}${bounded ? " ui-surface--bounded" : ""}`;
 }
 
