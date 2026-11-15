@@ -31,7 +31,7 @@ def source_atom_vectors(
         invalid("BAMF_SOURCE_ATOM_INPUT_INVALID")
     handoff = None
     if source_execution_authority is not None:
-        from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
             require_b11_source_execution_authority,
         )
         authority = require_b11_source_execution_authority(
