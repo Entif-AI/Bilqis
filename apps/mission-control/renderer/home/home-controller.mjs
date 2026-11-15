@@ -21,6 +21,7 @@ export function createHomeController(api) {
   let unsubscribe = null;
   let renderTarget = null;
   let inspectTarget = null;
+  let navigateTarget = null;
   let context = null;
   let historical = false;
 
@@ -28,7 +29,7 @@ export function createHomeController(api) {
     if (!renderTarget || !model) return;
     renderTarget.hidden = false;
     renderTarget.innerHTML = renderHomeMarkup(model, { historical });
-    bindHomeInteractions(renderTarget, inspectTarget ?? (() => {}));
+    bindHomeInteractions(renderTarget, inspectTarget ?? (() => {}), navigateTarget ?? (() => {}));
   }
 
   async function loadFamily(family) {
@@ -96,9 +97,10 @@ export function createHomeController(api) {
     }
   }
 
-  async function activate(nextContext, { host, onInspect, defense } = {}) {
+  async function activate(nextContext, { host, onInspect, onNavigate, defense } = {}) {
     renderTarget = host;
     inspectTarget = onInspect;
+    navigateTarget = onNavigate;
     historical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
     context = nextContext;
     await refreshOperatorStatus();
@@ -125,6 +127,7 @@ export function createHomeController(api) {
     unsubscribe = null;
     renderTarget = null;
     inspectTarget = null;
+    navigateTarget = null;
     key = null;
     if (typeof stop === "function") await stop();
   }

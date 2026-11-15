@@ -152,7 +152,7 @@ function render() {
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
-    capabilityExplorer, onInspect: openInspector, onAnnounce: announce,
+    capabilityExplorer, onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
   });
   window.queueMicrotask(() => interactionController.render());
 }
