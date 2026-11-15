@@ -55,8 +55,9 @@ def validate_value(value, *, forbidden_mapping_keys: frozenset[str]) -> None:
                or not isinstance(item[0], str) for item in payload):
             raise SourcePacketCodecError
         keys = tuple(item[0] for item in payload)
-        if (len(set(keys)) != len(keys) or tuple(sorted(keys)) != keys
-                or forbidden_mapping_keys & set(keys)):
+        if forbidden_mapping_keys & set(keys):
+            raise SourcePacketForbiddenAuthority
+        if len(set(keys)) != len(keys) or tuple(sorted(keys)) != keys:
             raise SourcePacketCodecError
         for _, item in payload:
             validate_value(item, forbidden_mapping_keys=forbidden_mapping_keys)

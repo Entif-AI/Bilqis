@@ -64,6 +64,8 @@ class ImmutableSourcePacket:
                 self.payload, ensure_ascii=False, sort_keys=True,
                 separators=(",", ":"), allow_nan=False).encode("utf-8")
             expected_digest = hashlib.sha256(encoded).hexdigest()
+        except SourcePacketForbiddenAuthority:
+            _packet_invalid("SOURCE_PREFETCH_FORBIDDEN_AUTHORITY")
         except (TypeError, ValueError):
             _packet_invalid("SOURCE_PREFETCH_IMMUTABLE_PACKET_INVALID")
         if (not isinstance(self.identity, str)
