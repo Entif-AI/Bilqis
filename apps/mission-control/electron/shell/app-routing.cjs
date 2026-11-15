@@ -7,7 +7,7 @@ function appUriArgument(argv = []) {
 }
 
 async function rendererHashForAppUri(raw, {
-  loadAppUriModule = () => import("../renderer/interactions/app-uri.mjs"),
+  loadAppUriModule = () => import("../../renderer/interactions/app-uri.mjs"),
 } = {}) {
   const module = await loadAppUriModule();
   return module.appUriToHash(raw);

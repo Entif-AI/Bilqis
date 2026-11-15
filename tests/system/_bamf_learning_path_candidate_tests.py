@@ -40,7 +40,7 @@ class BamfLearningPathCandidateAccountingTests(unittest.TestCase):
 
     def test_owner_candidate_rejection_and_hold_preserve_accepted_parent(self):
         cases = (
-            (SimpleNamespace(status="REJECTED_HOLD", visits=1, accepted=0, rejected=1),
+            (SimpleNamespace(status="VISIT_LIMIT", visits=1, accepted=0, rejected=1),
              "REJECTED", 1),
             (SimpleNamespace(status="PRIORITY_HOLD", visits=0, accepted=0, rejected=0),
              "HELD", 0),

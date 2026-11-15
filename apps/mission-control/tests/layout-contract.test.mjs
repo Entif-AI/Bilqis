@@ -28,12 +28,15 @@ test("shared shell owns stable grouped navigation and compact destination geomet
   const frames = source("frame-explorer.css");
 
   assert.match(tokens, /--rail-width:\s*184px/);
+  assert.match(tokens, /--rail-collapsed-width:/);
   assert.match(tokens, /--page-gutter:/);
-  assert.match(shell, /grid-template-columns:\s*var\(--rail-width\) minmax\(0, 1fr\) 0/);
+  assert.match(shell, /grid-template-columns:\s*var\(--active-rail-width\) minmax\(0, 1fr\) 0/);
+  assert.match(shell, /:root\[data-rail="collapsed"\]\s*\{[^}]*--active-rail-width:\s*var\(--rail-collapsed-width\)/s);
   assert.match(shell, /\.rail\s*\{[^}]*position:\s*sticky[^}]*height:\s*100vh[^}]*overflow-y:\s*auto/s);
   assert.match(shell, /\.view-host\s*\{[^}]*max-width:\s*none[^}]*var\(--page-gutter\)/s);
   assert.match(shell, /\.destination-header h1\s*\{[^}]*font-size:\s*var\(--type-title\)/s);
   assert.match(shell, /\.nav-group-label\s*\{/);
+  assert.match(shell, /\.nav-group \+ \.nav-group\s*\{[^}]*border-block-start:/s);
   assert.match(shell, /@media \(max-width:\s*980px\)[\s\S]*#primary-nav\s*\{[^}]*overflow-x:\s*auto/s);
   assert.doesNotMatch(shell, /#primary-nav button::first-letter/);
   assert.doesNotMatch(shell, /font-size:\s*0/);
@@ -54,6 +57,9 @@ test("shell target anatomy removes redundant chrome and keeps secondary context 
   assert.doesNotMatch(html, /brand-mark/);
   assert.match(html, /id="system-context-disclosure"[^>]*class="context-disclosure"/);
   assert.match(html, /id="view-settings-disclosure"[^>]*class="context-disclosure"/);
+  assert.equal((html.match(/name="shell-context-disclosure"/g) ?? []).length, 2);
+  assert.doesNotMatch(html, /data-test-id="shell-command-trigger"/);
+  assert.match(html, /data-test-id="shell-rail-toggle"/);
   assert.doesNotMatch(html, /id="run-selector"/);
   assert.doesNotMatch(html, /id="generation-selector"/);
   assert.match(html, /data-test-id="shell-destination-header"/);
@@ -132,6 +138,7 @@ test("operator typography and explanatory surfaces use the shared visual languag
   ]) assert.match(tokens, new RegExp(token + ":\\s*" + value));
   assert.match(shell, /\.context-bar\s*\{[^}]*display:\s*flex[^}]*justify-content:\s*space-between/s);
   assert.match(shell, /\.context-disclosure\s*\{[^}]*position:\s*relative/s);
+  assert.match(shell, /\.context-disclosure > summary\s*\{[^}]*display:\s*inline-flex[^}]*align-items:\s*center[^}]*background:\s*var\(--surface-2\)/s);
   assert.match(shell, /\.context-popover\s*\{[^}]*position:\s*absolute/s);
   assert.match(shell, /\.context-facts\s*\{[^}]*repeat\(3, minmax\(140px, 1fr\)\)/s);
   assert.doesNotMatch(shell, /\.selector\s*\{/);

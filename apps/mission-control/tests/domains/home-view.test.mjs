@@ -7,8 +7,8 @@ import {
   homeStatus,
   projectionFromPages,
   queryRequest,
-  referenceHomeProjection,
 } from "../../renderer/home/home-model.mjs";
+import { referenceHomeProjection } from "../../renderer/home/home-fixture.mjs";
 import { createHomeController } from "../../renderer/home/home-controller.mjs";
 import { renderHomeMarkup } from "../../renderer/home/home-view.mjs";
 import { collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
@@ -138,8 +138,29 @@ test("Home fixtures never relabel generation coordinates as wall-clock time", ()
   const model = referenceHomeProjection();
   assert.equal(model.pulse.every((event) => event.observedAt === null && event.materializedAt === null), true);
   const markup = renderHomeMarkup(model);
-  assert.match(markup, /<time>Time unavailable<\/time>/);
-  assert.doesNotMatch(markup, /<time>4423[5-9]<\/time>/);
+  assert.match(markup, /home-pulse-time-0[^>]*>Time unavailable<\/span>/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="4423[5-9]"/);
+});
+
+test("Home consumes shared contextual-help and temporal primitives without collapsing materialization time", () => {
+  const fixture = referenceHomeProjection();
+  const model = {
+    ...fixture,
+    currentWork: Object.freeze({ ...fixture.currentWork, observedAt: 1_799_000_100, materializedAt: 1_799_000_105 }),
+    attention: Object.freeze([{ ...fixture.attention[0], observedAt: 1_799_000_200, materializedAt: 1_799_000_205 }]),
+    pulse: Object.freeze([{ ...fixture.pulse[0], observedAt: 1_799_000_300, materializedAt: 1_799_000_305 }]),
+  };
+  const markup = renderHomeMarkup(model, { nowMs: 1_799_000_400_000, locale: "en-US" });
+  for (const id of ["status", "current", "attention", "pulse", "school", "health"]) {
+    assert.match(markup, new RegExp(`data-test-id="home-help-${id}-trigger"`));
+  }
+  assert.match(markup, /data-source-unix-seconds="1799000100"/);
+  assert.match(markup, /data-source-unix-seconds="1799000200"/);
+  assert.match(markup, /data-source-unix-seconds="1799000300"/);
+  assert.match(markup, />5 minutes ago</);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="1799000105"/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="1799000205"/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="1799000305"/);
 });
 
 test("Home does not repeat the shell-owned Mission Control destination heading", () => {

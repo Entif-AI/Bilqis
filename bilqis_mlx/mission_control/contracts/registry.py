@@ -27,10 +27,12 @@ from .snapshots import (
 )
 
 
+from .trainer import TrainerObservation
 from .dossier import CapabilityDossier
 
 
 ALL_RECORD_TYPES = (
+    TrainerObservation,
     CapabilityDossier,
     RunContext,
     OperatorView,

@@ -1,7 +1,7 @@
 const { chromium } = require(process.env.BILQIS_PLAYWRIGHT_MODULE || "playwright");
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, "../../../..");
-const {assetPathForRendererRequest} = require("../../electron/renderer-protocol.cjs");
+const {assetPathForRendererRequest} = require("../../electron/shell/renderer-protocol.cjs");
 const server = http.createServer((req,res)=>{
  const prefix = "/apps/mission-control/renderer";
  const asset = req.url.startsWith(prefix + "/") ? assetPathForRendererRequest("bamf-mc://app" + req.url.slice(prefix.length), path.join(root,"apps/mission-control/renderer")) : null;

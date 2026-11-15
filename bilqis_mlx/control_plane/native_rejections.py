@@ -69,6 +69,7 @@ def _project_verified_rejection(verified, generation):
     option_id = evidence.get("selected_option_id")
     candidate_step = evidence.get("candidate_optimizer_step")
     retained_step = evidence.get("retained_optimizer_step")
+    rejection_attempt_ordinal = evidence.get("rejection_attempt_ordinal")
     from bilqis_mlx.learning.atlas_retention_decision import CandidateRetentionDecision
 
     decision = CandidateRetentionDecision.from_record(evidence.get("decision"))
@@ -80,6 +81,9 @@ def _project_verified_rejection(verified, generation):
             or type(candidate_step) is not int
             or candidate_step <= generation.manifest["optimizer"].get("step")
             or retained_step != generation.manifest["optimizer"].get("step")
+            or (rejection_attempt_ordinal is not None
+                and (type(rejection_attempt_ordinal) is not int
+                     or rejection_attempt_ordinal < 1))
             or decision.decision != "REJECT"
             or decision_fields.get("parent_generation")
             != accepted_student_sha256(generation)
@@ -110,11 +114,14 @@ def _project_verified_rejection(verified, generation):
     run = run_ref(generation)
     refs = (f"rejection-authority:{authority_sha}",)
     receipts = (f"bamf-rejection:{receipt_sha}",)
+    episode_id = (
+        visit_id if rejection_attempt_ordinal is None
+        else f"{visit_id}:rejection:{rejection_attempt_ordinal}")
     episode = LearningEpisode(
         record_meta(
-            f"episode:{visit_id}", run, generation, evidence_refs=refs,
+            f"episode:{episode_id}", run, generation, evidence_refs=refs,
             receipt_refs=receipts, coverage=CoverageState.PARTIAL),
-        visit_id, capability, visit_id, "REJECTED", run.generation, run.generation)
+        episode_id, capability, visit_id, "REJECTED", run.generation, run.generation)
     candidate = CandidateDecision(
         record_meta(
             f"candidate:{event_id}", run, generation, evidence_refs=refs,

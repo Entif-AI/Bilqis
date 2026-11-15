@@ -5,12 +5,14 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { RENDERER_ENTRY_URL } = require("../renderer-location.cjs");
+const { RENDERER_ENTRY_URL } = require("../../shell/renderer-location.cjs");
 const {
+  FIXTURE_ONLY_ASSETS,
   RENDERER_ASSETS,
   assetPathForRendererRequest,
   registerMissionControlProtocol,
-} = require("../renderer-protocol.cjs");
+  rendererAssetsForLaunchMode,
+} = require("../../shell/renderer-protocol.cjs");
 
 test("renderer protocol resolves only the checked-in Mission Control asset allowlist", () => {
   const root = "/Applications/Bilqis/MissionControl/renderer";
@@ -76,8 +78,10 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/evidence/evidence-query.mjs",
     "/evidence/evidence-markup.mjs",
     "/evidence/evidence.css",
+    "/fixture-support.mjs",
     "/index.html",
     "/interactions/app-uri.mjs",
+    "/interactions/compare-production.mjs",
     "/interactions/compare.mjs",
     "/interactions/controller.mjs",
     "/interactions/dom-ref.mjs",
@@ -109,13 +113,17 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/neural/neural.css",
     "/foundation/renderer-ui.mjs",
     "/foundation/static-interactions.mjs",
+    "/foundation/temporal.mjs",
     "/foundation/test-hooks.mjs",
     "/home/home-controller.mjs",
+    "/home/home-fixture.mjs",
     "/home/home-model.mjs",
+    "/home/home-observed.mjs",
     "/home/home-view.mjs",
     "/home/home.css",
     "/renderer.mjs",
     "/resources/resource-controller.mjs",
+    "/resources/resource-fixture-state.mjs",
     "/resources/resource-fixture.mjs",
     "/resources/resource-model.mjs",
     "/resources/resource-view.mjs",
@@ -146,6 +154,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/salience/salience-evidence.css",
     "/salience/salience.css",
     "/settings.mjs",
+    "/shell-preferences.mjs",
     "/shell-state.mjs",
     "/shell.css",
     "/teacher/teacher-fixture.mjs",
@@ -163,6 +172,41 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/visual-language.mjs",
     "/visual-tokens.css",
   ].sort());
+});
+
+test("production protocol excludes fixture-only assets while fixture mode admits them", () => {
+  const root = "/Applications/Bilqis/MissionControl/renderer";
+  const production = rendererAssetsForLaunchMode("production");
+  const fixtures = rendererAssetsForLaunchMode("fixtures");
+  for (const requestPath of FIXTURE_ONLY_ASSETS) {
+    assert.equal(production.has(requestPath), false, requestPath);
+    assert.equal(fixtures.has(requestPath), true, requestPath);
+    assert.equal(assetPathForRendererRequest(`bamf-mc://app${requestPath}`, root, "production"), null);
+    assert.equal(
+      assetPathForRendererRequest(`bamf-mc://app${requestPath}`, root, "fixtures"),
+      path.join(root, RENDERER_ASSETS.get(requestPath)),
+    );
+  }
+});
+
+test("production renderer static dependency graph is fixture-free", () => {
+  const root = path.resolve(__dirname, "../../../renderer");
+  const production = rendererAssetsForLaunchMode("production");
+  const pending = ["/renderer.mjs"];
+  const seen = new Set();
+  while (pending.length > 0) {
+    const requestPath = pending.pop();
+    if (seen.has(requestPath)) continue;
+    seen.add(requestPath);
+    assert.equal(FIXTURE_ONLY_ASSETS.has(requestPath), false, requestPath);
+    const relative = production.get(requestPath);
+    assert.ok(relative, `production asset missing: ${requestPath}`);
+    const source = fs.readFileSync(path.join(root, relative), "utf8");
+    for (const match of source.matchAll(/(?:from\s+|import\s*)["'](\.\.?\/[^"']+)["']/g)) {
+      const resolved = "/" + path.posix.normalize(path.posix.join(path.posix.dirname(relative), match[1]));
+      pending.push(resolved);
+    }
+  }
 });
 
 test("renderer protocol refuses traversal, query aliases and untrusted origins", () => {
@@ -212,7 +256,7 @@ test("protocol handler never asks net.fetch for a non-allowlisted local file", a
 });
 
 test("packaged renderer assets include every local HTML and JavaScript dependency", () => {
-  const root = path.resolve(__dirname, "../../renderer");
+  const root = path.resolve(__dirname, "../../../renderer");
   for (const asset of RENDERER_ASSETS.values()) {
     const source = fs.readFileSync(path.join(root, asset), "utf8");
     const dependencies = asset.endsWith(".html")
