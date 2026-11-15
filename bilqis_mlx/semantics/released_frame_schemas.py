@@ -38,7 +38,8 @@ from ._released_schemas.io import (
     seal_released_frame_schemas, load_released_frame_schemas, persist_released_frame_schemas,
 )
 from ._released_schemas.pins import (
-    _source_pins, _load_pinned_released_frame_schemas, lookup_source_pinned_frame_schema,
+    _source_pins, _load_pinned_released_frame_schemas,
+    _load_pinned_released_frame_schemas_from_snapshot, lookup_source_pinned_frame_schema,
     verify_source_pinned_frame_schema, verify_source_pinned_frame_schema_bytes,
 )
 
@@ -51,7 +52,8 @@ for _public in (
     _json, ReleasedSchemaBody, ReleasedFrameSchemaManifest,
     ReleasedSchemaBodyWitness, VerifiedReleasedFrameSchemas, seal_released_frame_schemas,
     load_released_frame_schemas, persist_released_frame_schemas, _source_pins,
-    _load_pinned_released_frame_schemas, lookup_source_pinned_frame_schema, verify_source_pinned_frame_schema,
+    _load_pinned_released_frame_schemas, _load_pinned_released_frame_schemas_from_snapshot,
+    lookup_source_pinned_frame_schema, verify_source_pinned_frame_schema,
     verify_source_pinned_frame_schema_bytes,
 ):
     _restore_public_module(_public, __name__)

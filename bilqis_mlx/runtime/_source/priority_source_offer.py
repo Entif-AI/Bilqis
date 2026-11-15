@@ -164,7 +164,7 @@ def prepare_priority_source_offer(source_context, parent, atlas_artifact_path, *
     from bilqis_mlx.source_adapters.atoms.admission import authorize_public_formal_prefix
     if authenticated.receipt.generation_manifest_sha256 != cache.accepted_manifest_sha256:
         _invalid_source_batch('BAMF_PRIORITY_SOURCE_ACCEPTED_GENERATION_DRIFT')
-    _, _, source_rows = _prepare_factory_source_rows(
+    _, _, _, source_rows = _prepare_factory_source_rows(
         source_context, authenticated, rows, capability=capability,
         source_seed=source_seed, source_each=source_each)
     if len({tuple(item.row['tokens']) for item in source_rows}) != len(rows):

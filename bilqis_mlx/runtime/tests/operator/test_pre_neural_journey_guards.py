@@ -117,6 +117,46 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
         self.assertEqual(selected.status, "TEACHER_SELECTED")
         self.assertEqual(calls, 1)
 
+    def test_candidate_preflight_reuses_planning_feature_context_without_reauthentication(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        marker = object()
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                selected = select_foundation_priority_visit(
+                    self.run, context, atlas_path, program=program, school=school)
+                rows = selected.offer.rows()
+                observation = FactoryDeliveryObservation(
+                    _Capture(self.run, selected),
+                    parent.retained_state.optimizer_step + 1,
+                    rows,
+                    selected.offer.source_seed,
+                )
+                expected = selected.offer._planning_generation._authenticated_features
+                with patch(
+                        "bilqis_mlx.runtime.factory_training_bridge."
+                        "authenticate_bamf_execution_feature_context",
+                        side_effect=AssertionError("training bridge reauthenticated features")), patch(
+                            "bilqis_mlx.runtime.factory_candidate_training."
+                            "authenticate_bamf_execution_feature_context",
+                            side_effect=AssertionError("candidate step reauthenticated features")), patch(
+                                "bilqis_mlx.runtime.factory_candidate_training."
+                                "_execute_prepared_candidate", return_value=marker) as boundary:
+                    result = execute_accepted_priority_candidate(
+                        selected, context, atlas_path, feature_path,
+                        teacher_hparams=parent.optimizer_hyperparameters,
+                        observation=observation,
+                        optimizer_step_seed=_step_seed(selected.visit.identity.visit_id),
+                        max_norm=1.0,
+                    )
+        self.assertIs(result, marker)
+        self.assertIs(boundary.call_args.kwargs["semantic_context"], expected)
+
     def test_priority_planning_reuses_generation_binding_after_context_authentication(self):
         from bilqis_mlx.runtime import backbone_identity
         from bilqis_mlx.runtime.bamf_bundle import accepted_runtime
@@ -177,6 +217,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
         self.assertEqual(selected.status, "TEACHER_SELECTED")
 
     def test_priority_planning_deep_custody_binds_once_then_uses_currentness(self):
+        from bilqis_mlx.runtime import bamf_bundle
         from bilqis_mlx.runtime.bamf_bundle import bundle_currentness
         from bilqis_mlx.runtime.bamf_bundle import source_authority_custody
         from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import currentness
@@ -184,7 +225,8 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
 
         b13_original = bundle_currentness.bind_bamf_bundle_currentness
         c09_original = source_authority_custody.bind_source_authority_currentness
-        counts = {"b13": 0, "c09": 0}
+        features_original = bamf_bundle.authenticate_bamf_execution_feature_context
+        counts = {"b13": 0, "c09": 0, "features": 0}
 
         def b13_counted(*args, **kwargs):
             counts["b13"] += 1
@@ -194,16 +236,22 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
             counts["c09"] += 1
             return c09_original(*args, **kwargs)
 
+        def features_counted(*args, **kwargs):
+            counts["features"] += 1
+            return features_original(*args, **kwargs)
+
         with patch.object(bundle_currentness, "bind_bamf_bundle_currentness",
                           side_effect=b13_counted), patch.object(
                               source_authority_custody, "bind_source_authority_currentness",
-                              side_effect=c09_counted):
+                              side_effect=c09_counted), patch.object(
+                                  bamf_bundle, "authenticate_bamf_execution_feature_context",
+                                  side_effect=features_counted):
             (_pointer, _before, _after, context, selected, _rows,
              _pointer_bytes, _event_bytes) = self.exercise_journey()
 
         binding = selected.offer._planning_generation
         parent = binding._parent
-        self.assertEqual(counts, {"b13": 1, "c09": 1})
+        self.assertEqual(counts, {"b13": 1, "c09": 1, "features": 1})
         stable_trust_root = binding._source_authority_currentness._trust_root
 
         with patch.object(

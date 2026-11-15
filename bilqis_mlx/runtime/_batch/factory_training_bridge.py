@@ -27,7 +27,7 @@ from bilqis_mlx.semantics.frame_compiler import (
     CompiledFrameRows, FrameCompilerConfig, validate_partial_visible_forest,
 )
 from bilqis_mlx.semantics.released_frame_schemas import (
-    _load_pinned_released_frame_schemas,
+    _load_pinned_released_frame_schemas_from_snapshot,
 )
 from bilqis_mlx.source_adapters.atoms.admission import (
     _public_formal_atom_context_from_snapshot, authorize_public_formal_prefix,
@@ -205,8 +205,8 @@ def _prepare_factory_source_rows(source_context, authenticated, rows, *, capabil
         source_context.source_root, source_context.graph, source_context.release,
         source_context.source_registry, execution)
     family = source_family_for_adapter(adapter.descriptor.adapter_id)
-    manifest = _load_pinned_released_frame_schemas(
-        family, authenticated.selection).manifest
+    manifest = _load_pinned_released_frame_schemas_from_snapshot(
+        family, authenticated.selection, authenticated.snapshot).manifest
     profile = (dict(execution.provider_parameters)
                if execution.provider_parameters else None)
     source_rows = tuple(_prepare_source_row(
