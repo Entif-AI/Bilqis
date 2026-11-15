@@ -63,6 +63,39 @@ test("generation zero shows observed retention and separates accepted coordinate
   assert.equal(model.runtime.retainedCandidates, 0);
 });
 
+test("epoch-millisecond trainer heartbeat projected to Unix seconds renders near the real observation time", () => {
+  const heartbeatMs = Date.UTC(2026, 10, 15, 13, 0, 0, 123);
+  const projectedSeconds = Math.floor(heartbeatMs / 1000);
+  const row = observation({
+    meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: projectedSeconds },
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: heartbeatMs + 60_000, locale: "en-US" });
+  assert.match(html, /data-source-unix-seconds="1794747600"/);
+  assert.match(html, />1 minute ago</);
+  assert.doesNotMatch(html, /year/);
+});
+
+test("observed elapsed and CPU values render human durations across seconds minutes hours days and fractions", () => {
+  const cases = [
+    { elapsed_ms: 4_000, cpu_seconds: 0.4, expected: ["4 seconds", "0.4 seconds"] },
+    { elapsed_ms: 64_000, cpu_seconds: 61.25, expected: ["1 minute and 4 seconds", "1 minute and 1.25 seconds"] },
+    { elapsed_ms: 3_664_000, cpu_seconds: 3_661.5, expected: ["1 hour, 1 minute, and 4 seconds", "1 hour, 1 minute, and 1.5 seconds"] },
+    { elapsed_ms: 93_784_500, cpu_seconds: 90_061.02, expected: ["1 day, 2 hours, 3 minutes, and 4.5 seconds", "1 day, 1 hour, 1 minute, and 1.02 seconds"] },
+    { elapsed_ms: 34_560_000_000, cpu_seconds: 34_560_000, expected: ["400 days"] },
+  ];
+  for (const sample of cases) {
+    const row = observation(sample);
+    const model = projectionFromPages({ run: runPage(row) }, context);
+    const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+    for (const value of sample.expected) assert.match(html, new RegExp(value.replaceAll(".", "\\.")));
+    assert.doesNotMatch(html, /\b(?:month|year)s?\b/);
+  }
+  const unavailable = projectionFromPages({ run: runPage(observation({ cpu_seconds: null })) }, context);
+  const html = renderHomeMarkup(unavailable, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Measured process CPU time<\/dt><dd>Unavailable<\/dd>/);
+});
+
 test("accepted, rejected and held observations never change retained counts", () => {
   for (const outcome of ["ACCEPTED", "REJECTED", "HELD", "INTERRUPTED"]) {
     const model = projectionFromPages({ run: runPage(observation({ phase: "COMPLETED", outcome,

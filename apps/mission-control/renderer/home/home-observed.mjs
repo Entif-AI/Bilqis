@@ -1,5 +1,5 @@
 import { t } from "../foundation/i18n.mjs";
-import { temporalMarkup } from "../foundation/temporal.mjs";
+import { formatDurationSeconds, temporalMarkup } from "../foundation/temporal.mjs";
 import { testIdAttribute } from "../foundation/test-hooks.mjs";
 
 const SCHEMA = "bilqis.bamf.mission-control.trainer-observation/v1";
@@ -23,7 +23,7 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
   const progress = row.retention_total === null ? unknown
     : t("home.observed.assessments", { completed: row.retention_completed, total: row.retention_total });
   const candidate = row.candidate_horizon === null ? unknown : `${row.candidate_step} / ${row.candidate_horizon}`;
-  const seconds = `${(row.elapsed_ms / 1000).toFixed(1)} s`;
+  const elapsed = formatDurationSeconds(row.elapsed_ms / 1000, { locale });
   const posture = row.connection_state === "DISCONNECTED" ? t("home.observed.disconnected")
     : t("home.observed.provisional");
   const observedTime = temporalMarkup({
@@ -38,8 +38,8 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     ["home.observed.candidate", candidate], ["home.observed.candidateOptimizer", row.candidate_optimizer_step],
     ["home.observed.retention", progress],
     ["home.observed.subject", [row.retention_subject, row.retention_role].filter(Boolean).join(" · ") || null],
-    ["home.observed.elapsed", seconds],
-    ["home.observed.cpu", row.cpu_seconds === null ? null : `${row.cpu_seconds.toFixed(2)} s`],
+    ["home.observed.elapsed", elapsed],
+    ["home.observed.cpu", row.cpu_seconds === null ? null : formatDurationSeconds(row.cpu_seconds, { locale })],
     ["home.observed.memory", row.peak_rss_bytes === null ? null : `${(row.peak_rss_bytes / 1048576).toFixed(1)} MiB`],
     ["home.observed.disk", row.disk_free_bytes === null ? null : `${(row.disk_free_bytes / 1073741824).toFixed(1)} GiB`],
   ];

@@ -46,9 +46,10 @@ def _record(row, runs, now_ms):
         return None
     state = _connection(row, now_ms)
     identifier = f"trainer-observed:{row['observation_id']}:{row['revision']}:{state}"
+    observed_at_seconds = row['observed_at'] // 1000
     meta = RecordMeta(
-        record_id=identifier, run=parent, materialized_at=row['observed_at'],
-        observed_at=row['observed_at'], as_of=None, coverage=CoverageState.PARTIAL,
+        record_id=identifier, run=parent, materialized_at=observed_at_seconds,
+        observed_at=observed_at_seconds, as_of=None, coverage=CoverageState.PARTIAL,
         authority=AuthorityClass.MEASURED,
         source_refs=(f"trainer-observed:{row['observation_id']}",),
     )
