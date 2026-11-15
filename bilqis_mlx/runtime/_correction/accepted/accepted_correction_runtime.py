@@ -88,6 +88,21 @@ def _make_owner_custody(entries):
     )
 
 
+def _retain_runtime(entries, lock, run_dir, manifest_sha256, registry,
+                    require_owned, authorize_owner, retire_owner):
+    key = (str(Path(run_dir).resolve()), manifest_sha256)
+    with lock:
+        current = entries.get(key)
+        if current is None:
+            current = AcceptedCorrectionRuntime(
+                Path(run_dir), manifest_sha256, registry,
+                require_owned, authorize_owner, retire_owner)
+            entries[key] = current
+        elif current.registry != registry:
+            _invalid("BAMF_C09_CORRECTION_AUTHORITY_DRIFT")
+        return current
+
+
 def _make_runtime_core():
     """Own accepted runtimes, verifier roots, and mutation leases privately."""
     entries = {}
@@ -109,17 +124,9 @@ def _make_runtime_core():
         cache, registry = _accepted_correction_registry(run_dir)
         if cache.accepted_manifest_sha256 != manifest_sha256:
             _invalid("BAMF_C09_ACCEPTED_RUNTIME_STALE")
-        key = (str(Path(run_dir).resolve()), manifest_sha256)
-        with lock:
-            current = entries.get(key)
-            if current is None:
-                current = AcceptedCorrectionRuntime(
-                    Path(run_dir), manifest_sha256, registry,
-                    require_owned, authorize_owner, retire_owner)
-                entries[key] = current
-            elif current.registry != registry:
-                _invalid("BAMF_C09_CORRECTION_AUTHORITY_DRIFT")
-            return current
+        return _retain_runtime(
+            entries, lock, run_dir, manifest_sha256, registry,
+            require_owned, authorize_owner, retire_owner)
 
     def retained_authenticated(run_dir: Path, manifest_sha256: str, registry) -> AcceptedCorrectionRuntime:
         """Reuse verifier material already authenticated by the accepted host."""
@@ -128,17 +135,9 @@ def _make_runtime_core():
         if (not isinstance(registry, SourceAuthorityRegistry)
                 or not isinstance(manifest_sha256, str) or not manifest_sha256):
             _invalid("BAMF_C09_CORRECTION_AUTHORITY_REQUIRED")
-        key = (str(Path(run_dir).resolve()), manifest_sha256)
-        with lock:
-            current = entries.get(key)
-            if current is None:
-                current = AcceptedCorrectionRuntime(
-                    Path(run_dir), manifest_sha256, registry,
-                    require_owned, authorize_owner, retire_owner)
-                entries[key] = current
-            elif current.registry != registry:
-                _invalid("BAMF_C09_CORRECTION_AUTHORITY_DRIFT")
-            return current
+        return _retain_runtime(
+            entries, lock, run_dir, manifest_sha256, registry,
+            require_owned, authorize_owner, retire_owner)
 
     def refresh(owner) -> None:
         target = target_for_owner(owner)

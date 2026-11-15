@@ -50,3 +50,54 @@ The timing claim passes only if all of the following hold:
 The final section of this receipt will record exact implementation head, current
 unified base, warm samples, call counts, semantic equality and disposition. No result
 is claimed yet.
+
+## Postimplementation witness
+
+Integrated semantic head measured: `800a930ebc310d2aee3237f6b3e1e78d89d84c36`.
+Current unified base consumed by that head: `d2815e3151013c51fe11a298157625dce1aee6f5`.
+
+The original shell command above creates a fresh unittest fixture, temporary DataPlane,
+and run directory for every process. Repeating that command therefore cannot exercise a
+warm content-addressed frontier row across invocations. This was discovered during
+implementation profiling and is recorded rather than hidden. The binding postimplementation
+witness consequently keeps one production-shaped fixture alive, executes one cold visit,
+then times three additional visits through the same `select_foundation_priority_visit(...)`
+entrypoint. No learner mutation occurs.
+
+For an apples-to-apples implementation-effect check, the same in-fixture timing shape was
+also run at the frozen preimplementation commit `495be606`. Its three selection samples
+were **13.882379 s**, **14.686724 s**, and **13.937186 s**, median **13.937186 s**; each
+reported `TEACHER_SELECTED` and rebuilt the frontier because reuse did not yet exist.
+
+Integrated-head samples:
+
+| Sample | Planning wall time | Frontier disposition | Result |
+| --- | ---: | --- | --- |
+| cold | 10.660754 s | rebuilt | `TEACHER_SELECTED` |
+| warm 1 | 10.081268 s | reused | `TEACHER_SELECTED` |
+| warm 2 | 9.823177 s | reused | `TEACHER_SELECTED` |
+| warm 3 | 10.296672 s | reused | `TEACHER_SELECTED` |
+
+Warm median: **10.081268 s**.
+
+- versus the same-shape frozen preimplementation median, reduction is **27.66%** and
+  **3.855918 s**;
+- versus the predeclared absolute ceiling, **10.081268 s <= 15.088 s**;
+- the 21-capability path remains `TEACHER_SELECTED`;
+- `test_priority_planning_authenticates_generation_once_for_all_capabilities` proves
+  exactly **1** accepted planning-cache bind across the fan-out;
+- `test_priority_planning_deep_custody_binds_once_then_uses_currentness` proves exactly
+  **1 B13** deep-custody bind and **1 C09** deep source-authority bind, followed only by
+  cheap currentness fences;
+- `test_priority_target_registration_reuses_authenticated_c09_runtime` fails if target
+  registration reopens `_accepted_correction_registry` after the planning transaction is
+  bound;
+- the trusted-frontier tests prove an unchanged second visit does not launch the builder,
+  while builder/source/release/input identity drift invalidates reuse;
+- the source offer still performs one authoritative owner redraw through `bind_rows()` at
+  each currentness boundary and compares the exact retained/prepared rows to the sealed
+  offer; the eliminated redraw was a duplicate immediately following that owner redraw;
+- #1174 `prepared_rows` / `prepared_source_rows` remains supported; and
+- all measurements are neural-inert.
+
+Disposition: **PASS** for #1171 acceptance item 6.
