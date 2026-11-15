@@ -9,6 +9,9 @@ from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
 from bilqis_mlx.learning.source_atoms import SourceAtomRow
 from bilqis_mlx.runtime.atlas_model_contracts import bind_candidate_active_semantic_rows
 from bilqis_mlx.runtime.atlas_training_authority import bind_compiled_training_batch
+from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+    bind_b11_source_execution_authority,
+)
 from bilqis_mlx.semantics.atlas_features.formal import source_family_for_adapter
 from bilqis_mlx.semantics.context_eligibility import (
     ApprovedContextProjection, ContextPolicy, SourceFrontier, TaskScope,
@@ -157,9 +160,13 @@ def _bind_b11_rows(source_context, candidate, authenticated, training, source_ro
             authenticated.selection, item.row, item.source_graph,
             Path(source_context.source_root), source_seed, source_each,
             source_context.release.curriculum, profile)
+        source_execution_authority = bind_b11_source_execution_authority(
+            compiled.compiled.rows[0], compiled.compiler_configs[0],
+            source, adapter, authenticated.snapshot)
         batch = bind_compiled_training_batch(
             training, compiled, (source,), authenticated.schema,
-            active_semantic_rows=active_semantic_rows, row_index=index)
+            active_semantic_rows=active_semantic_rows, row_index=index,
+            source_execution_authority=source_execution_authority)
         source_context.register_compiled_batch(batch)
         compiled_rows.append(batch)
     return tuple(compiled_rows)
