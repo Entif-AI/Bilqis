@@ -39,6 +39,7 @@ def _invalid(reason: str):
 
 class EventFamily(StrEnum):
     RUN_STATE_CHANGED = "run.state.changed"
+    RUN_TRAINER_OBSERVED = "run.trainer.observed"
     LESSON_VISIT_STARTED = "lesson.visit.started"
     LESSON_VISIT_COMPLETED = "lesson.visit.completed"
     CANDIDATE_STARTED = "candidate.started"

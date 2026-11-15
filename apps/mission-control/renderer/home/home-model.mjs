@@ -1,6 +1,8 @@
 import { schoolFixtureRows } from "../school/school-fixture.mjs";
 import { EPISODE_FIXTURES } from "../episodes/episode-fixture.mjs";
 
+import { observedHomeState } from "./home-observed.mjs";
+
 const QUERY_SCHEMA = "bilqis.bamf.control-plane.query/v1";
 const PRESENT = "PRESENT";
 
@@ -98,6 +100,7 @@ export function projectionFromPages(pages, context) {
   const teachers = pageRecords(pages, "teacher");
 
   const run = latest(runRecords, "bilqis.bamf.mission-control.run-context/v1");
+  const observed = observedHomeState(runRecords, context, run);
   const school = latest(schoolRecords, "bilqis.bamf.mission-control.school-snapshot/v1");
   const frontier = latest(schoolRecords, "bilqis.bamf.mission-control.curriculum-frontier/v1");
   const semantic = latest(semanticRecords, "bilqis.bamf.mission-control.semantic-atlas-snapshot/v1");
@@ -118,7 +121,7 @@ export function projectionFromPages(pages, context) {
     capabilities.length + episodes.length + schoolRecords.length + semanticRecords.length +
     resources.length + corrections.length + teachers.length
   );
-  const startup = run && context?.mode !== "HISTORICAL" && domainRecordCount === 0
+  const startup = run && !observed.current && context?.mode !== "HISTORICAL" && domainRecordCount === 0
     ? Object.freeze({
       state: context?.operatorActive === true
         ? "WAITING_FOR_FIRST_TRAINING_EVENT"
@@ -132,6 +135,7 @@ export function projectionFromPages(pages, context) {
 
   return Object.freeze({
     provenance: "LIVE_QUERY",
+    observed,
     startup,
     state: Object.freeze(Object.fromEntries(HOME_FAMILIES.map((family) => [family, pageState(pages, family)]))),
     learningStatus: classifyLearning({ retained, freshRetainedImprovements: 0, regressions: 0 }),
@@ -169,9 +173,9 @@ export function projectionFromPages(pages, context) {
       hardWarnings: null,
     }),
     currentWork: Object.freeze({
-      capabilityId: activeEpisode?.capability_id ?? context?.activeCapabilityId ?? null,
+      capabilityId: observed.current?.capability_id ?? activeEpisode?.capability_id ?? context?.activeCapabilityId ?? null,
       strategy: teacher?.strategy_id ?? null,
-      candidateIntent: activeEpisode?.state ?? run?.stage ?? null,
+      candidateIntent: observed.current?.phase ?? activeEpisode?.state ?? run?.stage ?? null,
       sourceFamily: null,
       targetAssessment: null,
       protectedAssessment: null,
