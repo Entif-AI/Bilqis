@@ -1,10 +1,10 @@
 export const VISUAL_FIXTURES = Object.freeze({
-  live: { mode: "LIVE", freshness: "FRESH", state: "healthy", label: "Live healthy" },
-  unknown: { mode: "LIVE", freshness: "UNKNOWN", state: "unknown", label: "Freshness unknown" },
-  historical: { mode: "HISTORICAL", freshness: "FRESH", state: "historical", label: "Historical / as-of" },
-  stale: { mode: "LIVE", freshness: "STALE", state: "stale", label: "Stale connection" },
-  denied: { mode: "LIVE", freshness: "FRESH", state: "denied", label: "Denied operation" },
-  invalidEvidence: { mode: "LIVE", freshness: "FRESH", state: "invalid", label: "Invalid evidence" },
+  live: { mode: "LIVE", freshness: "FRESH", state: "healthy", labelKey: "foundation.fixture.live" },
+  unknown: { mode: "LIVE", freshness: "UNKNOWN", state: "unknown", labelKey: "foundation.fixture.unknown" },
+  historical: { mode: "HISTORICAL", freshness: "FRESH", state: "historical", labelKey: "foundation.fixture.historical" },
+  stale: { mode: "LIVE", freshness: "STALE", state: "stale", labelKey: "foundation.fixture.stale" },
+  denied: { mode: "LIVE", freshness: "FRESH", state: "denied", labelKey: "foundation.fixture.denied" },
+  invalidEvidence: { mode: "LIVE", freshness: "FRESH", state: "invalid", labelKey: "foundation.fixture.invalidEvidence" },
 });
 
 export const VISUAL_REGRESSION_CASES = Object.freeze(

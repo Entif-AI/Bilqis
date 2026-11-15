@@ -1,49 +1,55 @@
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --canvas: #0a0d12;
-  --canvas-accent: #203346;
-  --surface-0: #080c11;
-  --surface-1: #101820;
-  --surface-2: #14202b;
-  --surface-3: #1a2834;
-  --border: #2b3947;
-  --border-strong: #486074;
-  --text: #edf3f7;
-  --text-muted: #9aa8b4;
-  --text-faint: #748491;
-  --accent: #8acde8;
-  --healthy: #91d5ae;
-  --attention: #e2bd78;
-  --invalid: #df8792;
-  --info: #8db5df;
-  --historical: #c7a878;
+  --primary: #7cc8ea;
+  --on-primary: #071117;
+  --canvas: #0b0d10;
+  --canvas-accent: #1e242a;
+  --surface-0: #0b0d10;
+  --surface-1: #111418;
+  --surface-2: #171b20;
+  --surface-3: #1e242a;
+  --border: #303841;
+  --border-strong: #53616d;
+  --text: #f2f5f7;
+  --text-muted: #b0bac2;
+  --text-faint: #858f98;
+  --accent: var(--primary);
+  --healthy: #78c89d;
+  --attention: #d6ab62;
+  --danger: #e1848d;
+  --invalid: var(--danger);
+  --info: #8aafe0;
+  --historical: #c4a873;
   --pattern: rgba(255, 255, 255, 0.045);
-  --focus: #b9e8fb;
+  --focus: #bce9fa;
   --shadow: rgba(0, 0, 0, 0.34);
 }
 
 :root[data-theme="light"] {
   color-scheme: light;
-  --canvas: #edf1f3;
-  --canvas-accent: #d3e0e6;
-  --surface-0: #f7f9fa;
+  --primary: #176b8d;
+  --on-primary: #ffffff;
+  --canvas: #f4f6f7;
+  --canvas-accent: #e2e8eb;
+  --surface-0: #f4f6f7;
   --surface-1: #ffffff;
-  --surface-2: #eef3f5;
-  --surface-3: #e3eaee;
-  --border: #c7d1d7;
-  --border-strong: #8799a5;
-  --text: #172028;
-  --text-muted: #52616d;
-  --text-faint: #687884;
-  --accent: #276885;
-  --healthy: #2d7250;
-  --attention: #8a611d;
-  --invalid: #9a3340;
-  --info: #315f8b;
-  --historical: #735a34;
+  --surface-2: #edf1f3;
+  --surface-3: #e2e8eb;
+  --border: #c5ced4;
+  --border-strong: #7a8994;
+  --text: #182027;
+  --text-muted: #52616b;
+  --text-faint: #6b7881;
+  --accent: var(--primary);
+  --healthy: #276b4a;
+  --attention: #7d581c;
+  --danger: #983b46;
+  --invalid: var(--danger);
+  --info: #315e8b;
+  --historical: #6f5630;
   --pattern: rgba(0, 0, 0, 0.045);
-  --focus: #134e68;
+  --focus: #0e5775;
   --shadow: rgba(28, 40, 50, 0.18);
 }
 
@@ -57,29 +63,42 @@
   --surface-raised: var(--surface-2);
   --line: var(--border);
   --line-strong: var(--border-strong);
-  /*
-   * One operator type scale.  View CSS may choose a semantic role, but it may
-   * not invent another rendered size.
-   *
-   * label   = metadata, badges, dense tables
-   * body    = prose, controls, ordinary values
-   * section = local headings
-   * display = destination titles and primary numeric emphasis
-   */
-  --type-label: 11px;
+  /* Canonical operator type roles mirror DESIGN.md exactly. */
+  --type-label: 12px;
+  --type-caption: 12px;
+  --type-data: 13px;
+  --type-body-sm: 13px;
   --type-body: 14px;
-  --type-section: 18px;
-  --type-display: 28px;
-  --line-label: 1.2;
-  --line-body: 1.4;
+  --type-body-lg: 16px;
+  --type-subsection: 16px;
+  --type-section: 20px;
+  --type-title: 26px;
+  --type-display: 30px;
+  --type-metric: 24px;
+  --line-label: 1.3;
+  --line-caption: 1.4;
+  --line-data: 1.35;
+  --line-title: 1.15;
+  --line-subsection: 1.3;
+  --line-body-sm: 1.45;
+  --line-body-lg: 1.5;
+  --line-metric: 1.1;
+  --line-body: 1.5;
   --line-section: 1.2;
-  --line-display: 1.05;
+  --line-display: 1.1;
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 650;
+  --tracking-display: -0.02em;
+  --tracking-title: -0.015em;
+  --tracking-section: -0.01em;
+  --tracking-label: 0.01em;
 
   /* Compatibility aliases for existing domain styles. */
   --text-xs: var(--type-label);
-  --text-sm: var(--type-label);
+  --text-sm: var(--type-body-sm);
   --text-md: var(--type-body);
-  --text-lg: var(--type-body);
+  --text-lg: var(--type-body-lg);
   --heading-sm: var(--type-section);
   --heading-md: var(--type-section);
   --heading-lg: var(--type-display);
@@ -88,35 +107,26 @@
   --space-2: 8px;
   --space-3: 12px;
   --space-4: 16px;
-  --space-5: 22px;
-  --space-6: 30px;
-  --radius-sm: 7px;
-  --radius-md: 11px;
-  --radius-lg: 16px;
-  --row-height: 42px;
-  --control-height: 34px;
-  --content-gap: 18px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --row-height: 44px;
+  --control-height: 36px;
+  --content-gap: 24px;
   --measure-copy: 68ch;
 }
 
 :root[data-density="compact"] {
-  --space-3: 9px;
+  --space-3: 8px;
   --space-4: 12px;
   --space-5: 16px;
-  --space-6: 22px;
-  --row-height: 34px;
-  --control-height: 30px;
-  --content-gap: 12px;
-}
-
-:root[data-density="terminal"] {
-  --space-3: 6px;
-  --space-4: 9px;
-  --space-5: 12px;
-  --space-6: 16px;
-  --row-height: 28px;
-  --control-height: 27px;
-  --content-gap: 8px;
+  --space-6: 24px;
+  --row-height: 36px;
+  --control-height: 32px;
+  --content-gap: 16px;
 }
 
 html {

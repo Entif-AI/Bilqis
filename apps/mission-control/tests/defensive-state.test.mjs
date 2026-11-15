@@ -108,6 +108,7 @@ test("defensive banner exposes inspection and mutation posture in text, not colo
   assert.match(html, /Cached verified snapshot/);
   assert.match(html, /Mutation unavailable/);
   assert.match(html, /data-reconnect/);
+  assert.match(html, /data-test-id="foundation-reconnect"/);
 });
 
 test("renderer-facing contract errors classify malformed and unsupported payloads distinctly", () => {

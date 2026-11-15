@@ -12,6 +12,7 @@ import {
   defensiveStateForError,
   loadCachedOperatorView,
 } from "./defensive-state.mjs";
+import { t } from "./i18n.mjs";
 
 const SNAPSHOT_REQUEST = Object.freeze({
   schemaVersion: "bamf.gui20.operator-view-query/v1",
@@ -94,8 +95,8 @@ export function createBootstrapController({
       setVerifiedLiveContext(null);
       render();
       announce(connection.learnerReady === true
-        ? "Learner connected. Waiting for Mission Control telemetry projection."
-        : "Control plane connected, but no accepted learner is ready.");
+        ? t("foundation.bootstrap.announce.telemetryPending")
+        : t("foundation.bootstrap.announce.learnerUnavailable"));
       return;
     }
 
@@ -109,7 +110,7 @@ export function createBootstrapController({
       setVerifiedLiveContext(null);
       setBootstrap(Object.freeze({ phase: "failed", connection, error: snapshotError ?? connectError }));
       render();
-      announce(`${nextDefense.label}. No verified snapshot is available.`);
+      announce(t("foundation.bootstrap.announce.noSnapshot", { state: nextDefense.label }));
       return;
     }
 
@@ -127,7 +128,12 @@ export function createBootstrapController({
     setState({ ...withDefensiveState(createShellState(operatorView, route), nextDefense), modelSection });
     setBootstrap(Object.freeze({ phase: "ready", connection, error: null }));
     render();
-    announce(`${nextDefense.label}. ${nextDefense.historical ? "Inspection-only evidence is shown." : "Live context established."}`);
+    announce(t(
+      nextDefense.historical
+        ? "foundation.bootstrap.announce.inspection"
+        : "foundation.bootstrap.announce.live",
+      { state: nextDefense.label },
+    ));
   }
 
   return Object.freeze({ establishSnapshot });

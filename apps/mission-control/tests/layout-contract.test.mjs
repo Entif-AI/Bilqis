@@ -53,8 +53,8 @@ test("operator typography and explanatory surfaces use the shared visual languag
   const evidence = source("evidence/evidence-markup.mjs");
 
   for (const [token, value] of [
-    ["--type-label", "11px"], ["--type-body", "14px"],
-    ["--type-section", "18px"], ["--type-display", "28px"],
+    ["--type-label", "12px"], ["--type-body", "14px"],
+    ["--type-section", "20px"], ["--type-display", "30px"],
   ]) assert.match(tokens, new RegExp(token + ":\\s*" + value));
   assert.match(shell, /\.context-bar\[data-context="empty"\][^}]*grid-template-columns:\s*minmax\(300px, 1fr\) auto/s);
   assert.match(shell, /\.context-actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*align-items:\s*flex-end/s);
@@ -65,6 +65,38 @@ test("operator typography and explanatory surfaces use the shared visual languag
   }
   assert.match(evidence, /QUERY UNAVAILABLE/);
   assert.doesNotMatch(evidence, /QUERY ERROR/);
+});
+
+test("shared primitive layer preserves canvas separation and canonical density modes", () => {
+  const tokens = source("visual-tokens.css");
+  const components = source("components.css");
+  const settings = source("settings.mjs");
+  assert.match(components, /\.ui-canvas\s*\{[^}]*background:\s*var\(--canvas\)/s);
+  assert.match(components, /\.ui-surface-1\s*\{[^}]*background:\s*var\(--surface-1\)/s);
+  assert.match(components, /\.ui-surface-2\s*\{[^}]*background:\s*var\(--surface-2\)/s);
+  assert.match(components, /\.ui-surface-3\s*\{[^}]*background:\s*var\(--surface-3\)/s);
+  assert.match(components, /\.ui-panel\s*\{/);
+  assert.match(components, /\.ui-table-wrap\s*\{/);
+  assert.match(components, /\.ui-disclosure\s*\{/);
+  assert.match(components, /\.ui-state--error\s*\{/);
+  assert.match(components, /\.ui-control--mode\s*\{/);
+  assert.match(components, /\.ui-control--peer-tab\s*\{/);
+  assert.match(components, /\.ui-control--secondary\s*\{/);
+  assert.match(components, /\.ui-control--tertiary\s*\{/);
+  assert.match(components, /\.ui-control--destructive\s*\{/);
+  assert.match(components, /\.ui-control--link\s*\{/);
+  assert.match(components, /\.ui-control--read-only\s*\{/);
+  assert.match(components, /\.ui-control--navigate\s*\{[^}]*border-inline-start/s);
+  assert.match(components, /\.ui-control--export\s*\{[^}]*text-decoration/s);
+  assert.match(components, /\.ui-control--compare\s*\{[^}]*double/s);
+  assert.match(components, /\.ui-control--mode\s*\{[^}]*box-shadow/s);
+  assert.match(components, /\.metric-tile \.evidence-value \.value,[\s\S]*\.comparison-card \.evidence-value \.value\s*\{[^}]*var\(--type-metric\)/);
+  assert.match(components, /\.ui-control--read-only[^\n]*:hover\s*\{[^}]*var\(--surface-2\)/s);
+  assert.match(components, /aria-pressed="true"/);
+  assert.match(components, /data-align="numeric"/);
+  assert.match(components, /forced-colors:\s*active/);
+  assert.match(settings, /\["comfortable",\s*"compact"\]/);
+  assert.doesNotMatch(tokens, /data-density="terminal"/);
 });
 
 test("domain CSS cannot invent additional rendered text sizes", () => {

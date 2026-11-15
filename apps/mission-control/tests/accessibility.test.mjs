@@ -88,12 +88,14 @@ test("startup reports service learner telemetry and trainer stages without live 
   const bootstrap = source("foundation/bootstrap-controller.mjs");
   const current = source("foundation/current-view.mjs");
   const ui = source("foundation/renderer-ui.mjs");
+  const i18n = source("foundation/i18n.mjs");
   const html = source("index.html");
   for (const label of ["Local control plane", "Learner discovery", "Mission Control telemetry", "Trainer"]) {
     assert.match(current, new RegExp(label));
   }
   assert.match(bootstrap, /telemetry-pending/);
-  assert.match(ui, /Learner ready · telemetry starting/);
+  assert.match(ui, /foundation\.bootstrap\.telemetryPending\.label/);
+  assert.match(i18n, /Learner ready · telemetry starting/);
   assert.match(current, /fixture data is never substituted for live state/);
   assert.doesNotMatch(html, /fixture:prometheus-disposable/);
 });
