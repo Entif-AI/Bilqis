@@ -27,6 +27,8 @@ from bilqis_mlx.source_adapters.atom_binding import (
 
 
 _ISSUER = object()
+_MOTIF_FEATURE_ROW_WIDTH = 3
+_MOTIF_FEATURE_VALUE_INDEX = 2
 
 
 def _invalid(reason: str) -> None:
@@ -71,10 +73,11 @@ class B11SourceExecutionAuthority:
             or type(self.motif_inputs) is not tuple
             or any(type(item) is not MotifFrameInput for item in self.motif_inputs)
             or type(self.motif_feature_rows) is not tuple
-            or any(type(item) is not tuple or len(item) != 3
+            or any(type(item) is not tuple
+                   or len(item) != _MOTIF_FEATURE_ROW_WIDTH
                    or not isinstance(item[0], str) or not item[0]
                    or not isinstance(item[1], str) or not item[1]
-                   or type(item[2]) is not FeatureRow
+                   or type(item[_MOTIF_FEATURE_VALUE_INDEX]) is not FeatureRow
                    for item in self.motif_feature_rows)
             or len({(item[0], item[1]) for item in self.motif_feature_rows})
             != len(self.motif_feature_rows)
