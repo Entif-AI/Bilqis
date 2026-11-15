@@ -50,10 +50,6 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                     "optimizer_steps": 1,
                     "candidate_optimizer_steps": ordinal,
                     "c08_memory_budget_bytes": 64 * 1024 ** 3,
-                    "atlas_reload_count": 0,
-                    "feature_manifest_rebuild_count": 0,
-                    "visit_atlas_reload_count": 1,
-                    "visit_feature_manifest_rebuild_count": 1,
                 },
             )
 
@@ -103,10 +99,30 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         event = derive.call_args.kwargs["delivery_events"][0]
         self.assertEqual(event["resource"]["optimizer_steps"], 4)
         self.assertEqual(event["resource"]["wall_seconds"], 10.0)
-        self.assertEqual(event["resource"]["atlas_reload_count"], 0)
-        self.assertEqual(event["resource"]["feature_manifest_rebuild_count"], 0)
-        self.assertEqual(event["resource"]["visit_atlas_reload_count"], 1)
-        self.assertEqual(event["resource"]["visit_feature_manifest_rebuild_count"], 1)
+
+    def test_resource_observation_reports_semantic_materialization_counts(self):
+        from bilqis_mlx.runtime.bamf_operator.session_support import _resource_observation
+
+        cost = {
+            "wall_seconds": 1.0,
+            "optimizer_steps": 1,
+            "candidate_optimizer_steps": 1,
+            "c08_memory_budget_bytes": 64 * 1024 ** 3,
+            "atlas_reload_count": 0,
+            "feature_manifest_rebuild_count": 0,
+            "visit_atlas_reload_count": 1,
+            "visit_feature_manifest_rebuild_count": 1,
+        }
+        step = SimpleNamespace(
+            transaction=SimpleNamespace(update_steps=1), realized_cost=cost)
+        with patch(
+                "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
+                return_value=SimpleNamespace(used=123)):
+            resource = _resource_observation(Path("/run"), step)
+        self.assertEqual(resource["atlas_reload_count"], 0)
+        self.assertEqual(resource["feature_manifest_rebuild_count"], 0)
+        self.assertEqual(resource["visit_atlas_reload_count"], 1)
+        self.assertEqual(resource["visit_feature_manifest_rebuild_count"], 1)
 
     def test_accepted_visit_persists_native_resource_observation(self):
         with TemporaryDirectory() as temporary:
