@@ -12,22 +12,14 @@ const ALLOWED_PARAMETERS = new Set([
 ]);
 
 export const OPERATE_ACTIONS = Object.freeze([
-  Object.freeze({ id: "create", label: "Create", supported: true, mutation: true, dryRun: true,
-    description: "Resolve and create a new BAMF run through the accepted C11 owner boundary." }),
-  Object.freeze({ id: "owner-launch", label: "Owner launch", supported: true, mutation: true, dryRun: true,
-    description: "Launch the existing run through the sovereign C11 owner path." }),
-  Object.freeze({ id: "resume", label: "Resume", supported: true, mutation: true, dryRun: true,
-    description: "Resume an exact existing retained generation through C11." }),
-  Object.freeze({ id: "status", label: "Read-only status", supported: true, mutation: false, dryRun: false,
-    description: "Read command target state without authorizing learner mutation." }),
-  Object.freeze({ id: "checkpoint-verify", label: "Checkpoint verification", supported: true, mutation: false, dryRun: false,
-    description: "Verify the accepted checkpoint/generation identity without mutation." }),
-  Object.freeze({ id: "admission-lease", label: "Admission lease", supported: true, mutation: true, dryRun: false,
-    description: "Run the admitted lease operation through the existing C11 policy surface." }),
-  Object.freeze({ id: "pause", label: "Pause", supported: false, mutation: false, dryRun: false,
-    description: "Unavailable: CP05/C11 does not expose pause semantics." }),
-  Object.freeze({ id: "stop", label: "Stop", supported: true, mutation: true, dryRun: false,
-    description: "Request the active owner-run trainer to stop through its existing safe SIGINT boundary." }),
+  Object.freeze({ id: "create", supported: true, mutation: true, dryRun: true }),
+  Object.freeze({ id: "owner-launch", supported: true, mutation: true, dryRun: true }),
+  Object.freeze({ id: "resume", supported: true, mutation: true, dryRun: true }),
+  Object.freeze({ id: "status", supported: true, mutation: false, dryRun: false }),
+  Object.freeze({ id: "checkpoint-verify", supported: true, mutation: false, dryRun: false }),
+  Object.freeze({ id: "admission-lease", supported: true, mutation: true, dryRun: false }),
+  Object.freeze({ id: "pause", supported: false, mutation: false, dryRun: false }),
+  Object.freeze({ id: "stop", supported: true, mutation: true, dryRun: false }),
 ]);
 
 export function actionSpec(action) {

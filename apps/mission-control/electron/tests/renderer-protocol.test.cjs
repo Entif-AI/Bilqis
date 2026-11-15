@@ -93,6 +93,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/memory/memory-view.mjs",
     "/memory/memory.css",
     "/operate/operate-controller.mjs",
+    "/operate/operate-messages.mjs",
     "/operate/operate-model.mjs",
     "/operate/operate-view.mjs",
     "/operate/operate.css",

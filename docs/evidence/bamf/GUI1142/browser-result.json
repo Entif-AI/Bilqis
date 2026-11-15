@@ -1,0 +1,41 @@
+{
+  "schema": "bilqis.bamf.gui1142.render-evidence/v1",
+  "baseline": {
+    "sha": "7b79ef85b1b7fad87918066b8ca2e048ddc24936",
+    "viewport_width": 1487,
+    "viewport_height": 755,
+    "domain_height": 1707.96875,
+    "document_height": 2096,
+    "document_width": 1472
+  },
+  "redesign_dark_mutating_review": {
+    "viewport_width": 1487,
+    "viewport_height": 755,
+    "domain_height": 1973.78125,
+    "document_height": 2362,
+    "document_width": 1472
+  },
+  "redesign_light_compact_stale_390": {
+    "viewport_width": 390,
+    "viewport_height": 844,
+    "domain_height": 3352.375,
+    "document_height": 4089,
+    "document_width": 375
+  },
+  "redesign_lost_ack_dark": {
+    "viewport_width": 1440,
+    "viewport_height": 900,
+    "domain_height": 1924.78125,
+    "document_height": 2313,
+    "document_width": 1425,
+    "blind_retry_offered": false
+  },
+  "redesign_defensive_unavailable": {
+    "viewport_width": 1440,
+    "viewport_height": 900,
+    "domain_height": 1338.1875,
+    "document_height": 1726,
+    "document_width": 1425,
+    "preflight_disabled": true
+  }
+}
