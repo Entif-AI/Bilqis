@@ -7,6 +7,7 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning._engram.atlas_engram_source_context import (
     qualify_source_motif_context,
 )
+from bilqis_mlx.learning._engram.atlas_engram_identity import MotifFrameInput
 from bilqis_mlx.learning.source_atoms.inputs import SourceAtomRow
 from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
 from bilqis_mlx.semantics.context_eligibility import (
@@ -40,6 +41,7 @@ class B11SourceExecutionAuthority:
     source_adapter: object
     source_handoff: SourceAtomHandoff
     motif_projection: ApprovedContextProjection
+    motif_inputs: tuple[MotifFrameInput, ...]
     motif_frontier: SourceFrontier
     task_scope: TaskScope
     source_digest: str
@@ -60,6 +62,8 @@ class B11SourceExecutionAuthority:
             or type(self.snapshot) is not FrozenAtlasSnapshot
             or type(self.source_handoff) is not SourceAtomHandoff
             or type(self.motif_projection) is not ApprovedContextProjection
+            or type(self.motif_inputs) is not tuple
+            or any(type(item) is not MotifFrameInput for item in self.motif_inputs)
             or type(self.motif_frontier) is not SourceFrontier
             or type(self.task_scope) is not TaskScope
             or type(self._compiled_row) is not CompiledFrameBatch
@@ -143,13 +147,14 @@ def bind_b11_source_execution_authority(
     )
     if isinstance(replayed, ContextHold):
         _invalid("B11_SOURCE_EXECUTION_MOTIF_CONTEXT_HELD")
-    projection, _motifs, frontier = replayed
+    projection, motifs, frontier = replayed
     authority = object.__new__(B11SourceExecutionAuthority)
     for name, value in (
         ("snapshot", snapshot),
         ("source_adapter", source_adapter),
         ("source_handoff", handoff),
         ("motif_projection", projection),
+        ("motif_inputs", motifs),
         ("motif_frontier", frontier),
         ("task_scope", task_scope),
         ("source_digest", _source_digest(source)),
