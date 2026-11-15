@@ -139,6 +139,7 @@ test("neural workspace uses stable unique hooks and mechanism-first hierarchy", 
   assert.ok(markup.indexOf('data-test-id="model-neural-topology-runtime"') < markup.indexOf('data-test-id="model-neural-ccgqa"'));
   assert.ok(markup.indexOf('data-test-id="model-neural-ccgqa"') < markup.indexOf('data-test-id="model-neural-refinement"'));
   assert.match(markup, /data-test-id="model-neural-ccgqa-disclosure"/);
+  assert.match(markup, /data-test-id="model-neural-ccgqa-disclosure-toggle"/);
   assert.match(markup, /data-test-id="model-neural-attnres-disclosure"/);
   assert.match(markup, /data-test-id="model-neural-refinement-disclosure"/);
   assert.doesNotMatch(markup, /data-source-unix-seconds=/);
