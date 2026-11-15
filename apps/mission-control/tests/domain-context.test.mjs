@@ -121,7 +121,10 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   assert.match(renderer, /launchMode === "fixtures"[\s\S]*import\("\.\/fixture-support\.mjs"\)/);
   assert.match(renderer, /createCapabilityExplorer\(/);
   assert.match(renderer, /activateDomainViews\(\{/);
-  assert.match(renderer, /homeController, resourceController, operateController/);
+  assert.match(renderer, /homeController/);
+  assert.match(renderer, /resourceController/);
+  assert.match(renderer, /teacherController/);
+  assert.match(renderer, /operateController/);
   assert.match(renderer, /capabilityExplorer/);
 
   assert.match(activation, /state\?\.view === "mission-control"/);
@@ -131,6 +134,8 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   assert.match(activation, /state\?\.view === "school"/);
   assert.match(activation, /launchMode: fixture \? "fixtures" : "production"/);
   assert.match(activation, /activateSchoolDomain/);
+  assert.match(activation, /state\?\.view === "teacher"/);
+  assert.match(activation, /teacherController\?\.activate/);
   assert.match(activation, /state\?\.view === "capability"/);
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);

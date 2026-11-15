@@ -18,7 +18,7 @@ const server = http.createServer((req,res)=>{
  window.fixtureState={status:'ready',criteria:{kind:'record',value:record.meta.record_id},records:[record,{...record,meta:{...record.meta,record_id:'checkpoint:44238:9e37f2a19bb3'},schema_version:'bilqis.bamf.mission-control.checkpoint/v1'},{...record,meta:{...record.meta,record_id:'capability:boolean-and:44238'},schema_version:'bilqis.bamf.mission-control.capability-snapshot/v1'}],links:[related],selected:record,selectedLinks:{state:'PRESENT',coverage:'COMPLETE',links:[related],returned:1,total_matches:1},page:{state:'PRESENT',coverage:'COMPLETE',returned:4,total_matches:4,markers:[],links:[related]},returnAvailable:true,origin:{view:'capability',selected:{kind:'capability',id:'B.AND'},context:{runId:'bamf-alpha-20261114',generation:44238,mode:'LIVE'}}};
  window.paint=(translate)=>document.querySelector('[data-test-id="fixture-host"]').innerHTML=renderEvidenceMarkup(window.fixtureState,translate);window.paint();
  });
- const {evidenceJourney}=await import(path.join(root,'apps/mission-control/tests/browser/evidence-journey.mjs'));
+ const {evidenceJourney}=await import(path.join(root,'apps/mission-control/tests/browser/journeys/evidence-journey.mjs'));
  const result = await evidenceJourney(page);
  await page.evaluate(()=>window.paint());
  const label='after';

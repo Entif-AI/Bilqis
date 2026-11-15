@@ -174,7 +174,7 @@ async function mount(page, moduleUrl) {
     document.querySelector('[data-test-id="capability-view"]').style.cssText = "";
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
-  const { capabilityJourney } = await import(path.join(root, "apps/mission-control/tests/browser/capability-journey.mjs"));
+  const { capabilityJourney } = await import(path.join(root, "apps/mission-control/tests/browser/journeys/capability-journey.mjs"));
   result.journey = await capabilityJourney(page);
   await page.screenshot({ path: path.join(out, "after-defensive-unavailable.png"), fullPage: true });
   fs.writeFileSync(path.join(out, "browser-result.json"), JSON.stringify(result, null, 2) + "\n");

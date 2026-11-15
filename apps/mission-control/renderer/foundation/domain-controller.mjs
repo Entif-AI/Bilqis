@@ -72,6 +72,7 @@ export function activateDomainViews({
     });
   } else {
     void teacherController?.deactivate();
+  }
   if (state?.view === "learning" && state.context?.fixture !== true) {
     void learningController?.activate(state.context, {
       target: document.querySelector("#domain-view"),
