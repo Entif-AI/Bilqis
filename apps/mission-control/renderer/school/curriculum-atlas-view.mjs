@@ -19,6 +19,7 @@ import {
   toolbarMarkup,
 } from "./curriculum-atlas-markup.mjs";
 import { t } from "../foundation/i18n.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
 import { assertUniqueTestIds, testIdAttribute } from "../foundation/test-hooks.mjs";
 
 const ui = {
@@ -275,9 +276,10 @@ export function renderCurriculumAtlasView(
         'data-trace-status data-message="' + esc(status) + '" ' + testIdAttribute("curriculum", "trace", "status") + '>' + esc(status) + '</p>' +
       '<div class="curriculum-topology-grid" ' + testIdAttribute("curriculum", "topology") + '>' +
       '<section class="curriculum-graph-panel" ' + testIdAttribute("curriculum", "graph") + '><header><div><span class="eyebrow">' + esc(t("curriculum.graph.eyebrow")) + '</span>' +
-        '<h2>' + esc(t("curriculum.graph.title")) + '</h2></div><div class="curriculum-legend">' +
+        '<h2>' + esc(t("curriculum.graph.title")) + '</h2></div><div class="curriculum-graph-tools"><div class="curriculum-legend">' +
         '<span>' + esc(t("curriculum.graph.legend.qualified")) + '</span><span>' + esc(t("curriculum.graph.legend.active")) + '</span><span>' + esc(t("curriculum.graph.legend.eligible")) + '</span>' +
-        '<span>' + esc(t("curriculum.graph.legend.blocked")) + '</span><span>' + esc(t("curriculum.graph.legend.future")) + '</span></div></header>' +
+        '<span>' + esc(t("curriculum.graph.legend.blocked")) + '</span><span>' + esc(t("curriculum.graph.legend.future")) + '</span></div>' +
+        contextHelpMarkup({ label: t("school.help.atlas.label"), description: t("school.help.atlas.body"), testId: "school-help-atlas" }) + '</div></header>' +
         '<p>' + esc(t("curriculum.graph.description")) + '</p>' +
         '<div class="curriculum-scroll" tabindex="0" role="region" aria-label="' + esc(t("curriculum.graph.aria")) + '" ' + testIdAttribute("curriculum", "graph", "scroll") + '><div class="curriculum-canvas" ' +
         'data-height="' + layout.height + '">' +

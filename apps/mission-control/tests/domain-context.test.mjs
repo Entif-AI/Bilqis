@@ -105,7 +105,7 @@ test("the domain activation owner binds Atlas completion to the current shell st
   assert.equal(fixture.host.innerHTML, markup);
 });
 
-test("production shell routes accepted domains and keeps fixture-only views behind launch support", () => {
+test("production shell routes accepted domains and keeps fixture-only data behind launch support", () => {
   const index = fs.readFileSync(path.join(rendererRoot, "index.html"), "utf8");
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
@@ -128,6 +128,9 @@ test("production shell routes accepted domains and keeps fixture-only views behi
   assert.match(activation, /homeController\.activate/);
   assert.match(activation, /state\?\.view === "atlas"/);
   assert.match(activation, /renderAtlasDomain/);
+  assert.match(activation, /state\?\.view === "school"/);
+  assert.match(activation, /launchMode: fixture \? "fixtures" : "production"/);
+  assert.match(activation, /activateSchoolDomain/);
   assert.match(activation, /state\?\.view === "capability"/);
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);

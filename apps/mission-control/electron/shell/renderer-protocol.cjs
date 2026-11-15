@@ -129,6 +129,7 @@ const RENDERER_ASSETS = Object.freeze(new Map([
   ["/school/curriculum-atlas-view.mjs", "school/curriculum-atlas-view.mjs"],
   ["/school/curriculum-atlas.css", "school/curriculum-atlas.css"],
   ["/school/school-domain-controller.mjs", "school/school-domain-controller.mjs"],
+  ["/school/school-live.mjs", "school/school-live.mjs"],
   ["/salience/salience-fixture.mjs", "salience/salience-fixture.mjs"],
   ["/salience/salience-events-fixture.mjs", "salience/salience-events-fixture.mjs"],
   ["/salience/salience-aggregation-view.mjs", "salience/salience-aggregation-view.mjs"],
