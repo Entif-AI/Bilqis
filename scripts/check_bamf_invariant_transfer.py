@@ -12,8 +12,10 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "docs/tasks/bamf-0.2/invariant-transfer-v1.json"
 SCHEMA = "bilqis.bamf.invariant-transfer/v1"
-STATUSES = {"TRANSFERRED", "SUPERSEDED", "MISSING"}
-EVIDENCE_KINDS = {"independent_authority", "self_consistency", "superseding_authority"}
+STATUSES = frozenset({"TRANSFERRED", "SUPERSEDED", "MISSING"})
+EVIDENCE_KINDS = frozenset({
+    "independent_authority", "self_consistency", "superseding_authority",
+})
 SHA = re.compile(r"^[0-9a-f]{40}$")
 
 
