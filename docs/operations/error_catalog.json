@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 268,
-  "legacy_raw_raise_count": 2097,
+  "legacy_raw_file_count": 269,
+  "legacy_raw_raise_count": 2098,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -11658,6 +11658,13 @@
       "path": "bilqis_mlx/runtime/tests/capability/test_capability_evidence_history.py"
     },
     {
+      "code_hint": "steps must be a positive integer",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'steps must be a positive integer'",
+      "path": "bilqis_mlx/runtime/tests/correction/capability_support_owner_support.py"
+    },
+    {
       "code_hint": "source-owned context was not approved",
       "count": 1,
       "exception": "AssertionError",
@@ -11739,7 +11746,7 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'bamf_operator must not inspect Factory capability order'",
-      "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_session.py"
+      "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_routing.py"
     },
     {
       "code_hint": "GRAPH_UNAVAILABLE",

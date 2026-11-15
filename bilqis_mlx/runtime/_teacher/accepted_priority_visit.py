@@ -173,7 +173,7 @@ def select_accepted_priority_visit(
 def execute_accepted_priority_candidate(selection, source_context,
         atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
         optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
-        capture_diagnostics=False):
+        capture_diagnostics=False, candidate=None, finalize_candidate=True):
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
@@ -201,4 +201,5 @@ def execute_accepted_priority_candidate(selection, source_context,
         visit_provenance=provenance, teacher_strategy=policy, teacher_hparams=hparams,
         max_norm=max_norm, observation=observation, memory_budget=memory_budget,
         salience_provider=salience_provider,
-        capture_diagnostics=capture_diagnostics)
+        capture_diagnostics=capture_diagnostics, candidate=candidate,
+        finalize_candidate=finalize_candidate)
