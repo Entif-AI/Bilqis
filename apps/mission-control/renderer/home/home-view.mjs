@@ -1,5 +1,6 @@
 import { t } from "../foundation/i18n.mjs";
 import { assertUniqueTestIds, testIdAttribute } from "../foundation/test-hooks.mjs";
+import { renderObservedWork } from "./home-observed.mjs";
 import { homeStatus } from "./home-model.mjs";
 
 function esc(value) {
@@ -137,7 +138,7 @@ function currentWork(model) {
     ? `<button type="button" class="home-link" data-home-target-kind="episode" data-home-target-id="${esc(current.recordId)}" ${testIdAttribute("home", "current", "inspect")}>${esc(t("home.current.inspect"))}</button>` : "";
   return `<section class="home-surface home-current" ${testIdAttribute("home", "current", "work")}>
     <header><div><span class="eyebrow">${esc(t("home.current.eyebrow"))}</span><h2>${esc(t("home.current.title"))}</h2></div><span>${esc(current.capabilityId ? t("home.current.observed") : t("home.common.unavailable"))}</span></header>
-    <dl>${rows.map(([labelKey, value]) => `<div><dt>${esc(t(labelKey))}</dt><dd>${esc(value ?? t("home.common.unavailable"))}</dd></div>`).join("")}</dl>${inspect}
+    ${model.observed?.current ? renderObservedWork(model.observed, esc) : `<dl>${rows.map(([labelKey, value]) => `<div><dt>${esc(t(labelKey))}</dt><dd>${esc(value ?? t("home.common.unavailable"))}</dd></div>`).join("")}</dl>${inspect}`}
   </section>`;
 }
 

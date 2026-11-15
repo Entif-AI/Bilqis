@@ -7,23 +7,20 @@ import {
 } from "./home-model.mjs";
 import { bindHomeInteractions, renderHomeMarkup } from "./home-view.mjs";
 
-function contextKey(context) {
-  return context
-    ? [context.runId, context.generation, context.mode, context.operatorActive].join(":")
-    : "none";
+function acceptedIdentity(page) {
+  const run = page?.records?.find((record) => record.schema_version?.endsWith(".run-context/v1"));
+  const ref = run?.meta?.run;
+  return ref ? JSON.stringify([ref.run_id, ref.generation, ref.generation_manifest_sha256]) : null;
 }
 
-export function createHomeController(api) {
-  let key = null;
-  let pages = {};
-  let model = null;
-  let loadPromise = null;
-  let unsubscribe = null;
-  let renderTarget = null;
-  let inspectTarget = null;
-  let navigateTarget = null;
-  let context = null;
-  let historical = false;
+export function createHomeController(api, {
+  schedule = (callback, delay) => { const timer = setTimeout(callback, delay); timer.unref?.(); return timer; },
+  cancel = (timer) => clearTimeout(timer),
+} = {}) {
+  let pages = {}, model = null, context = null, historical = false;
+  let renderTarget = null, inspectTarget = null, navigateTarget = null;
+  let unsubscribe = null, timer = null, epoch = 0, queue = Promise.resolve();
+  let disconnected = false, needsSnapshot = false, pending = new Map();
 
   function render() {
     if (!renderTarget || !model) return;
@@ -31,110 +28,150 @@ export function createHomeController(api) {
     renderTarget.innerHTML = renderHomeMarkup(model, { historical });
     bindHomeInteractions(renderTarget, inspectTarget ?? (() => {}), navigateTarget ?? (() => {}));
   }
-
-  async function loadFamily(family) {
-    const request = queryRequest(family, context);
-    const page = await api.query(request);
-    pages = { ...pages, [family]: page };
+  function project(fixtureFallback = true) {
     model = projectionFromPages(pages, context);
-    render();
-  }
-
-  async function loadAll() {
-    const entries = await Promise.all(HOME_FAMILIES.map(async (family) => {
-      try {
-        return [family, await api.query(queryRequest(family, context))];
-      } catch (_error) {
-        return [family, { accepted: false, state: "UNAVAILABLE", records: [] }];
-      }
-    }));
-    pages = Object.fromEntries(entries);
-    model = projectionFromPages(pages, context);
-    if (context?.runId === "fixture-run" && context?.mode !== "HISTORICAL" &&
+    if (fixtureFallback && context?.runId === "fixture-run" && context?.mode !== "HISTORICAL" &&
         HOME_FAMILIES.every((family) => pages[family]?.accepted !== true || pages[family]?.state === "EMPTY")) {
-      model = referenceHomeProjection();
+      const fixture = referenceHomeProjection();
+      model = { ...fixture, runtime: { ...fixture.runtime, running: context?.operatorActive ?? fixture.runtime.running } };
     }
     render();
   }
-
-  async function refreshOperatorStatus() {
-    let operatorActive = null;
-    if (!historical && typeof api.status === "function") {
-      try {
-        const status = await api.status();
-        operatorActive = typeof status?.learnerActive === "boolean"
-          ? status.learnerActive
-          : null;
-      } catch (_error) {
-        operatorActive = null;
-      }
-    }
-    context = Object.freeze({ ...context, operatorActive });
+  function failed(current) {
+    if (current !== epoch) return;
+    disconnected = true;
+    context = { ...context, transportDisconnected: true, operatorActive: null };
+    project();
   }
-
-  async function subscribe() {
+  function enqueue(current, operation) {
+    const result = queue.then(async () => {
+      if (current !== epoch) return;
+      try { await operation(); } catch (_error) { failed(current); }
+    });
+    queue = result;
+    return result;
+  }
+  async function loadFamily(family, current) {
+    const page = await api.query(queryRequest(family, context));
+    if (current !== epoch) return null;
+    if (page?.accepted !== true) throw new Error("HOME_QUERY_UNAVAILABLE");
+    pages = { ...pages, [family]: page };
+    project();
+    return page;
+  }
+  async function loadAll(current) {
+    const source = context;
+    const request = (family) => api.query(queryRequest(family, source));
+    const anchor = historical ? null : await request("run");
+    if (current !== epoch) return;
+    const families = historical ? HOME_FAMILIES : HOME_FAMILIES.filter((family) => family !== "run");
+    const entries = await Promise.all(families.map(async (family) => [family, await request(family)]));
+    if (current !== epoch) return;
+    const frontier = historical ? null : await request("run");
+    if (current !== epoch) return;
+    if ([...entries.map(([, page]) => page), ...[anchor, frontier].filter(Boolean)]
+      .some((page) => page?.accepted !== true)) throw new Error("HOME_QUERY_UNAVAILABLE");
+    if (!historical && acceptedIdentity(anchor) !== acceptedIdentity(frontier)) {
+      needsSnapshot = true;
+      return;
+    }
+    pages = Object.fromEntries(historical ? entries : [...entries, ["run", frontier]]);
+    needsSnapshot = false;
+    disconnected = false;
+    context = { ...context, transportDisconnected: false };
+    project(true);
+  }
+  async function refreshRun(current) {
+    const page = await api.query(queryRequest("run", context));
+    if (current !== epoch) return;
+    if (page?.accepted !== true) throw new Error("HOME_QUERY_UNAVAILABLE");
+    if (needsSnapshot || acceptedIdentity(pages.run) !== acceptedIdentity(page)) return loadAll(current);
+    pages = { ...pages, run: page };
+    project(true);
+  }
+  async function refreshStatus(current) {
+    if (historical || typeof api.status !== "function") return;
+    const status = await api.status();
+    if (current !== epoch) return;
+    context = { ...context, operatorActive: typeof status?.learnerActive === "boolean" ? status.learnerActive : null };
+    project();
+  }
+  function enqueueOnce(current, key, operation) {
+    if (pending.has(key)) return pending.get(key);
+    const tasks = pending;
+    const result = enqueue(current, operation).finally(() => { if (tasks.get(key) === result) tasks.delete(key); });
+    tasks.set(key, result);
+    return result;
+  }
+  async function subscribe(current) {
     if (historical || typeof api.subscribeEvents !== "function") return;
-    try {
-      unsubscribe = api.subscribeEvents(async (event) => {
-        if (event?.event_family === "operator.action.state") {
-          await refreshOperatorStatus();
-          model = projectionFromPages(pages, context);
-          render();
-          return;
-        }
-        const family = familyForEvent(event);
-        if (!family || context?.mode === "HISTORICAL") return;
-        try {
-          await loadFamily(family);
-        } catch (_error) {
-          pages = { ...pages, [family]: { accepted: false, state: "UNAVAILABLE", records: [] } };
-          model = projectionFromPages(pages, context);
-          render();
-        }
-      });
-    } catch (_error) {
+    let stop;
+    try { stop = await api.subscribeEvents((event) => enqueueOnce(current, event?.event_family ?? "unknown", async () => {
+      if (event?.event_family === "operator.action.state") return refreshStatus(current);
+      const family = familyForEvent(event);
+      if (!family) return;
+      if (event.event_family === "run.trainer.observed") return refreshRun(current);
+      if (event.event_family?.startsWith("run.") || event.event_family?.startsWith("checkpoint.")) return loadAll(current);
+      return loadFamily(family, current);
+    })); } catch (_error) { return; }
+    if (current !== epoch) { if (typeof stop === "function") await stop(); return; }
+    unsubscribe = stop;
+  }
+  async function recover(current) {
+    if (disconnected) {
+      if (typeof api.connect === "function") await api.connect();
+      if (current !== epoch) return;
+      const stop = unsubscribe;
       unsubscribe = null;
+      if (typeof stop === "function") await stop();
+      if (current !== epoch) return;
+      await subscribe(current);
+      if (current !== epoch) return;
+      await refreshStatus(current);
+      await loadAll(current);
+    } else {
+      await refreshStatus(current);
+      if (current !== epoch) return;
+      await refreshRun(current);
     }
   }
-
+  function startTimer(current) {
+    if (current !== epoch || historical) return;
+    timer = schedule(async () => {
+      timer = null;
+      await enqueue(current, () => recover(current));
+      startTimer(current);
+    }, 2000);
+  }
   async function activate(nextContext, { host, onInspect, onNavigate, defense } = {}) {
-    renderTarget = host;
-    inspectTarget = onInspect;
-    navigateTarget = onNavigate;
-    historical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
-    context = nextContext;
-    await refreshOperatorStatus();
-    const nextKey = contextKey(context) + `:${historical}`;
-    if (key === nextKey) {
-      render();
-      return loadPromise;
-    }
-    key = nextKey;
-    pages = {};
-    model = nextContext?.runId === "fixture-run" && nextContext?.mode !== "HISTORICAL"
-      ? referenceHomeProjection() : null;
-    if (typeof unsubscribe === "function") {
-      await unsubscribe();
-      unsubscribe = null;
-    }
-    render();
-    loadPromise = loadAll().then(subscribe);
-    return loadPromise;
-  }
-
-  async function deactivate() {
+    const current = ++epoch;
+    if (timer !== null) { cancel(timer); timer = null; }
     const stop = unsubscribe;
     unsubscribe = null;
-    renderTarget = null;
-    inspectTarget = null;
-    navigateTarget = null;
-    key = null;
+    queue = Promise.resolve(); pending = new Map();
+    renderTarget = host; inspectTarget = onInspect; navigateTarget = onNavigate;
+    historical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
+    context = { ...nextContext, mode: historical ? "HISTORICAL" : nextContext?.mode }; pages = {}; disconnected = false; needsSnapshot = false;
+    model = nextContext?.runId === "fixture-run" && !historical ? referenceHomeProjection() : null;
+    render();
+    if (typeof stop === "function") await stop();
+    if (current !== epoch) return;
+    await enqueue(current, async () => {
+      await subscribe(current);
+      if (current !== epoch) return;
+      await refreshStatus(current);
+      if (current !== epoch) return;
+      await loadAll(current);
+    });
+    startTimer(current);
+  }
+  async function deactivate() {
+    ++epoch;
+    if (timer !== null) { cancel(timer); timer = null; }
+    const stop = unsubscribe;
+    unsubscribe = null;
+    renderTarget = null; inspectTarget = null; navigateTarget = null;
     if (typeof stop === "function") await stop();
   }
-
-  function currentModel() {
-    return model;
-  }
-
-  return Object.freeze({ activate, deactivate, currentModel });
+  return Object.freeze({ activate, deactivate, currentModel: () => model });
 }
