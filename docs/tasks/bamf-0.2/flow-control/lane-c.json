@@ -405,8 +405,8 @@
       "issue": 1140,
       "pr": null,
       "state": "READY",
-      "head_sha": "829d93df4b2c8dbf469745973853c46c3d66efbf",
-      "summary": "Resources redesign is code-complete on current unified 27744c66: pinned design PASS, scoped NO_DRIFT, 30 Resources regressions, 319 UI/53 Electron/6 bridge checks and rendered/theme/density/reflow/axe evidence passed. Human review/merge pending.",
+      "head_sha": "e5d19a4c211ffa879c59eeed4a5b69c95ac8f375",
+      "summary": "Resources redesign is ready on unified b621e1bb: design PASS, scoped NO_DRIFT, 30 Resources regressions, leaf 319 UI/53 Electron/6 bridge checks and 41 post-sync scoped checks pass. Four rendered variants, expanded copy and axe checks passed. Human review/merge pending.",
       "resume_trigger": null,
       "preserved_branch": "codex/1140-resources-redesign-20261114"
     }

@@ -106,3 +106,17 @@ chrome. Whole-application integration and operator visual acceptance remain #114
 [Expanded copy](../../../../output/playwright/1140/after-expanded-320.png) ·
 [RTL/text spacing](../../../../output/playwright/1140/after-rtl-spacing-320.png) ·
 [Historical/forced colors](../../../../output/playwright/1140/after-historical-forced-colors-320.png).
+
+
+### Final synchronization
+
+Before PR admission, unified advanced to `b621e1bb3195fe739a1916e32d46c7b605b5e510`
+with the Home redesign. Merge `e735381c7b64c4ef622dc49211875527f775a13c` consumed it.
+The affected Resources/translator imports, layout and Electron protocol closure
+passed **41 scoped tests** afterward. Prior behavioral and visual evidence remains
+valid: this intake changed no Resources runtime or style source. The earlier full
+leaf and static evidence is reused for unaffected surfaces.
+
+Scope-drift audit after integration commits: every changed Resources obligation
+still maps to #1140's inherited acceptance; synchronization and review receipts
+add no feature scope or new acceptance.
