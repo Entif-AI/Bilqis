@@ -14,7 +14,7 @@ from bilqis_mlx.learning._engram.tests.test_atlas_engram_source import (
 from bilqis_mlx.learning.atlas_engram import MotifBudget
 from bilqis_mlx.learning.atlas_engram_source import prepare_source_qualified_motifs
 from bilqis_mlx.learning.atlas_engram_reads.source_owner import (
-    _B13_EXECUTION_SEAL, _read_retained_compiled_motifs,
+    _B13_EXECUTION_SEAL, _pad_motif_read_row, _read_retained_compiled_motifs,
 )
 from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
 from bilqis_mlx.learning.source_atoms import SourceAtomRow
@@ -38,6 +38,19 @@ from bilqis_mlx.source_adapters.atoms.admission import public_formal_atom_contex
 
 
 class SourceOwnedMotifReadBoundaryTests(unittest.TestCase):
+    def test_mixed_width_row_padding_adds_only_none_positions_and_zero_features(self):
+        short_positions, short_features = _pad_motif_read_row(
+            (None, None), mx.ones((2, 128), dtype=mx.float32), 3)
+        long_positions, long_features = _pad_motif_read_row(
+            (None, None, None), mx.ones((3, 128), dtype=mx.float32), 3)
+        stacked = mx.stack((short_features, long_features))
+        self.assertEqual(short_positions, (None, None, None))
+        self.assertEqual(long_positions, (None, None, None))
+        self.assertEqual(stacked.shape, (2, 3, 128))
+        self.assertTrue(bool(mx.all(stacked[0, :2] == 1)))
+        self.assertTrue(bool(mx.all(stacked[0, 2] == 0)))
+        self.assertTrue(bool(mx.all(stacked[1] == 1)))
+
     def test_wrong_private_seal_rejects_before_read_inputs_can_authorize(self):
         with self.assertRaises(BilqisError):
             _read_retained_compiled_motifs(

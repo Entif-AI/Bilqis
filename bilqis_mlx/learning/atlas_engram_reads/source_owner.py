@@ -31,6 +31,7 @@ from .records import MOTIF_WIDTH, MotifReadPosition, MotifReadResult, _invalid
 
 
 _B13_EXECUTION_SEAL = object()
+_MOTIF_ROW_FEATURE_RANK = 2
 
 
 def _canonical_adapter(source: SourceAtomRow):
@@ -98,6 +99,28 @@ def _row_read_inputs(
     return tuple(positions), mx.stack(tuple(vectors))
 
 
+def _pad_motif_read_row(positions, features, width):
+    """Pad one source-owned motif row to the already-issued hidden width."""
+    if (type(positions) is not tuple
+            or not isinstance(features, mx.array)
+            or features.ndim != _MOTIF_ROW_FEATURE_RANK
+            or features.shape != (len(positions), MOTIF_WIDTH)
+            or features.dtype != mx.float32
+            or type(width) is not int
+            or width < len(positions)):
+        _invalid()
+    padding = width - len(positions)
+    if not padding:
+        return positions, features
+    return (
+        positions + (None,) * padding,
+        mx.concatenate((
+            features,
+            mx.zeros((padding, MOTIF_WIDTH), dtype=mx.float32),
+        ), axis=0),
+    )
+
+
 def _read_retained_compiled_motifs(
     compiled: CompiledEncoderInput,
     parameters,
@@ -123,6 +146,7 @@ def _read_retained_compiled_motifs(
         _invalid()
     validate_bamf_parameters(spec, extents, parameters)
     row_positions, row_features = [], []
+    padded_width = hidden.shape[1]
     tasks, frontiers, policies = [], [], []
     for row, config, source in zip(
             compiled.compiled.rows, compiled.compiler_configs, sources):
@@ -142,15 +166,18 @@ def _read_retained_compiled_motifs(
         projection, _motifs, issued_frontier = replayed
         projection = _execution_projection(row, config, projection, issued_frontier)
         if projection is None:
-            row_positions.append((None,) * len(row.positions))
-            row_features.append(mx.zeros(
-                (len(row.positions), MOTIF_WIDTH), dtype=mx.float32))
+            positions = (None,) * len(row.positions)
+            features = mx.zeros(
+                (len(row.positions), MOTIF_WIDTH), dtype=mx.float32)
         else:
             positions, vectors = _row_read_inputs(
                 row, config, projection, adapter, source, parameters,
                 compiled.features, extents)
-            row_positions.append(positions)
-            row_features.append(vectors)
+            features = vectors
+        positions, features = _pad_motif_read_row(
+            positions, features, padded_width)
+        row_positions.append(positions)
+        row_features.append(features)
         task = replace(config.task, causal_prefix_end=row.visible_end)
         tasks.append(task)
         frontiers.append(issued_frontier)
