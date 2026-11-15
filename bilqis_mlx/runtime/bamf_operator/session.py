@@ -12,8 +12,10 @@ import time
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
-from bilqis_mlx.learning.atlas_candidate import resolve_candidate
 from bilqis_mlx.learning.atlas_retention_decision import issue_factory_retention_decision
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_metrics_delta, candidate_identity_metrics_snapshot,
+)
 from bilqis_mlx.runtime.accepted_priority_visit import (
     accepted_priority_school, execute_accepted_priority_candidate,
 )
@@ -41,12 +43,14 @@ from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
 from .source_prefetch import (
     CandidateSourceLane, NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
+from ._session_execution import candidate_horizon_execution as _candidate_horizon_execution_impl
+from ._session_execution import execute_horizon as _execute_horizon_impl
+from ._session_execution import operate as _operate_impl
+from ._session_execution import retention_result as _retention_result_impl
 
 _MAX_CANDIDATE_HORIZON = 16
-
 def _invalid(reason: str):
     ErrorBus.raise_(SCHOOL.BAMF_FIRST_STUDENT.INVALID, reason=reason)
-
 @dataclass(frozen=True)
 class BamfOperatorResult:
     status: str
@@ -60,7 +64,6 @@ class BamfOperatorResult:
     source_prefetch_overlap_seconds: float = 0.0
     source_prefetch_prepared_steps: int = 0
     source_prefetch_serial_steps: int = 0
-
 def _emit_progress(progress, message: str) -> None:
     if progress is not None:
         progress(message)
@@ -69,133 +72,47 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
                      rows, horizon, cache, candidate_attempt_ordinal, progress,
                      source_prefetch_workers,
                      source_prefetch_executor, source_prefetch_metrics, observer):
-    source_lane = None
-    if source_prefetch_metrics is not None or source_prefetch_workers:
-        metrics = source_prefetch_metrics or SourcePrefetchMetrics()
-        source_lane = CandidateSourceLane(
-            selection, context, parent, horizon, workers=source_prefetch_workers,
-            executor=source_prefetch_executor, metrics=metrics)
-    prepare_candidate_evidence_root(run_dir)
-    capture = _Capture(
-        run_dir, selection,
-        generation=cache.generation,
-        accepted_manifest_sha256=cache.accepted_manifest_sha256,
-        candidate_attempt_ordinal=candidate_attempt_ordinal,
-        parent_optimizer_step=parent.retained_state.optimizer_step,
-    )
-    steps, candidate = [], None
-    for ordinal in range(1, horizon + 1):
-        source_rows = rows if source_lane is None else source_lane.rows(ordinal)
-        observation = FactoryDeliveryObservation(
-            capture, parent.retained_state.optimizer_step + ordinal,
-            source_rows, selection.offer.source_seed)
-        _emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
-        step = execute_accepted_priority_candidate(
-            selection, context, atlas_path, feature_path,
-            teacher_hparams=parent.optimizer_hyperparameters,
-            observation=observation,
-            optimizer_step_seed=_step_seed(selection.visit.identity.visit_id, ordinal),
-            max_norm=1.0, candidate=candidate,
-            finalize_candidate=(ordinal == horizon),
-            prepared_source_rows=(source_rows if source_lane is not None else None))
-        candidate = step.transaction
-        if candidate.update_steps != ordinal:
-            _invalid("BAMF_C16_3_CANDIDATE_HORIZON_DRIFT")
-        steps.append(step)
-        if observer is not None:
-            observer.update(candidate_step=candidate.update_steps,
-                            candidate_optimizer_step=candidate.parent.optimizer_step + candidate.update_steps)
-        if getattr(candidate, "motif_transition", None) is not None:
-            break
-    return steps, capture
+    return _execute_horizon_impl(
+        run_dir, selection, context, parent, atlas_path, feature_path,
+        rows, horizon, cache, candidate_attempt_ordinal, progress,
+        source_prefetch_workers, source_prefetch_executor,
+        source_prefetch_metrics, observer,
+        source_lane_cls=CandidateSourceLane, source_metrics_cls=SourcePrefetchMetrics,
+        prepare_evidence_root=prepare_candidate_evidence_root, capture_cls=_Capture,
+        delivery_observation_cls=FactoryDeliveryObservation,
+        execute_candidate=execute_accepted_priority_candidate, step_seed=_step_seed,
+        emit_progress=_emit_progress, invalid=_invalid)
 
 
 def _candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer):
-    cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
-    horizon = candidate_step_horizon(
-        run_dir, parent, cache, capability, steps_per_visit)
-    rejection_journal_ordinal, rejection_attempt_ordinal = rejection_attempt_ordinals(
-        run_dir, parent, cache, capability)
-    _emit_progress(
-        progress,
-        f"candidate horizon is atomic for up to {horizon} optimizer steps; "
-        "the session time limit is checked between candidate visits")
-    if observer is not None:
-        observer.update(
-            phase="TRAINING", capability_id=capability, candidate_step=0,
-            candidate_horizon=horizon,
-            candidate_optimizer_step=parent.retained_state.optimizer_step)
-    steps, capture = _execute_horizon(
-        run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
-        cache, rejection_journal_ordinal, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer)
-    if observer is not None:
-        metrics = currentness_metrics(
-            selection.offer._planning_generation._accepted_currentness)
-        observer.update(
-            currentness_deep_authentications=metrics["deep_authentication_count"],
-            currentness_accepted_cache_checks=metrics[
-                "accepted_cache_currentness_count"],
-            currentness_full_candidate_identity_hashes=metrics[
-                "full_candidate_identity_hashes"],
-            currentness_bundle_tree_scans=metrics["bundle_tree_scans"],
-        )
-    return cache, steps, capture, rejection_journal_ordinal, rejection_attempt_ordinal
+    return _candidate_horizon_execution_impl(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer,
+        bind_cache=bind_accepted_execution_cache, horizon_for=candidate_step_horizon,
+        rejection_ordinals=rejection_attempt_ordinals,
+        execute_horizon_fn=_execute_horizon, currentness_metrics_fn=currentness_metrics,
+        emit_progress=_emit_progress,
+        identity_snapshot=candidate_identity_metrics_snapshot)
 
 
 def _retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
-        progress, observer):
-    step = steps[-1]
-    if observer is not None:
-        observer.update(phase="RETENTION")
-    _emit_progress(progress, "evaluating retention evidence")
-    evaluation = evaluate_factory_retention_candidate(
-        context, step.transaction, atlas_path, capability, run_dir=run_dir,
-        **({"observer": lambda fields: observer.update(**fields)}
-           if observer is not None else {}))
-    decision = issue_factory_retention_decision(evaluation)
-    retained = resolve_candidate(step.transaction, accepted=decision.accepted)
-    candidate_evidence = capture.finalize(
-        accepted=decision.accepted, decision=decision.to_record())
-    successor = None
-    if decision.accepted:
-        resource = _resource_observation(
-            run_dir, tuple(steps),
-            getattr(context, "_source_preparation_metrics", None))
-        resource.update({
-            "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
-            "evidence_file_fsyncs": candidate_evidence["persistence"]["file_fsyncs"],
-            "evidence_directory_fsyncs": candidate_evidence["persistence"]["directory_fsyncs"],
-            "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
-            "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
-        })
-        successor = derive_accepted_teacher_successor(
-            run_dir, retained, selection.visit,
-            delivery_events=({
-                "event": "BAMF_C16_3_ACCEPTED",
-                "optimizer_step": retained.optimizer_step,
-                "parent_generation": cache.generation,
-                "accepted_manifest_sha256": cache.accepted_manifest_sha256,
-                "candidate_attempt_ordinal": rejection_journal_ordinal,
-                "capability": capability,
-                "visit_id": selection.visit.identity.visit_id,
-                "selected_policy_key": selection.visit.identity.policy_key,
-                "selected_option_id": selection.option_id,
-                "resource": resource,
-                "candidate_evidence": candidate_evidence,
-            },))
-    return BamfPreparedVisit(
-        "ACCEPTED" if decision.accepted else "REJECTED", parent,
-        selection=selection, step=step, steps=tuple(steps), decision=decision,
-        retained=retained, capability=capability, successor=successor,
-        candidate_evidence=candidate_evidence,
-        rejection_journal_ordinal=rejection_journal_ordinal,
-        rejection_attempt_ordinal=rejection_attempt_ordinal)
+        identity_before, progress, observer):
+    return _retention_result_impl(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        identity_before, progress, observer,
+        evaluate_candidate=evaluate_factory_retention_candidate,
+        issue_decision=issue_factory_retention_decision,
+        identity_delta=candidate_identity_metrics_delta,
+        resource_observation=_resource_observation,
+        derive_successor=derive_accepted_teacher_successor,
+        prepared_visit_type=BamfPreparedVisit, emit_progress=_emit_progress)
 
 
 def prepare_bamf_visit(
@@ -237,11 +154,14 @@ def prepare_bamf_visit(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer)
-    cache, steps, capture, rejection_journal_ordinal, rejection_attempt_ordinal = horizon_state
+    (
+        cache, steps, capture, rejection_journal_ordinal,
+        rejection_attempt_ordinal, identity_before,
+    ) = horizon_state
     return _retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
-        progress, observer)
+        identity_before, progress, observer)
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
@@ -275,6 +195,7 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
             "retention_reason": decision.reason,
             "capability": capability,
             "decision": decision.to_record(),
+            "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
         })
         return "REJECTED"
@@ -302,50 +223,15 @@ def operate_bamf(
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
-    if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
-            or max_visits < 0 or type(steps_per_visit) is not int
-            or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON
-            or type(source_prefetch_workers) is not int
-            or source_prefetch_workers not in NATIVE_SOURCE_WORKER_COUNTS
-            or reserve_gib < 0):
-        _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
-    run_dir = Path(run_dir).resolve()
-    deadline = time.monotonic() + minutes * 60
-    visits = accepted = rejected = 0
-    status = "TIME_LIMIT"
-    metrics = SourcePrefetchMetrics()
-    if source_prefetch_workers:
-        from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
-        source_pool = source_prefetch_pool(source_prefetch_workers)
-    else:
-        source_pool = nullcontext(None)
-    with source_pool as source_prefetch_executor, bamf_operator_lock(run_dir):
-        while time.monotonic() < deadline and (not max_visits or visits < max_visits):
-            _emit_progress(progress, f"starting visit {visits + 1}")
-            with TrainerObservation(run_dir, visits + 1) as observer:
-                outcome = _visit(
-                    run_dir, reserve_gib, steps_per_visit=steps_per_visit,
-                    progress=progress, source_prefetch_workers=source_prefetch_workers,
-                    source_prefetch_executor=source_prefetch_executor,
-                    source_prefetch_metrics=metrics, observer=observer)
-                observer.finish(outcome)
-            _emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
-            if outcome in {"HELD", "ACTION_REQUIRED"}:
-                status = "PRIORITY_HOLD" if outcome == "HELD" else "ACTION_REQUIRED"
-                break
-            visits += 1
-            if outcome == "REJECTED":
-                rejected += 1
-                continue
-            accepted += 1
-        else:
-            status = "VISIT_LIMIT" if max_visits and visits >= max_visits else "TIME_LIMIT"
-    current = load_accepted_generation(run_dir)
-    return BamfOperatorResult(
-        status, visits, accepted, rejected, current.generation,
-        current.retained_state.optimizer_step,
-        source_prefetch_workers=source_prefetch_workers,
-        source_prefetch_wait_seconds=metrics.wait_seconds,
-        source_prefetch_overlap_seconds=metrics.overlap_seconds,
-        source_prefetch_prepared_steps=metrics.prepared_steps,
-        source_prefetch_serial_steps=metrics.serial_steps)
+    from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
+    return _operate_impl(
+        Path(run_dir), minutes=minutes, max_visits=max_visits,
+        steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
+        source_prefetch_workers=source_prefetch_workers, progress=progress,
+        max_horizon=_MAX_CANDIDATE_HORIZON,
+        worker_counts=NATIVE_SOURCE_WORKER_COUNTS, invalid=_invalid,
+        metrics_type=SourcePrefetchMetrics, source_pool_factory=source_prefetch_pool,
+        null_context=nullcontext, operator_lock=bamf_operator_lock,
+        visit_fn=_visit, observer_type=TrainerObservation,
+        emit_progress=_emit_progress, monotonic=time.monotonic,
+        load_generation=load_accepted_generation, result_type=BamfOperatorResult)

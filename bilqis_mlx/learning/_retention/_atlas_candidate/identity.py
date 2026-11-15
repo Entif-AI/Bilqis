@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from time import perf_counter
 
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
@@ -98,4 +99,13 @@ def candidate_identity_digest(state) -> str:
     an absent manifest field; an unknown explicit scheme is never a fallback.
     """
     scheme = require_identity_scheme(state.identity_scheme)
-    return _raw_digest(state) if scheme == RAW_IDENTITY_SCHEME else _legacy_digest(state)
+    started = perf_counter()
+    result = _raw_digest(state) if scheme == RAW_IDENTITY_SCHEME else _legacy_digest(state)
+    elapsed = perf_counter() - started
+    try:
+        from .identity_binding import _record_full_identity_computation
+    except ImportError:
+        pass
+    else:
+        _record_full_identity_computation(state, elapsed)
+    return result

@@ -1,0 +1,16 @@
+{
+  "scope": "DISPOSABLE_FULL_B01_IDENTITY_BINDING_ZERO_OPTIMIZER_UPDATES",
+  "topology_sha256": "4ea0a04087596dc243a667ed17138ff0ffb3df8b4339759ddf533cdad7e0bd96",
+  "extents_sha256": "9d64a5140fadb58df27c4e751a4905608bb074ec9863d8b87f590793be9dcf94",
+  "digest": "5e3368458350dfde8c738852250126eb560474bdec28f987f1cbbfc400cf0323",
+  "tensor_bytes": 953848264,
+  "first_bind_wall_seconds": 0.566647875122726,
+  "canonical_full_hash_wall_seconds": 0.4492319170385599,
+  "require_count": 25,
+  "average_require_wall_seconds": 0.0018661150056868791,
+  "wall_speedup_first_bind_over_require": 303.6511004926807,
+  "first_bind_full_computations": 1,
+  "final_full_computations": 1,
+  "final_candidate_identity_require_calls": 25,
+  "optimizer_updates": 0
+}

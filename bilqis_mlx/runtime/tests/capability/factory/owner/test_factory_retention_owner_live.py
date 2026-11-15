@@ -135,7 +135,9 @@ class FactoryRetentionOwnerLiveTests(SourceBackboneTestBase):
                 run_dir, source_context, self.snapshot, self.artifact)
             transaction, gradient, row, targets, teacher = _teacher_selected_source_owned_candidate_step_evidence(
                 run_dir, source_context, parent, cache, self.artifact)
-            _, candidate_bundle, _, _ = _candidate_from_live_parent(run_dir, transaction)
+            _, candidate_bundle, candidate_state, _ = _candidate_from_live_parent(
+                run_dir, transaction)
+            self.assertIs(candidate_bundle.retained_state, candidate_state)
             target = targets[0]
             parent_compiled, before = _evaluation_output(
                 source_context, parent, self.artifact, row)
@@ -196,7 +198,9 @@ class FactoryRetentionOwnerLiveTests(SourceBackboneTestBase):
             transaction, _gradient, row, targets, teacher = (
                 _teacher_selected_source_owned_candidate_step_evidence(
                     run_dir, source_context, parent, cache, self.artifact))
-            _, candidate_bundle, _, _ = _candidate_from_live_parent(run_dir, transaction)
+            _, candidate_bundle, candidate_state, _ = _candidate_from_live_parent(
+                run_dir, transaction)
+            self.assertIs(candidate_bundle.retained_state, candidate_state)
             target = targets[0]
             parent_compiled, before = _evaluation_output(
                 source_context, parent, self.artifact, row)
