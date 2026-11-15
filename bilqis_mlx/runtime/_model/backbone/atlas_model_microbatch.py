@@ -23,6 +23,13 @@ from .atlas_model_forward_validation import (
 from .atlas_model_training import (
     _gradient_execution_rebinder, _require_finite_tensor_tree, loss_bearing_bamf,
 )
+from .microbatch.refinement_kernel import (
+    batched_refine_hidden, prepare_refinement_selections,
+)
+from .microbatch.route_kernel import (
+    prepare_route_microbatch_kernel, route_microbatch_compatible,
+    route_microbatch_mean_loss,
+)
 from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 
@@ -81,7 +88,8 @@ def _merge_compiled_rows(row_batches):
         source_asts=source_asts, partial_forest_receipts=receipts)
 
 
-def microbatch_compatible(row_batches) -> bool:
+def microbatch_compatible(
+        row_batches, answer_plans=None, targets=None, masks=None) -> bool:
     """Return whether rows can share one B11 source-backbone dispatch safely."""
     if (type(row_batches) is not tuple or len(row_batches) < _MIN_ROWS
             or any(type(item) is not BamfCompiledBatch for item in row_batches)):
@@ -98,7 +106,14 @@ def microbatch_compatible(row_batches) -> bool:
                 or item.active_semantic_rows != first.active_semantic_rows
                 or item.sources[0].selection != first.sources[0].selection):
             return False
-    return True
+    if answer_plans is None and targets is None and masks is None:
+        return True
+    if answer_plans is None or targets is None or masks is None:
+        return False
+    if any(plan.snapshot != answer_plans[0].snapshot for plan in answer_plans):
+        return False
+    return route_microbatch_compatible(
+        row_batches, answer_plans, targets, masks)
 
 
 def _compiled_microbatch(row_batches):
@@ -111,6 +126,16 @@ def _compiled_microbatch(row_batches):
         first.feature_schema, first.active_semantic_rows, row_batches)
     result.__post_init__()
     return result
+
+
+def _microbatch_salience_labels(row_batches, salience_supervision):
+    if salience_supervision is None:
+        return ()
+    from .salience_training import SalienceSupervision
+    if type(salience_supervision) is not SalienceSupervision:
+        _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
+    return tuple(
+        salience_supervision.labels_for(row_batch) for row_batch in row_batches)
 
 
 def _bamf_microbatch_value_and_grad_impl(
@@ -130,12 +155,8 @@ def _bamf_microbatch_value_and_grad_impl(
         _invalid("B11_MICROBATCH_ARGUMENT_INVALID")
     batch = _compiled_microbatch(row_batches)
     backend.__post_init__()
-    if salience_supervision is not None:
-        from .salience_training import SalienceSupervision
-        if type(salience_supervision) is not SalienceSupervision:
-            _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
-        for row_batch in row_batches:
-            salience_supervision.labels_for(row_batch)
+    salience_labels = _microbatch_salience_labels(
+        row_batches, salience_supervision)
     generation = answer_plans[0].generation_binding
     if any(plan.generation_binding != generation for plan in answer_plans):
         _invalid("B11_MICROBATCH_GENERATION_BINDING_MISMATCH")
@@ -149,6 +170,16 @@ def _bamf_microbatch_value_and_grad_impl(
     preflight_executions = microbatch_trace_preflight(
         backend, params, batch, row_batches, answer_plans, targets, masks,
         generation, cache, rebind_execution, salience_supervision, snapshot)
+    route_vectorized = route_microbatch_compatible(
+        row_batches, answer_plans, targets, masks)
+    refinement_selections = (
+        prepare_refinement_selections(row_batches, answer_plans, generation)
+        if route_vectorized else None)
+    route_kernel = (
+        prepare_route_microbatch_kernel(
+            row_batches, answer_plans, targets, masks, preflight_executions,
+            salience_labels)
+        if route_vectorized else None)
     holder = {}
 
     def objective(current):
@@ -161,28 +192,34 @@ def _bamf_microbatch_value_and_grad_impl(
                 producer, accepted_cache, batch, capture_derived_cache=False)
             if hidden.shape[0] != len(row_batches):
                 _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
-            executions = []
-            total = mx.array(0.0, dtype=mx.float32)
-            for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
-                    row_batches, answer_plans, targets, masks)):
-                output = _decode_bamf_producer_row(
-                    backend, current, row_batch, plan, producer, hidden, index,
-                    accepted_cache, execution_binding, refinement_training=True,
-                    trace=True,
-                    replay_output=preflight_executions[index].output)
-                execution = loss_bearing_bamf(
-                    output, row_targets, mask,
-                    salience_supervision=salience_supervision,
-                    validate_finite=False)
-                executions.append(execution)
-                total = total + execution.loss.total
-            holder["executions"] = tuple(executions)
-            return total / len(row_batches)
+            if not route_vectorized:
+                executions = []
+                total = mx.array(0.0, dtype=mx.float32)
+                for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
+                        row_batches, answer_plans, targets, masks)):
+                    output = _decode_bamf_producer_row(
+                        backend, current, row_batch, plan, producer, hidden, index,
+                        accepted_cache, execution_binding, refinement_training=True,
+                        trace=True,
+                        replay_output=preflight_executions[index].output)
+                    execution = loss_bearing_bamf(
+                        output, row_targets, mask,
+                        salience_supervision=salience_supervision,
+                        validate_finite=False)
+                    executions.append(execution)
+                    total = total + execution.loss.total
+                holder["executions"] = tuple(executions)
+                return total / len(row_batches)
+            salience_hidden = hidden
+            refined = batched_refine_hidden(
+                current, row_batches, producer, hidden, refinement_selections)
+            return route_microbatch_mean_loss(
+                current, refined, route_kernel, salience_hidden=salience_hidden)
 
     mean_loss, gradients = mx.value_and_grad(objective)(params)
     mx.eval(mean_loss, gradients)
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
-    executions = holder.get("executions")
+    executions = None if route_vectorized else holder.get("executions")
     return finalize_microbatch_gradient(
         backend, batch, row_batches, preflight_executions,
         executions, mean_loss, gradients)

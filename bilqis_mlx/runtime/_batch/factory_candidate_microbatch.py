@@ -58,14 +58,18 @@ def execute_factory_logical_batch(
 
     def execute_group(group):
         group_rows = tuple(bound[index] for index in group)
-        if not microbatch_compatible(group_rows):
+        group_plans = tuple(plans[index] for index in group)
+        group_targets = tuple(targets[index] for index in group)
+        group_masks = tuple(masks[index] for index in group)
+        if not microbatch_compatible(
+                group_rows, group_plans, group_targets, group_masks):
             return None
         return bamf_microbatch_value_and_grad(
             parameters,
             group_rows,
-            tuple(plans[index] for index in group),
-            tuple(targets[index] for index in group),
-            tuple(masks[index] for index in group),
+            group_plans,
+            group_targets,
+            group_masks,
             cache,
             salience_supervision=salience_supervision)
 
