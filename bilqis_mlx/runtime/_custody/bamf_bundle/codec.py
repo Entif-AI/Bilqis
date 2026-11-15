@@ -9,7 +9,7 @@ from pathlib import Path
 import bilqis_mlx.runtime.mlx_checkpoint as _mlx_checkpoint
 from bilqis_mlx.data_plane import DataPlaneError, data_plane
 from bilqis_mlx.runtime.disk import assert_headroom
-from bilqis_mlx.learning._retention.candidate_identity import (
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     IDENTITY_SCHEMES, LEGACY_IDENTITY_SCHEME,
 )
 from .records import (

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import mlx.core as mx
 
-from bilqis_mlx.learning._retention.candidate_identity import (
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME,
 )
 from bilqis_mlx.learning.atlas_candidate import CandidateState

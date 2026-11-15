@@ -1,7 +1,7 @@
 """B12 package-import state custody, distinct from native training candidates."""
 from __future__ import annotations
 
-from bilqis_mlx.learning._retention.candidate_identity import RAW_IDENTITY_SCHEME
+from bilqis_mlx.learning._retention._atlas_candidate.identity import RAW_IDENTITY_SCHEME
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field

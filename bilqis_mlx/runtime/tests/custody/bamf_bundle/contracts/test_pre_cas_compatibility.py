@@ -51,7 +51,7 @@ class PreCasCompatibilityTests(DataPlaneCase):
     def setUp(self):
         super().setUp()
         from bilqis_mlx.learning.atlas_candidate import CandidateState
-        from bilqis_mlx.learning._retention.candidate_identity import LEGACY_IDENTITY_SCHEME
+        from bilqis_mlx.learning._retention._atlas_candidate.identity import LEGACY_IDENTITY_SCHEME
         # Pinned old writers consume historical candidates, not raw-v2 candidates.
         historical_state = lambda *a, **k: CandidateState(
             *a, **k, identity_scheme=LEGACY_IDENTITY_SCHEME)

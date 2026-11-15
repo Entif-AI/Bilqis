@@ -12,7 +12,7 @@ import mlx.core as mx
 from bilqis_mlx.data_plane import data_plane
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
-from bilqis_mlx.learning._retention.candidate_identity import (
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME,
 )
 from bilqis_mlx.learning._retention.tests.test_candidate_identity import legacy_oracle

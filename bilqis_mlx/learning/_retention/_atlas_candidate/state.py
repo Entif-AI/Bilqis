@@ -11,7 +11,7 @@ from bilqis_mlx.learning.atlas_plasticity import (
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
 from .common import RETAINED_STATE_ISSUER, STATE_SCHEMA, invalid, is_digest
 from .proofs import CandidateStepProof
-from bilqis_mlx.learning._retention.candidate_identity import (
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME, require_identity_scheme,
 )
 

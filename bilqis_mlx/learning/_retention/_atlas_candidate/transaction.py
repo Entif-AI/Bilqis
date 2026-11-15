@@ -17,7 +17,7 @@ from .common import (CLOSURE_STEP_PROOF_SCHEMA, LEGACY_STEP_PROOF_SCHEMA,
     STEP_PROOF_SCHEMA, RETAINED_STATE_ISSUER, STATE_SCHEMA, TRANSACTION_ISSUER,
     TRANSACTION_SCHEMA, invalid)
 from .proofs import CandidateStepProof
-from bilqis_mlx.learning._retention.candidate_identity import RAW_IDENTITY_SCHEME
+from bilqis_mlx.learning._retention._atlas_candidate.identity import RAW_IDENTITY_SCHEME
 from .state import CandidateState, _is_genesis_allocations
 from .motif_transition import (
     CandidateMotifAllocationTransition,

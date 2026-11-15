@@ -7,7 +7,7 @@ optimizer algorithm or actual student updates. B13 remains publication authority
 
 ## Framing and owner
 
-Add `bilqis_mlx/learning/_retention/candidate_identity.py`; keep
+Add `bilqis_mlx/learning/_retention/_atlas_candidate/identity.py`; keep
 `atlas_acceptance.candidate_identity_digest` as its existing import surface.
 `CandidateState.identity_scheme` selects the hash; new states default to
 `bilqis.mlx.candidate-identity/raw-v2`. Unknown schemes fail through the existing

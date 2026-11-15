@@ -15,7 +15,7 @@ from bilqis_mlx.learning.atlas_plasticity import (
     IdentityRowAge, ModeTransition, PlasticityPolicy,
     TRANSITIONED_POLICY_STATE_SCHEMA, TRANSITIONED_POLICY_VERSION,
 )
-from bilqis_mlx.learning._retention.candidate_identity import (
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME,
 )
 from bilqis_mlx.learning._atlas_candidate.state import _issue_parameter_extension_state

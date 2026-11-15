@@ -32,7 +32,7 @@ def _original(state):
 
 def measure(mode):
     import mlx.core as mx
-    from bilqis_mlx.learning._retention.candidate_identity import (
+    from bilqis_mlx.learning._retention._atlas_candidate.identity import (
         LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME, candidate_identity_digest,
     )
     from bilqis_mlx.runtime.atlas_optimizer import _create_unbound_bamf_optimizer
