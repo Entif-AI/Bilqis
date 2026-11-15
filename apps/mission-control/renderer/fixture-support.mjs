@@ -1,4 +1,5 @@
 import { fixtureQuery, FIXTURE_RUN } from "./capability/fixture.mjs";
+import { createAtlasFixtureApi } from "./atlas/atlas-fixture.mjs";
 import { renderCorrectionsView } from "./corrections/corrections-view.mjs";
 import { renderEpisodesView } from "./episodes/episode-view.mjs";
 import { referenceHomeProjection } from "./home/home-fixture.mjs";
@@ -19,6 +20,8 @@ export const capability = Object.freeze({
   runId: FIXTURE_RUN,
   generation: 3,
 });
+
+export const atlas = Object.freeze({ api: createAtlasFixtureApi() });
 
 export const currentViews = Object.freeze({
   renderCorrectionsView,
