@@ -7,7 +7,7 @@ from bilqis_mlx.fixed_frontier import load_frontier_cohort
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
 from bilqis_mlx.learning.atlas_package_import import PackageImportTransaction
 from bilqis_mlx.learning._atlas_candidate.identity_binding import (
-    candidate_identity_for_canonical_consumer,
+    candidate_identity_binding_for_state, candidate_identity_for_canonical_consumer,
 )
 from bilqis_mlx.runtime.bamf_bundle.admission import (
     bind_accepted_execution_cache, derive_successor_bundle,
@@ -164,6 +164,9 @@ def _bind_factory_evaluation_issuer(raw_issue):
             cache,
             parent_state=parent.retained_state,
             candidate_state=candidate.retained_state,
+            parent_binding=candidate_identity_binding_for_state(parent.retained_state),
+            candidate_binding=candidate_identity_binding_for_state(
+                candidate.retained_state),
         )
 
     def foundation(*args, **kwargs):

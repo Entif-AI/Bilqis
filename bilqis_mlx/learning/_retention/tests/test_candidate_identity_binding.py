@@ -2,6 +2,8 @@
 from types import MappingProxyType
 from unittest import TestCase
 from unittest.mock import patch
+import gc
+import weakref
 
 import mlx.core as mx
 import numpy as np
@@ -16,7 +18,7 @@ from bilqis_mlx.runtime.model_topology_v2 import GenerationExtents, ModelTopolog
 from bilqis_mlx.learning._atlas_candidate.identity import candidate_identity_digest
 from bilqis_mlx.learning._atlas_candidate.identity_binding import (
     _reset_candidate_identity_metrics_for_tests,
-    bind_candidate_identity,
+    bind_candidate_identity, bind_candidate_identity_or_fallback,
     candidate_identity_for_state,
     candidate_identity_metrics_snapshot,
     mark_candidate_state_unbindable,
@@ -125,3 +127,44 @@ class CandidateIdentityBindingTests(TestCase):
                 candidate_identity_for_state(state, topology, extents),
                 candidate_identity_digest(state))
 
+    def test_unsupported_owner_refuses_bind_then_uses_canonical_fallback(self):
+        state, topology, extents = _state()
+        with patch(
+            "bilqis_mlx.learning._atlas_candidate.identity_binding."
+            "protect_state_storage", return_value=False,
+        ):
+            with self.assertRaises(BilqisError):
+                bind_candidate_identity(state, topology, extents)
+        with patch(
+            "bilqis_mlx.learning._atlas_candidate.identity_binding."
+            "candidate_identity_binding_supported", return_value=False,
+        ):
+            expected = candidate_identity_digest(state)
+            self.assertEqual(
+                bind_candidate_identity_or_fallback(
+                    state, topology, extents, expected_digest=expected), expected)
+            self.assertEqual(
+                candidate_identity_for_state(state, topology, extents),
+                expected)
+
+    def test_shared_storage_remains_protected_until_last_owner_is_released(self):
+        state, topology, extents = _state()
+        sibling = CandidateState(
+            state.optimizer, state.policy, state.allocations, state.optimizer_step,
+            state.custody, state.step_proofs, identity_scheme=state.identity_scheme)
+        bind_candidate_identity(state, topology, extents)
+        bind_candidate_identity(sibling, topology, extents)
+        array = sibling.optimizer.parameters["identity.bank.0"]
+        state_ref = weakref.ref(state)
+        del state
+        gc.collect()
+        self.assertIsNone(state_ref())
+        with self.assertRaises(RuntimeError):
+            array[0, 0] = 9
+
+        sibling_ref = weakref.ref(sibling)
+        del sibling
+        gc.collect()
+        self.assertIsNone(sibling_ref())
+        array[0, 0] = 9
+        self.assertEqual(float(array[0, 0]), 9.0)

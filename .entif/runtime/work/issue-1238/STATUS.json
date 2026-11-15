@@ -1,10 +1,8 @@
 {
-  "blocked": [
-    "T006"
-  ],
+  "blocked": [],
   "parent_work_id": null,
   "ready": [
-    "T005"
+    "T006"
   ],
   "schema_version": "0.1",
   "states": {
@@ -12,15 +10,15 @@
       "T001",
       "T002",
       "T003",
-      "T004"
+      "T004",
+      "T005"
     ],
     "planned": [
-      "T005",
       "T006"
     ]
   },
   "task_count": 6,
   "title": "GitHub #1238 candidate identity binding",
-  "updated_at": "2026-11-15T21:56:40.255864Z",
+  "updated_at": "2026-11-15T22:05:41.635890Z",
   "work_id": "bilqis-mlx-1238"
 }

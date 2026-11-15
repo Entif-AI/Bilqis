@@ -141,6 +141,35 @@ def bind_candidate_identity(state, topology_digest: str, extents_digest: str, *,
     return binding
 
 
+def bind_candidate_identity_or_fallback(
+        state, topology_digest: str, extents_digest: str, *,
+        expected_digest: str | None = None) -> str:
+    """Bind owner-controlled state when supported, otherwise prove canonically."""
+    with _LOCK:
+        existing = _binding_for(state)
+        status = _STATUSES.get(id(state))
+        status_value = (status[1] if status is not None and status[0]() is state
+                        else "UNCLASSIFIED")
+    if existing is not None:
+        digest = require_candidate_identity_binding(
+            state, topology_digest, extents_digest, existing).digest
+    elif status_value == "UNBINDABLE":
+        digest = candidate_identity_digest(state)
+    elif status_value == "BINDABLE":
+        if not candidate_identity_binding_supported():
+            invalid()
+        digest = bind_candidate_identity(
+            state, topology_digest, extents_digest).digest
+    elif candidate_identity_binding_supported():
+        digest = bind_candidate_identity(
+            state, topology_digest, extents_digest).digest
+    else:
+        digest = candidate_identity_digest(state)
+    if expected_digest is not None and digest != expected_digest:
+        invalid()
+    return digest
+
+
 def require_candidate_identity_binding(state, topology_digest: str, extents_digest: str,
                                        binding=None):
     started = perf_counter()
@@ -219,6 +248,16 @@ def candidate_identity_for_bound_state(state) -> str:
     invalid()
 
 
+def candidate_identity_binding_for_state(state):
+    """Return the exact live binding when one exists, validating it first."""
+    with _LOCK:
+        binding = _binding_for(state)
+    if binding is None:
+        return None
+    return require_candidate_identity_binding(
+        state, binding.topology_digest, binding.extents_digest, binding)
+
+
 def candidate_identity_for_canonical_consumer(state) -> str:
     """Reuse a live binding when present; otherwise perform the canonical proof."""
     with _LOCK:
@@ -253,4 +292,3 @@ def _reset_candidate_identity_metrics_for_tests() -> None:
     with _LOCK:
         for key, value in _METRICS.items():
             _METRICS[key] = 0.0 if isinstance(value, float) else 0
-

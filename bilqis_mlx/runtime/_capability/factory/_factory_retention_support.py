@@ -6,7 +6,7 @@ from pathlib import Path
 
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction, resolve_candidate
 from bilqis_mlx.learning._atlas_candidate.identity_binding import (
-    bind_candidate_identity, candidate_identity_for_canonical_consumer,
+    bind_candidate_identity_or_fallback, candidate_identity_for_canonical_consumer,
 )
 from bilqis_mlx.learning.atlas_package_import import PackageImportTransaction
 from bilqis_mlx.runtime.atlas_training_authority import (
@@ -92,7 +92,8 @@ def _candidate_from_live_parent(run_dir: Path, transaction: CandidateTransaction
         _invalid("BAMF_C05_CANDIDATE_PARENT_CUSTODY_MISMATCH")
     preview = resolve_candidate(transaction, accepted=True)
     if transaction.motif_transition is None:
-        bind_candidate_identity(preview, parent.topology.digest, parent.extents.digest)
+        bind_candidate_identity_or_fallback(
+            preview, parent.topology.digest, parent.extents.digest)
         successor = derive_successor_bundle(
             parent, preview,
             parent_manifest_sha256=cache.accepted_manifest_sha256,

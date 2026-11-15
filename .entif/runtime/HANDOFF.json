@@ -19,7 +19,8 @@
     "Current production candidate_identity_digest census classified",
     "Pinned EGM design review repaired all substantive findings except final codebase readback still running at checkpoint creation",
     "Pinned EGM design review passed: Design Critic PASS, Codebase Details PASS, Readiness no Blocker/Major; EGM-Passed label verified.",
-    "Rebased design/structural checkpoint cleanly onto unified df58fd5b, which includes merged #1231 currentness authority; focused T002 tests still green."
+    "Rebased design/structural checkpoint cleanly onto unified df58fd5b, which includes merged #1231 currentness authority; focused T002 tests still green.",
+    "T005 verification complete: verify:leaf PASS; EGM Stage-6 drift PASS; verify:premerge PASS; dual-runtime binding verification green."
   ],
   "created_at": "2026-11-15T21:31:39.461520Z",
   "handoff_id": "cp-1238-design-egm",
@@ -49,10 +50,10 @@
     "Post-#1231 production candidate_identity_digest census is 80 occurrences; _issue_transaction now owns parent currentness hashing and the former admission loaded-step occurrence is gone."
   ],
   "next_safe_operations": [
-    "Perform T002 structural split before feature mutation",
-    "Implement binding core and focused tests",
-    "Thread exact binding through lifecycle",
-    "Verify and run drift/premerge gates"
+    "Remove .entif/runtime from final merge candidate",
+    "Refresh unified base",
+    "Push final verified head",
+    "Open PR and inspect hosted checks"
   ],
   "reason": "Structural threshold and long-running feature work require a durable Work Stack checkpoint before implementation.",
   "refs": {
@@ -73,14 +74,9 @@
     "validate Work Stack event chain before checkpoint commit"
   ],
   "work": {
-    "blocked": [
-      "T003",
-      "T004",
-      "T005",
-      "T006"
-    ],
+    "blocked": [],
     "current": [
-      "T002"
+      "T006"
     ],
     "location": ".entif/runtime/work/issue-1238",
     "safe_held": [],

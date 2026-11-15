@@ -150,8 +150,10 @@ def _self_test() -> None:
     root_span = storage_span(root)
     _add_span(root_span)
     try:
-        aliases = (root, root[:, 1:3], root.T, root.reshape((2, 6)),
-                   mx.stop_gradient(root))
+        aliases = (
+            root, root[:, 1:3], root[::-1], root[:, ::2], root.T,
+            root.reshape((2, 6)), root[0, 0], mx.stop_gradient(root),
+        )
         for alias in aliases:
             if storage_span(alias) is None or not _overlaps(alias):
                 raise RuntimeError("MLX sharing alias not protected")
@@ -169,6 +171,25 @@ def _self_test() -> None:
                 pass
             else:
                 raise RuntimeError("MLX DLPack export remained")
+            if hasattr(alias, "__array__"):
+                exported = alias.__array__()
+                if exported.flags.writeable:
+                    raise RuntimeError("MLX __array__ export remained writable")
+            try:
+                alias.__setstate__(_ORIGINALS["__getstate__"](alias))
+            except Exception:
+                pass
+            else:
+                raise RuntimeError("MLX state mutation remained")
+        for name in _MUTATION_SLOTS:
+            if name == "__setitem__":
+                continue
+            try:
+                getattr(root, name)(1)
+            except Exception:
+                pass
+            else:
+                raise RuntimeError(f"MLX in-place mutation remained: {name}")
         for candidate in (copy.copy(root), copy.deepcopy(root)):
             if _overlaps(candidate) and np.asarray(candidate).flags.writeable:
                 raise RuntimeError("MLX copy retained writable shared storage")
@@ -178,8 +199,12 @@ def _self_test() -> None:
         _remove_span(root_span)
     ordinary = mx.array([1.0, 2.0], dtype=mx.float32)
     ordinary[0] = 9.0
-    if float(ordinary[0]) != 9.0:
+    if (float(ordinary[0]) != 9.0 or memoryview(ordinary).readonly
+            or not np.asarray(ordinary).flags.writeable):
         raise RuntimeError("MLX unprotected mutation was changed")
+    ordinary.__dlpack__()
+    if hasattr(ordinary, "__array__") and not ordinary.__array__().flags.writeable:
+        raise RuntimeError("MLX unprotected __array__ export was changed")
 
 
 def guard_intact(capability) -> bool:
@@ -271,4 +296,3 @@ def state_storage_protected(state) -> bool:
     with _LOCK:
         current = _PROTECTIONS.get(id(state))
         return bool(current is not None and current[0]() is state)
-

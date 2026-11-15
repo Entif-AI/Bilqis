@@ -62,9 +62,9 @@ It does **not** claim to defeat an adversarial in-process actor that, before Bil
 
 To keep this boundary honest rather than rhetorical:
 
-- `identity_binding.py` is imported by the private CandidateState owner module at module initialization and installs/probes the guard before Bilqis can classify any CandidateState as `BINDABLE` or issue any binding;
+- `identity_binding.py` is imported by the private CandidateState owner module at module initialization and delegates guard installation/probing to the sibling private `identity_guard.py` before Bilqis can classify any CandidateState as `BINDABLE` or issue any binding;
 - public/caller-owned numerical state that may predate that import is `UNBINDABLE` and receives canonical full hashing;
-- a repository audit gate must find **zero** production occurrences that capture/call `mx.array` mutation/export descriptors (`mx.array.__setitem__`, `__i*__`, `__buffer__`, `__array__`, `__dlpack__`, `__getstate__`, `__reduce_ex__`, `__setstate__`) outside `identity_binding.py`, and zero `ctypes`/raw-pointer writes against candidate numerical storage;
+- a repository audit gate must find **zero** production occurrences that capture/call `mx.array` mutation/export descriptors (`mx.array.__setitem__`, `__i*__`, `__buffer__`, `__array__`, `__dlpack__`, `__getstate__`, `__reduce_ex__`, `__setstate__`) outside `identity_guard.py`, and zero `ctypes`/raw-pointer writes against candidate numerical storage;
 - supported third-party code used in the candidate lifecycle is exercised through the alias/export self-tests; any future dependency that requires descriptor capture/raw writes makes the capability unsupported until separately reviewed;
 - the guard capability record includes an `installed_before_bindable_state=True` invariant, and binding issuance rejects otherwise.
 
@@ -230,7 +230,8 @@ Record the final matrix in tests or turn-in evidence.
 The initial exact migration surface for this issue is deliberately narrower than the repository-wide 80-call census on refreshed unified base `df58fd5b`. Modify only these live-path consumers unless implementation proof exposes another duplicate scan on the same exact state:
 
 - `learning/_retention/_atlas_candidate/identity.py`: canonical raw-v2 remains authoritative; add counters only, no memoization.
-- new `learning/_retention/_atlas_candidate/identity_binding.py`: guard capability, protected-storage ownership, binding issue/require/fallback, metrics snapshots.
+- new `learning/_retention/_atlas_candidate/identity_guard.py`: MLX guard capability, protected-storage ownership, span currentness, self-test and poisoning.
+- new `learning/_retention/_atlas_candidate/identity_binding.py`: binding issue/require/fallback, exact nonnumerical/currentness witnesses, weak registries and metrics snapshots.
 - `learning/_retention/_atlas_candidate/state.py` and `transaction.py`: protect owner-created numerical trees and transfer owner references through exact state issuance; do not change #1231 step-currentness comparisons.
 - `runtime/_capability/factory/_factory_retention_support.py`: resolve one exact candidate state, bind parent/candidate where owner-proven, and remove motif double resolution.
 - new private `runtime/_capability/factory/_factory_identity_evaluation.py` is mandatory: move the FactoryRetentionEvaluation type/issuer there before adding #1238 fields so `factory_retention_owner.py` shrinks below the repository >360 LoC interruption threshold. This structural move is the first implementation mutation after the required Work Stack checkpoint.
@@ -245,7 +246,7 @@ The initial exact migration surface for this issue is deliberately narrower than
 
 All other production `candidate_identity_digest(...)` calls remain canonical full proof in #1238 unless the exact same bound object is already present at that call and a focused migration is necessary to satisfy one of the acceptance bullets. In particular, teacher/current-visit and candidate-step guards remain #1231-owned; persisted bundle hydration/reload orchestration remains #1237-owned; public Atlas/factory-release/package-import/parameter-extension paths remain canonical fallback unless they already receive a private owner-issued binding without changing their authority boundary.
 
-### Exhaustive current production census at base `cde85fe9`
+### Exhaustive current production census at refreshed base `df58fd5b`
 
 Categories: `CORE` = canonical definition/wrapper; `R` = #1238 live bind/reuse migration; `C` = cold full-proof performed by first bind against durable expected digest; `F` = canonical fallback intentionally unchanged; `P` = intentional independent full-content proof unchanged; `#1231` = sibling currentness ownership unchanged. A row with several line numbers accounts for every occurrence in that function.
 
@@ -312,9 +313,10 @@ This census includes the two generation-digest function definitions because the 
 
 | Action | Path | Responsibility |
 |---|---|---|
-| Create | `bilqis_mlx/learning/_retention/_atlas_candidate/identity_binding.py` | Guard installation/capability, protected-storage owners, binding issuer/registry/currentness, metrics snapshot/delta. |
+| Create | `bilqis_mlx/learning/_retention/_atlas_candidate/identity_guard.py` | Guard installation/capability, protected-storage owners, span currentness and runtime self-test. |
+| Create | `bilqis_mlx/learning/_retention/_atlas_candidate/identity_binding.py` | Binding issuer/registry/currentness, bindability status and metrics snapshot/delta. |
 | Modify | `.../_atlas_candidate/identity.py` | Canonical hash metrics only; raw-v2/legacy framing unchanged. |
-| Modify | `.../_retention/atlas_candidate.py` | Private/runtime exports needed by owning production modules; do not expose a caller mint. |
+| No change | `.../_retention/atlas_candidate.py` | Keep the public candidate surface unchanged. Runtime owners import the canonical private logical module directly, so no binding mint or convenience API leaks onto the public candidate surface. |
 | Modify | `.../_atlas_candidate/state.py` | Protect cold/fresh owner-created state and preserve/release owner references; no public auto-binding. |
 | Modify | `.../_atlas_candidate/transaction.py` | Protect private transaction numerical storage and exact resolved-state ownership; #1231 currentness call stays canonical. |
 | Create | `bilqis_mlx/runtime/_capability/factory/_factory_identity_evaluation.py` | Move the live FactoryRetentionEvaluation issuer/state-binding payload out of the 355-LoC owner before feature edits would cross 360. |
@@ -336,7 +338,7 @@ This census includes the two generation-digest function definitions because the 
 | Modify | `bilqis_mlx/runtime/bamf_operator/session_support.py` | Resource observation v2 with exact identity metrics. |
 | Modify | `bilqis_mlx/runtime/bamf_operator/session.py` | Visit snapshot/delta; identical resource object on accepted/rejected visits; exact evaluation state reuse. |
 | Create | `bilqis_mlx/learning/_retention/tests/test_candidate_identity_binding.py` | Guard capability, geometry, currentness, fallback, raw-v2 compatibility. |
-| Create | `bilqis_mlx/runtime/tests/capability/factory/retention/identity_reuse/` focused test package | C05 ordinary/motif exact-state continuity, acceptance/B13/retry hash-count proofs without pushing the parent test directory to the >=18-file trigger. |
+| Modify/Create | Existing directly affected Factory/operator/publication tests plus `learning/_retention/tests/test_candidate_identity_binding.py` | Keep exact-state continuity and cold/hot hash-count proofs beside the authority seams they exercise. Do not create an artificial nested test package when the existing focused owner/publication tests remain below structural thresholds. |
 | Modify | Existing directly affected genesis/publication/operator tests | Update schema/version expectations and add cold/fresh single-hash assertions beside their owners. |
 | Create | `scripts/bamf/benchmark_candidate_identity_binding.py` | Disposable full-B01 first-bind vs repeated-require benchmark; no learner mutation. |
 
