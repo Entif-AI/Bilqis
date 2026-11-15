@@ -6,7 +6,11 @@ import mlx.core as mx
 from bilqis_mlx.learning.atlas_readout import AnswerPlan
 
 from .atlas_model_backend import Backend
-from .atlas_model_contracts import BamfCompiledBatch, _invalid
+from .atlas_model_contracts import (
+    BamfCompiledBatch, BamfMicrobatchGradientExecution,
+    _MICROBATCH_EXECUTION_ISSUER, _invalid,
+)
+from bilqis_mlx.runtime.model_topology_v2 import validate_bamf_parameters
 
 
 _FORWARD_HIDDEN_RANK = 3
@@ -84,7 +88,71 @@ def validate_task_plan_custody(
         _invalid("B11_FORWARD_TASK_PLAN_CUSTODY_MISMATCH")
 
 
+def microbatch_trace_preflight(
+    backend, params, batch, row_batches, answer_plans, targets, masks,
+    generation, cache, rebind_execution, salience_supervision,
+):
+    """Capture model-derived row trajectories outside the autodiff tape."""
+    from .atlas_model_forward import (
+        _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
+    )
+    from .atlas_model_training import loss_bearing_bamf
+
+    binding = rebind_execution(params)
+    producer, accepted_cache, _ = _source_producer(
+        params, batch, generation, cache, binding, trace=True)
+    hidden = _finalize_source_hidden(
+        producer, accepted_cache, batch, capture_derived_cache=False)
+    if hidden.shape[0] != len(row_batches):
+        _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
+    executions = []
+    for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
+            row_batches, answer_plans, targets, masks)):
+        output = _decode_bamf_producer_row(
+            backend, params, row_batch, plan, producer, hidden, index,
+            accepted_cache, binding, refinement_training=True,
+            trace=False)
+        executions.append(loss_bearing_bamf(
+            output, row_targets, mask,
+            salience_supervision=salience_supervision))
+    return tuple(executions)
+
+
+def finalize_microbatch_gradient(
+    backend, batch, row_batches, preflight_executions,
+    executions, mean_loss, gradients,
+):
+    """Verify replay parity and issue one post-autodiff microbatch result."""
+    if (type(executions) is not tuple or len(executions) != len(row_batches)):
+        _invalid("B11_MICROBATCH_EXECUTION_MISSING")
+    if any(
+            execution.output.committed != preflight.output.committed
+            or execution.output.status is not preflight.output.status
+            for execution, preflight in zip(executions, preflight_executions)):
+        _invalid("B11_MICROBATCH_TRAJECTORY_DRIFT")
+    preflight_mean = sum(
+        (execution.loss.total for execution in preflight_executions),
+        mx.array(0.0, dtype=mx.float32)) / len(preflight_executions)
+    mx.eval(preflight_mean)
+    if not bool(mx.allclose(mean_loss, preflight_mean, rtol=1e-5, atol=1e-6)):
+        _invalid("B11_MICROBATCH_LOSS_DRIFT")
+    validate_bamf_parameters(
+        backend.topology, batch.compiled.extents, gradients)
+    result = object.__new__(BamfMicrobatchGradientExecution)
+    for name, value in (
+        ("executions", executions), ("gradients", gradients),
+        ("mean_loss", mean_loss),
+        ("schema_version", "bilqis.mlx.b11-microbatch-gradient-execution/v1"),
+        ("_issuance", _MICROBATCH_EXECUTION_ISSUER),
+    ):
+        object.__setattr__(result, name, value)
+    result.__post_init__()
+    return result
+
+
 __all__ = (
+    "finalize_microbatch_gradient",
+    "microbatch_trace_preflight",
     "validate_decode_row_custody",
     "validate_decode_row_input",
     "validate_task_plan_custody",

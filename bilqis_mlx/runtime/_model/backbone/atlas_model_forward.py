@@ -7,6 +7,7 @@ from bilqis_mlx.learning.atlas_readout import (
     AnswerPlan, DecoderMemory, ExecutionMode, ModelOutput,
     ReadoutSemantics, predict_typed,
 )
+from bilqis_mlx.learning.atlas_readout.decoder.replay import predict_typed_replay
 from bilqis_mlx.learning.frame_embeddings import semantic_bank_views
 from bilqis_mlx.learning.source_atoms.backbone import (
     finalize_source_backbone_hidden,
@@ -114,6 +115,7 @@ def _decode_bamf_producer_row(
     refinement_training: bool = False,
     teacher_targets=None,
     trace=False,
+    replay_output=None,
 ) -> ModelOutput:
     """Decode one task-owned row from a B11 source producer and issue its provenance."""
     validate_decode_row_input(
@@ -155,10 +157,20 @@ def _decode_bamf_producer_row(
         row,
         generation,
     )
-    output = predict_typed(
-        memory, projection, answer_plan, semantics, params,
-        teacher_targets, trace=trace)
+    if replay_output is not None:
+        replay_record = _FORWARD_ISSUANCE.require(replay_output)
+        if (replay_record.compiled_batch is not compiled_batch
+                or replay_record.generation_binding != generation
+                or replay_output.plan != answer_plan):
+            _invalid("B11_REPLAY_OUTPUT_CUSTODY_MISMATCH")
+    output = (
+        predict_typed_replay(
+            memory, projection, answer_plan, semantics, params, replay_output)
+        if replay_output is not None else predict_typed(
+            memory, projection, answer_plan, semantics, params,
+            teacher_targets, trace=trace))
     expected_mode = (
+        ExecutionMode.INFERENCE if replay_output is not None else
         ExecutionMode.TEACHER_FORCED
         if teacher_targets is not None else ExecutionMode.INFERENCE)
     if type(output) is not ModelOutput or output.execution_mode is not expected_mode:
@@ -183,6 +195,8 @@ def _forward_bamf_impl(
     refinement_training: bool = False,
     execution_binding=None,
     teacher_targets=None,
+    decoder_trace=None,
+    replay_output=None,
 ) -> ModelOutput:
     """Run the source-backed BAMF forward and typed decoder once."""
     if (
@@ -230,7 +244,9 @@ def _forward_bamf_impl(
         backend, params, compiled_batch, answer_plan, producer, hidden, 0,
         accepted_cache, execution_binding,
         refinement_training=refinement_training,
-        teacher_targets=teacher_targets, trace=refinement_training)
+        teacher_targets=teacher_targets,
+        trace=refinement_training if decoder_trace is None else decoder_trace,
+        replay_output=replay_output)
 
 
 def forward_bamf(
