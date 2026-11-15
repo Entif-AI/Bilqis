@@ -190,10 +190,10 @@ test("production launch cannot import Lineage fixtures or infer wall clock from 
   assert.match(fixtureSupport, /lineage\/lineage-view\.mjs/);
   assert.doesNotMatch(controller + view, /lineage-fixture|fixture-lineage-run|LINEAGE_FIXTURE/);
   assert.doesNotMatch(view, /new Date\([^)]*generation|generation\s*\*\s*1000/);
-  assert.ok(packageJson.scripts["mission-control"]);
-  assert.ok(packageJson.scripts["mission-control:fixtures"]);
+  assert.ok(packageJson.scripts.bamf);
+  assert.ok(packageJson.scripts["bamf:fixtures"]);
   assert.notEqual(
-    packageJson.scripts["mission-control"],
-    packageJson.scripts["mission-control:fixtures"],
+    packageJson.scripts.bamf,
+    packageJson.scripts["bamf:fixtures"],
   );
 });

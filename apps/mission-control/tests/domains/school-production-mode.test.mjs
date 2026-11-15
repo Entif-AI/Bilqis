@@ -102,6 +102,6 @@ test("production School modules have no static fixture import", () => {
 
 test("package exposes the reviewed explicit fixture launch command", () => {
   const packageJson = JSON.parse(fs.readFileSync(path.resolve(rendererRoot, "../../../package.json"), "utf8"));
-  assert.equal(packageJson.scripts["mission-control"], "electron apps/mission-control/main.cjs");
-  assert.equal(packageJson.scripts["mission-control:fixtures"], "electron apps/mission-control/main.cjs --mission-control-fixtures");
+  assert.equal(packageJson.scripts.bamf, "electron apps/mission-control/main.cjs");
+  assert.equal(packageJson.scripts["bamf:fixtures"], "electron apps/mission-control/main.cjs --mission-control-fixtures");
 });
