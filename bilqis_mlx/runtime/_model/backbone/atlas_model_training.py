@@ -8,6 +8,7 @@ import mlx.core as mx
 from bilqis_mlx.learning.atlas_readout import (
     AnswerPlan, DecisionKind, DecisionOutput, ExecutionMode, answer_loss,
 )
+from bilqis_mlx.learning.atlas_readout.decoder.prediction import attest_issued_output
 from bilqis_mlx.semantics.frame_schema import ConceptRef
 from bilqis_mlx.runtime.backbone_identity import (
     _execution_generation_autodiff_rebinder,
@@ -214,6 +215,8 @@ def _bamf_value_and_grad_impl(
     execution = holder.get("execution")
     if type(execution) is not BamfLossExecution:
         _invalid("B11_GRADIENT_EXECUTION_MISSING")
+    if not attest_issued_output(execution.output):
+        _invalid("B11_TRAINING_OUTPUT_ATTESTATION_FAILED")
     if (execution.output.committed != preflight_output.committed
             or execution.output.status is not preflight_output.status):
         _invalid("B11_TRAINING_TRAJECTORY_DRIFT")
