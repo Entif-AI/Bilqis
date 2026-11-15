@@ -67,12 +67,28 @@ def _execution_projection(compiled_row, config, replayed, frontier):
     return projected
 
 
+def _qualified_schema_map(source_execution_authority):
+    if source_execution_authority is None:
+        return None
+    schemas, pending = {}, list(source_execution_authority.motif_inputs)
+    while pending:
+        item = pending.pop()
+        occurrence_id = item.frame.occurrence_id
+        previous = schemas.get(occurrence_id)
+        if previous is not None and previous != item.schema:
+            _invalid()
+        schemas[occurrence_id] = item.schema
+        pending.extend(item.children)
+    return schemas
+
+
 def _row_read_inputs(
     compiled_row, config, projection, adapter, source, parameters, features,
-    extents,
+    extents, source_execution_authority=None,
 ):
     positions, vectors = [], []
     family = _source_family(adapter.descriptor.adapter_id)
+    qualified_schemas = _qualified_schema_map(source_execution_authority)
     for position in compiled_row.positions:
         if position.kind is not PositionKind.CLOSURE:
             positions.append(None)
@@ -89,9 +105,17 @@ def _row_read_inputs(
             continue
         if type(envelope.frame) is not FrameInstance:
             _invalid()
-        schema, _witness = lookup_source_pinned_frame_schema(
-            envelope.frame.frame_schema_id, envelope.frame.frame_schema_revision,
-            source_family=family, atlas_selection=source.selection)
+        if qualified_schemas is None:
+            schema, _witness = lookup_source_pinned_frame_schema(
+                envelope.frame.frame_schema_id, envelope.frame.frame_schema_revision,
+                source_family=family, atlas_selection=source.selection)
+        else:
+            schema = qualified_schemas.get(envelope.frame.occurrence_id)
+            if (schema is None
+                    or (schema.schema_id, schema.revision)
+                    != (envelope.frame.frame_schema_id,
+                        envelope.frame.frame_schema_revision)):
+                _invalid()
         positions.append(MotifReadPosition(envelope, schema, family))
         vectors.append(motif_gate_features(
             parameters, projection, position.frame_handle, features,
@@ -190,7 +214,8 @@ def _read_retained_compiled_motifs(
         else:
             positions, vectors = _row_read_inputs(
                 row, config, projection, adapter, source, parameters,
-                compiled.features, extents)
+                compiled.features, extents,
+                source_execution_authority=source_authority)
             features = vectors
         positions, features = _pad_motif_read_row(
             positions, features, padded_width)
