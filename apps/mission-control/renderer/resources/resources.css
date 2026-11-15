@@ -41,3 +41,6 @@
 .resource-table thead th:not(:first-child) { text-align: end; }
 .resource-table :is(th, td):first-child { position: sticky; inset-inline-start: 0; background: var(--canvas); z-index: 1; }
 .resource-table button { max-inline-size: 220px; white-space: normal; overflow-wrap: anywhere; text-align: start; }
+.resource-summary article { grid-template-columns: minmax(0, 1fr); }
+.resource-summary article > *, .resource-panel > header > * { min-inline-size: 0; max-inline-size: 100%; }
+.resource-summary .resource-semantic, .resource-panel > header .resource-state { white-space: normal; }
