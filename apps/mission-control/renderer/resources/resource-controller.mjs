@@ -19,6 +19,7 @@ export function createResourceController(api, { fixtureSupport = null } = {}) {
   let epoch = 0;
   let currentRequest = 0;
   let comparisonRequest = 0;
+  let activeTab = "overview";
 
   function render(preserve = true) {
     if (!host) return;
@@ -29,10 +30,16 @@ export function createResourceController(api, { fixtureSupport = null } = {}) {
     const activeHook = preserve && host.ownerDocument?.activeElement?.getAttribute("data-test-id");
     const disclosure = host.querySelector('[data-test-id="resources-semantics"]');
     const expanded = preserve ? disclosure?.open : undefined;
+    const fixtureMessages = fixtureSupport && context?.fixture === true ? fixtureSupport.messages : undefined;
     host.hidden = false;
-    host.innerHTML = renderResourceMarkup(state, { historical });
+    host.innerHTML = renderResourceMarkup(state, { historical, activeTab, messages: fixtureMessages });
     host.__resourceState = state;
-    bindResourceInteractions(host, { onInspect: inspect, onCompare: loadComparison });
+    bindResourceInteractions(host, {
+      onInspect: inspect,
+      onCompare: loadComparison,
+      onTabChange: tab => { activeTab = tab; },
+      messages: fixtureMessages,
+    });
     const next = host.querySelector('[data-test-id="resources-compare-generation"]');
     if (next && draft !== undefined) next.value = draft;
     if (focused) {
@@ -137,6 +144,7 @@ export function createResourceController(api, { fixtureSupport = null } = {}) {
     context = nextContext;
     historical = nextHistorical;
     key = nextKey;
+    activeTab = "overview";
     state = fixtureSupport && nextContext?.fixture === true && !historical ? fixtureSupport.referenceState()
       : { current: null, currentState: "LOADING", comparison: null, comparisonState: "EMPTY" };
     render(false);

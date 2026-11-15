@@ -8,6 +8,7 @@
     "mission-control:test": "node --test apps/mission-control/tests/*.test.mjs apps/mission-control/tests/interactions/*.test.mjs apps/mission-control/tests/domains/*.test.mjs apps/mission-control/tests/domains/*/*.test.mjs apps/mission-control/tests/resources/*.test.mjs apps/mission-control/tests/operate/*.test.mjs",
     "mission-control:production-boundary:test": "node apps/mission-control/scripts/check-production-imports.mjs",
     "mission-control:lineage:browser-test": "node apps/mission-control/tests/browser/lineage-check.cjs",
+    "mission-control:resources:browser-test": "node apps/mission-control/tests/browser/resources-check.cjs",
     "mission-control:school:browser-test": "node apps/mission-control/tests/browser/school-mode-check.cjs",
     "mission-control:salience:browser-test": "node apps/mission-control/tests/browser/salience-mode-check.cjs",
     "mission-control:teacher:browser-test": "node apps/mission-control/tests/browser/teacher-mode-check.cjs",
