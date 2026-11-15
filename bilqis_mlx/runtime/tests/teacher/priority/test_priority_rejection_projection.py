@@ -128,6 +128,47 @@ def test_cold_rebuild_matches_hot_projection(monkeypatch, tmp_path):
     assert cold == hot
 
 
+def test_cold_resume_legacy_cross_capability_prefix_preserves_pressure_without_fake_recency(
+        monkeypatch, tmp_path):
+    plane = CountingPlane()
+    journal = tmp_path / "events.jsonl"
+    parent, cache = _parent(), _cache()
+    _append(journal, _rejection(
+        plane, 1, capability="capability:alpha"))
+    _append(journal, _rejection(
+        plane, 1, capability="capability:beta"))
+
+    cold_module = importlib.reload(rejection_replay)
+    monkeypatch.setattr(cold_module, "data_plane", lambda: plane)
+
+    rows = cold_module.current_rejections(tmp_path, parent, cache)
+
+    assert tuple(row[0] for row in rows) == (
+        "capability:alpha", "capability:beta")
+    assert cold_module.rejection_pressure(
+        tmp_path, parent, cache, "capability:alpha") == ({"retention_gate": 1}, 1)
+    assert cold_module.rejection_pressure(
+        tmp_path, parent, cache, "capability:beta") == ({"retention_gate": 1}, 1)
+    assert cold_module.rejection_recency(tmp_path, parent, cache) == (2, {})
+    assert cold_module.ordered_rejections(tmp_path, parent, cache) == ()
+    assert cold_module.rejection_attempt_ordinals(
+        tmp_path, parent, cache, "capability:beta") == (3, 2)
+
+    _record(tmp_path, _rejection(
+        plane, 2, capability="capability:beta", journal_ordinal=3))
+    rows = cold_module.current_rejections(tmp_path, parent, cache)
+
+    assert len(rows) == 3
+    assert cold_module.rejection_pressure(
+        tmp_path, parent, cache, "capability:beta") == ({"retention_gate": 2}, 2)
+    assert cold_module.rejection_recency(
+        tmp_path, parent, cache) == (3, {"capability:beta": 3})
+    assert cold_module.ordered_rejections(tmp_path, parent, cache) == (
+        rows[-1],)
+    assert cold_module.rejection_attempt_ordinals(
+        tmp_path, parent, cache, "capability:beta") == (4, 3)
+
+
 def test_authenticated_rejection_ordinals_fail_closed_when_reordered(monkeypatch, tmp_path):
     plane = CountingPlane()
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
@@ -144,16 +185,15 @@ def test_authenticated_rejection_ordinals_fail_closed_when_reordered(monkeypatch
     assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_ORDER_INVALID"
 
 
-@pytest.mark.parametrize("global_ordinals", [False, True])
-def test_cross_capability_authenticated_order_is_global(monkeypatch, tmp_path, global_ordinals):
+def test_cross_capability_authenticated_global_order_is_global(monkeypatch, tmp_path):
     plane = CountingPlane()
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
     first = _rejection(plane, 1, capability="capability:alpha",
-        journal_ordinal=1 if global_ordinals else None)
+        journal_ordinal=1)
     second = _rejection(plane, 1, capability="capability:beta",
-        journal_ordinal=2 if global_ordinals else None)
+        journal_ordinal=2)
     _append(journal, second)
     _append(journal, first)
 
