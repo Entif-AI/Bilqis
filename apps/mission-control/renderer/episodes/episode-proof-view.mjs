@@ -2,6 +2,7 @@ import { diffRows, rejectionClass, retainedTransition, rollbackInvariant } from 
 import {
   displayComparisonValue,
   esc,
+  learningHelpMarkup,
   retentionReasonLabel,
   stateBadge,
   t,
@@ -13,7 +14,7 @@ export function diffPanel(episode) {
     <header class="episode-section-heading"><div>
       <span class="eyebrow">${esc(t("learning.comparison.eyebrow"))}</span>
       <h3 id="learning-comparison-title">${esc(t("learning.comparison.title"))}</h3>
-    </div></header>
+    </div>${learningHelpMarkup("comparison", "learning-help-comparison")}</header>
     <div class="episode-diff-wrap" tabindex="0" ${testIdAttribute("learning", "comparison", "scroll")}>
       <table class="episode-diff" ${testIdAttribute("learning", "comparison", "table")}>
         <caption>${esc(t("learning.comparison.caption"))}</caption>
@@ -50,7 +51,10 @@ function retainedProof(transition) {
     <header class="episode-section-heading"><div>
       <span class="eyebrow">${esc(t("learning.outcome.eyebrow"))}</span>
       <h3>${esc(t("learning.outcome.retainedTitle"))}</h3><p>${esc(t("learning.outcome.retainedDetail"))}</p>
-    </div>${stateBadge("RETAINED")}</header>
+    </div><div class="episode-heading-tools">
+      ${learningHelpMarkup("retention", "learning-help-retention")}
+      ${stateBadge("RETAINED")}
+    </div></header>
     <dl class="episode-transition">
       <div><dt>${esc(t("learning.outcome.parentGeneration"))}</dt><dd>${esc(transition.parentGeneration)}</dd></div>
       <span class="episode-transition-arrow" aria-hidden="true">→</span>
@@ -65,7 +69,10 @@ function pendingProof() {
     <header class="episode-section-heading"><div>
       <span class="eyebrow">${esc(t("learning.outcome.eyebrow"))}</span>
       <h3>${esc(t("learning.outcome.pendingTitle"))}</h3><p>${esc(t("learning.outcome.pendingDetail"))}</p>
-    </div>${stateBadge("UNKNOWN")}</header>
+    </div><div class="episode-heading-tools">
+      ${learningHelpMarkup("retention", "learning-help-retention")}
+      ${stateBadge("UNKNOWN")}
+    </div></header>
   </section>`;
 }
 
@@ -77,7 +84,10 @@ function rejectedProof(episode, rollback) {
       <h3>${esc(t("learning.outcome.rejectedTitle"))}</h3>
       <p><strong>${esc(t(classification === "INTERFERENCE" ? "learning.outcome.interference" : "learning.outcome.noGain"))}</strong>
         · ${esc(retentionReasonLabel(episode.retentionReason))}</p>
-    </div>${stateBadge("REJECTED")}</header>
+    </div><div class="episode-heading-tools">
+      ${learningHelpMarkup("retention", "learning-help-retention")}
+      ${stateBadge("REJECTED")}
+    </div></header>
     <table class="episode-rollback-table" ${testIdAttribute("learning", "rollback", "table")}>
       <thead><tr><th scope="col">${esc(t("learning.outcome.invariant"))}</th><th scope="col">${esc(t("learning.outcome.result"))}</th></tr></thead>
       <tbody>

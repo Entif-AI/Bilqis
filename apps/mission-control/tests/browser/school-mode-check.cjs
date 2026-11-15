@@ -128,7 +128,9 @@ async function audit(page, launchMode, viewport, theme, density) {
   await page.keyboard.press("Escape");
   await page.waitForFunction(() => {
     const panel = document.querySelector('[data-test-id="investigation-inspector"]');
-    return panel?.getAttribute("aria-hidden") === "true" && panel.getBoundingClientRect().left >= innerWidth - 1;
+    if (panel?.getAttribute("aria-hidden") !== "true" || panel.inert !== true) return false;
+    const style = getComputedStyle(panel);
+    return style.display === "none" || panel.getBoundingClientRect().left >= innerWidth - 1;
   });
   for (const id of ["matrix", "controls", "dependencies"]) {
     check(await page.locator('[data-test-id="school-help-' + id + '-trigger"]').count() === 1, launchMode + " missing shared " + id + " help");
