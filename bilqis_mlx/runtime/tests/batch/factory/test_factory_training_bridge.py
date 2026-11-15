@@ -19,7 +19,7 @@ from bilqis_mlx.runtime.atlas_model import bind_compiled_training_batch, forward
 from bilqis_mlx.runtime.atlas_training_authority import (
     bind_logical_batch_training_authority,
 )
-from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+from bilqis_mlx.runtime.b11_source_execution_authority import (
     require_b11_source_execution_authority,
 )
 from bilqis_mlx.runtime.cognitive_solver import (
