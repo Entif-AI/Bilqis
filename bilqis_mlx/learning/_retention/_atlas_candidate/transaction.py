@@ -10,6 +10,7 @@ from bilqis_mlx.learning.atlas_plasticity import advance_candidate_policy, next_
 from bilqis_mlx.runtime.atlas_optimizer import (
     AdamWStateTree, _adamw_update, reconcile_b01_optimizer_manifest,
 )
+from bilqis_mlx.runtime.optimizer_step import issue_optimizer_parent_witness
 from ..atlas_execution_provenance import StepExecutionProvenance, mask_digest, participation_digest
 from ..atlas_participation import optimizer_participation_mask
 from .common import (CLOSURE_STEP_PROOF_SCHEMA, LEGACY_STEP_PROOF_SCHEMA,
@@ -64,7 +65,7 @@ class CandidateTransaction:
                 or self.schema_version != TRANSACTION_SCHEMA):
             invalid()
         self.parent.__post_init__()
-        self.optimizer.validate()
+        self.optimizer.validate_structure()
         self.allocations.__post_init__()
         if self.motif_transition is None:
             if (self.allocations is not self.parent.allocations
@@ -82,6 +83,7 @@ class CandidateTransaction:
                     or transition.parent_allocation_sha256 != self.parent.allocations.digest
                     or transition.candidate_allocation_sha256 != self.allocations.digest):
                 invalid()
+        count_checks = []
         for name, count in self.optimizer.update_counts.items():
             previous = self.parent.optimizer.update_counts.get(name)
             if previous is None:
@@ -89,9 +91,16 @@ class CandidateTransaction:
                     invalid()
                 continue
             if (self.optimizer.parameters[name].shape != self.parent.optimizer.parameters[name].shape
-                    or count.shape != previous.shape
-                    or not bool(mx.all(count >= previous))
-                    or not bool(mx.all(count - previous <= self.update_steps))):
+                    or count.shape != previous.shape):
+                invalid()
+            count_checks.extend((
+                mx.all(count >= previous),
+                mx.all(count - previous <= self.update_steps),
+            ))
+        if count_checks:
+            counts_valid = mx.all(mx.stack(tuple(count_checks)))
+            mx.eval(counts_valid)
+            if not bool(counts_valid):
                 invalid()
 
     @property
@@ -234,9 +243,17 @@ def candidate_step(candidate: CandidateTransaction, gradients, execution,
     decay = _validated_step_decay(candidate, execution, spec, extents)
     update_mask = optimizer_participation_mask(
         execution.mask, candidate.optimizer.update_counts)
+    participation_authority = {
+        item.name: (item.whole_parameter, item.row_indices)
+        for item in execution.mask.parameters
+    }
+    candidate.optimizer.validate()
+    parent_witness = issue_optimizer_parent_witness(candidate.optimizer)
     optimizer = _adamw_update(
         candidate.optimizer, gradients, update_mask, teacher_hparams,
-        decay=decay, loss_bearing=loss_bearing, max_norm=max_norm)
+        decay=decay, loss_bearing=loss_bearing, max_norm=max_norm,
+        parent_witness=parent_witness,
+        participation_authority=participation_authority)
     if optimizer is candidate.optimizer:
         return candidate
     proof = _candidate_step_proof(

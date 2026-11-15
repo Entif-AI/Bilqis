@@ -75,7 +75,7 @@ class CandidateState:
                        for index, proof in enumerate(self.step_proofs))
                 or self.schema_version != STATE_SCHEMA):
             invalid()
-        self.optimizer.validate()
+        self.optimizer.validate_structure()
         self.policy.validate()
         self.allocations.__post_init__()
         if (not _is_genesis_allocations(self.allocations)

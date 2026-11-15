@@ -1,5 +1,6 @@
 """Private native AdamW count proofs on disposable numerical tensors."""
 import unittest
+from unittest.mock import patch
 
 import mlx.core as mx
 import mlx.optimizers as optim
@@ -7,6 +8,7 @@ import numpy as np
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.atlas_optimizer import AdamWHyperparameters, AdamWStateTree, _adamw_update
+from .optimizer_step_probe import realistic_step_report
 
 
 class AdamWCountsTests(unittest.TestCase):
@@ -191,6 +193,67 @@ class AdamWCountsTests(unittest.TestCase):
         for field in ("parameters", "m", "v", "update_counts"):
             np.testing.assert_array_equal(np.asarray(getattr(actual, field)["fixture.bank"]),
                                           np.asarray(getattr(expected, field)["fixture.bank"]))
+
+    def test_one_clipped_step_has_one_parent_and_one_child_full_validation(self):
+        parent = self.state()
+        original_validate = AdamWStateTree.validate
+        calls = []
+
+        def counted_validate(state):
+            calls.append(state)
+            return original_validate(state)
+
+        with patch.object(AdamWStateTree, "validate", counted_validate):
+            actual = _adamw_update(
+                parent,
+                {"fixture.bank": mx.full((3, 2), .2, dtype=mx.float32)},
+                {"fixture.bank": mx.array([True, False, False])},
+                self.hp,
+                decay={"fixture.bank": True},
+                max_norm=1.,
+            )
+        self.assertIsNot(actual, parent)
+        self.assertEqual(len(calls), 2)
+        self.assertIs(calls[0], parent)
+        self.assertIs(calls[1], actual)
+
+    def test_rowwise_update_does_not_construct_optimizer_or_extract_numpy_indices(self):
+        parent = self.state()
+        gradient = mx.array([[.1, .3], [.2, -.5], [99999., -99999.]], dtype=mx.float32)
+        mask = mx.array([True, True, False])
+        with (patch.object(optim, "AdamW",
+                    side_effect=AssertionError("per-leaf AdamW dispatch")),
+              patch("bilqis_mlx.runtime.atlas_optimizer.np.asarray",
+                    side_effect=AssertionError("host row-index extraction"))):
+            actual = self.update(parent, mask, gradient)
+        self.assertEqual(int(actual.update_counts["fixture.bank"][0]), 1)
+        self.assertEqual(int(actual.update_counts["fixture.bank"][1]), 3)
+        self.assertEqual(int(actual.update_counts["fixture.bank"][2]), 0)
+
+    def test_authority_selected_rows_match_generic_mask_path_exactly(self):
+        parent = self.state()
+        gradient = mx.array([[.1, .3], [.2, -.5], [99999., -99999.]], dtype=mx.float32)
+        mask = {"fixture.bank": mx.array([True, True, False])}
+        expected = _adamw_update(
+            parent, {"fixture.bank": gradient}, mask, self.hp,
+            decay={"fixture.bank": True})
+        actual = _adamw_update(
+            parent, {"fixture.bank": gradient}, mask, self.hp,
+            decay={"fixture.bank": True},
+            participation_authority={"fixture.bank": (False, (0, 1))})
+        for field in ("parameters", "m", "v", "update_counts"):
+            np.testing.assert_array_equal(
+                np.asarray(getattr(actual, field)["fixture.bank"]),
+                np.asarray(getattr(expected, field)["fixture.bank"]))
+
+    def test_realistic_214_leaf_step_has_constant_validation_boundaries(self):
+        report = realistic_step_report()
+        self.assertEqual(report.leaf_count, 214)
+        self.assertEqual(report.full_state_validations, 2)
+        self.assertEqual(report.numpy_mask_readbacks, 0)
+        self.assertEqual(report.optimizer_instances, 0)
+        self.assertEqual(report.explicit_eval_batches, 4)
+        self.assertGreater(report.wall_seconds, 0.)
 
     def test_clipping_rejects_nonfinite_norm_and_invalid_limit(self):
         from bilqis_mlx.runtime.atlas_optimizer import _masked_clipped_gradients
