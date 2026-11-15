@@ -20,13 +20,34 @@ import {
 } from "./memory-model.mjs";
 import { buildDeepLink } from "../deep-link.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
-import { t } from "../foundation/i18n.mjs";
+import { createTranslator } from "../foundation/i18n.mjs";
+import { contextHelpMarkup, controlClass } from "../foundation/primitives.mjs";
+import { MEMORY_MESSAGES } from "./memory-messages.mjs";
+
+const t = createTranslator({ messages: Object.freeze({
+  "en-US": Object.freeze({
+    ...MEMORY_MESSAGES,
+    "memory.fixture.label": "REFERENCE MEMORY DATA",
+    "memory.fixture.detail": "This launch uses checked-in retained-memory reference records for development and visual verification.",
+  }),
+}) });
+
+export const MEMORY_TABS = Object.freeze(["overview", "atlas", "dossier", "comparison"]);
 
 const ui = {
   compareGeneration: priorMemoryGeneration().generation,
   selectedPage: 0,
   selectedIdentity: stableMemoryIdentity(currentMemoryGeneration().slots[0]),
+  activeTab: "overview",
 };
+
+function help(id, key) {
+  return contextHelpMarkup({
+    label: t(`memory.help.${key}.label`),
+    description: t(`memory.help.${key}.body`),
+    testId: `memory-help-${id}`,
+  });
+}
 
 const STATE_KEYS = Object.freeze({
   PRESENT: "memory.state.present",
@@ -84,6 +105,7 @@ function summaryPanel(snapshot) {
   return `<section class="memory-surface memory-summary" data-test-id="memory-summary">
     <header class="memory-section-heading">
       <div><span class="eyebrow">${t("memory.summary.eyebrow")}</span><h3>${t("memory.summary.title")}</h3></div>
+      <div class="memory-heading-tools">${help("metrics", "metrics")}${help("time", "time")}</div>
       ${stateBadge("PRESENT")}
     </header>
     <dl class="memory-metric-band">
@@ -122,6 +144,7 @@ function atlasPanel(snapshot) {
   return `<section class="memory-surface memory-atlas" data-test-id="memory-atlas">
     <header class="memory-section-heading">
       <div><span class="eyebrow">${t("memory.atlas.eyebrow")}</span><h3>${t("memory.atlas.title")}</h3><p>${t("memory.atlas.summary")}</p></div>
+      <div class="memory-heading-tools">${help("identity", "identity")}${help("allocation", "allocation")}</div>
     </header>
     <nav class="memory-page-nav" aria-label="${e(t("memory.atlas.eyebrow"))}" data-test-id="memory-page-navigation">
       <button type="button" data-memory-page-step="-1" data-test-id="memory-page-previous" ${currentPosition === 0 ? "disabled" : ""}>${t("memory.atlas.previous")}</button>
@@ -184,6 +207,7 @@ function slotPanel(snapshot, context) {
   return `<section class="memory-surface memory-dossier" data-test-id="memory-dossier">
     <header class="memory-section-heading">
       <div><span class="eyebrow">${t("memory.dossier.eyebrow")}</span><h3>${t("memory.dossier.title")}</h3><code class="memory-primary-identity">${e(stableMemoryIdentity(slot))}</code></div>
+      <div class="memory-heading-tools">${help("optimizer", "optimizer")}${help("relations", "relations")}${help("correction", "correction")}</div>
       ${stateBadge(slot.allocationState)}
     </header>
     <div class="memory-dossier-grid">
@@ -230,7 +254,7 @@ function comparePanel(snapshot) {
     ["requalified", "memory.compare.requalified", delta.requalified],
   ];
   return `<section class="memory-surface memory-compare" data-test-id="memory-generation-comparison">
-    <header class="memory-section-heading"><div><span class="eyebrow">${t("memory.compare.eyebrow")}</span><h3>${t("memory.compare.title")}</h3></div>${stateBadge("DIFF")}</header>
+    <header class="memory-section-heading"><div><span class="eyebrow">${t("memory.compare.eyebrow")}</span><h3>${t("memory.compare.title")}</h3></div><div class="memory-heading-tools">${help("comparison", "comparison")}</div>${stateBadge("DIFF")}</header>
     <label class="memory-compare-control">${t("memory.compare.from")}
       <select data-memory-compare data-test-id="memory-compare-generation">${candidates.map((item) => `<option value="${item.generation}" ${item.generation === before.generation ? "selected" : ""}>${t("memory.compare.option", { generation: item.generation })}</option>`).join("")}</select>
     </label>
@@ -277,7 +301,45 @@ function historicalUnavailable(generation) {
   </div>`;
 }
 
+function tabsMarkup() {
+  return MEMORY_TABS.map((id) => `<button type="button" role="tab" class="${controlClass("peer-tab")}" id="memory-tab-${id}" data-memory-tab="${id}" aria-controls="memory-panel-${id}" aria-selected="${String(id === ui.activeTab)}" tabindex="${id === ui.activeTab ? "0" : "-1"}" data-test-id="memory-tab-${id}">${t(`memory.tab.${id}`)}</button>`).join("");
+}
+
+function tabPanel(id, body) {
+  return `<section class="memory-tabpanel" role="tabpanel" id="memory-panel-${id}" aria-labelledby="memory-tab-${id}" data-memory-panel="${id}" ${id === ui.activeTab ? "" : "hidden "}data-test-id="memory-panel-${id}">${body}</section>`;
+}
+
+function bindTabs(container) {
+  const tabs = [...container.querySelectorAll("[data-memory-tab]")];
+  const panels = [...container.querySelectorAll("[data-memory-panel]")];
+  const activate = (id, focus = false) => {
+    if (!MEMORY_TABS.includes(id)) return;
+    ui.activeTab = id;
+    tabs.forEach(tab => {
+      const selected = tab.dataset.memoryTab === id;
+      tab.setAttribute("aria-selected", String(selected));
+      tab.tabIndex = selected ? 0 : -1;
+      if (selected && focus) tab.focus?.({ preventScroll: true });
+    });
+    panels.forEach(panel => { panel.hidden = panel.dataset.memoryPanel !== id; });
+  };
+  tabs.forEach((tab, index) => {
+    tab.addEventListener("click", () => activate(tab.dataset.memoryTab));
+    tab.addEventListener("keydown", event => {
+      const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
+        : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
+        : event.key === "Home" ? 0
+        : event.key === "End" ? tabs.length - 1
+        : null;
+      if (next === null) return;
+      event.preventDefault();
+      activate(tabs[next].dataset.memoryTab, true);
+    });
+  });
+}
+
 function bind(container, inspectMemory, snapshot, context) {
+  bindTabs(container);
   container.querySelectorAll("[data-memory-page-step]").forEach((button) => button.addEventListener("click", () => {
     const pages = pageSummaries(snapshot);
     const current = pages.findIndex((page) => page.pageIndex === ui.selectedPage);
@@ -317,11 +379,11 @@ export function renderMemoryView(container, inspectMemory, selectedIdentity = nu
   container.innerHTML = `<div class="memory-view" data-test-id="memory-workspace">
     <header class="memory-heading" data-test-id="memory-heading"><div><span class="eyebrow">${t("memory.heading.eyebrow")}</span><h2>${t("memory.heading.title")}</h2></div><p>${t("memory.heading.summary")}</p></header>
     <div class="memory-fixture-notice" role="note" data-test-id="memory-fixture-posture"><strong>${t("memory.fixture.label")}</strong><span>${t("memory.fixture.detail")}</span></div>
-    ${summaryPanel(snapshot)}
-    ${atlasPanel(snapshot)}
-    ${slotPanel(snapshot, context)}
-    ${comparePanel(snapshot)}
-    ${rejectedCandidatePanel(snapshot)}
+    <div class="memory-tabs" role="tablist" aria-label="${e(t("memory.tabs.aria"))}" data-test-id="memory-tabs">${tabsMarkup()}</div>
+    ${tabPanel("overview", summaryPanel(snapshot))}
+    ${tabPanel("atlas", atlasPanel(snapshot))}
+    ${tabPanel("dossier", slotPanel(snapshot, context) + rejectedCandidatePanel(snapshot))}
+    ${tabPanel("comparison", comparePanel(snapshot))}
   </div>`;
   bind(container, inspectMemory, snapshot, context);
 }
