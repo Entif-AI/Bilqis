@@ -51,7 +51,7 @@ def _b14_attention_caches(producer):
 
 
 def start_source_backbone_numerical(
-    compiled, parameters, sources, feature_schema, banks, artifact_owner,
+    compiled, parameters, sources, feature_schema, banks, artifact_owner, *, snapshot=None,
 ):
     """Compute h0 and input coordinates internally before constructing a session.
 
@@ -60,7 +60,8 @@ def start_source_backbone_numerical(
     Extent and prefix digests are observations, not B13 generation credentials.
     """
     encoding = encode_source_compiled(
-        compiled, parameters, sources, feature_schema, banks, artifact_owner)
+        compiled, parameters, sources, feature_schema, banks, artifact_owner,
+        snapshot=snapshot)
     valid = mx.array([[position is not None for position in row]
                       for row in encoding.handles], dtype=mx.bool_)
     return UnadmittedBackboneSession(
@@ -73,11 +74,12 @@ def start_source_backbone_numerical(
 
 def start_source_backbone_producer(
     compiled, parameters, sources, feature_schema, banks, artifact_owner, *,
-    execution_binding=None, trace=False,
+    execution_binding=None, trace=False, snapshot=None,
 ):
     """Create the B11 producer only by replaying and revalidating actual source rows."""
     encoded, handoffs = encode_source_compiled_with_handoffs(
-        compiled, parameters, sources, feature_schema, banks, artifact_owner)
+        compiled, parameters, sources, feature_schema, banks, artifact_owner,
+        snapshot=snapshot)
     return _start_encoded_source_backbone_producer(
         encoded, handoffs, parameters, compiled, sources, feature_schema,
         artifact_owner, execution_binding=execution_binding, trace=trace)
@@ -174,7 +176,7 @@ def finalize_source_backbone_hidden(producer):
 
 def start_retained_source_backbone_producer(
     compiled, parameters, sources, feature_schema, banks, manifest,
-    artifact_owner, *, seal, execution_binding=None, trace=False,
+    artifact_owner, *, seal, execution_binding=None, trace=False, snapshot=None,
 ):
     """B13-only B11 producer whose input and g1 boundaries execute B08 reads."""
     if seal is not _B13_EXECUTION_SEAL or type(manifest) is not MotifManifest:
@@ -182,7 +184,8 @@ def start_retained_source_backbone_producer(
     if manifest.digest != compiled.extents.motif_key_map_digest:
         _invalid_producer_receipt()
     encoded, handoffs = encode_source_compiled_with_handoffs(
-        compiled, parameters, sources, feature_schema, banks, artifact_owner)
+        compiled, parameters, sources, feature_schema, banks, artifact_owner,
+        snapshot=snapshot)
     topology = ModelTopologySpecV2()
     input_motif_read = _read_retained_compiled_motifs(
         compiled, parameters, sources, manifest,

@@ -100,9 +100,9 @@ class PreparedPrioritySourceOffer:
     def require_current_parent(self, source_context):
         self._validate()
         parent = self._planning_generation._parent
-        cache, _authenticated = _require_planning_generation(
+        cache, authenticated = _require_planning_generation(
             self._planning_generation, source_context, parent)
-        return parent, cache
+        return parent, cache, authenticated
 
     def require_current(self, source_context, parent, *, prepared_rows=None):
         self._validate()
@@ -164,7 +164,7 @@ def prepare_priority_source_offer(source_context, parent, atlas_artifact_path, *
     from bilqis_mlx.source_adapters.atoms.admission import authorize_public_formal_prefix
     if authenticated.receipt.generation_manifest_sha256 != cache.accepted_manifest_sha256:
         _invalid_source_batch('BAMF_PRIORITY_SOURCE_ACCEPTED_GENERATION_DRIFT')
-    _, _, source_rows = _prepare_factory_source_rows(
+    _, _, _, source_rows = _prepare_factory_source_rows(
         source_context, authenticated, rows, capability=capability,
         source_seed=source_seed, source_each=source_each)
     if len({tuple(item.row['tokens']) for item in source_rows}) != len(rows):
