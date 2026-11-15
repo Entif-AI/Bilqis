@@ -71,6 +71,23 @@ function result(kind, left, right, rows, {
   });
 }
 
+function contextRows(left, right) {
+  return [
+    row("run", t("investigation.compare.row.run"), left.runId, right.runId),
+    row("generation", t("investigation.compare.row.generation"), left.generation, right.generation),
+  ];
+}
+
+function withContextRows(comparison, left, right) {
+  return result(comparison.kind, left, right, [
+    ...contextRows(left, right),
+    ...comparison.rows,
+  ], {
+    state: comparison.state,
+    note: comparison.note,
+  });
+}
+
 function findGeneration(ref) {
   return lineageNodes().find((node) =>
     [node.id, node.recordId, node.manifestSha256, `checkpoint:${node.checkpointSha256}`]
@@ -206,25 +223,37 @@ export function compareStableRefs(left, right) {
   }
   if (left.kind !== right.kind) {
     return result("mixed", left, right, [
+      ...contextRows(left, right),
       row("object-class", t("investigation.compare.row.objectClass"), left.kind, right.kind, "INCOMPATIBLE"),
     ], {
       state: "INCOMPATIBLE",
       note: t("investigation.compare.mixed"),
     });
   }
+  if (left.runId !== right.runId) {
+    return result(left.kind, left, right, contextRows(left, right), {
+      state: "INCOMPATIBLE",
+      note: t("investigation.compare.contextMismatch"),
+    });
+  }
+  let comparison;
   if (["generation", "checkpoint"].includes(left.kind)) {
-    return compareGenerationRefs(left, right);
+    comparison = compareGenerationRefs(left, right);
+  } else if (["candidate", "episode"].includes(left.kind)) {
+    comparison = compareCandidateRefs(left, right);
+  } else if (left.kind === "capability") {
+    comparison = compareCapabilityRefs(left, right);
+  } else if (left.kind === "strategy") {
+    comparison = compareStrategyRefs(left, right);
+  } else if (["source", "semantic"].includes(left.kind)) {
+    comparison = compareIdentityRefs(left, right);
+  } else {
+    comparison = result(left.kind, left, right, [
+      row("identity", t("investigation.compare.row.identity"), left.id, right.id),
+    ], {
+      state: "UNAVAILABLE",
+      note: t("investigation.compare.adapterUnavailable"),
+    });
   }
-  if (["candidate", "episode"].includes(left.kind)) {
-    return compareCandidateRefs(left, right);
-  }
-  if (left.kind === "capability") return compareCapabilityRefs(left, right);
-  if (left.kind === "strategy") return compareStrategyRefs(left, right);
-  if (["source", "semantic"].includes(left.kind)) return compareIdentityRefs(left, right);
-  return result(left.kind, left, right, [
-    row("identity", t("investigation.compare.row.identity"), left.id, right.id),
-  ], {
-    state: "UNAVAILABLE",
-    note: t("investigation.compare.adapterUnavailable"),
-  });
+  return withContextRows(comparison, left, right);
 }

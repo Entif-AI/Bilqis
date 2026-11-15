@@ -38,6 +38,13 @@ function destinationLabel(id) {
   return t(`shell.destination.${id}`);
 }
 
+export function inspectorEvidenceLabelKey(state, defense, fixtureCorrection = false) {
+  if (fixtureCorrection) return "shell.inspector.fixture";
+  const historical = state?.context?.mode === "HISTORICAL" ||
+    state?.context?.historicalPinned === true || defense?.historical === true;
+  return historical ? "shell.inspector.historicalEvidence" : "shell.inspector.currentEvidence";
+}
+
 export function localizeShellStatic(root = document) {
   root.querySelectorAll("[data-i18n]").forEach((element) => {
     element.textContent = t(element.dataset.i18n);
@@ -192,11 +199,7 @@ export function renderInspector(state, defense) {
   panel.inert = !open;
   document.querySelector("#inspector-title").textContent = selected?.label ?? selected?.id ?? t("shell.inspector.noSelection");
   const fixtureCorrection = isFixtureCorrectionSelection(state);
-  const evidencePosture = fixtureCorrection
-    ? t("shell.inspector.fixture")
-    : defense.historical
-      ? t("shell.inspector.historicalEvidence")
-      : t("shell.inspector.currentEvidence");
+  const evidencePosture = t(inspectorEvidenceLabelKey(state, defense, fixtureCorrection));
   const summary = document.querySelector("#inspector-summary");
   const exact = selected?.details
     ? Object.entries(selected.details).map(([label, value]) =>

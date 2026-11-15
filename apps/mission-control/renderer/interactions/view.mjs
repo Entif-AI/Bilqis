@@ -85,6 +85,7 @@ function annotationsMarkup(metadata, currentRef) {
       <label>${esc(t("investigation.notes.target", { id: currentRef.id }))}
         <textarea name="body" maxlength="2000" required data-test-id="investigation-note-body"></textarea>
       </label>
+      <small data-test-id="investigation-note-target-context">${esc(t("investigation.notes.exactTarget", currentRef))}</small>
       <p>${esc(t("investigation.notes.help"))}</p>
       <button type="submit" data-test-id="investigation-note-save">${esc(t("investigation.notes.save"))}</button>
     </form>` : `<p data-test-id="investigation-note-select">${esc(t("investigation.notes.select"))}</p>`}

@@ -2,7 +2,11 @@
 
 Issue: #1128
 
-Baseline: `490e86e1a284fd03c3824e0bce656d658df0052c`
+Final integration/review base: `44b64de2ee772790924cc20ca12aa4d52441c864`
+
+Pre-implementation visual baseline: `490e86e1a284fd03c3824e0bce656d658df0052c`
+
+The visual baseline predates the final integration base because parallel Mission Control leaves advanced unified during implementation. The investigation-plane rendering files exercised below did not change in the intervening unified delta; final exact-base verification was rerun after merging `44b64de2`.
 
 ## Acceptance setup
 

@@ -17,7 +17,7 @@ export const SHELL_MESSAGES = Object.freeze({
   "shell.inspector.compareLeft": "Set compare left",
   "shell.inspector.compareRight": "Set compare right",
   "shell.inspector.addNote": "Add operator note",
-  "shell.inspector.historicalEvidence": "Verified prior evidence · inspection only",
+  "shell.inspector.historicalEvidence": "Historical context · inspection only",
   "shell.inspector.currentEvidence": "Current verified fixture/reference",
   "shell.inspector.evidence": "Evidence",
   "shell.inspector.fixture": "Fixture projection · not live or reconstructed evidence",
