@@ -9,6 +9,8 @@
 .evidence-view :is(button, input, select) { max-inline-size: 100%; }
 .evidence-origin { display: grid; justify-items: start; gap: var(--space-1); max-inline-size: 75ch; overflow-wrap: anywhere; }
 .evidence-origin span { color: var(--text-muted); font-size: var(--type-body-sm); }
+.evidence-heading-row { min-inline-size: 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2) var(--space-3); }
+.evidence-query-guide { justify-content: flex-start; }
 .evidence-query { display: grid; gap: var(--space-3); }
 .evidence-search { display: grid; grid-template-columns: minmax(12rem, .7fr) minmax(0, 1.5fr) auto; gap: var(--space-3); align-items: end; }
 .evidence-search label { display: grid; gap: var(--space-2); min-inline-size: 0; }
@@ -17,8 +19,6 @@
 .evidence-query-state[data-state="error"] { border-inline-start: 3px double var(--danger); padding-inline-start: var(--space-3); }
 .evidence-query-state:is([data-state="PARTIAL"], [data-state="STALE"], [data-state="MISSING"], [data-state="UNKNOWN"], [data-state="UNAVAILABLE"], [data-state="DENIED"]) { border-inline-start: 3px solid var(--attention); padding-inline-start: var(--space-3); }
 .evidence-page-status { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-5); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
-.evidence-help { justify-self: start; max-inline-size: 75ch; }
-.evidence-help p { margin-block-start: var(--space-3); }
 .evidence-workbench { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.6fr); gap: var(--space-6); align-items: start; }
 .evidence-workbench > *, .evidence-detail, .evidence-readable { min-inline-size: 0; }
 .evidence-results { display: grid; gap: var(--space-4); }
