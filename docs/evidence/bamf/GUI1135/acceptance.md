@@ -87,4 +87,21 @@ BILQIS_MEMORY_BASE_REF=df57fe448af9c79db8f9a6a2704564baec7e4c84 \
   node apps/mission-control/tests/browser/memory-check.mjs
 ```
 
-The final issue turn-in must still consume the then-current unified head and rerun the affected verification before review.
+## Final current-unified reconciliation
+
+Before turn-in, #1135 consumed current unified `a68961296b9ae4dc40b8813b2b91fd1633453c73`. The only manual merge conflict was the shared foundation i18n registry after the upstream investigation redesign moved peer message bundles under `foundation/messages/`; the resolution preserves the complete incoming registry and adds the Memory message catalog without restoring retired paths. The Electron asset allowlist and its exact test merged both sets of assets cleanly.
+
+Reconciled head: `8087d26556ebbebdf9488c136881abe2a1286349`
+
+Fresh reconciled proof:
+
+- focused Memory + accessibility + layout + renderer-protocol seam: **39/39 PASS**
+- exact Chrome/CDP browser qualification: **7/7 variants PASS**
+- `verify:leaf`: **PASS**
+  - Mission Control renderer: **352/352 PASS**
+  - Electron security: **53/53 PASS**
+  - Python bridge: **6/6 PASS**
+  - development structure, governance integrity, legacy trainer authority, and BAMF flow control: PASS
+- `git diff --check`: PASS
+
+The first post-merge `verify:leaf` attempt exposed a stale local dependency install: current source already declared `ajv@8.20.0`, while this worktree lacked `node_modules/ajv`. An offline, no-save install restored the declared dependency without changing `package.json` or `package-lock.json`; the exact rerun then passed completely. This was an execution-environment repair, not a product-code change.
