@@ -1,6 +1,7 @@
 """BAMF embedding gather owner."""
 from __future__ import annotations
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 from .common import ATOM_EMBEDDING_RANK, CONSTITUENT_INDEX_RANK, INDEXED_LOGITS_SCHEMA, UINT32_MAX, WIDTH, _invalid
 from .banks import IndexedLogits
 
@@ -14,7 +15,8 @@ def gather_constituents(embeddings: mx.array, indices: mx.array, valid: mx.array
             min(indices.shape) < 1 or not isinstance(valid, mx.array) or valid.shape != indices.shape or
             valid.dtype != mx.bool_):
         _invalid()
-    if bool(mx.any(valid & ((indices < 0) | (indices >= embeddings.shape[1])))):
+    if (host_tensor_validation_enabled()
+            and bool(mx.any(valid & ((indices < 0) | (indices >= embeddings.shape[1]))))):
         _invalid()
     batch, frames, members = indices.shape
     safe = mx.where(valid, indices, 0).astype(mx.int32).reshape(batch, frames*members)
@@ -36,11 +38,12 @@ def masked_semantic_loss(indexed: IndexedLogits, targets: mx.array, legal: mx.ar
         _invalid()
     target_ids = targets.astype(mx.int64)
     target_mask = target_ids[..., None] == mx.array(indexed.indices, dtype=mx.int64)
-    checks = (mx.all((target_ids >= 0) & (target_ids <= UINT32_MAX)), mx.all(mx.any(legal, axis=-1)),
-              mx.all(mx.any(target_mask & legal, axis=-1)), mx.all(~legal | mx.isfinite(indexed.logits)))
-    mx.eval(*checks)
-    if not all(bool(check) for check in checks):
-        _invalid()
+    if host_tensor_validation_enabled():
+        checks = (mx.all((target_ids >= 0) & (target_ids <= UINT32_MAX)), mx.all(mx.any(legal, axis=-1)),
+                  mx.all(mx.any(target_mask & legal, axis=-1)), mx.all(~legal | mx.isfinite(indexed.logits)))
+        mx.eval(*checks)
+        if not all(bool(check) for check in checks):
+            _invalid()
     masked = mx.where(legal, indexed.logits, -mx.inf)
     shifted = masked - mx.max(masked, axis=-1, keepdims=True)
     target_score = mx.sum(mx.where(target_mask, shifted, 0), axis=-1)

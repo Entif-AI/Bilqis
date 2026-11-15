@@ -37,7 +37,7 @@ from .atlas_model_forward_validation import (
 
 
 def _source_producer(
-        params, compiled_batch, generation, cache, execution_binding=None):
+        params, compiled_batch, generation, cache, execution_binding=None, *, trace=False):
     speculative = type(cache) is CandidateExecutionCache
     execution_cache = (
         require_candidate_execution_cache(cache) if speculative
@@ -57,6 +57,7 @@ def _source_producer(
             banks,
             compiled_batch.atlas_feature_artifact_owner,
             execution_binding=execution_binding,
+            trace=trace,
         ), None, True
     if (
         accepted_cache.run_id != compiled_batch.active_semantic_rows.run_id
@@ -77,6 +78,7 @@ def _source_producer(
         compiled_batch.atlas_feature_artifact_owner,
         seal=_B13_EXECUTION_SEAL,
         execution_binding=execution_binding,
+        trace=trace,
     )
     # Speculative execution still carries accepted-generation provenance for
     # motif dependency accounting, but it must never write derived attention
@@ -110,6 +112,8 @@ def _decode_bamf_producer_row(
     execution_binding=None,
     *,
     refinement_training: bool = False,
+    teacher_targets=None,
+    trace=False,
 ) -> ModelOutput:
     """Decode one task-owned row from a B11 source producer and issue its provenance."""
     validate_decode_row_input(
@@ -152,8 +156,12 @@ def _decode_bamf_producer_row(
         generation,
     )
     output = predict_typed(
-        memory, projection, answer_plan, semantics, params)
-    if type(output) is not ModelOutput or output.execution_mode is not ExecutionMode.INFERENCE:
+        memory, projection, answer_plan, semantics, params,
+        teacher_targets, trace=trace)
+    expected_mode = (
+        ExecutionMode.TEACHER_FORCED
+        if teacher_targets is not None else ExecutionMode.INFERENCE)
+    if type(output) is not ModelOutput or output.execution_mode is not expected_mode:
         _invalid("B11_TYPED_OUTPUT_INVALID")
     return _FORWARD_ISSUANCE.issue(
         output, replace(_forward_participation(
@@ -174,6 +182,7 @@ def _forward_bamf_impl(
     *,
     refinement_training: bool = False,
     execution_binding=None,
+    teacher_targets=None,
 ) -> ModelOutput:
     """Run the source-backed BAMF forward and typed decoder once."""
     if (
@@ -210,7 +219,8 @@ def _forward_bamf_impl(
         _invalid("B11_TRAINING_AUTHORITY_GENERATION_MISMATCH")
 
     producer, accepted_cache, capture_derived_cache = _source_producer(
-        params, compiled_batch, generation, cache, execution_binding)
+        params, compiled_batch, generation, cache, execution_binding,
+        trace=refinement_training)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, compiled_batch,
         capture_derived_cache=capture_derived_cache and not refinement_training)
@@ -219,7 +229,8 @@ def _forward_bamf_impl(
     return _decode_bamf_producer_row(
         backend, params, compiled_batch, answer_plan, producer, hidden, 0,
         accepted_cache, execution_binding,
-        refinement_training=refinement_training)
+        refinement_training=refinement_training,
+        teacher_targets=teacher_targets, trace=refinement_training)
 
 
 def forward_bamf(

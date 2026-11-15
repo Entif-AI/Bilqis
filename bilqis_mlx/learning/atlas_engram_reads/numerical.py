@@ -5,6 +5,7 @@ from dataclasses import asdict
 import math
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.semantics.context_eligibility import ApprovedContextProjection, ContextHold, ContextPolicy, SourceFrontier, TaskScope, project_context
 from bilqis_mlx.semantics.frame_schema import AtomicFrame
@@ -56,8 +57,10 @@ def _validate_candidate_inputs(
             or any(type(item) is not TaskScope for item in tasks)
             or any(type(item) is not SourceFrontier for item in frontiers)
             or any(type(item) is not ContextPolicy for item in policies)
-            or not bool(mx.all(mx.isfinite(hidden)))
-            or not bool(mx.all(mx.isfinite(features)))):
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(hidden))))
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(features))))):
         _invalid()
     parameters.__post_init__()
 

@@ -19,6 +19,7 @@ from bilqis_mlx.semantics.atlas_features import AtlasFeatures
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
 from bilqis_mlx.runtime.backbone_identity import (
     bamf_parameter_tree_digest, execution_generation_digest,
+    require_execution_generation_binding,
 )
 from .model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, expected_bamf_shapes,
@@ -72,6 +73,7 @@ class DepthParameterView(Mapping[str, mx.array]):
     _seal: object
     _full_parameters: Mapping[str, mx.array] | None = None
     _extents: GenerationExtents | None = None
+    _execution_binding: object | None = field(default=None, repr=False, compare=False)
     _feature_parameters: Mapping[str, mx.array] = field(init=False, repr=False, compare=False)
     schema_version: str = PARAMETER_VIEW_SCHEMA
 
@@ -86,6 +88,10 @@ class DepthParameterView(Mapping[str, mx.array]):
                 or type(self._extents) is not GenerationExtents):
             _invalid()
         validate_bamf_parameters(ModelTopologySpecV2(), self._extents, self._full_parameters)
+        if self._execution_binding is not None:
+            require_execution_generation_binding(
+                self._execution_binding, self._full_parameters,
+                spec=ModelTopologySpecV2(), extents=self._extents)
         if any(self._tensors[local] is not self._full_parameters[path]
                for local, path in _depth_names(self.boundary_group).items()):
             _invalid()
@@ -105,18 +111,28 @@ class DepthParameterView(Mapping[str, mx.array]):
 
     @property
     def parameter_tree_digest(self) -> str:
+        if self._execution_binding is not None:
+            return require_execution_generation_binding(
+                self._execution_binding, self._full_parameters,
+                spec=ModelTopologySpecV2(), extents=self._extents,
+            ).parameter_tree_digest
         return bamf_parameter_tree_digest(
             self._full_parameters, spec=ModelTopologySpecV2(), extents=self._extents)
 
     @property
     def generation_digest(self) -> str:
+        if self._execution_binding is not None:
+            return require_execution_generation_binding(
+                self._execution_binding, self._full_parameters,
+                spec=ModelTopologySpecV2(), extents=self._extents,
+            ).generation_digest
         return execution_generation_digest(
             self._full_parameters, spec=ModelTopologySpecV2(), extents=self._extents)
 
 
 def depth_parameter_view(
     parameters: Mapping[str, mx.array], *, spec: ModelTopologySpecV2,
-    extents: GenerationExtents, boundary_group: int,
+    extents: GenerationExtents, boundary_group: int, execution_binding=None,
 ) -> DepthParameterView:
     """Borrow only shared depth tensors and the selected B01 boundary gate."""
     if (type(spec) is not ModelTopologySpecV2
@@ -134,7 +150,7 @@ def depth_parameter_view(
         _invalid()
     return DepthParameterView(
         {local: parameters[name] for local, name in names.items()},
-        boundary_group, _VIEW_SEAL, parameters, extents)
+        boundary_group, _VIEW_SEAL, parameters, extents, execution_binding)
 
 
 @dataclass(frozen=True)

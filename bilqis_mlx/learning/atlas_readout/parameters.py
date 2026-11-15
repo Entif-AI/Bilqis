@@ -5,6 +5,7 @@ from types import MappingProxyType
 from typing import Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.runtime.model_topology_v2 import (
     GenerationExtents,
@@ -42,6 +43,7 @@ def bind_readout_parameters(
         value = parameters[item.name]
         if (not isinstance(value, mx.array) or value.dtype != mx.float32
                 or tuple(value.shape) != item.shape
-                or not bool(mx.all(mx.isfinite(value)))):
+                or (host_tensor_validation_enabled()
+                    and not bool(mx.all(mx.isfinite(value))))):
             invalid()
     return MappingProxyType(dict((item.name, parameters[item.name]) for item in declared))

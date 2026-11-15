@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from .model_topology_v2 import (
@@ -138,7 +139,8 @@ def _validate_refinement_parameters(parameters):
         value = parameters[item.name]
         if not isinstance(value, mx.array) or value.shape != item.shape or value.dtype != mx.float32:
             _invalid()
-    if not all(bool(mx.all(mx.isfinite(value))) for value in parameters.values()):
+    if (host_tensor_validation_enabled()
+            and not all(bool(mx.all(mx.isfinite(value))) for value in parameters.values())):
         _invalid()
     return parameters
 
@@ -153,8 +155,9 @@ def _validate(hidden, seed, members, role, passes, parameters):
             members.shape[0] < 1 or members.shape[1] != WIDTH or members.dtype != mx.float32):
         _invalid()
     parameters = _validate_refinement_parameters(parameters)
-    if not all(bool(mx.all(mx.isfinite(value))) for value in
-               (hidden, seed, members, role)):
+    if (host_tensor_validation_enabled()
+            and not all(bool(mx.all(mx.isfinite(value))) for value in
+                        (hidden, seed, members, role))):
         _invalid()
     return parameters
 
@@ -184,7 +187,9 @@ def _refine_frame(hidden: mx.array, seed: mx.array, members: mx.array, role: mx.
             parameters["refine.bias"])
         state = state + gate * residual
     route_logits = state @ parameters["refine.route"].T + parameters["refine.route_bias"]
-    if not bool(mx.all(mx.isfinite(state))) or not bool(mx.all(mx.isfinite(route_logits))):
+    if (host_tensor_validation_enabled()
+            and (not bool(mx.all(mx.isfinite(state)))
+                 or not bool(mx.all(mx.isfinite(route_logits))))):
         _invalid()
     return _RefinementResult(state, route_logits, passes)
 
@@ -200,11 +205,12 @@ def routing_logits_from_state(
     """
     if (not isinstance(hidden, mx.array) or hidden.shape != (WIDTH,)
             or hidden.dtype != mx.float32
-            or not bool(mx.all(mx.isfinite(hidden)))):
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(hidden))))):
         _invalid()
     parameters = _validate_refinement_parameters(parameters)
     logits = hidden @ parameters["refine.route"].T + parameters["refine.route_bias"]
-    if not bool(mx.all(mx.isfinite(logits))):
+    if host_tensor_validation_enabled() and not bool(mx.all(mx.isfinite(logits))):
         _invalid()
     return logits
 
@@ -222,7 +228,8 @@ def masked_routing_loss(route_logits: mx.array | None, route_label: int | None) 
     if (not isinstance(route_logits, mx.array)
             or route_logits.shape != (ROUTE_LOGIT_DIM,)
             or route_logits.dtype != mx.float32
-            or not bool(mx.all(mx.isfinite(route_logits)))
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(route_logits))))
             or (route_label is not None
                 and (type(route_label) is not int or not 0 <= route_label <= MAX_LOCAL_PASSES))):
         _invalid()
