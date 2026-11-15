@@ -112,7 +112,8 @@ operator logs show which path ran.
 ### 2. Extract planning-generation custody into its own owner module
 
 Move `PriorityPlanningGeneration`, retained-object guard, pointer/acceptance snapshot,
-binding and currentness functions out of the 356-line source-offer module into
+binding and currentness functions out of the current unified base's 357-line
+source-offer module into
 `runtime._source.priority_planning_generation` (canonical import name
 `bilqis_mlx.runtime.priority_planning_generation`).
 
@@ -143,7 +144,8 @@ the non-caller-constructible binding it must prove, once:
 - the pointer and published acceptance file are stable across feature
   authentication;
 - full accepted B13 bundle custody validates, bracketed by stable filesystem custody
-  snapshots over the bundle tree;
+  snapshots over the bundle tree **and** an owner-captured inventory of every
+  content-addressed DataPlane dependency that the validator actually consumed;
 - the source-authority registry resolves from the parent's accepted correction
   frontier and equals the accepted cache registry, bracketed by a stable stat identity
   for the actual host/provisioned trust-root file selected by C09 custody;
@@ -156,15 +158,19 @@ The binding records the deep-authenticated identities plus two **currentness fen
 
 - a **B13-owner-issued** bundle currentness witness whose deep bind brackets
   `validate_bamf_bundle_custody()` with equal pre/post bundle-tree stat snapshots
-  (relative name + device/inode/size/mtime/ctime for the verified root/files); and
+  (relative name + device/inode/size/mtime/ctime for the verified root/files) and
+  captures the exact external DataPlane identities authenticated by that validation:
+  the manifest node digest, every sidecar `object_sha256`, and the current tensor
+  `object_sha256` when present; and
 - a C09 trust-root stat witness issued by the source-authority custody owner for the
   exact fixed host/provisioned registry that was deeply resolved.
 
-These filesystem identities are not semantic authority. They are cheap evidence that
-the bytes/authority root deeply authenticated moments earlier have not changed. The
-repository already uses the same stat-bound-proof doctrine in the shared data plane's
-verified-file cache. The binding remains process-live and grants no publication,
-admission, retention or neural-update authority.
+These filesystem/DataPlane identities are not semantic authority. They are cheap
+evidence that the bytes and content-addressed dependencies deeply authenticated
+moments earlier have not changed. The repository already uses the same stat-bound-
+proof doctrine in the shared data plane's verified-file cache. The binding remains
+process-live and grants no publication, admission, retention or neural-update
+authority.
 
 ### 4. Downstream calls use a cheap fail-closed currentness guard
 
@@ -181,16 +187,27 @@ The guard still rejects before downstream use if any of these change:
 - parent correction-frontier canonical digest or accepted source-authority registry
   digest;
 - any B13 bundle-tree stat change after the deep custody proof;
+- any disappearance/corruption of the B13 manifest node or sidecar DataPlane objects
+  captured by the witness. Currentness calls `data_plane().get_node(manifest_sha256)`
+  and `data_plane().get_object(object_sha256)` for those small immutable records and
+  therefore rechecks their content digest without re-parsing/revalidating the whole
+  BAMF bundle;
+- any disappearance/corruption of the current tensor CAS object captured by the
+  witness. Currentness calls `data_plane().require_file_object(tensor_object_sha256)`,
+  which uses the existing stat-bound digest proof and rehashes if its file identity
+  changed;
 - any selected C09 host/provisioned trust-root stat change after deep resolution;
 - accepted feature receipt/content identity captured by the transaction; or
 - current executable release SHA-256.
 
-The pointer/acceptance and B13/C09 stat witnesses are intentionally retained as cheap
-filesystem currentness checks. If any stat fence changes, the hot-path guard fails
-closed; it does not silently reauthenticate/rebase the live transaction. A new
-planning transaction may then perform fresh deep authentication. This preserves
-same-manifest bundle drift and live trust-root drift detection without re-reading and
-re-hashing immutable authority material 21 times.
+The pointer/acceptance, B13 bundle/DataPlane witness and C09 trust-root witness are
+intentionally retained as cheap currentness checks. If any filesystem fence changes
+or any captured DataPlane object fails its ordinary content-addressed read, the hot-
+path guard fails closed; it does not silently reauthenticate/rebase the live
+transaction. A new planning transaction may then perform fresh deep authentication.
+This preserves same-manifest bundle drift, DataPlane node/sidecar/CAS custody drift,
+and live trust-root drift detection without re-reading, reconstructing and validating
+the complete BAMF bundle 21 times.
 
 ### 5. Offer-local checks remain authoritative at their existing boundary
 
@@ -264,7 +281,9 @@ local source/feature/row checks.
     currentness validation.
 - `bilqis_mlx/runtime/_custody/bamf_bundle/bundle_currentness.py` (new)
   - B13-owned non-caller-constructible witness: deep-validate once under stable
-    pre/post bundle stat snapshots, then require exact cheap filesystem currentness.
+    pre/post bundle stat snapshots; retain the exact manifest-node, sidecar-object and
+    tensor-CAS identities consumed by that validation; then require exact cheap
+    filesystem + DataPlane currentness.
 - `bilqis_mlx/runtime/_custody/bamf_bundle/source_authority_custody/__init__.py`
   - issue/check the stat witness for the exact host/provisioned C09 trust-root file;
     do not expose a caller-selectable authority path.
@@ -297,8 +316,9 @@ local source/feature/row checks.
    once-per-transaction regressions, not claimed new savings. Requalification consumes
    the same transaction and no offer repeats generation-wide deep authentication.
 4. Cheap downstream guards independently reject pointer/acceptance, in-memory parent,
-   correction-frontier/source-authority, same-manifest B13 bundle-file change, live
-   C09 trust-root change and executable-release drift; offer-local owners still reject
+   correction-frontier/source-authority, same-manifest B13 bundle-file change,
+   B13 DataPlane manifest-node/sidecar-object/tensor-CAS drift, live C09 trust-root
+   change and executable-release drift; offer-local owners still reject
    feature/source/row holds or drift before candidate execution.
 5. A fresh process can reuse a valid frontier directory by content identity, but
    cannot reuse a process-live planning-generation binding.
