@@ -6,6 +6,16 @@ _MAP = "bilqis.source-packet/map"
 _LIST = "bilqis.source-packet/list"
 _TUPLE = "bilqis.source-packet/tuple"
 _TAGS = frozenset((_MAP, _LIST, _TUPLE))
+_TAGGED_VALUE_WIDTH = 2
+_MAPPING_ENTRY_WIDTH = 2
+
+
+class SourcePacketCodecError(ValueError):
+    """Internal codec-shape failure translated by the packet owner."""
+
+
+class SourcePacketForbiddenAuthority(SourcePacketCodecError):
+    """Forbidden mutable authority appeared inside a source packet."""
 
 
 def freeze_value(value, *, forbidden_mapping_keys: frozenset[str]):
@@ -13,9 +23,9 @@ def freeze_value(value, *, forbidden_mapping_keys: frozenset[str]):
         return value
     if isinstance(value, dict):
         if forbidden_mapping_keys & set(value):
-            raise ValueError("SOURCE_PACKET_FORBIDDEN_AUTHORITY")
+            raise SourcePacketForbiddenAuthority
         if not all(isinstance(key, str) for key in value):
-            raise ValueError("SOURCE_PACKET_MAPPING_INVALID")
+            raise SourcePacketCodecError
         items = tuple(
             (key, freeze_value(value[key], forbidden_mapping_keys=forbidden_mapping_keys))
             for key in sorted(value))
@@ -28,25 +38,26 @@ def freeze_value(value, *, forbidden_mapping_keys: frozenset[str]):
         return (_TUPLE, tuple(
             freeze_value(item, forbidden_mapping_keys=forbidden_mapping_keys)
             for item in value))
-    raise ValueError("SOURCE_PACKET_VALUE_INVALID")
+    raise SourcePacketCodecError
 
 
 def validate_value(value, *, forbidden_mapping_keys: frozenset[str]) -> None:
     if value is None or type(value) in (str, bool, int, float):
         return
-    if not isinstance(value, tuple) or len(value) != 2 or value[0] not in _TAGS:
-        raise ValueError("SOURCE_PACKET_VALUE_INVALID")
+    if (not isinstance(value, tuple) or len(value) != _TAGGED_VALUE_WIDTH
+            or value[0] not in _TAGS):
+        raise SourcePacketCodecError
     tag, payload = value
     if not isinstance(payload, tuple):
-        raise ValueError("SOURCE_PACKET_VALUE_INVALID")
+        raise SourcePacketCodecError
     if tag == _MAP:
-        if any(not isinstance(item, tuple) or len(item) != 2
+        if any(not isinstance(item, tuple) or len(item) != _MAPPING_ENTRY_WIDTH
                or not isinstance(item[0], str) for item in payload):
-            raise ValueError("SOURCE_PACKET_MAPPING_INVALID")
+            raise SourcePacketCodecError
         keys = tuple(item[0] for item in payload)
         if (len(set(keys)) != len(keys) or tuple(sorted(keys)) != keys
                 or forbidden_mapping_keys & set(keys)):
-            raise ValueError("SOURCE_PACKET_MAPPING_INVALID")
+            raise SourcePacketCodecError
         for _, item in payload:
             validate_value(item, forbidden_mapping_keys=forbidden_mapping_keys)
         return
@@ -71,12 +82,12 @@ def freeze_payload(packet: dict, *, forbidden_mapping_keys: frozenset[str]) -> t
 
 def validate_payload(payload: tuple, *, forbidden_mapping_keys: frozenset[str]) -> None:
     if (not isinstance(payload, tuple)
-            or any(not isinstance(item, tuple) or len(item) != 2
+            or any(not isinstance(item, tuple) or len(item) != _MAPPING_ENTRY_WIDTH
                    or not isinstance(item[0], str) for item in payload)):
-        raise ValueError("SOURCE_PACKET_PAYLOAD_INVALID")
+        raise SourcePacketCodecError
     keys = tuple(item[0] for item in payload)
     if len(set(keys)) != len(keys) or tuple(sorted(keys)) != keys:
-        raise ValueError("SOURCE_PACKET_PAYLOAD_INVALID")
+        raise SourcePacketCodecError
     for _, value in payload:
         validate_value(value, forbidden_mapping_keys=forbidden_mapping_keys)
 

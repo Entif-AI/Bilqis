@@ -21,7 +21,10 @@ from bilqis_mlx.source_adapters.school import live_source_registry
 from bilqis_mlx.live_curriculum import draw_course_rows
 from bilqis_mlx.factory.teaching import optional_teaching_rows
 from .source_execution import SourceExecutionContext
-from .source_packet_codec import freeze_payload, thaw_payload, validate_payload
+from .source_packet_codec import (
+    SourcePacketCodecError, SourcePacketForbiddenAuthority,
+    freeze_payload, thaw_payload, validate_payload,
+)
 from . import state as _runtime_state
 
 
@@ -89,11 +92,10 @@ def freeze_source_packet(packet: dict) -> ImmutableSourcePacket:
     try:
         payload = freeze_payload(
             packet, forbidden_mapping_keys=FORBIDDEN_NESTED_AUTHORITY_KEYS)
-    except ValueError as error:
-        _packet_invalid(
-            "SOURCE_PREFETCH_FORBIDDEN_AUTHORITY"
-            if str(error) == "SOURCE_PACKET_FORBIDDEN_AUTHORITY"
-            else "SOURCE_PREFETCH_UNFREEZABLE_VALUE")
+    except SourcePacketForbiddenAuthority:
+        _packet_invalid("SOURCE_PREFETCH_FORBIDDEN_AUTHORITY")
+    except SourcePacketCodecError:
+        _packet_invalid("SOURCE_PREFETCH_UNFREEZABLE_VALUE")
     encoded = json.dumps(
         payload, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"), allow_nan=False).encode("utf-8")
