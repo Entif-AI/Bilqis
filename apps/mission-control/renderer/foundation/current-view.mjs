@@ -98,7 +98,7 @@ export function renderCurrentView(
     domain.hidden = false;
     summary.textContent = t("learning.currentView.summary");
     if (!fixtureViews?.renderEpisodesView || state.context.fixture !== true) {
-      domain.innerHTML = productionProjectionMarkup("learning");
+      domain.innerHTML = "";
       return;
     }
     fixtureViews.renderEpisodesView(domain, (id, kind) => onInspect({

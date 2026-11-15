@@ -8,7 +8,8 @@ import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, onInspect, onNavigate, onAnnounce, schoolDomainSupport = null,
+  capabilityExplorer, learningController, onInspect, onNavigate, onAnnounce,
+  schoolDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
@@ -51,6 +52,15 @@ export function activateDomainViews({
     });
   } else {
     void resourceController?.deactivate();
+  }
+  if (state?.view === "learning" && state.context?.fixture !== true) {
+    void learningController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selection: state.selected,
+    });
+  } else {
+    void learningController?.deactivate();
   }
   if (state?.view === "operate") {
     void operateController?.activate(state.context, {
