@@ -103,12 +103,20 @@ def accepted_corrections(
     cache, registry = _accepted_correction_registry(run_dir)
     if cache.accepted_manifest_sha256 != manifest_sha256:
         _invalid("BAMF_C09_ACCEPTED_RUNTIME_STALE")
-    records = tuple(
-        item for item in read_records(run_dir, manifest_sha256)
-        if item["event"] == CORRECTION_EVENT
-    )
+    records = read_records(run_dir, manifest_sha256)
+    return _accepted_corrections_from_records(records, registry)
+
+
+def _accepted_corrections_from_records(
+    records: tuple[dict, ...], registry: SourceAuthorityRegistry,
+) -> tuple[tuple[str, CorrectionEvent], ...]:
+    """Verify already-read accepted correction records with bound C09 authority."""
+    if not isinstance(registry, SourceAuthorityRegistry):
+        _invalid("BAMF_C09_CORRECTION_AUTHORITY_REQUIRED")
     result = []
     for item in records:
+        if item["event"] != CORRECTION_EVENT:
+            continue
         event = event_from_record(item["correction"])
         registry.verify_correction(event)
         result.append((item["event_id"], event))

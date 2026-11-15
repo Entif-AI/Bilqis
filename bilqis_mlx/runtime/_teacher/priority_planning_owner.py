@@ -44,8 +44,8 @@ def _build_epoch(run_dir, source_context, atlas_artifact_path, progress):
         selection, SOURCE_FAMILY_ADAPTERS,
         LearnedFrontier(selection.release_sha256))
     source = issue_source_context_transition_authority(selection)
-    _emit_progress(progress, "planner: rebuilding source candidate frontier")
-    frontier = _candidate_frontier(run_dir)
+    frontier = _candidate_frontier(
+        run_dir, current.release_sha256, progress=progress)
     _emit_progress(progress, "planner: staging source-valid candidate realizations")
     staged = _persist_ready_realizations(
         run_dir, current, candidate, frontier, source_context.graph)

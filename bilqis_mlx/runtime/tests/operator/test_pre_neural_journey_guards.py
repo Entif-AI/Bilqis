@@ -99,9 +99,9 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
                     state_path.write_bytes(original)
 
     def test_priority_planning_authenticates_generation_once_for_all_capabilities(self):
-        from bilqis_mlx.runtime import priority_source_offer
+        from bilqis_mlx.runtime import priority_planning_generation
 
-        original = priority_source_offer._current_cache
+        original = priority_planning_generation._current_cache
         calls = 0
 
         def counted(*args, **kwargs):
@@ -109,7 +109,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
             calls += 1
             return original(*args, **kwargs)
 
-        with patch.object(priority_source_offer, "_current_cache", side_effect=counted):
+        with patch.object(priority_planning_generation, "_current_cache", side_effect=counted):
             (_pointer, _before, _after, context, selected, _rows,
              _pointer_bytes, _event_bytes) = self.exercise_journey()
 
@@ -117,7 +117,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
         self.assertEqual(selected.status, "TEACHER_SELECTED")
         self.assertEqual(calls, 1)
 
-    def test_priority_planning_hashes_parameter_tree_once_after_context_authentication(self):
+    def test_priority_planning_reuses_generation_binding_after_context_authentication(self):
         from bilqis_mlx.runtime import backbone_identity
         from bilqis_mlx.runtime.bamf_bundle import accepted_runtime
 
@@ -148,7 +148,108 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
 
         self.assertEqual(len(context.release.execution_plan.capabilities), 21)
         self.assertEqual(selected.status, "TEACHER_SELECTED")
-        self.assertEqual(calls, 1)
+        # #1173 owns one execution-generation proof per immutable state. Once the
+        # accepted execution context has bound it, C03 planning must not hash the
+        # parameter tree again during the 21-capability fan-out.
+        self.assertEqual(calls, 0)
+
+    def test_priority_target_registration_reuses_authenticated_c09_runtime(self):
+        """Offer target replay must not reopen deep C09 accepted-registry custody."""
+        from bilqis_mlx.runtime.bamf_bundle import accepted_runtime
+
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                with patch.object(
+                        accepted_runtime, "_accepted_correction_registry",
+                        side_effect=AssertionError(
+                            "target registration rebound deep C09 authority")):
+                    selected = select_foundation_priority_visit(
+                        self.run, context, atlas_path, program=program, school=school)
+
+        self.assertEqual(len(context.release.execution_plan.capabilities), 21)
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+
+    def test_priority_planning_deep_custody_binds_once_then_uses_currentness(self):
+        from bilqis_mlx.runtime.bamf_bundle import bundle_currentness
+        from bilqis_mlx.runtime.bamf_bundle import source_authority_custody
+        from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import currentness
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+
+        b13_original = bundle_currentness.bind_bamf_bundle_currentness
+        c09_original = source_authority_custody.bind_source_authority_currentness
+        counts = {"b13": 0, "c09": 0}
+
+        def b13_counted(*args, **kwargs):
+            counts["b13"] += 1
+            return b13_original(*args, **kwargs)
+
+        def c09_counted(*args, **kwargs):
+            counts["c09"] += 1
+            return c09_original(*args, **kwargs)
+
+        with patch.object(bundle_currentness, "bind_bamf_bundle_currentness",
+                          side_effect=b13_counted), patch.object(
+                              source_authority_custody, "bind_source_authority_currentness",
+                              side_effect=c09_counted):
+            (_pointer, _before, _after, context, selected, _rows,
+             _pointer_bytes, _event_bytes) = self.exercise_journey()
+
+        binding = selected.offer._planning_generation
+        parent = binding._parent
+        self.assertEqual(counts, {"b13": 1, "c09": 1})
+        stable_trust_root = binding._source_authority_currentness._trust_root
+
+        with patch.object(
+                bundle_currentness, "validate_bamf_bundle_custody",
+                side_effect=AssertionError("deep B13 validation repeated")), patch.object(
+                    currentness, "resolve_source_authority_registry",
+                    side_effect=AssertionError("deep C09 resolution repeated")), patch.object(
+                        currentness, "_trust_root_snapshot",
+                        return_value=stable_trust_root):
+            for _ in range(3):
+                cache, authenticated = _require_planning_generation(
+                    binding, context, parent)
+                self.assertIs(cache, binding._cache)
+                self.assertIs(authenticated, binding._authenticated_features)
+
+    def test_priority_planning_currentness_rejects_b13_and_c09_drift(self):
+        from bilqis_mlx.runtime.bamf_bundle import bundle_currentness
+        from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import currentness
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+
+        (_pointer, _before, _after, context, selected, _rows,
+         _pointer_bytes, _event_bytes) = self.exercise_journey()
+        binding = selected.offer._planning_generation
+        parent = binding._parent
+
+        with patch.object(
+                bundle_currentness, "_tree_snapshot",
+                return_value=(("drift",),)):
+            with self.assertRaises(ValueError):
+                _require_planning_generation(binding, context, parent)
+
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=("HOST_SYSTEM_V1", 9, 9, 9, 9, 9)):
+            with self.assertRaises(ValueError):
+                _require_planning_generation(binding, context, parent)
+
+    def test_priority_requalification_reuses_planning_generation_authority(self):
+        from bilqis_mlx.runtime import priority_qualification
+
+        with patch.object(
+                priority_qualification, "_accepted_correction_registry",
+                side_effect=AssertionError("requalification rebound correction authority")):
+            (_pointer, _before, _after, _context, selected, _rows,
+             _pointer_bytes, _event_bytes) = self.exercise_journey()
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
 
     def test_planning_generation_rejects_in_memory_parent_mutation(self):
         from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation

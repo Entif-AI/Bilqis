@@ -1,4 +1,5 @@
 import { t } from "../foundation/i18n.mjs";
+import { temporalMarkup } from "../foundation/temporal.mjs";
 
 const SCHEMA = "bilqis.bamf.mission-control.trainer-observation/v1";
 
@@ -14,7 +15,7 @@ export function observedHomeState(records, context, run) {
     acceptedOptimizerStep: run?.optimizer_step ?? null });
 }
 
-export function renderObservedWork(observed, esc) {
+export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale } = {}) {
   const row = observed?.current;
   if (!row) return "";
   const unknown = t("home.common.unavailable");
@@ -24,6 +25,12 @@ export function renderObservedWork(observed, esc) {
   const seconds = `${(row.elapsed_ms / 1000).toFixed(1)} s`;
   const posture = row.connection_state === "DISCONNECTED" ? t("home.observed.disconnected")
     : t("home.observed.provisional");
+  const observedTime = temporalMarkup({
+    unixSeconds: row.meta?.observed_at ?? null,
+    nowMs,
+    locale,
+    testId: "home-observed-time",
+  });
   const fields = [
     ["home.current.targetCapability", row.capability_id],
     ["home.observed.phase", row.phase], ["home.observed.outcome", row.outcome],
@@ -36,10 +43,10 @@ export function renderObservedWork(observed, esc) {
     ["home.observed.disk", row.disk_free_bytes === null ? null : `${(row.disk_free_bytes / 1073741824).toFixed(1)} GiB`],
   ];
   return `<div class="home-observed" data-posture="OBSERVED" data-connection="${esc(row.connection_state)}" data-test-id="home-observed">
-    <strong class="home-observed-badge">${esc(posture)}</strong>
+    <div class="home-observed-head"><strong class="home-observed-badge">${esc(posture)}</strong>${observedTime}</div>
     <p class="home-observed-accepted">${esc(t("home.observed.acceptedGeneration"))}: ${esc(observed.acceptedGeneration ?? unknown)} · ${esc(t("home.observed.acceptedStep"))}: ${esc(observed.acceptedOptimizerStep ?? unknown)}</p>
     <dl>${fields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
 
-    <details><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item) => `<li>${esc(item.capability_id ?? unknown)} · ${esc(item.phase)} · ${esc(item.outcome)} · ${esc(item.connection_state)}</li>`).join("")}</ol></details>
+    <details><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(item.capability_id ?? unknown)} · ${esc(item.phase)} · ${esc(item.outcome)} · ${esc(item.connection_state)}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
   </div>`;
 }

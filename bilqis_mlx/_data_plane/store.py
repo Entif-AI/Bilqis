@@ -32,6 +32,29 @@ BEGIN
 END;
 """
 
+_PLANNER_FRONTIER_TRUST_SQL = """
+CREATE TABLE IF NOT EXISTS bamf_planner_frontier_trust(
+    trust_key_sha256 TEXT PRIMARY KEY,
+    builder_sha256 TEXT NOT NULL,
+    input_digest TEXT NOT NULL,
+    factory_release_sha256 TEXT NOT NULL,
+    output_digest TEXT NOT NULL,
+    frontier_release_sha256 TEXT NOT NULL,
+    receipt_sha256 TEXT NOT NULL UNIQUE,
+    receipt_payload BLOB NOT NULL
+) WITHOUT ROWID;
+CREATE TRIGGER IF NOT EXISTS bamf_planner_frontier_trust_no_update
+BEFORE UPDATE ON bamf_planner_frontier_trust
+BEGIN
+    SELECT RAISE(ABORT, 'BAMF_PLANNER_FRONTIER_TRUST_IMMUTABLE');
+END;
+CREATE TRIGGER IF NOT EXISTS bamf_planner_frontier_trust_no_delete
+BEFORE DELETE ON bamf_planner_frontier_trust
+BEGIN
+    SELECT RAISE(ABORT, 'BAMF_PLANNER_FRONTIER_TRUST_IMMUTABLE');
+END;
+"""
+
 class DataPlaneStoreMixin:
     def __init__(self, path: Path):
         self.path = Path(path)
@@ -109,6 +132,7 @@ class DataPlaneStoreMixin:
         END;
         """)
         self._db.executescript(_C05_FIXED_SCHOOL_TRUST_SQL)
+        self._db.executescript(_PLANNER_FRONTIER_TRUST_SQL)
         row = self._db.execute(
             "SELECT value FROM meta WHERE key='schema_version'").fetchone()
         if row is None:

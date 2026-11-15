@@ -1886,7 +1886,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2098** raw raises across **271** files. The baseline gate permits only reduction.
+Current production scan: **2099** raw raises across **272** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -3791,6 +3791,7 @@ Current production scan: **2098** raw raises across **271** files. The baseline 
 | `lacks U7C pattern` | 1 | `bilqis_mlx/source_adapters/tests/boolean/test_grade_b_u7c_causal_cells.py` |
 | `malformed decoder payload` | 1 | `bilqis_mlx/runtime/tests/capability/factory/test_cognitive_solver.py` |
 | `malformed translated score` | 1 | `bilqis_mlx/runtime/tests/capability/test_capability_evidence_history.py` |
+| `missing` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/test_planning_currentness.py` |
 | `missing source manifest` | 1 | `bilqis_mlx/runtime/tests/capability/test_capability_authority.py` |
 | `model-input planning entered before A06 authority rejection` | 1 | `bilqis_mlx/runtime/tests/batch/training/test_atlas_training_real_source.py` |
 | `non-finite JSON literal` | 1 | `bilqis_mlx/semantics/atlas/feature_io_contracts.py` |
