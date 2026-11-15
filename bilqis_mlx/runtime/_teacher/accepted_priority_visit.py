@@ -179,7 +179,9 @@ def execute_accepted_priority_candidate(selection, source_context,
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
-    parent, cache, semantic_context = selection.offer.require_current_parent(source_context)
+    parent, cache = selection.offer.require_current_parent(source_context)
+    planning_generation = getattr(selection.offer, '_planning_generation', None)
+    semantic_context = getattr(planning_generation, '_authenticated_features', None)
     _require_current_visit(parent, cache, selection.visit)
     if prepared_source_rows is None:
         selection.offer.require_current(source_context, parent)

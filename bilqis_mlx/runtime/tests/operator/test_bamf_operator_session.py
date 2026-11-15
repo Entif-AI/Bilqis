@@ -195,28 +195,17 @@ class BamfOperatorRoutingTests(unittest.TestCase):
 
     def test_execution_context_uses_accepted_release_without_requiring_c07_lease(self):
         parent = object()
-        context = object()
+        context = SimpleNamespace()
         host = SimpleNamespace(source_context=lambda **_kwargs: context)
-        receipt = SimpleNamespace(
-            source_atlas_bundle_id="atlas",
-            source_release_sha256="release",
-            source_source_bundle_id="source",
-        )
-        accepted = SimpleNamespace(receipt=receipt, construction_predecessor="predecessor")
-        selection = SimpleNamespace(path="/atlas")
-        authenticated = SimpleNamespace(features="features")
+        authenticated = SimpleNamespace(
+            features="features", construction_predecessor="predecessor",
+            selection=SimpleNamespace(path="/atlas"))
         feature = SimpleNamespace(path="/feature")
         with patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.load_accepted_generation",
                 return_value=parent), patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.AcceptedRuntimeHost",
                 return_value=host), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.read_accepted_generation_feature_context",
-                return_value=accepted), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.AtlasArtifactIdentity",
-                return_value="identity"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support._atlas_snapshot.resolve_atlas_artifact_selection",
-                return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.authenticate_bamf_execution_feature_context",
                 return_value=authenticated), patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.persist_feature_manifest",
@@ -224,6 +213,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             self.assertEqual(
                 _execution_context(Path("/run")),
                 (parent, context, "/atlas", "/feature"))
+        self.assertIs(context._accepted_feature_context, authenticated)
 
 
 

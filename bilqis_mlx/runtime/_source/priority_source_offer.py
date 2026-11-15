@@ -100,9 +100,9 @@ class PreparedPrioritySourceOffer:
     def require_current_parent(self, source_context):
         self._validate()
         parent = self._planning_generation._parent
-        cache, authenticated = _require_planning_generation(
+        cache, _authenticated = _require_planning_generation(
             self._planning_generation, source_context, parent)
-        return parent, cache, authenticated
+        return parent, cache
 
     def require_current(self, source_context, parent, *, prepared_rows=None):
         self._validate()
