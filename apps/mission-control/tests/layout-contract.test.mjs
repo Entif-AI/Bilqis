@@ -8,7 +8,7 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../renderer");
 const source = (name) => fs.readFileSync(path.join(rendererRoot, name), "utf8");
 
-test("shared shell owns stable rail and dense page geometry", () => {
+test("shared shell owns stable grouped navigation and compact destination geometry", () => {
   const tokens = source("visual-tokens.css");
   const shell = source("shell.css");
   const home = source("home/home.css");
@@ -20,13 +20,38 @@ test("shared shell owns stable rail and dense page geometry", () => {
   assert.match(shell, /grid-template-columns:\s*var\(--rail-width\) minmax\(0, 1fr\) 0/);
   assert.match(shell, /\.rail\s*\{[^}]*position:\s*sticky[^}]*height:\s*100vh[^}]*overflow-y:\s*auto/s);
   assert.match(shell, /\.view-host\s*\{[^}]*max-width:\s*none[^}]*var\(--page-gutter\)/s);
-  assert.match(shell, /\.view-host h1\s*\{[^}]*font-size:\s*var\(--type-display\)/s);
+  assert.match(shell, /\.destination-header h1\s*\{[^}]*font-size:\s*var\(--type-title\)/s);
+  assert.match(shell, /\.nav-group-label\s*\{/);
+  assert.match(shell, /@media \(max-width:\s*980px\)[\s\S]*#primary-nav\s*\{[^}]*overflow-x:\s*auto/s);
+  assert.doesNotMatch(shell, /#primary-nav button::first-letter/);
+  assert.doesNotMatch(shell, /font-size:\s*0/);
 
   assert.doesNotMatch(home, /grid-template-columns:\s*176px/);
   assert.doesNotMatch(dossier, /^\.context-bar\s*\{/m);
   assert.doesNotMatch(dossier, /^\.context-actions\s*\{/m);
   assert.doesNotMatch(frames, /^\s*\.context-bar\s*\{/m);
   assert.doesNotMatch(frames, /^\s*\.context-actions\s*\{/m);
+});
+
+test("shell target anatomy removes redundant chrome and keeps secondary context disclosed", () => {
+  const html = source("index.html");
+  const shell = source("shell.css");
+  const ui = source("foundation/renderer-ui.mjs");
+  const interactions = source("foundation/static-interactions.mjs");
+
+  assert.doesNotMatch(html, /brand-mark/);
+  assert.match(html, /id="system-context-disclosure"[^>]*class="context-disclosure"/);
+  assert.match(html, /id="view-settings-disclosure"[^>]*class="context-disclosure"/);
+  assert.doesNotMatch(html, /id="run-selector"/);
+  assert.doesNotMatch(html, /id="generation-selector"/);
+  assert.match(html, /data-test-id="shell-destination-header"/);
+  assert.match(ui, /DESTINATION_GROUPS\.map/);
+  assert.match(ui, /testIdAttribute\("nav", "destination", id\)/);
+  assert.match(ui, /shell\.context\.factExact/);
+  assert.equal(ui.includes('aria-label="${esc(accessible)}"'), true);
+  assert.doesNotMatch(interactions, /generation-selector/);
+  assert.doesNotMatch(shell, /repeating-linear-gradient/);
+  assert.doesNotMatch(shell, /font-size:\s*0/);
 });
 
 test("operator values and wide School data stay inside their owning surfaces", () => {
@@ -58,14 +83,17 @@ test("operator typography and explanatory surfaces use the shared visual languag
     ["--type-label", "12px"], ["--type-body", "14px"],
     ["--type-section", "20px"], ["--type-display", "30px"],
   ]) assert.match(tokens, new RegExp(token + ":\\s*" + value));
-  assert.match(shell, /\.context-bar\[data-context="empty"\][^}]*grid-template-columns:\s*minmax\(300px, 1fr\) auto/s);
-  assert.match(shell, /\.context-actions\s*\{[^}]*flex-wrap:\s*nowrap[^}]*align-items:\s*flex-end/s);
-  assert.match(shell, /\.context-facts\[hidden\]\s*\{\s*display:\s*none/s);
+  assert.match(shell, /\.context-bar\s*\{[^}]*display:\s*flex[^}]*justify-content:\s*space-between/s);
+  assert.match(shell, /\.context-disclosure\s*\{[^}]*position:\s*relative/s);
+  assert.match(shell, /\.context-popover\s*\{[^}]*position:\s*absolute/s);
+  assert.match(shell, /\.context-facts\s*\{[^}]*repeat\(3, minmax\(140px, 1fr\)\)/s);
+  assert.doesNotMatch(shell, /\.selector\s*\{/);
   assert.match(shell, /\.ui-glossary\s*\{/);
-  for (const markup of [school, teacher, salience, corrections, evidence]) {
+  for (const markup of [school, teacher, salience, corrections]) {
     assert.match(markup, /class="ui-glossary"/);
   }
-  assert.match(evidence, /QUERY UNAVAILABLE/);
+  assert.doesNotMatch(evidence, /class="ui-glossary"/);
+  assert.match(source("evidence/evidence-messages.mjs"), /Query unavailable/);
   assert.doesNotMatch(evidence, /QUERY ERROR/);
 });
 

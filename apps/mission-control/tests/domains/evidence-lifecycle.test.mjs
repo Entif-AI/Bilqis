@@ -85,7 +85,7 @@ test("new exact search clears prior evidence before showing the loading criterio
   const markup = renderEvidenceMarkup(next);
   assert.deepEqual(next.records, []);
   assert.equal(next.page, null);
-  assert.ok(markup.includes("LOADING"));
+  assert.ok(markup.includes("Loading"));
   assert.ok(markup.includes("Awaiting bounded evidence page"));
   assert.ok(markup.includes('value="B.OR"'));
   assert.equal(markup.includes("capability:and"), false);
@@ -116,4 +116,10 @@ test("leaving Evidence invalidates pending work before another domain reuses the
   pending.resolve(page(request, [capability]));
   await new Promise((resolve) => setTimeout(resolve, 0));
   assert.equal(container.innerHTML, "OWNER SENTINEL");
+});
+
+test("pagination preserves the selected record traversal failure until a retry", () => {
+  const next = prepareEvidenceSearch({selected: capability, selectedLinks: null,
+    traversalError: "QUERY_DENIED", records: [capability], links: []}, {kind:"context",value:""}, true);
+  assert.equal(next.traversalError, "QUERY_DENIED");
 });

@@ -13,7 +13,8 @@ async (page) => {
   await page.locator('#evidence-detail [data-record]').first().click();
   await page.getByText('"score_correct":', {exact:false}).last().waitFor();
   check((await page.locator('#evidence-detail').innerText()).includes('evidence:B.AND:fresh:3'), 'exact evidence');
-  await page.locator('#generation-selector').selectOption('1');
+  await page.locator('[data-time-lens-form] input[name="generation"]').fill('1');
+  await page.locator('[data-time-lens-form] button[type="submit"]').click();
   await page.getByRole('heading', {name:'Conjunction', exact:true}).waitFor();
   check(await page.locator('[data-kind="regression"]').count() === 0, 'no future regression at G1');
   check(await page.locator('[data-kind="recovery"]').count() === 0, 'no future recovery at G1');
@@ -21,8 +22,8 @@ async (page) => {
   await page.getByRole('button', {name:'Open capability · B.NOT'}).click();
   await page.getByRole('heading', {name:'Negation', exact:true}).waitFor();
   check(page.url().includes('id=B.NOT') && page.url().includes('generation=1'), 'exact dependent lens');
-  await page.getByRole('button', {name:'Change theme'}).click();
-  await page.getByRole('button', {name:'Change information density'}).click();
+  await page.locator('[data-test-id="shell-theme-trigger"]').click();
+  await page.locator('[data-test-id="shell-density-trigger"]').click();
   await page.setViewportSize({width:800,height:900});
   check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'narrow viewport no overflow');
   await page.locator('[data-section="sources"]').focus();

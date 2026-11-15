@@ -18,6 +18,8 @@ import {
   tableMarkup,
   toolbarMarkup,
 } from "./curriculum-atlas-markup.mjs";
+import { t } from "../foundation/i18n.mjs";
+import { testIdAttribute } from "../foundation/test-hooks.mjs";
 
 const ui = {
   selectedId: null, traceMode: "both", grade: "all", state: "all", family: "all",
@@ -258,9 +260,11 @@ export function renderCurriculumAtlasView(
         '<span>' + esc(snapshot.label) + ' · ' + esc(snapshot.fixtureBoundary) +
         ' · shell generation ' + esc(context?.generation ?? "unknown") + ' · ' +
         esc(context?.mode ?? "LIVE") + '</span></div>' +
-      '<nav class="school-subnav" aria-label="School views">' +
-        '<button type="button" data-school-mode="matrix" data-focus-key="school-mode:matrix">Capability matrix</button>' +
-        '<button type="button" aria-current="page" data-focus-key="school-mode:atlas">Curriculum Semantic Atlas</button></nav>' +
+      '<nav class="school-subnav" aria-label="' + esc(t("shell.school.subnav")) + '" data-test-id="shell-school-subnav">' +
+        '<button type="button" class="ui-control ui-control--peer-tab" data-school-mode="matrix" data-focus-key="school-mode:matrix" ' +
+          testIdAttribute("shell", "school-mode", "matrix") + '>' + esc(t("shell.school.matrix")) + '</button>' +
+        '<button type="button" class="ui-control ui-control--peer-tab" aria-current="page" data-focus-key="school-mode:atlas" ' +
+          testIdAttribute("shell", "school-mode", "atlas") + '>' + esc(t("shell.school.atlas")) + '</button></nav>' +
       toolbarMarkup(graph, snapshot, ui) +
       (ui.searchStatus
         ? '<p class="curriculum-search-status" role="status">' + esc(ui.searchStatus) + '</p>'

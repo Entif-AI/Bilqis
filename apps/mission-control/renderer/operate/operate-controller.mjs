@@ -9,6 +9,7 @@ import {
   terminalReceipt,
 } from "./operate-model.mjs";
 import { bindOperateInteractions, renderOperateMarkup } from "./operate-view.mjs";
+import { t } from "../foundation/i18n.mjs";
 
 function sameContext(left, right) {
   return Boolean(left && right) && left.runId === right.runId &&
@@ -189,9 +190,9 @@ export function createOperateController(api) {
     onAnnounce = options.onAnnounce;
     active = true;
     if (typeof document !== "undefined") {
-      document.querySelector(".fixture-card").hidden = true;
+      document.querySelector("#domain-context-boundary").hidden = true;
       document.querySelector("#visual-catalog").hidden = true;
-      document.querySelector("#view-summary").textContent = "Preflighted CP05 commands with explicit consequence, human authorization, target binding, idempotency, and receipt readback.";
+      document.querySelector("#view-summary").textContent = t("shell.destination.operate.purpose");
     }
     if (changed) state = initialOperateState();
     render();

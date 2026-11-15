@@ -1,6 +1,5 @@
 import { parseDeepLink } from "../deep-link.mjs";
 import { withRoute, openEvidence, openSelectionOwner } from "../shell-state.mjs";
-import { withHistoricalLens } from "../interactions/model.mjs";
 import {
   DENSITIES,
   THEMES,
@@ -51,14 +50,6 @@ export function bindStaticInteractions({
   document.querySelector("#palette-trigger").addEventListener("click", openPalette);
   document.querySelector("#palette-close").addEventListener("click", () => {
     document.querySelector("#command-palette").close();
-  });
-  document.querySelector("#generation-selector").addEventListener("change", (event) => {
-    const state = getState();
-    if (!state) return;
-    const generation = Number(event.currentTarget.value);
-    if (!Number.isSafeInteger(generation) || generation < 0) return;
-    setState(withHistoricalLens(state, generation));
-    render();
   });
   window.addEventListener("hashchange", () => {
     const state = getState();

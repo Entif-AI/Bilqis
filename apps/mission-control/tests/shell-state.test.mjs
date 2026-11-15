@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
+  DESTINATION_GROUPS,
   DESTINATIONS,
   assertOperatorView,
   createShellState,
@@ -25,6 +26,22 @@ test("all required GUI01 destinations remain stable and reachable", () => {
   assert.deepEqual(
     DESTINATIONS.map(([id]) => id),
     ["mission-control", "school", "capability", "learning", "atlas", "model", "memory", "teacher", "salience", "corrections", "lineage", "resources", "evidence", "operate"],
+  );
+});
+
+test("persistent navigation groups follow the target atlas task families without losing direct access", () => {
+  assert.deepEqual(
+    DESTINATION_GROUPS.map(({ id, destinations }) => [id, [...destinations]]),
+    [
+      ["overview-learning", ["mission-control", "school", "capability", "learning"]],
+      ["representation-mechanisms", ["atlas", "model", "memory"]],
+      ["decision-correction", ["teacher", "salience", "corrections"]],
+      ["provenance-operations", ["lineage", "resources", "evidence", "operate"]],
+    ],
+  );
+  assert.deepEqual(
+    DESTINATION_GROUPS.flatMap(({ destinations }) => destinations),
+    DESTINATIONS.map(([id]) => id),
   );
 });
 

@@ -1,5 +1,5 @@
 import { escapeText as esc } from "../frames/frame-model.mjs";
-import { DESTINATIONS, shellPosture } from "../shell-state.mjs";
+import { DESTINATION_GROUPS, DESTINATIONS, shellPosture } from "../shell-state.mjs";
 import {
   currentMemoryGeneration,
   stableMemoryIdentity,
@@ -8,16 +8,12 @@ import { defensiveBannerMarkup } from "./defensive-state.mjs";
 import { bindRovingNavigation } from "./accessibility.mjs";
 import { renderCurrentView } from "./current-view.mjs";
 import { t } from "./i18n.mjs";
+import { controlClass } from "./primitives.mjs";
+import { testIdAttribute } from "./test-hooks.mjs";
 
 export { renderCurrentView } from "./current-view.mjs";
 
-const labels = new Map(DESTINATIONS);
-const controllerSummaries = new Map([
-  ["mission-control", "Outcome-first learner health, current work, learning pulse and actionable attention."],
-  ["atlas", "Source-authoritative semantic identity and generation-scoped ABI state, with learned similarity isolated behind a separate lens."],
-  ["capability", "Measured chronology, source support, and literal evidence. No inferred causes."],
-  ["resources", "Measured resource budgets, decomposed where instrumented, with exact historical comparison and spike correlation."],
-]);
+const destinationIds = new Set(DESTINATIONS.map(([id]) => id));
 const demoObjects = [
   ["capability", "B.AND"],
   ["episode", "episode-record:fixture:retained-44239"],
@@ -36,71 +32,98 @@ function compactIdentity(value) {
     : value;
 }
 
+function destinationLabel(id) {
+  if (!destinationIds.has(id)) throw new RangeError(`MISSION_CONTROL_DESTINATION_UNKNOWN:${id}`);
+  return t(`shell.destination.${id}`);
+}
+
+export function localizeShellStatic(root = document) {
+  root.querySelectorAll("[data-i18n]").forEach((element) => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+    element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+  });
+}
+
+function contextFactMarkup(labelKey, value) {
+  const exact = String(value);
+  const label = t(labelKey);
+  const accessible = t("shell.context.factExact", { label, value: exact });
+  return `<span><small>${esc(label)}</small><strong title="${esc(exact)}" aria-label="${esc(accessible)}">${esc(compactIdentity(value))}</strong></span>`;
+}
+
+function shellStateLabel(value) {
+  const key = {
+    LIVE: "shell.context.mode.live",
+    HISTORICAL: "shell.context.mode.historical",
+    CONNECTED: "shell.context.freshness.connected",
+    WAITING: "shell.context.freshness.waiting",
+    FRESH: "shell.context.freshness.fresh",
+    STALE: "shell.context.freshness.stale",
+    DISCONNECTED: "shell.context.freshness.disconnected",
+    UNKNOWN: "shell.context.freshness.unknown",
+    READY: "shell.context.value.ready",
+    CONNECTING: "shell.context.value.connecting",
+    DISCOVERING: "shell.context.value.discovering",
+    "NOT STARTED": "shell.context.value.notStarted",
+    STARTING: "shell.context.value.starting",
+    FAILED: "shell.context.value.failed",
+    HEALTHY: "shell.context.value.healthy",
+    "LEARNER-UNAVAILABLE": "shell.context.value.learnerUnavailable",
+  }[String(value ?? "").toUpperCase()];
+  return key ? t(key) : String(value ?? "");
+}
+
 export function renderContext(state, defense, bootstrap = null) {
   const shell = document.querySelector("#shell");
   const contextBar = document.querySelector(".context-bar");
   const contextFacts = document.querySelector("#context-facts");
   contextBar.dataset.context = state ? "verified" : "empty";
-  contextFacts.hidden = !state;
   if (!state) {
     shell.dataset.posture = defense.id;
     const connection = bootstrap?.connection ?? null;
-    document.querySelector("#mode-badge").textContent = connection?.serviceLive ? "BOOTSTRAP" : "INSPECTION";
-    document.querySelector("#run-id").textContent = connection?.runId ?? "Discovering learner";
+    document.querySelector("#mode-badge").textContent = connection?.serviceLive
+      ? t("shell.context.bootstrapMode")
+      : t("shell.context.inspectionMode");
+    document.querySelector("#run-id").textContent = connection?.runId ?? t("shell.context.discoveringLearner");
     document.querySelector("#generation-id").textContent = Number.isSafeInteger(connection?.generation)
-      ? `Generation ${connection.generation} · telemetry pending`
-      : "Generation not yet identified";
+      ? t("shell.context.generationBootstrap", { generation: connection.generation })
+      : t("shell.context.generationUnknown");
     document.querySelector("#freshness").textContent = connection?.serviceLive
-      ? connection?.learnerReady ? "CONNECTED" : "WAITING"
-      : defense.freshness;
+      ? shellStateLabel(connection?.learnerReady ? "CONNECTED" : "WAITING")
+      : shellStateLabel(defense.freshness);
     const facts = [
-      ["Service", connection?.serviceReady ? "READY" : connection?.serviceLive ? "LIVE" : "WAITING"],
-      ["Learner", connection?.learnerReady ? "READY" : connection?.learnerState ?? "DISCOVERING"],
-      ["Optimizer", Number.isSafeInteger(connection?.optimizerStep) ? connection.optimizerStep : "NOT STARTED"],
-      ["Telemetry", bootstrap?.phase === "telemetry-pending" ? "STARTING" : bootstrap?.phase ?? "WAITING"],
+      ["shell.context.fact.service", shellStateLabel(connection?.serviceReady ? "READY" : connection?.serviceLive ? "LIVE" : "WAITING")],
+      ["shell.context.fact.learner", shellStateLabel(connection?.learnerReady ? "READY" : connection?.learnerState ?? "DISCOVERING")],
+      ["shell.context.fact.optimizer", Number.isSafeInteger(connection?.optimizerStep) ? connection.optimizerStep : shellStateLabel("NOT STARTED")],
+      ["shell.context.fact.telemetry", shellStateLabel(bootstrap?.phase === "telemetry-pending" ? "STARTING" : bootstrap?.phase ?? "WAITING")],
     ];
-    document.querySelector("#context-facts").innerHTML = facts
-      .map(([label, value]) => `<span><small>${esc(label)}</small><strong>${esc(value)}</strong></span>`).join("");
-    const runSelector = document.querySelector("#run-selector");
-    runSelector.replaceChildren(new Option(connection?.runId ?? "Discovering…", connection?.runId ?? ""));
-    runSelector.disabled = true;
-    const generationSelector = document.querySelector("#generation-selector");
-    generationSelector.replaceChildren(new Option(
-      Number.isSafeInteger(connection?.generation) ? `${connection.generation} · BOOTSTRAP` : "Waiting…",
-      Number.isSafeInteger(connection?.generation) ? String(connection.generation) : "",
-    ));
-    generationSelector.disabled = true;
+    contextFacts.innerHTML = facts.map(([labelKey, value]) => contextFactMarkup(labelKey, value)).join("");
     return;
   }
   const { context } = state;
   shell.dataset.posture = shellPosture(context);
-  document.querySelector("#mode-badge").textContent = context.mode;
+  document.querySelector("#mode-badge").textContent = shellStateLabel(context.mode);
   document.querySelector("#run-id").textContent = context.runId;
   document.querySelector("#run-id").title = context.runId;
   const generationIdentity = document.querySelector("#generation-id");
-  generationIdentity.textContent =
-    `Generation ${context.generation} · manifest ${compactIdentity(context.generationManifest)}`;
-  generationIdentity.setAttribute(
-    "aria-label",
-    `Generation ${context.generation}; manifest ${context.generationManifest}`,
-  );
-  document.querySelector("#freshness").textContent = context.freshness;
-  document.querySelector("#run-selector").replaceChildren(new Option(context.runId, context.runId));
-  const generations = context.fixture ? [1, 2, 3] : [context.generation];
-  const generationSelector = document.querySelector("#generation-selector");
-  generationSelector.replaceChildren(...generations.map((generation) =>
-    new Option(`${generation} · ${generation === context.generation ? context.mode : "HISTORICAL"}`,
-      String(generation), false, generation === context.generation)));
-  generationSelector.disabled = !context.fixture;
+  generationIdentity.textContent = context.mode === "HISTORICAL"
+    ? t("shell.context.generationHistorical", { generation: context.generation })
+    : t("shell.context.generationCurrent", { generation: context.generation });
+  document.querySelector("#freshness").textContent = shellStateLabel(context.freshness);
   const facts = [
-    ["Topology", context.topologyId], ["Factory", context.factoryRelease],
-    ["Semantic", context.semanticRelease], ["Optimizer", context.optimizerStep],
-    ["Lease", context.admissionLease], ["Frontier", context.correctionFrontier],
-    ["Resources", context.resourceHealth], ["Coverage", context.coverage],
+    ["shell.context.fact.manifest", context.generationManifest],
+    ["shell.context.fact.topology", context.topologyId],
+    ["shell.context.fact.factory", context.factoryRelease],
+    ["shell.context.fact.semantic", context.semanticRelease],
+    ["shell.context.fact.optimizer", context.optimizerStep],
+    ["shell.context.fact.lease", context.admissionLease],
+    ["shell.context.fact.frontier", context.correctionFrontier],
+    ["shell.context.fact.resources", context.resourceHealth],
+    ["shell.context.fact.coverage", context.coverage],
   ];
-  contextFacts.innerHTML = facts
-    .map(([label, value]) => `<span><small>${esc(label)}</small><strong title="${esc(value)}" aria-label="${esc(label)}: ${esc(value)}">${esc(compactIdentity(value))}</strong></span>`)
-    .join("");
+  contextFacts.innerHTML = facts.map(([labelKey, value]) => contextFactMarkup(labelKey, value)).join("");
 }
 
 export function renderDefensiveStatus(defense, onReconnect, bootstrap = null) {
@@ -137,14 +160,21 @@ export function renderDefensiveStatus(defense, onReconnect, bootstrap = null) {
 
 export function renderNavigation(state, onNavigate) {
   const nav = document.querySelector("#primary-nav");
-  nav.setAttribute("aria-label", "Mission Control destinations");
+  nav.setAttribute("aria-label", t("shell.nav.label"));
   const active = state?.view ?? "mission-control";
-  nav.innerHTML = DESTINATIONS.map(([id, label]) => {
-    const blocked = !state || (id === "operate" && !state.mutationAvailable);
-    const reason = id === "operate" && blocked
-      ? " title=\"Operate is unavailable until a verified live command context is re-established.\""
-      : "";
-    return `<button type="button" data-view="${id}" data-focus-key="nav:${id}" aria-current="${active === id ? "page" : "false"}" ${blocked ? "disabled" : ""}${reason}>${label}</button>`;
+  nav.innerHTML = DESTINATION_GROUPS.map((group) => {
+    const groupLabelId = `nav-group-${group.id}-label`;
+    const destinations = group.destinations.map((id) => {
+      const blocked = !state || (id === "operate" && !state.mutationAvailable);
+      const reason = id === "operate" && blocked
+        ? ` title="${esc(t("shell.command.operateUnavailable"))}"`
+        : "";
+      return `<button type="button" class="${controlClass("navigate")}" data-view="${id}" data-focus-key="nav:${id}" aria-current="${active === id ? "page" : "false"}" ${testIdAttribute("nav", "destination", id)} ${blocked ? "disabled" : ""}${reason}>${esc(destinationLabel(id))}</button>`;
+    }).join("");
+    return `<section class="nav-group" aria-labelledby="${groupLabelId}" ${testIdAttribute("nav", "group", group.id)}>
+      <h2 id="${groupLabelId}" class="nav-group-label">${esc(t(group.labelKey))}</h2>
+      <div class="nav-group-items">${destinations}</div>
+    </section>`;
   }).join("");
   nav.querySelectorAll("button:not(:disabled)").forEach((button) => {
     button.addEventListener("click", () => onNavigate(button.dataset.view));
@@ -193,19 +223,40 @@ export function renderDemoActions(state, onInspect) {
   });
 }
 
-export function renderPaletteOptions(state, onNavigate) {
+export function renderPaletteOptions(state, onNavigate, onCommand = () => {}) {
   const host = document.querySelector("#palette-options");
-  host.innerHTML = DESTINATIONS.map(([id, label]) => {
-    const blocked = !state || (id === "operate" && !state.mutationAvailable);
-    return `<button type="button" data-view="${id}" data-focus-key="palette:${id}" ${blocked ? "disabled" : ""}>${label}${id === "operate" && blocked ? " · unavailable offline" : ""}</button>`;
+  const destinationGroups = DESTINATION_GROUPS.map((group) => {
+    const options = group.destinations.map((id) => {
+      const blocked = !state || (id === "operate" && !state.mutationAvailable);
+      const unavailable = id === "operate" && blocked
+        ? `<small>${esc(t("shell.command.operateUnavailable"))}</small>`
+        : "";
+      return `<button type="button" class="${controlClass("navigate")}" data-view="${id}" data-focus-key="palette:${id}" ${testIdAttribute("palette", "destination", id)} ${blocked ? "disabled" : ""}><span>${esc(destinationLabel(id))}</span>${unavailable}</button>`;
+    }).join("");
+    return `<section class="palette-group" ${testIdAttribute("palette", "group", group.id)}>
+      <h3>${esc(t(group.labelKey))}</h3>
+      <div class="palette-group-items">${options}</div>
+    </section>`;
   }).join("");
+  host.innerHTML = `${destinationGroups}
+    <section class="palette-group palette-command-group" ${testIdAttribute("palette", "group", "view-commands")}>
+      <h3>${esc(t("shell.command.paletteViewCommands"))}</h3>
+      <div class="palette-group-items">
+        <button type="button" class="${controlClass("mode")}" data-palette-command="theme" ${testIdAttribute("palette", "command", "theme")}>${esc(t("shell.command.paletteToggleTheme"))}</button>
+        <button type="button" class="${controlClass("mode")}" data-palette-command="density" ${testIdAttribute("palette", "command", "density")}>${esc(t("shell.command.paletteToggleDensity"))}</button>
+      </div>
+    </section>`;
   host.querySelectorAll("button:not(:disabled)").forEach((button) => {
-    button.addEventListener("click", () => onNavigate(button.dataset.view));
+    button.addEventListener("click", () => {
+      if (button.dataset.view) onNavigate(button.dataset.view);
+      else if (button.dataset.paletteCommand) onCommand(button.dataset.paletteCommand);
+    });
   });
   bindRovingNavigation(host);
 }
 
 export function renderChrome(state, defense, displaySettings, handlers, bootstrap = null) {
+  localizeShellStatic();
   renderContext(state, defense, bootstrap);
   renderDefensiveStatus(defense, handlers.onReconnect, bootstrap);
   renderNavigation(state, handlers.onNavigate);
@@ -215,10 +266,14 @@ export function renderChrome(state, defense, displaySettings, handlers, bootstra
     state, defense, handlers.onInspect, handlers.api,
     handlers.onEvidenceSelect, handlers.onEvidenceReturn, bootstrap,
   );
-  document.querySelector("#view-title").textContent = labels.get(state?.view ?? "mission-control");
+  const currentView = state?.view ?? "mission-control";
+  document.querySelector("#view-title").textContent = destinationLabel(currentView);
   document.querySelector("#view-title").setAttribute("tabindex", "-1");
-  document.querySelector("#theme-trigger").textContent = "Theme · " + displaySettings.theme;
-  document.querySelector("#density-trigger").textContent = "Density · " + displaySettings.density;
-  document.querySelector("#theme-trigger").setAttribute("aria-label", `Change theme. Current theme ${displaySettings.theme}`);
-  document.querySelector("#density-trigger").setAttribute("aria-label", `Change information density. Current density ${displaySettings.density}`);
+  const posture = document.querySelector("#view-posture");
+  posture.hidden = state?.context?.mode !== "HISTORICAL";
+  posture.textContent = posture.hidden ? "" : t("shell.destination.posture.historical");
+  document.querySelector("#theme-trigger").textContent = t("shell.settings.theme", { theme: displaySettings.theme });
+  document.querySelector("#density-trigger").textContent = t("shell.settings.density", { density: displaySettings.density });
+  document.querySelector("#theme-trigger").setAttribute("aria-label", t("shell.settings.themeAria", { theme: displaySettings.theme }));
+  document.querySelector("#density-trigger").setAttribute("aria-label", t("shell.settings.densityAria", { density: displaySettings.density }));
 }
