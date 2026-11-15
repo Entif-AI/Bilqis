@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "5df83f69a4fb07b6c39dea47868934bc0d8e0e62",
-  "updated_at": "2026-11-14T01:27:27.278177+00:00",
+  "observed_unified": "8390a7aedffc7e0e353b73d9a7868f6307a445bd",
+  "updated_at": "2026-11-15T07:21:51.748036+00:00",
   "exception": null,
   "items": [
     {
@@ -420,6 +420,15 @@
       "summary": "Issue #1167 is active on an isolated branch from reviewed unified 2c8cda55. It owns fixed-school C05 MLX evaluation batching only: reduce per-case neural launches while preserving complete-solver semantics, per-case bindings/receipts, deterministic CPU execution, retention decisions, accepted-generation semantics and bounded resource fallback. Pinned EGM design review precedes implementation.",
       "resume_trigger": null,
       "preserved_branch": "codex/1167-retention-mlx-batch-20261115"
+    },
+    {
+      "issue": 1171,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "8390a7aedffc7e0e353b73d9a7868f6307a445bd",
+      "summary": "Issue #1171 is active on an isolated branch from reviewed unified 8390a7ae. It owns pre-neural planner throughput only: reuse an exact content-addressed candidate-frontier release when every bound builder/source/release/input identity still matches, authenticate the accepted planning generation/custody once per immutable planning transaction, and retain cheap fail-closed currentness checks at downstream offer boundaries. No neural updates are authorized.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1171-planner-frontier-20261115"
     }
   ]
 }
