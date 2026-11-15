@@ -48,10 +48,15 @@ def _recover_orphaned_commit(run_dir: _pathlib.Path, latest: dict) -> dict:
 
 def _record(run_dir: _pathlib.Path, event: dict):
     path = run_dir / "events.jsonl"
+    encoded = _runtime_state._canonical(event) + "\n"
     with path.open("a", encoding="utf-8") as stream:
-        stream.write(_runtime_state._canonical(event) + "\n")
+        before = _os.fstat(stream.fileno())
+        stream.write(encoded)
         stream.flush()
         _os.fsync(stream.fileno())
+        after = _os.fstat(stream.fileno())
+    from bilqis_mlx.runtime.priority_rejection_journal import note_journal_append
+    note_journal_append(path, before, after, len(encoded.encode("utf-8")))
     if _event_view.get() is None:
         print(_json.dumps(event, sort_keys=True), flush=True)
     else:

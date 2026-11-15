@@ -194,6 +194,9 @@ class BamfOperatorRejectionReplayIntegrationTests(NativeSourceFixture, unittest.
         self.assertEqual(
             [event["evidence"]["rejection_attempt_ordinal"] for event in events],
             [1, 2])
+        self.assertEqual(
+            [event["evidence"]["rejection_journal_ordinal"] for event in events],
+            [1, 2])
         self.assertEqual((self.run / "bamf-state.json").read_bytes(), pointer_before)
         with shape_patch():
             after = load_bamf_generation(self.run / "bamf-state.json")
