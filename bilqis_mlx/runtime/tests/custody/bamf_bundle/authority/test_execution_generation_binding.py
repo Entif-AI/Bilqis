@@ -81,6 +81,34 @@ class ExecutionGenerationBindingTests(unittest.TestCase):
                 speculative, substituted,
                 spec=self.parent.topology, extents=self.parent.extents)
 
+    def test_autodiff_rebind_preserves_one_prevalidated_generation(self):
+        transaction = begin_candidate(self.parent.retained_state)
+        with shape_patch():
+            speculative = bind_candidate_execution_cache(
+                self.accepted, self.parent, transaction,
+                spec=self.parent.topology, extents=self.parent.extents)
+            binding = bind_execution_generation(
+                speculative, transaction.optimizer.parameters,
+                spec=self.parent.topology, extents=self.parent.extents)
+            rebind = identity._execution_generation_autodiff_rebinder(
+                binding, transaction.optimizer.parameters,
+                spec=self.parent.topology, extents=self.parent.extents)
+            observed = []
+
+            def objective(current):
+                self.assertIsNot(current[NAME], transaction.optimizer.parameters[NAME])
+                rebound = rebind(current)
+                identity.require_execution_generation_binding(
+                    rebound, current,
+                    spec=self.parent.topology, extents=self.parent.extents)
+                observed.append(rebound.generation_digest)
+                return mx.sum(current[NAME] * current[NAME])
+
+            _loss, gradients = mx.value_and_grad(objective)(
+                dict(transaction.optimizer.parameters))
+            mx.eval(gradients)
+        self.assertEqual(observed, [binding.generation_digest])
+
     def test_topology_or_extents_drift_cannot_reuse_candidate_binding(self):
         transaction = begin_candidate(self.parent.retained_state)
         with shape_patch():

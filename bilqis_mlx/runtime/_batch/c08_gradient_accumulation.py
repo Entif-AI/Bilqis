@@ -7,7 +7,9 @@ from typing import Callable, Mapping
 import mlx.core as mx
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from bilqis_mlx.runtime.atlas_model import BamfGradientExecution
+from bilqis_mlx.runtime.atlas_model import (
+    BamfGradientExecution, BamfMicrobatchGradientExecution,
+)
 from bilqis_mlx.runtime.atlas_resources import BatchPlan
 
 
@@ -30,6 +32,8 @@ class LogicalBatchGradientExecution:
     source_digest: str
     generation_binding: str
     plan_digest: str
+    gradient_launches: int
+    vectorized_microbatches: int
     _issuance: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -52,7 +56,11 @@ class LogicalBatchGradientExecution:
                 or not self.generation_binding
                 or not isinstance(self.plan_digest, str)
                 or len(self.plan_digest) != _SHA256_HEX_LENGTH
-                or any(char not in "0123456789abcdef" for char in self.plan_digest)):
+                or any(char not in "0123456789abcdef" for char in self.plan_digest)
+                or type(self.gradient_launches) is not int
+                or self.gradient_launches < 1
+                or type(self.vectorized_microbatches) is not int
+                or not 0 <= self.vectorized_microbatches <= self.gradient_launches):
             _invalid("C08_LOGICAL_BATCH_GRADIENT_INVALID")
 
 
@@ -79,16 +87,41 @@ def _scale_tree(gradients, scale: float):
 def accumulate_logical_batch_gradients(
         plan: BatchPlan,
         execute_row: Callable[[int], BamfGradientExecution],
+        *,
+        execute_group: Callable[[tuple[int, ...]], BamfMicrobatchGradientExecution | None]
+        | None = None,
 ) -> LogicalBatchGradientExecution:
-    """Execute each planned row once, row-count-weight raw group means, clip later."""
-    if not isinstance(plan, BatchPlan) or not callable(execute_row):
+    """Execute each group once when vectorizable, otherwise preserve scalar oracle."""
+    if (not isinstance(plan, BatchPlan) or not callable(execute_row)
+            or (execute_group is not None and not callable(execute_group))):
         _invalid("C08_LOGICAL_BATCH_GRADIENT_ARGUMENT_INVALID")
     plan.__post_init__()
     total_rows = len(plan.logical_row_ids)
     aggregate = None
     weighted_loss = mx.array(0.0, dtype=mx.float32)
     losses = []
+    gradient_launches = 0
+    vectorized_microbatches = 0
     for group in plan.groups:
+        microbatch = execute_group(group) if execute_group is not None and len(group) > 1 else None
+        if microbatch is not None:
+            if type(microbatch) is not BamfMicrobatchGradientExecution:
+                _invalid("C08_LOGICAL_BATCH_MICROBATCH_EXECUTION_REQUIRED")
+            microbatch.__post_init__()
+            if (len(microbatch.executions) != len(group)
+                    or any(execution.output.generation_binding != plan.generation_binding
+                           for execution in microbatch.executions)):
+                _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
+            aggregate = _sum_tree(
+                aggregate,
+                _scale_tree(microbatch.gradients, len(group) / total_rows))
+            weighted_loss = weighted_loss + (
+                microbatch.mean_loss * (len(group) / total_rows))
+            losses.extend(microbatch.executions)
+            gradient_launches += 1
+            vectorized_microbatches += 1
+            mx.eval(aggregate, weighted_loss)
+            continue
         group_sum = None
         group_loss = mx.array(0.0, dtype=mx.float32)
         for index in group:
@@ -102,6 +135,7 @@ def accumulate_logical_batch_gradients(
             group_loss = group_loss + execution.loss_total
             mx.eval(group_sum, group_loss)
             losses.append(execution.execution)
+            gradient_launches += 1
         group_mean = _scale_tree(group_sum, 1.0 / len(group))
         mx.eval(group_mean, group_loss)
         aggregate = _sum_tree(
@@ -121,6 +155,8 @@ def accumulate_logical_batch_gradients(
         ("source_digest", plan.source_digest),
         ("generation_binding", plan.generation_binding),
         ("plan_digest", plan.digest),
+        ("gradient_launches", gradient_launches),
+        ("vectorized_microbatches", vectorized_microbatches),
         ("_issuance", _ISSUER),
     ):
         object.__setattr__(result, name, value)

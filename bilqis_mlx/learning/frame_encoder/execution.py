@@ -91,6 +91,7 @@ def _encode_compiled(compiled, vectors, parameters, *, atlas_selections=None):
         if cursor != len(supplied) or atomic_cursor != len(atomic_frames):
             _invalid()
         row_seeds.extend(mx.zeros((WIDTH,), dtype=mx.float32) for _ in range(width-len(row_seeds)))
+        row_factors.extend(None for _ in range(width - len(row_factors)))
         seeds.append(mx.stack(row_seeds) if row_seeds else mx.zeros((0, WIDTH), dtype=mx.float32))
         members.append(tuple(row_members))
         factors.append(tuple(row_factors))

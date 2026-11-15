@@ -144,4 +144,6 @@ def read_motif(
     if (expected_cache_digests is not None
             and expected_cache_digests != cache_digests):
         _invalid()
-    return MotifReadResult(hidden, tuple(dispositions), (), cache_digests)
+    return MotifReadResult(
+        hidden, tuple(dispositions), (), cache_digests,
+        tuple(() for _ in dispositions))
