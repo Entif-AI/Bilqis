@@ -10,6 +10,7 @@ from bilqis_mlx.data_plane import DataPlaneError, SHA256_HEX_LENGTH
 from ..codec import validate_bamf_bundle_custody
 from ..records import BAMF_BUNDLE_SCHEMA, BAMF_POINTER_SCHEMA, LEGACY_BAMF_POINTER_SCHEMA, canonical, invalid
 from .storage import _fsync_directory, _require_bundle_root
+from .instrumentation import note_fsync, note_write
 
 
 def _read_pointer(path: Path) -> dict | None:
@@ -64,8 +65,10 @@ def _atomic_pointer(path: Path, pointer: dict) -> None:
     try:
         with os.fdopen(fd, "wb") as stream:
             stream.write(raw)
+            note_write(len(raw))
             stream.flush()
             os.fsync(stream.fileno())
+            note_fsync(len(raw))
         os.replace(temporary, path)
         _fsync_directory(path.parent)
     finally:

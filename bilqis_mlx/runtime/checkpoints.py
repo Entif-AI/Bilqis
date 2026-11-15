@@ -52,8 +52,12 @@ def _record(run_dir: _pathlib.Path, event: dict):
     with path.open("a", encoding="utf-8") as stream:
         before = _os.fstat(stream.fileno())
         stream.write(encoded)
+        from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import note_write
+        note_write(len(encoded.encode("utf-8")))
         stream.flush()
         _os.fsync(stream.fileno())
+        from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import note_fsync
+        note_fsync(len(encoded.encode("utf-8")))
         after = _os.fstat(stream.fileno())
     from bilqis_mlx.runtime.priority_rejection_journal import note_journal_append
     note_journal_append(path, before, after, len(encoded.encode("utf-8")))
