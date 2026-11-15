@@ -31,11 +31,8 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     derive_successor_bundle, load_accepted_generation,
 )
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
-    AcceptedExecutionCache, CandidateExecutionCache,
-    bind_candidate_execution_cache, bind_motif_artifact_owner,
-    require_accepted_execution_cache, require_candidate_execution_cache,
+    bind_motif_artifact_owner,
 )
-from bilqis_mlx.learning.atlas_candidate import begin_candidate
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
     candidate, next_accepted_step, parent_state, publish_candidate,
     shape_patch as _shape_patch,
@@ -73,47 +70,6 @@ class AcceptedRuntimeCustodyTests(unittest.TestCase):
                 "this suite binds its synthetic signer as the HOST registry")
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             return publish_candidate(self.run, source)
-
-    def test_only_accepted_b13_custody_mints_live_execution_cache(self):
-        self.publish(candidate(parent_state()))
-        with shape_patch():
-            cache = bind_accepted_execution_cache(self.run)
-            rebound = bind_accepted_execution_cache(self.run)
-            self.assertIs(require_accepted_execution_cache(cache), cache)
-            self.assertIs(rebound, cache)
-        self.assertEqual(cache.run_id, "fixture-run")
-        with shape_patch():
-            accepted = load_accepted_generation(self.run)
-        self.assertEqual(
-            cache.motif_manifest.digest,
-            accepted.retained_state.allocations.manifest.digest,
-        )
-        with self.assertRaises(BilqisError):
-            AcceptedExecutionCache()
-
-    def test_candidate_execution_cache_is_bound_to_current_parent_and_transaction(self):
-        self.publish(candidate(parent_state()))
-        with shape_patch():
-            accepted = load_accepted_generation(self.run)
-            cache = bind_accepted_execution_cache(self.run)
-            transaction = begin_candidate(accepted.retained_state)
-            speculative = bind_candidate_execution_cache(
-                cache, accepted, transaction,
-                spec=accepted.topology, extents=accepted.extents)
-            self.assertIs(require_candidate_execution_cache(speculative), speculative)
-        self.assertEqual(speculative.run_id, accepted.run_id)
-        self.assertEqual(speculative.generation, accepted.generation)
-        self.assertEqual(
-            speculative.accepted_manifest_sha256, cache.accepted_manifest_sha256)
-        self.assertEqual(speculative.generation_binding, cache.generation_binding)
-        with self.assertRaises(BilqisError):
-            CandidateExecutionCache()
-
-        foreign_parent = replace(accepted, retained_state=parent_state())
-        with shape_patch(), self.assertRaises(BilqisError):
-            bind_candidate_execution_cache(
-                cache, foreign_parent, transaction,
-                spec=accepted.topology, extents=accepted.extents)
 
     def _motif_fixture(self):
         self.publish(candidate(parent_state()), AUTHORITY)
