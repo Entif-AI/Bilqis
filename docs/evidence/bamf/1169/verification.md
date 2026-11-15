@@ -140,3 +140,32 @@ The identity implementation and benchmark surface are unchanged; their earlier
 proof is reused. Full quality checks pass against the consumed unified head.
 The next aggregate remains a separate required gate; no PR is opened before its
 receipt is reconciled.
+
+## Second aggregate and current integration boundary
+
+R2 at `f1347553` ran 4,622 tests: 4,399 passed, 222 skipped, one error;
+787.335 test seconds / 842.189 gate seconds. Source mutation guard and fixture
+postflight both passed. The remaining error was a test-double signature lagging
+unified's new `steps_per_visit` CLI forwarding. The probe now explicitly accepts
+the keyword and asserts its declared default16. Focused red→green: one test
+failed with TypeError, then passed in19.851s. No production identity code changed.
+R2 remains a failed aggregate receipt; individual passes are evidence only for
+their unchanged dependency surfaces.
+
+Current unified `55a53d1e70a98164ca08e0744125f7c0ad83a960` was merged cleanly.
+It adds accepted-parent assessment caching and reorganizes exam ownership. The
+cache calls candidate_identity_digest, so new integration tests exercise legacy
+and raw schemes through its actual identity builder and evaluator: unchanged
+state reuses; mutations to parameters/m/v/counts force a fresh assessment; equal
+bytes under distinct schemes do not reuse. Two tests / eight mutation subcases
+pass. Only the accepted-cache authentication boundary is isolated; this is not
+live publication-authority or learning proof. Affected cache/retention/exam owners
+pass25/25 with zero skips. Detached-only full-model owner witnesses stay outside
+this cheap ring under their existing policies.
+
+The cheap preflight now also runs the complete formerly failing resume test and
+these cache interactions before a new canonical gate. The newly consumed cache
+and exam production changes require fresh integration evidence; a third run is
+not described as reuse of a passing R2 gate. PM-2026-11-15-002 was enriched and
+native-ledger read back. The benchmark and raw identity implementation are
+unchanged. No actual student/optimizer/teacher/champion was updated.
