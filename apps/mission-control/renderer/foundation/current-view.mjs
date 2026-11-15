@@ -28,7 +28,10 @@ export function renderCurrentView(
       : connection?.serviceLive ? t("shell.bootstrap.service.connected") : t("shell.bootstrap.service.connecting");
     const learnerState = connection?.learnerReady
       ? t("shell.bootstrap.learner.ready")
-      : connection?.learnerState ?? t("shell.bootstrap.learner.discovering");
+      : {
+          healthy: t("shell.bootstrap.learner.healthy"),
+          "learner-unavailable": t("shell.bootstrap.learner.unavailable"),
+        }[connection?.learnerState] ?? t("shell.bootstrap.learner.discovering");
     const telemetryState = bootstrap?.phase === "telemetry-pending"
       ? t("shell.bootstrap.telemetry.waiting")
       : bootstrap?.phase === "failed" ? t("shell.bootstrap.telemetry.failed") : t("shell.bootstrap.telemetry.starting");

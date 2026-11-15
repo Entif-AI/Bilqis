@@ -136,6 +136,9 @@ test("foundation localization uses stable keys and named parameters", () => {
   assert.equal(translate("foundation.catalog.historical.detail", { generation: 7 }), "Inspection only · generation 7 · not live learner state");
   assert.equal(translate("shell.nav.group.overviewLearning"), "Overview & learning");
   assert.equal(translate("shell.context.generationHistorical", { generation: 7 }), "As of generation 7");
+  assert.equal(translate("shell.context.freshness.connected"), "CONNECTED");
+  assert.equal(translate("shell.context.value.notStarted"), "NOT STARTED");
+  assert.equal(translate("shell.context.factExact", { label: "Topology", value: "abc" }), "Topology: abc");
   assert.match(translate("shell.destination.mission-control.purpose"), /Learner health/);
   assert.equal(formatMessage("{count} rows", { count: 3 }), "3 rows");
   assert.throws(() => translate("foundation.unknown"), /I18N_KEY_UNKNOWN/);

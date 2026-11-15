@@ -47,6 +47,8 @@ test("shell target anatomy removes redundant chrome and keeps secondary context 
   assert.match(html, /data-test-id="shell-destination-header"/);
   assert.match(ui, /DESTINATION_GROUPS\.map/);
   assert.match(ui, /testIdAttribute\("nav", "destination", id\)/);
+  assert.match(ui, /shell\.context\.factExact/);
+  assert.equal(ui.includes('aria-label="${esc(accessible)}"'), true);
   assert.doesNotMatch(interactions, /generation-selector/);
   assert.doesNotMatch(shell, /repeating-linear-gradient/);
   assert.doesNotMatch(shell, /font-size:\s*0/);

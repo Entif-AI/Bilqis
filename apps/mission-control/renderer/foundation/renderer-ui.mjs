@@ -48,7 +48,31 @@ export function localizeShellStatic(root = document) {
 
 function contextFactMarkup(labelKey, value) {
   const exact = String(value);
-  return `<span><small>${esc(t(labelKey))}</small><strong title="${esc(exact)}">${esc(compactIdentity(value))}</strong></span>`;
+  const label = t(labelKey);
+  const accessible = t("shell.context.factExact", { label, value: exact });
+  return `<span><small>${esc(label)}</small><strong title="${esc(exact)}" aria-label="${esc(accessible)}">${esc(compactIdentity(value))}</strong></span>`;
+}
+
+function shellStateLabel(value) {
+  const key = {
+    LIVE: "shell.context.mode.live",
+    HISTORICAL: "shell.context.mode.historical",
+    CONNECTED: "shell.context.freshness.connected",
+    WAITING: "shell.context.freshness.waiting",
+    FRESH: "shell.context.freshness.fresh",
+    STALE: "shell.context.freshness.stale",
+    DISCONNECTED: "shell.context.freshness.disconnected",
+    UNKNOWN: "shell.context.freshness.unknown",
+    READY: "shell.context.value.ready",
+    CONNECTING: "shell.context.value.connecting",
+    DISCOVERING: "shell.context.value.discovering",
+    "NOT STARTED": "shell.context.value.notStarted",
+    STARTING: "shell.context.value.starting",
+    FAILED: "shell.context.value.failed",
+    HEALTHY: "shell.context.value.healthy",
+    "LEARNER-UNAVAILABLE": "shell.context.value.learnerUnavailable",
+  }[String(value ?? "").toUpperCase()];
+  return key ? t(key) : String(value ?? "");
 }
 
 export function renderContext(state, defense, bootstrap = null) {
@@ -67,27 +91,27 @@ export function renderContext(state, defense, bootstrap = null) {
       ? t("shell.context.generationBootstrap", { generation: connection.generation })
       : t("shell.context.generationUnknown");
     document.querySelector("#freshness").textContent = connection?.serviceLive
-      ? connection?.learnerReady ? "CONNECTED" : "WAITING"
-      : defense.freshness;
+      ? shellStateLabel(connection?.learnerReady ? "CONNECTED" : "WAITING")
+      : shellStateLabel(defense.freshness);
     const facts = [
-      ["shell.context.fact.service", connection?.serviceReady ? "READY" : connection?.serviceLive ? "LIVE" : "WAITING"],
-      ["shell.context.fact.learner", connection?.learnerReady ? "READY" : connection?.learnerState ?? "DISCOVERING"],
-      ["shell.context.fact.optimizer", Number.isSafeInteger(connection?.optimizerStep) ? connection.optimizerStep : "NOT STARTED"],
-      ["shell.context.fact.telemetry", bootstrap?.phase === "telemetry-pending" ? "STARTING" : bootstrap?.phase ?? "WAITING"],
+      ["shell.context.fact.service", shellStateLabel(connection?.serviceReady ? "READY" : connection?.serviceLive ? "LIVE" : "WAITING")],
+      ["shell.context.fact.learner", shellStateLabel(connection?.learnerReady ? "READY" : connection?.learnerState ?? "DISCOVERING")],
+      ["shell.context.fact.optimizer", Number.isSafeInteger(connection?.optimizerStep) ? connection.optimizerStep : shellStateLabel("NOT STARTED")],
+      ["shell.context.fact.telemetry", shellStateLabel(bootstrap?.phase === "telemetry-pending" ? "STARTING" : bootstrap?.phase ?? "WAITING")],
     ];
     contextFacts.innerHTML = facts.map(([labelKey, value]) => contextFactMarkup(labelKey, value)).join("");
     return;
   }
   const { context } = state;
   shell.dataset.posture = shellPosture(context);
-  document.querySelector("#mode-badge").textContent = context.mode;
+  document.querySelector("#mode-badge").textContent = shellStateLabel(context.mode);
   document.querySelector("#run-id").textContent = context.runId;
   document.querySelector("#run-id").title = context.runId;
   const generationIdentity = document.querySelector("#generation-id");
   generationIdentity.textContent = context.mode === "HISTORICAL"
     ? t("shell.context.generationHistorical", { generation: context.generation })
     : t("shell.context.generationCurrent", { generation: context.generation });
-  document.querySelector("#freshness").textContent = context.freshness;
+  document.querySelector("#freshness").textContent = shellStateLabel(context.freshness);
   const facts = [
     ["shell.context.fact.manifest", context.generationManifest],
     ["shell.context.fact.topology", context.topologyId],
