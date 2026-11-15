@@ -1,0 +1,298 @@
+{
+  "baseRef": "df57fe448af9c79db8f9a6a2704564baec7e4c84",
+  "variants": [
+    {
+      "source": "baseline",
+      "theme": "dark",
+      "density": "comfortable",
+      "rtl": false,
+      "documentOverflow": false,
+      "scrollWidth": 1425,
+      "viewport": 1440,
+      "duplicateTestIds": [],
+      "details": [],
+      "historicalUnavailable": false,
+      "currentSummary": false,
+      "tables": [],
+      "minInteractive": {
+        "w": 157,
+        "h": 36
+      },
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/before-dark-comfortable-1440.png",
+      "contentSize": {
+        "width": 1425,
+        "height": 2571
+      }
+    },
+    {
+      "source": "current",
+      "theme": "dark",
+      "density": "comfortable",
+      "rtl": false,
+      "documentOverflow": false,
+      "scrollWidth": 1425,
+      "viewport": 1440,
+      "duplicateTestIds": [],
+      "details": [
+        {
+          "testId": "memory-read-site-receipts",
+          "open": false
+        },
+        {
+          "testId": "memory-dossier-provenance",
+          "open": false
+        }
+      ],
+      "historicalUnavailable": false,
+      "currentSummary": true,
+      "tables": [
+        {
+          "scrollWidth": 1325,
+          "clientWidth": 1325,
+          "localOverflow": false
+        },
+        {
+          "scrollWidth": 1325,
+          "clientWidth": 1325,
+          "localOverflow": false
+        }
+      ],
+      "minInteractive": {
+        "w": 87.9375,
+        "h": 24
+      },
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/after-dark-comfortable-1440.png",
+      "contentSize": {
+        "width": 1425,
+        "height": 2335
+      }
+    },
+    {
+      "source": "current",
+      "theme": "light",
+      "density": "compact",
+      "rtl": false,
+      "documentOverflow": false,
+      "scrollWidth": 1425,
+      "viewport": 1440,
+      "duplicateTestIds": [],
+      "details": [
+        {
+          "testId": "memory-read-site-receipts",
+          "open": false
+        },
+        {
+          "testId": "memory-dossier-provenance",
+          "open": false
+        }
+      ],
+      "historicalUnavailable": false,
+      "currentSummary": true,
+      "tables": [
+        {
+          "scrollWidth": 1333,
+          "clientWidth": 1333,
+          "localOverflow": false
+        },
+        {
+          "scrollWidth": 1333,
+          "clientWidth": 1333,
+          "localOverflow": false
+        }
+      ],
+      "minInteractive": {
+        "w": 87.9375,
+        "h": 24
+      },
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/after-light-compact-1440.png",
+      "contentSize": {
+        "width": 1425,
+        "height": 2167
+      }
+    },
+    {
+      "source": "current",
+      "theme": "dark",
+      "density": "comfortable",
+      "rtl": false,
+      "documentOverflow": false,
+      "scrollWidth": 375,
+      "viewport": 390,
+      "duplicateTestIds": [],
+      "details": [
+        {
+          "testId": "memory-read-site-receipts",
+          "open": false
+        },
+        {
+          "testId": "memory-dossier-provenance",
+          "open": false
+        }
+      ],
+      "historicalUnavailable": false,
+      "currentSummary": true,
+      "tables": [
+        {
+          "scrollWidth": 820,
+          "clientWidth": 275,
+          "localOverflow": true
+        },
+        {
+          "scrollWidth": 820,
+          "clientWidth": 275,
+          "localOverflow": true
+        }
+      ],
+      "minInteractive": {
+        "w": 133.5,
+        "h": 24
+      },
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 390,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/after-dark-comfortable-390.png",
+      "contentSize": {
+        "width": 375,
+        "height": 4730
+      }
+    },
+    {
+      "source": "current",
+      "theme": "light",
+      "density": "compact",
+      "rtl": false,
+      "documentOverflow": false,
+      "scrollWidth": 320,
+      "viewport": 320,
+      "duplicateTestIds": [],
+      "details": [
+        {
+          "testId": "memory-read-site-receipts",
+          "open": false
+        },
+        {
+          "testId": "memory-dossier-provenance",
+          "open": false
+        }
+      ],
+      "historicalUnavailable": false,
+      "currentSummary": true,
+      "tables": [
+        {
+          "scrollWidth": 820,
+          "clientWidth": 228,
+          "localOverflow": true
+        },
+        {
+          "scrollWidth": 820,
+          "clientWidth": 228,
+          "localOverflow": true
+        }
+      ],
+      "minInteractive": {
+        "w": 110,
+        "h": 24
+      },
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/after-light-compact-320.png",
+      "contentSize": {
+        "width": 320,
+        "height": 4933
+      }
+    },
+    {
+      "source": "current",
+      "theme": "dark",
+      "density": "comfortable",
+      "rtl": true,
+      "documentOverflow": false,
+      "scrollWidth": 320,
+      "viewport": 320,
+      "duplicateTestIds": [],
+      "details": [
+        {
+          "testId": "memory-read-site-receipts",
+          "open": false
+        },
+        {
+          "testId": "memory-dossier-provenance",
+          "open": false
+        }
+      ],
+      "historicalUnavailable": false,
+      "currentSummary": true,
+      "tables": [
+        {
+          "scrollWidth": 820,
+          "clientWidth": 220,
+          "localOverflow": true
+        },
+        {
+          "scrollWidth": 820,
+          "clientWidth": 220,
+          "localOverflow": true
+        }
+      ],
+      "minInteractive": {
+        "w": 106,
+        "h": 24
+      },
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/after-rtl-text-spacing-reduced-motion-320.png",
+      "contentSize": {
+        "width": 320,
+        "height": 5528
+      }
+    },
+    {
+      "source": "current",
+      "theme": "dark",
+      "density": "comfortable",
+      "rtl": false,
+      "documentOverflow": false,
+      "scrollWidth": 320,
+      "viewport": 320,
+      "duplicateTestIds": [],
+      "details": [],
+      "historicalUnavailable": true,
+      "currentSummary": false,
+      "tables": [],
+      "minInteractive": null,
+      "smallInteractive": [],
+      "requestedViewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "screenshot": "output/browser/1135/after-historical-unavailable-320.png",
+      "contentSize": {
+        "width": 320,
+        "height": 1000
+      }
+    }
+  ]
+}

@@ -4,11 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  MEMORY_FIXTURE_CONTRACT,
-  MEMORY_GENERATIONS,
-  REJECTED_MEMORY_CANDIDATE,
-} from "../../renderer/memory/memory-fixture.mjs";
+import { MEMORY_FIXTURE_CONTRACT, MEMORY_GENERATIONS, REJECTED_MEMORY_CANDIDATE } from "../../renderer/memory/memory-fixture.mjs";
 import {
   capabilityInterpretation,
   currentMemoryGeneration,
@@ -22,12 +18,15 @@ import {
   slotHitRate,
   stableMemoryIdentity,
 } from "../../renderer/memory/memory-model.mjs";
+import { renderMemoryView } from "../../renderer/memory/memory-view.mjs";
+import { t } from "../../renderer/foundation/i18n.mjs";
 import { parseDeepLink } from "../../renderer/deep-link.mjs";
 import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(here, "../../../..");
 const rendererRoot = path.resolve(here, "../../renderer");
+const fakeContainer = () => ({ innerHTML: "", querySelectorAll: () => [], querySelector: () => null });
 
 test("summary reconciles literal hit miss and gate counts from fixture receipts", () => {
   const current = currentMemoryGeneration();
@@ -66,14 +65,7 @@ test("fixture geometry matches executable motif page and telemetry contracts", (
 test("atlas aggregates by page but drill-down resolves exact stable BAMF memory identity", () => {
   const current = currentMemoryGeneration();
   const pages = pageSummaries(current);
-  assert.deepEqual(pages, [{
-    pageIndex: 0,
-    capacity: 16_384,
-    allocated: 5,
-    active: 4,
-    held: 1,
-    optimizerParticipating: 4,
-  }]);
+  assert.deepEqual(pages, [{ pageIndex: 0, capacity: 16_384, allocated: 5, active: 4, held: 1, optimizerParticipating: 4 }]);
   const slot = current.slots[0];
   const identity = stableMemoryIdentity(slot);
   assert.equal(identity, slot.keyDigest);
@@ -144,7 +136,8 @@ test("high hit rate never becomes a learned-success claim without independent ca
   const interpretation = capabilityInterpretation(slot);
   assert.equal(interpretation.learnedSuccess, false);
   assert.equal(interpretation.capabilityEvidence, "INDEPENDENT_EVIDENCE_UNAVAILABLE");
-  assert.match(interpretation.label, /no independent capability claim/i);
+  assert.equal(interpretation.messageKey, "memory.dossier.capabilityUnavailable");
+  assert.match(t(interpretation.messageKey), /no independent capability claim/i);
 });
 
 test("memory deep link uses stable BAMF memory identity and owning view", () => {
@@ -158,7 +151,7 @@ test("memory deep link uses stable BAMF memory identity and owning view", () => 
 
 test("GUI10 source avoids memory-policy mutation and unsupported success language", () => {
   const source = [
-    "memory-fixture.mjs", "memory-model.mjs", "memory-view.mjs",
+    "memory-fixture.mjs", "memory-model.mjs", "memory-view.mjs", "memory-messages.mjs",
   ].map((name) => fs.readFileSync(
     path.join(rendererRoot, "memory", name), "utf8",
   )).join("\n").toLowerCase();
@@ -167,15 +160,71 @@ test("GUI10 source avoids memory-policy mutation and unsupported success languag
     "providerrowid", "database row id",
   ]) assert.equal(source.includes(forbidden), false, forbidden);
   assert.equal(source.includes("retrieval telemetry only"), true);
-  assert.equal(source.includes("not semantic authority"), true);
+  assert.equal(source.includes("semantic or capability authority"), true);
+});
+
+test("Memory target markup is analytical, progressively disclosed, localized, and hook-stable", () => {
+  const container = fakeContainer();
+  renderMemoryView(container, () => {});
+  const html = container.innerHTML;
+  for (const id of [
+    "memory-workspace",
+    "memory-fixture-posture",
+    "memory-summary",
+    "memory-page-navigation",
+    "memory-atlas",
+    "memory-dossier",
+    "memory-dossier-provenance",
+    "memory-generation-comparison",
+    "memory-compare-generation",
+    "memory-rejected-boundary",
+  ]) assert.match(html, new RegExp(`data-test-id="${id}"`), id);
+  assert.match(html, /<table class="memory-slot-table">/);
+  assert.match(html, /<table class="memory-delta-table">/);
+  assert.match(html, /<details class="memory-receipts"/);
+  assert.match(html, /<details class="memory-provenance"/);
+  assert.doesNotMatch(html, /class="memory-panel"/);
+  const ids = [...html.matchAll(/data-test-id="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(ids.length, new Set(ids).size);
+});
+
+test("historical memory absence replaces current content instead of blending it", () => {
+  const container = fakeContainer();
+  renderMemoryView(container, () => {}, null, {
+    runId: "fixture-run",
+    generation: 1,
+    mode: "HISTORICAL",
+  });
+  assert.match(container.innerHTML, /data-test-id="memory-historical-unavailable"/);
+  assert.match(container.innerHTML, /Exact memory fixture unavailable/);
+  assert.doesNotMatch(container.innerHTML, /data-test-id="memory-summary"/);
+  assert.doesNotMatch(container.innerHTML, /data-test-id="memory-atlas"/);
+});
+
+test("owned Memory human copy is routed through the Memory message catalog", () => {
+  const source = fs.readFileSync(path.join(rendererRoot, "memory/memory-view.mjs"), "utf8");
+  for (const legacyLiteral of ["Engram memory summary", "Aggregate → page → stable motif", "Motif inspector", "Rejected candidate boundary", "Historical memory"]) {
+    assert.equal(source.includes(legacyLiteral), false, legacyLiteral);
+  }
+  assert.match(source, /t\("memory\.heading\.title"\)/);
+  assert.match(source, /t\("memory\.compare\.title"\)/);
+  assert.match(source, /t\("memory\.rejected\.title"\)/);
 });
 
 test("CSS gives held rejected and requalified states non-color structural cues", () => {
-  const css = fs.readFileSync(path.join(rendererRoot, "memory/memory.css"), "utf8");
+  const css = ["memory-core.css", "memory-atlas.css", "memory-evidence.css"]
+    .map((name) => fs.readFileSync(path.join(rendererRoot, "memory", name), "utf8")).join("\n");
   assert.match(css, /data-memory-state="held"/);
   assert.match(css, /border-style:\s*dashed/);
   assert.match(css, /data-memory-state="rejected"/);
   assert.match(css, /data-delta-kind="requalified"/);
+});
+
+test("Memory stylesheet modules stay below the structural interruption threshold", () => {
+  for (const name of ["memory-core.css", "memory-atlas.css", "memory-evidence.css"]) {
+    const lines = fs.readFileSync(path.join(rendererRoot, "memory", name), "utf8").split("\n").length - 1;
+    assert.ok(lines < 240, `${name} has ${lines} lines`);
+  }
 });
 
 test("fixture generation sequence is ordered and immutable enough for compare", () => {

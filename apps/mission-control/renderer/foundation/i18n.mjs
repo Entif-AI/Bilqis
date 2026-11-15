@@ -4,6 +4,7 @@ import { HOME_MESSAGES } from "./messages/home.mjs";
 import { INVESTIGATION_MESSAGES } from "./messages/investigation.mjs";
 import { SHELL_MESSAGES } from "./messages/shell.mjs";
 import { MODEL_MESSAGES } from "./messages/model.mjs";
+import { MEMORY_MESSAGES } from "../memory/memory-messages.mjs";
 import { SCHOOL_MESSAGES } from "./messages/school.mjs";
 import { TEACHER_MESSAGES } from "./messages/teacher.mjs";
 
@@ -197,6 +198,7 @@ const EN_US = Object.freeze({
   ...LEARNING_MESSAGES,
   ...HOME_MESSAGES,
   ...MODEL_MESSAGES,
+  ...MEMORY_MESSAGES,
   ...SCHOOL_MESSAGES,
   ...TEACHER_MESSAGES,
 });
