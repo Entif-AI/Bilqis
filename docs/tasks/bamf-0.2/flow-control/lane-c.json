@@ -1,7 +1,7 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "d2815e3151013c51fe11a298157625dce1aee6f5",
+  "observed_unified": "4d743ecfb6a5bce75ef6e86842c83f70807c9806",
   "updated_at": "2026-11-15T08:35:10+00:00",
   "exception": null,
   "items": [
@@ -439,6 +439,16 @@
       "summary": "Observed trainer telemetry candidate consumes unified406e30c. Pinned design and intake review PASS; scoped NO_DRIFT. Native28, renderer382, Electron53 and bridge8 pass; broad leaf/premerge qualification remains pending. No PR or real learner mutation.",
       "resume_trigger": null,
       "head_sha_role": "Semantic implementation after unified406e30c intake; later review/evidence metadata does not change source behavior."
+    },
+    {
+      "issue": 1197,
+      "pr": 1199,
+      "state": "TURNED_IN",
+      "head_sha": "7e7f009ac64b0bcdedbb2150e61643cb9f7c0977",
+      "summary": "Issue #1197 is turned in as ready PR #1199 against reviewed unified d2815e31. Ordinary rejection now continues the same bounded human-authorized session, and repeated same-parent rejections carry replay-derived attempt ordinals so authenticated pressure accumulates without mutating accepted generation, AdamW, teacher state or pointer custody. Two repeated interference rejections are proven to reach the existing 16->8 horizon rule; CP07 preserves unique episode record identity while retaining the C03 visit_id. Focused proof: 14/14 operator, 7/7 priority/replay, 7/7 B13 + 5 subtests, 18/18 CP07, and 7/7 C13 + 2 subtests; structure/governance/smell/flow/diff checks pass. No agent-run neural training occurred.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1197-rejection-continue-20261115",
+      "head_sha_role": "exact #1197 semantic implementation, review repairs, repeated-rejection replay proof and CP07 compatibility head before this flow-control receipt commit"
     }
   ]
 }
