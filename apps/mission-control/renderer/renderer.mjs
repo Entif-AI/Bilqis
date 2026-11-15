@@ -210,10 +210,12 @@ function render() {
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
-    learningController, lineageController, teacherController, capabilityExplorer,
+    teacherController, capabilityExplorer, learningController, lineageController,
     onInspect: openInspector,
+    onSelectionChange: syncDomainSelection,
     onNavigate: navigateTo, onAnnounce: announce,
     schoolDomainSupport: fixtureSupport?.school ?? null,
+    atlasDomainSupport: fixtureSupport?.atlas ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;
@@ -259,6 +261,14 @@ function openInspector(selected) {
   setHash();
   window.queueMicrotask(() => document.querySelector("#inspector-close")?.focus());
   announce(t("shell.announce.inspectorOpened", { id: selected.id }));
+}
+
+function syncDomainSelection(selected) {
+  if (!state || !selected) return;
+  state = { ...state, selected };
+  if (state.inspectorOpen) renderInspector(state, defense);
+  interactionController.render();
+  setHash();
 }
 
 function closeInspector() {
