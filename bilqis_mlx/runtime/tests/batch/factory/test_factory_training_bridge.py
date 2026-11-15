@@ -17,6 +17,9 @@ from bilqis_mlx.runtime.atlas_model import bind_compiled_training_batch, forward
 from bilqis_mlx.runtime.atlas_training_authority import (
     bind_logical_batch_training_authority,
 )
+from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+    require_b11_source_execution_authority,
+)
 from bilqis_mlx.runtime.cognitive_solver import (
     GenerationBinding, RouteKind, SolveBudget, SolveContext, solve_task,
 )
@@ -92,6 +95,14 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
                         (("policy", "c02-parent-integration"),))
                     self.assertFalse(hasattr(compiled, "target"))
                     self.assertFalse(hasattr(compiled.compiled, "target"))
+                    self.assertIsNotNone(compiled.source_execution_authority)
+                    self.assertIs(
+                        require_b11_source_execution_authority(
+                            compiled.source_execution_authority,
+                            compiled.compiled.compiled.rows[0],
+                            compiled.compiled.compiler_configs[0],
+                            compiled.sources[0]),
+                        compiled.source_execution_authority)
                     self.assertEqual(index, rows.index(source_row))
 
     def test_training_bridge_registers_every_compiled_row_with_source_custody(self):
@@ -162,6 +173,19 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
         self.assertEqual(
             caught.exception.context["reason"],
             "B11_TRAINING_AUTHORITY_CONTEXT_DRIFT")
+
+    def test_bound_b11_source_authority_rejects_source_substitution(self):
+        _rows, prepared = self.prepare("A.IDENTITY", 37122, 1)
+        compiled = prepared.compiled_rows[0]
+        source = compiled.sources[0]
+        forged = replace(
+            source, source_row={**source.source_row, "gold": "forged"})
+        with self.assertRaises(BilqisError):
+            require_b11_source_execution_authority(
+                compiled.source_execution_authority,
+                compiled.compiled.compiled.rows[0],
+                compiled.compiled.compiler_configs[0],
+                forged)
 
     def test_b11_row_binding_rejects_sibling_row_substitution(self):
         rows, prepared = self.prepare("A.IDENTITY", 37104, 2)
