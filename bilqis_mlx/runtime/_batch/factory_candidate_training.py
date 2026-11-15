@@ -43,6 +43,51 @@ def _prepared_feature_context(prepared, semantic_context):
     return feature_context
 
 
+def _execute_training_and_admission(
+        run_dir, source_context, parent, prepared, feature_context, generation, cache,
+        resource_plan, teacher_hparams, max_norm, candidate, currentness_transaction,
+        salience_supervision):
+    parameters = dict((parent.retained_state.optimizer if candidate is None
+                       else candidate.optimizer).parameters)
+    if len(prepared.compiled_rows) == 1:
+        gradient, authority, targets = execute_factory_training_row(
+            parameters, prepared.compiled_rows[0], source_context,
+            feature_context.snapshot, generation, cache,
+            salience_supervision=salience_supervision)
+        authorities, target_rows = (authority,), (targets,)
+        optimizer_started = time.perf_counter()
+        transaction = admit_uninterrupted_candidate_step(
+            Path(run_dir), parent, loss_bearing_target=True,
+            gradient_execution=gradient, teacher_hparams=teacher_hparams,
+            max_norm=max_norm, candidate=candidate, execution_cache=cache,
+            currentness_transaction=currentness_transaction)
+        loss_total = gradient.loss_total
+        c08_metrics = (1, 0, 1, 0, None)
+    else:
+        gradient, authorities, target_rows = execute_factory_logical_batch(
+            parameters, prepared, source_context, feature_context.snapshot,
+            generation, cache, resource_plan,
+            salience_supervision=salience_supervision)
+        optimizer_started = time.perf_counter()
+        transaction = admit_uninterrupted_candidate_step(
+            Path(run_dir), parent, loss_bearing_target=True,
+            logical_batch_execution=gradient,
+            training_batch=prepared.training_batch,
+            logical_batch_plan=resource_plan,
+            teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
+            execution_cache=cache,
+            currentness_transaction=currentness_transaction)
+        loss_total = gradient.weighted_mean_loss
+        c08_metrics = (
+            gradient.gradient_launches, gradient.vectorized_microbatches,
+            gradient.materialization_barriers, gradient.scalar_fallback_rows,
+            gradient.wall_seconds)
+    return (
+        gradient, authorities, target_rows, transaction, loss_total, c08_metrics,
+        time.perf_counter() - optimizer_started,
+    )
+
+
 def _realized_candidate_cost(
         start, candidate_step_started_at, loss_total, prepared,
         resource_plan, memory_budget, transaction,
@@ -116,46 +161,14 @@ def _execute_prepared_candidate(
     identity_before = candidate_identity_metrics_snapshot()
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
     feature_context = _prepared_feature_context(prepared, semantic_context)
-    parameters = dict((parent.retained_state.optimizer if candidate is None
-                       else candidate.optimizer).parameters)
-
-    if len(prepared.compiled_rows) == 1:
-        gradient, authority, targets = execute_factory_training_row(
-            parameters, prepared.compiled_rows[0], source_context,
-            feature_context.snapshot, generation, cache,
-            salience_supervision=salience_supervision)
-        authorities, target_rows = (authority,), (targets,)
-        optimizer_started = time.perf_counter()
-        transaction = admit_uninterrupted_candidate_step(
-            Path(run_dir), parent, loss_bearing_target=True,
-            gradient_execution=gradient, teacher_hparams=teacher_hparams,
-            max_norm=max_norm, candidate=candidate, execution_cache=cache,
-            currentness_transaction=currentness_transaction)
-        stage_metrics["optimizer_admission_wall_seconds"] = (
-            time.perf_counter() - optimizer_started)
-        loss_total = gradient.loss_total
-        c08_metrics = (1, 0, 1, 0, None)
-    else:
-        gradient, authorities, target_rows = execute_factory_logical_batch(
-            parameters, prepared, source_context, feature_context.snapshot,
-            generation, cache, resource_plan,
-            salience_supervision=salience_supervision)
-        optimizer_started = time.perf_counter()
-        transaction = admit_uninterrupted_candidate_step(
-            Path(run_dir), parent, loss_bearing_target=True,
-            logical_batch_execution=gradient,
-            training_batch=prepared.training_batch,
-            logical_batch_plan=resource_plan,
-            teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
-            execution_cache=cache,
-            currentness_transaction=currentness_transaction)
-        stage_metrics["optimizer_admission_wall_seconds"] = (
-            time.perf_counter() - optimizer_started)
-        loss_total = gradient.weighted_mean_loss
-        c08_metrics = (
-            gradient.gradient_launches, gradient.vectorized_microbatches,
-            gradient.materialization_barriers, gradient.scalar_fallback_rows,
-            gradient.wall_seconds)
+    (
+        gradient, authorities, target_rows, transaction, loss_total, c08_metrics,
+        optimizer_wall_seconds,
+    ) = _execute_training_and_admission(
+        run_dir, source_context, parent, prepared, feature_context, generation, cache,
+        resource_plan, teacher_hparams, max_norm, candidate,
+        currentness_transaction, salience_supervision)
+    stage_metrics["optimizer_admission_wall_seconds"] = optimizer_wall_seconds
     motif_started = time.perf_counter()
     if finalize_candidate:
         transaction = _stage_retained_motifs(
@@ -217,6 +230,52 @@ def _candidate_cache_and_generation(run_dir, source_context, parent, candidate,
     return cache, generation
 
 
+def _prepare_candidate_step_inputs(
+        run_dir, source_context, parent, atlas_artifact_path, feature_artifact_path,
+        delivered_rows, capability, delivery, requested_count, source_seed,
+        source_each, optimizer_step_seed, visit_provenance, teacher_strategy,
+        rehearsal_by_id, salience_provider, candidate, currentness_transaction,
+        candidate_step_started_at, currentness_binding_wall_seconds,
+        upstream_pre_neural_source_compile_wall_seconds, semantic_context,
+        prepared_source):
+    start = time.perf_counter()
+    if candidate_step_started_at is None:
+        candidate_step_started_at = start
+    binding_started = time.perf_counter()
+    cache, generation = _candidate_cache_and_generation(
+        run_dir, source_context, parent, candidate, currentness_transaction)
+    stage_metrics = {
+        "candidate_step_started_at": candidate_step_started_at,
+        "currentness_binding_wall_seconds": (
+            float(currentness_binding_wall_seconds)
+            + time.perf_counter() - binding_started),
+    }
+    semantic_context_materialized_in_step = semantic_context is None
+    pre_neural_started = time.perf_counter()
+    prepared = prepare_factory_training_batch(
+        source_context, parent, atlas_artifact_path, feature_artifact_path,
+        delivered_rows, generation, capability=capability, delivery=delivery,
+        requested_count=requested_count, source_seed=source_seed,
+        source_each=source_each, optimizer_step_seed=optimizer_step_seed,
+        visit_provenance=visit_provenance, teacher_strategy=teacher_strategy,
+        rehearsal_by_id=rehearsal_by_id, semantic_context=semantic_context,
+        prepared_source=prepared_source)
+    supervision = None
+    if salience_provider is not None:
+        from bilqis_mlx.runtime.salience_training import prepare_salience_training
+        if not callable(salience_provider):
+            _invalid("BAMF_SALIENCE_PROVIDER_REQUIRED")
+        prepared, supervision = prepare_salience_training(
+            prepared, source_context, salience_provider(prepared))
+    stage_metrics["pre_neural_source_compile_wall_seconds"] = (
+        float(upstream_pre_neural_source_compile_wall_seconds)
+        + time.perf_counter() - pre_neural_started)
+    return (
+        start, cache, generation, stage_metrics, prepared, supervision,
+        semantic_context_materialized_in_step,
+    )
+
+
 def execute_factory_candidate_step(
     run_dir: Path,
     source_context,
@@ -260,39 +319,17 @@ def execute_factory_candidate_step(
             or type(capture_diagnostics) is not bool
             or type(finalize_candidate) is not bool):
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
-    start = time.perf_counter()
-    if candidate_step_started_at is None:
-        candidate_step_started_at = start
-    binding_started = time.perf_counter()
-    cache, generation = _candidate_cache_and_generation(
-        run_dir, source_context, parent, candidate, currentness_transaction)
-    stage_metrics = {
-        "candidate_step_started_at": candidate_step_started_at,
-        "currentness_binding_wall_seconds": (
-            float(currentness_binding_wall_seconds)
-            + time.perf_counter() - binding_started),
-    }
-    semantic_context_materialized_in_step = semantic_context is None
-    pre_neural_started = time.perf_counter()
-    prepared = prepare_factory_training_batch(
-        source_context, parent, atlas_artifact_path, feature_artifact_path,
-        delivered_rows, generation, capability=capability, delivery=delivery,
-        requested_count=requested_count, source_seed=source_seed,
-        source_each=source_each, optimizer_step_seed=optimizer_step_seed,
-        visit_provenance=visit_provenance,
-        teacher_strategy=teacher_strategy,
-        rehearsal_by_id=rehearsal_by_id, semantic_context=semantic_context,
-        prepared_source=prepared_source)
-    supervision = None
-    if salience_provider is not None:
-        from bilqis_mlx.runtime.salience_training import prepare_salience_training
-        if not callable(salience_provider):
-            _invalid("BAMF_SALIENCE_PROVIDER_REQUIRED")
-        prepared, supervision = prepare_salience_training(
-            prepared, source_context, salience_provider(prepared))
-    stage_metrics["pre_neural_source_compile_wall_seconds"] = (
-        float(upstream_pre_neural_source_compile_wall_seconds)
-        + time.perf_counter() - pre_neural_started)
+    (
+        start, cache, generation, stage_metrics, prepared, supervision,
+        semantic_context_materialized_in_step,
+    ) = _prepare_candidate_step_inputs(
+        run_dir, source_context, parent, atlas_artifact_path, feature_artifact_path,
+        delivered_rows, capability, delivery, requested_count, source_seed,
+        source_each, optimizer_step_seed, visit_provenance, teacher_strategy,
+        rehearsal_by_id, salience_provider, candidate, currentness_transaction,
+        candidate_step_started_at, currentness_binding_wall_seconds,
+        upstream_pre_neural_source_compile_wall_seconds, semantic_context,
+        prepared_source)
     return _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows,
         capability=capability, teacher_hparams=teacher_hparams,
