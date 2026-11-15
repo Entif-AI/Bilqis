@@ -68,7 +68,7 @@ class BamfCompiledBatch:
         ):
             _invalid("B11_ACTIVE_SEMANTIC_ROWS_GENERATION_MISMATCH")
         if self.source_execution_authority is not None:
-            from .source_execution_authority import (
+            from bilqis_mlx.runtime.b11_source_execution_authority import (
                 require_b11_source_execution_authority,
             )
             require_b11_source_execution_authority(
