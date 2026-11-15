@@ -31,8 +31,28 @@ export function createBootstrapController({
   render,
   announce,
   currentHash,
+  scheduleReconnect = (callback, delay) => globalThis.setTimeout(callback, delay),
+  cancelReconnect = (token) => globalThis.clearTimeout(token),
+  reconnectDelayMs = 1000,
 }) {
+  let reconnectToken = null;
+
+  function clearReconnect() {
+    if (reconnectToken === null) return;
+    cancelReconnect(reconnectToken);
+    reconnectToken = null;
+  }
+
+  function armReconnect() {
+    if (reconnectToken !== null) return;
+    reconnectToken = scheduleReconnect(() => {
+      reconnectToken = null;
+      return establishSnapshot({ preserveRoute: true });
+    }, reconnectDelayMs);
+  }
+
   async function establishSnapshot({ preserveRoute = false } = {}) {
+    clearReconnect();
     const current = getState();
     const modelSection = current?.modelSection;
     resetFrameShell();
@@ -97,6 +117,7 @@ export function createBootstrapController({
       announce(connection.learnerReady === true
         ? t("foundation.bootstrap.announce.telemetryPending")
         : t("foundation.bootstrap.announce.learnerUnavailable"));
+      armReconnect();
       return;
     }
 
@@ -111,6 +132,7 @@ export function createBootstrapController({
       setBootstrap(Object.freeze({ phase: "failed", connection, error: snapshotError ?? connectError }));
       render();
       announce(t("foundation.bootstrap.announce.noSnapshot", { state: nextDefense.label }));
+      armReconnect();
       return;
     }
 
@@ -128,6 +150,7 @@ export function createBootstrapController({
     setState({ ...withDefensiveState(createShellState(operatorView, route), nextDefense), modelSection });
     setBootstrap(Object.freeze({ phase: "ready", connection, error: null }));
     render();
+    if (snapshotSource !== "service" || connection?.serviceLive !== true) armReconnect();
     announce(t(
       nextDefense.historical
         ? "foundation.bootstrap.announce.inspection"

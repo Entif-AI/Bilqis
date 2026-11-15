@@ -184,14 +184,13 @@ Ctrl-C stops the control-plane service. Stopping CP01 does not itself stop or mu
 
 ## Launch Mission Control
 
-In a second terminal:
+Mission Control discovers an active human BAMF trainer automatically and starts
+the local CP01 service for that exact run. From the trainer checkout:
 
 ~~~bash
 cd /path/to/Bilqis-MLX
 source .venv/bin/activate
 
-export RUN_DIR=/absolute/path/to/bamf-run
-export BILQIS_CONTROL_PLANE_SOCKET="$(dirname "$RUN_DIR")/.$(basename "$RUN_DIR").control-plane.sock"
 npm run mission-control
 ~~~
 
@@ -206,7 +205,13 @@ The major operator surfaces are:
 - **Evidence:** exact receipts and provenance;
 - **Operate:** read-only previews and human-authorized commands.
 
-If Mission Control says the control plane is disconnected, first verify that CP01 is still running and that both terminals use the same BILQIS_CONTROL_PLANE_SOCKET.
+If Mission Control is already open before the trainer starts, it retries local
+discovery automatically and moves from the passive inspection target to the
+new active operator run. To inspect a specific inactive run instead, set
+`RUN_DIR=/absolute/path/to/bamf-run` before launching Mission Control.
+`BILQIS_CONTROL_PLANE_SOCKET` remains available as an explicit advanced socket
+override; normal operation no longer requires a separately managed CP01
+terminal.
 
 ## Start or resume through Mission Control
 

@@ -1,12 +1,17 @@
 """Private stdio broker exposing accepted CP01 state to Electron main only."""
 from __future__ import annotations
 
+from contextlib import ExitStack
 import json
 import os
 from pathlib import Path
 import sys
+from threading import Thread
 
-from bilqis_mlx.control_plane import ControlPlaneClient
+from bilqis_mlx.control_plane import ControlPlaneClient, ControlPlaneService
+from bilqis_mlx.control_plane.active_endpoint import (
+    advertise_active_endpoint, default_socket_path, discover_active_endpoint,
+)
 from bilqis_mlx.control_plane.contracts import ControlPlaneState, PROTOCOL_VERSION
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.mission_control.contracts.codec import decode_record, encode_record
@@ -24,11 +29,25 @@ def _invalid(reason: str):
 
 
 def _socket_path() -> Path:
+    return _control_plane_target()[1]
+
+
+def _control_plane_target() -> tuple[Path, Path]:
     configured = os.environ.get("BILQIS_CONTROL_PLANE_SOCKET", "").strip()
+    configured_run = os.environ.get("RUN_DIR", "").strip()
+    run_dir = (Path(configured_run).expanduser().resolve()
+               if configured_run else None)
     if configured:
-        return Path(configured).expanduser().resolve()
+        return (run_dir or active_run_dir().expanduser().resolve(),
+                Path(configured).expanduser().resolve())
+    if run_dir is not None:
+        return run_dir, default_socket_path(run_dir)
+    discovered = discover_active_endpoint()
+    if discovered is not None:
+        return (Path(discovered.run_dir).expanduser().resolve(),
+                Path(discovered.socket_path).expanduser().resolve())
     run_dir = active_run_dir().expanduser().resolve()
-    return run_dir.parent / f".{run_dir.name}.control-plane.sock"
+    return run_dir, default_socket_path(run_dir)
 
 
 def _public_status(payload: dict, *, connected: bool) -> dict:
@@ -52,18 +71,83 @@ def _public_status(payload: dict, *, connected: bool) -> dict:
 class ElectronBridge:
     def __init__(self) -> None:
         self.client: ControlPlaneClient | None = None
+        self._local_service: ControlPlaneService | None = None
+        self._local_service_thread: Thread | None = None
+        self._local_service_stack: ExitStack | None = None
+        self._local_service_target: tuple[Path, Path] | None = None
+
+    def _close_client(self) -> None:
+        if self.client is not None:
+            self.client.close()
+            self.client = None
+
+    def _stop_local_service(self) -> None:
+        service, thread = self._local_service, self._local_service_thread
+        stack = self._local_service_stack
+        self._local_service = None
+        self._local_service_thread = None
+        self._local_service_stack = None
+        self._local_service_target = None
+        if service is not None:
+            service.shutdown()
+        if thread is not None:
+            thread.join(2.0)
+        if stack is not None:
+            stack.close()
+
+    def _ensure_local_service(self, run_dir: Path, socket_path: Path) -> None:
+        target = (run_dir, socket_path)
+        if self._local_service is not None and self._local_service_target == target:
+            return
+        self._stop_local_service()
+        from bilqis_mlx.control_plane.native_source import native_query_catalog
+        service = ControlPlaneService(
+            run_dir, socket_path,
+            query_source=lambda: native_query_catalog(run_dir))
+        stack = ExitStack()
+        try:
+            stack.enter_context(advertise_active_endpoint(
+                run_dir, socket_path=socket_path, role="service"))
+            thread = Thread(
+                target=service.serve_forever,
+                name="bilqis-mission-control-cp01", daemon=True)
+            thread.start()
+        except Exception:
+            stack.close()
+            service.server_close()
+            raise
+        self._local_service = service
+        self._local_service_thread = thread
+        self._local_service_stack = stack
+        self._local_service_target = target
 
     def connect(self) -> dict:
-        self.disconnect()
-        client = ControlPlaneClient(_socket_path(), client_id=_CLIENT_ID)
+        self._close_client()
+        run_dir, socket_path = _control_plane_target()
+        if (self._local_service is not None
+                and self._local_service_target != (run_dir, socket_path)):
+            self._stop_local_service()
+        client = ControlPlaneClient(socket_path, client_id=_CLIENT_ID)
         try:
             payload = client.connect()
-        except Exception:
+        except PermissionError:
             state = client.state
             client.close(preserve_state=True)
             if state is ControlPlaneState.CONNECTING:
                 state = ControlPlaneState.DISCONNECTED
             return _public_status({"state": state.value}, connected=False)
+        except Exception:
+            client.close(preserve_state=True)
+            try:
+                self._ensure_local_service(run_dir, socket_path)
+                client = ControlPlaneClient(socket_path, client_id=_CLIENT_ID)
+                payload = client.connect()
+            except Exception:
+                state = client.state
+                client.close(preserve_state=True)
+                if state is ControlPlaneState.CONNECTING:
+                    state = ControlPlaneState.DISCONNECTED
+                return _public_status({"state": state.value}, connected=False)
         if not payload.get("accepted"):
             client.close(preserve_state=True)
             return _public_status(payload, connected=False)
@@ -132,10 +216,12 @@ class ElectronBridge:
         return self.client.inspect_command(operation_id)
 
     def disconnect(self) -> dict:
-        if self.client is not None:
-            self.client.close()
-            self.client = None
+        self._close_client()
         return _public_status({}, connected=False)
+
+    def close(self) -> None:
+        self._close_client()
+        self._stop_local_service()
 
 
 def _reply(identifier, *, result=None, error=None) -> None:
@@ -196,7 +282,7 @@ def main() -> int:
                    error="BAMF_GUI20_CP01_UNAVAILABLE")
             continue
         _reply(identifier, result=result)
-    bridge.disconnect()
+    bridge.close()
     return 0
 
 

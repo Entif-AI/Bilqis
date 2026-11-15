@@ -112,27 +112,18 @@ Do not hand-edit checkpoint state to bypass a failed preflight. The accepted gen
 
 Mission Control talks to the local Python control plane over a Unix socket. These commands assume `RUN_DIR/bamf-state.json` already exists. A pointerless fresh target reports `learner-unavailable`; create generation zero first.
 
-Start the control plane for the accepted run:
+Mission Control automatically discovers an active human BAMF trainer and owns
+the local CP01 service for that run. For the common case, start or resume the
+trainer and launch Mission Control from the same checkout:
 
 ~~~bash
-export RUN_DIR=/absolute/path/to/bamf-run
-export BILQIS_CONTROL_PLANE_SOCKET="$(dirname "$RUN_DIR")/.$(basename "$RUN_DIR").control-plane.sock"
-
-python -m bilqis_mlx.control_plane \
-  --run-dir "$RUN_DIR" \
-  --socket "$BILQIS_CONTROL_PLANE_SOCKET"
-~~~
-
-Leave that terminal running. In a second terminal, activate the same Python environment and launch the desktop app:
-
-~~~bash
-cd /path/to/Bilqis-MLX
-source .venv/bin/activate
-export RUN_DIR=/absolute/path/to/bamf-run
-export BILQIS_CONTROL_PLANE_SOCKET="$(dirname "$RUN_DIR")/.$(basename "$RUN_DIR").control-plane.sock"
-
 npm run mission-control
 ~~~
+
+If Mission Control is already open when a trainer starts, it retries discovery
+and reattaches automatically. `RUN_DIR` remains useful when opening Mission
+Control for a specific inactive run; `BILQIS_CONTROL_PLANE_SOCKET` is an
+advanced explicit override rather than a routine startup requirement.
 
 Mission Control can inspect the run without neural updates. Mutating actions remain behind preview and explicit human authorization. The [operator guide](docs/operations/OPERATOR_GUIDE.md) walks through Resume, Owner Launch, Stop, checkpoint verification, logs, and recovery.
 

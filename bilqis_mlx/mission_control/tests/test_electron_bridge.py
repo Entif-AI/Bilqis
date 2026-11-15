@@ -5,6 +5,7 @@ import os
 from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
 
@@ -156,6 +157,38 @@ class ElectronBridgeTests(unittest.TestCase):
     def test_default_socket_path_matches_accepted_cp01_locator(self):
         with patch.dict(os.environ, {"BILQIS_CONTROL_PLANE_SOCKET": ""}):
             self.assertEqual(_socket_path(), _default_socket(active_run_dir()))
+
+    def test_default_socket_path_prefers_discovered_active_operator(self):
+        discovered = Path("/tmp/bilqis-active-operator.sock")
+        endpoint = SimpleNamespace(
+            run_dir=Path("/tmp/bilqis-active-run"), socket_path=discovered)
+        with patch.dict(os.environ, {
+                "BILQIS_CONTROL_PLANE_SOCKET": "", "RUN_DIR": ""}), patch(
+                "bilqis_mlx.mission_control.electron.bridge.discover_active_endpoint",
+                return_value=endpoint, create=True):
+            self.assertEqual(_socket_path(), discovered.resolve())
+
+    def test_bridge_autostarts_cp01_for_discovered_operator_run(self):
+        from bilqis_mlx.control_plane.active_endpoint import advertise_active_endpoint
+
+        with TemporaryDirectory(dir="/tmp") as directory:
+            root = Path(directory)
+            run_dir = root / "operator-run"
+            run_dir.mkdir()
+            socket_path = root / ".operator-run.control-plane.sock"
+            registry = root / "registry"
+            bridge = ElectronBridge()
+            with patch.dict(os.environ, {
+                    "BILQIS_ACTIVE_CONTROL_PLANE_DIR": str(registry),
+                    "BILQIS_CONTROL_PLANE_SOCKET": "",
+                    "RUN_DIR": "",
+            }), advertise_active_endpoint(run_dir, socket_path=socket_path):
+                connected = bridge.connect()
+                self.assertTrue(connected["serviceLive"])
+                self.assertEqual(connected["state"], "learner-unavailable")
+                self.assertTrue(socket_path.exists())
+            bridge.close()
+            self.assertFalse(socket_path.exists())
 
 
 if __name__ == "__main__":
