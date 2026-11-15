@@ -45,6 +45,18 @@ class ObservedSourceTests(unittest.TestCase):
         self.assertEqual(row.meta.receipt_refs, ())
         self.assertEqual(row.meta.run, RUN)
 
+    def test_millisecond_heartbeat_projects_unix_seconds_without_changing_liveness_age(self):
+        heartbeat_ms = 1_763_218_800_123
+        self.write(visit(observed_at=heartbeat_ms))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=True):
+            row = observed_records(self.root, (RUN,), now_ms=heartbeat_ms + 9_999)[0]
+        self.assertEqual(row.connection_state, 'LIVE')
+        self.assertEqual(row.meta.observed_at, heartbeat_ms // 1000)
+        self.assertEqual(row.meta.materialized_at, heartbeat_ms // 1000)
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=True):
+            stale = observed_records(self.root, (RUN,), now_ms=heartbeat_ms + 10_001)[0]
+        self.assertEqual(stale.connection_state, 'DISCONNECTED')
+
     def test_dead_or_expired_producer_is_disconnected_and_terminal_is_finished(self):
         self.write(visit())
         with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=False):

@@ -8,6 +8,11 @@ const DAY = 24 * HOUR;
 const WEEK = 7 * DAY;
 const MONTH = 30 * DAY;
 const YEAR = 365 * DAY;
+const DURATION_UNITS = Object.freeze([
+  ["day", DAY],
+  ["hour", HOUR],
+  ["minute", MINUTE],
+]);
 
 const RELATIVE_UNITS = Object.freeze([
   ["second", SECOND],
@@ -53,6 +58,36 @@ export function formatRelativeUnixSeconds(
   const [unit, secondsPerUnit] = relativeUnit(deltaSeconds);
   const value = Math.round(deltaSeconds / secondsPerUnit);
   return new Intl.RelativeTimeFormat(locale, { numeric: "always" }).format(value, unit);
+}
+
+export function formatDurationSeconds(
+  seconds,
+  { locale = DEFAULT_LOCALE } = {},
+) {
+  if (typeof seconds !== "number" || !Number.isFinite(seconds) || seconds < 0) return null;
+  let remaining = seconds;
+  const parts = [];
+  for (const [unit, secondsPerUnit] of DURATION_UNITS) {
+    const value = Math.floor(remaining / secondsPerUnit);
+    if (value === 0) continue;
+    parts.push(new Intl.NumberFormat(locale, {
+      style: "unit",
+      unit,
+      unitDisplay: "long",
+      maximumFractionDigits: 0,
+    }).format(value));
+    remaining -= value * secondsPerUnit;
+  }
+  const secondsValue = Math.round(remaining * 1000) / 1000;
+  if (secondsValue > 0 || parts.length === 0) {
+    parts.push(new Intl.NumberFormat(locale, {
+      style: "unit",
+      unit: "second",
+      unitDisplay: "long",
+      maximumFractionDigits: 3,
+    }).format(secondsValue));
+  }
+  return new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(parts);
 }
 
 export function temporalMarkup({
