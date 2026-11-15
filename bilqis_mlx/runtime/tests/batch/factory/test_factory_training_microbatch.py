@@ -5,6 +5,8 @@ import unittest
 from unittest.mock import patch
 
 import bilqis_mlx.runtime.atlas_model_microbatch as microbatch_impl
+import bilqis_mlx.learning._engram.atlas_engram_source_context as motif_context_impl
+import bilqis_mlx.learning.source_atoms.embedding as source_embedding_impl
 from bilqis_mlx.runtime.factory_candidate_microbatch import (
     execute_factory_logical_batch,
 )
@@ -18,8 +20,20 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
         rows, prepared = self.prepare("A.IDENTITY", 37172, 4)
         resource_plan, _ = _resource_plan(prepared, self.candidate, None)
         with patch.object(
-                microbatch_impl, "_decode_bamf_producer_row",
-                wraps=microbatch_impl._decode_bamf_producer_row) as row_decode, \
+                motif_context_impl, "load_pinned_atlas_snapshot",
+                side_effect=AssertionError("B11 reopened Atlas")) as atlas_reload, \
+                patch.object(
+                    motif_context_impl, "public_formal_context",
+                    side_effect=AssertionError("B11 redrew motif source")) as motif_redraw, \
+                patch.object(
+                    source_embedding_impl, "_build_source_atom_handoff_from_snapshot",
+                    side_effect=AssertionError("B11 rebuilt source handoff")) as atom_redraw, \
+                patch.object(
+                    source_embedding_impl, "_require_embedding_ready_from_snapshot",
+                    side_effect=AssertionError("B11 revalidated source handoff")) as atom_recheck, \
+                patch.object(
+                    microbatch_impl, "_decode_bamf_producer_row",
+                    wraps=microbatch_impl._decode_bamf_producer_row) as row_decode, \
                 patch.object(
                     microbatch_impl, "loss_bearing_bamf",
                     wraps=microbatch_impl.loss_bearing_bamf) as row_loss:
@@ -35,6 +49,10 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
         self.assertEqual(gradient.materialization_barriers, 1)
         self.assertEqual(gradient.scalar_fallback_rows, 0)
         self.assertGreaterEqual(gradient.wall_seconds, 0.0)
+        self.assertEqual(atlas_reload.call_count, 0)
+        self.assertEqual(motif_redraw.call_count, 0)
+        self.assertEqual(atom_redraw.call_count, 0)
+        self.assertEqual(atom_recheck.call_count, 0)
         self.assertEqual(row_decode.call_count, 0)
         self.assertEqual(row_loss.call_count, 0)
         self.assertEqual(len(gradient.loss_executions), 4)
