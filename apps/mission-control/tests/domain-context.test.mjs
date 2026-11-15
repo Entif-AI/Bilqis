@@ -110,6 +110,8 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
   const activation = fs.readFileSync(path.join(rendererRoot, "foundation/domain-controller.mjs"), "utf8");
+  const fixtureSupport = fs.readFileSync(path.join(rendererRoot, "fixture-support.mjs"), "utf8");
+  const atlasMessages = fs.readFileSync(path.join(rendererRoot, "foundation/messages/atlas.mjs"), "utf8");
   const capability = fs.readFileSync(path.join(rendererRoot, "capability/app.mjs"), "utf8");
 
   assert.match(
@@ -128,6 +130,12 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   assert.match(activation, /homeController\.activate/);
   assert.match(activation, /state\?\.view === "atlas"/);
   assert.match(activation, /renderAtlasDomain/);
+  assert.match(activation, /context\?\.fixture === true \? atlasDomainSupport\?\.api : api/);
+  assert.doesNotMatch(activation, /atlasDomainSupport\?\.api \?\? api/);
+  assert.match(renderer, /atlasDomainSupport: fixtureSupport\?\.atlas \?\? null/);
+  assert.match(fixtureSupport, /createAtlasFixtureApi/);
+  assert.match(fixtureSupport, /export const atlas = Object\.freeze\(\{ api: createAtlasFixtureApi\(\) \}\)/);
+  assert.doesNotMatch(atlasMessages, /atlas\.[^"\n]*fixture|Reference fixture/i);
   assert.match(activation, /state\?\.view === "school"/);
   assert.match(activation, /launchMode: fixture \? "fixtures" : "production"/);
   assert.match(activation, /activateSchoolDomain/);

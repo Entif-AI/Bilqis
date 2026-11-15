@@ -12,18 +12,21 @@ import {
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, learningController, onInspect, onNavigate, onAnnounce,
-  schoolDomainSupport = null,
+  capabilityExplorer, learningController, onInspect, onSelectionChange, onNavigate, onAnnounce,
+  schoolDomainSupport = null, atlasDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
     const context = state.context;
+    const atlasApi = context?.fixture === true ? atlasDomainSupport?.api : api;
     const isActive = () => getState()?.view === "atlas" && getState().context === context;
-    renderAtlasDomain(api, context, isActive);
-    if (state.selected?.kind === "semantic" && state.selected.id) {
-      void ensureAtlasSelection(api, context, state.selected.id, isActive);
-    } else {
-      void ensureAtlasOverview(api, context, isActive);
+    if (atlasApi) {
+      renderAtlasDomain(atlasApi, context, isActive, onInspect, onSelectionChange);
+      if (state.selected?.kind === "semantic" && state.selected.id) {
+        void ensureAtlasSelection(atlasApi, context, state.selected.id, isActive, onInspect, onSelectionChange);
+      } else {
+        void ensureAtlasOverview(atlasApi, context, isActive, onInspect, onSelectionChange);
+      }
     }
   }
   if (state?.view !== "atlas") invalidateAtlasRequests();
