@@ -157,25 +157,7 @@ export function renderCurrentView(
   if (state.view === "teacher") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.teacher.purpose");
-    if (!fixtureViews?.renderTeacherView || state.context.fixture !== true) {
-      domain.innerHTML = productionProjectionMarkup("teacher");
-      return;
-    }
-    fixtureViews.renderTeacherView(domain, (id, strategy, relations) => onInspect({
-      kind: "strategy",
-      id,
-      label: strategy?.label ?? id,
-      relations,
-      details: {
-        [t("teacher.inspector.role")]: strategy?.role ?? "UNKNOWN",
-        [t("teacher.inspector.attempts")]: strategy?.attempts ?? "UNKNOWN",
-        [t("teacher.inspector.retained")]: strategy?.retained ?? "UNKNOWN",
-        [t("teacher.inspector.noGain")]: strategy?.noGain ?? "UNKNOWN",
-        [t("teacher.inspector.interference")]: strategy?.interference ?? "UNKNOWN",
-        [t("teacher.inspector.comparisonPosture")]: t("teacher.inspector.descriptiveOnly"),
-        [t("teacher.inspector.policyMutation")]: t("teacher.inspector.none"),
-      },
-    }), state.selected?.kind === "strategy" ? state.selected.id : null);
+    domain.innerHTML = "";
     return;
   }
   if (state.view === "corrections") {

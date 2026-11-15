@@ -1,5 +1,6 @@
 import { FIDELITY_FIXTURES, STRATEGY_FIXTURES } from "./teacher-fixture.mjs";
 import { teacherProjectionBoundary } from "./teacher-model.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
 import { esc, stateBadge, t, testIdAttribute, yesNo } from "./teacher-view-shared.mjs";
 
 function delta(value) {
@@ -45,7 +46,9 @@ export function fidelityPanel() {
   return `<section class="teacher-fidelity" aria-labelledby="teacher-fidelity-title" ${testIdAttribute("teacher", "fidelity")}>
     <header class="teacher-section-heading"><div><span class="eyebrow">${esc(t("teacher.fidelity.eyebrow"))}</span>
       <h3 id="teacher-fidelity-title">${esc(t("teacher.fidelity.title"))}</h3></div>
-      <span class="teacher-observational"><span aria-hidden="true">○</span>${esc(t("teacher.fidelity.observational"))}</span></header>
+      <div class="teacher-heading-tools"><span class="teacher-observational"><span aria-hidden="true">○</span>${esc(t("teacher.fidelity.observational"))}</span>${contextHelpMarkup({
+        label: t("teacher.help.fidelity.label"), description: t("teacher.help.fidelity.body"), testId: "teacher-help-fidelity",
+      })}</div></header>
     ${fidelityTable()}<p class="teacher-fidelity-boundary">${esc(t("teacher.fidelity.boundary"))}</p>
     <div class="teacher-disclosures">${projectionDisclosure()}${glossaryDisclosure()}</div>
   </section>`;

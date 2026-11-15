@@ -1,6 +1,7 @@
 import { STRATEGY_FIXTURES } from "./teacher-fixture.mjs";
 import { aggregateContext, roleCounts, strategyEpisodes } from "./teacher-model.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
 import { esc, stateBadge, t, testIdAttribute, unavailable } from "./teacher-view-shared.mjs";
 
 export function strategyRelations(strategy) {
@@ -54,7 +55,9 @@ function selectedDetail(strategy) {
     </div><div class="teacher-state-pair"><span class="machine-value">${esc(strategy.role)}</span>${stateBadge(strategy.status)}</div></header>
 
     <div class="teacher-detail-grid">
-      <section><h4>${esc(t("teacher.detail.outcomes"))}</h4><dl class="teacher-detail-metrics">
+      <section><div class="teacher-subheading"><h4>${esc(t("teacher.detail.outcomes"))}</h4>${contextHelpMarkup({
+        label: t("teacher.help.metrics.label"), description: t("teacher.help.metrics.body"), testId: "teacher-help-metrics",
+      })}</div><dl class="teacher-detail-metrics">
         <div><dt>${esc(t("teacher.detail.attempts"))}</dt><dd>${strategy.attempts}</dd></div>
         <div><dt>${esc(t("teacher.detail.retained"))}</dt><dd>${strategy.retained}</dd></div>
         <div><dt>${esc(t("teacher.detail.actualGain"))}</dt><dd>+${strategy.actualCapabilityGain}</dd></div>
@@ -64,7 +67,9 @@ function selectedDetail(strategy) {
           average: unavailable(metrics.averageWallSeconds), median: unavailable(metrics.medianWallSeconds),
         }))}</dd></div>
       </dl></section>
-      <section><h4>${esc(t("teacher.detail.scope"))}</h4><dl class="teacher-detail-scope">
+      <section><div class="teacher-subheading"><h4>${esc(t("teacher.detail.scope"))}</h4>${contextHelpMarkup({
+        label: t("teacher.help.strategy.label"), description: t("teacher.help.strategy.body"), testId: "teacher-help-strategy",
+      })}</div><dl class="teacher-detail-scope">
         <div><dt>${esc(t("teacher.detail.capabilities"))}</dt><dd>${esc(strategy.activeCapabilityScope.join(", "))}</dd></div>
         <div><dt>${esc(t("teacher.detail.sourceFamilies"))}</dt><dd class="machine-value">${esc(strategy.sourceFamilies.join(", "))}</dd></div>
         <div><dt>${esc(t("teacher.detail.lastUsed"))}</dt><dd class="machine-value">${esc(strategy.lastUsedCheckpoint)}</dd></div>
