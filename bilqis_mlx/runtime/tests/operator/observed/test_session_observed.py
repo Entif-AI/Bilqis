@@ -27,7 +27,8 @@ class SessionObservationTests(unittest.TestCase):
                       update=lambda **fields: events.append(fields))
         parent = NS(retained_state=NS(optimizer_step=4), optimizer_hyperparameters='hp')
         selection = NS(status='TEACHER_SELECTED', offer=NS(
-            capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},)),
+            capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},),
+            _planning_generation=NS(_accepted_currentness='currentness')),
             visit=NS(identity=NS(visit_id='visit')))
         steps = [NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=i)) for i in (1, 2, 3)]
         def assess(*args, observer, **kwargs):
@@ -50,6 +51,12 @@ class SessionObservationTests(unittest.TestCase):
             'candidate_step_horizon': 3,
             'rejection_attempt_ordinals': (1, 1),
             'prepare_candidate_evidence_root': Path('/tmp/teacher-observations/objects'),
+            'currentness_metrics': {
+                'deep_authentication_count': 1,
+                'accepted_cache_currentness_count': 3,
+                'full_candidate_identity_hashes': 1,
+                'bundle_tree_scans': 2,
+            },
             'issue_factory_retention_decision': NS(
                 accepted=False, to_record=lambda: {'decision': 'REJECTED'}),
             'resolve_candidate': 'retained',

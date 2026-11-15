@@ -35,6 +35,9 @@ from .telemetry import TrainerObservation
 from .session_support import (
     BamfPreparedVisit, _execution_context, _resource_observation, _step_seed,
 )
+from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+    VisitCurrentnessMetrics, currentness_metrics,
+)
 from .source_prefetch import (
     CandidateSourceLane, NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
@@ -116,12 +119,19 @@ def prepare_bamf_visit(
             or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON):
         _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
     _emit_progress(progress, "validating accepted generation and source custody")
-    parent, context, atlas_path, feature_path = _execution_context(run_dir)
+    visit_currentness_metrics = VisitCurrentnessMetrics()
+    parent, context, atlas_path, feature_path = _execution_context(
+        run_dir, currentness_metrics=visit_currentness_metrics)
     if observer is not None:
         observer.bind_parent(parent)
         observer.update(phase="SELECTING")
     program = schedule_program_from_executable_release(context.release)
-    school = accepted_priority_school(parent, program)
+    accepted_host = getattr(context, "_accepted_runtime_host", None)
+    host_cache = getattr(accepted_host, "_accepted_cache", None)
+    school = accepted_priority_school(
+        parent, program,
+        candidate_identity_sha256=getattr(
+            host_cache, "_candidate_identity_sha256", None))
     _emit_progress(progress, "planning current candidate frontier and teacher priority")
     selection = select_foundation_priority_visit(
         run_dir, context, atlas_path, program=program, school=school,
@@ -134,7 +144,7 @@ def prepare_bamf_visit(
         progress,
         f"selected {selection.offer.capability_id} with {len(rows)} source rows")
     capability = selection.offer.capability_id
-    cache = bind_accepted_execution_cache(run_dir)
+    cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
     horizon = candidate_step_horizon(
         run_dir, parent, cache, capability, steps_per_visit)
     rejection_journal_ordinal, rejection_attempt_ordinal = rejection_attempt_ordinals(
@@ -151,6 +161,17 @@ def prepare_bamf_visit(
         cache, rejection_journal_ordinal, progress, source_prefetch_workers,
         source_prefetch_executor,
         source_prefetch_metrics, observer)
+    if observer is not None:
+        metrics = currentness_metrics(
+            selection.offer._planning_generation._accepted_currentness)
+        observer.update(
+            currentness_deep_authentications=metrics["deep_authentication_count"],
+            currentness_accepted_cache_checks=metrics[
+                "accepted_cache_currentness_count"],
+            currentness_full_candidate_identity_hashes=metrics[
+                "full_candidate_identity_hashes"],
+            currentness_bundle_tree_scans=metrics["bundle_tree_scans"],
+        )
     step = steps[-1]
     if observer is not None:
         observer.update(phase="RETENTION")
