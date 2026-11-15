@@ -14,9 +14,9 @@ from bilqis_mlx.learning.source_atoms.backbone import (
     start_retained_source_backbone_producer,
     start_source_backbone_producer,
 )
-from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+from bilqis_mlx.runtime.backbone_identity import issue_execution_generation_binding
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
-    CandidateExecutionCache, bind_motif_artifact_owner,
+    CandidateExecutionCache, bind_execution_generation, bind_motif_artifact_owner,
     require_accepted_execution_cache, require_candidate_execution_cache,
 )
 from bilqis_mlx.runtime.model_topology_v2 import (
@@ -32,7 +32,8 @@ from .atlas_model_participation import _active_banks, _forward_participation
 from .atlas_model_refinement import _prediction_local_refinement
 
 
-def _source_producer(params, compiled_batch, generation, cache):
+def _source_producer(
+        params, compiled_batch, generation, cache, execution_binding=None):
     speculative = type(cache) is CandidateExecutionCache
     execution_cache = (
         require_candidate_execution_cache(cache) if speculative
@@ -51,6 +52,7 @@ def _source_producer(params, compiled_batch, generation, cache):
             compiled_batch.feature_schema,
             banks,
             compiled_batch.atlas_feature_artifact_owner,
+            execution_binding=execution_binding,
         ), None, True
     if (
         accepted_cache.run_id != compiled_batch.active_semantic_rows.run_id
@@ -70,6 +72,7 @@ def _source_producer(params, compiled_batch, generation, cache):
         accepted_cache.motif_manifest,
         compiled_batch.atlas_feature_artifact_owner,
         seal=_B13_EXECUTION_SEAL,
+        execution_binding=execution_binding,
     )
     # Speculative execution still carries accepted-generation provenance for
     # motif dependency accounting, but it must never write derived attention
@@ -114,8 +117,11 @@ def _forward_bamf_impl(
     spec = backend.topology
     extents = compiled_batch.compiled.extents
     validate_bamf_parameters(spec, extents, params)
-    generation = execution_generation_digest(
-        params, spec=spec, extents=extents)
+    execution_binding = (
+        issue_execution_generation_binding(params, spec=spec, extents=extents)
+        if cache is None else bind_execution_generation(
+            cache, params, spec=spec, extents=extents))
+    generation = execution_binding.generation_digest
     if answer_plan.generation_binding != generation:
         _invalid("B11_GENERATION_BINDING_MISMATCH")
     if (compiled_batch.training_authority is not None
@@ -123,7 +129,7 @@ def _forward_bamf_impl(
         _invalid("B11_TRAINING_AUTHORITY_GENERATION_MISMATCH")
 
     producer, accepted_cache, capture_derived_cache = _source_producer(
-        params, compiled_batch, generation, cache)
+        params, compiled_batch, generation, cache, execution_binding)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, compiled_batch,
         capture_derived_cache=capture_derived_cache and not refinement_training)
