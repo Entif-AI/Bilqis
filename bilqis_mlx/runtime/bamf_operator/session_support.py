@@ -11,12 +11,10 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.paths import LEGACY_SOURCE
 from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
 from bilqis_mlx.runtime.bamf_bundle import (
-    authenticate_bamf_execution_feature_context, read_accepted_generation_feature_context,
+    authenticate_bamf_execution_feature_context,
 )
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
 from bilqis_mlx.semantics.atlas.feature_io import persist_feature_manifest
-from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactIdentity
-import bilqis_mlx.semantics.atlas.snapshot as _atlas_snapshot
 
 
 def _invalid(reason: str):
@@ -42,20 +40,13 @@ def _execution_context(run_dir: Path, *, currentness_metrics=None):
     host = AcceptedRuntimeHost(run_dir, currentness_metrics=currentness_metrics)
     parent = load_accepted_generation(run_dir)
     context = host.source_context(source_root=LEGACY_SOURCE.resolve())
-    accepted = read_accepted_generation_feature_context(run_dir / "bamf-state.json")
-    identity = accepted.receipt
-    selection = _atlas_snapshot.resolve_atlas_artifact_selection(AtlasArtifactIdentity(
-        identity.source_atlas_bundle_id,
-        identity.source_release_sha256,
-        identity.source_source_bundle_id,
-    ))
     authenticated = authenticate_bamf_execution_feature_context(
-        parent, selection.path, run_dir)
-    predecessor = accepted.construction_predecessor
+        parent, None, run_dir)
+    object.__setattr__(context, "_accepted_feature_context", authenticated)
     feature = persist_feature_manifest(
         authenticated.features, run_dir / "operator-artifacts" / "features",
-        predecessor=predecessor)
-    return parent, context, selection.path, feature.path
+        predecessor=authenticated.construction_predecessor)
+    return parent, context, authenticated.selection.path, feature.path
 
 
 class _Capture:

@@ -104,6 +104,8 @@ class SourceExecutionContext:
     run_dir: Path | None = None
     _accepted_runtime_host: object | None = field(
         default=None, init=False, repr=False, compare=False)
+    _accepted_feature_context: object | None = field(
+        default=None, init=False, repr=False, compare=False)
 
     @classmethod
     def from_admitted_release(

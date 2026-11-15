@@ -94,10 +94,11 @@ class Offer:
     _planning_generation = SimpleNamespace(
         _accepted_currentness='currentness',
         _parent='planned-parent',
+        _authenticated_features='semantic-context',
         parent_candidate_identity_sha256='planned-id',
     )
     def require_current_parent(self, context):
-        return 'planned-parent', 'planned-cache', 'semantic-context'
+        return 'planned-parent', 'planned-cache'
     def rows(self):
         return ({'id': 'one', 'capability': 'cap'},)
     def require_current(self, context, parent):
