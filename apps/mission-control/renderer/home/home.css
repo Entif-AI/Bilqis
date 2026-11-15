@@ -33,6 +33,8 @@
 .home-current .home-link { margin-top: var(--space-3); }
 .attention-list, .pulse-list { display: grid; margin-top: var(--space-2); }
 .attention-list button, .pulse-list button { min-width: 0; display: grid; grid-template-columns: auto minmax(0,1fr); gap: 2px var(--space-3); min-height: 44px; padding: var(--space-2) 0; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); text-align: start; cursor: pointer; }
+.attention-list button:hover, .pulse-list button:hover,
+.attention-list button:focus-visible, .pulse-list button:focus-visible { background: var(--surface-2); }
 .attention-list button:last-child, .pulse-list button:last-child { border-bottom: 0; }
 .attention-list button > span, .pulse-list .pulse-kind, .pulse-list time { color: var(--text-muted); font-size: var(--type-label); line-height: var(--line-label); }
 .attention-list button strong, .pulse-list button strong { min-width: 0; overflow-wrap: anywhere; font-size: var(--type-body); }
@@ -77,5 +79,7 @@
 @media (forced-colors: active) {
   .home-surface, .home-status-band, .home-health, .home-analysis, .home-startup { border-color: CanvasText; }
   .home-attention[data-priority="primary"], .attention-list button[data-severity="blocker"], .attention-list button[data-severity="invalid"] { border-inline-start: 4px double CanvasText; }
+  .attention-list button:hover, .pulse-list button:hover,
+  .attention-list button:focus-visible, .pulse-list button:focus-visible { outline-color: Highlight; }
 }
 @media (prefers-reduced-motion: reduce) { .home-dashboard * { scroll-behavior: auto !important; animation: none !important; transition: none !important; } }
