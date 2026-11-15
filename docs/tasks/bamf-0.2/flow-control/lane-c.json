@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "4d743ecfb6a5bce75ef6e86842c83f70807c9806",
-  "updated_at": "2026-11-15T08:35:10+00:00",
+  "observed_unified": "d280a3e8d47efdba34e1262ffa59018d93f7c443",
+  "updated_at": "2026-11-15T09:19:59+00:00",
   "exception": null,
   "items": [
     {
@@ -423,12 +423,13 @@
     },
     {
       "issue": 1171,
-      "pr": null,
-      "state": "ACTIVE",
-      "head_sha": "8390a7aedffc7e0e353b73d9a7868f6307a445bd",
-      "summary": "Issue #1171 is active on an isolated branch from reviewed unified 8390a7ae. It owns pre-neural planner throughput only: reuse an exact content-addressed candidate-frontier release when every bound builder/source/release/input identity still matches, authenticate the accepted planning generation/custody once per immutable planning transaction, and retain cheap fail-closed currentness checks at downstream offer boundaries. No neural updates are authorized.",
+      "pr": 1202,
+      "state": "TURNED_IN",
+      "head_sha": "2f6cc3c41b016cf81665936789580ac286d2a970",
+      "summary": "Issue #1171 is turned in as ready PR #1202 after consuming reviewed unified d280a3e8. Exact content-addressed frontier reuse now requires trusted builder/source/Factory-release/output/release identity; accepted B13/C09 planning custody binds deeply once before the 21-capability fan-out and downstream boundaries retain fail-closed currentness. The final acceptance-drift repair validates pointer/acceptance stability before issuing the process-live correction registrar. Pinned EGM is 0B/0M/0N. Focused owner proof is 69 passed + 2 subtests in 149.01s, static/flow/legacy-trainer gates are green, and the retained timing witness shows a 10.081268s warm median versus 13.937186s same-shape preimplementation control (27.66% / 3.855918s reduction). Verification is impact-scoped; unrelated gitignored legacy-checkpoint aggregate failures are not treated as #1171 regressions. No neural update occurred.",
       "resume_trigger": null,
-      "preserved_branch": "codex/1171-planner-frontier-20261115"
+      "preserved_branch": "codex/1171-planner-frontier-20261115",
+      "head_sha_role": "exact #1171 implementation, final acceptance-stability repair, current-unified synchronization, and turn-in evidence head before this flow-control receipt commit"
     },
     {
       "issue": 1170,
