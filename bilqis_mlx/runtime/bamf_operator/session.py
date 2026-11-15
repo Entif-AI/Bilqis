@@ -26,7 +26,9 @@ from bilqis_mlx.runtime.factory_retention_owner import evaluate_factory_retentio
 from bilqis_mlx.runtime.foundation_teacher_owner import (
     derive_accepted_teacher_successor, select_foundation_priority_visit,
 )
-from bilqis_mlx.runtime.priority_rejection_replay import candidate_step_horizon
+from bilqis_mlx.runtime.priority_rejection_replay import (
+    candidate_step_horizon, current_rejections,
+)
 from .locking import bamf_operator_lock
 from .telemetry import TrainerObservation
 from .session_support import (
@@ -179,8 +181,13 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
     retained = prepared.retained
     capability = prepared.capability
     if not decision.accepted:
+        cache = bind_accepted_execution_cache(run_dir)
+        rejection_attempt_ordinal = 1 + sum(
+            1 for selected, *_ in current_rejections(run_dir, parent, cache)
+            if selected == capability)
         record_bamf_rejection(run_dir, parent, {
             "schema": "bilqis.bamf.c16.3-rejection/v2",
+            "rejection_attempt_ordinal": rejection_attempt_ordinal,
             "visit_id": selection.visit.identity.visit_id,
             "teacher_visit": selection.visit.identity.to_record(),
             "selected_option_id": selection.option_id,
@@ -246,8 +253,7 @@ def operate_bamf(
             visits += 1
             if outcome == "REJECTED":
                 rejected += 1
-                status = "REJECTED_HOLD"
-                break
+                continue
             accepted += 1
         else:
             status = "VISIT_LIMIT" if max_visits and visits >= max_visits else "TIME_LIMIT"
