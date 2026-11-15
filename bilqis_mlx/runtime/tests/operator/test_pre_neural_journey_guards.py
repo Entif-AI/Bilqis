@@ -153,6 +153,29 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
         # parameter tree again during the 21-capability fan-out.
         self.assertEqual(calls, 0)
 
+    def test_priority_target_registration_reuses_authenticated_c09_runtime(self):
+        """Offer target replay must not reopen deep C09 accepted-registry custody."""
+        from bilqis_mlx.runtime.bamf_bundle import accepted_runtime
+
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                with patch.object(
+                        accepted_runtime, "_accepted_correction_registry",
+                        side_effect=AssertionError(
+                            "target registration rebound deep C09 authority")):
+                    selected = select_foundation_priority_visit(
+                        self.run, context, atlas_path, program=program, school=school)
+
+        self.assertEqual(len(context.release.execution_plan.capabilities), 21)
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+
     def test_priority_planning_deep_custody_binds_once_then_uses_currentness(self):
         from bilqis_mlx.runtime.bamf_bundle import bundle_currentness
         from bilqis_mlx.runtime.bamf_bundle import source_authority_custody

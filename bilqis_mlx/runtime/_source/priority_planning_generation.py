@@ -89,6 +89,7 @@ class PriorityPlanningGeneration:
     _authenticated_features: object = field(repr=False, compare=False)
     _bundle_currentness: object = field(repr=False, compare=False)
     _source_authority_currentness: object = field(repr=False, compare=False)
+    _target_registrar: object = field(repr=False, compare=False)
     _retained_guard: object = field(repr=False, compare=False)
     _issuance: object = field(repr=False, compare=False)
 
@@ -165,6 +166,11 @@ def bind_priority_planning_generation(source_context, parent, atlas_artifact_pat
     )
     source_authority_currentness = bind_source_authority_currentness(
         run_dir, parent.correction_frontier, cache._correction_registry)
+    from bilqis_mlx.runtime.accepted_correction_runtime import (
+        _bind_accepted_target_registrar,
+    )
+    target_registrar = _bind_accepted_target_registrar(
+        source_context._accepted_runtime_host, cache)
     after_pointer, after_acceptance_file = _planning_pointer_snapshot(run_dir)
     if (before_pointer != after_pointer
             or before_acceptance_file != after_acceptance_file
@@ -191,6 +197,7 @@ def bind_priority_planning_generation(source_context, parent, atlas_artifact_pat
         ('_authenticated_features', authenticated),
         ('_bundle_currentness', bundle_currentness),
         ('_source_authority_currentness', source_authority_currentness),
+        ('_target_registrar', target_registrar),
         ('_retained_guard', _retained_object_guard(parent)),
         ('_issuance', _PLANNING_ISSUER),
     ):

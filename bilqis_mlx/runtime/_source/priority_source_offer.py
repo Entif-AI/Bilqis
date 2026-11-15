@@ -119,15 +119,16 @@ class PreparedPrioritySourceOffer:
         rows = self.rows() if prepared_rows is None else tuple(prepared_rows)
         current = source_context.bind_rows(rows, seed=self.source_seed,
             capability=self.capability_id, each=self.source_each)
-        if (current != self.source_authority or _canonical_rows(rows) != self._rows_json
-                or (prepared_rows is None and _canonical_rows(tuple(source_context.draw_rows(
-                    seed=self.source_seed, capability=self.capability_id, each=self.source_each)))
-                    != self._rows_json)):
+        # bind_rows() already performs the authoritative owner redraw and rejects
+        # source-content drift. The second identical draw that used to live here
+        # repeated that source work at every offer boundary; the exact supplied or
+        # retained row representation is still checked against the sealed offer.
+        if (current != self.source_authority
+                or _canonical_rows(rows) != self._rows_json):
             _invalid_source_batch('BAMF_PRIORITY_SOURCE_OFFER_ROWS_DRIFT')
-        from bilqis_mlx.runtime.accepted_corrections import register_accepted_target
         for kind, owner in (('ATLAS_FEATURE', self._feature_owner), ('PACKED_FRAME', self._packed_owner),
                             ('SALIENCE_EVIDENCE', self._source_owner)):
-            register_accepted_target(source_context.run_dir, cache.accepted_manifest_sha256, kind, owner)
+            self._planning_generation._target_registrar.register(kind, owner)
         self._feature_owner.require(self._features)
         self._source_owner.require()
         for prefix in self._prefixes:
@@ -158,7 +159,6 @@ def prepare_priority_source_offer(source_context, parent, atlas_artifact_path, *
     from bilqis_mlx.runtime.atlas_artifact_owner import AtlasFeatureArtifactOwner
     from bilqis_mlx.runtime.atlas_packed_frame_owner import PackedFrameArtifactOwner
     from bilqis_mlx.runtime.salience_evidence_owner import SalienceEvidenceArtifactOwner
-    from bilqis_mlx.runtime.accepted_corrections import register_accepted_target
     from bilqis_mlx.runtime.training_input_authority import require_source_lineage
     from bilqis_mlx.semantics.frame_compiler import CompiledFrameRows, compile_prefix, validate_partial_visible_forest
     from bilqis_mlx.source_adapters.atoms.admission import authorize_public_formal_prefix
@@ -192,7 +192,7 @@ def prepare_priority_source_offer(source_context, parent, atlas_artifact_path, *
     source_owner = SalienceEvidenceArtifactOwner.for_source_offer(authority, rows, prefixes)
     for kind, owner in (('ATLAS_FEATURE', feature_owner), ('PACKED_FRAME', packed_owner),
                         ('SALIENCE_EVIDENCE', source_owner)):
-        register_accepted_target(source_context.run_dir, cache.accepted_manifest_sha256, kind, owner)
+        planning_generation._target_registrar.register(kind, owner)
     offer = object.__new__(PreparedPrioritySourceOffer)
     for name, value in (
         ('source_authority', authority), ('accepted_manifest_sha256', cache.accepted_manifest_sha256),

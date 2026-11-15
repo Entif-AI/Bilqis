@@ -10,6 +10,27 @@ from .accepted_correction_dispatch import AcceptedCorrectionRuntime
 from .atlas_revalidation_common import _invalid
 
 
+_REGISTRAR_ISSUER = object()
+
+
+class _AcceptedTargetRegistrar:
+    """Opaque process-live target registrar bound to one accepted C09 runtime."""
+
+    __slots__ = ("_runtime", "_issuance")
+
+    def __init__(self, *args, **kwargs):
+        _invalid("BAMF_C09_ACCEPTED_RUNTIME_REQUIRED")
+
+    def register(self, kind: str, owner, *, seen_event_ids: tuple[str, ...] = ()) -> None:
+        if (getattr(self, "_issuance", None) is not _REGISTRAR_ISSUER
+                or type(seen_event_ids) is not tuple
+                or any(not isinstance(event_id, str) or not event_id
+                       for event_id in seen_event_ids)):
+            _invalid("BAMF_C09_ACCEPTED_TARGET_IDENTITY_CONFLICT")
+        from bilqis_mlx.runtime._atlas_owner_ingress import _route
+        self._runtime.register(kind, owner, _route, seen_event_ids)
+
+
 def _make_owner_custody(entries):
     active_owner = ContextVar("bamf_c09_active_accepted_owner", default=None)
     superseded_owners = weakref.WeakSet()
@@ -100,6 +121,25 @@ def _make_runtime_core():
                 _invalid("BAMF_C09_CORRECTION_AUTHORITY_DRIFT")
             return current
 
+    def retained_authenticated(run_dir: Path, manifest_sha256: str, registry) -> AcceptedCorrectionRuntime:
+        """Reuse verifier material already authenticated by the accepted host."""
+        from .atlas_source_authority import SourceAuthorityRegistry
+
+        if (not isinstance(registry, SourceAuthorityRegistry)
+                or not isinstance(manifest_sha256, str) or not manifest_sha256):
+            _invalid("BAMF_C09_CORRECTION_AUTHORITY_REQUIRED")
+        key = (str(Path(run_dir).resolve()), manifest_sha256)
+        with lock:
+            current = entries.get(key)
+            if current is None:
+                current = AcceptedCorrectionRuntime(
+                    Path(run_dir), manifest_sha256, registry,
+                    require_owned, authorize_owner, retire_owner)
+                entries[key] = current
+            elif current.registry != registry:
+                _invalid("BAMF_C09_CORRECTION_AUTHORITY_DRIFT")
+            return current
+
     def refresh(owner) -> None:
         target = target_for_owner(owner)
         if target is None:
@@ -146,6 +186,7 @@ def _make_runtime_core():
 
     return (
         require_bound_registry, refresh, register, register_support, retained,
+        retained_authenticated,
         reset_for_tests, target_for_owner, owner_is_superseded,
     )
 
@@ -215,9 +256,29 @@ def _make_delivery_api(retained):
 def _make_runtime_boundary():
     """Compose public closures without exposing the retained runtime getter."""
     (
-        require_bound_registry, refresh, register, register_support, retained, reset,
+        require_bound_registry, refresh, register, register_support, retained,
+        retained_authenticated, reset,
         target_for_owner, owner_is_superseded,
     ) = _make_runtime_core()
+
+    def bind_registrar(host, cache):
+        """Bind registration to the exact host/cache pair authenticated by planning."""
+        from .accepted_corrections import AcceptedRuntimeHost
+
+        if (type(host) is not AcceptedRuntimeHost
+                or host._accepted_cache is not cache
+                or cache is None
+                or getattr(cache, "_run_dir", None) is None
+                or Path(cache._run_dir).resolve() != host.run_dir.resolve()
+                or getattr(cache, "_correction_registry", None) is None):
+            _invalid("BAMF_C09_ACCEPTED_RUNTIME_REQUIRED")
+        retained_runtime = retained_authenticated(
+            host.run_dir, cache.accepted_manifest_sha256,
+            cache._correction_registry)
+        registrar = object.__new__(_AcceptedTargetRegistrar)
+        registrar._runtime = retained_runtime
+        registrar._issuance = _REGISTRAR_ISSUER
+        return registrar
 
     def require_pending(owner, artifact_id: str) -> None:
         """Fail closed when accepted correction state blocks this physical owner."""
@@ -238,7 +299,7 @@ def _make_runtime_boundary():
 
     return (
         require_bound_registry, refresh, register, register_support,
-        *_make_delivery_api(retained), reset, require_pending,
+        *_make_delivery_api(retained), reset, require_pending, bind_registrar,
     )
 
 
@@ -254,6 +315,7 @@ def _make_runtime_boundary():
     replay_accepted_stale_evidence,
     _reset_accepted_correction_runtime_for_tests,
     require_pending_corrections,
+    _bind_accepted_target_registrar,
 ) = _make_runtime_boundary()
 
 
