@@ -16,7 +16,7 @@ from ...runtime.model_topology_v2 import ModelTopologySpecV2
 from .inputs import SourceAtomRow
 
 
-def _source_embedding_authority(
+def _resolve_source_embedding_authority(
     compiled, config, source, features, feature_schema, artifact_owner,
     snapshot, source_execution_authority,
 ):
@@ -38,6 +38,28 @@ def _source_embedding_authority(
         expected_features = build_feature_manifest(snapshot, feature_schema)
         if features != expected_features:
             invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
+    return snapshot, handoff
+
+
+def _validate_source_embedding_generation(
+    source, features, extents, banks, snapshot,
+):
+    selection = source.selection
+    if (snapshot.release_sha256 != selection.release_sha256
+            or snapshot.bundle_id != selection.bundle_id
+            or snapshot.source_bundle_id != selection.source_bundle_id
+            or features.semantic_release != selection.release_sha256
+            or features.atlas_bundle_id != selection.bundle_id
+            or features.source_bundle_id != selection.source_bundle_id
+            or extents.factor_map_digest != features.digest
+            or type(banks) is not tuple or not banks
+            or any(type(bank) is not SemanticBankView for bank in banks)):
+        invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
+
+
+def _bind_source_embedding_handoff(
+    compiled, config, source, features, artifact_owner, snapshot, handoff,
+):
     artifact_owner.require(features)
     if handoff is None:
         handoff = _build_source_atom_handoff_from_snapshot(
@@ -56,17 +78,6 @@ def _source_embedding_authority(
 def _source_embedding_parameters(
     parameters, source, features, extents, banks, snapshot,
 ):
-    selection = source.selection
-    if (snapshot.release_sha256 != selection.release_sha256
-            or snapshot.bundle_id != selection.bundle_id
-            or snapshot.source_bundle_id != selection.source_bundle_id
-            or features.semantic_release != selection.release_sha256
-            or features.atlas_bundle_id != selection.bundle_id
-            or features.source_bundle_id != selection.source_bundle_id
-            or extents.factor_map_digest != features.digest
-            or type(banks) is not tuple or not banks
-            or any(type(bank) is not SemanticBankView for bank in banks)):
-        invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
     spec = ModelTopologySpecV2()
     owned = embedding_parameter_view(parameters, spec=spec, extents=extents)
     _validate_banks(banks)
@@ -120,9 +131,13 @@ def source_atom_vectors(
     feature types. Unframed atoms use its existing NONE role/schema and local
     slot zero, without casting the atom to a caller-created ConceptRef.
     """
-    snapshot, handoff = _source_embedding_authority(
+    snapshot, handoff = _resolve_source_embedding_authority(
         compiled, config, source, features, feature_schema, artifact_owner,
         snapshot, source_execution_authority)
+    _validate_source_embedding_generation(
+        source, features, extents, banks, snapshot)
+    snapshot, handoff = _bind_source_embedding_handoff(
+        compiled, config, source, features, artifact_owner, snapshot, handoff)
     spec, owned = _source_embedding_parameters(
         parameters, source, features, extents, banks, snapshot)
     vectors = _source_binding_vectors(
