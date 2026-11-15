@@ -26,6 +26,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
   );
   assert.deepEqual([...RENDERER_ASSETS.keys()].sort(), [
     "/atlas/atlas-controller.mjs",
+    "/atlas/atlas-data.mjs",
     "/atlas/atlas-fixture.mjs",
     "/atlas/semantic-atlas.css",
     "/atlas/semantic-atlas.mjs",

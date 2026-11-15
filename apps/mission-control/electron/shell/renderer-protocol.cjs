@@ -11,6 +11,7 @@ const {
 
 const RENDERER_ASSETS = Object.freeze(new Map([
   ["/atlas/atlas-controller.mjs", "atlas/atlas-controller.mjs"],
+  ["/atlas/atlas-data.mjs", "atlas/atlas-data.mjs"],
   ["/atlas/atlas-fixture.mjs", "atlas/atlas-fixture.mjs"],
   ["/atlas/semantic-atlas.css", "atlas/semantic-atlas.css"],
   ["/atlas/semantic-atlas.mjs", "atlas/semantic-atlas.mjs"],
