@@ -254,7 +254,7 @@ test("shared CSS gives rail, help, temporal, and context controls explicit acces
 test("inspector splitter has pointer and keyboard resize paths with persistent destination width", () => {
   const html = source("index.html");
   const interactions = source("foundation/static-interactions.mjs");
-  const renderer = source("renderer.mjs");
+  const inspector = source("foundation/inspector-controller.mjs");
   assert.match(html, /id="inspector-splitter"[^>]*role="separator"[^>]*aria-orientation="vertical"/);
   assert.match(html, /aria-valuemin="160"/);
   assert.match(interactions, /pointerdown/);
@@ -263,7 +263,7 @@ test("inspector splitter has pointer and keyboard resize paths with persistent d
   assert.match(interactions, /ArrowRight/);
   assert.match(interactions, /Home/);
   assert.match(interactions, /End/);
-  assert.match(renderer, /inspectorWidthForDestination/);
-  assert.match(renderer, /withInspectorWidthPreference/);
-  assert.match(renderer, /saveShellPreferences\(window\.localStorage, shellPreferences\)/);
+  assert.match(inspector, /inspectorWidthForDestination/);
+  assert.match(inspector, /withInspectorWidthPreference/);
+  assert.match(inspector, /saveShellPreferences\(window\.localStorage, shellPreferences\)/);
 });

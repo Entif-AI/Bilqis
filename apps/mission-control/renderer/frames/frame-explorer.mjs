@@ -1,4 +1,6 @@
-import { t } from "../foundation/i18n.mjs";
+import { modelFixtureT as t } from "../foundation/model-fixture-i18n.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+import { temporalMarkup } from "../foundation/temporal.mjs";
 import { testIdAttribute } from "../foundation/test-hooks.mjs";
 import { FRAME_QUERY, assertFramePage, sameFrameRequest } from "./frame-contract.mjs";
 import { escapeText as esc, packingMetrics, visiblePosition, visibility } from "./frame-model.mjs";
@@ -22,7 +24,7 @@ export function renderPackingMetrics(examples, label, hook = "metrics") {
 }
 
 export function renderFrameExample(example, frontier) {
-  const identity = `<details class="frame-disclosure" ${testIdAttribute("model", "frame", "receipt", "provenance")}><summary ${testIdAttribute("model", "frame", "receipt", "provenance", "toggle")}>${esc(t("model.frame.receiptProvenance", { version: example.compiler?.version ?? unavailable() }))}</summary><dl class="frame-identity">${pair(t("model.frame.receipt"), example.receiptId)}${pair(t("model.neural.frame"), example.frameId)}
+  const identity = `<div class="frame-provenance-heading">${contextHelpMarkup({ label: t("model.frame.help.provenance.label"), description: t("model.frame.help.provenance.description"), testId: "model-frame-help-provenance" })}</div><details class="frame-disclosure" ${testIdAttribute("model", "frame", "receipt", "provenance")}><summary ${testIdAttribute("model", "frame", "receipt", "provenance", "toggle")}>${esc(t("model.frame.receiptProvenance", { version: example.compiler?.version ?? unavailable() }))}</summary><dl class="frame-identity">${pair(t("model.frame.receipt"), example.receiptId)}${pair(t("model.neural.frame"), example.frameId)}
     ${pair(t("model.frame.source"), example.sourceId)}${pair(t("model.frame.generationManifest"), example.generationManifest)}
     ${pair(t("model.frame.compilerVersion"), example.compiler?.version)}${pair(t("model.frame.compilerDigest"), example.compiler?.digest)}
     ${pair(t("model.frame.sourceDigest"), example.sourceDigest)}${pair(t("model.frame.compiledDigest"), example.compiledDigest)}</dl></details>`;
@@ -70,12 +72,12 @@ export class FrameQueryController {
 export function mountFrameExplorer(host, { querySnapshot, context, selectedId, onContext, onSelection }) {
   let selected = selectedId;
   host.innerHTML = `<div class="frame-explorer" ${testIdAttribute("model", "frame", "workspace")}>
-    <header class="frame-heading"><div><span class="eyebrow">${esc(t("model.frame.eyebrow"))}</span><h2>${esc(t("model.frame.title"))}</h2></div><p>${esc(t("model.frame.summary"))}</p></header>
-    <section class="frame-fixture-posture" ${testIdAttribute("model", "frame", "fixture", "posture")}><div><strong>${esc(t("model.frame.fixtureLabel"))}</strong><span>${esc(t("model.frame.fixtureDetail"))}</span></div></section>
+    <header class="frame-heading"><div><span class="eyebrow">${esc(t("model.frame.eyebrow"))}</span><h2>${esc(t("model.frame.title"))}</h2></div><div class="frame-heading-detail"><p>${esc(t("model.frame.summary"))}</p>${contextHelpMarkup({ label: t("model.frame.help.concepts.label"), description: t("model.frame.help.concepts.description"), testId: "model-frame-help-concepts" })}</div></header>
+    <section class="frame-fixture-posture" ${testIdAttribute("model", "frame", "fixture", "posture")}><div><strong>${esc(t("model.frame.fixtureLabel"))}</strong><span>${esc(t("model.frame.fixtureDetail"))}</span>${contextHelpMarkup({ label: t("model.neural.help.posture.label"), description: t("model.neural.help.posture.description"), testId: "model-frame-help-posture" })}</div></section>
     <div class="frame-control-bar" ${testIdAttribute("model", "frame", "controls")}>
       <label>${esc(t("model.frame.generation"))}<select data-frame-generation data-focus-key="frame-generation" ${testIdAttribute("model", "frame", "generation")}>
         <option value="7">${esc(t("model.frame.currentFixture"))}</option><option value="6">${esc(t("model.frame.historicalFixture"))}</option></select></label>
-      <div class="frame-request-block"><span>${esc(t("model.frame.requestState"))}</span><p data-frame-state role="status" ${testIdAttribute("model", "frame", "request", "state")}></p></div>
+      <div class="frame-request-block"><span>${esc(t("model.frame.requestState"))}${contextHelpMarkup({ label: t("model.frame.help.controls.label"), description: t("model.frame.help.controls.description"), testId: "model-frame-help-controls" })}</span><p data-frame-state role="status" ${testIdAttribute("model", "frame", "request", "state")}></p></div>
     </div>
     <div data-frame-results ${testIdAttribute("model", "frame", "results")}></div>
   </div>`;
@@ -91,7 +93,13 @@ export function mountFrameExplorer(host, { querySnapshot, context, selectedId, o
     onContext(page.operatorView, page.request.mode);
     const examples = page.examples;
     if (!examples.length) return;
-    results.innerHTML = `<section class="frame-result-set" ${testIdAttribute("model", "frame", "result", "set")}><p class="frame-coverage" ${testIdAttribute("model", "frame", "coverage")}>${esc(t("model.frame.coverage", { coverage: page.coverage, count: examples.length }))}</p>
+    const observed = page.operatorView.meta?.observed_at;
+    const materialized = page.operatorView.meta?.materialized_at;
+    const temporal = [
+      ["model.neural.observed", observed, "model-frame-observed"],
+      ["model.neural.materialized", materialized, "model-frame-materialized"],
+    ].filter(([, value]) => Number.isSafeInteger(value));
+    results.innerHTML = `<section class="frame-result-set" ${testIdAttribute("model", "frame", "result", "set")}><div class="frame-result-status"><p class="frame-coverage" ${testIdAttribute("model", "frame", "coverage")}>${esc(t("model.frame.coverage", { coverage: page.coverage, count: examples.length }))}</p>${temporal.length ? `<dl class="frame-time-facts">${temporal.map(([label, value, hook]) => `<div><dt>${esc(t(label))}</dt><dd>${temporalMarkup({ unixSeconds: value, testId: hook })}</dd></div>`).join("")}</dl>` : ""}</div>
       <div class="frame-example-control"><label>${esc(t("model.frame.compiledExample"))}<select data-frame-example data-focus-key="frame-example" ${testIdAttribute("model", "frame", "example")}><option value="">${esc(t("model.frame.selectExact"))}</option>
       ${examples.map(example => `<option value="${esc(example.frameId)}">${esc(example.frameId)}</option>`).join("")}</select></label></div>
       <div data-frame-detail ${testIdAttribute("model", "frame", "detail")}></div><details class="frame-disclosure frame-aggregate" ${testIdAttribute("model", "frame", "aggregate")}><summary>${esc(t("model.frame.aggregatePacking", { count: examples.length }))}</summary>
@@ -108,7 +116,7 @@ export function mountFrameExplorer(host, { querySnapshot, context, selectedId, o
       }
       const atoms = packingMetrics([example]).atoms;
       detail.innerHTML = `<div class="frame-selected-summary">${renderPackingMetrics([example], t("model.frame.selectedExample"), "selected-metrics")}
-        <label>${esc(t("model.frame.predictionFrontier"))}<select data-frame-frontier data-focus-key="frame-frontier" ${testIdAttribute("model", "frame", "frontier")} ${atoms === null ? "disabled" : ""}>
+        <label>${esc(t("model.frame.predictionFrontier"))}${contextHelpMarkup({ label: t("model.frame.help.frontier.label"), description: t("model.frame.help.frontier.description"), testId: "model-frame-help-frontier" })}<select data-frame-frontier data-focus-key="frame-frontier" ${testIdAttribute("model", "frame", "frontier")} ${atoms === null ? "disabled" : ""}>
         ${atoms === null ? `<option>${esc(unavailable())}</option>` : Array.from({ length: atoms + 1 }, (_, p) => `<option value="${p}">${esc(t("model.frame.frontierOption", { count: p }))}</option>`).join("")}</select></label></div>
         <div data-frame-positions ${testIdAttribute("model", "frame", "positions")}></div>`;
       const frontier = detail.querySelector('[data-test-id="model-frame-frontier"]');

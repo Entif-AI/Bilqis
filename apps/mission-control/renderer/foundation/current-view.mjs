@@ -6,7 +6,7 @@ import { t } from "./i18n.mjs";
 
 export function renderCurrentView(
   state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn, bootstrap = null,
-  fixtureViews = null,
+  fixtureViews = null, onModelDiagnosticMode = null,
 ) {
   const domain = document.querySelector("#domain-view");
   const summary = document.querySelector("#view-summary");
@@ -80,8 +80,12 @@ export function renderCurrentView(
       return;
     }
     summary.textContent = t("shell.destination.model.purpose");
-    if (!fixtureViews?.renderNeuralView || state.context.fixture !== true) {
-      domain.innerHTML = productionProjectionMarkup("model");
+    if (state.context.fixture !== true) {
+      domain.innerHTML = "";
+      return;
+    }
+    if (!fixtureViews?.renderNeuralView) {
+      domain.innerHTML = "";
       return;
     }
     fixtureViews.renderNeuralView(domain, (id, kind) => onInspect({
@@ -91,7 +95,10 @@ export function renderCurrentView(
         [t("model.inspector.diagnosticClass")]: kind,
         [t("model.inspector.interpretationBoundary")]: t("model.inspector.telemetryOnly"),
       },
-    }));
+    }), {
+      mode: state.modelDiagnosticMode ?? "current",
+      onModeChange: onModelDiagnosticMode,
+    });
     return;
   }
   if (state.view === "learning") {

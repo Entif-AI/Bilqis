@@ -54,7 +54,7 @@ function correctionsControllerFor(api, fixtureSupport) {
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  teacherController, salienceController, capabilityExplorer, learningController,
+  teacherController, salienceController, neuralController, capabilityExplorer, learningController,
   onInspect, onSelectionChange, onNavigate, onAnnounce,
   schoolDomainSupport = null, atlasDomainSupport = null, correctionsDomainSupport = null,
 }) {
@@ -126,6 +126,14 @@ export function activateDomainViews({
     });
   } else {
     void teacherController?.deactivate();
+  }
+  if (state?.view === "model" && state.modelSection !== "frames" && state.context?.fixture !== true) {
+    void neuralController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+    });
+  } else {
+    void neuralController?.deactivate();
   }
   if (state?.view === "salience") {
     void salienceController?.activate(state.context, {

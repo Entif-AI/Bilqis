@@ -67,6 +67,22 @@ test("deep links restore view and selected object with exact run and generation 
   assert.deepEqual(restored.selected, { kind: "evidence", id: "receipt:123" });
 });
 
+test("Model deep links preserve the peer workspace and diagnostic fixture mode", () => {
+  const initial = { ...navigate(createShellState(context), "model"), modelSection: "frames", modelDiagnosticMode: "historical" };
+  const hash = buildDeepLink(initial);
+  assert.match(hash, /section=frames/);
+  assert.match(hash, /diagnostic=historical/);
+  const restored = createShellState(context, parseDeepLink(hash));
+  assert.equal(restored.view, "model");
+  assert.equal(restored.modelSection, "frames");
+  assert.equal(restored.modelDiagnosticMode, "historical");
+  const neural = withRoute(restored, { view: "model", modelSection: "neural", modelDiagnosticMode: "current" });
+  assert.equal(neural.modelSection, "neural");
+  assert.equal(neural.modelDiagnosticMode, "current");
+  assert.match(buildDeepLink(neural), /section=neural/);
+  assert.match(buildDeepLink(neural), /diagnostic=current/);
+});
+
 test("evidence selection can update URL identity without forcing inspector state", () => {
   const initial = navigate(createShellState(context), "evidence");
   const selected = selectObject(initial, { kind: "evidence", id: "receipt:exact" });

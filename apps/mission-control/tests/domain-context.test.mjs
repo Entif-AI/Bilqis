@@ -110,6 +110,7 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
   const activation = fs.readFileSync(path.join(rendererRoot, "foundation/domain-controller.mjs"), "utf8");
+  const capabilityController = fs.readFileSync(path.join(rendererRoot, "foundation/capability-controller.mjs"), "utf8");
   const fixtureSupport = fs.readFileSync(path.join(rendererRoot, "fixture-support.mjs"), "utf8");
   const atlasMessages = fs.readFileSync(path.join(rendererRoot, "foundation/messages/atlas.mjs"), "utf8");
   const capability = fs.readFileSync(path.join(rendererRoot, "capability/app.mjs"), "utf8");
@@ -121,7 +122,8 @@ test("production shell routes accepted domains and keeps fixture-only data behin
 
   assert.match(renderer, /createHomeController\(window\.bamfMissionControl, fixtureSupport\?\.home\)/);
   assert.match(renderer, /launchMode === "fixtures"[\s\S]*import\("\.\/fixture-support\.mjs"\)/);
-  assert.match(renderer, /createCapabilityExplorer\(/);
+  assert.match(renderer, /createShellCapabilityExplorer\(/);
+  assert.match(capabilityController, /createCapabilityExplorer\(/);
   assert.match(renderer, /activateDomainViews\(\{/);
   assert.match(renderer, /homeController/);
   assert.match(renderer, /resourceController/);
