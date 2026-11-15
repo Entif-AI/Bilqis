@@ -96,7 +96,7 @@ def _require_issued(result):
         _invalid('BAMF_PRIORITY_RESULT_DRIFT')
 
 
-def accepted_priority_school(parent, program):
+def accepted_priority_school(parent, program, *, candidate_identity_sha256=None):
     """Project B13 + admitted Factory custody into C03's minimal school view."""
     from bilqis_mlx.factory.schedule import ScheduleProgram
     if not isinstance(program, ScheduleProgram):
@@ -104,11 +104,13 @@ def accepted_priority_school(parent, program):
     grades = tuple(grade.id for grade in program.grades)
     if not grades:
         _invalid('BAMF_PRIORITY_PROGRAM_INVALID')
+    if candidate_identity_sha256 is None:
+        candidate_identity_sha256 = candidate_identity_digest(parent.retained_state)
     return PrioritySchoolContext(
         course_digest=program.digest(),
         active_grades=grades,
         current_student=PriorityStudentIdentity(
-            candidate_identity_digest(parent.retained_state)),
+            candidate_identity_sha256),
     )
 
 
@@ -128,7 +130,12 @@ def select_accepted_priority_visit(
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
     epoch = restore_teacher_lineage(projection.teacher_state)
-    if getattr(getattr(school, 'current_student', None), 'sha256', None) != candidate_identity_digest(parent.retained_state):
+    expected_parent_identity = (
+        planning_generation.parent_candidate_identity_sha256
+        if planning_generation is not None
+        else candidate_identity_digest(parent.retained_state)
+    )
+    if getattr(getattr(school, 'current_student', None), 'sha256', None) != expected_parent_identity:
         _invalid('BAMF_PRIORITY_STUDENT_DRIFT')
     teacher = _teacher(epoch, school)
     if not isinstance(learning_settings, Settings):
@@ -179,10 +186,17 @@ def execute_accepted_priority_candidate(selection, source_context,
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
+    planning_generation = selection.offer._planning_generation
+    from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+        refresh_accepted_currentness,
+    )
+    refresh_accepted_currentness(
+        planning_generation._accepted_currentness, planning_generation._parent)
     parent, cache = selection.offer.require_current_parent(source_context)
-    planning_generation = getattr(selection.offer, '_planning_generation', None)
-    semantic_context = getattr(planning_generation, '_authenticated_features', None)
-    _require_current_visit(parent, cache, selection.visit)
+    semantic_context = planning_generation._authenticated_features
+    _require_current_visit(
+        parent, cache, selection.visit,
+        candidate_identity_sha256=planning_generation.parent_candidate_identity_sha256)
     if prepared_source_rows is None:
         selection.offer.require_current(source_context, parent)
     else:
@@ -210,4 +224,6 @@ def execute_accepted_priority_candidate(selection, source_context,
         max_norm=max_norm, observation=observation, memory_budget=memory_budget,
         salience_provider=salience_provider,
         capture_diagnostics=capture_diagnostics, candidate=candidate,
-        finalize_candidate=finalize_candidate, semantic_context=semantic_context)
+        finalize_candidate=finalize_candidate,
+        currentness_transaction=planning_generation._accepted_currentness,
+        semantic_context=semantic_context)

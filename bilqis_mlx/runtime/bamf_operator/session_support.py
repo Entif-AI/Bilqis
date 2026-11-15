@@ -36,9 +36,9 @@ class BamfPreparedVisit:
     successor: object | None = None
 
 
-def _execution_context(run_dir: Path):
+def _execution_context(run_dir: Path, *, currentness_metrics=None):
+    host = AcceptedRuntimeHost(run_dir, currentness_metrics=currentness_metrics)
     parent = load_accepted_generation(run_dir)
-    host = AcceptedRuntimeHost(run_dir)
     context = host.source_context(source_root=LEGACY_SOURCE.resolve())
     authenticated = authenticate_bamf_execution_feature_context(
         parent, None, run_dir)

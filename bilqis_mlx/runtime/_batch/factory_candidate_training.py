@@ -32,6 +32,14 @@ from .factory_candidate_components import (
 )
 
 
+def _prepared_feature_context(prepared, semantic_context):
+    feature_context = prepared.semantic_context if semantic_context is None else semantic_context
+    if type(feature_context) is not AuthenticatedGenerationFeatureContext:
+        _invalid("FACTORY_CANDIDATE_SEMANTIC_CONTEXT_INVALID")
+    feature_context.__post_init__()
+    return feature_context
+
+
 def _realized_candidate_cost(
         start, loss_total, prepared, resource_plan, memory_budget, transaction,
         feature_context, semantic_context_materialized_in_step, c08_metrics):
@@ -69,14 +77,12 @@ def _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows, *,
         capability, teacher_hparams, max_norm, observation, memory_budget,
         cache, generation, prepared, start, capture_diagnostics,
-        salience_supervision=None, candidate=None, semantic_context=None,
+        salience_supervision=None, candidate=None, currentness_transaction=None,
+        semantic_context=None,
         semantic_context_materialized_in_step=False,
         finalize_candidate=True) -> FactoryCandidateStep:
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
-    feature_context = prepared.semantic_context if semantic_context is None else semantic_context
-    if type(feature_context) is not AuthenticatedGenerationFeatureContext:
-        _invalid("FACTORY_CANDIDATE_SEMANTIC_CONTEXT_INVALID")
-    feature_context.__post_init__()
+    feature_context = _prepared_feature_context(prepared, semantic_context)
     parameters = dict((parent.retained_state.optimizer if candidate is None
                        else candidate.optimizer).parameters)
 
@@ -89,7 +95,8 @@ def _execute_prepared_candidate(
         transaction = admit_uninterrupted_candidate_step(
             Path(run_dir), parent, loss_bearing_target=True,
             gradient_execution=gradient, teacher_hparams=teacher_hparams,
-            max_norm=max_norm, candidate=candidate, execution_cache=cache)
+            max_norm=max_norm, candidate=candidate, execution_cache=cache,
+            currentness_transaction=currentness_transaction)
         loss_total = gradient.loss_total
         c08_metrics = (1, 0, 1, 0, None)
     else:
@@ -103,7 +110,8 @@ def _execute_prepared_candidate(
             training_batch=prepared.training_batch,
             logical_batch_plan=resource_plan,
             teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
-            execution_cache=cache)
+            execution_cache=cache,
+            currentness_transaction=currentness_transaction)
         loss_total = gradient.weighted_mean_loss
         c08_metrics = (
             gradient.gradient_launches, gradient.vectorized_microbatches,
@@ -132,6 +140,31 @@ def _execute_prepared_candidate(
         diagnostics, transaction, cost)
 
 
+def _candidate_cache_and_generation(run_dir, source_context, parent, candidate,
+                                    currentness_transaction):
+    source_context.require_accepted_runtime(Path(run_dir))
+    if currentness_transaction is None:
+        cache = bind_accepted_execution_cache(Path(run_dir))
+    else:
+        from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+            require_accepted_currentness,
+        )
+        cache = require_accepted_currentness(
+            currentness_transaction, parent=parent)._cache
+    if candidate is not None:
+        cache = bind_candidate_execution_cache(
+            cache, parent, candidate, spec=parent.topology, extents=parent.extents)
+    parameters = (
+        parent.retained_state.optimizer if candidate is None else candidate.optimizer
+    ).parameters
+    generation = bind_execution_generation(
+        cache, parameters, spec=parent.topology,
+        extents=parent.extents).generation_digest
+    if cache.generation_binding != generation:
+        _invalid("FACTORY_CANDIDATE_STEP_GENERATION_DRIFT")
+    return cache, generation
+
+
 def execute_factory_candidate_step(
     run_dir: Path,
     source_context,
@@ -157,6 +190,7 @@ def execute_factory_candidate_step(
     salience_provider=None,
     candidate=None,
     finalize_candidate: bool = True,
+    currentness_transaction=None,
     semantic_context=None,
 ) -> FactoryCandidateStep:
     """Compose C02→C08→B10/B11→candidate custody without publishing state.
@@ -170,20 +204,9 @@ def execute_factory_candidate_step(
             or type(capture_diagnostics) is not bool
             or type(finalize_candidate) is not bool):
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
-    source_context.require_accepted_runtime(Path(run_dir))
     start = time.perf_counter()
-    cache = bind_accepted_execution_cache(Path(run_dir))
-    if candidate is not None:
-        cache = bind_candidate_execution_cache(
-            cache, parent, candidate, spec=parent.topology, extents=parent.extents)
-    parameters = (
-        parent.retained_state.optimizer if candidate is None else candidate.optimizer
-    ).parameters
-    generation = bind_execution_generation(
-        cache, parameters, spec=parent.topology,
-        extents=parent.extents).generation_digest
-    if cache.generation_binding != generation:
-        _invalid("FACTORY_CANDIDATE_STEP_GENERATION_DRIFT")
+    cache, generation = _candidate_cache_and_generation(
+        run_dir, source_context, parent, candidate, currentness_transaction)
     semantic_context_materialized_in_step = semantic_context is None
     prepared = prepare_factory_training_batch(
         source_context, parent, atlas_artifact_path, feature_artifact_path,
@@ -207,6 +230,7 @@ def execute_factory_candidate_step(
         cache=cache, generation=generation, prepared=prepared, start=start,
         capture_diagnostics=capture_diagnostics,
         salience_supervision=supervision, candidate=candidate,
+        currentness_transaction=currentness_transaction,
         finalize_candidate=finalize_candidate, semantic_context=semantic_context,
         semantic_context_materialized_in_step=semantic_context_materialized_in_step)
 

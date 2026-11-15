@@ -29,6 +29,7 @@ class _AcceptedHydration:
     acceptance_file_sha256: str
     student: CompleteStudent
     correction_frontier_canonical: bytes
+    candidate_identity_sha256: str
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,8 @@ def _require_execution_entry(entry, registry) -> None:
     if (cache.accepted_manifest_sha256 != hydration.manifest_sha256
             or cache.run_id != hydration.student.run_id
             or cache.generation != hydration.student.generation
+            or cache._candidate_identity_sha256
+            != hydration.candidate_identity_sha256
             or registry != entry.registry
             or cache._correction_registry is not entry.registry
             or cache.source_authority_registry_sha256 != entry.registry_sha256
@@ -112,12 +115,14 @@ def _require_execution_entry(entry, registry) -> None:
         invalid("B13_EXECUTION_CACHE_REQUIRED")
 
 
-def _new_hydration(run_dir: Path, pointer: dict, student: CompleteStudent):
+def _new_hydration(
+        run_dir: Path, pointer: dict, student: CompleteStudent,
+        candidate_identity_sha256: str):
     return _AcceptedHydration(
         pointer["manifest_sha256"], sha(canonical(pointer)),
         pointer["acceptance_sha256"],
         _acceptance_file_sha256(run_dir, pointer["manifest_sha256"]), student,
-        canonical(dict(student.correction_frontier)))
+        canonical(dict(student.correction_frontier)), candidate_identity_sha256)
 
 
 def _new_execution_entry(run_dir: Path, hydration, registry):
@@ -133,6 +138,8 @@ def _new_execution_entry(run_dir: Path, hydration, registry):
         source_authority_registry_sha256=student.correction_frontier.get(
             "source_authority_registry_sha256"))
     object.__setattr__(cache, "_run_dir", run_dir)
+    object.__setattr__(
+        cache, "_candidate_identity_sha256", hydration.candidate_identity_sha256)
     if registry is not None:
         object.__setattr__(cache, "_correction_registry", registry)
     return _AcceptedExecutionEntry(
@@ -181,7 +188,8 @@ def _require_publication_parent_locked(lock, hydrations, run_dir, pointer, witne
     return witness
 
 
-def _current_hydration_locked(lock, hydrations, executions, run_dir, key, pointer):
+def _current_hydration_locked(
+        lock, hydrations, executions, run_dir, key, pointer, *, metrics=None):
     with lock:
         retained = hydrations.get(key)
     if (retained is not None and pointer is not None
@@ -192,10 +200,13 @@ def _current_hydration_locked(lock, hydrations, executions, run_dir, key, pointe
         if retained is not None else None)
     pointer, student = _read_accepted_locked(
         run_dir, accepted_parent=accepted_parent)
-    _published_in_memory_identity_locked(
+    identity = _published_in_memory_identity_locked(
         run_dir, student, pointer, accepted_parent=accepted_parent,
         acceptance_verified=True)
-    hydration = _new_hydration(run_dir, pointer, student)
+    if metrics is not None:
+        metrics.increment("full_candidate_identity_hashes")
+    hydration = _new_hydration(
+        run_dir, pointer, student, identity.candidate_identity_sha256)
     with lock:
         hydrations[key] = hydration
         executions.pop(key, None)
@@ -206,18 +217,19 @@ def _make_execution_cache_runtime():
     lock = RLock()
     hydrations, executions = {}, {}
 
-    def current_hydration(run_dir: Path):
+    def current_hydration(run_dir: Path, *, metrics=None):
         run_dir = Path(run_dir).resolve()
         key = str(run_dir)
         with _pointer_lock(run_dir):
             pointer = _read_pointer(run_dir / "bamf-state.json")
             return _current_hydration_locked(
-                lock, hydrations, executions, run_dir, key, pointer)
+                lock, hydrations, executions, run_dir, key, pointer,
+                metrics=metrics)
 
-    def bind(run_dir: Path):
+    def bind(run_dir: Path, *, metrics=None):
         run_dir = Path(run_dir).resolve()
         key = str(run_dir)
-        hydration = current_hydration(run_dir)
+        hydration = current_hydration(run_dir, metrics=metrics)
         registry = _accepted_source_authority_registry(run_dir, hydration.student)
         with lock:
             retained = executions.get(key)

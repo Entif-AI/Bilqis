@@ -11,7 +11,8 @@ from ._atlas_candidate.state import (
     _load_retained_candidate_state_with_parts,
 )
 from ._atlas_candidate.transaction import (
-    CandidateTransaction, begin_candidate, candidate_step, resolve_candidate,
+    CandidateTransaction, _begin_candidate_with_parent_identity,
+    begin_candidate, candidate_step, resolve_candidate,
 )
 
 
