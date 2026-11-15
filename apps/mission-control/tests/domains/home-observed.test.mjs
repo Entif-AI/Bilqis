@@ -187,3 +187,23 @@ test("snapshot requests cannot retain pre-publication families behind a successo
   assert.equal(controller.currentModel().runtime.retainedCandidates, 1);
   await controller.deactivate();
 });
+
+test("publication between snapshot anchors retries on the next bounded tick", async () => {
+  let runReads = 0, tick;
+  const controller = createHomeController({ query: async ({ family }) => {
+    if (family === "run") { runReads += 1; return runPage(observation(), runReads === 1 ? 0 : 1); }
+    const records = family === "episode" && runReads > 2 ? [{
+      schema_version: "bilqis.bamf.mission-control.candidate-decision/v1",
+      outcome: "ACCEPTED", capability_id: "A.IDENTITY", reason_code: "RETAINED",
+      meta: { run: { run_id: context.runId, generation: 1 } },
+    }] : [];
+    return { accepted: true, state: records.length ? "PRESENT" : "EMPTY", records };
+  }, subscribeEvents: () => () => {} },
+  { schedule: (callback) => { tick = callback; return 1; }, cancel: () => {} });
+  await controller.activate(context, { host: host() });
+  assert.equal(controller.currentModel()?.observed?.acceptedGeneration ?? null, null);
+  await tick();
+  assert.equal(controller.currentModel().observed.acceptedGeneration, 1);
+  assert.equal(controller.currentModel().runtime.retainedCandidates, 1);
+  await controller.deactivate();
+});

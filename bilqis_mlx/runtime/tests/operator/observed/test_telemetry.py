@@ -36,3 +36,35 @@ class TrainerObservationTests(unittest.TestCase):
             with TrainerObservation(root, 1) as obs:
                 obs.update(phase='SELECTING')
                 obs.finish('HELD')
+
+    def test_heartbeat_interleaved_with_phase_changes_keeps_complete_snapshots(self):
+        import threading
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            reads = []
+            done = threading.Event()
+            def read_snapshots():
+                while not done.is_set():
+                    try:
+                        reads.append(json.loads((root / 'trainer-observed.json').read_bytes()))
+                    except FileNotFoundError:
+                        pass
+            with TrainerObservation(root, 1, heartbeat_seconds=0.001) as obs:
+                reader = threading.Thread(target=read_snapshots)
+                reader.start()
+                for i in range(12):
+                    obs.update(phase='TRAINING', candidate_step=i, candidate_horizon=12)
+                    time.sleep(0.001)
+                obs.update(phase='RETENTION', retention_completed=2, retention_total=3)
+                time.sleep(0.005)
+                obs.finish('REJECTED')
+                done.set()
+                reader.join()
+            final = json.loads((root / 'trainer-observed.json').read_bytes())['visits'][-1]
+            self.assertTrue(reads)
+            self.assertTrue(all(len(item['visits']) == 1 for item in reads))
+            self.assertEqual((final['phase'], final['retention_completed'], final['candidate_step']),
+                             ('COMPLETED', 2, 11))
+            retention = [item['visits'][-1] for item in reads if item['visits'][-1]['phase'] == 'RETENTION']
+            self.assertTrue(retention)
+            self.assertTrue(all(item['candidate_step'] == 11 and item['retention_completed'] == 2 for item in retention))

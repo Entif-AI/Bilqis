@@ -10,7 +10,7 @@ def main(argv) -> int:
     import mlx.core as mx
 
     mx.set_default_device(mx.cpu)
-    from .factory_retention_live_support import live_factory_context
+    from ..factory_retention_live_support import live_factory_context
     from .factory_retention_next_step_state import natural_next_selection
     from .factory_retention_next_step_witness import run_cold_destination
 

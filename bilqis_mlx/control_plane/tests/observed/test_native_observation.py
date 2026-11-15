@@ -54,3 +54,19 @@ class NativeObservationTests(NativeSourceFixture, unittest.TestCase):
             QueryFamily.RUN, mode=QueryMode.HISTORICAL, generation=0))
         self.assertFalse(any(isinstance(row, ProgressRecord) for row in historical.records))
         self.assertEqual((self.run / 'bamf-state.json').read_bytes(), before)
+
+    def test_actual_successor_publication_preserves_observed_parent_history(self):
+        self.parent()
+        with TrainerObservation(self.run, 1) as producer:
+            producer.update(phase='PUBLISHING', capability_id='A.NATIVE',
+                            candidate_step=1, candidate_horizon=1)
+            self.publish_successor()
+            producer.finish('ACCEPTED')
+        page = native_query_catalog(self.run).query(QueryRequest(QueryFamily.RUN))
+        observed = next(row for row in page.records if isinstance(row, ProgressRecord))
+        self.assertEqual(observed.outcome, 'ACCEPTED')
+        self.assertEqual(observed.meta.run.generation, 0)
+        self.assertEqual(max(row.meta.run.generation for row in page.records), 1)
+        episode = native_query_catalog(self.run).query(QueryRequest(QueryFamily.EPISODE))
+        self.assertEqual(sum(getattr(row, 'outcome', None) == 'ACCEPTED'
+                             for row in episode.records), 1)

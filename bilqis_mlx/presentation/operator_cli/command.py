@@ -73,7 +73,9 @@ def _dispatch_bamf_resume(args, run_dir: Path, report):
         with advertise_active_endpoint(run_dir):
             result = operate_bamf(
                 run_dir, minutes=args.minutes,
-                max_visits=args.max_visits, reserve_gib=args.reserve_gib,
+                max_visits=args.max_visits, steps_per_visit=args.steps_per_visit,
+                reserve_gib=args.reserve_gib,
+                source_prefetch_workers=args.source_prefetch_workers,
                 progress=progress)
         operator_report = asdict(result)
         if admission_status is not None:

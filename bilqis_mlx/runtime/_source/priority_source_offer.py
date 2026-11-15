@@ -250,7 +250,7 @@ class PreparedPrioritySourceOffer:
             self._planning_generation, source_context, parent)
         return parent, cache
 
-    def require_current(self, source_context, parent):
+    def require_current(self, source_context, parent, *, prepared_rows=None):
         self._validate()
         cache, _authenticated = _require_planning_generation(
             self._planning_generation, source_context, parent)
@@ -262,12 +262,13 @@ class PreparedPrioritySourceOffer:
                 or contract_digest(source_context.release.source_bindings.by_capability[self.capability_id])
                 != self.source_binding_digest):
             _invalid_source_batch('BAMF_PRIORITY_SOURCE_OFFER_STALE')
-        rows = self.rows()
+        rows = self.rows() if prepared_rows is None else tuple(prepared_rows)
         current = source_context.bind_rows(rows, seed=self.source_seed,
             capability=self.capability_id, each=self.source_each)
-        if (current != self.source_authority or _canonical_rows(tuple(source_context.draw_rows(
-                seed=self.source_seed, capability=self.capability_id, each=self.source_each)))
-                != self._rows_json):
+        if (current != self.source_authority or _canonical_rows(rows) != self._rows_json
+                or (prepared_rows is None and _canonical_rows(tuple(source_context.draw_rows(
+                    seed=self.source_seed, capability=self.capability_id, each=self.source_each)))
+                    != self._rows_json)):
             _invalid_source_batch('BAMF_PRIORITY_SOURCE_OFFER_ROWS_DRIFT')
         from bilqis_mlx.runtime.accepted_corrections import register_accepted_target
         for kind, owner in (('ATLAS_FEATURE', self._feature_owner), ('PACKED_FRAME', self._packed_owner),

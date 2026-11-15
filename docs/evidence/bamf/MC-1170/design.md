@@ -220,3 +220,69 @@ or mutation authority. Test an open Home with the terminal event discarded/evict
 no additional events, and one recovery tick; assert terminal posture and accepted
 counts recover. Also test disconnected transport then successful connect and reload,
 and navigation while that reconnect is pending.
+
+## Unified intake amendment — 2026-11-15
+
+This section supersedes the one-update and uncached-foundation assumptions above
+for unified `406e30c65c257230b50259d678ed4e1e2a880f14`.
+
+The native operator now selects `candidate_step_horizon` using the existing owner;
+its default request is up to 16 updates. One visit still has one final retention
+and publication boundary. The observer reports the selected horizon, starts at
+candidate_step=0, and increments after each existing candidate update returns.
+`candidate_optimizer_step` is transaction parent step plus actual update_steps.
+A motif transition may stop the candidate before the planned horizon; preserve
+actual completed < planned rather than claiming all planned steps executed.
+Source-prefetch and generation-binding owners remain unchanged.
+
+The production foundation screen now obtains its complete parent assessment through
+`use_parent_assessment`, which may reuse accepted cache evidence. Report that stage
+as RETENTION with unknown progress until a truthful candidate-assessment plan is
+available. Never count a cache hit as a new solver execution. Once the foundation
+candidate loop begins, progress units are **candidate solver assessments**:
+`total=len(capability_order)`, completed starts at 0, subject is the current
+capability, role is candidate, and completion increments only after its actual
+assessment returns. Early rejection preserves completed < total. For two capabilities:
+start A=0/2; finish A=1/2; start B=1/2; finish B=2/2. Rejection after A remains 1/2.
+
+The direct foundation compatibility path without a supplied parent assessment runs
+one full parent assessment before the candidate loop. Count that actual parent call
+as one additional assessment: parent start=0/3, parent completion=1/3, candidate A
+start=1/3 and completion=2/3, candidate B completion=3/3. The supplied-parent path
+starts at 0/2 and never counts the supplied parent. Adaptive retention retains its
+existing parent/candidate two-assessments-per-cohort unit and order.
+
+Implementation must preserve incoming batching, parent-cache identity checks,
+source-prefetch, resource aggregation, early termination and optional callback
+compatibility. Introduce cohesive operator preparation/helper modules before adding
+telemetry if necessary to keep the existing coordinator within structural limits;
+migrate tests to the actual helper owner. Private reexports used by existing callers
+remain available. This structural decomposition adds no acceptance obligation.
+
+Verification adds selected-horizon >1, per-return completed increments, early motif
+termination, cache-supplied parent exclusion, uncached parent inclusion, and unchanged
+retention decisions. The renderer's generic progress fields/schema need no semantic
+change. Snapshot recovery brackets family queries with matching accepted RUN reads;
+a publication between them leaves the prior snapshot intact and retries on the next
+bounded tick. It never installs a mixed accepted snapshot.
+
+### Intake implementation decisions
+
+Extract `BamfPreparedVisit`, `_execution_context(run_dir)`, `_Capture(run_dir,
+selection)`, `_step_seed(visit_id, ordinal)` and `_resource_observation(run_dir,
+steps)` unchanged into `runtime/bamf_operator/session_support.py`. Import and
+reexport those exact names from `session.py` for existing consumers. Keep
+`prepare_bamf_visit`, `_visit`, `operate_bamf` and `BamfOperatorResult` in the
+coordinator. Migrate mocks of support-owned imports to session_support; retain
+coordinator mocks for injected owner calls. No selection, source, custody,
+resource aggregation or optimizer behavior changes during extraction.
+
+The deterministic snapshot race test must return generation N for the first
+RUN anchor, then N+1 for the final RUN anchor while intervening family pages
+still describe N. Assert that none of that mismatched batch is installed.
+On the next injected two-second recovery tick, return stable N+1 RUN anchors
+and N+1 episode evidence; assert accepted generation N+1 and one accepted
+candidate without another subscription event or navigation. A separate test
+resolves the first RUN read asynchronously and proves domain reads begin only
+after it, preventing an earlier request from leaving old families behind a
+successor RUN. These tests live in `tests/domains/home-observed.test.mjs`.

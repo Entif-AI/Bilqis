@@ -29,7 +29,7 @@ class SessionObservationTests(unittest.TestCase):
         selection = NS(status='TEACHER_SELECTED', offer=NS(
             capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},)),
             visit=NS(identity=NS(visit_id='visit')))
-        step = NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=1))
+        steps = [NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=i)) for i in (1, 2, 3)]
         def assess(*args, observer, **kwargs):
             observer({'retention_completed': 1, 'retention_total': 2,
                       'retention_subject': 'cap', 'retention_role': 'parent'})
@@ -40,7 +40,7 @@ class SessionObservationTests(unittest.TestCase):
             'schedule_program_from_executable_release': 'program',
             'accepted_priority_school': 'school', 'select_foundation_priority_visit': selection,
             '_Capture': 'capture', 'FactoryDeliveryObservation': 'delivery',
-            'execute_accepted_priority_candidate': step,
+            'bind_accepted_execution_cache': 'cache', 'candidate_step_horizon': 3,
             'issue_factory_retention_decision': NS(accepted=False),
             'resolve_candidate': 'retained',
         }
@@ -48,13 +48,16 @@ class SessionObservationTests(unittest.TestCase):
         with ExitStack() as stack:
             for name, value in patches.items():
                 stack.enter_context(patch(prefix + name, return_value=value))
+            stack.enter_context(patch(prefix + 'execute_accepted_priority_candidate', side_effect=steps))
             stack.enter_context(patch(prefix + 'evaluate_factory_retention_candidate', side_effect=assess))
             result = prepare_bamf_visit(Path('/tmp'), observer=observer)
         self.assertEqual(result.status, 'REJECTED')
         self.assertEqual([e.get('phase') for e in events if 'phase' in e],
                          ['SELECTING', 'TRAINING', 'RETENTION'])
-        self.assertIn({'phase': 'RETENTION', 'candidate_step': 1,
-                       'candidate_optimizer_step': 5}, events)
+        self.assertIn({'phase': 'TRAINING', 'capability_id': 'cap', 'candidate_step': 0,
+                       'candidate_horizon': 3, 'candidate_optimizer_step': 4}, events)
+        for i in (1, 2, 3):
+            self.assertIn({'candidate_step': i, 'candidate_optimizer_step': 4 + i}, events)
         self.assertIn({'retention_completed': 1, 'retention_total': 2,
                        'retention_subject': 'cap', 'retention_role': 'parent'}, events)
 
@@ -79,3 +82,21 @@ class SessionObservationTests(unittest.TestCase):
             final = json.loads((path / 'trainer-observed.json').read_text())['visits'][-1]
             self.assertEqual((snapshots[0]['phase'], snapshots[0]['outcome']), ('PUBLISHING', 'RUNNING'))
             self.assertEqual((final['phase'], final['outcome']), ('COMPLETED', 'ACCEPTED'))
+
+    def test_horizon_stops_after_real_motif_transition(self):
+        from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon
+        events = []
+        observer = NS(update=lambda **fields: events.append(fields))
+        parent = NS(retained_state=NS(optimizer_step=7), optimizer_hyperparameters='hp')
+        selection = NS(offer=NS(source_seed=1), visit=NS(identity=NS(visit_id='v')))
+        transactions = [NS(parent=NS(optimizer_step=7), update_steps=1),
+                        NS(parent=NS(optimizer_step=7), update_steps=2, motif_transition='stop')]
+        prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
+        with patch(prefix + '_Capture'), patch(prefix + 'FactoryDeliveryObservation'), patch(
+                prefix + 'execute_accepted_priority_candidate', side_effect=[NS(transaction=x) for x in transactions]) as execute:
+            steps = _execute_horizon(Path('/tmp'), selection, NS(), parent, 'atlas', 'feature',
+                                     ({'id': 'row'},), 4, None, 0, None, None, observer)
+        self.assertEqual(len(steps), 2)
+        self.assertEqual(execute.call_count, 2)
+        self.assertEqual(events, [{'candidate_step': 1, 'candidate_optimizer_step': 8},
+                                  {'candidate_step': 2, 'candidate_optimizer_step': 9}])
