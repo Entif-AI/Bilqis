@@ -46,6 +46,7 @@ def test_offer_rejects_context_without_accepted_host():
 
 def test_planning_generation_rejects_acceptance_change_during_binding():
     from bilqis_mlx.runtime import priority_source_offer as offer_module
+    from bilqis_mlx.runtime import priority_planning_generation as generation_module
     from bilqis_mlx.runtime.source_execution import SourceExecutionContext
 
     pointer = {
@@ -61,9 +62,9 @@ def test_planning_generation_rejects_acceptance_change_during_binding():
     object.__setattr__(context, 'run_dir', Path('/run'))
     with patch.object(
             SourceExecutionContext, 'require_accepted_runtime', return_value=None), patch.object(
-            offer_module, '_planning_pointer_snapshot',
+            generation_module, '_planning_pointer_snapshot',
             side_effect=((pointer, 'e' * 64), (pointer, 'f' * 64))), patch.object(
-            offer_module, '_current_cache', return_value=cache), patch(
+            generation_module, '_current_cache', return_value=cache), patch(
             'bilqis_mlx.runtime.bamf_bundle.authenticate_bamf_execution_feature_context',
             return_value=object()):
         with pytest.raises(BilqisError) as error:

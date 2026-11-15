@@ -99,9 +99,9 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
                     state_path.write_bytes(original)
 
     def test_priority_planning_authenticates_generation_once_for_all_capabilities(self):
-        from bilqis_mlx.runtime import priority_source_offer
+        from bilqis_mlx.runtime import priority_planning_generation
 
-        original = priority_source_offer._current_cache
+        original = priority_planning_generation._current_cache
         calls = 0
 
         def counted(*args, **kwargs):
@@ -109,7 +109,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
             calls += 1
             return original(*args, **kwargs)
 
-        with patch.object(priority_source_offer, "_current_cache", side_effect=counted):
+        with patch.object(priority_planning_generation, "_current_cache", side_effect=counted):
             (_pointer, _before, _after, context, selected, _rows,
              _pointer_bytes, _event_bytes) = self.exercise_journey()
 
