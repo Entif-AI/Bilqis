@@ -2,6 +2,7 @@ import { createFrameShell } from "./frames/frame-shell.mjs";
 import {
   inspect,
   navigate,
+  openEvidence as openEvidenceView,
   openSelectionOwner,
   returnFromEvidence,
   selectObject,
@@ -61,6 +62,15 @@ const interactionController = createInteractionController({
   },
   canUseCurrent: () => Boolean(verifiedLiveContext),
   onOpenRef: (ref) => { state = withRoute(state, routeForObjectRef(ref)); render(); },
+  copyText: async (value) => {
+    if (!navigator.clipboard?.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  },
   announce,
 });
 const operateController = createOperateController(window.bamfMissionControl);
@@ -106,6 +116,11 @@ const capabilityExplorer = createCapabilityExplorer({
   openObject: (selected) => {
     if (!state) return;
     state = { ...openSelectionOwner(inspect(state, selected)), inspectorOpen: false };
+    render();
+  },
+  openEvidence: (selected) => {
+    if (!state) return;
+    state = openEvidenceView(inspect(state, selected));
     render();
   },
   resolvePins: (meta) => {

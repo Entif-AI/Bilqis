@@ -214,8 +214,8 @@ test("forensic renderer has no direct provider filesystem process or network esc
 test("shell inspector exposes evidence navigation beside owning-view navigation", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const html = fs.readFileSync(path.join(here, "../../renderer/index.html"), "utf8");
-  assert.ok(html.includes('id="open-evidence"'));
-  assert.ok(html.includes('id="open-owner"'));
+  assert.ok(html.includes('data-test-id="inspector-open-evidence"'));
+  assert.ok(html.includes('data-test-id="inspector-open-owner"'));
 });
 
 const record = { schema_version: "receipt/v1", meta: {

@@ -1,0 +1,36 @@
+{
+  "baseRef": "a68961296b9ae4dc40b8813b2b91fd1633453c73",
+  "variants": [
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "fixtureLiveMode": true,
+  "rtlTextSpacingReducedMotion": true,
+  "journey": "CAPABILITY_BROWSER_JOURNEY_PASS"
+}
