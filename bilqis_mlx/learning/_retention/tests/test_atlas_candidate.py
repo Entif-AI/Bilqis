@@ -95,6 +95,27 @@ class CandidateTransactionTests(TestCase):
     def test_public_candidate_step_accepts_no_caller_decay(self):
         self.assertNotIn("decay", inspect.signature(candidate_step).parameters)
 
+    def test_one_candidate_step_performs_only_parent_and_result_numerical_validation(self):
+        candidate = begin_candidate(self.parent)
+        original_validate = AdamWStateTree.validate
+        calls = []
+
+        def counted_validate(state):
+            calls.append(state)
+            return original_validate(state)
+
+        with patch.object(AdamWStateTree, "validate", counted_validate):
+            stepped = self.step(candidate)
+        self.assertEqual(len(calls), 2)
+        self.assertIs(calls[0], candidate.optimizer)
+        self.assertIs(calls[1], stepped.optimizer)
+
+    def test_mutated_issued_parent_is_rejected_by_step_boundary_validation(self):
+        candidate = begin_candidate(self.parent)
+        candidate.optimizer.parameters[self.name][0, 0] = float("nan")
+        with self.assertRaises(BilqisError):
+            self.step(candidate)
+
     def test_public_candidate_step_derives_no_decay_from_custody_bound_b01(self):
         optimizer = self.parent.optimizer
         zero_moments = AdamWStateTree(
