@@ -1,6 +1,7 @@
 """C16.3 persistent BAMF operator routing contracts."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -13,16 +14,99 @@ from bilqis_mlx.runtime.bamf_operator.session import (
 )
 
 
+def _evidence_receipt(bytes_written, evidence_objects, seconds):
+    return {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": bytes_written, "file_fsyncs": 1,
+            "directory_fsyncs": 1, "evidence_objects": evidence_objects,
+            "persistence_seconds": seconds,
+        },
+    }
+
+
+def _candidate_executor(transactions, case):
+    def execute(*_args, candidate=None, **_kwargs):
+        ordinal = len(transactions) + 1
+        case.assertIsNone(candidate) if ordinal == 1 else case.assertIs(
+            candidate, transactions[-1])
+        transaction = SimpleNamespace(
+            parent=SimpleNamespace(optimizer_step=11), update_steps=ordinal,
+            training_authorities=tuple(
+                f"authority-{step}" for step in range(ordinal)))
+        transactions.append(transaction)
+        return SimpleNamespace(
+            transaction=transaction,
+            realized_cost={
+                "wall_seconds": float(ordinal), "optimizer_steps": 1,
+                "candidate_optimizer_steps": ordinal,
+                "c08_memory_budget_bytes": 64 * 1024 ** 3,
+            })
+    return execute
+
+
 class BamfOperatorRoutingTests(unittest.TestCase):
+    def test_candidate_horizon_buffers_step_evidence_until_one_boundary_write(self):
+        from bilqis_mlx.factory.teaching import content_digest
+        from bilqis_mlx.runtime.bamf_operator.evidence import (
+            CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root,
+        )
+
+        identity = SimpleNamespace(
+            visit_id="visit:evidence", policy_key="policy:evidence",
+            to_record=lambda: {
+                "visit_id": "visit:evidence", "policy_key": "policy:evidence"})
+        selection = SimpleNamespace(
+            option_id="option:evidence",
+            visit=SimpleNamespace(identity=identity),
+            offer=SimpleNamespace(
+                capability_id="capability:evidence", source_seed=17,
+                release_sha256="b" * 64),
+        )
+        execution = SimpleNamespace(
+            provider_id="provider:evidence", provider_implementation_sha256="f" * 64,
+            variation_axes=("seed",), teaching_option_ids=("option:evidence",))
+        release = SimpleNamespace(
+            release_sha256="b" * 64,
+            execution_plan=SimpleNamespace(
+                capability_map={"capability:evidence": execution}))
+        row = {
+            "id": "row:one", "capability": "capability:evidence",
+            "tokens": [1, 2, 3],
+        }
+        rows = (row,)
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            prepare_candidate_evidence_root(root)
+            capture = _Capture(
+                root, selection, generation=3,
+                accepted_manifest_sha256="a" * 64,
+                candidate_attempt_ordinal=1, parent_optimizer_step=10)
+            with patch(
+                    "bilqis_mlx.runtime.state.os.fsync",
+                    wraps=os.fsync) as fsync:
+                for ordinal in range(1, 17):
+                    capture.delivery(
+                        release, "capability:evidence", 10 + ordinal, rows,
+                        option_rows=rows, seed=ordinal,
+                        controls={
+                            "realized_cost": {"wall_seconds": 0.01},
+                            "delivered_content_sha256": content_digest(rows),
+                        },
+                    )
+                self.assertEqual(fsync.call_count, 0)
+
     def test_prepare_visit_accumulates_horizon_before_one_retention_decision(self):
         parent = SimpleNamespace(
             retained_state=SimpleNamespace(optimizer_step=11),
             optimizer_hyperparameters="hparams",
         )
         context = SimpleNamespace(release=object())
+        cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
         identity = SimpleNamespace(visit_id="visit:horizon", policy_key="policy:horizon")
         selection = SimpleNamespace(
             status="TEACHER_SELECTED",
+            option_id="option:horizon",
             visit=SimpleNamespace(identity=identity),
             offer=SimpleNamespace(
                 capability_id="capability:horizon", source_seed=17,
@@ -30,32 +114,13 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             ),
         )
         transactions = []
-
-        def execute(*_args, candidate=None, **_kwargs):
-            ordinal = len(transactions) + 1
-            if ordinal == 1:
-                self.assertIsNone(candidate)
-            else:
-                self.assertIs(candidate, transactions[-1])
-            transaction = SimpleNamespace(
-                parent=SimpleNamespace(optimizer_step=11),
-                update_steps=ordinal,
-                training_authorities=tuple(f"authority-{step}" for step in range(ordinal)),
-            )
-            transactions.append(transaction)
-            return SimpleNamespace(
-                transaction=transaction,
-                realized_cost={
-                    "wall_seconds": float(ordinal),
-                    "optimizer_steps": 1,
-                    "candidate_optimizer_steps": ordinal,
-                    "c08_memory_budget_bytes": 64 * 1024 ** 3,
-                },
-            )
-
-        decision = SimpleNamespace(accepted=True)
+        execute = _candidate_executor(transactions, self)
+        decision = SimpleNamespace(
+            accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
         retained = SimpleNamespace(optimizer_step=15)
         successor = object()
+        evidence = _evidence_receipt(900, 6, 0.01)
+        capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
         with patch(
                 "bilqis_mlx.runtime.bamf_operator.session._execution_context",
                 return_value=(parent, context, "atlas", "feature")), patch(
@@ -66,11 +131,14 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                return_value="cache"), patch(
+                return_value=cache), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=4) as horizon, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                return_value=(1, 1)), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value="capture"), patch(
+                return_value=capture) as capture_factory, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
                 return_value="observation"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
@@ -91,18 +159,29 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         self.assertEqual(len(prepared.steps), 4)
         self.assertEqual(prepared.step.transaction.update_steps, 4)
         self.assertEqual(execute_candidate.call_count, 4)
+        capture_factory.assert_called_once_with(
+            Path("/run"), selection, generation=1,
+            accepted_manifest_sha256="a" * 64,
+            candidate_attempt_ordinal=1, parent_optimizer_step=11)
         horizon.assert_called_once_with(
-            Path("/run"), parent, "cache", "capability:horizon", 16)
+            Path("/run"), parent, cache, "capability:horizon", 16)
         evaluate.assert_called_once_with(
             context, transactions[-1], "atlas", "capability:horizon", run_dir=Path("/run"))
         decide.assert_called_once_with("evaluation")
         event = derive.call_args.kwargs["delivery_events"][0]
         self.assertEqual(event["resource"]["optimizer_steps"], 4)
         self.assertEqual(event["resource"]["wall_seconds"], 10.0)
+        self.assertEqual(event["visit_id"], "visit:horizon")
+        self.assertEqual(event["selected_policy_key"], "policy:horizon")
+        self.assertEqual(event["selected_option_id"], "option:horizon")
+        self.assertEqual(event["parent_generation"], 1)
+        self.assertEqual(event["accepted_manifest_sha256"], "a" * 64)
+        self.assertEqual(event["candidate_attempt_ordinal"], 1)
+        self.assertEqual(event["candidate_evidence"], evidence)
+        self.assertEqual(event["resource"]["evidence_file_fsyncs"], 1)
 
     def test_resource_observation_reports_semantic_materialization_counts(self):
         from bilqis_mlx.runtime.bamf_operator.session_support import _resource_observation
-        from bilqis_mlx.runtime.source_execution import SourcePreparationMetrics
 
         cost = {
             "wall_seconds": 1.0,
@@ -116,21 +195,14 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         }
         step = SimpleNamespace(
             transaction=SimpleNamespace(update_steps=1), realized_cost=cost)
-        source_metrics = SourcePreparationMetrics(
-            provider_draws=21, source_context_builds=1,
-            compiled_source_builds=1)
         with patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
                 return_value=SimpleNamespace(used=123)):
-            resource = _resource_observation(
-                Path("/run"), step, source_metrics)
+            resource = _resource_observation(Path("/run"), step)
         self.assertEqual(resource["atlas_reload_count"], 0)
         self.assertEqual(resource["feature_manifest_rebuild_count"], 0)
         self.assertEqual(resource["visit_atlas_reload_count"], 1)
         self.assertEqual(resource["visit_feature_manifest_rebuild_count"], 1)
-        self.assertEqual(resource["provider_draw_count"], 21)
-        self.assertEqual(resource["source_context_build_count"], 1)
-        self.assertEqual(resource["compiled_source_build_count"], 1)
 
     def test_accepted_visit_persists_native_resource_observation(self):
         with TemporaryDirectory() as temporary:
@@ -142,12 +214,15 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             identity = SimpleNamespace(visit_id="visit:resource", policy_key="policy:resource")
             selection = SimpleNamespace(
                 status="TEACHER_SELECTED",
+                option_id="option:resource",
                 visit=SimpleNamespace(identity=identity),
                 offer=SimpleNamespace(
                     capability_id="capability:resource", source_seed=17,
                     rows=lambda: ({"id": "row:resource"},),
                 ),
             )
+            cache = SimpleNamespace(
+                generation=1, accepted_manifest_sha256="a" * 64)
             transaction = SimpleNamespace(
                 parent=SimpleNamespace(optimizer_step=11), update_steps=1,
                 training_authorities=("authority",),
@@ -160,9 +235,12 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                     "c08_memory_budget_bytes": 64 * 1024 ** 3,
                 },
             )
-            decision = SimpleNamespace(accepted=True)
+            decision = SimpleNamespace(
+                accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
             retained = SimpleNamespace(optimizer_step=12)
             successor = object()
+            evidence = _evidence_receipt(300, 4, 0.005)
+            capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
             with patch(
                     "bilqis_mlx.runtime.bamf_operator.session._execution_context",
                     return_value=(parent, context, "atlas", "feature")), patch(
@@ -173,11 +251,13 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                     "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                     return_value=selection), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                    return_value="cache"), patch(
+                    return_value=cache), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                     return_value=1), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                    return_value=(1, 1)), patch(
                     "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                    return_value="capture"), patch(
+                    return_value=capture), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
                     return_value="observation"), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
@@ -200,6 +280,11 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         self.assertGreater(resource["disk_used_bytes"], 0)
         self.assertEqual(resource["optimizer_steps"], 1)
         self.assertEqual(resource["wall_seconds"], 30.0)
+        self.assertEqual(resource["evidence_bytes_written"], 300)
+        self.assertEqual(resource["evidence_file_fsyncs"], 1)
+        self.assertEqual(resource["evidence_directory_fsyncs"], 1)
+        self.assertEqual(resource["evidence_objects"], 4)
+        self.assertEqual(event["candidate_evidence"], evidence)
 
     def test_execution_context_uses_accepted_release_without_requiring_c07_lease(self):
         parent = object()

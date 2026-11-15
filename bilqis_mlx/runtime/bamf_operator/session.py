@@ -29,10 +29,11 @@ from bilqis_mlx.runtime.foundation_teacher_owner import (
 from bilqis_mlx.runtime.priority_rejection_replay import (
     candidate_step_horizon, rejection_attempt_ordinals,
 )
+from .evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root
 from .locking import bamf_operator_lock
 from .telemetry import TrainerObservation
 from .session_support import (
-    BamfPreparedVisit, _Capture, _execution_context, _resource_observation, _step_seed,
+    BamfPreparedVisit, _execution_context, _resource_observation, _step_seed,
 )
 from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
     VisitCurrentnessMetrics, currentness_metrics,
@@ -65,7 +66,8 @@ def _emit_progress(progress, message: str) -> None:
         progress(message)
 
 def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_path,
-                     rows, horizon, progress, source_prefetch_workers,
+                     rows, horizon, cache, candidate_attempt_ordinal, progress,
+                     source_prefetch_workers,
                      source_prefetch_executor, source_prefetch_metrics, observer):
     source_lane = None
     if source_prefetch_metrics is not None or source_prefetch_workers:
@@ -73,7 +75,14 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
         source_lane = CandidateSourceLane(
             selection, context, parent, horizon, workers=source_prefetch_workers,
             executor=source_prefetch_executor, metrics=metrics)
-    capture = _Capture(run_dir, selection)
+    prepare_candidate_evidence_root(run_dir)
+    capture = _Capture(
+        run_dir, selection,
+        generation=cache.generation,
+        accepted_manifest_sha256=cache.accepted_manifest_sha256,
+        candidate_attempt_ordinal=candidate_attempt_ordinal,
+        parent_optimizer_step=parent.retained_state.optimizer_step,
+    )
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
         source_rows = rows if source_lane is None else source_lane.rows(ordinal)
@@ -98,7 +107,96 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
                             candidate_optimizer_step=candidate.parent.optimizer_step + candidate.update_steps)
         if getattr(candidate, "motif_transition", None) is not None:
             break
-    return steps
+    return steps, capture
+
+
+def _candidate_horizon_execution(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer):
+    cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
+    horizon = candidate_step_horizon(
+        run_dir, parent, cache, capability, steps_per_visit)
+    rejection_journal_ordinal, rejection_attempt_ordinal = rejection_attempt_ordinals(
+        run_dir, parent, cache, capability)
+    _emit_progress(
+        progress,
+        f"candidate horizon is atomic for up to {horizon} optimizer steps; "
+        "the session time limit is checked between candidate visits")
+    if observer is not None:
+        observer.update(
+            phase="TRAINING", capability_id=capability, candidate_step=0,
+            candidate_horizon=horizon,
+            candidate_optimizer_step=parent.retained_state.optimizer_step)
+    steps, capture = _execute_horizon(
+        run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
+        cache, rejection_journal_ordinal, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer)
+    if observer is not None:
+        metrics = currentness_metrics(
+            selection.offer._planning_generation._accepted_currentness)
+        observer.update(
+            currentness_deep_authentications=metrics["deep_authentication_count"],
+            currentness_accepted_cache_checks=metrics[
+                "accepted_cache_currentness_count"],
+            currentness_full_candidate_identity_hashes=metrics[
+                "full_candidate_identity_hashes"],
+            currentness_bundle_tree_scans=metrics["bundle_tree_scans"],
+        )
+    return cache, steps, capture, rejection_journal_ordinal, rejection_attempt_ordinal
+
+
+def _retention_result(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        progress, observer):
+    step = steps[-1]
+    if observer is not None:
+        observer.update(phase="RETENTION")
+    _emit_progress(progress, "evaluating retention evidence")
+    evaluation = evaluate_factory_retention_candidate(
+        context, step.transaction, atlas_path, capability, run_dir=run_dir,
+        **({"observer": lambda fields: observer.update(**fields)}
+           if observer is not None else {}))
+    decision = issue_factory_retention_decision(evaluation)
+    retained = resolve_candidate(step.transaction, accepted=decision.accepted)
+    candidate_evidence = capture.finalize(
+        accepted=decision.accepted, decision=decision.to_record())
+    successor = None
+    if decision.accepted:
+        resource = _resource_observation(
+            run_dir, tuple(steps),
+            getattr(context, "_source_preparation_metrics", None))
+        resource.update({
+            "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
+            "evidence_file_fsyncs": candidate_evidence["persistence"]["file_fsyncs"],
+            "evidence_directory_fsyncs": candidate_evidence["persistence"]["directory_fsyncs"],
+            "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
+            "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
+        })
+        successor = derive_accepted_teacher_successor(
+            run_dir, retained, selection.visit,
+            delivery_events=({
+                "event": "BAMF_C16_3_ACCEPTED",
+                "optimizer_step": retained.optimizer_step,
+                "parent_generation": cache.generation,
+                "accepted_manifest_sha256": cache.accepted_manifest_sha256,
+                "candidate_attempt_ordinal": rejection_journal_ordinal,
+                "capability": capability,
+                "visit_id": selection.visit.identity.visit_id,
+                "selected_policy_key": selection.visit.identity.policy_key,
+                "selected_option_id": selection.option_id,
+                "resource": resource,
+                "candidate_evidence": candidate_evidence,
+            },))
+    return BamfPreparedVisit(
+        "ACCEPTED" if decision.accepted else "REJECTED", parent,
+        selection=selection, step=step, steps=tuple(steps), decision=decision,
+        retained=retained, capability=capability, successor=successor,
+        candidate_evidence=candidate_evidence,
+        rejection_journal_ordinal=rejection_journal_ordinal,
+        rejection_attempt_ordinal=rejection_attempt_ordinal)
+
 
 def prepare_bamf_visit(
         run_dir: Path, *, steps_per_visit: int = 16,
@@ -135,56 +233,15 @@ def prepare_bamf_visit(
         progress,
         f"selected {selection.offer.capability_id} with {len(rows)} source rows")
     capability = selection.offer.capability_id
-    cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
-    horizon = candidate_step_horizon(
-        run_dir, parent, cache, capability, steps_per_visit)
-    _emit_progress(
-        progress,
-        f"candidate horizon is atomic for up to {horizon} optimizer steps; "
-        "the session time limit is checked between candidate visits")
-    if observer is not None:
-        observer.update(phase="TRAINING", capability_id=capability, candidate_step=0,
-                        candidate_horizon=horizon, candidate_optimizer_step=parent.retained_state.optimizer_step)
-    steps = _execute_horizon(
-        run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
-        progress, source_prefetch_workers, source_prefetch_executor,
-        source_prefetch_metrics, observer)
-    if observer is not None:
-        metrics = currentness_metrics(
-            selection.offer._planning_generation._accepted_currentness)
-        observer.update(
-            currentness_deep_authentications=metrics["deep_authentication_count"],
-            currentness_accepted_cache_checks=metrics[
-                "accepted_cache_currentness_count"],
-            currentness_full_candidate_identity_hashes=metrics[
-                "full_candidate_identity_hashes"],
-            currentness_bundle_tree_scans=metrics["bundle_tree_scans"],
-        )
-    step = steps[-1]
-    if observer is not None:
-        observer.update(phase="RETENTION")
-    _emit_progress(progress, "evaluating retention evidence")
-    evaluation = evaluate_factory_retention_candidate(
-        context, step.transaction, atlas_path, capability, run_dir=run_dir,
-        **({"observer": lambda fields: observer.update(**fields)} if observer is not None else {}))
-    decision = issue_factory_retention_decision(evaluation)
-    retained = resolve_candidate(step.transaction, accepted=decision.accepted)
-    successor = None
-    if decision.accepted:
-        successor = derive_accepted_teacher_successor(
-            run_dir, retained, selection.visit,
-            delivery_events=({
-                "event": "BAMF_C16_3_ACCEPTED",
-                "optimizer_step": retained.optimizer_step,
-                "capability": capability,
-                "resource": _resource_observation(
-                    run_dir, tuple(steps),
-                    getattr(context, "_source_preparation_metrics", None)),
-            },))
-    return BamfPreparedVisit(
-        "ACCEPTED" if decision.accepted else "REJECTED", parent,
-        selection=selection, step=step, steps=tuple(steps), decision=decision,
-        retained=retained, capability=capability, successor=successor)
+    horizon_state = _candidate_horizon_execution(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer)
+    cache, steps, capture, rejection_journal_ordinal, rejection_attempt_ordinal = horizon_state
+    return _retention_result(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        progress, observer)
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
@@ -204,19 +261,10 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
     retained = prepared.retained
     capability = prepared.capability
     if not decision.accepted:
-        offer = getattr(selection, "offer", None)
-        planning_generation = getattr(offer, "_planning_generation", None)
-        cache = (
-            planning_generation._cache
-            if planning_generation is not None
-            else bind_accepted_execution_cache(run_dir)
-        )
-        rejection_journal_ordinal, rejection_attempt_ordinal = rejection_attempt_ordinals(
-            run_dir, parent, cache, capability)
         record_bamf_rejection(run_dir, parent, {
             "schema": "bilqis.bamf.c16.3-rejection/v2",
-            "rejection_attempt_ordinal": rejection_attempt_ordinal,
-            "rejection_journal_ordinal": rejection_journal_ordinal,
+            "rejection_attempt_ordinal": prepared.rejection_attempt_ordinal,
+            "rejection_journal_ordinal": prepared.rejection_journal_ordinal,
             "visit_id": selection.visit.identity.visit_id,
             "teacher_visit": selection.visit.identity.to_record(),
             "selected_option_id": selection.option_id,
@@ -227,6 +275,7 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
             "retention_reason": decision.reason,
             "capability": capability,
             "decision": decision.to_record(),
+            "candidate_evidence": prepared.candidate_evidence,
         })
         return "REJECTED"
     successor = prepared.successor

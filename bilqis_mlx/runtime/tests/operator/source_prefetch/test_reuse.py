@@ -17,7 +17,7 @@ from bilqis_mlx.runtime.source_prefetch import (
 )
 from bilqis_mlx.semantics.domains import contract_digest
 
-from .test_bamf_source_prefetch import _fixture
+from ..test_bamf_source_prefetch import _fixture
 
 
 @pytest.mark.parametrize("capability", [
@@ -28,7 +28,7 @@ def test_live_grade_a_rows_survive_immutable_packet_roundtrip_without_content_dr
     from bilqis_mlx.grade_a_probe import read_sources
     from bilqis_mlx.live_grade_a import draw_predicates
 
-    source_root = Path(__file__).resolve().parents[4] / "vendor" / "legacy-v16"
+    source_root = Path(__file__).resolve().parents[5] / "vendor" / "legacy-v16"
     graph = read_sources(source_root)[2]
     rows = list(draw_predicates(
         source_root, graph, seed=31, capability=capability, each=4))
@@ -143,7 +143,7 @@ def test_spawned_native_prefetch_preserves_real_a_identity_source_content():
     from bilqis_mlx.live_grade_a import live_course as initial_course
     from bilqis_mlx.source_adapters.school import live_source_registry
 
-    root = Path(__file__).resolve().parents[4]
+    root = Path(__file__).resolve().parents[5]
     source_root = root / "vendor" / "legacy-v16"
     graph = read_sources(source_root)[2]
     manifest = json.loads((

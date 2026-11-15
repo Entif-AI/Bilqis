@@ -80,6 +80,25 @@ _EXACT = MappingProxyType({
 })
 
 
+_REASON_EXACT = MappingProxyType({
+    "BAMF_PRIORITY_REJECTION_ORDER_INVALID": RecoveryAdvice(
+        "BAMF_PRIORITY_REJECTION_ORDER_INVALID",
+        "PRESERVE_AND_DIAGNOSE",
+        "Preserve the accepted checkpoint and rejection journal. Do not delete, reorder, "
+        "or hand-edit events.jsonl; repair the rejection-replay compatibility or ordering "
+        "evidence before retrying the trainer.",
+        "The trainer could not establish a safe rejection ordering for C03 priority replay.",
+    ),
+})
+
+
+def _exact_advice(report, code):
+    reason = report.context.get("reason")
+    if isinstance(reason, str) and reason in _REASON_EXACT:
+        return _REASON_EXACT[reason]
+    return _EXACT.get(code)
+
+
 def error_code(error: BaseException | str) -> str:
     """Extract the stable leading code without depending on exception prose."""
     text = str(error).strip()
@@ -90,7 +109,7 @@ def recovery_advice(error: BaseException | str) -> RecoveryAdvice:
     """Classify every surfaced operator failure into one safe recovery posture."""
     report = ErrorBus.report(error)
     code = report.code
-    exact = _EXACT.get(code)
+    exact = _exact_advice(report, code)
     if exact is not None:
         return exact
     if not report.legacy_untyped:
