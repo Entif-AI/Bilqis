@@ -18,7 +18,7 @@ from .inputs import SourceAtomRow
 
 def source_atom_vectors(
     parameters, compiled, config, source, features, feature_schema, extents,
-    banks, artifact_owner, *, snapshot=None,
+    banks, artifact_owner, *, snapshot=None, source_execution_authority=None,
 ):
     """Recheck source/rights before gathering any identity tensor.
 
@@ -29,7 +29,24 @@ def source_atom_vectors(
     if (type(source) is not SourceAtomRow
             or type(artifact_owner) is not AtlasFeatureArtifactOwner):
         invalid("BAMF_SOURCE_ATOM_INPUT_INVALID")
-    if snapshot is None:
+    handoff = None
+    if source_execution_authority is not None:
+        from bilqis_mlx.runtime._model.backbone.source_execution_authority import (
+            require_b11_source_execution_authority,
+        )
+        authority = require_b11_source_execution_authority(
+            source_execution_authority, compiled, config, source)
+        if snapshot is not None and (
+                snapshot.release_sha256,
+                snapshot.bundle_id,
+                snapshot.source_bundle_id) != (
+                    authority.snapshot.release_sha256,
+                    authority.snapshot.bundle_id,
+                    authority.snapshot.source_bundle_id):
+            invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
+        snapshot = authority.snapshot
+        handoff = authority.source_handoff
+    elif snapshot is None:
         snapshot = load_pinned_atlas_snapshot(source.selection)
         expected_features = build_feature_manifest(snapshot, feature_schema)
         if features != expected_features:
@@ -46,12 +63,17 @@ def source_atom_vectors(
             or any(type(bank) is not SemanticBankView for bank in banks)):
         invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
     artifact_owner.require(features)
-    handoff = _build_source_atom_handoff_from_snapshot(
-        compiled, config, source.selection, snapshot, source.source_row,
-        source.graph, **source.replay_arguments())
-    _require_embedding_ready_from_snapshot(
-        handoff, compiled, config, source.selection, snapshot,
-        source.source_row, source.graph, **source.replay_arguments())
+    if handoff is None:
+        handoff = _build_source_atom_handoff_from_snapshot(
+            compiled, config, source.selection, snapshot, source.source_row,
+            source.graph, **source.replay_arguments())
+        _require_embedding_ready_from_snapshot(
+            handoff, compiled, config, source.selection, snapshot,
+            source.source_row, source.graph, **source.replay_arguments())
+    else:
+        handoff.__post_init__()
+        if not handoff.embedding_ready:
+            invalid("BAMF_SOURCE_ATOM_BINDING_HELD")
     spec = ModelTopologySpecV2()
     owned = embedding_parameter_view(parameters, spec=spec, extents=extents)
     _validate_banks(banks)
