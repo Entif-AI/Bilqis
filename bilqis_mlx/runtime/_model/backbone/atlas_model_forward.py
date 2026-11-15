@@ -1,6 +1,5 @@
 """Source-owned B11 forward execution and typed readout composition."""
 from __future__ import annotations
-
 from dataclasses import replace
 
 from bilqis_mlx.learning.atlas_engram_reads.source_owner import _B13_EXECUTION_SEAL
@@ -14,9 +13,11 @@ from bilqis_mlx.learning.source_atoms.backbone import (
     start_retained_source_backbone_producer,
     start_source_backbone_producer,
 )
-from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+from bilqis_mlx.runtime.backbone_identity import (
+    issue_execution_generation_binding, require_execution_generation_binding,
+)
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
-    CandidateExecutionCache, bind_motif_artifact_owner,
+    CandidateExecutionCache, bind_execution_generation, bind_motif_artifact_owner,
     require_accepted_execution_cache, require_candidate_execution_cache,
 )
 from bilqis_mlx.runtime.model_topology_v2 import (
@@ -31,13 +32,12 @@ from .atlas_model_contracts import (
 from .atlas_model_participation import _active_banks, _forward_participation
 from .atlas_model_refinement import _prediction_local_refinement
 from .atlas_model_forward_validation import (
-    validate_decode_row_custody,
-    validate_decode_row_input,
-    validate_task_plan_custody,
+    validate_decode_row_custody, validate_decode_row_input, validate_task_plan_custody,
 )
 
 
-def _source_producer(params, compiled_batch, generation, cache):
+def _source_producer(
+        params, compiled_batch, generation, cache, execution_binding=None):
     speculative = type(cache) is CandidateExecutionCache
     execution_cache = (
         require_candidate_execution_cache(cache) if speculative
@@ -56,6 +56,7 @@ def _source_producer(params, compiled_batch, generation, cache):
             compiled_batch.feature_schema,
             banks,
             compiled_batch.atlas_feature_artifact_owner,
+            execution_binding=execution_binding,
         ), None, True
     if (
         accepted_cache.run_id != compiled_batch.active_semantic_rows.run_id
@@ -75,6 +76,7 @@ def _source_producer(params, compiled_batch, generation, cache):
         accepted_cache.motif_manifest,
         compiled_batch.atlas_feature_artifact_owner,
         seal=_B13_EXECUTION_SEAL,
+        execution_binding=execution_binding,
     )
     # Speculative execution still carries accepted-generation provenance for
     # motif dependency accounting, but it must never write derived attention
@@ -105,6 +107,7 @@ def _decode_bamf_producer_row(
     final_hidden,
     row_index: int,
     accepted_cache=None,
+    execution_binding=None,
     *,
     refinement_training: bool = False,
 ) -> ModelOutput:
@@ -114,7 +117,8 @@ def _decode_bamf_producer_row(
     spec = backend.topology
     extents = compiled_batch.compiled.extents
     validate_bamf_parameters(spec, extents, params)
-    generation = execution_generation_digest(params, spec=spec, extents=extents)
+    generation = require_execution_generation_binding(
+        execution_binding, params, spec=spec, extents=extents).generation_digest
     validate_decode_row_custody(
         compiled_batch, answer_plan, producer, row_index, generation)
     validate_task_plan_custody(compiled_batch, answer_plan)
@@ -169,6 +173,7 @@ def _forward_bamf_impl(
     cache,
     *,
     refinement_training: bool = False,
+    execution_binding=None,
 ) -> ModelOutput:
     """Run the source-backed BAMF forward and typed decoder once."""
     if (
@@ -183,8 +188,20 @@ def _forward_bamf_impl(
     spec = backend.topology
     extents = compiled_batch.compiled.extents
     validate_bamf_parameters(spec, extents, params)
-    generation = execution_generation_digest(
-        params, spec=spec, extents=extents)
+    if cache is None:
+        execution_binding = (
+            issue_execution_generation_binding(
+                params, spec=spec, extents=extents,
+                expected_generation=answer_plan.generation_binding)
+            if execution_binding is None else require_execution_generation_binding(
+                execution_binding, params, spec=spec, extents=extents))
+    else:
+        owned_binding = bind_execution_generation(
+            cache, params, spec=spec, extents=extents)
+        if execution_binding is not None and execution_binding is not owned_binding:
+            _invalid("B11_EXECUTION_BINDING_MISMATCH")
+        execution_binding = owned_binding
+    generation = execution_binding.generation_digest
     if answer_plan.generation_binding != generation:
         _invalid("B11_GENERATION_BINDING_MISMATCH")
     if (compiled_batch.training_authority is not None
@@ -192,7 +209,7 @@ def _forward_bamf_impl(
         _invalid("B11_TRAINING_AUTHORITY_GENERATION_MISMATCH")
 
     producer, accepted_cache, capture_derived_cache = _source_producer(
-        params, compiled_batch, generation, cache)
+        params, compiled_batch, generation, cache, execution_binding)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, compiled_batch,
         capture_derived_cache=capture_derived_cache and not refinement_training)
@@ -200,7 +217,8 @@ def _forward_bamf_impl(
         _invalid("B11_SINGLE_ROW_FORWARD_REQUIRED")
     return _decode_bamf_producer_row(
         backend, params, compiled_batch, answer_plan, producer, hidden, 0,
-        accepted_cache, refinement_training=refinement_training)
+        accepted_cache, execution_binding,
+        refinement_training=refinement_training)
 
 
 def forward_bamf(
@@ -209,10 +227,13 @@ def forward_bamf(
     answer_plan: AnswerPlan,
     mode: ExecutionMode,
     cache,
+    *,
+    execution_binding=None,
 ) -> ModelOutput:
     """Public inference entrypoint through the single BAMF backend selector."""
     return model_backend(ModelTopologySpecV2()).forward(
-        params, compiled_batch, answer_plan, mode, cache)
+        params, compiled_batch, answer_plan, mode, cache,
+        execution_binding=execution_binding)
 
 
 __all__ = ("forward_bamf",)

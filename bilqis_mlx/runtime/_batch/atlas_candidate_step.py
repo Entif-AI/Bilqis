@@ -14,6 +14,7 @@ from bilqis_mlx.runtime.atlas_resources import BatchPlan
 from bilqis_mlx.runtime.atlas_training_contracts import BamfTrainingBatch
 from .c08_gradient_accumulation import require_logical_batch_gradient_execution
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_execution_generation
 
 
 def _invalid(reason):
@@ -41,9 +42,14 @@ def _logical_batch_inputs(logical_batch_execution, training_batch,
     return logical.loss_executions, logical.gradients
 
 
-def _require_execution_custody(candidate, observed, *, spec, extents):
-    expected_generation = execution_generation_digest(
-        candidate.optimizer.parameters, spec=spec, extents=extents)
+def _require_execution_custody(
+        candidate, observed, *, spec, extents, execution_cache=None):
+    expected_generation = (
+        execution_generation_digest(
+            candidate.optimizer.parameters, spec=spec, extents=extents)
+        if execution_cache is None else bind_execution_generation(
+            execution_cache, candidate.optimizer.parameters,
+            spec=spec, extents=extents).generation_digest)
     custody = candidate.parent.custody
     for execution in observed:
         if execution.output.generation_binding != expected_generation:
@@ -62,7 +68,8 @@ def production_candidate_step(
         group_eligible, spec, extents,
         run_id, generation, parent_manifest_sha256,
         parent_candidate_identity_sha256, parent_optimizer_step, topology_digest,
-        candidate_step_ordinal, teacher_hparams, max_norm: float):
+        candidate_step_ordinal, teacher_hparams, max_norm: float,
+        execution_cache=None):
     """Run only when the binder can issue truthful execution provenance."""
     loss_execution = None
     loss_executions = None
@@ -82,7 +89,9 @@ def production_candidate_step(
             gradient_execution.__post_init__()
         observed = (loss_executions if loss_executions is not None
                     else (gradient_execution.execution,))
-        _require_execution_custody(candidate, observed, spec=spec, extents=extents)
+        _require_execution_custody(
+            candidate, observed, spec=spec, extents=extents,
+            execution_cache=execution_cache)
         if loss_executions is None:
             loss_execution = gradient_execution.execution
             actual_gradients = gradient_execution.gradients

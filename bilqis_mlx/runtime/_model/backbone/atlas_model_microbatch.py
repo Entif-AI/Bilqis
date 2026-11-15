@@ -18,7 +18,8 @@ from .atlas_model_forward import (
     _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
 )
 from .atlas_model_training import loss_bearing_bamf
-from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
+from bilqis_mlx.runtime.backbone_identity import issue_execution_generation_binding
+from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_execution_generation
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
 )
@@ -133,15 +134,21 @@ def _bamf_microbatch_value_and_grad_impl(
             _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
         for row_batch in row_batches:
             salience_supervision.labels_for(row_batch)
-    generation = execution_generation_digest(
-        params, spec=backend.topology, extents=batch.compiled.extents)
+    generation = answer_plans[0].generation_binding
     if any(plan.generation_binding != generation for plan in answer_plans):
         _invalid("B11_MICROBATCH_GENERATION_BINDING_MISMATCH")
     holder = {}
 
     def objective(current):
+        execution_binding = (
+            issue_execution_generation_binding(
+                current, spec=backend.topology, extents=batch.compiled.extents,
+                expected_generation=generation)
+            if cache is None else bind_execution_generation(
+                cache, current, spec=backend.topology, extents=batch.compiled.extents)
+        )
         producer, accepted_cache, _capture_derived_cache = _source_producer(
-            current, batch, generation, cache)
+            current, batch, generation, cache, execution_binding)
         hidden = _finalize_source_hidden(
             producer, accepted_cache, batch, capture_derived_cache=False)
         if hidden.shape[0] != len(row_batches):
@@ -152,7 +159,7 @@ def _bamf_microbatch_value_and_grad_impl(
                 row_batches, answer_plans, targets, masks)):
             output = _decode_bamf_producer_row(
                 backend, current, row_batch, plan, producer, hidden, index,
-                accepted_cache, refinement_training=True)
+                accepted_cache, execution_binding, refinement_training=True)
             execution = loss_bearing_bamf(
                 output, row_targets, mask,
                 salience_supervision=salience_supervision)
