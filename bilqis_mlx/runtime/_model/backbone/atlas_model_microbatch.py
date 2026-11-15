@@ -140,7 +140,7 @@ def _bamf_microbatch_value_and_grad_impl(
     holder = {}
 
     def objective(current):
-        producer, accepted_cache = _source_producer(
+        producer, accepted_cache, _capture_derived_cache = _source_producer(
             current, batch, generation, cache)
         hidden = _finalize_source_hidden(
             producer, accepted_cache, batch, capture_derived_cache=False)

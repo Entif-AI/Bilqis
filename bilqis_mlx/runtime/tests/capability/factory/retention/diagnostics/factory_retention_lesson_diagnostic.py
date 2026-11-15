@@ -19,7 +19,7 @@ from bilqis_mlx.runtime.factory_retention_owner import (
     _owner_seed,
     _training_exclusions,
 )
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_target_diagnostic import (
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_target_diagnostic import (
     _value_receipt,
 )
 
