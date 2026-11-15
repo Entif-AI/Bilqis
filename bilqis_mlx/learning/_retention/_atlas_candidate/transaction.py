@@ -19,6 +19,7 @@ from .common import (CLOSURE_STEP_PROOF_SCHEMA, LEGACY_STEP_PROOF_SCHEMA,
     TRANSACTION_SCHEMA, invalid)
 from .proofs import CandidateStepProof
 from bilqis_mlx.learning._retention._atlas_candidate.identity import RAW_IDENTITY_SCHEME
+from .identity_binding import protect_candidate_state
 from .state import CandidateState, _is_genesis_allocations
 from .motif_transition import (
     CandidateMotifAllocationTransition,
@@ -325,10 +326,12 @@ def resolve_candidate(candidate: CandidateTransaction, *, accepted: bool) -> Can
         accepted=True, participating_rows=rows)
     step = candidate.parent.optimizer_step + candidate.update_steps
     if _is_genesis_allocations(candidate.allocations):
-        return CandidateState(candidate.optimizer, policy, candidate.allocations, step,
-                              candidate.parent.custody,
-                              tuple(candidate.step_proofs),
-                              identity_scheme=RAW_IDENTITY_SCHEME)
+        state = CandidateState(candidate.optimizer, policy, candidate.allocations, step,
+                               candidate.parent.custody,
+                               tuple(candidate.step_proofs),
+                               identity_scheme=RAW_IDENTITY_SCHEME)
+        protect_candidate_state(state)
+        return state
     state = object.__new__(CandidateState)
     for name, value in (
             ('optimizer', candidate.optimizer), ('policy', policy),
@@ -339,4 +342,5 @@ def resolve_candidate(candidate: CandidateTransaction, *, accepted: bool) -> Can
             ('schema_version', STATE_SCHEMA), ('_issuance', RETAINED_STATE_ISSUER)):
         object.__setattr__(state, name, value)
     state.__post_init__()
+    protect_candidate_state(state)
     return state

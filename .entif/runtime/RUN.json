@@ -1,5 +1,5 @@
 {
-  "base_sha": "cde85fe91e251b65f844befffcd3e2f3f0f47ea3",
+  "base_sha": "df58fd5b9716950472facd490541d38d54e35862",
   "branch": "codex/1238-candidate-identity-binding-20261115",
   "created_at": "2026-11-15T21:31:39.460361Z",
   "issue": 1238,
@@ -7,5 +7,6 @@
   "run_id": "issue-1238-20261115",
   "runtime_surface": "codex",
   "schema": "entif.runtime.run/v1",
-  "state": "active"
+  "state": "active",
+  "updated_at": "2026-11-15T21:36:06.571587Z"
 }

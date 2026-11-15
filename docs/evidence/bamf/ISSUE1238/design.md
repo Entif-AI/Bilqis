@@ -227,7 +227,7 @@ Before migration, classify every production candidate_identity_digest call as on
 
 Record the final matrix in tests or turn-in evidence.
 
-The initial exact migration surface for this issue is deliberately narrower than the repository-wide 81-call census. Modify only these live-path consumers unless implementation proof exposes another duplicate scan on the same exact state:
+The initial exact migration surface for this issue is deliberately narrower than the repository-wide 80-call census on refreshed unified base `df58fd5b`. Modify only these live-path consumers unless implementation proof exposes another duplicate scan on the same exact state:
 
 - `learning/_retention/_atlas_candidate/identity.py`: canonical raw-v2 remains authoritative; add counters only, no memoization.
 - new `learning/_retention/_atlas_candidate/identity_binding.py`: guard capability, protected-storage ownership, binding issue/require/fallback, metrics snapshots.
@@ -253,7 +253,7 @@ Categories: `CORE` = canonical definition/wrapper; `R` = #1238 live bind/reuse m
 |---|---|---|
 | `learning/_retention/_atlas_candidate/identity.py:94` | `candidate_identity_digest` | `CORE`; raw-v2/legacy canonical implementation stays byte-identical; add metrics only. |
 | `learning/_retention/_atlas_candidate/state.py:270` | `_issue_promotion_transition_state` | `F`; public transition validation keeps canonical proof. The newly issued state has no inherited binding and may be separately bound by a private owner later. |
-| `learning/_retention/_atlas_candidate/transaction.py:160` | `_validated_step_decay` | `#1231`; unchanged. |
+| `learning/_retention/_atlas_candidate/transaction.py:142` | `_issue_transaction` | `#1231`; current unified base now binds parent currentness at transaction issuance. #1238 may consume an existing full-state binding here only if it preserves #1231's object-guard/currentness authority. |
 | `learning/_retention/atlas_acceptance.py:273` | `mint_acceptance_binding` | `R`; replace raw call with strict supplied/live registry binding require, fallback only for explicitly unbindable/unsupported state. |
 | `runtime/_admission/atlas_flywheel_runtime.py:131` | `_accepted_checkpoint` | `#1231`; accepted-runtime currentness remains sibling-owned. |
 | `runtime/_admission/jit/jit_adoption_native.py:61` | `_authenticate_native_staged_candidate` | `P`; native staged-adoption boundary remains an independent full proof. |
@@ -267,7 +267,6 @@ Categories: `CORE` = canonical definition/wrapper; `R` = #1238 live bind/reuse m
 | `runtime/_capability/factory/factory_retention_owner.py:177` | `_adaptive_retention_screen` | `R`; fresh-seed identity uses the same exact candidate binding. |
 | `runtime/_custody/bamf_bundle/accepted_runtime.py:86` | `_identity_from_pointer` | `#1231`; unchanged. |
 | `runtime/_custody/bamf_bundle/admission.py:95,96` | `derive_motif_successor_bundle` | `#1231` for parent-currentness comparison; #1238 only removes duplicate `resolve_candidate` and threads the already-resolved state. |
-| `runtime/_custody/bamf_bundle/admission.py:163` | `_admit_loaded_candidate_step` | `#1231`; unchanged. |
 | `runtime/_custody/bamf_bundle/admission.py:294` | `accept_and_publish` | `R`; successor-generation payload consumes the required candidate binding. |
 | `runtime/_custody/bamf_bundle/atlas_admission.py:182,184,218` | `_issue_atlas_admission_binding`, `require_atlas_admission_binding` | `F`; public Atlas extension/admission remains canonical. |
 | `runtime/_custody/bamf_bundle/codec.py:273` | `load_bamf_bundle` genesis run-identity check | `C`; replace the direct raw equality with first bind against persisted `initial_candidate_identity_sha256`. Non-genesis codec load protects storage but does not self-ratify. |

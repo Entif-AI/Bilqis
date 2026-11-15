@@ -6,7 +6,7 @@
     "repository_public": true
   },
   "checkpoint": {
-    "branch_head": "cde85fe91e251b65f844befffcd3e2f3f0f47ea3",
+    "branch_head": "5d33a269156052cd5e2b56745b5383d16a0ac578",
     "persistence": "worktree pending first branch checkpoint push"
   },
   "cleanup": {
@@ -18,7 +18,8 @@
     "Live issue/base/README/AGENTS authority grounded",
     "Current production candidate_identity_digest census classified",
     "Pinned EGM design review repaired all substantive findings except final codebase readback still running at checkpoint creation",
-    "Pinned EGM design review passed: Design Critic PASS, Codebase Details PASS, Readiness no Blocker/Major; EGM-Passed label verified."
+    "Pinned EGM design review passed: Design Critic PASS, Codebase Details PASS, Readiness no Blocker/Major; EGM-Passed label verified.",
+    "Rebased design/structural checkpoint cleanly onto unified df58fd5b, which includes merged #1231 currentness authority; focused T002 tests still green."
   ],
   "created_at": "2026-11-15T21:31:39.461520Z",
   "handoff_id": "cp-1238-design-egm",
@@ -44,7 +45,8 @@
     "Do not steal #1231 visit/step currentness ownership",
     "Do not steal #1237 publication hydration ordering",
     "Do not rely on np.asarray inside a patched buffer hook",
-    "Process-local guard does not claim resistance to hostile pre-captured C descriptors/raw-pointer writes"
+    "Process-local guard does not claim resistance to hostile pre-captured C descriptors/raw-pointer writes",
+    "Post-#1231 production candidate_identity_digest census is 80 occurrences; _issue_transaction now owns parent currentness hashing and the former admission loaded-step occurrence is gone."
   ],
   "next_safe_operations": [
     "Perform T002 structural split before feature mutation",
@@ -54,7 +56,7 @@
   ],
   "reason": "Structural threshold and long-running feature work require a durable Work Stack checkpoint before implementation.",
   "refs": {
-    "base_sha": "cde85fe91e251b65f844befffcd3e2f3f0f47ea3",
+    "base_sha": "df58fd5b9716950472facd490541d38d54e35862",
     "branch": "codex/1238-candidate-identity-binding-20261115",
     "egm_sha": "b3a35956759bf7f024af2ff061b2e0b44b438e4c",
     "issue": "https://github.com/Entif-AI/Bilqis-MLX/issues/1238",
