@@ -66,6 +66,29 @@ test("shell target anatomy removes redundant chrome and keeps secondary context 
   assert.doesNotMatch(shell, /font-size:\s*0/);
 });
 
+test("investigation plane keeps forensic identity in the inspector and toolbar controls subordinate", () => {
+  const html = source("index.html");
+  const view = source("interactions/view.mjs");
+  const css = source("interactions/interactions.css");
+  const shell = source("shell.css");
+
+  assert.match(html, /id="inspector-forensics"[^>]*data-test-id="investigation-inspector-forensics"/);
+  assert.match(html, /id="inspector-deep-link-value"[^>]*data-test-id="investigation-inspector-deep-link-value"/);
+  assert.match(html, /id="copy-deep-link"[^>]*data-test-id="investigation-inspector-copy-deep-link"/);
+  assert.match(view, /data-test-id="investigation-time-toggle"/);
+  assert.match(view, /data-test-id="investigation-open-compare"/);
+  assert.match(view, /data-test-id="investigation-open-pins"/);
+  assert.match(view, /data-test-id="investigation-open-notes"/);
+  assert.doesNotMatch(view, /buildAppUri|Exact app URI|investigation-link/);
+  assert.match(css, /\.investigation-time form\s*\{[^}]*position:\s*absolute/s);
+  assert.match(css, /\.investigation-time:not\(\[open\]\) form\s*\{\s*display:\s*none;\s*\}/);
+  assert.match(css, /\.pin-list li,[\s\S]*border-bottom:\s*1px solid var\(--border\)/);
+  assert.doesNotMatch(css, /\.pin-list article|\.annotation-list article/);
+  assert.doesNotMatch(css, /text-overflow:\s*ellipsis/);
+  assert.match(shell, /\.inspector-deep-link code\s*\{[^}]*overflow-wrap:\s*anywhere[^}]*white-space:\s*normal/s);
+  assert.match(shell, /\.inspector-forensics:not\(\[open\]\) > :not\(summary\)\s*\{\s*display:\s*none;\s*\}/);
+});
+
 test("operator values and wide School data stay inside their owning surfaces", () => {
   const home = source("home/home.css");
   const school = source("school/school.css");

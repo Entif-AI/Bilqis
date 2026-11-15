@@ -10,11 +10,10 @@ async (page) => {
   await page.getByTitle("Inspect exact capability B.AND").waitFor();
 
   await page.getByTitle("Inspect exact capability B.AND").click();
-  await page.locator("#compare-left").click();
+  await page.locator('[data-test-id="investigation-inspector-compare-left"]').click();
   await page.getByTitle("Inspect exact capability B.NOT").click();
-  await page.locator("#compare-right").click();
-  await page.getByText("WAS/TOP/NOW/ALL", {exact: true}).waitFor();
-  await page.getByText("No winner is synthesized.", {exact: false}).waitFor();
+  await page.locator('[data-test-id="investigation-inspector-compare-right"]').click();
+  await page.locator('[data-test-id="investigation-compare-table"]').waitFor();
 
   await page.getByTitle("Inspect exact capability B.AND").hover();
   const highlighted = await page.evaluate(() => Array.from(
@@ -32,16 +31,17 @@ async (page) => {
     ["capability", "B.OR", "related"],
   ].sort()), "only declared capability relations cross-highlight");
 
-  await page.locator("#pin-selection").click();
-  await page.locator('[data-investigation-panel="pins"]').click();
-  await page.getByText("Open exact pin", {exact: true}).waitFor();
+  await page.locator('[data-test-id="investigation-inspector-pin"]').click();
+  await page.locator('[data-test-id="investigation-open-pins"]').click();
+  await page.locator('[data-test-id="investigation-pin-open-0"]').waitFor();
 
-  await page.locator("#annotate-selection").click();
-  await page.locator('[data-annotation-form] textarea').fill("GUI18 browser journey note.");
-  await page.getByRole("button", {name: "Save non-authoritative note"}).click();
-  await page.getByText("OPERATOR NOTE · NON-AUTHORITATIVE", {exact: true}).waitFor();
+  await page.locator('[data-test-id="investigation-inspector-note"]').click();
+  await page.locator('[data-test-id="investigation-note-body"]').fill("GUI18 browser journey note.");
+  await page.locator('[data-test-id="investigation-note-save"]').click();
+  await page.locator('[data-test-id="investigation-note-0"]').waitFor();
 
-  const generation = page.locator('[data-time-lens-form] input[name="generation"]');
+  await page.locator('[data-test-id="investigation-time-toggle"]').click();
+  const generation = page.locator('[data-test-id="investigation-time-generation"]');
   await generation.evaluate((input) => {
     const setter = Object.getOwnPropertyDescriptor(
       HTMLInputElement.prototype, "value",
@@ -58,21 +58,24 @@ async (page) => {
   await page.getByText("motif-read:fixture:g44238:s0", {exact: false}).waitFor();
   check(page.url().includes("generation=44238") && page.url().includes("mode=HISTORICAL"),
     "Memory uses the same historical lens");
-  await page.getByRole("button", {name: "Use verified current", exact: true}).click();
+  if (!await page.locator('[data-test-id="investigation-time-lens"]').evaluate((element) => element.hasAttribute("open"))) {
+    await page.locator('[data-test-id="investigation-time-toggle"]').click();
+  }
+  await page.locator('[data-test-id="investigation-time-current"]').click();
   await page.getByText("Generation 7", {exact: false}).first().waitFor();
   check(page.url().includes("generation=7") && page.url().includes("mode=LIVE"),
     "verified current restores exact current route");
 
   await page.locator('[data-test-id="nav-destination-learning"]').click();
   await page.locator('[data-test-id="learning-candidate-inspect"]').click();
-  await page.locator("#compare-left").click();
+  await page.locator('[data-test-id="investigation-inspector-compare-left"]').click();
   await page.locator('[data-test-id="learning-episode-selector"]').selectOption(
     "episode-record:fixture:interference-reject",
   );
   await page.locator('[data-test-id="learning-candidate-inspect"]').click();
-  await page.locator("#compare-right").click();
-  await page.getByText("Target committed", {exact: true}).waitFor();
-  const candidateTable = await page.locator(".investigation-table").innerText();
+  await page.locator('[data-test-id="investigation-inspector-compare-right"]').click();
+  await page.locator('[data-test-id="investigation-compare-row-target-committed"]').waitFor();
+  const candidateTable = await page.locator('[data-test-id="investigation-compare-table"]').innerText();
   check(candidateTable.includes("12/12") && candidateTable.includes("8/12"),
     "candidate compare keeps committed target values distinct");
   check(candidateTable.includes("Protected committed") &&
@@ -80,12 +83,12 @@ async (page) => {
 
   await page.locator('[data-test-id="nav-destination-lineage"]').click();
   await page.getByRole("button", {name: /Generation 44238 Retained candidate progression/}).click();
-  await page.locator("#compare-left").click();
+  await page.locator('[data-test-id="investigation-inspector-compare-left"]').click();
   await page.keyboard.press("Escape");
   await page.getByRole("button", {name: /Generation 44240 Explicit recovery fork/}).click();
-  await page.locator("#compare-right").click();
-  await page.getByText("Topology digest/version", {exact: true}).waitFor();
-  const generationTable = await page.locator(".investigation-table").innerText();
+  await page.locator('[data-test-id="investigation-inspector-compare-right"]').click();
+  await page.locator('[data-test-id="investigation-compare-row-topology-digest-version"]').waitFor();
+  const generationTable = await page.locator('[data-test-id="investigation-compare-table"]').innerText();
   check(generationTable.includes("BAMF-V1") && generationTable.includes("BAMF-V2"),
     "generation compare exposes exact topology difference");
   check(generationTable.includes("recovered accepted checkpoint"),
@@ -94,7 +97,7 @@ async (page) => {
   const noPageOverflow = await page.evaluate(() =>
     document.documentElement.scrollWidth <= innerWidth);
   const tableScrollable = await page.evaluate(() => {
-    const wrap = document.querySelector(".investigation-table-wrap");
+    const wrap = document.querySelector('[data-test-id="investigation-compare-table-wrap"]');
     return Boolean(wrap && wrap.scrollWidth > wrap.clientWidth);
   });
   check(noPageOverflow, "investigation layout has no page-level horizontal overflow");

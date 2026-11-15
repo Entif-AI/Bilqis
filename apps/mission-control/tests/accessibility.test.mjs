@@ -24,6 +24,21 @@ test("keyboard roving semantics cover arrows, Home, End, Enter and Space", () =>
   assert.equal(isActivationKey("Escape"), false);
 });
 
+test("focus return preserves an unkeyed invoking control while it remains connected", async () => {
+  const { focusToken, restoreFocus } = await import("../renderer/foundation/accessibility.mjs");
+  let focused = false;
+  const invokingControl = {
+    dataset: {},
+    id: "",
+    isConnected: true,
+    focus() { focused = true; },
+  };
+  const token = focusToken(invokingControl);
+  assert.equal(typeof token, "object");
+  assert.equal(restoreFocus({ querySelector() { return null; } }, token), true);
+  assert.equal(focused, true);
+});
+
 test("manual keyboard journey covers shell, School, inspector, graph, palette and offline mutation boundary", () => {
   assert.equal(MANUAL_KEYBOARD_SCENARIO.length >= 7, true);
   const scenario = MANUAL_KEYBOARD_SCENARIO.join("\n");
@@ -39,6 +54,8 @@ test("static shell exposes named landmarks, skip navigation, dedicated announcem
   assert.match(html, /id="defensive-banner"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
   assert.match(html, /id="announcer"[^>]*aria-live="polite"/);
   assert.match(html, /id="inspector"[^>]*role="dialog"[^>]*aria-labelledby="inspector-title"[^>]*inert/);
+  assert.match(html, /id="inspector-forensics"[^>]*>\s*<summary data-i18n="shell\.inspector\.forensics"/s);
+  assert.match(html, /id="copy-deep-link"[^>]*data-test-id="investigation-inspector-copy-deep-link"/);
   assert.match(html, /<dialog id="command-palette"[^>]*aria-labelledby="palette-title"/);
   assert.match(html, /aria-keyshortcuts="Control\+K"/);
 });
@@ -86,7 +103,7 @@ test("renderer blocks Operate unless verified live context is re-established and
     source("foundation/renderer-ui.mjs"),
     source("foundation/current-view.mjs"),
     source("foundation/i18n.mjs"),
-    source("foundation/i18n-shell.mjs"),
+    source("foundation/messages/shell.mjs"),
   ].join("\n");
   assert.match(renderer, /id === "operate" && !state\.mutationAvailable/);
   assert.match(renderer, /loadCachedOperatorView/);
@@ -99,7 +116,7 @@ test("startup reports service learner telemetry and trainer stages without live 
   const bootstrap = source("foundation/bootstrap-controller.mjs");
   const current = source("foundation/current-view.mjs");
   const ui = source("foundation/renderer-ui.mjs");
-  const i18n = [source("foundation/i18n.mjs"), source("foundation/i18n-shell.mjs")].join("\n");
+  const i18n = [source("foundation/i18n.mjs"), source("foundation/messages/shell.mjs")].join("\n");
   const html = source("index.html");
   for (const label of ["Local control plane", "Learner discovery", "Mission Control telemetry", "Trainer"]) {
     assert.match(i18n, new RegExp(label));

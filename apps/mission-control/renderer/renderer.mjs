@@ -62,6 +62,15 @@ const interactionController = createInteractionController({
   },
   canUseCurrent: () => Boolean(verifiedLiveContext),
   onOpenRef: (ref) => { state = withRoute(state, routeForObjectRef(ref)); render(); },
+  copyText: async (value) => {
+    if (!navigator.clipboard?.writeText) return false;
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch (_error) {
+      return false;
+    }
+  },
   announce,
 });
 const operateController = createOperateController(window.bamfMissionControl);
