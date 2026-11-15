@@ -240,7 +240,12 @@ export function selectObject(state, selected) {
   return { ...state, selected, inspectorOpen: false };
 }
 
+export function isFixtureCorrectionSelection(state) {
+  return Boolean(state?.selected && (state.selected.fixtureBacked === true || state.view === "corrections"));
+}
+
 export function openEvidence(state) {
+  if (isFixtureCorrectionSelection(state)) return state;
   const origin = state.view !== "evidence" && state.selected ? {
     view: state.view,
     selected: state.selected,
@@ -268,6 +273,7 @@ export function returnFromEvidence(state) {
 }
 
 export function openSelectionOwner(state) {
+  if (isFixtureCorrectionSelection(state)) return state;
   if (!state.selected) return state;
   const owner = INSPECTOR_OWNERS[state.selected.kind];
   return owner ? navigate(state, owner, state.selected) : state;

@@ -1,0 +1,49 @@
+{
+  "passed": true,
+  "claims": [
+    "explicit graph/table parity",
+    "keyboard inspection",
+    "custody disclosure",
+    "exact receipt inspection",
+    "complete chronological history",
+    "fixture custody across live/historical/reloaded selections",
+    "guarded owner/evidence routes",
+    "unique hooks"
+  ],
+  "variants": [
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "overflow": false,
+      "violations": [],
+      "graphViolations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "overflow": false,
+      "violations": [],
+      "graphViolations": []
+    },
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "overflow": false,
+      "violations": [],
+      "graphViolations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "overflow": false,
+      "violations": [],
+      "graphViolations": []
+    }
+  ],
+  "translationExpansion": true,
+  "rtlTextSpacingReducedMotion": true
+}

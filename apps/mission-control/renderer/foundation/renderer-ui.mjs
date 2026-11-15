@@ -1,5 +1,5 @@
 import { escapeText as esc } from "../frames/frame-model.mjs";
-import { DESTINATION_GROUPS, DESTINATIONS, shellPosture } from "../shell-state.mjs";
+import { DESTINATION_GROUPS, DESTINATIONS, shellPosture, isFixtureCorrectionSelection } from "../shell-state.mjs";
 import {
   currentMemoryGeneration,
   stableMemoryIdentity,
@@ -190,6 +190,7 @@ export function renderInspector(state, defense) {
   panel.setAttribute("aria-hidden", String(!open));
   panel.inert = !open;
   document.querySelector("#inspector-title").textContent = selected ? selected.id : "No selection";
+  const fixtureCorrection = isFixtureCorrectionSelection(state);
   const exact = selected?.details
     ? Object.entries(selected.details).map(([label, value]) =>
       `<dt>${esc(label)}</dt><dd>${esc(Array.isArray(value) ? value.join(", ") : value)}</dd>`,
@@ -200,10 +201,11 @@ export function renderInspector(state, defense) {
        <dt>Identity</dt><dd>${esc(selected.id)}</dd>
        <dt>Posture</dt><dd>${state.context.mode}</dd>
        <dt>Generation</dt><dd>${state.context.generation}</dd>
-       <dt>Evidence</dt><dd>${defense.historical ? "Verified prior evidence · inspection only" : "Current verified fixture/reference"}</dd>${exact}`
+       <dt>${esc(t("shell.inspector.evidence"))}</dt><dd>${fixtureCorrection ? esc(t("shell.inspector.fixture")) : defense.historical ? "Verified prior evidence · inspection only" : "Current verified fixture/reference"}</dd>
+       ${fixtureCorrection ? `<dt>${esc(t("shell.inspector.navigation"))}</dt><dd data-test-id="corrections-inspector-fixture-note">${esc(t("shell.inspector.fixtureNavigation"))}</dd>` : ""}${exact}`
     : "";
-  document.querySelector("#open-owner").disabled = !selected;
-  document.querySelector("#open-evidence").disabled = !selected;
+  document.querySelector("#open-owner").disabled = !selected || fixtureCorrection;
+  document.querySelector("#open-evidence").disabled = !selected || fixtureCorrection;
 }
 
 export function renderDemoActions(state, onInspect) {

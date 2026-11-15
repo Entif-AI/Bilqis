@@ -1,4 +1,8 @@
 export const SHELL_MESSAGES = Object.freeze({
+  "shell.inspector.evidence": "Evidence",
+  "shell.inspector.fixture": "Fixture projection · not live or reconstructed evidence",
+  "shell.inspector.navigation": "Navigation boundary",
+  "shell.inspector.fixtureNavigation": "Local fixture inspection only. Owner and Evidence navigation require a verified record mapping; search Evidence separately using the exact reference.",
   "shell.skipToMain": "Skip to main content",
   "shell.brand": "Mission Control",
   "shell.nav.label": "Mission Control destinations",
