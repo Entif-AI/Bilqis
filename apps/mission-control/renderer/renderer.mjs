@@ -213,6 +213,7 @@ function render() {
     onNavigate: navigateTo, onAnnounce: announce,
     schoolDomainSupport: fixtureSupport?.school ?? null,
     atlasDomainSupport: fixtureSupport?.atlas ?? null,
+    correctionsDomainSupport: fixtureSupport?.corrections ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;

@@ -1,4 +1,3 @@
-import { correctionsT } from "../corrections/corrections-messages.mjs";
 import { evidenceT } from "../evidence/evidence-messages.mjs";
 import { operateT } from "../operate/operate-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
@@ -163,27 +162,8 @@ export function renderCurrentView(
   }
   if (state.view === "corrections") {
     domain.hidden = false;
-    summary.textContent = correctionsT("corrections.summary");
-    if (!fixtureViews?.renderCorrectionsView || state.context.fixture !== true) {
-      domain.innerHTML = productionProjectionMarkup("corrections");
-      return;
-    }
-    fixtureViews.renderCorrectionsView(domain, (id, node) => onInspect({
-      kind: "correction", id, fixtureBacked: true,
-      details: {
-        [correctionsT("corrections.evidence.details")]: node.kind,
-        [correctionsT("corrections.evidence.state")]: node.state,
-        [correctionsT("corrections.evidence.refs")]: node.evidenceRefs.length ? node.evidenceRefs : [correctionsT("corrections.evidence.none")],
-        [correctionsT("corrections.evidence.projection")]: correctionsT("corrections.fixture.title"),
-      },
-    }), {onReference: (ref, kind) => onInspect({
-      kind: "correction", id: ref, fixtureBacked: true,
-      details: {
-        [correctionsT("corrections.evidence.reference")]: ref,
-        [correctionsT("corrections.evidence.referenceKind")]: correctionsT(`corrections.reference.${kind}`),
-        [correctionsT("corrections.evidence.projection")]: correctionsT("corrections.fixture.title"),
-      },
-    })});
+    summary.textContent = t("shell.destination.corrections.purpose");
+    domain.innerHTML = "";
     return;
   }
   if (state.view === "salience") {

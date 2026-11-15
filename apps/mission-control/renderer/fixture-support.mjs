@@ -1,6 +1,6 @@
 import { fixtureQuery, FIXTURE_RUN } from "./capability/fixture.mjs";
 import { createAtlasFixtureApi } from "./atlas/atlas-fixture.mjs";
-import { renderCorrectionsView } from "./corrections/corrections-view.mjs";
+import { CORRECTION_FIXTURE_SUPPORT } from "./corrections/corrections-fixture.mjs";
 import { renderEpisodesView } from "./episodes/episode-view.mjs";
 import { referenceHomeProjection } from "./home/home-fixture.mjs";
 import { compareStableRefs } from "./interactions/compare.mjs";
@@ -24,7 +24,6 @@ export const capability = Object.freeze({
 export const atlas = Object.freeze({ api: createAtlasFixtureApi() });
 
 export const currentViews = Object.freeze({
-  renderCorrectionsView,
   renderEpisodesView,
   renderLineageView,
   renderMemoryView,
@@ -32,6 +31,8 @@ export const currentViews = Object.freeze({
   renderSalienceView,
   renderTeacherView,
 });
+
+export const corrections = CORRECTION_FIXTURE_SUPPORT;
 
 export const home = Object.freeze({ referenceProjection: referenceHomeProjection });
 export const interactions = Object.freeze({ compareRefs: compareStableRefs });
