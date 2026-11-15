@@ -177,6 +177,14 @@ def _bamf_value_and_grad_impl(
     rebind_execution = _gradient_execution_rebinder(
         params, cache, spec=backend.topology, extents=compiled_batch.compiled.extents,
         generation=answer_plan.generation_binding)
+    preflight_binding = rebind_execution(params)
+    preflight_output = _forward_bamf_impl(
+        backend, params, compiled_batch, answer_plan, ExecutionMode.INFERENCE, cache,
+        refinement_training=True, execution_binding=preflight_binding,
+        decoder_trace=False)
+    preflight_execution = loss_bearing_bamf(
+        preflight_output, targets, mask,
+        salience_supervision=salience_supervision)
     holder = {}
 
     def objective(current):
@@ -191,7 +199,7 @@ def _bamf_value_and_grad_impl(
                 cache,
                 refinement_training=True,
                 execution_binding=execution_binding,
-                teacher_targets=targets,
+                replay_output=preflight_output,
             )
             execution = loss_bearing_bamf(
                 output, targets, mask,
@@ -206,6 +214,13 @@ def _bamf_value_and_grad_impl(
     execution = holder.get("execution")
     if type(execution) is not BamfLossExecution:
         _invalid("B11_GRADIENT_EXECUTION_MISSING")
+    if (execution.output.committed != preflight_output.committed
+            or execution.output.status is not preflight_output.status):
+        _invalid("B11_TRAINING_TRAJECTORY_DRIFT")
+    if not bool(mx.allclose(
+            execution.loss.total, preflight_execution.loss.total,
+            rtol=1e-5, atol=1e-6)):
+        _invalid("B11_TRAINING_LOSS_DRIFT")
     validate_bamf_parameters(
         backend.topology, compiled_batch.compiled.extents, gradients)
     result = object.__new__(BamfGradientExecution)
