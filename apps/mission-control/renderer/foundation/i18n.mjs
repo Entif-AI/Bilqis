@@ -1,4 +1,5 @@
 import { LEARNING_MESSAGES } from "./i18n-learning.mjs";
+import { ATLAS_MESSAGES } from "./i18n-atlas.mjs";
 import { SHELL_MESSAGES } from "./i18n-shell.mjs";
 import { TEACHER_MESSAGES } from "./i18n-teacher.mjs";
 
@@ -122,6 +123,7 @@ const EN_US = Object.freeze({
   "foundation.fixture.stale": "Stale connection",
   "foundation.fixture.denied": "Denied operation",
   "foundation.fixture.invalidEvidence": "Invalid evidence",
+  ...ATLAS_MESSAGES,
   ...SHELL_MESSAGES,
   ...LEARNING_MESSAGES,
   ...TEACHER_MESSAGES,

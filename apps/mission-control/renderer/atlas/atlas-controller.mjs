@@ -58,7 +58,7 @@ export function renderAtlasDomain(api, context, isActive = () => true) {
       renderAtlasDomain(api, context, isActive);
     });
   });
-  host.querySelector("#atlas-search-form")?.addEventListener("submit", async (event) => {
+  host.querySelector('[data-test-id="atlas-search-form"]')?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const semanticId = new FormData(event.currentTarget).get("semanticId")?.toString().trim();
     if (!semanticId) return;
@@ -79,7 +79,7 @@ export function renderAtlasDomain(api, context, isActive = () => true) {
     }
     renderAtlasDomain(api, context, isActive);
   });
-  host.querySelector("#atlas-abi-form")?.addEventListener("submit", async (event) => {
+  host.querySelector('[data-test-id="atlas-abi-form"]')?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const bank = Number(form.get("bank"));
