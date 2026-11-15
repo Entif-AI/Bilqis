@@ -136,3 +136,14 @@ through merge `40e04c95fc9e3a0c0045bfd43eb3c75e0ea351c9`. The Resources,
 layout and finite-asset dependency closure passed **42 tests** after the new
 identity-hook regression (31 Resources cases). Unchanged backend/semantic and
 unaffected UI evidence remains reused; hosted checks qualify the final PR head.
+
+### Merge boundary and bounded follow-up
+
+Human merge of PR #1155 landed the initial redesign at
+`490e86e1a284fd03c3824e0bce656d658df0052c` while final narrow-screen review was
+still in progress. That merge contains source head `f6a7b9e9`, not the subsequent
+narrow-table correction. Issue #1140 was reopened for this same original
+presentation requirement. The verified correction is isolated on
+`codex/1140-resources-narrow-followup-20261114`, which consumed `490e86e1`.
+It adds no new acceptance or runtime policy. Its PR and hosted checks are a separate
+review boundary; the initial PR's passing checks do not qualify this later source.
