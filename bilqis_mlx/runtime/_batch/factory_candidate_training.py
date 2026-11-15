@@ -54,7 +54,9 @@ def _realized_candidate_cost(
     bound_source_authorities = sum(
         compiled.source_execution_authority is not None
         for compiled in prepared.compiled_rows)
-    if bound_source_authorities != len(prepared.compiled_rows):
+    cold_requalification_rows = (
+        len(prepared.compiled_rows) - bound_source_authorities)
+    if cold_requalification_rows:
         _invalid("FACTORY_CANDIDATE_SOURCE_EXECUTION_AUTHORITY_MISSING")
     return {
         "wall_seconds": time.perf_counter() - start,
@@ -76,9 +78,7 @@ def _realized_candidate_cost(
         "visit_feature_manifest_rebuild_count": (
             feature_context.feature_manifest_rebuild_count),
         "b11_source_authority_bound_rows": bound_source_authorities,
-        "b11_source_atlas_reload_count": 0,
-        "b11_source_feature_manifest_rebuild_count": 0,
-        "b11_source_provider_redraw_count": 0,
+        "b11_source_cold_requalification_rows": cold_requalification_rows,
     }
 
 
