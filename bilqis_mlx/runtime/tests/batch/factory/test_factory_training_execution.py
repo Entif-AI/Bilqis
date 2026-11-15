@@ -201,7 +201,7 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
                 capture, parent.retained_state.optimizer_step + 2,
                 rows, 37119)
             with patch(
-                    "bilqis_mlx.runtime.factory_candidate_training.bamf_value_and_grad",
+                    "bilqis_mlx.runtime.factory_candidate_microbatch.bamf_value_and_grad",
                     wraps=bamf_value_and_grad) as gradient:
                 second = execute_factory_candidate_step(
                     run_dir, source_context, parent, str(self.artifact),

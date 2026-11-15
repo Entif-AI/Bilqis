@@ -17,9 +17,7 @@ from .atlas_model_contracts import (
 from .atlas_model_forward import (
     _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
 )
-from .atlas_model_training import loss_bearing_bamf
-from bilqis_mlx.runtime.backbone_identity import issue_execution_generation_binding
-from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_execution_generation
+from .atlas_model_training import _gradient_execution_rebinder, loss_bearing_bamf
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
 )
@@ -137,16 +135,13 @@ def _bamf_microbatch_value_and_grad_impl(
     generation = answer_plans[0].generation_binding
     if any(plan.generation_binding != generation for plan in answer_plans):
         _invalid("B11_MICROBATCH_GENERATION_BINDING_MISMATCH")
+    rebind_execution = _gradient_execution_rebinder(
+        params, cache, spec=backend.topology, extents=batch.compiled.extents,
+        generation=generation)
     holder = {}
 
     def objective(current):
-        execution_binding = (
-            issue_execution_generation_binding(
-                current, spec=backend.topology, extents=batch.compiled.extents,
-                expected_generation=generation)
-            if cache is None else bind_execution_generation(
-                cache, current, spec=backend.topology, extents=batch.compiled.extents)
-        )
+        execution_binding = rebind_execution(current)
         producer, accepted_cache, _capture_derived_cache = _source_producer(
             current, batch, generation, cache, execution_binding)
         hidden = _finalize_source_hidden(

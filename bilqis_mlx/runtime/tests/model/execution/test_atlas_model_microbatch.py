@@ -8,6 +8,7 @@ from unittest.mock import patch
 import mlx.core as mx
 import numpy as np
 
+import bilqis_mlx.runtime.backbone_identity as backbone_identity
 from bilqis_mlx.learning.atlas_readout import (
     AnswerPlan, ControlAction, DecisionKind, DecisionOutput, DecisionSpec,
     compile_frame_output,
@@ -98,11 +99,16 @@ class AtlasModelMicrobatchTests(SourceBackboneTestBase):
             name: mx.mean(mx.stack(tuple(item.gradients[name] for item in scalar)), axis=0)
             for name in scalar[0].gradients
         }
-        with patch.object(mx, "value_and_grad", wraps=mx.value_and_grad) as value_and_grad:
+        original_digest = backbone_identity.bamf_parameter_tree_digest
+        with patch.object(
+                backbone_identity, "bamf_parameter_tree_digest",
+                wraps=original_digest) as tree_digest, patch.object(
+                mx, "value_and_grad", wraps=mx.value_and_grad) as value_and_grad:
             vector = bamf_microbatch_value_and_grad(
                 parameters, (batch,) * 4, (plan,) * 4,
                 (targets,) * 4, (mask,) * 4, None)
         self.assertEqual(value_and_grad.call_count, 1)
+        self.assertEqual(tree_digest.call_count, 1)
         self.assertEqual(len(vector.executions), 4)
         np.testing.assert_allclose(
             np.asarray(vector.mean_loss), np.asarray(expected_loss),

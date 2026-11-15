@@ -188,18 +188,19 @@ def _forward_bamf_impl(
     spec = backend.topology
     extents = compiled_batch.compiled.extents
     validate_bamf_parameters(spec, extents, params)
-    if cache is None:
-        execution_binding = (
-            issue_execution_generation_binding(
-                params, spec=spec, extents=extents,
-                expected_generation=answer_plan.generation_binding)
-            if execution_binding is None else require_execution_generation_binding(
-                execution_binding, params, spec=spec, extents=extents))
+    if execution_binding is not None:
+        execution_binding = require_execution_generation_binding(
+            execution_binding, params, spec=spec, extents=extents)
+        if (cache is not None
+                and cache.generation_binding != execution_binding.generation_digest):
+            _invalid("B11_EXECUTION_BINDING_MISMATCH")
+    elif cache is None:
+        execution_binding = issue_execution_generation_binding(
+            params, spec=spec, extents=extents,
+            expected_generation=answer_plan.generation_binding)
     else:
         owned_binding = bind_execution_generation(
             cache, params, spec=spec, extents=extents)
-        if execution_binding is not None and execution_binding is not owned_binding:
-            _invalid("B11_EXECUTION_BINDING_MISMATCH")
         execution_binding = owned_binding
     generation = execution_binding.generation_digest
     if answer_plan.generation_binding != generation:
