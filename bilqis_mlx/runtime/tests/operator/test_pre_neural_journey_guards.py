@@ -143,10 +143,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
                         "authenticate_bamf_execution_feature_context",
                         side_effect=AssertionError("training bridge reauthenticated features")), patch(
                             "bilqis_mlx.runtime.factory_candidate_training."
-                            "authenticate_bamf_execution_feature_context",
-                            side_effect=AssertionError("candidate step reauthenticated features")), patch(
-                                "bilqis_mlx.runtime.factory_candidate_training."
-                                "_execute_prepared_candidate", return_value=marker) as boundary:
+                            "_execute_prepared_candidate", return_value=marker) as boundary:
                     result = execute_accepted_priority_candidate(
                         selected, context, atlas_path, feature_path,
                         teacher_hparams=parent.optimizer_hyperparameters,

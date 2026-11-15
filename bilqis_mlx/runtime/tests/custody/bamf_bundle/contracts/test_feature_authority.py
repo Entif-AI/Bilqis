@@ -45,6 +45,36 @@ class AcceptedGenerationFeatureAuthorityTests(FeatureAuthorityTestBase):
         self.assertEqual(receipt.source_atlas_bundle_id, ATLAS_BUNDLE)
         self.assertIsNone(receipt.predecessor_feature_sha256)
 
+    def test_generation_context_materializes_snapshot_and_features_once(self):
+        features = source_features()
+        self.publish_feature_genesis(features)
+        counts = {"atlas": 0, "features": 0}
+
+        def load_snapshot(selection):
+            counts["atlas"] += 1
+            return frozen_snapshot(selection)
+
+        def build_features(snapshot, schema):
+            counts["features"] += 1
+            return features
+
+        with shape_patch():
+            student = load_bamf_generation(self.pointer)
+        with shape_patch(), patch.object(
+                feature_authority, "resolve_atlas_artifact_selection",
+                side_effect=lambda identity: AtlasArtifactSelection(
+                    "/artifact", identity.bundle_id, identity.release_sha256,
+                    identity.source_bundle_id)), patch.object(
+                feature_authority, "load_pinned_atlas_snapshot",
+                side_effect=load_snapshot), patch.object(
+                    feature_authority, "build_feature_manifest",
+                    side_effect=build_features):
+            context = feature_authority.authenticate_bamf_generation_feature_context(
+                student, "/artifact", self.pointer)
+
+        self.assertEqual(counts, {"atlas": 1, "features": 1})
+        self.assertEqual(context.features, features)
+
     def test_genesis_preserves_distinct_atlas_release_and_active_set_identity(self):
         features = source_features(release=ATLAS_RELEASE)
         authority = self.foundation_authority(features)

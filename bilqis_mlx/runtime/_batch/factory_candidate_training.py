@@ -7,7 +7,6 @@ import time
 from bilqis_mlx.runtime.atlas_resources import MemoryBudget
 from bilqis_mlx.runtime.bamf_bundle import (
     AuthenticatedGenerationFeatureContext, CompleteStudent,
-    authenticate_bamf_execution_feature_context,
 )
 from bilqis_mlx.runtime.bamf_bundle.admission import (
     admit_uninterrupted_candidate_step, bind_accepted_execution_cache,
@@ -28,7 +27,7 @@ from .atlas_visit_provenance import BamfVisitProvenance
 
 from .factory_candidate_components import (
     FactoryCandidateDiagnostics, FactoryCandidateStep, FactoryDeliveryObservation,
-    _frame_stats, _invalid, _reporting_diagnostics, _resource_plan,
+    _invalid, _reporting_diagnostics, _resource_plan,
     _stage_retained_motifs,
 )
 
@@ -40,11 +39,8 @@ def _execute_prepared_candidate(
         salience_supervision=None, candidate=None, semantic_context=None,
         finalize_candidate=True) -> FactoryCandidateStep:
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
-    feature_context = semantic_context
-    if feature_context is None:
-        feature_context = authenticate_bamf_execution_feature_context(
-            parent, atlas_artifact_path, source_context.run_dir)
-    elif type(feature_context) is not AuthenticatedGenerationFeatureContext:
+    feature_context = prepared.semantic_context if semantic_context is None else semantic_context
+    if type(feature_context) is not AuthenticatedGenerationFeatureContext:
         _invalid("FACTORY_CANDIDATE_SEMANTIC_CONTEXT_INVALID")
     feature_context.__post_init__()
     parameters = dict((parent.retained_state.optimizer if candidate is None

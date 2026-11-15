@@ -13,7 +13,8 @@ from bilqis_mlx.runtime.atlas_model_contracts import (
 )
 from bilqis_mlx.runtime.atlas_training_authority import bind_compiled_training_batch
 from bilqis_mlx.runtime.bamf_bundle import (
-    AuthenticatedGenerationFeatureContext, BamfBundleCandidate,
+    AuthenticatedCandidateFeatureContext, AuthenticatedGenerationFeatureContext,
+    BamfBundleCandidate,
     authenticate_bamf_execution_feature_context,
 )
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext
@@ -48,6 +49,7 @@ class PreparedFactoryTrainingBatch:
     training_batch: BamfTrainingBatch
     compiled_rows: tuple[BamfCompiledBatch, ...]
     motif_inputs: tuple
+    semantic_context: object
 
     def __post_init__(self) -> None:
         if (type(self.training_batch) is not BamfTrainingBatch
@@ -58,8 +60,12 @@ class PreparedFactoryTrainingBatch:
                 or any(type(item) is not _FactoryMotifPlanningInput
                        for item in self.motif_inputs)
                 or any(type(item) is not BamfCompiledBatch
-                       for item in self.compiled_rows)):
+                       for item in self.compiled_rows)
+                or type(self.semantic_context) not in (
+                    AuthenticatedCandidateFeatureContext,
+                    AuthenticatedGenerationFeatureContext)):
             _invalid("FACTORY_TRAINING_BRIDGE_INVALID")
+        self.semantic_context.__post_init__()
 
 
 @dataclass(frozen=True)
@@ -315,7 +321,8 @@ def prepare_factory_training_batch(
         source_context, authenticated, adapter, profile, item,
         source_seed=source_seed, source_each=source_each)
         for item in source_rows)
-    prepared = PreparedFactoryTrainingBatch(training, compiled_rows, motif_inputs)
+    prepared = PreparedFactoryTrainingBatch(
+        training, compiled_rows, motif_inputs, authenticated)
     prepared.__post_init__()
     return prepared
 
