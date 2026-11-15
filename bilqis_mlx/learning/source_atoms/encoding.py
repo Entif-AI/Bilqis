@@ -31,7 +31,7 @@ def _atomic_source_embeddings(compiled, atom_rows):
 
 
 def encode_source_compiled_with_handoffs(
-    compiled, parameters, sources, feature_schema, banks, artifact_owner,
+    compiled, parameters, sources, feature_schema, banks, artifact_owner, *, snapshot=None,
 ):
     """Encode actual A05 rows and return the verified source handoff closure.
 
@@ -51,7 +51,8 @@ def encode_source_compiled_with_handoffs(
             sources, compiled.member_requests):
         vectors, row_banks, handoff = source_atom_vectors(
             parameters, row, config, source, compiled.features,
-            feature_schema, compiled.extents, banks, artifact_owner)
+            feature_schema, compiled.extents, banks, artifact_owner,
+            snapshot=snapshot)
         atom_rows.append(vectors)
         handoffs.append(handoff)
         if requests:
@@ -71,8 +72,9 @@ def encode_source_compiled_with_handoffs(
 
 
 def encode_source_compiled(
-        compiled, parameters, sources, feature_schema, banks, artifact_owner):
+        compiled, parameters, sources, feature_schema, banks, artifact_owner, *, snapshot=None):
     """Compatibility surface returning only the differentiable encoded frames."""
     encoded, _ = encode_source_compiled_with_handoffs(
-        compiled, parameters, sources, feature_schema, banks, artifact_owner)
+        compiled, parameters, sources, feature_schema, banks, artifact_owner,
+        snapshot=snapshot)
     return encoded

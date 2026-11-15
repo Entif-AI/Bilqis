@@ -38,7 +38,8 @@ from .atlas_model_forward_validation import (
 
 
 def _source_producer(
-        params, compiled_batch, generation, cache, execution_binding=None, *, trace=False):
+        params, compiled_batch, generation, cache, execution_binding=None, *,
+        trace=False, snapshot=None):
     speculative = type(cache) is CandidateExecutionCache
     execution_cache = (
         require_candidate_execution_cache(cache) if speculative
@@ -59,6 +60,7 @@ def _source_producer(
             compiled_batch.atlas_feature_artifact_owner,
             execution_binding=execution_binding,
             trace=trace,
+            snapshot=snapshot,
         ), None, True
     if (
         accepted_cache.run_id != compiled_batch.active_semantic_rows.run_id
@@ -80,6 +82,7 @@ def _source_producer(
         seal=_B13_EXECUTION_SEAL,
         execution_binding=execution_binding,
         trace=trace,
+        snapshot=snapshot,
     )
     # Speculative execution still carries accepted-generation provenance for
     # motif dependency accounting, but it must never write derived attention
@@ -234,7 +237,7 @@ def _forward_bamf_impl(
 
     producer, accepted_cache, capture_derived_cache = _source_producer(
         params, compiled_batch, generation, cache, execution_binding,
-        trace=refinement_training)
+        trace=refinement_training, snapshot=answer_plan.snapshot)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, compiled_batch,
         capture_derived_cache=capture_derived_cache and not refinement_training)

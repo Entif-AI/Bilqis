@@ -136,6 +136,7 @@ def _execute_chunk(
         banks,
         first.atlas_feature_artifact_owner,
         execution_binding=execution_binding,
+        snapshot=items[0].plan.snapshot,
     )
     hidden = finalize_source_backbone_hidden(producer)
     if on_launch is not None:

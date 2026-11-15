@@ -66,6 +66,8 @@ def priority():
         ),
         'bilqis_mlx.runtime.atlas_optimizer': module(AdamWHyperparameters=HParams),
         'bilqis_mlx.runtime.atlas_training_contracts': module(BamfVisitProvenance=SimpleNamespace(from_c03_record=None)),
+        'bilqis_mlx.runtime.bamf_bundle.currentness_transaction': module(
+            refresh_accepted_currentness=lambda transaction, parent: transaction),
         'bilqis_mlx.runtime.factory_candidate_training': module(execute_factory_candidate_step=None),
         'bilqis_mlx.runtime.teacher_policy_selection': module(select_visit_policy=None),
         'bilqis_mlx.semantics.domains': module(contract_digest=None),
@@ -89,8 +91,13 @@ class Offer:
     capability_id = 'cap'
     source_seed = 7
     source_each = 1
+    _planning_generation = SimpleNamespace(
+        _accepted_currentness='currentness',
+        _parent='planned-parent',
+        parent_candidate_identity_sha256='planned-id',
+    )
     def require_current_parent(self, context):
-        return 'planned-parent', 'planned-cache'
+        return 'planned-parent', 'planned-cache', 'semantic-context'
     def rows(self):
         return ({'id': 'one', 'capability': 'cap'},)
     def require_current(self, context, parent):
@@ -136,8 +143,12 @@ def test_execution_reuses_authenticated_planning_parent(priority):
             teacher_hparams=HParams(0.01, (0.8, 0.9), 1e-8, 0.2),
             observation=Observation(({'id': 'old'},), 0), optimizer_step_seed=3,
             max_norm=1) == 'step'
-    require_visit.assert_called_once_with('planned-parent', 'planned-cache', selected.visit)
+    require_visit.assert_called_once_with(
+        'planned-parent', 'planned-cache', selected.visit,
+        candidate_identity_sha256='planned-id')
     assert execute.call_args.args[2] == 'planned-parent'
+    assert execute.call_args.kwargs['semantic_context'] == 'semantic-context'
+    assert execute.call_args.kwargs['currentness_transaction'] == 'currentness'
 
 
 def test_accepted_priority_school_derives_all_admitted_grades_and_student(priority):

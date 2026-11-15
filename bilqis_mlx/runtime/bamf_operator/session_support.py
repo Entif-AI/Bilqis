@@ -101,21 +101,40 @@ def _resource_observation(run_dir: Path, step) -> dict:
     if not steps:
         _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
     budget, wall_seconds = None, 0.0
+    atlas_reloads = feature_rebuilds = 0
+    visit_atlas_reloads = visit_feature_rebuilds = None
     for ordinal, item in enumerate(steps, 1):
         cost = getattr(item, "realized_cost", None)
         if not isinstance(cost, dict):
             _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
         current_budget = cost.get("c08_memory_budget_bytes")
         current_wall = cost.get("wall_seconds")
+        current_atlas = cost.get("atlas_reload_count", 0)
+        current_features = cost.get("feature_manifest_rebuild_count", 0)
+        current_visit_atlas = cost.get("visit_atlas_reload_count", current_atlas)
+        current_visit_features = cost.get(
+            "visit_feature_manifest_rebuild_count", current_features)
         if (type(current_budget) is not int or current_budget <= 0
                 or (budget is not None and current_budget != budget)
                 or type(current_wall) not in (int, float) or type(current_wall) is bool
                 or not math.isfinite(current_wall) or current_wall <= 0
                 or cost.get("optimizer_steps") != 1
-                or cost.get("candidate_optimizer_steps", ordinal) != ordinal):
+                or cost.get("candidate_optimizer_steps", ordinal) != ordinal
+                or type(current_atlas) is not int or current_atlas < 0
+                or type(current_features) is not int or current_features < 0
+                or type(current_visit_atlas) is not int or current_visit_atlas < 0
+                or type(current_visit_features) is not int or current_visit_features < 0
+                or (visit_atlas_reloads is not None
+                    and current_visit_atlas != visit_atlas_reloads)
+                or (visit_feature_rebuilds is not None
+                    and current_visit_features != visit_feature_rebuilds)):
             _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
         budget = current_budget
         wall_seconds += float(current_wall)
+        atlas_reloads += current_atlas
+        feature_rebuilds += current_features
+        visit_atlas_reloads = current_visit_atlas
+        visit_feature_rebuilds = current_visit_features
     final_transaction = getattr(steps[-1], "transaction", None)
     optimizer_steps = getattr(final_transaction, "update_steps", len(steps))
     if optimizer_steps != len(steps):
@@ -127,4 +146,8 @@ def _resource_observation(run_dir: Path, step) -> dict:
         "disk_used_bytes": disk_used,
         "optimizer_steps": optimizer_steps,
         "wall_seconds": float(wall_seconds),
+        "atlas_reload_count": atlas_reloads,
+        "feature_manifest_rebuild_count": feature_rebuilds,
+        "visit_atlas_reload_count": visit_atlas_reloads,
+        "visit_feature_manifest_rebuild_count": visit_feature_rebuilds,
     }

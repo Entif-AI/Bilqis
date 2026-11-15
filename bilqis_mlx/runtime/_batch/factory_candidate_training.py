@@ -6,7 +6,7 @@ import time
 
 from bilqis_mlx.runtime.atlas_resources import MemoryBudget
 from bilqis_mlx.runtime.bamf_bundle import (
-    CompleteStudent, authenticate_bamf_execution_feature_context,
+    AuthenticatedGenerationFeatureContext, CompleteStudent,
 )
 from bilqis_mlx.runtime.bamf_bundle.admission import (
     admit_uninterrupted_candidate_step, bind_accepted_execution_cache,
@@ -37,10 +37,20 @@ def _execute_prepared_candidate(
         capability, teacher_hparams, max_norm, observation, memory_budget,
         cache, generation, prepared, start, capture_diagnostics,
         salience_supervision=None, candidate=None, currentness_transaction=None,
+        semantic_context=None,
+        semantic_context_materialized_in_step=False,
         finalize_candidate=True) -> FactoryCandidateStep:
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
-    feature_context = authenticate_bamf_execution_feature_context(
-        parent, atlas_artifact_path, source_context.run_dir)
+    feature_context = prepared.semantic_context if semantic_context is None else semantic_context
+    if type(feature_context) is not AuthenticatedGenerationFeatureContext:
+        _invalid("FACTORY_CANDIDATE_SEMANTIC_CONTEXT_INVALID")
+    feature_context.__post_init__()
+    step_atlas_reloads = (
+        feature_context.atlas_reload_count
+        if semantic_context_materialized_in_step else 0)
+    step_feature_rebuilds = (
+        feature_context.feature_manifest_rebuild_count
+        if semantic_context_materialized_in_step else 0)
     parameters = dict((parent.retained_state.optimizer if candidate is None
                        else candidate.optimizer).parameters)
 
@@ -87,6 +97,11 @@ def _execute_prepared_candidate(
             len(prepared.compiled_rows) / gradient_launches),
         "optimizer_steps": 1,
         "candidate_optimizer_steps": transaction.update_steps,
+        "atlas_reload_count": step_atlas_reloads,
+        "feature_manifest_rebuild_count": step_feature_rebuilds,
+        "visit_atlas_reload_count": feature_context.atlas_reload_count,
+        "visit_feature_manifest_rebuild_count": (
+            feature_context.feature_manifest_rebuild_count),
     }
     capture_realized_delivery(
         prepared.training_batch, source_context, observation.capture,
@@ -131,6 +146,7 @@ def execute_factory_candidate_step(
     candidate=None,
     finalize_candidate: bool = True,
     currentness_transaction=None,
+    semantic_context=None,
 ) -> FactoryCandidateStep:
     """Compose C02→C08→B10/B11→candidate custody without publishing state.
 
@@ -164,6 +180,7 @@ def execute_factory_candidate_step(
         extents=parent.extents).generation_digest
     if cache.generation_binding != generation:
         _invalid("FACTORY_CANDIDATE_STEP_GENERATION_DRIFT")
+    semantic_context_materialized_in_step = semantic_context is None
     prepared = prepare_factory_training_batch(
         source_context, parent, atlas_artifact_path, feature_artifact_path,
         delivered_rows, generation, capability=capability, delivery=delivery,
@@ -171,7 +188,7 @@ def execute_factory_candidate_step(
         source_each=source_each, optimizer_step_seed=optimizer_step_seed,
         visit_provenance=visit_provenance,
         teacher_strategy=teacher_strategy,
-        rehearsal_by_id=rehearsal_by_id)
+        rehearsal_by_id=rehearsal_by_id, semantic_context=semantic_context)
     supervision = None
     if salience_provider is not None:
         from bilqis_mlx.runtime.salience_training import prepare_salience_training
@@ -187,7 +204,8 @@ def execute_factory_candidate_step(
         capture_diagnostics=capture_diagnostics,
         salience_supervision=supervision, candidate=candidate,
         currentness_transaction=currentness_transaction,
-        finalize_candidate=finalize_candidate)
+        finalize_candidate=finalize_candidate, semantic_context=semantic_context,
+        semantic_context_materialized_in_step=semantic_context_materialized_in_step)
 
 
 __all__ = (

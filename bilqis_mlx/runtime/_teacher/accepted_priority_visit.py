@@ -192,7 +192,7 @@ def execute_accepted_priority_candidate(selection, source_context,
     )
     refresh_accepted_currentness(
         planning_generation._accepted_currentness, planning_generation._parent)
-    parent, cache = selection.offer.require_current_parent(source_context)
+    parent, cache, semantic_context = selection.offer.require_current_parent(source_context)
     _require_current_visit(
         parent, cache, selection.visit,
         candidate_identity_sha256=planning_generation.parent_candidate_identity_sha256)
@@ -224,4 +224,5 @@ def execute_accepted_priority_candidate(selection, source_context,
         salience_provider=salience_provider,
         capture_diagnostics=capture_diagnostics, candidate=candidate,
         finalize_candidate=finalize_candidate,
-        currentness_transaction=planning_generation._accepted_currentness)
+        currentness_transaction=planning_generation._accepted_currentness,
+        semantic_context=semantic_context)

@@ -6,7 +6,7 @@ from ...semantics.atlas_features import build_feature_manifest
 from ...semantics.atlas.snapshot import load_pinned_atlas_snapshot
 from ...semantics.source_atom_binding.common import invalid
 from ...source_adapters.atom_binding import (
-    build_source_atom_handoff, require_pinned_embedding_ready,
+    _build_source_atom_handoff_from_snapshot, _require_embedding_ready_from_snapshot,
 )
 from ..frame_embeddings import (
     SemanticBankView, _released_factor_terms, _validate_banks,
@@ -18,7 +18,7 @@ from .inputs import SourceAtomRow
 
 def source_atom_vectors(
     parameters, compiled, config, source, features, feature_schema, extents,
-    banks, artifact_owner,
+    banks, artifact_owner, *, snapshot=None,
 ):
     """Recheck source/rights before gathering any identity tensor.
 
@@ -29,19 +29,29 @@ def source_atom_vectors(
     if (type(source) is not SourceAtomRow
             or type(artifact_owner) is not AtlasFeatureArtifactOwner):
         invalid("BAMF_SOURCE_ATOM_INPUT_INVALID")
-    snapshot = load_pinned_atlas_snapshot(source.selection)
-    expected_features = build_feature_manifest(snapshot, feature_schema)
-    if (features != expected_features or extents.factor_map_digest != features.digest
+    if snapshot is None:
+        snapshot = load_pinned_atlas_snapshot(source.selection)
+        expected_features = build_feature_manifest(snapshot, feature_schema)
+        if features != expected_features:
+            invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
+    selection = source.selection
+    if (snapshot.release_sha256 != selection.release_sha256
+            or snapshot.bundle_id != selection.bundle_id
+            or snapshot.source_bundle_id != selection.source_bundle_id
+            or features.semantic_release != selection.release_sha256
+            or features.atlas_bundle_id != selection.bundle_id
+            or features.source_bundle_id != selection.source_bundle_id
+            or extents.factor_map_digest != features.digest
             or type(banks) is not tuple or not banks
             or any(type(bank) is not SemanticBankView for bank in banks)):
         invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
     artifact_owner.require(features)
-    handoff = build_source_atom_handoff(
-        compiled, config, source.selection, source.source_row, source.graph,
-        **source.replay_arguments())
-    require_pinned_embedding_ready(
-        handoff, compiled, config, source.selection, source.source_row,
+    handoff = _build_source_atom_handoff_from_snapshot(
+        compiled, config, source.selection, snapshot, source.source_row,
         source.graph, **source.replay_arguments())
+    _require_embedding_ready_from_snapshot(
+        handoff, compiled, config, source.selection, snapshot,
+        source.source_row, source.graph, **source.replay_arguments())
     spec = ModelTopologySpecV2()
     owned = embedding_parameter_view(parameters, spec=spec, extents=extents)
     _validate_banks(banks)
