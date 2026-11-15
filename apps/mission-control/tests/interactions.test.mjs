@@ -260,6 +260,22 @@ test("inspector evidence posture follows the exact historical lens rather than s
   );
 });
 
+test("Corrections browser fixture carries the shared inspector anatomy", () => {
+  const fixture = fs.readFileSync(new URL("./browser/corrections-check.cjs", import.meta.url), "utf8");
+  for (const id of [
+    "inspector-summary",
+    "inspector-details",
+    "inspector-deep-link-value",
+    "copy-deep-link",
+    "open-owner",
+    "open-evidence",
+  ]) {
+    assert.match(fixture, new RegExp(`id=\\"${id}\\"`));
+  }
+  const journey = fs.readFileSync(new URL("./browser/corrections-journey.mjs", import.meta.url), "utf8");
+  assert.match(journey, /fixture-inspector-summary/);
+});
+
 test("generation compare exposes literal incompatibility and candidate compare keeps challenger separate", () => {
   const leftGeneration = {
     kind: "generation", id: "generation:44238", runId: "fixture-run", generation: 44238,

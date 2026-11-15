@@ -24,6 +24,21 @@ test("keyboard roving semantics cover arrows, Home, End, Enter and Space", () =>
   assert.equal(isActivationKey("Escape"), false);
 });
 
+test("focus return preserves an unkeyed invoking control while it remains connected", async () => {
+  const { focusToken, restoreFocus } = await import("../renderer/foundation/accessibility.mjs");
+  let focused = false;
+  const invokingControl = {
+    dataset: {},
+    id: "",
+    isConnected: true,
+    focus() { focused = true; },
+  };
+  const token = focusToken(invokingControl);
+  assert.equal(typeof token, "object");
+  assert.equal(restoreFocus({ querySelector() { return null; } }, token), true);
+  assert.equal(focused, true);
+});
+
 test("manual keyboard journey covers shell, School, inspector, graph, palette and offline mutation boundary", () => {
   assert.equal(MANUAL_KEYBOARD_SCENARIO.length >= 7, true);
   const scenario = MANUAL_KEYBOARD_SCENARIO.join("\n");

@@ -48,7 +48,7 @@ export async function correctionsJourney(page) {
     for(const untagged of [false,true]){
       await page.evaluate(({mode,untagged})=>window.mount(mode,untagged),{mode,untagged});
       if(!untagged) await group('corrections-artifact-').first().click();
-      const inspector=await hook('fixture-inspector-details').innerText();
+      const inspector=await hook('fixture-inspector-summary').innerText();
       check(inspector.includes('Fixture projection · not live or reconstructed evidence'),'truthful inspector '+mode);
       check(!inspector.includes('Verified prior evidence'),'fixture never promoted by historical lens');
       check(await hook('inspector-open-owner').isDisabled() && await hook('inspector-open-evidence').isDisabled(),'bounded fixture routes '+mode);
