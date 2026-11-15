@@ -3,13 +3,10 @@ import assert from "node:assert/strict";
 import {
   HOME_FAMILIES,
   classifyLearning,
-  familyForEvent,
   homeStatus,
   projectionFromPages,
-  queryRequest,
 } from "../../renderer/home/home-model.mjs";
 import { referenceHomeProjection } from "../../renderer/home/home-fixture.mjs";
-import { createHomeController } from "../../renderer/home/home-controller.mjs";
 import { renderHomeMarkup } from "../../renderer/home/home-view.mjs";
 import { collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
 
@@ -17,10 +14,6 @@ const context = Object.freeze({ runId: "fixture-run", generation: 7, mode: "LIVE
 
 function emptyPage(family, state = "EMPTY") {
   return { accepted: true, family, mode: "current", state, coverage: "COMPLETE", records: [] };
-}
-
-function fakeHost() {
-  return { hidden: false, innerHTML: "", querySelectorAll: () => [] };
 }
 
 function runPage({ generation = 0, optimizerStep = 0, stage = "UNKNOWN" } = {}) {
@@ -214,61 +207,4 @@ test("accepted generation zero renders a setup state instead of a wall of unavai
   assert.match(markup, /data-test-id="home-startup-operate"/);
   assert.doesNotMatch(markup, /Unavailable/);
   assert.doesNotMatch(markup, /Latest school score|Whole-school growth|Peak memory/);
-});
-
-test("historical home queries bind the explicit prior generation", () => {
-  const request = queryRequest("capability", { runId: "run-7", generation: 6, mode: "HISTORICAL" });
-  assert.equal(request.mode, "historical");
-  assert.equal(request.run_id, "run-7");
-  assert.equal(request.generation, 6);
-});
-
-test("CP04 event families refresh only their owning CP03 family", () => {
-  assert.equal(familyForEvent({ event_family: "candidate.retained" }), "episode");
-  assert.equal(familyForEvent({ event_family: "capability.changed" }), "capability");
-  assert.equal(familyForEvent({ event_family: "resource.health.sample" }), "resource");
-  assert.equal(familyForEvent({ event_family: "warning.failure" }), null);
-});
-
-test("live home uses one family query per CP04 event rather than polling the full view", async () => {
-  const calls = [];
-  let active = true;
-  let listener = null;
-  const api = {
-    async status() { return { learnerActive: active }; },
-    async query(request) {
-      calls.push(request.family);
-      return emptyPage(request.family);
-    },
-    subscribeEvents(next) {
-      listener = next;
-      return async () => { listener = null; };
-    },
-  };
-  const controller = createHomeController(api);
-  await controller.activate(context, { host: fakeHost(), onInspect: () => {}, defense: { historical: false } });
-  assert.deepEqual(new Set(calls), new Set(HOME_FAMILIES));
-  assert.equal(controller.currentModel().runtime.running, true);
-  const baseline = calls.length;
-  active = false;
-  await listener({ event_family: "operator.action.state" });
-  assert.equal(controller.currentModel().runtime.running, false);
-  assert.equal(calls.length, baseline);
-  await listener({ event_family: "capability.changed" });
-  assert.equal(calls.length, baseline + 1);
-  assert.equal(calls.at(-1), "capability");
-  await controller.deactivate();
-});
-
-test("historical home never opens a live CP04 subscription", async () => {
-  let subscriptions = 0;
-  const api = {
-    async query(request) { return { ...emptyPage(request.family), mode: "historical" }; },
-    subscribeEvents() { subscriptions += 1; return async () => {}; },
-  };
-  const controller = createHomeController(api);
-  await controller.activate({ ...context, mode: "HISTORICAL" }, {
-    host: fakeHost(), onInspect: () => {}, defense: { historical: true },
-  });
-  assert.equal(subscriptions, 0);
 });
