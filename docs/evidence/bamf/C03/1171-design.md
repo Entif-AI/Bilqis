@@ -173,6 +173,14 @@ the same offer boundary before candidate execution.
 
 No capability may silently mint a new planning transaction during fan-out.
 
+`select_accepted_priority_visit()` and `requalify_priority()` must consume that same
+planning-generation transaction as well. Requalification may still validate salience,
+policy, school/program, source-binding and per-offer eligibility, but it must not call
+the accepted-runtime binder or correction-registry resolver as a second generation-wide
+deep authentication. The already-authenticated transaction supplies the exact accepted
+cache/registry after a cheap currentness guard, then each offer performs its existing
+local source/feature/row checks.
+
 ## Failure semantics
 
 - Existing frontier artifacts that fail exact loader verification are a reuse miss,
@@ -203,6 +211,12 @@ No capability may silently mint a new planning transaction during fan-out.
     local validation.
 - `bilqis_mlx/runtime/_teacher/priority_authority.py`
   - reuse the one authenticated transaction across the complete capability fan-out.
+- `bilqis_mlx/runtime/_teacher/accepted_priority_visit.py`
+  - pass the existing planning-generation binding through requalification rather than
+    causing a second deep accepted-runtime lookup.
+- `bilqis_mlx/runtime/_teacher/priority_qualification.py`
+  - consume cache/registry from the current planning transaction; retain salience,
+    program, release, source-binding and offer-local qualification checks.
 - focused tests under the mirrored runtime test owners.
 
 ## Proof obligations
@@ -213,9 +227,11 @@ No capability may silently mint a new planning transaction during fan-out.
 2. Builder-byte change, canonical source-input change, missing/malformed artifact or
    generated-output change prevents reuse and causes one rebuild; the rebuilt release
    must pass the ordinary loader.
-3. On the 21-capability foundation path, full B13 bundle custody validation,
-   source-authority resolution, accepted feature authentication and parameter-tree
-   generation hashing each occur once per planning transaction, not once per offer.
+3. On the 21-capability foundation path, the planning-generation owner's full B13/C09
+   custody authentication, accepted feature authentication and parameter-tree
+   generation hashing occur once before fan-out. Requalification consumes that
+   transaction instead of independently rebinding accepted runtime/correction
+   authority, and no offer repeats generation-wide deep authentication.
 4. Cheap downstream guards independently reject pointer/acceptance, in-memory parent,
    correction-frontier/source-authority and executable-release drift; offer-local
    owners still reject feature/source/row holds or drift before candidate execution.
