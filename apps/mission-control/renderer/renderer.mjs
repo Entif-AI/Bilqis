@@ -1,9 +1,6 @@
 import { createFrameShell } from "./frames/frame-shell.mjs";
 import {
-  inspect,
   navigate,
-  openEvidence as openEvidenceView,
-  openSelectionOwner,
   returnFromEvidence,
   selectObject,
   withDefensiveState,
@@ -16,12 +13,7 @@ import {
 } from "./settings.mjs";
 import {
   applyShellPreferences,
-  constrainInspectorWidth,
-  INSPECTOR_MIN_WIDTH,
-  inspectorWidthForDestination,
   loadShellPreferences,
-  saveShellPreferences,
-  withInspectorWidthPreference,
 } from "./shell-preferences.mjs";
 import { defensiveState } from "./foundation/defensive-state.mjs";
 import {
@@ -38,9 +30,11 @@ import {
 import { createHomeController } from "./home/home-controller.mjs";
 import { createResourceController } from "./resources/resource-controller.mjs";
 import { createTeacherController } from "./teacher/teacher-controller.mjs";
+import { createSalienceController } from "./salience/salience-controller.mjs";
 import { createOperateController } from "./operate/operate-controller.mjs";
-import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
+import { createShellCapabilityExplorer } from "./foundation/capability-controller.mjs";
+import { createInspectorController } from "./foundation/inspector-controller.mjs";
 import { createInteractionController } from "./interactions/controller.mjs";
 import { createProductionLearningController } from "./learning/controller.mjs";
 import { createProductionNeuralController } from "./neural/neural-controller.mjs";
@@ -66,13 +60,11 @@ let shellPreferences;
 let lastRenderedView = null;
 let defense = defensiveState("loading");
 let bootstrapState = Object.freeze({ phase: "connecting", connection: null, error: null });
-let focusReturnToken = null;
 let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
 const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
-const teacherController = createTeacherController(window.bamfMissionControl, {
-  fixtureSupport: fixtureSupport?.teacher ?? null,
-});
+const teacherController = createTeacherController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.teacher ?? null });
+const salienceController = createSalienceController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.salience ?? null });
 const learningController = createProductionLearningController(window.bamfMissionControl);
 const neuralController = createProductionNeuralController(window.bamfMissionControl);
 const interactionController = createInteractionController({
@@ -102,6 +94,20 @@ const interactionController = createInteractionController({
   },
   announce,
 });
+const inspectorController = createInspectorController({
+  document,
+  window,
+  getState: () => state,
+  setState: (next) => { state = next; },
+  getDefense: () => defense,
+  getShellPreferences: () => shellPreferences,
+  setShellPreferences: (next) => { shellPreferences = next; },
+  renderInspector,
+  interactionController,
+  setHash,
+  announce,
+});
+const { openInspector, closeInspector, syncInspectorWidth } = inspectorController;
 const operateController = createOperateController(window.bamfMissionControl);
 
 const frameShell = createFrameShell({
@@ -124,55 +130,17 @@ const { establishSnapshot } = createBootstrapController({
   announce,
   currentHash: () => window.location.hash,
 });
-const capabilityExplorer = createCapabilityExplorer({
-  host: document.querySelector("#domain-view"),
-  serviceQuery: request => window.bamfMissionControl.querySnapshot(request),
+const capabilityExplorer = createShellCapabilityExplorer({
+  document,
+  api: window.bamfMissionControl,
   launchMode,
   fixtureSupport: fixtureSupport?.capability ?? null,
-  changeLens: (lens, capabilityId) => {
-    if (!state) return;
-    state = {
-      ...state,
-      context: Object.freeze({
-        ...state.context, ...lens,
-        fixture: launchMode === "fixtures",
-        historicalPinned: lens.mode === "HISTORICAL",
-        generationManifest: "UNKNOWN", topologyId: "UNKNOWN",
-        factoryRelease: "UNKNOWN", semanticRelease: "UNKNOWN",
-        coverage: "UNKNOWN", freshness: "UNKNOWN",
-      }),
-      selected: { kind: "capability", id: capabilityId },
-      inspectorOpen: false,
-      mutationAvailable: false,
-    };
-    render();
-  },
-  openObject: (selected) => {
-    if (!state) return;
-    state = { ...openSelectionOwner(inspect(state, selected)), inspectorOpen: false };
-    render();
-  },
-  openEvidence: (selected) => {
-    if (!state) return;
-    state = openEvidenceView(inspect(state, selected));
-    render();
-  },
-  resolvePins: (meta) => {
-    if (!state) return;
-    state = {
-      ...state,
-      context: Object.freeze({
-        ...state.context,
-        generationManifest: meta.run.generation_manifest_sha256,
-        topologyId: meta.run.topology_sha256,
-        factoryRelease: meta.run.factory_release_sha256,
-        semanticRelease: meta.run.semantic_release_sha256,
-        coverage: meta.coverage,
-      }),
-    };
-    renderContext(state, defense);
-    setHash();
-  },
+  getState: () => state,
+  setState: (next) => { state = next; },
+  render,
+  renderContext,
+  getDefense: () => defense,
+  setHash,
 });
 
 function setHash() {
@@ -217,10 +185,14 @@ function render() {
   frameShell.afterRender();
   setHash();
   activateDomainViews({
-    state, getState: () => state, defense, api: window.bamfMissionControl, homeController,
-    resourceController, operateController, teacherController, capabilityExplorer,
-    onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
-    learningController, neuralController, schoolDomainSupport: fixtureSupport?.school ?? null,
+    state, getState: () => state, defense, api: window.bamfMissionControl,
+    homeController, resourceController, operateController,
+    teacherController, salienceController, neuralController, capabilityExplorer, learningController,
+    onInspect: openInspector,
+    onSelectionChange: syncDomainSelection,
+    onNavigate: navigateTo, onAnnounce: announce,
+    schoolDomainSupport: fixtureSupport?.school ?? null,
+    atlasDomainSupport: fixtureSupport?.atlas ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;
@@ -256,69 +228,12 @@ function navigateTo(view) {
   announce(t("shell.announce.destination", { destination: t(`shell.destination.${view}`) }));
 }
 
-function openInspector(selected) {
-  if (!state) return;
-  focusReturnToken = focusToken(document.activeElement);
-  state = inspect(state, selected);
-  syncInspectorWidth();
-  renderInspector(state, defense);
+function syncDomainSelection(selected) {
+  if (!state || !selected) return;
+  state = { ...state, selected };
+  if (state.inspectorOpen) renderInspector(state, defense);
   interactionController.render();
   setHash();
-  window.queueMicrotask(() => document.querySelector("#inspector-close")?.focus());
-  announce(t("shell.announce.inspectorOpened", { id: selected.id }));
-}
-
-function closeInspector() {
-  if (!state?.inspectorOpen) return;
-  state = inspect(state, null);
-  renderInspector(state, defense);
-  interactionController.render();
-  setHash();
-  window.queueMicrotask(() => restoreFocus(document, focusReturnToken));
-  announce(t("shell.announce.inspectorClosed"));
-}
-
-function inspectorMetrics() {
-  return {
-    viewportWidth: document.documentElement.clientWidth || window.innerWidth,
-    railWidth: document.querySelector(".rail")?.getBoundingClientRect?.().width ?? 0,
-  };
-}
-
-function syncInspectorWidth(requestedWidth = null, { persist = false } = {}) {
-  if (!shellPreferences) return null;
-  const destination = state?.view ?? "mission-control";
-  const preferred = requestedWidth ?? inspectorWidthForDestination(shellPreferences, destination);
-  const width = constrainInspectorWidth(preferred, inspectorMetrics());
-  document.documentElement.style.setProperty("--inspector-width", `${width}px`);
-  const splitter = document.querySelector("#inspector-splitter");
-  if (splitter) {
-    const maximum = constrainInspectorWidth(Number.MAX_SAFE_INTEGER, inspectorMetrics());
-    splitter.setAttribute("aria-valuemin", String(INSPECTOR_MIN_WIDTH));
-    splitter.setAttribute("aria-valuemax", String(maximum));
-    splitter.setAttribute("aria-valuenow", String(width));
-  }
-  if (requestedWidth !== null) {
-    shellPreferences = withInspectorWidthPreference(shellPreferences, destination, width);
-    if (persist) saveShellPreferences(window.localStorage, shellPreferences);
-  }
-  const open = Boolean(state?.inspectorOpen);
-  const narrowOverlay = open && window.matchMedia?.("(max-width: 980px)")?.matches === true;
-  const panel = document.querySelector("#inspector");
-  if (narrowOverlay) panel?.setAttribute("aria-modal", "true");
-  else panel?.removeAttribute("aria-modal");
-  for (const background of [
-    document.querySelector(".skip-link"),
-    document.querySelector(".rail"),
-    document.querySelector("#main-content"),
-  ]) {
-    if (background) background.inert = narrowOverlay;
-  }
-  if (splitter) {
-    splitter.setAttribute("aria-hidden", String(!open || narrowOverlay));
-    splitter.tabIndex = open && !narrowOverlay ? 0 : -1;
-  }
-  return width;
 }
 
 function openPalette() {

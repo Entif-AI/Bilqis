@@ -1,12 +1,18 @@
 import { SALIENCE_AXES } from "./salience-fixture.mjs";
 import { axisPosture, salienceDeepLink } from "./salience-model.mjs";
 import { esc, slug, stateBadge, t, testIdAttribute } from "./salience-view-shared.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+import { temporalMarkup } from "../foundation/temporal.mjs";
 
 const AXIS_KEYS = Object.freeze({
   impact: "salience.observations.impact",
   exigency: "salience.observations.exigency",
   novelty: "salience.observations.novelty",
 });
+
+function help(labelKey, descriptionKey, testId) {
+  return contextHelpMarkup({ label: t(labelKey), description: t(descriptionKey), testId });
+}
 
 function postureNote(value) {
   const posture = axisPosture(value);
@@ -31,13 +37,14 @@ function provenance(event) {
     <details class="salience-provenance" ${testIdAttribute("salience", "provenance", suffix)}>
       <summary>${esc(t("salience.provenance.summary", {id: event.salienceId}))}</summary>
       <div class="salience-provenance-body">
+        <div class="salience-panel-help">${help("salience.help.provenance.label", "salience.help.provenance.fixtureBody", `salience-help-provenance-${suffix}`)}</div>
         <dl class="salience-provenance-meta">
           <div><dt>${esc(t("salience.provenance.owner"))}</dt><dd class="machine-value">${esc(event.policy.sourceOwner)}</dd></div>
           <div><dt>${esc(t("salience.provenance.policy"))}</dt><dd class="machine-value">${esc(event.policy.policyId)}/${esc(event.policy.version)}</dd></div>
           <div><dt>${esc(t("salience.provenance.digest"))}</dt><dd class="machine-value">${esc(event.policy.policyDigest)}</dd></div>
           <div><dt>${esc(t("salience.provenance.window"))}</dt><dd class="machine-value">${esc(event.policy.windowPolicyId)}/${esc(event.policy.windowPolicyVersion)} · ${event.policy.windowSize}</dd></div>
-          <div><dt>${esc(t("salience.provenance.observed"))}</dt><dd class="machine-value">${event.observedAt}</dd></div>
-          <div><dt>${esc(t("salience.provenance.effective"))}</dt><dd class="machine-value">${event.effectiveAt}</dd></div>
+          <div><dt>${esc(t("salience.provenance.observed"))}</dt><dd>${temporalMarkup({ unixSeconds: event.observedAt, testId: `salience-observed-${suffix}` })}</dd></div>
+          <div><dt>${esc(t("salience.provenance.effective"))}</dt><dd>${temporalMarkup({ unixSeconds: event.effectiveAt, testId: `salience-effective-${suffix}` })}</dd></div>
           <div><dt>${esc(t("salience.provenance.object"))}</dt><dd class="machine-value">${esc(event.associatedObjectRef)}</dd></div>
         </dl>
         <div class="salience-provenance-table-wrap"><table class="salience-provenance-table"><thead><tr>
@@ -81,12 +88,14 @@ export function observationPanel(snapshot, selectedId) {
   return `<section class="salience-observations" aria-labelledby="salience-observations-title" ${testIdAttribute("salience", "observations")}>
     <header class="salience-section-heading"><div><span class="eyebrow">${esc(t("salience.observations.eyebrow"))}</span>
       <h2 id="salience-observations-title">${esc(t("salience.observations.title"))}</h2></div>
-      ${stateBadge(snapshot.mode, "salience-snapshot-state")}</header>
+      <div class="salience-heading-tools">${stateBadge(snapshot.mode, "salience-snapshot-state")}${help("salience.help.ordinal.label", "salience.help.ordinal.body", "salience-help-ordinal")}</div></header>
     <div class="salience-observation-guidance">
       <p>${esc(t("salience.observations.doctrine"))}</p>
       <details class="salience-axis-guide" ${testIdAttribute("salience", "axis", "guide")}><summary>${esc(t("salience.axisGuide.summary"))}</summary>
-        <ul><li>${esc(t("salience.axisGuide.impact"))}</li><li>${esc(t("salience.axisGuide.exigency"))}</li>
-          <li>${esc(t("salience.axisGuide.novelty"))}</li><li>${esc(t("salience.axisGuide.independent"))}</li></ul></details>
+        <ul><li>${esc(t("salience.axisGuide.impact"))} ${help("salience.help.axis.impact.label", "salience.help.axis.impact.body", "salience-help-axis-impact")}</li>
+          <li>${esc(t("salience.axisGuide.exigency"))} ${help("salience.help.axis.exigency.label", "salience.help.axis.exigency.body", "salience-help-axis-exigency")}</li>
+          <li>${esc(t("salience.axisGuide.novelty"))} ${help("salience.help.axis.novelty.label", "salience.help.axis.novelty.body", "salience-help-axis-novelty")}</li>
+          <li>${esc(t("salience.axisGuide.independent"))}</li></ul></details>
     </div>
     <div class="salience-table-wrap" tabindex="0" ${testIdAttribute("salience", "observation", "scroll")}>
       <table class="salience-observation-table" ${testIdAttribute("salience", "observation", "table")}>

@@ -110,6 +110,9 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
   const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
   const activation = fs.readFileSync(path.join(rendererRoot, "foundation/domain-controller.mjs"), "utf8");
+  const capabilityController = fs.readFileSync(path.join(rendererRoot, "foundation/capability-controller.mjs"), "utf8");
+  const fixtureSupport = fs.readFileSync(path.join(rendererRoot, "fixture-support.mjs"), "utf8");
+  const atlasMessages = fs.readFileSync(path.join(rendererRoot, "foundation/messages/atlas.mjs"), "utf8");
   const capability = fs.readFileSync(path.join(rendererRoot, "capability/app.mjs"), "utf8");
 
   assert.match(
@@ -119,11 +122,13 @@ test("production shell routes accepted domains and keeps fixture-only data behin
 
   assert.match(renderer, /createHomeController\(window\.bamfMissionControl, fixtureSupport\?\.home\)/);
   assert.match(renderer, /launchMode === "fixtures"[\s\S]*import\("\.\/fixture-support\.mjs"\)/);
-  assert.match(renderer, /createCapabilityExplorer\(/);
+  assert.match(renderer, /createShellCapabilityExplorer\(/);
+  assert.match(capabilityController, /createCapabilityExplorer\(/);
   assert.match(renderer, /activateDomainViews\(\{/);
   assert.match(renderer, /homeController/);
   assert.match(renderer, /resourceController/);
   assert.match(renderer, /teacherController/);
+  assert.match(renderer, /salienceController/);
   assert.match(renderer, /operateController/);
   assert.match(renderer, /capabilityExplorer/);
 
@@ -131,11 +136,19 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   assert.match(activation, /homeController\.activate/);
   assert.match(activation, /state\?\.view === "atlas"/);
   assert.match(activation, /renderAtlasDomain/);
+  assert.match(activation, /context\?\.fixture === true \? atlasDomainSupport\?\.api : api/);
+  assert.doesNotMatch(activation, /atlasDomainSupport\?\.api \?\? api/);
+  assert.match(renderer, /atlasDomainSupport: fixtureSupport\?\.atlas \?\? null/);
+  assert.match(fixtureSupport, /createAtlasFixtureApi/);
+  assert.match(fixtureSupport, /export const atlas = Object\.freeze\(\{ api: createAtlasFixtureApi\(\) \}\)/);
+  assert.doesNotMatch(atlasMessages, /atlas\.[^"\n]*fixture|Reference fixture/i);
   assert.match(activation, /state\?\.view === "school"/);
   assert.match(activation, /launchMode: fixture \? "fixtures" : "production"/);
   assert.match(activation, /activateSchoolDomain/);
   assert.match(activation, /state\?\.view === "teacher"/);
   assert.match(activation, /teacherController\?\.activate/);
+  assert.match(activation, /state\?\.view === "salience"/);
+  assert.match(activation, /salienceController\?\.activate/);
   assert.match(activation, /state\?\.view === "capability"/);
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);

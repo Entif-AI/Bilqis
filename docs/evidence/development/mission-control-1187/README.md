@@ -25,13 +25,15 @@
 
 The bounded owner/regression ring is intentionally limited to the affected Model and shell contracts.
 
-- 68 focused Node tests passed across shell routing/bootstrap, Model domain ownership, Neural production/fixture rendering, Frame Explorer/Frame shell, and renderer protocol boundaries.
-- `npm run mission-control:production-boundary:test` passed with the production renderer dependency graph fixture-free.
+- 68 focused Node tests passed on the issue implementation before reconciliation. After consuming reviewed unified `c8877477c43b93aff4e2be12d002a5787adc6bac`, the affected shared integration ring expanded to 148 tests across Model, Atlas, Salience, Lineage, shell routing/usability, and renderer protocol contracts; all passed. A final 29-test shell/protocol subset also passed after the structural split described below.
+- `npm run mission-control:production-boundary:test` passed after reconciliation with `MISSION_CONTROL_PRODUCTION_IMPORT_BOUNDARY_OK modules=89`.
 - Legacy Model visual witness passed dark/light, comfortable/compact, 1440/390/320, RTL + text-spacing, reduced motion, local table overflow, and accessibility checks after a 320px heading/help reflow repair.
 - `python3 -B scripts/check_module_size.py --changed-from review-source/codex/bamf-unified-base-20261028` passed.
 - `python3 -B scripts/quality/check_governance_integrity.py --base-ref review-source/codex/bamf-unified-base-20261028` passed.
 - `git diff --check` passed.
 - Full-shell production/fixture rendered journey passed six variants under `output/playwright/1187/`: production and fixture launch at 1440 dark/comfortable, 1440 light/compact, and 390 light/compact. Every variant reported zero Axe A/AA violations, no document overflow, exactly two Model peer controls, and no nested tablist.
 - The full-shell journey also proved desktop collapsed-rail + resized-inspector geometry, narrow modal inspector behavior, production Frame zero fixture queries, production Neural accepted-sample timestamps/authority, fixture Neural gen6 historical route rehydration, and the cold `Frames gen6 -> reload -> Neural current gen7 -> Frames gen6` provenance transition.
+- Reconciliation with reviewed unified produced content conflicts only in `foundation/domain-controller.mjs` and `renderer.mjs`; both were resolved by preserving the incoming Atlas/Salience/Lineage wiring together with the Model Neural controller contract.
+- The repository structure gate then required the now-shared `renderer.mjs` to be decomposed below its touched-file threshold. Capability-explorer setup and inspector geometry/state were moved into focused foundation controllers; the package allowlist and source-shape tests were updated to the new ownership. A browser-only initialization-order regression exposed during this split was repaired before final verification.
 
 No aggregate repository suite was run because the changed dependency surface is bounded to Mission Control Model/shell/protocol behavior.
