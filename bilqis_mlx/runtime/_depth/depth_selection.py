@@ -17,7 +17,7 @@ from .depth_contracts import (
 from .model_topology_v2 import ModelTopologySpecV2
 
 
-def _validate(current, summaries, features, params) -> None:
+def _validate(current, summaries, features, params, *, check_finite=True) -> None:
     if (not isinstance(current, mx.array) or current.ndim != FRAME_RANK
             or current.shape[-1] != WIDTH or current.dtype != mx.float32
             or min(current.shape[:BATCH_POSITION_AXES]) < 1
@@ -43,13 +43,14 @@ def _validate(current, summaries, features, params) -> None:
         if (not isinstance(value, mx.array) or value.shape != shape
                 or value.dtype != mx.float32):
             _invalid()
-    finite = tuple(mx.all(mx.isfinite(value)) for value in (
-        current, features.frame_seed, features.type_role,
-        *(item.hidden for item in summaries), *params.values(),
-    ))
-    mx.eval(*finite)
-    if not all(bool(flag) for flag in finite):
-        _invalid()
+    if check_finite:
+        finite = tuple(mx.all(mx.isfinite(value)) for value in (
+            current, features.frame_seed, features.type_role,
+            *(item.hidden for item in summaries), *params.values(),
+        ))
+        mx.eval(*finite)
+        if not all(bool(flag) for flag in finite):
+            _invalid()
 
 
 def _rms_norm(values: mx.array, gamma: mx.array) -> mx.array:
@@ -58,8 +59,8 @@ def _rms_norm(values: mx.array, gamma: mx.array) -> mx.array:
         mx.mean(values * values, axis=-1, keepdims=True) + epsilon) * gamma
 
 
-def _depth_components(current, summaries, features, params):
-    _validate(current, summaries, features, params)
+def _depth_components(current, summaries, features, params, *, check_finite=True):
+    _validate(current, summaries, features, params, check_finite=check_finite)
     q = _rms_norm(current + features.frame_seed, params["norm"]) @ params["query"].T
     keys = mx.stack([
         _rms_norm(summary.hidden + features.type_role, params["norm"]) @ params["key"].T
@@ -90,7 +91,7 @@ def _numerical_depth_select(current, summaries, frame_features, params):
 
 
 def _numerical_depth_select_with_diagnostics(
-    current, summaries, frame_features, params,
+    current, summaries, frame_features, params, *, check_finite=True,
 ) -> DepthSelectionDiagnostics:
     if (type(params) is not DepthParameterView
             or type(frame_features) is not DepthFrameFeatures
@@ -110,7 +111,8 @@ def _numerical_depth_select_with_diagnostics(
     numerical = _DepthFeatureValues(
         summaries[0].hidden, type_role, frame_features.features.semantic_release,
         frame_features.features.digest, frame_features.boundary_group)
-    output, alpha, gate = _depth_components(current, summaries, numerical, params)
+    output, alpha, gate = _depth_components(
+        current, summaries, numerical, params, check_finite=check_finite)
     return DepthSelectionDiagnostics(output, alpha, gate)
 
 
@@ -119,8 +121,19 @@ def _producer_summaries(producer, boundary_group, params):
     if (type(producer) is not _SourceBackboneProducerSession
             or type(params) is not DepthParameterView):
         _invalid()
-    receipts = _SourceBackboneProducerSession._validated_receipts(
-        producer, boundary_group)
+    if producer._trace:
+        if (producer._execution_binding is None
+                or len(producer._trace_boundaries) <= boundary_group
+                or params._execution_binding is not producer._execution_binding
+                or params.generation_digest != producer._generation):
+            _invalid()
+        sources = producer._trace_boundaries[:boundary_group + 1]
+        summaries = tuple(DepthSummary(
+            SOURCE_ORDER[index], index * 4,
+            hidden if index == 0 else _rms_norm(hidden, params["norm"]),
+        ) for index, hidden in enumerate(sources))
+        return summaries, sources[boundary_group]
+    receipts = _SourceBackboneProducerSession._validated_receipts(producer, boundary_group)
     # One source selection has one sealed parameter view. Rehashing the entire
     # model for each receipt adds no verification strength within this call.
     parameter_tree_digest = params.parameter_tree_digest
@@ -140,7 +153,7 @@ def _producer_summaries(producer, boundary_group, params):
         item.source_id, item.completed_layer,
         item.hidden if index == 0 else _rms_norm(item.hidden, params["norm"]),
     ) for index, item in enumerate(receipts))
-    return summaries, receipts
+    return summaries, receipts[boundary_group].hidden
 
 
 def depth_select(producer, frame_features, params):
@@ -152,11 +165,11 @@ def depth_select_with_diagnostics(producer, frame_features, params):
     if (type(frame_features) is not DepthFrameFeatures
             or type(params) is not DepthParameterView):
         _invalid()
-    summaries, receipts = _producer_summaries(
+    summaries, current = _producer_summaries(
         producer, frame_features.boundary_group, params)
-    current = receipts[frame_features.boundary_group].hidden
     return _numerical_depth_select_with_diagnostics(
-        current, summaries, frame_features, params)
+        current, summaries, frame_features, params,
+        check_finite=not producer._trace)
 
 
 def source_depth_select_with_diagnostics(producer, params):
@@ -166,10 +179,10 @@ def source_depth_select_with_diagnostics(producer, params):
             or type(params) is not DepthParameterView
             or type(producer._encoded) is not FrameEncoding):
         _invalid()
-    summaries, receipts = _producer_summaries(
+    summaries, current = _producer_summaries(
         producer, params.boundary_group, params)
     encoded = producer._encoded
-    if (encoded.global_seeds.shape != receipts[0].hidden.shape
+    if (encoded.global_seeds.shape != summaries[0].hidden.shape
             or len(encoded.features) != encoded.global_seeds.shape[0]
             or any(not 0 < len(row) <= encoded.global_seeds.shape[1]
                    for row in encoded.features)):
@@ -197,7 +210,8 @@ def source_depth_select_with_diagnostics(producer, params):
         producer._compiled.features.semantic_release,
         producer._compiled.features.digest, params.boundary_group)
     output, alpha, gate = _depth_components(
-        receipts[params.boundary_group].hidden, summaries, numerical, params)
+        current, summaries, numerical, params,
+        check_finite=not producer._trace)
     return DepthSelectionDiagnostics(output, alpha, gate)
 
 
