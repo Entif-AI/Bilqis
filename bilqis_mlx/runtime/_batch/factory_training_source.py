@@ -135,7 +135,7 @@ def _motif_planning_input(source_context, authenticated, adapter, profile, item,
 
 
 def _bind_b11_rows(source_context, candidate, authenticated, training, source_rows,
-                   profile, *, source_seed, source_each):
+                   adapter, profile, *, source_seed, source_each):
     compiled_rows = []
     active_semantic_rows = bind_candidate_active_semantic_rows(candidate, authenticated)
     for index, item in enumerate(source_rows):
