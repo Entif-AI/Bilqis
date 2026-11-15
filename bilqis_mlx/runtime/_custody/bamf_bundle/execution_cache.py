@@ -3,11 +3,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from threading import RLock
 import weakref
 
 from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning.atlas_engram import MotifManifest
+from bilqis_mlx.runtime.backbone_identity import (
+    execution_generation_object_key, issue_execution_generation_binding,
+    require_execution_generation_binding,
+)
 
 
 _CANDIDATE_CACHE_ISSUER = object()
@@ -40,6 +45,8 @@ class AcceptedExecutionCache:
     _run_dir: Path | None = field(init=False, repr=False, compare=False)
     _correction_registry: object | None = field(init=False, repr=False, compare=False)
     _source_authority: object | None = field(init=False, repr=False, compare=False)
+    _execution_bindings: dict = field(init=False, repr=False, compare=False)
+    _execution_binding_lock: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
         _invalid("B13_EXECUTION_CACHE_CALLER_CONSTRUCTION_FORBIDDEN")
@@ -73,6 +80,7 @@ class CandidateExecutionCache:
     _candidate: object = field(repr=False, compare=False)
     _spec: object = field(repr=False, compare=False)
     _extents: object = field(repr=False, compare=False)
+    _execution_binding: object = field(repr=False, compare=False)
     _issuance: object = field(repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -101,6 +109,8 @@ def _new_execution_cache(
         ("_run_dir", None),
         ("_correction_registry", None),
         ("_source_authority", None),
+        ("_execution_bindings", {}),
+        ("_execution_binding_lock", RLock()),
     ):
         object.__setattr__(cache, name, value)
     cache.__post_init__()
@@ -112,8 +122,6 @@ def bind_candidate_execution_cache(cache, parent, candidate, *, spec, extents):
     accepted = require_accepted_execution_cache(cache)
     from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
     from bilqis_mlx.runtime.bamf_bundle.records import CompleteStudent
-    from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
-
     if (type(parent) is not CompleteStudent
             or type(candidate) is not CandidateTransaction
             or candidate.parent is not parent.retained_state):
@@ -128,16 +136,18 @@ def bind_candidate_execution_cache(cache, parent, candidate, *, spec, extents):
             or custody.topology_digest != spec.digest
             or custody.extents_digest != extents.digest):
         _invalid("B13_CANDIDATE_EXECUTION_CACHE_DRIFT")
+    binding = issue_execution_generation_binding(
+        candidate.optimizer.parameters, spec=spec, extents=extents)
     result = object.__new__(CandidateExecutionCache)
     for name, value in (
             ("run_id", accepted.run_id), ("generation", accepted.generation),
             ("accepted_manifest_sha256", accepted.accepted_manifest_sha256),
-            ("generation_binding", execution_generation_digest(
-                candidate.optimizer.parameters, spec=spec, extents=extents)),
+            ("generation_binding", binding.generation_digest),
             ("motif_manifest", accepted.motif_manifest),
             ("_accepted_cache", accepted), ("_parent", parent),
             ("_candidate", candidate),
             ("_spec", spec), ("_extents", extents),
+            ("_execution_binding", binding),
             ("_issuance", _CANDIDATE_CACHE_ISSUER)):
         object.__setattr__(result, name, value)
     return result
@@ -147,8 +157,6 @@ def require_candidate_execution_cache(cache) -> CandidateExecutionCache:
     if type(cache) is not CandidateExecutionCache:
         _invalid("B13_CANDIDATE_EXECUTION_CACHE_REQUIRED")
     accepted = require_accepted_execution_cache(cache._accepted_cache)
-    from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
-
     candidate = cache._candidate
     candidate.__post_init__()
     custody = candidate.parent.custody
@@ -163,11 +171,43 @@ def require_candidate_execution_cache(cache) -> CandidateExecutionCache:
             or candidate.allocations.manifest.digest != accepted.motif_manifest.digest
             or custody.topology_digest != cache._spec.digest
             or custody.extents_digest != cache._extents.digest
-            or cache.generation_binding != execution_generation_digest(
-                candidate.optimizer.parameters,
-                spec=cache._spec, extents=cache._extents)):
+            or cache.generation_binding != cache._execution_binding.generation_digest):
+        _invalid("B13_CANDIDATE_EXECUTION_CACHE_DRIFT")
+    try:
+        require_execution_generation_binding(
+            cache._execution_binding, candidate.optimizer.parameters,
+            spec=cache._spec, extents=cache._extents)
+    except Exception:
         _invalid("B13_CANDIDATE_EXECUTION_CACHE_DRIFT")
     return cache
+
+
+def bind_execution_generation(cache, parameters, *, spec, extents):
+    """Return the one process-local generation proof for this immutable state."""
+    if type(cache) is CandidateExecutionCache:
+        candidate = require_candidate_execution_cache(cache)
+        try:
+            return require_execution_generation_binding(
+                candidate._execution_binding, parameters, spec=spec, extents=extents)
+        except Exception:
+            _invalid("B13_CANDIDATE_EXECUTION_CACHE_DRIFT")
+    accepted = require_accepted_execution_cache(cache)
+    key = execution_generation_object_key(parameters, spec=spec, extents=extents)
+    with accepted._execution_binding_lock:
+        binding = accepted._execution_bindings.get(key)
+        if binding is None:
+            try:
+                binding = issue_execution_generation_binding(
+                    parameters, spec=spec, extents=extents,
+                    expected_generation=accepted.generation_binding)
+            except Exception:
+                _invalid("B13_EXECUTION_CACHE_GENERATION_MISMATCH")
+            accepted._execution_bindings[key] = binding
+        try:
+            return require_execution_generation_binding(
+                binding, parameters, spec=spec, extents=extents)
+        except Exception:
+            _invalid("B13_EXECUTION_CACHE_GENERATION_MISMATCH")
 
 
 def require_accepted_execution_cache(cache) -> AcceptedExecutionCache:
@@ -206,6 +246,7 @@ def bind_motif_artifact_owner(cache, compiled):
 
 __all__ = (
     "AcceptedExecutionCache", "CandidateExecutionCache",
-    "bind_candidate_execution_cache", "bind_motif_artifact_owner",
+    "bind_candidate_execution_cache", "bind_execution_generation",
+    "bind_motif_artifact_owner",
     "require_accepted_execution_cache", "require_candidate_execution_cache",
 )

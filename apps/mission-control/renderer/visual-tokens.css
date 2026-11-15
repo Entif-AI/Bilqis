@@ -55,6 +55,8 @@
 
 :root {
   --rail-width: 184px;
+  --rail-collapsed-width: 112px;
+  --active-rail-width: var(--rail-width);
   --page-gutter: clamp(24px, 3vw, 48px);
   --page-gutter-tight: clamp(18px, 2vw, 30px);
   --page-block-start: 28px;

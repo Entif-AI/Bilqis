@@ -22,6 +22,10 @@ export const OPERATE_ACTIONS = Object.freeze([
   Object.freeze({ id: "stop", supported: true, mutation: true, dryRun: false }),
 ]);
 
+export const OPERATE_STAGES = Object.freeze([
+  "request", "preflight", "authorization", "outcome",
+]);
+
 export function actionSpec(action) {
   return OPERATE_ACTIONS.find((item) => item.id === action) ?? null;
 }
@@ -130,6 +134,19 @@ export function terminalReceipt(state) {
   return new Set(["COMPLETED", "REJECTED", "FAILED", "OUTCOME_UNKNOWN"]).has(state);
 }
 
+export function operateStageAvailable(state, stage) {
+  if (!OPERATE_STAGES.includes(stage)) return false;
+  if (state?.activeStage === stage) return true;
+  if (stage === "request") return true;
+  if (stage === "preflight") {
+    return Boolean(state?.preview) || state?.phase === "PREVIEWING";
+  }
+  if (stage === "authorization") return Boolean(state?.preview);
+  return Boolean(state?.inspection) || new Set([
+    "SUBMITTING", "PENDING", "TERMINAL", "LOST_ACK", "OUTCOME_UNKNOWN", "RECONCILING",
+  ]).has(state?.phase);
+}
+
 export function authorizationPhrase(preview) {
   return preview?.consequence?.mutation === "MUTATING"
     ? `AUTHORIZE ${String(preview.action).toUpperCase()}` : "";
@@ -138,6 +155,7 @@ export function authorizationPhrase(preview) {
 export function initialOperateState() {
   return Object.freeze({
     action: "status",
+    activeStage: "request",
     dryRun: false,
     parametersText: "{}",
     phase: "IDLE",

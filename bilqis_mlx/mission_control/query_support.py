@@ -5,6 +5,7 @@ import hashlib
 import json
 from types import MappingProxyType
 
+from .contracts.trainer import TrainerObservation
 from .contracts.codec import encode_record
 from .contracts.dossier import CapabilityDossier
 from .contracts.envelopes import (
@@ -36,7 +37,7 @@ from .semantic import (
 
 FAMILY_TYPES = MappingProxyType({
     QueryFamily.RECORD: ALL_RECORD_TYPES,
-    QueryFamily.RUN: (RunContext, OperatorView),
+    QueryFamily.RUN: (RunContext, OperatorView, TrainerObservation),
     QueryFamily.SCHOOL: (SchoolSnapshot, CurriculumFrontier),
     QueryFamily.CAPABILITY: (CapabilitySnapshot, CapabilityDossier),
     QueryFamily.EPISODE: (LearningEpisode, CandidateDecision),
@@ -114,6 +115,8 @@ def _current_identity(record: WireRecord):
     if run is None:
         return None
     base = (run.run_id, type(record))
+    if type(record) is TrainerObservation:
+        return (*base, record.observation_id)
     if type(record) is CapabilitySnapshot:
         return (*base, record.capability_id)
     if type(record) is SemanticGenerationState:
@@ -138,6 +141,10 @@ def _current_identity(record: WireRecord):
 
 def matches_identity(
         item: WireRecord, request: QueryRequest, *, match_record_id: bool = True) -> bool:
+    if isinstance(item, TrainerObservation) and (
+            request.mode is not QueryMode.CURRENT or request.generation is not None
+            or request.as_of is not None or request.frontier_id is not None):
+        return False
     if request.schema_version is not None and item.schema_version != request.schema_version:
         return False
     if request.run_id is not None:
@@ -164,13 +171,13 @@ def select_current(rows: list[WireRecord]) -> list[WireRecord]:
     generations = {}
     for item in rows:
         run = item.meta.run
-        if run is not None:
+        if run is not None and not isinstance(item, TrainerObservation):
             generations[run.run_id] = max(
                 run.generation, generations.get(run.run_id, -1))
     if generations:
         rows = [
             item for item in rows
-            if item.meta.run is None
+            if isinstance(item, TrainerObservation) or item.meta.run is None
             or item.meta.run.generation == generations[item.meta.run.run_id]
         ]
     newest = {}

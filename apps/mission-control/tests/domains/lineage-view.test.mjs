@@ -63,12 +63,12 @@ test("every displayed manifest field resolves to an explicit source receipt or m
   }
 });
 
-test("compare is literal, branch aware, and never synthesizes an overall winner", () => {
+test("compare is literal, branch aware, and preserves descriptive evidence states", () => {
   const before = LINEAGE_FIXTURE.nodes[1];
   const after = currentLineageNode();
   const comparison = compareGenerations(before.id, after.id);
   assert.equal(comparison.sameRun, true);
-  assert.match(lineageT(`lineage.compare.${comparison.interpretationKey}`), /No overall winner/);
+  assert.match(lineageT(`lineage.compare.${comparison.interpretationKey}`), /recorded values/);
   assert.equal(comparison.rows.some((row) => row.state === "DIFFERENT"), true);
   assert.equal(comparison.capabilityChanges.some((row) => row.state !== "UNCHANGED"), false);
 });
@@ -157,6 +157,8 @@ test("target lineage markup is graph-led, dossier-oriented, localized, and stabl
   const hooks = new Set(collectTestIds(markup));
   for (const id of [
     "lineage-workspace", "lineage-heading", "lineage-fixture", "lineage-accepted",
+    "lineage-tabs", "lineage-tab-generations", "lineage-tab-selected",
+    "lineage-tab-comparison", "lineage-tab-rejected",
     "lineage-graph-scroll", "lineage-graph-tree", "lineage-accepted-table",
     "lineage-dossier", "lineage-dossier-manifest", "lineage-compare",
     "lineage-compare-before", "lineage-compare-after", "lineage-diff-table",
@@ -164,6 +166,10 @@ test("target lineage markup is graph-led, dossier-oriented, localized, and stabl
   ]) assert.equal(hooks.has(id), true, id);
   assert.match(markup, new RegExp(lineageT("lineage.title")));
   assert.match(markup, /<ol class="lineage-tree"/);
+  assert.equal((markup.match(/role="tablist"/g) ?? []).length, 1);
+  assert.match(markup, /data-test-id="lineage-help-accepted-trigger"/);
+  assert.match(markup, /data-test-id="lineage-help-custody-trigger"/);
+  assert.match(markup, /data-test-id="lineage-help-comparison-trigger"/);
   assert.match(markup, /data-sticky="identity"/);
   assert.match(markup, /<th scope="col"[^>]*>Source<\/th>/);
   assert.doesNotMatch(markup, /overall winner is synthesized\.<\/strong>/i);
@@ -181,7 +187,7 @@ test("historical generation unavailable is a no-substitution boundary state", ()
   const markup = renderLineageMarkup({ context: { mode: "HISTORICAL", generation: 999999 } });
   assert.match(markup, /data-test-id="lineage-historical-unavailable"/);
   assert.match(markup, /999999/);
-  assert.match(markup, /Current generation data is not substituted/);
+  assert.match(markup, /no exact record for generation 999999/i);
   assert.doesNotMatch(markup, /data-test-id="lineage-accepted"/);
   assert.doesNotMatch(markup, /data-test-id="lineage-dossier"/);
 });
@@ -191,7 +197,7 @@ test("exact historical lineage pins the requested accepted generation without mu
   const markup = renderLineageMarkup({ context: { mode: "HISTORICAL", generation: historical.generation } });
   assert.match(markup, /data-test-id="lineage-historical-pinned"/);
   assert.match(markup, new RegExp(`data-test-id="lineage-graph-generation-${historical.generation}"[^>]*aria-pressed="true"`));
-  assert.match(markup, /Historical lens pins generation/);
+  assert.match(markup, /Historical lens is fixed to generation/);
 });
 
 test("lineage owned human copy resolves through stable message keys", () => {

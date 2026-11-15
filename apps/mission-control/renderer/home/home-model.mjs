@@ -1,5 +1,4 @@
-import { schoolFixtureRows } from "../school/school-fixture.mjs";
-import { EPISODE_FIXTURES } from "../episodes/episode-fixture.mjs";
+import { observedHomeState } from "./home-observed.mjs";
 
 const QUERY_SCHEMA = "bilqis.bamf.control-plane.query/v1";
 const PRESENT = "PRESENT";
@@ -98,6 +97,7 @@ export function projectionFromPages(pages, context) {
   const teachers = pageRecords(pages, "teacher");
 
   const run = latest(runRecords, "bilqis.bamf.mission-control.run-context/v1");
+  const observed = observedHomeState(runRecords, context, run);
   const school = latest(schoolRecords, "bilqis.bamf.mission-control.school-snapshot/v1");
   const frontier = latest(schoolRecords, "bilqis.bamf.mission-control.curriculum-frontier/v1");
   const semantic = latest(semanticRecords, "bilqis.bamf.mission-control.semantic-atlas-snapshot/v1");
@@ -118,7 +118,7 @@ export function projectionFromPages(pages, context) {
     capabilities.length + episodes.length + schoolRecords.length + semanticRecords.length +
     resources.length + corrections.length + teachers.length
   );
-  const startup = run && context?.mode !== "HISTORICAL" && domainRecordCount === 0
+  const startup = run && !observed.current && context?.mode !== "HISTORICAL" && domainRecordCount === 0
     ? Object.freeze({
       state: context?.operatorActive === true
         ? "WAITING_FOR_FIRST_TRAINING_EVENT"
@@ -132,6 +132,7 @@ export function projectionFromPages(pages, context) {
 
   return Object.freeze({
     provenance: "LIVE_QUERY",
+    observed,
     startup,
     state: Object.freeze(Object.fromEntries(HOME_FAMILIES.map((family) => [family, pageState(pages, family)]))),
     learningStatus: classifyLearning({ retained, freshRetainedImprovements: 0, regressions: 0 }),
@@ -169,13 +170,15 @@ export function projectionFromPages(pages, context) {
       hardWarnings: null,
     }),
     currentWork: Object.freeze({
-      capabilityId: activeEpisode?.capability_id ?? context?.activeCapabilityId ?? null,
+      capabilityId: observed.current?.capability_id ?? activeEpisode?.capability_id ?? context?.activeCapabilityId ?? null,
       strategy: teacher?.strategy_id ?? null,
-      candidateIntent: activeEpisode?.state ?? run?.stage ?? null,
+      candidateIntent: observed.current?.phase ?? activeEpisode?.state ?? run?.stage ?? null,
       sourceFamily: null,
       targetAssessment: null,
       protectedAssessment: null,
       recordId: activeEpisode?.meta?.record_id ?? null,
+      observedAt: activeEpisode?.meta?.observed_at ?? null,
+      materializedAt: activeEpisode?.meta?.materialized_at ?? null,
     }),
     schoolRows: Object.freeze(capabilityRows.slice(0, 8).map((record) => Object.freeze({
       id: record.capability_id,
@@ -189,73 +192,17 @@ export function projectionFromPages(pages, context) {
       kind: record.outcome === "ACCEPTED" ? "retain" : "reject",
       capabilityId: record.capability_id,
       reasonCode: record.reason_code,
-      observedAt: record.meta?.observed_at ?? record.meta?.materialized_at ?? null,
+      observedAt: record.meta?.observed_at ?? null,
+      materializedAt: record.meta?.materialized_at ?? null,
       target: Object.freeze({ kind: "capability", id: record.capability_id }),
     }))),
     attention: Object.freeze([
       ...(correctionDebt ? [{
         kind: "correction", severity: "invalid", count: correctionDebt, id: corrections[0]?.meta?.record_id,
         target: { kind: "correction", id: corrections[0]?.meta?.record_id },
+        observedAt: corrections[0]?.meta?.observed_at ?? null,
+        materializedAt: corrections[0]?.meta?.materialized_at ?? null,
       }] : []),
-    ]),
-  });
-}
-
-export function referenceHomeProjection() {
-  const rows = schoolFixtureRows();
-  const current = rows.reduce((sum, row) => sum + row.now, 0);
-  const best = rows.reduce((sum, row) => sum + row.top, 0);
-  const was = rows.reduce((sum, row) => sum + row.was, 0);
-  const total = rows.reduce((sum, row) => sum + row.total, 0);
-  const retainedSteps = rows.reduce((sum, row) => sum + row.retainedSteps, 0);
-  const pRetRows = rows.filter((row) => row.pRet !== null);
-  const retainedEpisode = EPISODE_FIXTURES.find((episode) => episode.terminalState === "RETAINED");
-  const pending = EPISODE_FIXTURES.find((episode) => episode.terminalState === "UNKNOWN");
-  const rejected = EPISODE_FIXTURES.filter((episode) => episode.terminalState === "REJECTED");
-  const regression = rows.find((row) => row.lastRegression !== "none");
-  return Object.freeze({
-    provenance: "FIXTURE",
-    startup: null,
-    state: Object.freeze(Object.fromEntries(HOME_FAMILIES.map((family) => [family, "PRESENT"]))),
-    learningStatus: classifyLearning({ retained: 1, freshRetainedImprovements: 1, regressions: 1 }),
-    learning: Object.freeze({
-      latestSchoolScore: ratio(current, total), bestSchoolScore: ratio(best, total),
-      wholeSchoolGrowth: ratio(current - was, total), gRtn: null,
-      pRet: pRetRows.reduce((sum, row) => sum + row.pRet, 0) / pRetRows.length,
-      retainedOptimizerSteps: retainedSteps,
-    }),
-    curriculum: Object.freeze({
-      qualifiedCapabilities: rows.filter((row) => row.qualificationState === "QUALIFIED").length,
-      observedDebt: rows.reduce((sum, row) => sum + row.debt, 0), activeConcepts: 30,
-      ready: rows.filter((row) => row.qualificationState === "READY").length,
-      held: rows.filter((row) => row.sourceState === "SOURCE_HELD").length,
-      uncovered: rows.filter((row) => row.implementationState === "IMPLEMENTATION_UNCOVERED").length,
-    }),
-    runtime: Object.freeze({ running: true, elapsed: "42 m fixture window", visits: rows.reduce((sum, row) => sum + row.visits, 0),
-      visitRate: null, retainedCandidates: 1, rejectedCandidates: rejected.length, acceptedStepsHour: null }),
-    system: Object.freeze({ memoryPressure: null, peakMemory: null, diskReserve: null, correctionDebt: 1, hardWarnings: 0 }),
-    currentWork: Object.freeze({
-      capabilityId: pending.capabilityId, strategy: pending.strategy, candidateIntent: pending.retentionReason,
-      sourceFamily: pending.sourceFamily, targetAssessment: "PENDING", protectedAssessment: "PENDING",
-      recordId: pending.recordId,
-    }),
-    schoolRows: Object.freeze(rows.slice(0, 7).map((row) => Object.freeze({
-      id: row.id, now: row.now, total: row.total, best: row.top, delta: row.growth, debt: row.debt,
-      pRet: row.pRet, status: row.qualificationState, lastVisit: row.lastGain,
-      strategy: row.strategy, recordId: row.id,
-    }))),
-    pulse: Object.freeze([
-      { kind: "gain", observedAt: 44239, capabilityId: retainedEpisode.capabilityId, before: "10/12", after: "12/12", target: { kind: "episode", id: retainedEpisode.recordId } },
-      { kind: "regress", observedAt: 44238, capabilityId: regression.id, detail: regression.lastRegression, target: { kind: "capability", id: regression.id } },
-      { kind: "retain", observedAt: 44239, capabilityId: retainedEpisode.capabilityId, reasonCode: retainedEpisode.retentionReason, target: { kind: "episode", id: retainedEpisode.recordId } },
-      { kind: "reject", observedAt: 44237, capabilityId: rejected[0].capabilityId, reasonCode: rejected[0].retentionReason, target: { kind: "episode", id: rejected[0].recordId } },
-      { kind: "source", observedAt: 44236, family: "future-source", target: { kind: "capability", id: "D.EVENT" } },
-      { kind: "correction", observedAt: 44235, count: 1, target: { kind: "correction", id: "correction:fixture:1" } },
-    ].map(Object.freeze)),
-    attention: Object.freeze([
-      Object.freeze({ kind: "stalled", severity: "attention", capabilities: "B.IFF · C.NUMBER", id: "B.IFF", target: { kind: "capability", id: "B.IFF" } }),
-      Object.freeze({ kind: "held", severity: "attention", capabilityId: "D.EVENT", id: "D.EVENT", target: { kind: "capability", id: "D.EVENT" } }),
-      Object.freeze({ kind: "recovery", severity: "blocker", capabilityId: pending.capabilityId, id: pending.recordId, target: { kind: "episode", id: pending.recordId } }),
     ]),
   });
 }

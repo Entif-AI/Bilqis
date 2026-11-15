@@ -4,38 +4,64 @@ import {
   invalidateAtlasRequests,
   renderAtlasDomain,
 } from "../atlas/atlas-controller.mjs";
+import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
+import { createProductionLineageController } from "../lineage/production-controller.mjs";
 import {
   activateSchoolDomain,
   invalidateSchoolDomainRequests,
 } from "../school/school-domain-controller.mjs";
-import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
+
+let productionLineageApi = null;
+let productionLineageController = null;
+
+function lineageControllerFor(api) {
+  if (!api) return null;
+  if (productionLineageApi !== api) {
+    productionLineageController?.deactivate();
+    productionLineageApi = api;
+    productionLineageController = createProductionLineageController(api);
+  }
+  return productionLineageController;
+}
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, onInspect, onNavigate, onAnnounce,
+  teacherController, salienceController, capabilityExplorer, learningController,
+  onInspect, onSelectionChange, onNavigate, onAnnounce,
+  schoolDomainSupport = null, atlasDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
     const context = state.context;
+    const atlasApi = context?.fixture === true ? atlasDomainSupport?.api : api;
     const isActive = () => getState()?.view === "atlas" && getState().context === context;
-    renderAtlasDomain(api, context, isActive);
-    if (state.selected?.kind === "semantic" && state.selected.id) {
-      void ensureAtlasSelection(api, context, state.selected.id, isActive);
-    } else {
-      void ensureAtlasOverview(api, context, isActive);
+    if (atlasApi) {
+      renderAtlasDomain(atlasApi, context, isActive, onInspect, onSelectionChange);
+      if (state.selected?.kind === "semantic" && state.selected.id) {
+        void ensureAtlasSelection(atlasApi, context, state.selected.id, isActive, onInspect, onSelectionChange);
+      } else {
+        void ensureAtlasOverview(atlasApi, context, isActive, onInspect, onSelectionChange);
+      }
     }
   }
   if (state?.view !== "atlas") invalidateAtlasRequests();
   if (state?.view === "school") {
     const context = state.context;
-    activateSchoolDomain({
+    const fixture = state.context?.fixture === true;
+    const support = fixture ? schoolDomainSupport : { activateSchoolDomain };
+    if (!support?.activateSchoolDomain) return;
+    void support.activateSchoolDomain({
       state,
       api,
       onInspect,
+      launchMode: fixture ? "fixtures" : "production",
       isActive: () =>
         getState()?.view === "school" && getState().context === context,
     });
-  } else invalidateSchoolDomainRequests();
+  } else {
+    invalidateSchoolDomainRequests();
+    schoolDomainSupport?.invalidateSchoolDomainRequests?.();
+  }
   if (state?.view === "mission-control") {
     void homeController.activate(state.context, {
       host: document.querySelector("#domain-view"),
@@ -55,12 +81,55 @@ export function activateDomainViews({
   } else {
     void resourceController?.deactivate();
   }
+  if (state?.view === "teacher") {
+    void teacherController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void teacherController?.deactivate();
+  }
+  if (state?.view === "salience") {
+    void salienceController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void salienceController?.deactivate();
+  }
+  if (state?.view === "learning" && state.context?.fixture !== true) {
+    void learningController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selection: state.selected,
+    });
+  } else {
+    void learningController?.deactivate();
+  }
+  if (state?.view === "lineage" && state.context?.fixture !== true) {
+    void lineageControllerFor(api)?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+    });
+  } else {
+    void productionLineageController?.deactivate();
+  }
   if (state?.view === "operate") {
+    const operateDefense = Object.freeze({
+      ...defense,
+      mutationAllowed: defense?.mutationAllowed === true && state?.mutationAvailable === true,
+    });
     void operateController?.activate(state.context, {
       target: document.querySelector("#domain-view"),
       onInspect,
       onAnnounce,
-      defense,
+      defense: operateDefense,
     });
   } else {
     void operateController?.deactivate();

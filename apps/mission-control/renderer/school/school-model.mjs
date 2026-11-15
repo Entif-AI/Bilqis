@@ -29,8 +29,10 @@ export function selectionNeighborhood(rows, selectedId) {
 }
 
 export function matchesSchoolFilter(row, filter) {
-  if (filter === "imperfect") return row.now < row.total;
-  if (filter === "regression") return row.lastRegression !== "none";
+  if (filter === "imperfect") {
+    return Number.isFinite(row.now) && Number.isFinite(row.total) && row.now < row.total;
+  }
+  if (filter === "regression") return Boolean(row.lastRegression && row.lastRegression !== "none");
   if (filter === "stale-debt") return row.staleDebt;
   if (filter === "recent-gain") return row.recentGain;
   if (filter === "held") return row.sourceState === "SOURCE_HELD" || row.lifecycleState === "HELD";
@@ -72,10 +74,10 @@ export function paginateRows(rows, page = 1, pageSize = 50) {
 
 export function evidenceTotals(rows) {
   return rows.reduce((acc, row) => ({
-    nowCorrect: acc.nowCorrect + row.now,
-    denominator: acc.denominator + row.total,
-    debt: acc.debt + row.debt,
-    retainedSteps: acc.retainedSteps + row.retainedSteps,
+    nowCorrect: acc.nowCorrect + (Number.isFinite(row.now) ? row.now : 0),
+    denominator: acc.denominator + (Number.isFinite(row.total) ? row.total : 0),
+    debt: acc.debt + (Number.isFinite(row.debt) ? row.debt : 0),
+    retainedSteps: acc.retainedSteps + (Number.isFinite(row.retainedSteps) ? row.retainedSteps : 0),
   }), { nowCorrect: 0, denominator: 0, debt: 0, retainedSteps: 0 });
 }
 
@@ -84,7 +86,7 @@ export function exportSchoolCsv(rows) {
   const lines = rows.map((row) => [
     row.id, row.grade, row.family, row.was, row.top, row.now, row.total, row.debt,
     row.pRet ?? "", row.qualificationState,
-  ].map((value) => '"' + String(value).replaceAll('"', '""') + '"').join(","));
+  ].map((value) => '"' + String(value ?? "").replaceAll('"', '""') + '"').join(","));
   return [header.join(","), ...lines].join("\n");
 }
 

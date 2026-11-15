@@ -12,10 +12,23 @@ from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind
 from .atlas_model_contracts import BamfCompiledBatch, _ForwardRecord, _invalid
 
 
-def _motif_reads(producer):
-    return tuple(
-        read for read in (
-            getattr(producer, "_input_motif_read", None), producer._motif_read)
+def _row_motif_read(read, row_index):
+    if read.hidden.shape[0] == 1:
+        return read
+    if (not read.row_participating_slots
+            or row_index < 0 or row_index >= read.hidden.shape[0]):
+        _invalid("B11_MOTIF_ROW_PARTICIPATION_REQUIRED")
+    slots = read.row_participating_slots[row_index]
+    from bilqis_mlx.learning.atlas_engram_reads import MotifReadResult
+    return MotifReadResult(
+        read.hidden[row_index:row_index + 1],
+        (read.dispositions[row_index],), slots,
+        (read.context_digests[row_index],), (slots,))
+
+
+def _motif_reads(producer, row_index=0):
+    return tuple(_row_motif_read(read, row_index) for read in (
+        getattr(producer, "_input_motif_read", None), producer._motif_read)
         if read is not None)
 
 
@@ -53,7 +66,12 @@ def _executed_readout_parameters(plan, output):
     return dense
 
 
-def _execution_dependencies(batch, producer, accepted_cache):
+def _execution_dependencies(batch, producer_or_reads, accepted_cache):
+    motif_reads = (producer_or_reads if type(producer_or_reads) is tuple else tuple(
+        read for read in (
+            getattr(producer_or_reads, "_input_motif_read", None),
+            getattr(producer_or_reads, "_motif_read", None))
+        if read is not None))
     dependencies = set()
     feature = batch.atlas_feature_artifact_owner.current_node
     dependencies.update(
@@ -64,7 +82,6 @@ def _execution_dependencies(batch, producer, accepted_cache):
         dependencies.update(
             ref for ref in node.immediate_dependencies
             if ref.kind is not DependencyKind.ARTIFACT)
-    motif_reads = _motif_reads(producer)
     if (accepted_cache is not None
             and any(read.participating_slots for read in motif_reads)):
         owner = bind_motif_artifact_owner(accepted_cache, batch.compiled)
@@ -78,7 +95,7 @@ def _execution_dependencies(batch, producer, accepted_cache):
 
 def _forward_participation(
     params, batch, plan, output, producer, accepted_cache,
-    refinement_roles=(), refinement_executed=False,
+    refinement_roles=(), refinement_executed=False, producer_row_index=0,
 ):
     source = batch.sources[0]
     snapshot = load_pinned_atlas_snapshot(source.selection)
@@ -96,7 +113,7 @@ def _forward_participation(
         feature_rows.add(("role", factors.role_row))
         feature_rows.add(("schema", factors.schema_row))
     feature_rows.add(("role", dict(batch.compiled.features.role_map)["NONE"]))
-    motif_reads = _motif_reads(producer)
+    motif_reads = _motif_reads(producer, producer_row_index)
 
     dense = {
         item.name for item in expected_bamf_shapes(
@@ -144,7 +161,7 @@ def _forward_participation(
         batch.compiled.features.role_map,
         (None if batch.training_authority is None else extend_training_dependencies(
             batch.training_authority,
-            _execution_dependencies(batch, producer, accepted_cache))),
+            _execution_dependencies(batch, motif_reads, accepted_cache))),
     )
 
 

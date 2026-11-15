@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import replace
 
 from .accepted_correction_ledger import (
-    _manifest_lineage, accepted_corrections, append_record, read_records,
+    _accepted_corrections_from_records, _manifest_lineage, append_record, read_records,
 )
 from .accepted_stale_replay_ledger import (
     DERIVED_CLAIM_EVENT, PROCESS_FAULT_EVENT, REMEDIATION_EVENT,
@@ -237,8 +237,8 @@ def replay_stale_evidence(retained) -> tuple[object, ...]:
         return ()
     corrections = {
         event.event_id: event
-        for _event_id, event in accepted_corrections(
-            retained.run_dir, retained.manifest_sha256)
+        for _event_id, event in _accepted_corrections_from_records(
+            records, retained.registry)
     }
     _flush_c10_intents(retained, ledger, corrections)
     _flush_context_requalifications(retained, ledger, records)

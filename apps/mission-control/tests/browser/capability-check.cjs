@@ -6,7 +6,7 @@ const path = require("node:path");
 
 const root = path.resolve(__dirname, "../../../..");
 const baseRef = process.env.BILQIS_CAPABILITY_BASE_REF || "a68961296b9ae4dc40b8813b2b91fd1633453c73";
-const { assetPathForRendererRequest } = require("../../electron/renderer-protocol.cjs");
+const { assetPathForRendererRequest } = require("../../electron/shell/renderer-protocol.cjs");
 const fromBase = relative => execFileSync("git", ["show", `${baseRef}:${relative}`], {
   cwd: root, encoding: "utf8",
 });
@@ -20,6 +20,9 @@ const baseline = {
     .replace('from "./model.mjs"', 'from "/apps/mission-control/renderer/capability/model.mjs"'),
   css: fromBase("apps/mission-control/renderer/capability/dossier.css"),
 };
+const fixtureModule = fs.readFileSync(path.join(root, "apps/mission-control/renderer/capability/fixture.mjs"), "utf8")
+  .replace('from "./fixture-data.mjs"', 'from "/test-fixture-data.mjs"');
+const fixtureDataModule = fs.readFileSync(path.join(root, "apps/mission-control/renderer/capability/fixture-data.mjs"), "utf8");
 
 const server = http.createServer((req, res) => {
   if (req.url === "/baseline/app.mjs") {
@@ -30,6 +33,12 @@ const server = http.createServer((req, res) => {
   }
   if (req.url === "/baseline/dossier.css") {
     res.setHeader("Content-Type", "text/css"); res.end(baseline.css); return;
+  }
+  if (req.url === "/test-fixture.mjs") {
+    res.setHeader("Content-Type", "text/javascript"); res.end(fixtureModule); return;
+  }
+  if (req.url === "/test-fixture-data.mjs") {
+    res.setHeader("Content-Type", "text/javascript"); res.end(fixtureDataModule); return;
   }
   const prefix = "/apps/mission-control/renderer";
   const asset = req.url.startsWith(prefix + "/")
@@ -57,21 +66,23 @@ const server = http.createServer((req, res) => {
   }
 });
 
-async function mount(page, moduleUrl) {
-  await page.evaluate(async (url) => {
+async function mount(page, moduleUrl, launchMode = "fixtures") {
+  await page.evaluate(async ({ url, launchMode }) => {
     const { createCapabilityExplorer } = await import(url);
+    const { fixtureQuery, FIXTURE_RUN } = await import("/test-fixture.mjs");
+    const fixtureSupport = { query: fixtureQuery, runId: FIXTURE_RUN, generation: 3 };
     const host = document.querySelector('[data-test-id="fixture-host"]');
     host.innerHTML = "";
     window.__openedEvidence = null;
     let state = {
-      context: { runId: "fixture:gui05", generation: 3, mode: "HISTORICAL", fixture: true },
+      context: { runId: FIXTURE_RUN, generation: 3, mode: "HISTORICAL", fixture: launchMode === "fixtures" },
       selected: { kind: "capability", id: "B.AND" },
     };
     let explorer;
     const apply = () => explorer.update(state);
     explorer = createCapabilityExplorer({
       host,
-      serviceQuery: async () => { throw new Error("CONTROL_PLANE_UNAVAILABLE"); },
+      serviceQuery: launchMode === "fixtures" ? async () => { throw new Error("CONTROL_PLANE_UNAVAILABLE"); } : fixtureQuery,
       changeLens: (lens, capabilityId) => {
         state = { ...state, context: { ...state.context, ...lens }, selected: { kind: "capability", id: capabilityId } };
         apply();
@@ -82,13 +93,15 @@ async function mount(page, moduleUrl) {
       },
       openEvidence: selected => { window.__openedEvidence = selected; },
       resolvePins: () => {},
+      launchMode,
+      fixtureSupport,
     });
     window.__setCapabilityContext = next => {
       state = { ...state, context: { ...state.context, ...next } };
       apply();
     };
     apply();
-  }, moduleUrl);
+  }, { url: moduleUrl, launchMode });
 }
 
 (async () => {
@@ -98,9 +111,6 @@ async function mount(page, moduleUrl) {
   const out = path.join(root, "output/playwright/1131");
   fs.mkdirSync(out, { recursive: true });
   await page.goto(`http://127.0.0.1:${server.address().port}/`);
-
-  await mount(page, "/baseline/app.mjs");
-  await page.screenshot({ path: path.join(out, "before-dark.png"), fullPage: true });
 
   await page.evaluate(() => { document.querySelector("#capability-css").href = "/apps/mission-control/renderer/capability/dossier.css"; });
   await mount(page, "/apps/mission-control/renderer/capability/app.mjs");
@@ -142,9 +152,9 @@ async function mount(page, moduleUrl) {
   await page.evaluate(() => window.__setCapabilityContext({ mode: "LIVE", generation: 3, runId: "fixture:gui05", fixture: true }));
   const context = page.locator('[data-test-id="capability-context"]');
   await context.waitFor();
-  if (!(await context.innerText()).includes("LIVE")) throw new Error("CAPABILITY_CONTEXT_LIVE_MISSING");
-  await page.screenshot({ path: path.join(out, "after-fixture-live-dark.png"), fullPage: true });
-  result.fixtureLiveMode = true;
+  if (!(await context.innerText()).includes("HISTORICAL")) throw new Error("CAPABILITY_FIXTURE_MODE_ESCAPED_REFERENCE_LENS");
+  if (!(await context.innerText()).includes("Fixture")) throw new Error("CAPABILITY_FIXTURE_POSTURE_MISSING");
+  result.fixtureModeRemainsReferenceHistorical = true;
   await page.evaluate(() => window.__setCapabilityContext({ mode: "HISTORICAL", generation: 3, runId: "fixture:gui05", fixture: true }));
   await context.waitFor();
   if (!(await context.innerText()).includes("HISTORICAL")) throw new Error("CAPABILITY_CONTEXT_HISTORICAL_MISSING");
@@ -174,7 +184,20 @@ async function mount(page, moduleUrl) {
     document.querySelector('[data-test-id="capability-view"]').style.cssText = "";
   });
   await page.setViewportSize({ width: 1440, height: 1100 });
-  const { capabilityJourney } = await import(path.join(root, "apps/mission-control/tests/browser/capability-journey.mjs"));
+  await mount(page, "/apps/mission-control/renderer/capability/app.mjs", "production");
+  await page.locator('[data-test-id="capability-name"]').waitFor();
+  if ((await page.locator('[data-test-id="capability-context"]').innerText()).includes("Fixture")) {
+    throw new Error("CAPABILITY_PRODUCTION_EXPOSED_FIXTURE_POSTURE");
+  }
+  await page.evaluate(() => window.__setCapabilityContext({ mode: "LIVE", generation: 3, fixture: false }));
+  await page.locator('[data-test-id="capability-name"]').waitFor();
+  if (!(await page.locator('[data-test-id="capability-context"]').innerText()).includes("LIVE")) {
+    throw new Error("CAPABILITY_PRODUCTION_CURRENT_LENS_MISSING");
+  }
+  result.productionCurrentMode = true;
+  await page.evaluate(() => window.__setCapabilityContext({ mode: "HISTORICAL", generation: 3, fixture: false }));
+  await page.locator('[data-test-id="capability-name"]').waitFor();
+  const { capabilityJourney } = await import(path.join(root, "apps/mission-control/tests/browser/journeys/capability-journey.mjs"));
   result.journey = await capabilityJourney(page);
   await page.screenshot({ path: path.join(out, "after-defensive-unavailable.png"), fullPage: true });
   fs.writeFileSync(path.join(out, "browser-result.json"), JSON.stringify(result, null, 2) + "\n");

@@ -3,7 +3,7 @@ const { execFileSync } = require('node:child_process');
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '../../../..');
 const baseRef = process.env.BILQIS_MODEL_BASE_REF || '490e86e1a284fd03c3824e0bce656d658df0052c';
-const { assetPathForRendererRequest } = require('../../electron/renderer-protocol.cjs');
+const { assetPathForRendererRequest } = require('../../electron/shell/renderer-protocol.cjs');
 const framePages = JSON.parse(fs.readFileSync(path.join(root, 'apps/mission-control/fixtures/frame-inspections-v1.json'), 'utf8'));
 const baseline = Object.fromEntries(['neural-view.mjs', 'neural-model.mjs', 'neural-fixture.mjs'].map(name => [name,
   execFileSync('git', ['show', `${baseRef}:apps/mission-control/renderer/neural/${name}`], { cwd: root, encoding: 'utf8' })]));
@@ -39,7 +39,7 @@ const server = http.createServer((req, res) => {
   });
   await page.screenshot({ path: 'output/playwright/1134/before-dark.png', fullPage: true });
 
-  const { modelJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/model-journey.mjs'));
+  const { modelJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/journeys/model-journey.mjs'));
   await page.evaluate(() => { document.querySelector('#neural-css').href = '/apps/mission-control/renderer/neural/neural.css'; document.querySelector('[data-test-id="fixture-host"]').innerHTML = ''; });
   const result = await modelJourney(page, framePages);
   const axePath = process.env.BILQIS_AXE_MODULE;

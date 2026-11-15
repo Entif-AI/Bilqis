@@ -1,7 +1,7 @@
 const { chromium } = require(process.env.BILQIS_PLAYWRIGHT_MODULE || "playwright");
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, "../../../..");
-const {assetPathForRendererRequest} = require("../../electron/renderer-protocol.cjs");
+const {assetPathForRendererRequest} = require("../../electron/shell/renderer-protocol.cjs");
 const server = http.createServer((req,res)=>{
  const prefix = "/apps/mission-control/renderer";
  const asset = req.url.startsWith(prefix + "/") ? assetPathForRendererRequest("bamf-mc://app" + req.url.slice(prefix.length), path.join(root,"apps/mission-control/renderer")) : null;
@@ -11,7 +11,7 @@ const server = http.createServer((req,res)=>{
  try { res.setHeader('Content-Type',file.endsWith('.css')?'text/css':'text/javascript');res.end(fs.readFileSync(file)); }catch {res.statusCode=404;res.end();}
 });
 (async()=>{ await new Promise(r=>server.listen(0,'127.0.0.1',r)); const browser=await chromium.launch({channel:'chrome',headless:true});const page=await browser.newPage({viewport:{width:1440,height:1100}});await page.goto(`http://127.0.0.1:${server.address().port}/`);
- const {correctionsJourney}=await import(path.join(root,'apps/mission-control/tests/browser/corrections-journey.mjs'));
+ const {correctionsJourney}=await import(path.join(root,'apps/mission-control/tests/browser/journeys/corrections-journey.mjs'));
  const result = await correctionsJourney(page);
  await page.evaluate(()=>window.mount());
  const label='after';

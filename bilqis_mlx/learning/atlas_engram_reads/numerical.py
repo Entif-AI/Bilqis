@@ -183,6 +183,7 @@ def _read_motif_unqualified_candidate(
     dispositions = []
     context_digests = []
     participating = set()
+    row_participating = []
     for row_index, row in enumerate(positions):
         task, frontier, policy = tasks[row_index], frontiers[row_index], policies[row_index]
         output, status, digest, row_slots = _read_row(
@@ -191,12 +192,14 @@ def _read_motif_unqualified_candidate(
         output_rows.append(output)
         dispositions.append(status)
         context_digests.append(digest)
+        row_participating.append(tuple(sorted(row_slots)))
         participating.update(row_slots)
     if not participating:
         return MotifReadResult(
-            hidden, tuple(dispositions), (), tuple(context_digests))
+            hidden, tuple(dispositions), (), tuple(context_digests),
+            tuple(row_participating))
     return MotifReadResult(
         mx.stack(tuple(mx.stack(row) for row in output_rows)),
         tuple(dispositions), tuple(sorted(participating)),
-        tuple(context_digests),
+        tuple(context_digests), tuple(row_participating),
     )

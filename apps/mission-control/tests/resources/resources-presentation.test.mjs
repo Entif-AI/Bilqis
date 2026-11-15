@@ -1,11 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { referenceResourceState } from '../../renderer/resources/resource-model.mjs';
+import { referenceResourceState, RESOURCE_FIXTURE_MESSAGES } from '../../renderer/resources/resource-fixture-state.mjs';
 import { renderResourceMarkup, bindResourceInteractions } from '../../renderer/resources/resource-view.mjs';
-import { RESOURCE_MESSAGES } from '../../renderer/resources/resource-messages.mjs';
 
 test('resource presentation has unique hooks and translates and escapes copy', () => {
-  const messages = { 'en-US': { ...RESOURCE_MESSAGES['en-US'], 'resource.title': '<Budget>' } };
+  const messages = { 'en-US': { ...RESOURCE_FIXTURE_MESSAGES['en-US'], 'resource.title': '<Budget>' } };
   const html = renderResourceMarkup(referenceResourceState(), { messages });
   assert.match(html, /&lt;Budget&gt;/);
   const ids = [...html.matchAll(/data-test-id="([^"]+)"/g)].map(match => match[1]);
@@ -29,11 +28,11 @@ test('blank input does not request generation zero and inspection carries raw id
 test('signed overage and request state remain explicit', () => {
   const state = referenceResourceState();
   const profile = { ...state.current, memoryDecomposition: [{ id: 'other', state: 'PRESENT', value: 49 * 1024 ** 3 }] };
-  const html = renderResourceMarkup({ current: profile, comparison: null, comparisonState: 'LOADING', comparisonGeneration: 0 });
+  const html = renderResourceMarkup({ current: profile, comparison: null, comparisonState: 'LOADING', comparisonGeneration: 0 }, { messages: RESOURCE_FIXTURE_MESSAGES });
   assert.match(html, /Category overage/);
   assert.match(html, /-1\.0 GiB/);
   assert.match(html, /Requested generation 0: LOADING/);
-  const failure = renderResourceMarkup({ current: profile, comparison: null, comparisonState: 'UNAVAILABLE', comparisonGeneration: 7 });
+  const failure = renderResourceMarkup({ current: profile, comparison: null, comparisonState: 'UNAVAILABLE', comparisonGeneration: 7 }, { messages: RESOURCE_FIXTURE_MESSAGES });
   assert.match(failure, /Requested generation 7: UNAVAILABLE/);
 });
 
@@ -52,11 +51,11 @@ test('comparison accepts zero and rejects malformed or unsafe generation', () =>
 
 test('page state, timestamp units, named table scrollers and value templates are exposed', () => {
   const state = referenceResourceState();
-  const messages = { 'en-US': { ...RESOURCE_MESSAGES['en-US'], 'resource.format.percent': '{value} pct', 'resource.format.money': 'USD {value}' } };
+  const messages = { 'en-US': { ...RESOURCE_FIXTURE_MESSAGES['en-US'], 'resource.format.percent': '{value} pct', 'resource.format.money': 'USD {value}' } };
   const profile = { ...state.current, pageState: 'PARTIAL', aggregate: { ...state.current.aggregate, monetaryCost: { state: 'PRESENT', value: 2, units: 'USD' } } };
   const html = renderResourceMarkup({ ...state, current: profile }, { messages });
   assert.match(html, /data-test-id="resources-page-state"[^>]*>.*PARTIAL/s);
-  assert.match(html, /Unix seconds/);
+  assert.match(html, />Observed</);
   assert.match(html, /tabindex="0" role="region" aria-label="Memory decomposition"/);
   assert.match(html, /73\.0 pct/);
   assert.match(html, /USD 2\.00/);
@@ -85,7 +84,7 @@ test('unsafe generation gets localized recovery feedback', () => {
 });
 
 test('all analytical tables expose stable identity-column measurement hooks', () => {
-  const html = renderResourceMarkup(referenceResourceState());
+  const html = renderResourceMarkup(referenceResourceState(), { messages: RESOURCE_FIXTURE_MESSAGES });
   const hooks = [...html.matchAll(/data-test-id="(resources-(?:decomposition|compute|length|timeline|comparison)-identity)"/g)];
   assert.equal(hooks.length, 5);
   assert.equal(new Set(hooks.map(match => match[1])).size, 5);

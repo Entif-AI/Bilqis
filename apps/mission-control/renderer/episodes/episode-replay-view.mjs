@@ -1,6 +1,7 @@
 import { EPISODE_STAGES } from "./episode-fixture.mjs";
 import { replaySlice } from "./episode-model.mjs";
-import { esc, stateBadge, t, testIdAttribute } from "./episode-view-shared.mjs";
+import { temporalMarkup } from "../foundation/temporal.mjs";
+import { esc, learningHelpMarkup, stateBadge, t, testIdAttribute } from "./episode-view-shared.mjs";
 
 function evidenceButtons(stage) {
   if (!stage.evidence.length) {
@@ -17,13 +18,22 @@ function evidenceButtons(stage) {
 
 export function replayPanel(episode, stageIndex) {
   const replay = replaySlice(episode, stageIndex);
+  const activeTime = Number.isSafeInteger(replay.active.observedAt)
+    ? temporalMarkup({
+        unixSeconds: replay.active.observedAt,
+        testId: `learning-stage-${replay.active.id}-time`,
+      })
+    : "";
   return `<section class="episode-lifecycle" aria-labelledby="learning-lifecycle-title" ${testIdAttribute("learning", "lifecycle")}>
     <header class="episode-section-heading"><div>
       <span class="eyebrow">${esc(t("learning.lifecycle.eyebrow"))}</span>
       <h3 id="learning-lifecycle-title">${esc(t("learning.lifecycle.title"))}</h3>
-    </div><span class="episode-stage-counter">${esc(t("learning.lifecycle.counter", {
-      current: replay.stageIndex + 1, total: EPISODE_STAGES.length,
-    }))}</span></header>
+    </div><div class="episode-heading-tools">
+      ${learningHelpMarkup("lifecycle", "learning-help-lifecycle")}
+      <span class="episode-stage-counter">${esc(t("learning.lifecycle.counter", {
+        current: replay.stageIndex + 1, total: EPISODE_STAGES.length,
+      }))}</span>
+    </div></header>
     <div class="episode-replay"><ol class="episode-stage-list" aria-label="${esc(t("learning.lifecycle.title"))}">
       ${episode.stages.map((stage, index) => `<li class="episode-stage" data-state="${esc(stage.state.toLowerCase())}" data-active="${index === replay.stageIndex}">
         <button type="button" data-stage-index="${index}" aria-pressed="${index === replay.stageIndex}"
@@ -35,6 +45,7 @@ export function replayPanel(episode, stageIndex) {
       <span class="eyebrow">${esc(t("learning.lifecycle.selected"))}</span>
       <div class="episode-stage-detail-heading"><h4>${esc(t(replay.active.labelKey))}</h4>
         ${stateBadge(replay.active.state, "learning-active-stage-state")}</div>
+      ${activeTime}
       <p>${esc(t(replay.active.detailKey))}</p>
       <details class="episode-evidence-disclosure" ${testIdAttribute("learning", "stage", "evidence")}>
         <summary>${esc(t("learning.lifecycle.evidenceSummary", { count: replay.active.evidence.length }))}</summary>

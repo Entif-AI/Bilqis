@@ -1,9 +1,7 @@
 .investigation-strip {
   border-bottom: 1px solid var(--border);
   background: var(--surface-1);
-  transition: margin-right 160ms ease;
 }
-.shell[data-inspector="open"] .investigation-strip { margin-right: min(420px, 92vw); }
 .shell[data-inspector="open"] .annotation-workspace { grid-template-columns: 1fr; }
 .investigation-strip-row {
   display: flex;
@@ -158,12 +156,10 @@
 [data-global-highlight="related"] { outline: 2px dashed var(--attention); outline-offset: 2px; }
 
 @media (max-width: 1050px) {
-  .shell[data-inspector="open"] .investigation-strip { margin-right: min(340px, 46vw); }
   .investigation-strip-row { align-items: flex-start; }
 }
 
 @media (max-width: 720px) {
-  .shell[data-inspector="open"] .investigation-strip { margin-right: 0; }
   .investigation-strip-row { align-items: stretch; flex-direction: column; }
   .investigation-tabs { justify-content: flex-start; }
   .investigation-time form { position: static; min-width: 0; margin-top: var(--space-2); box-shadow: none; }

@@ -6,11 +6,11 @@ const assert = require("node:assert/strict");
 const {
   appUriArgument,
   rendererHashForAppUri,
-} = require("../app-routing.cjs");
+} = require("../shell/app-routing.cjs");
 const {
   RENDERER_ENTRY_URL,
   rendererEntryUrl,
-} = require("../renderer-location.cjs");
+} = require("../shell/renderer-location.cjs");
 
 test("app URI argument detection ignores unrelated command-line values", () => {
   assert.equal(

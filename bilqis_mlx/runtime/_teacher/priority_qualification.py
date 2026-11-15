@@ -81,11 +81,18 @@ def _grade(program, school, capability):
 
 
 def requalify_priority(run_dir, source_context, parent, frontier, history,
-                       planning, offers, program, school, teacher_epoch, *, now):
+                       planning, offers, program, school, teacher_epoch, *, now,
+                       planning_generation=None):
     from bilqis_mlx.runtime.priority_source_offer import PreparedPrioritySourceOffer
 
-    source_context.require_accepted_runtime(run_dir)
-    cache, registry = _accepted_correction_registry(run_dir)
+    if planning_generation is None:
+        source_context.require_accepted_runtime(run_dir)
+        cache, registry = _accepted_correction_registry(run_dir)
+    else:
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+        cache, _authenticated = _require_planning_generation(
+            planning_generation, source_context, parent)
+        registry = cache._correction_registry
     if (frontier.snapshot.registry.digest != registry.digest
             or frontier.snapshot.as_of != now or school.course_digest != program.digest()):
         _invalid('BAMF_PRIORITY_AUTHORITY_DRIFT')

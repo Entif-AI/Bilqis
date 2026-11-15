@@ -3,7 +3,7 @@ const { execFileSync } = require('node:child_process');
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '../../../..');
 const baseRef = process.env.BILQIS_ATLAS_BASE_REF || 'dada27e8b1776e0fb7917c61bd8df141a210f93a';
-const { assetPathForRendererRequest } = require('../../electron/renderer-protocol.cjs');
+const { assetPathForRendererRequest } = require('../../electron/shell/renderer-protocol.cjs');
 const baseline = {
   js: execFileSync('git', ['show', `${baseRef}:apps/mission-control/renderer/atlas/semantic-atlas.mjs`], { cwd: root, encoding: 'utf8' }),
   css: execFileSync('git', ['show', `${baseRef}:apps/mission-control/renderer/atlas/semantic-atlas.css`], { cwd: root, encoding: 'utf8' }),
@@ -37,7 +37,7 @@ const server = http.createServer((req, res) => {
     document.querySelector('[data-test-id="fixture-host"]').innerHTML = atlas.renderAtlasMarkup({ status: 'ready', overview, selection, lens: 'canonical', selectedBank: 0 });
   });
   await page.screenshot({ path: 'output/playwright/1133/before-dark.png', fullPage: true });
-  const { atlasJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/atlas-journey.mjs'));
+  const { atlasJourney } = await import(path.join(root, 'apps/mission-control/tests/browser/journeys/atlas-journey.mjs'));
   await page.evaluate(() => { document.querySelector('#atlas-css').href = '/apps/mission-control/renderer/atlas/semantic-atlas.css'; document.querySelector('[data-test-id="fixture-host"]').innerHTML = ''; });
   const result = await atlasJourney(page);
   const axePath = process.env.BILQIS_AXE_MODULE;

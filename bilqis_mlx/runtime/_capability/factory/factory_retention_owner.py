@@ -141,7 +141,7 @@ def _fixed_school_instruments(
 
 def _foundation_retention_screen(
     source_context, parent, candidate_bundle, artifact_path, target_capability,
-    release, groups, training, fixed_instruments, cache,
+    release, groups, training, fixed_instruments, cache, *, observer=None,
 ):
     fixed_cases = tuple(item.case for item in fixed_instruments)
     policy = FoundationRetentionPolicy(
@@ -165,14 +165,14 @@ def _foundation_retention_screen(
     decision = evaluate_foundation_fixed_school_candidate(
         parent_solver, candidate_solver, target_capability, policy, fixed_cohort,
         parent_generation, candidate_generation,
-        parent_assessment=parent_assessment)
+        parent_assessment=parent_assessment, **({"observer": observer} if observer is not None else {}))
     return decision, parent, candidate_bundle, parent_assessment_cache
 
 
 def _adaptive_retention_screen(
     source_context, parent, candidate_bundle, candidate_state, artifact_path,
     target_capability, target_group, lesson_capabilities, release, groups,
-    training, fixed_instruments, cache,
+    training, fixed_instruments, cache, *, observer=None,
 ):
     candidate_sha256 = candidate_identity_digest(candidate_state)
     fresh_seed = _owner_seed(
@@ -203,7 +203,7 @@ def _adaptive_retention_screen(
         source_context, candidate_bundle, artifact_path, all_instruments)
     decision = evaluate_retention_candidate(
         parent_solver, candidate_solver, target_capability, policy,
-        cohorts, parent_generation, candidate_generation)
+        cohorts, parent_generation, candidate_generation, **({"observer": observer} if observer is not None else {}))
     return decision, parent, candidate_bundle
 
 
@@ -263,7 +263,7 @@ def evaluate_factory_retention_candidate(
     artifact_path: str,
     target_capability: str,
     *,
-    run_dir: Path,
+    run_dir: Path, observer=None,
 ):
     """Run C05 with no caller-selected solver, cohort, policy or coverage map."""
     if (type(candidate) is not CandidateTransaction
@@ -297,11 +297,11 @@ def evaluate_factory_retention_candidate(
         return _foundation_retention_evaluation(
             source_context, parent, candidate_bundle, artifact_path,
             target_capability, release, groups, training, fixed_instruments,
-            cache)
+            cache, **({"observer": observer} if observer is not None else {}))
     return _adaptive_retention_evaluation(
         source_context, parent, candidate_bundle, candidate_state, artifact_path,
         target_capability, target_group, lesson_capabilities, release, groups,
-        training, fixed_instruments, cache)
+        training, fixed_instruments, cache, **({"observer": observer} if observer is not None else {}))
 
 
 def evaluate_factory_package_import(

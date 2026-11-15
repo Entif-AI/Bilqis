@@ -11,14 +11,22 @@ import {
 import { lineageT } from "./lineage-messages.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
-import { controlClass } from "../foundation/primitives.mjs";
+import { contextHelpMarkup, controlClass } from "../foundation/primitives.mjs";
 import { assertUniqueTestIds, testId, testIdAttribute } from "../foundation/test-hooks.mjs";
 
 const ui = {
   selected: currentLineageNode().manifestSha256,
   compareBefore: LINEAGE_FIXTURE.nodes[1].manifestSha256,
   compareAfter: LINEAGE_FIXTURE.nodes.at(-1).manifestSha256,
+  activeTab: "generations",
 };
+
+const TABS = Object.freeze([
+  ["generations", "lineage.tab.generations"],
+  ["selected", "lineage.tab.selected"],
+  ["comparison", "lineage.tab.comparison"],
+  ["rejected", "lineage.tab.rejected"],
+]);
 
 function slug(value) {
   return String(value).replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase()
@@ -51,6 +59,33 @@ function stateLabel(value, t = lineageT) {
 
 function stateBadge(value, t, ...hookSegments) {
   return `<span class="lineage-state" data-lineage-state="${esc(slug(value))}" ${testIdAttribute("lineage", ...hookSegments)}>${esc(stateLabel(value, t))}</span>`;
+}
+
+function help(t, id, labelKey, bodyKey) {
+  return contextHelpMarkup({
+    label: t(labelKey),
+    description: t(bodyKey),
+    testId: "lineage-help-" + id,
+  });
+}
+
+function tabsMarkup(t) {
+  return '<div class="lineage-tabs" role="tablist" aria-label="' +
+    esc(t("lineage.tabs.aria")) + '" ' + testIdAttribute("lineage", "tabs") + ">" +
+    TABS.map(([id, key]) => '<button type="button" role="tab" class="' +
+      controlClass("peer-tab") + '" data-lineage-tab="' + id +
+      '" id="lineage-tab-' + id + '" aria-controls="lineage-panel-' + id +
+      '" aria-selected="' + String(ui.activeTab === id) + '" tabindex="' +
+      (ui.activeTab === id ? "0" : "-1") + '" ' +
+      testIdAttribute("lineage", "tab", id) + ">" + esc(t(key)) + "</button>").join("") +
+    "</div>";
+}
+
+function panelMarkup(id, content) {
+  return '<div role="tabpanel" id="lineage-panel-' + id +
+    '" aria-labelledby="lineage-tab-' + id + '" data-lineage-panel="' + id + '" ' +
+    (ui.activeTab === id ? "" : "hidden ") +
+    testIdAttribute("lineage", "panel", id) + ">" + content + "</div>";
 }
 
 function transitionLabel(value, t) {
@@ -125,7 +160,7 @@ function acceptedLineageMarkup(selected, t, context = null) {
     </tr>`;
   }).join("");
   return `<section class="lineage-section lineage-lineage" ${testIdAttribute("lineage", "accepted")}>
-    <header class="lineage-section-heading"><div><span class="eyebrow">${esc(t("lineage.graph.eyebrow"))}</span><h3>${esc(t("lineage.graph.title"))}</h3><p>${esc(t("lineage.graph.summary"))}</p></div>${stateBadge("READ_ONLY", t, "graph", "state")}</header>
+    <header class="lineage-section-heading"><div><span class="eyebrow">${esc(t("lineage.graph.eyebrow"))}</span><h3>${esc(t("lineage.graph.title"))}</h3><p>${esc(t("lineage.graph.summary"))}</p></div><div class="lineage-heading-help">${stateBadge("READ_ONLY", t, "graph", "state")}${help(t, "accepted", "lineage.help.accepted.label", "lineage.help.accepted.body")}${help(t, "parent", "lineage.help.parent.label", "lineage.help.parent.body")}</div></header>
     ${pinned !== null ? `<p class="lineage-context-note" ${testIdAttribute("lineage", "historical", "pinned")}>${esc(t("lineage.historical.pinned", { generation: pinned }))}</p>` : ""}
     ${lineageTreeMarkup(selected, t, pinned)}
     ${tableWrap("accepted-table", t("lineage.graph.tableCaption"), [t("lineage.graph.column.generation"), t("lineage.graph.column.manifest"), t("lineage.graph.column.parent"), t("lineage.graph.column.transition"), t("lineage.graph.column.checkpoint")], rows, t)}
@@ -141,8 +176,8 @@ function dossierMarkup(node, t) {
   ];
   const rows = manifestFieldRows(node).map((field) => `<tr ${testIdAttribute("lineage", "manifest", "row", field.key)}><th scope="row" data-sticky="identity">${esc(t(`lineage.manifest.${field.key}`))}</th><td>${esc(field.value)}</td><td><code>${esc(field.sourceRef)}</code></td></tr>`).join("");
   return `<section class="lineage-section lineage-dossier" ${testIdAttribute("lineage", "dossier")}>
-    <header class="lineage-section-heading"><div><span class="eyebrow">${esc(t("lineage.dossier.eyebrow"))}</span><h3>${esc(t("lineage.dossier.title", { generation: node.generation }))}</h3><p>${esc(t("lineage.dossier.summary"))}</p></div>${stateBadge(node.transitionClass, t, "dossier", "state")}</header>
-    <dl class="lineage-dossier-facts">${primary.map(([key, value, code]) => `<div ${testIdAttribute("lineage", "dossier", "fact", key)}><dt>${esc(t(`lineage.dossier.${key}`))}</dt><dd>${code ? `<code>${esc(value)}</code>` : esc(value)}</dd></div>`).join("")}</dl>
+    <header class="lineage-section-heading"><div><span class="eyebrow">${esc(t("lineage.dossier.eyebrow"))}</span><h3>${esc(t("lineage.dossier.title", { generation: node.generation }))}</h3><p>${esc(t("lineage.dossier.summary"))}</p></div><div class="lineage-heading-help">${stateBadge(node.transitionClass, t, "dossier", "state")}${help(t, "transition", "lineage.help.transition.label", "lineage.help.transition.body")}${help(t, "custody", "lineage.help.custody.label", "lineage.help.custody.body")}</div></header>
+    <dl class="lineage-dossier-facts">${primary.map(([key, value, code]) => `<div ${testIdAttribute("lineage", "dossier", "fact", key)}><dt>${esc(t(`lineage.dossier.${key}`))}</dt><dd>${code ? exactCode(value, t) : esc(value)}</dd></div>`).join("")}</dl>
     <details class="ui-disclosure lineage-manifest-detail" ${testIdAttribute("lineage", "dossier", "manifest")}><summary ${testIdAttribute("lineage", "dossier", "manifest", "toggle")}>${esc(t("lineage.dossier.fields"))}</summary>
       ${tableWrap("manifest-table", t("lineage.dossier.fields"), [t("lineage.dossier.field"), t("lineage.dossier.value"), t("lineage.dossier.source")], rows, t)}
     </details>
@@ -167,7 +202,7 @@ function compareMarkup(t) {
     <td>${stateBadge(row.state, t, "capability", "state", slug(row.id))}</td><td>${esc(t("lineage.compare.source.capability"))}</td></tr>`).join("");
   const headers = [t("lineage.compare.column.dimension"), t("lineage.compare.column.before"), t("lineage.compare.column.after"), t("lineage.compare.column.state"), t("lineage.compare.column.source")];
   return `<section class="lineage-section lineage-compare" ${testIdAttribute("lineage", "compare")}>
-    <header class="lineage-section-heading"><div><span class="eyebrow">${esc(t("lineage.compare.eyebrow"))}</span><h3>${esc(t("lineage.compare.title"))}</h3><p>${esc(t("lineage.compare.summary"))}</p></div>${stateBadge(comparison.relation, t, "compare", "relation")}</header>
+    <header class="lineage-section-heading"><div><span class="eyebrow">${esc(t("lineage.compare.eyebrow"))}</span><h3>${esc(t("lineage.compare.title"))}</h3><p>${esc(t("lineage.compare.summary"))}</p></div><div class="lineage-heading-help">${stateBadge(comparison.relation, t, "compare", "relation")}${help(t, "comparison", "lineage.help.comparison.label", "lineage.help.comparison.body")}</div></header>
     <div class="lineage-compare-controls"><label>${esc(t("lineage.compare.from"))}<select class="lineage-select" data-lineage-before ${testIdAttribute("lineage", "compare", "before")}>${options}</select></label><label>${esc(t("lineage.compare.to"))}<select class="lineage-select" data-lineage-after ${testIdAttribute("lineage", "compare", "after")}>${options}</select></label></div>
     <p class="lineage-doctrine" ${testIdAttribute("lineage", "compare", "boundary")}>${esc(t(`lineage.compare.${comparison.interpretationKey}`))}</p>
     ${tableWrap("diff-table", t("lineage.compare.dimensionCaption"), headers, dimensionRows, t)}
@@ -176,13 +211,13 @@ function compareMarkup(t) {
 }
 
 function rejectedMarkup(t) {
-  return `<aside class="lineage-boundary lineage-rejected" ${testIdAttribute("lineage", "rejected", "boundary")}><header><div><span class="eyebrow">${esc(t("lineage.rejected.eyebrow"))}</span><h3>${esc(t("lineage.rejected.title"))}</h3><p>${esc(t("lineage.rejected.summary"))}</p></div>${stateBadge("REJECTED", t, "rejected", "state")}</header>
+  return `<aside class="lineage-boundary lineage-rejected" ${testIdAttribute("lineage", "rejected", "boundary")}><header><div><span class="eyebrow">${esc(t("lineage.rejected.eyebrow"))}</span><h3>${esc(t("lineage.rejected.title"))}</h3><p>${esc(t("lineage.rejected.summary"))}</p></div><div class="lineage-heading-help">${stateBadge("REJECTED", t, "rejected", "state")}${help(t, "rejected", "lineage.help.rejected.label", "lineage.help.rejected.body")}</div></header>
     <dl>${LINEAGE_FIXTURE.rejectedCandidates.map((candidate) => `<div data-test-id="${hook("rejected", "candidate", candidate.candidateId)}"><dt>${esc(t("lineage.rejected.candidate"))}</dt><dd><code>${esc(candidate.candidateId)}</code></dd><dt>${esc(t("lineage.rejected.reason"))}</dt><dd><code>${esc(candidate.reason)}</code></dd><dt>${esc(t("lineage.rejected.committed"))}</dt><dd>${esc(t("lineage.value.none"))}</dd></div>`).join("")}</dl>
   </aside>`;
 }
 
 function historicalUnavailableMarkup(context, t) {
-  return `<div class="lineage-view" ${testIdAttribute("lineage", "workspace")}><header class="lineage-heading" ${testIdAttribute("lineage", "heading")}><div><span class="eyebrow">${esc(t("lineage.eyebrow"))}</span><h2>${esc(t("lineage.title"))}</h2><p>${esc(t("lineage.summary"))}</p></div></header>
+  return `<div class="lineage-view" ${testIdAttribute("lineage", "workspace")}><header class="lineage-heading" ${testIdAttribute("lineage", "heading")}><div><span class="eyebrow">${esc(t("lineage.eyebrow"))}</span><h2>${esc(t("lineage.title"))}</h2><p>${esc(t("lineage.summary"))}</p></div>${help(t, "historical", "lineage.help.historical.label", "lineage.help.historical.body")}</header>
     <section class="lineage-boundary lineage-historical-unavailable" role="status" ${testIdAttribute("lineage", "historical", "unavailable")}><header><div><span class="eyebrow">${esc(t("lineage.historical.eyebrow"))}</span><h3>${esc(t("lineage.historical.title"))}</h3><p>${esc(t("lineage.historical.summary", { generation: context.generation }))}</p></div>${stateBadge("MISSING", t, "historical", "state")}</header><dl><dt>${esc(t("lineage.historical.requested"))}</dt><dd>${esc(context.generation)}</dd><dt>${esc(t("lineage.historical.record"))}</dt><dd>${esc(t("lineage.historical.none"))}</dd></dl></section>
   </div>`;
 }
@@ -196,15 +231,46 @@ export function renderLineageMarkup({ selectedIdentity = null, context = null, t
   const selected = resolveSelection(selectedIdentity, context);
   const markup = selected === null
     ? historicalUnavailableMarkup(context, t)
-    : `<div class="lineage-view" ${testIdAttribute("lineage", "workspace")}><header class="lineage-heading" ${testIdAttribute("lineage", "heading")}><div><span class="eyebrow">${esc(t("lineage.eyebrow"))}</span><h2>${esc(t("lineage.title"))}</h2><p>${esc(t("lineage.summary"))}</p></div></header>
+    : `<div class="lineage-view" ${testIdAttribute("lineage", "workspace")}><header class="lineage-heading" ${testIdAttribute("lineage", "heading")}><div><span class="eyebrow">${esc(t("lineage.eyebrow"))}</span><h2>${esc(t("lineage.title"))}</h2><p>${esc(t("lineage.summary"))}</p></div>${help(t, "historical", "lineage.help.historical.label", "lineage.help.historical.body")}</header>
       <aside class="lineage-fixture-notice" role="note" ${testIdAttribute("lineage", "fixture")}><strong>${esc(t(`lineage.fixture.${LINEAGE_FIXTURE_CONTRACT.posture}`))}</strong><p>${esc(t("lineage.fixture.description"))}</p></aside>
-      ${acceptedLineageMarkup(selected, t, context)}${dossierMarkup(selected, t)}${compareMarkup(t)}${rejectedMarkup(t)}
+      ${tabsMarkup(t)}
+      ${panelMarkup("generations", acceptedLineageMarkup(selected, t, context))}
+      ${panelMarkup("selected", dossierMarkup(selected, t))}
+      ${panelMarkup("comparison", compareMarkup(t))}
+      ${panelMarkup("rejected", rejectedMarkup(t))}
       <p class="lineage-authority" ${testIdAttribute("lineage", "authority")}><strong>${esc(t("lineage.boundary.label"))}:</strong> ${esc(t("lineage.boundary.detail"))}</p></div>`;
   assertUniqueTestIds(markup);
   return markup;
 }
 
 function bind(container, inspectGeneration, context) {
+  const tabs = [...container.querySelectorAll("[data-lineage-tab]")];
+  const activateTab = (id, focus = false) => {
+    if (!TABS.some(([candidate]) => candidate === id)) return;
+    ui.activeTab = id;
+    tabs.forEach((button) => {
+      const active = button.dataset.lineageTab === id;
+      button.setAttribute("aria-selected", String(active));
+      button.tabIndex = active ? 0 : -1;
+      if (active && focus) button.focus();
+    });
+    container.querySelectorAll("[data-lineage-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.lineagePanel !== id;
+    });
+  };
+  tabs.forEach((button, index) => {
+    button.addEventListener("click", () => activateTab(button.dataset.lineageTab));
+    button.addEventListener("keydown", (event) => {
+      const next = event.key === "ArrowRight" ? (index + 1) % tabs.length
+        : event.key === "ArrowLeft" ? (index - 1 + tabs.length) % tabs.length
+        : event.key === "Home" ? 0
+        : event.key === "End" ? tabs.length - 1
+        : null;
+      if (next === null) return;
+      event.preventDefault();
+      activateTab(tabs[next].dataset.lineageTab, true);
+    });
+  });
   container.querySelectorAll("[data-lineage-select]").forEach((button) => button.addEventListener("click", () => {
     const node = nodeByIdentity(button.dataset.lineageSelect);
     ui.selected = node.manifestSha256;

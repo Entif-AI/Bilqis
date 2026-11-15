@@ -143,7 +143,8 @@ def _admit_loaded_candidate_step(
         parent: CompleteStudent, identity: AcceptedGenerationIdentity, gradients=None, *,
         loss_bearing_target, gradient_execution=None, logical_batch_execution=None,
         training_batch=None, logical_batch_plan=None, teacher_hparams,
-        max_norm: float, candidate: CandidateTransaction | None = None) -> CandidateTransaction:
+        max_norm: float, candidate: CandidateTransaction | None = None,
+        execution_cache=None) -> CandidateTransaction:
     """Pass custody-verified state plus B11 execution truth to B09/B12.
 
     Raw gradients remain usable only for the no-loss no-op path. A loss-bearing
@@ -183,14 +184,16 @@ def _admit_loaded_candidate_step(
         parent_optimizer_step=identity.optimizer_step,
         topology_digest=identity.topology_digest,
         candidate_step_ordinal=candidate.update_steps + 1,
-        teacher_hparams=teacher_hparams, max_norm=max_norm)
+        teacher_hparams=teacher_hparams, max_norm=max_norm,
+        execution_cache=execution_cache)
 
 
 def admit_uninterrupted_candidate_step(
         run_dir: Path, parent: CompleteStudent, gradients=None, *,
         loss_bearing_target, gradient_execution=None, logical_batch_execution=None,
         training_batch=None, logical_batch_plan=None, teacher_hparams,
-        max_norm: float, candidate: CandidateTransaction | None = None) -> CandidateTransaction:
+        max_norm: float, candidate: CandidateTransaction | None = None,
+        execution_cache=None) -> CandidateTransaction:
     """Continue held state only after full current B13 custody authentication."""
     identity = _published_in_memory_identity(run_dir, parent)
     return _admit_loaded_candidate_step(
@@ -200,7 +203,8 @@ def admit_uninterrupted_candidate_step(
         logical_batch_execution=logical_batch_execution,
         training_batch=training_batch,
         logical_batch_plan=logical_batch_plan,
-        teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate)
+        teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
+        execution_cache=execution_cache)
 
 
 def admit_candidate_step(run_dir: Path, gradients=None, *,

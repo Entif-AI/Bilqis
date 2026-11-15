@@ -82,12 +82,16 @@ def current_rejections(run_dir, parent, cache):
         candidate_step = evidence.get("candidate_optimizer_step")
         retained_step = evidence.get("retained_optimizer_step")
         reason = evidence.get("retention_reason")
+        rejection_attempt_ordinal = evidence.get("rejection_attempt_ordinal")
         if (not isinstance(selected, str) or not selected
                 or not isinstance(visit_id, str) or not visit_id
                 or type(candidate_step) is not int
                 or candidate_step <= parent.retained_state.optimizer_step
                 or retained_step != parent.retained_state.optimizer_step
-                or not isinstance(reason, str) or not reason):
+                or not isinstance(reason, str) or not reason
+                or (rejection_attempt_ordinal is not None
+                    and (type(rejection_attempt_ordinal) is not int
+                         or rejection_attempt_ordinal < 1))):
             _invalid("BAMF_PRIORITY_REJECTION_EVIDENCE_INVALID")
         if receipt_sha256 in seen:
             continue

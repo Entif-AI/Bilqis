@@ -1,6 +1,7 @@
-import { controlClass } from "../foundation/primitives.mjs";
+import { contextHelpMarkup, controlClass } from "../foundation/primitives.mjs";
 import { t } from "../foundation/i18n.mjs";
 import { testIdAttribute } from "../foundation/test-hooks.mjs";
+import { temporalMarkup } from "../foundation/temporal.mjs";
 import { SECTIONS, RECORD_FAMILIES, escapeHtml as e, historyEntries, metricText } from "./model.mjs";
 
 const SECTION_DETAIL_KEYS = Object.freeze({
@@ -23,7 +24,11 @@ function metric(labelKey, id, value, total, score = false) {
     <small>${e(value?.origin ?? value?.state ?? t("capability.common.notMeasured"))}</small></dd></div>`;
 }
 
-function entryRow(entry, section, index) {
+function help(labelKey, bodyKey, id) {
+  return contextHelpMarkup({ label: t(labelKey), description: t(bodyKey), testId: id });
+}
+
+function entryRow(entry, section, index, fixture) {
   const values = entry.values ?? [];
   const refs = entry.refs ?? [];
   const entryHook = ["capability", "entry", section, index];
@@ -38,11 +43,13 @@ function entryRow(entry, section, index) {
     ${testIdAttribute("capability", "related", section, index)}>${e(t("capability.entry.openRelated", {
       kind: entry.related_kind, id: entry.related_id,
     }))}</button>` : "";
+  const observed = temporalMarkup({
+    unixSeconds: fixture ? null : entry.observed_at,
+    testId: `capability-entry-${section}-${index}-time`,
+  });
   return `<article class="dossier-entry" data-kind="${e(entry.kind)}" ${testIdAttribute(...entryHook)}>
     <header><div><span class="eyebrow">${e(entry.kind)}</span><h3>${e(entry.label)}</h3></div>
-      <span class="dossier-stamp">${e(t("capability.entry.context", {
-        generation: entry.generation, observedAt: entry.observed_at,
-      }))}</span></header>
+      <span class="dossier-stamp"><span>${e(t("capability.entry.generation", { generation: entry.generation }))}</span>${observed}</span></header>
     ${facts ? `<dl class="dossier-facts">${facts}</dl>` : ""}
     <details class="dossier-entry-evidence" ${testIdAttribute(...entryHook, "evidence")}>
       <summary ${testIdAttribute(...entryHook, "evidence", "toggle")}>${e(t("capability.entry.evidence", { count: refs.length }))}</summary>
@@ -58,7 +65,7 @@ function contextMarkup(state) {
     }))}</span>
     <strong>${e(t("capability.context.posture", {
       status: state.status, coverage: state.coverage ?? "UNKNOWN",
-    }))}</strong></div>`;
+    }))}</strong>${help("capability.help.identity.label", "capability.help.identity.body", "capability-help-identity")}</div>`;
 }
 
 function projectionMarkup(markers = []) {
@@ -95,9 +102,11 @@ export function renderDossier(state) {
     const entries = section === "history" ? historyEntries(d) : d.entries.filter((entry) => entry.section === section);
     return `<section id="dossier-${section}" class="dossier-section" tabindex="-1"
       aria-labelledby="dossier-${section}-heading" ${testIdAttribute("capability", "section", section)}>
-      <header><h2 id="dossier-${section}-heading">${e(t(`capability.section.${section}`))}</h2>
+      <header><div class="dossier-section-title"><h2 id="dossier-${section}-heading">${e(t(`capability.section.${section}`))}</h2>
+        ${section === "dependencies" ? help("capability.help.dependencies.label", "capability.help.dependencies.body", "capability-help-dependencies") : ""}
+        ${section === "history" ? help("capability.help.history.label", "capability.help.history.body", "capability-help-history") : ""}</div>
         <p>${e(t(SECTION_DETAIL_KEYS[section]))}</p></header>
-      ${entries.length ? entries.map((entry, index) => entryRow(entry, section, index)).join("") :
+      ${entries.length ? entries.map((entry, index) => entryRow(entry, section, index, state.fixture)).join("") :
         `<p class="dossier-section-empty" ${testIdAttribute("capability", "section", section, "empty")}>${e(t("capability.section.empty"))}</p>`}
     </section>`;
   }).join("");
@@ -108,7 +117,7 @@ export function renderDossier(state) {
       <div><span class="eyebrow">${e(t("capability.heading.eyebrow"))}</span>
         <h2 ${testIdAttribute("capability", "name")}>${e(d.name)}</h2>
         <code ${testIdAttribute("capability", "identity")}>${e(d.capability_id)}</code>
-        <p class="dossier-boundary">${e(t("capability.heading.boundary"))}</p></div>
+        <p class="dossier-boundary">${e(t("capability.heading.summary"))}</p></div>
       <dl class="dossier-posture">
         <div><dt>${e(t("capability.identity.current"))}</dt><dd>${e(status)}</dd></div>
         <div><dt>${e(t("capability.identity.qualification"))}</dt><dd>${e(metricText(d.qualification))}</dd></div>
@@ -116,14 +125,18 @@ export function renderDossier(state) {
         <div><dt>${e(t("capability.identity.provenance"))}</dt><dd>${e(`${d.meta?.authority ?? "UNKNOWN"} · ${d.meta?.coverage ?? "UNKNOWN"}`)}</dd></div>
       </dl>
     </header>
+    <div class="dossier-metrics-heading"><span>${e(t("capability.metrics.aria"))}</span>
+      ${help("capability.help.metrics.label", "capability.help.metrics.body", "capability-help-metrics")}</div>
     <dl class="dossier-metrics" aria-label="${e(t("capability.metrics.aria"))}" ${testIdAttribute("capability", "metrics")}>
       ${metrics.map(([labelKey, id, value, score]) => metric(labelKey, id, value, d.total, score)).join("")}
     </dl>
     <nav class="dossier-tabs" aria-label="${e(t("capability.section.navigation"))}" ${testIdAttribute("capability", "section", "nav")}>
       ${SECTIONS.map((section) => `<button type="button" class="${controlClass("peer-tab")}" data-section="${section}"
         ${testIdAttribute("capability", "section", "nav", section)}>${e(t(`capability.section.${section}`))}</button>`).join("")}
+      ${help("capability.help.navigation.label", "capability.help.navigation.body", "capability-help-navigation")}
     </nav>
     <div class="dossier-sections">${sections}</div>
+    <div class="dossier-provenance-heading">${help("capability.help.provenance.label", "capability.help.provenance.body", "capability-help-provenance")}</div>
     <details class="dossier-provenance" ${testIdAttribute("capability", "provenance")}>
       <summary>${e(t("capability.provenance.summary"))}</summary><pre>${e(JSON.stringify(d.meta, null, 2))}</pre>
     </details>

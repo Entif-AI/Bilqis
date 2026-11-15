@@ -19,11 +19,16 @@ from bilqis_mlx.learning.atlas_plasticity import (
     GroupEligibility, IdentityRowAge, PlasticityPolicy,
 )
 from bilqis_mlx.runtime.atlas_candidate_step import production_candidate_step
-from bilqis_mlx.runtime.atlas_model import BamfGradientExecution
+from bilqis_mlx.runtime.atlas_model import (
+    BamfGradientExecution, BamfMicrobatchGradientExecution,
+)
 from bilqis_mlx.runtime.atlas_optimizer import AdamWHyperparameters, AdamWStateTree
 from bilqis_mlx.runtime.atlas_resources import BatchPlan
 from bilqis_mlx.runtime.atlas_training_contracts import (
     BamfTrainingRow, _issue_training_batch,
+)
+from bilqis_mlx.runtime.c08_gradient_accumulation import (
+    accumulate_logical_batch_gradients,
 )
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.model_topology_v2 import (
@@ -180,6 +185,57 @@ class ProductionCandidateStepCustodyTests(unittest.TestCase):
             self.assertEqual(
                 caught.exception.context["reason"], "C08_LOGICAL_BATCH_PLAN_DRIFT")
             binder.assert_not_called()
+
+    def test_vectorized_logical_batch_reaches_one_native_adamw_update(self):
+        candidate = begin_candidate(self.parent)
+        patches = tuple(patch(path, return_value=DECLARED)
+                        for path in (*DIGEST_SHAPE, *CENSUS_SHAPE))
+        for item in patches:
+            item.start(); self.addCleanup(item.stop)
+        generation = execution_generation_digest(
+            self.parent.optimizer.parameters,
+            spec=ModelTopologySpecV2(), extents=self.extents)
+        rows = tuple(BamfTrainingRow(
+            None, None, None, SimpleNamespace(row_id=row_id, optimizer_step_seed=7))
+            for row_id in ("row:a", "row:b"))
+        batch = _issue_training_batch("4" * 64, generation, "5" * 64, "A.TEST", rows)
+        plan = BatchPlan(
+            groups=((0, 1),), logical_row_ids=("row:a", "row:b"),
+            microbatch_size=2, estimated_peak_bytes=100, resident_bytes=50,
+            optimizer_step_seed=7, generation_binding=generation,
+            topology_digest=ModelTopologySpecV2().digest,
+            memory_budget_digest="6" * 64, source_digest="7" * 64)
+        executions = tuple(SimpleNamespace(
+            output=SimpleNamespace(generation_binding=generation),
+            custody_run_id=self.parent.custody.run_id,
+            custody_generation=self.parent.custody.generation,
+            custody_manifest_sha256=self.parent.custody.manifest_sha256,
+            visible_identity_rows=((0, 0),), feedback_identity_rows=(),
+            feature_rows=(), local_slot_rows=(), dense_parameter_names=(BANK,),
+            semantic_denominator_identity_rows=(),
+            semantic_denominator_feature_rows=(), motif_reads=(),
+            role_read_feature_rows=(), training_authority=None) for _ in rows)
+        micro = object.__new__(BamfMicrobatchGradientExecution)
+        object.__setattr__(micro, "executions", executions)
+        object.__setattr__(micro, "gradients", {BANK: mx.ones((2, 2))})
+        object.__setattr__(micro, "mean_loss", mx.array(1.0))
+        with patch.object(BamfMicrobatchGradientExecution, "__post_init__", return_value=None):
+            logical = accumulate_logical_batch_gradients(
+                plan, lambda _index: self.fail("scalar fallback launched"),
+                execute_group=lambda _group: micro)
+        with patch(
+                "bilqis_mlx.runtime.atlas_execution_binder.require_bamf_loss_execution",
+                side_effect=lambda value: value), patch(
+                "bilqis_mlx.runtime.atlas_candidate_step.bind_logical_batch_training_authority",
+                return_value=None):
+            result = production_candidate_step(
+                candidate, loss_bearing_target=True,
+                logical_batch_execution=logical, training_batch=batch,
+                logical_batch_plan=plan, **self.step_kwargs())
+        self.assertEqual(result.update_steps, 1)
+        self.assertEqual(len(result.step_proofs), 1)
+        self.assertFalse(bool(mx.array_equal(
+            result.optimizer.parameters[BANK], self.parent.optimizer.parameters[BANK])))
 
 
 if __name__ == "__main__":

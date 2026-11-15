@@ -7,8 +7,8 @@ import {
   homeStatus,
   projectionFromPages,
   queryRequest,
-  referenceHomeProjection,
 } from "../../renderer/home/home-model.mjs";
+import { referenceHomeProjection } from "../../renderer/home/home-fixture.mjs";
 import { createHomeController } from "../../renderer/home/home-controller.mjs";
 import { renderHomeMarkup } from "../../renderer/home/home-view.mjs";
 import { collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
@@ -46,6 +46,9 @@ test("Home uses the governed five-state band and target overview regions", () =>
   }
   assert.match(markup, /Fixture evidence/);
   assert.match(markup, /School Snapshot/);
+  assert.match(markup, /class="home-school-table-wrap"[^>]*tabindex="0"[^>]*data-test-id="home-school-scroll"/);
+  assert.match(markup, /Observed · provisional/);
+  assert.match(markup, /Accepted capability snapshot/);
   assert.equal(model.learningStatus, "IMPROVING");
 });
 
@@ -90,6 +93,81 @@ test("fresh retained improvement is distinct and exact regression event retains 
   const gain = model.pulse.find((event) => event.kind === "gain");
   assert.equal(gain.target.kind, "episode");
   assert.match(gain.target.id, /^episode-record:/);
+});
+
+test("Home projection preserves exact source-backed observation times for current work and attention", () => {
+  const pages = Object.fromEntries(HOME_FAMILIES.map((family) => [family, emptyPage(family)]));
+  pages.episode = {
+    accepted: true, family: "episode", mode: "current", state: "PRESENT", coverage: "COMPLETE",
+    records: [{
+      schema_version: "bilqis.bamf.mission-control.learning-episode/v1",
+      meta: { record_id: "episode:active", observed_at: 1_799_000_100, materialized_at: 1_799_000_105 },
+      capability_id: "B.AND", state: "OPTIMIZING",
+    }],
+  };
+  pages.correction = {
+    accepted: true, family: "correction", mode: "current", state: "PRESENT", coverage: "COMPLETE",
+    records: [{
+      schema_version: "bilqis.bamf.mission-control.correction/v1",
+      meta: { record_id: "correction:1", observed_at: 1_799_000_200, materialized_at: 1_799_000_205 },
+      state: "REQUALIFICATION_REQUIRED",
+    }],
+  };
+  const model = projectionFromPages(pages, context);
+  assert.equal(model.currentWork.observedAt, 1_799_000_100);
+  assert.equal(model.currentWork.materializedAt, 1_799_000_105);
+  assert.equal(model.attention[0].observedAt, 1_799_000_200);
+  assert.equal(model.attention[0].materializedAt, 1_799_000_205);
+});
+
+test("Home pulse keeps observed and materialized time identities separate", () => {
+  const pages = Object.fromEntries(HOME_FAMILIES.map((family) => [family, emptyPage(family)]));
+  pages.episode = {
+    accepted: true, family: "episode", mode: "current", state: "PRESENT", coverage: "COMPLETE",
+    records: [{
+      schema_version: "bilqis.bamf.mission-control.candidate-decision/v1",
+      meta: { record_id: "decision:1", observed_at: null, materialized_at: 1_799_000_305 },
+      capability_id: "B.AND", outcome: "ACCEPTED", reason_code: "RETAINED",
+    }],
+  };
+  const model = projectionFromPages(pages, context);
+  assert.equal(model.pulse[0].observedAt, null);
+  assert.equal(model.pulse[0].materializedAt, 1_799_000_305);
+});
+
+test("Home fixtures never relabel generation coordinates as wall-clock time", () => {
+  const model = referenceHomeProjection();
+  assert.equal(model.pulse.every((event) => event.observedAt === null && event.materializedAt === null), true);
+  const markup = renderHomeMarkup(model);
+  assert.match(markup, /home-pulse-time-0[^>]*>Time unavailable<\/span>/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="4423[5-9]"/);
+});
+
+test("Home consumes shared contextual-help and temporal primitives without collapsing materialization time", () => {
+  const fixture = referenceHomeProjection();
+  const model = {
+    ...fixture,
+    currentWork: Object.freeze({ ...fixture.currentWork, observedAt: 1_799_000_100, materializedAt: 1_799_000_105 }),
+    attention: Object.freeze([{ ...fixture.attention[0], observedAt: 1_799_000_200, materializedAt: 1_799_000_205 }]),
+    pulse: Object.freeze([{ ...fixture.pulse[0], observedAt: 1_799_000_300, materializedAt: 1_799_000_305 }]),
+  };
+  const markup = renderHomeMarkup(model, { nowMs: 1_799_000_400_000, locale: "en-US" });
+  for (const id of ["status", "current", "attention", "pulse", "school", "health"]) {
+    assert.match(markup, new RegExp(`data-test-id="home-help-${id}-trigger"`));
+  }
+  assert.match(markup, /data-source-unix-seconds="1799000100"/);
+  assert.match(markup, /data-source-unix-seconds="1799000200"/);
+  assert.match(markup, /data-source-unix-seconds="1799000300"/);
+  assert.match(markup, />5 minutes ago</);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="1799000105"/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="1799000205"/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="1799000305"/);
+});
+
+test("Home does not repeat the shell-owned Mission Control destination heading", () => {
+  const markup = renderHomeMarkup(referenceHomeProjection());
+  assert.doesNotMatch(markup, /<h1\b/i);
+  assert.doesNotMatch(markup, />\s*Mission Control\s*</i);
 });
 
 test("attention queue contains actionable conditions rather than ordinary healthy telemetry", () => {

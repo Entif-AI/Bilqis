@@ -1,4 +1,4 @@
-import { compareStableRefs } from "./compare.mjs";
+import { compareProductionRefs } from "./compare-production.mjs";
 import { buildAppUri } from "./app-uri.mjs";
 import { objectRefFromElement } from "./dom-ref.mjs";
 import { t } from "../foundation/i18n.mjs";
@@ -38,6 +38,7 @@ export function createInteractionController({
   onCurrentLens,
   canUseCurrent,
   onOpenRef,
+  compareRefs = compareProductionRefs,
   copyText = async () => false,
   announce = () => {},
 }) {
@@ -61,7 +62,7 @@ export function createInteractionController({
     const state = getState();
     const ref = currentRef();
     const host = document.querySelector("#investigation-strip");
-    const comparison = compareStableRefs(interaction.compare.left, interaction.compare.right);
+    const comparison = compareRefs(interaction.compare.left, interaction.compare.right);
     host.innerHTML = renderInvestigationMarkup({
       state, interaction, metadata, currentRef: ref, comparison,
       currentAvailable: canUseCurrent(),

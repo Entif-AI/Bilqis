@@ -23,15 +23,23 @@ function ids(source, pattern) {
   return new Set(Array.from(source.matchAll(pattern), match => match[1]));
 }
 
+function browserJourneyFiles(directory = browserRoot) {
+  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const target = path.join(directory, entry.name);
+    if (entry.isDirectory()) return browserJourneyFiles(target);
+    return entry.name.endsWith(".mjs") || entry.name.endsWith(".cjs") ? [target] : [];
+  });
+}
+
 test("browser journeys select application UI only through stable test hooks", () => {
-  const files = readdirSync(browserRoot)
-    .filter(name => name.endsWith(".mjs") || name.endsWith(".cjs"));
+  const files = browserJourneyFiles();
   const bannedApis = /\.getBy(?:Role|Text|Title|Label|Placeholder|AltText|TestId)\s*\(/g;
   const contentSelectors = /\.filter\s*\(\s*\{\s*has(?:Text)?\s*:/g;
   const literalLocators = /\.locator\s*\(\s*(['"])(.*?)\1\s*\)/g;
 
-  for (const name of files) {
-    const source = readFileSync(path.join(browserRoot, name), "utf8");
+  for (const file of files) {
+    const name = path.relative(browserRoot, file);
+    const source = readFileSync(file, "utf8");
     assert.doesNotMatch(source, bannedApis, `${name} uses a content/ARIA selector`);
     assert.doesNotMatch(source, contentSelectors, `${name} filters a locator by rendered content`);
     for (const match of source.matchAll(literalLocators)) {

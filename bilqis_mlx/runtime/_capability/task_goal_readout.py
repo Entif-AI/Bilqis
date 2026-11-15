@@ -194,6 +194,7 @@ def b11_task_goal_proposer(
     authority: FactoryTaskAuthority,
     *,
     accepted_cache=None,
+    execution_binding=None,
 ):
     """Close C04's neural seam over one exact Factory-owned B11 source row."""
     if (type(compiled_batch) is not BamfCompiledBatch
@@ -233,6 +234,7 @@ def b11_task_goal_proposer(
         output = forward_bamf(
             parameters, owned_batch, routed_plan,
             ExecutionMode.INFERENCE, accepted_cache,
+            execution_binding=execution_binding,
         )
         return proposal_from_task_goal_output(authority.goal, request, output)
 

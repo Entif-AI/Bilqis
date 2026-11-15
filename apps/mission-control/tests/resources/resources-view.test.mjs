@@ -4,14 +4,17 @@ import { createResourceController } from "../../renderer/resources/resource-cont
 import {
   decomposition,
   historicalResourceQuery,
-  referenceResourceState,
   resourceProfileFromPage,
   resourceQuery,
 } from "../../renderer/resources/resource-model.mjs";
+import { referenceResourceState, RESOURCE_FIXTURE_MESSAGES } from "../../renderer/resources/resource-fixture-state.mjs";
+import { RESOURCE_MESSAGES } from "../../renderer/resources/resource-messages.mjs";
 import { renderResourceMarkup } from "../../renderer/resources/resource-view.mjs";
 import { createShellState, inspect, openSelectionOwner } from "../../renderer/shell-state.mjs";
 
 const context = Object.freeze({ runId: "fixture-run", generation: 44239, mode: "LIVE" });
+const renderFixture = (state = referenceResourceState(), options = {}) =>
+  renderResourceMarkup(state, { ...options, messages: RESOURCE_FIXTURE_MESSAGES });
 
 function datum(value, units, origin = "MEASURED") {
   return { state: "PRESENT", origin, value, units };
@@ -46,7 +49,7 @@ function fakeHost() {
 
 test("GUI15 fixture exposes literal budget, MLX, batching, density, and timing diagnostics", () => {
   const state = referenceResourceState();
-  const markup = renderResourceMarkup(state);
+  const markup = renderFixture(state);
   for (const label of [
     "Unified memory used", "MLX allocated", "MLX cache", "Disk reserve floor",
     "Accepted optimizer steps / h", "Compiled sequence density", "Compiled frame density",
@@ -56,7 +59,7 @@ test("GUI15 fixture exposes literal budget, MLX, batching, density, and timing d
   assert.match(markup, /34\.0 GiB/);
   assert.match(markup, /420 steps\/hour/);
   assert.match(markup, /73\.0%/);
-  assert.match(markup, /THROUGHPUT_ONLY|throughput is a resource fact/i);
+  assert.match(markup, /Throughput reports the accepted optimizer-step rate/);
 });
 
 test("decomposition reconciles measured categories and reports an explicit remainder", () => {
@@ -66,14 +69,38 @@ test("decomposition reconciles measured categories and reports an explicit remai
   assert.equal(totals.allocated, 40 * 1024 ** 3);
   assert.equal(totals.remainder, 8 * 1024 ** 3);
   assert.equal(totals.complete, false);
-  const markup = renderResourceMarkup(referenceResourceState());
+  const markup = renderFixture();
   assert.match(markup, /Unallocated \/ uninstrumented remainder/);
   assert.match(markup, /8\.0 GiB/);
-  assert.match(markup, /Unknown categories remain unknown rather than being forced to zero/);
+  assert.match(markup, /The remainder is memory outside the recorded categories/);
+});
+
+test("Resources uses one peer tab layer with shared help and recorded time", () => {
+  const markup = renderFixture();
+  assert.equal((markup.match(/role="tablist"/g) ?? []).length, 1);
+  assert.equal((markup.match(/role="tab"/g) ?? []).length, 4);
+  assert.match(markup, /aria-selected="true"[^>]*data-test-id="resources-tab-overview"/);
+  for (const id of ["value-types", "decomposition", "compute", "reserve", "length", "timeline", "comparison"]) {
+    assert.match(markup, new RegExp(`data-test-id="resources-help-${id}-trigger"`));
+  }
+  assert.match(markup, /data-source-unix-seconds="[^"]+"[^>]*data-test-id="resources-time-0"/);
+  assert.doesNotMatch(markup, /Observed at \(Unix seconds\)/);
+});
+
+test("production Resources keeps fixture strings outside the production message catalog", () => {
+  const profile = resourceProfileFromPage(page(), { runId: "run-7", generation: 7, mode: "LIVE" });
+  const markup = renderResourceMarkup({ current: profile, comparison: null, comparisonState: "EMPTY" });
+  assert.doesNotMatch(markup, /REFERENCE RESOURCE DATA|FIXTURE-BACKED|resource:fixture|44239/);
+  assert.equal(Object.hasOwn(RESOURCE_MESSAGES["en-US"], "resource.fixture"), false);
+});
+
+test("Resources owned copy is affirmative and avoids unsolicited negative-capability language", () => {
+  const markup = renderFixture();
+  assert.doesNotMatch(markup, /does not (?:prove|establish|imply|demonstrate|mean)|not evidence of|not measured peaks|not measurements|No generation is inferred/i);
 });
 
 test("configured limit, measured value, and estimate have distinct semantic presentation", () => {
-  const markup = renderResourceMarkup(referenceResourceState());
+  const markup = renderFixture();
   assert.match(markup, /data-resource-semantic="measured"/);
   assert.match(markup, /data-resource-semantic="configured-limit"/);
   assert.match(markup, /data-resource-semantic="estimate"/);
@@ -122,8 +149,8 @@ test("historical comparison binds only an explicit exact generation", () => {
   assert.equal(request.generation, 6);
   assert.throws(() => historicalResourceQuery(context, -1), /GUI15_HISTORICAL_GENERATION_REQUIRED/);
   assert.throws(() => historicalResourceQuery(context, 1.5), /GUI15_HISTORICAL_GENERATION_REQUIRED/);
-  const markup = renderResourceMarkup({ current: referenceResourceState().current, comparison: null, comparisonState: "EMPTY" });
-  assert.match(markup, /No generation is inferred/);
+  const markup = renderFixture({ current: referenceResourceState().current, comparison: null, comparisonState: "EMPTY" });
+  assert.match(markup, /Loads the exact generation through a read-only CP03 historical query/);
 });
 
 test("live GUI15 refreshes only for resource events and never opens a historical subscription", async () => {
@@ -190,8 +217,19 @@ test("resource query stays read-only and requests no mutation surface", () => {
     "as_of", "cursor", "family", "frontier_id", "generation", "limit", "mode",
     "record_id", "reference", "run_id", "schema", "schema_version",
   ].sort());
-  const markup = renderResourceMarkup(referenceResourceState());
+  const markup = renderFixture();
   assert.doesNotMatch(markup, /start training|change batch|apply budget|scale hardware/i);
+});
+
+test("missing observation time never borrows materialization time", () => {
+  const sample = record("resource:time-authority");
+  delete sample.meta.observed_at;
+  sample.meta.materialized_at = 999;
+  const profile = resourceProfileFromPage(page([sample]), context);
+  assert.equal(profile.timeline[0].observedAt, null);
+  const markup = renderResourceMarkup({ current: profile });
+  assert.match(markup, /Time unavailable/);
+  assert.doesNotMatch(markup, /data-source-unix-seconds="999"/);
 });
 
 test("resource identities route back to the Resources owner surface", () => {

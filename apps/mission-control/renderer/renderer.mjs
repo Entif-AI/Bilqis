@@ -14,6 +14,15 @@ import {
   applyDisplaySettings,
   loadDisplaySettings,
 } from "./settings.mjs";
+import {
+  applyShellPreferences,
+  constrainInspectorWidth,
+  INSPECTOR_MIN_WIDTH,
+  inspectorWidthForDestination,
+  loadShellPreferences,
+  saveShellPreferences,
+  withInspectorWidthPreference,
+} from "./shell-preferences.mjs";
 import { defensiveState } from "./foundation/defensive-state.mjs";
 import {
   renderChrome,
@@ -28,25 +37,42 @@ import {
 } from "./foundation/accessibility.mjs";
 import { createHomeController } from "./home/home-controller.mjs";
 import { createResourceController } from "./resources/resource-controller.mjs";
+import { createTeacherController } from "./teacher/teacher-controller.mjs";
+import { createSalienceController } from "./salience/salience-controller.mjs";
 import { createOperateController } from "./operate/operate-controller.mjs";
 import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
 import { createInteractionController } from "./interactions/controller.mjs";
+import { createProductionLearningController } from "./learning/controller.mjs";
 import { routeForObjectRef } from "./interactions/app-uri.mjs";
 import { withHistoricalLens } from "./interactions/model.mjs";
-import { createBootstrapController } from "./foundation/bootstrap-controller.mjs";
+import {
+  constrainRouteToLaunchMode,
+  createBootstrapController,
+} from "./foundation/bootstrap-controller.mjs";
 import { bindStaticInteractions } from "./foundation/static-interactions.mjs";
 import { t } from "./foundation/i18n.mjs";
+
+const launchMode = window.bamfMissionControl.launchMode === "fixtures" ? "fixtures" : "production";
+const fixtureSupport = launchMode === "fixtures"
+  ? await import("./fixture-support.mjs")
+  : null;
+const routeForLaunchMode = (route) => constrainRouteToLaunchMode(route, launchMode);
 
 let state = null;
 let verifiedLiveContext = null;
 let displaySettings;
+let shellPreferences;
+let lastRenderedView = null;
 let defense = defensiveState("loading");
 let bootstrapState = Object.freeze({ phase: "connecting", connection: null, error: null });
 let focusReturnToken = null;
 let paletteReturnToken = null;
-const homeController = createHomeController(window.bamfMissionControl);
-const resourceController = createResourceController(window.bamfMissionControl);
+const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
+const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
+const teacherController = createTeacherController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.teacher ?? null });
+const salienceController = createSalienceController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.salience ?? null });
+const learningController = createProductionLearningController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
   storage: window.localStorage,
@@ -61,7 +87,8 @@ const interactionController = createInteractionController({
     render();
   },
   canUseCurrent: () => Boolean(verifiedLiveContext),
-  onOpenRef: (ref) => { state = withRoute(state, routeForObjectRef(ref)); render(); },
+  onOpenRef: (ref) => { state = withRoute(state, routeForLaunchMode(routeForObjectRef(ref))); render(); },
+  compareRefs: fixtureSupport?.interactions?.compareRefs,
   copyText: async (value) => {
     if (!navigator.clipboard?.writeText) return false;
     try {
@@ -82,6 +109,7 @@ const frameShell = createFrameShell({
 });
 const { establishSnapshot } = createBootstrapController({
   api: window.bamfMissionControl,
+  launchMode,
   storage: window.localStorage,
   getState: () => state,
   setState: (next) => { state = next; },
@@ -96,12 +124,15 @@ const { establishSnapshot } = createBootstrapController({
 const capabilityExplorer = createCapabilityExplorer({
   host: document.querySelector("#domain-view"),
   serviceQuery: request => window.bamfMissionControl.querySnapshot(request),
+  launchMode,
+  fixtureSupport: fixtureSupport?.capability ?? null,
   changeLens: (lens, capabilityId) => {
     if (!state) return;
     state = {
       ...state,
       context: Object.freeze({
         ...state.context, ...lens,
+        fixture: launchMode === "fixtures",
         historicalPinned: lens.mode === "HISTORICAL",
         generationManifest: "UNKNOWN", topologyId: "UNKNOWN",
         factoryRelease: "UNKNOWN", semanticRelease: "UNKNOWN",
@@ -154,23 +185,44 @@ function announce(message) {
 }
 
 function render() {
+  const nextView = state?.view ?? null;
+  const primaryDestinationChanged = (
+    lastRenderedView !== null &&
+    nextView !== null &&
+    lastRenderedView !== nextView
+  );
   frameShell.beforeRender();
-  renderChrome(state, defense, displaySettings, {
+  renderChrome(state, defense, displaySettings, shellPreferences, {
     api: window.bamfMissionControl,
+    launchMode,
+    fixtureSupport,
     onEvidenceSelect: selectEvidenceRecord,
     onEvidenceReturn: returnEvidenceOrigin,
     onReconnect: () => establishSnapshot({ preserveRoute: true }),
     onNavigate: navigateTo,
     onInspect: openInspector,
   }, bootstrapState);
+  syncInspectorWidth();
   frameShell.afterRender();
   setHash();
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
-    capabilityExplorer, onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
+    teacherController, salienceController, capabilityExplorer, learningController, onInspect: openInspector,
+    onSelectionChange: syncDomainSelection,
+    onNavigate: navigateTo, onAnnounce: announce,
+    schoolDomainSupport: fixtureSupport?.school ?? null,
+    atlasDomainSupport: fixtureSupport?.atlas ?? null,
   });
+  if (primaryDestinationChanged) resetPrimaryScroll();
+  lastRenderedView = nextView;
   window.queueMicrotask(() => interactionController.render());
+}
+
+function resetPrimaryScroll() {
+  window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  const main = document.querySelector("#main-content");
+  if (main) main.scrollTop = 0;
 }
 
 function selectEvidenceRecord(selected) {
@@ -200,11 +252,20 @@ function openInspector(selected) {
   if (!state) return;
   focusReturnToken = focusToken(document.activeElement);
   state = inspect(state, selected);
+  syncInspectorWidth();
   renderInspector(state, defense);
   interactionController.render();
   setHash();
   window.queueMicrotask(() => document.querySelector("#inspector-close")?.focus());
   announce(t("shell.announce.inspectorOpened", { id: selected.id }));
+}
+
+function syncDomainSelection(selected) {
+  if (!state || !selected) return;
+  state = { ...state, selected };
+  if (state.inspectorOpen) renderInspector(state, defense);
+  interactionController.render();
+  setHash();
 }
 
 function closeInspector() {
@@ -217,21 +278,62 @@ function closeInspector() {
   announce(t("shell.announce.inspectorClosed"));
 }
 
+function inspectorMetrics() {
+  return {
+    viewportWidth: document.documentElement.clientWidth || window.innerWidth,
+    railWidth: document.querySelector(".rail")?.getBoundingClientRect?.().width ?? 0,
+  };
+}
+
+function syncInspectorWidth(requestedWidth = null, { persist = false } = {}) {
+  if (!shellPreferences) return null;
+  const destination = state?.view ?? "mission-control";
+  const preferred = requestedWidth ?? inspectorWidthForDestination(shellPreferences, destination);
+  const width = constrainInspectorWidth(preferred, inspectorMetrics());
+  document.documentElement.style.setProperty("--inspector-width", `${width}px`);
+  const splitter = document.querySelector("#inspector-splitter");
+  if (splitter) {
+    const maximum = constrainInspectorWidth(Number.MAX_SAFE_INTEGER, inspectorMetrics());
+    splitter.setAttribute("aria-valuemin", String(INSPECTOR_MIN_WIDTH));
+    splitter.setAttribute("aria-valuemax", String(maximum));
+    splitter.setAttribute("aria-valuenow", String(width));
+  }
+  if (requestedWidth !== null) {
+    shellPreferences = withInspectorWidthPreference(shellPreferences, destination, width);
+    if (persist) saveShellPreferences(window.localStorage, shellPreferences);
+  }
+  const open = Boolean(state?.inspectorOpen);
+  const narrowOverlay = open && window.matchMedia?.("(max-width: 980px)")?.matches === true;
+  const panel = document.querySelector("#inspector");
+  if (narrowOverlay) panel?.setAttribute("aria-modal", "true");
+  else panel?.removeAttribute("aria-modal");
+  for (const background of [
+    document.querySelector(".skip-link"),
+    document.querySelector(".rail"),
+    document.querySelector("#main-content"),
+  ]) {
+    if (background) background.inert = narrowOverlay;
+  }
+  if (splitter) {
+    splitter.setAttribute("aria-hidden", String(!open || narrowOverlay));
+    splitter.tabIndex = open && !narrowOverlay ? 0 : -1;
+  }
+  return width;
+}
+
 function openPalette() {
   const dialog = document.querySelector("#command-palette");
   paletteReturnToken = focusToken(document.activeElement);
-  renderPaletteOptions(state, navigateTo, (command) => {
-    if (command === "theme") document.querySelector("#theme-trigger")?.click();
-    if (command === "density") document.querySelector("#density-trigger")?.click();
-    dialog.close();
-  });
+  renderPaletteOptions(state, navigateTo);
   if (!dialog.open) dialog.showModal();
   window.queueMicrotask(() => dialog.querySelector("button:not(:disabled)")?.focus());
 }
 
 async function bootstrap() {
   displaySettings = loadDisplaySettings(window.localStorage);
+  shellPreferences = loadShellPreferences(window.localStorage);
   applyDisplaySettings(document.documentElement, displaySettings);
+  applyShellPreferences(document.documentElement, shellPreferences);
   bindStaticInteractions({
     document,
     window,
@@ -239,8 +341,11 @@ async function bootstrap() {
     setState: (next) => { state = next; },
     getDisplaySettings: () => displaySettings,
     setDisplaySettings: (next) => { displaySettings = next; },
+    getShellPreferences: () => shellPreferences,
+    setShellPreferences: (next) => { shellPreferences = next; },
     render,
     closeInspector,
+    resizeInspector: syncInspectorWidth,
     openPalette,
     interactionController,
   });

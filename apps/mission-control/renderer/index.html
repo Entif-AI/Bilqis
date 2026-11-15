@@ -31,13 +31,15 @@
       <aside class="rail" data-test-id="shell-rail">
         <div class="brand" data-test-id="shell-brand">
           <strong data-i18n="shell.brand"></strong>
+          <button id="rail-toggle" class="ui-control ui-control--tertiary" type="button"
+                  aria-controls="primary-nav" data-test-id="shell-rail-toggle">
+            <span aria-hidden="true">‹</span>
+          </button>
         </div>
-        <nav id="primary-nav" data-test-id="shell-navigation"></nav>
-        <button id="palette-trigger" class="utility-button ui-control ui-control--secondary" type="button"
-                aria-keyshortcuts="Control+K" data-i18n-aria-label="shell.command.triggerAria"
-                data-test-id="shell-command-trigger">
-          <span data-i18n="shell.command.trigger"></span><kbd>⌘K</kbd>
-        </button>
+        <span id="command-shortcut-hint" class="sr-only" data-i18n="shell.command.keyboardHint"
+              data-test-id="shell-command-shortcut-hint"></span>
+        <nav id="primary-nav" aria-keyshortcuts="Control+K Meta+K"
+             aria-describedby="command-shortcut-hint" data-test-id="shell-navigation"></nav>
       </aside>
 
       <main id="main-content" class="workspace" tabindex="-1" data-test-id="shell-main-content">
@@ -48,24 +50,30 @@
               <div><strong id="run-id"></strong><small id="generation-id" data-test-id="shell-generation-summary"></small></div>
             </div>
             <span id="freshness" class="freshness" data-test-id="shell-freshness"></span>
+            <span id="context-help-host" class="context-help-host"></span>
           </div>
           <div class="context-actions">
-            <details id="system-context-disclosure" class="context-disclosure" data-test-id="shell-system-context-disclosure">
-              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.system"></summary>
-              <div class="context-popover ui-surface ui-surface-2 ui-surface--bounded">
+            <details id="system-context-disclosure" name="shell-context-disclosure" class="context-disclosure" data-test-id="shell-system-context-disclosure">
+              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.system"
+                       data-test-id="shell-system-context-trigger"></summary>
+              <div class="context-popover ui-surface ui-surface-2 ui-surface--bounded"
+                   data-test-id="shell-system-context-popover">
                 <div id="context-facts" class="context-facts" data-i18n-aria-label="shell.context.systemAria"></div>
               </div>
             </details>
-            <details id="view-settings-disclosure" class="context-disclosure" data-test-id="shell-view-settings-disclosure">
-              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.viewSettings"></summary>
+            <details id="view-settings-disclosure" name="shell-context-disclosure" class="context-disclosure" data-test-id="shell-view-settings-disclosure">
+              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.viewSettings"
+                       data-test-id="shell-view-settings-trigger"></summary>
               <div class="context-popover context-settings ui-surface ui-surface-2 ui-surface--bounded"
-                   data-i18n-aria-label="shell.context.viewSettingsAria">
+                   data-i18n-aria-label="shell.context.viewSettingsAria"
+                   data-test-id="shell-view-settings-popover">
                 <button id="theme-trigger" class="ui-control ui-control--mode" type="button"
                         data-test-id="shell-theme-trigger"></button>
                 <button id="density-trigger" class="ui-control ui-control--mode" type="button"
                         data-test-id="shell-density-trigger"></button>
               </div>
             </details>
+            <span id="context-controls-help-host" class="context-help-host"></span>
           </div>
         </header>
 
@@ -96,10 +104,15 @@
         </section>
       </main>
 
+      <div id="inspector-splitter" class="inspector-splitter" role="separator" tabindex="-1"
+           aria-orientation="vertical" aria-controls="main-content inspector"
+           aria-valuemin="160" aria-valuemax="720" aria-valuenow="360"
+           data-i18n-aria-label="shell.inspector.resize" data-test-id="investigation-inspector-splitter"></div>
       <aside id="inspector" class="inspector" role="dialog" aria-labelledby="inspector-title" aria-hidden="true" inert
              data-test-id="investigation-inspector">
         <div class="inspector-heading">
           <div><span class="eyebrow" data-i18n="shell.inspector.eyebrow"></span><h2 id="inspector-title" data-test-id="investigation-inspector-title"></h2></div>
+          <span id="inspector-help-host" class="inspector-help-host"></span>
           <button id="inspector-close" type="button" data-i18n-aria-label="shell.inspector.close"
                   data-test-id="investigation-inspector-close">×</button>
         </div>

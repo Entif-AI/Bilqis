@@ -134,7 +134,8 @@ def select_accepted_priority_visit(
     if not isinstance(learning_settings, Settings):
         _invalid('BAMF_SALIENCE_CONTEXTUAL_SETTINGS_REQUIRED')
     qualified = requalify_priority(run_dir, source_context, parent, frontier, history,
-                                   planning, offers, program, school, epoch, now=now)
+                                   planning, offers, program, school, epoch, now=now,
+                                   planning_generation=planning_generation)
     by_id, evidence = dict(qualified.offers), dict(frontier.evidence)
     holds = list(qualified.holds)
     for option in qualified.ranked.ordered:
@@ -173,13 +174,18 @@ def select_accepted_priority_visit(
 def execute_accepted_priority_candidate(selection, source_context,
         atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
         optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
-        capture_diagnostics=False, candidate=None, finalize_candidate=True):
+        capture_diagnostics=False, candidate=None, finalize_candidate=True,
+        prepared_source_rows=None):
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
         return selection
     parent, cache = selection.offer.require_current_parent(source_context)
     _require_current_visit(parent, cache, selection.visit)
-    selection.offer.require_current(source_context, parent)
+    if prepared_source_rows is None:
+        selection.offer.require_current(source_context, parent)
+    else:
+        selection.offer.require_current(
+            source_context, parent, prepared_rows=prepared_source_rows)
     policy = selection.policy
     lr = policy.get('lr') if isinstance(policy, dict) else None
     if (type(teacher_hparams) is not AdamWHyperparameters or type(lr) not in (int, float)
@@ -187,7 +193,7 @@ def execute_accepted_priority_candidate(selection, source_context,
         _invalid('BAMF_PRIORITY_TEACHER_RATE_INVALID')
     hparams = replace(teacher_hparams, learning_rate=float(lr))
     offer = selection.offer
-    rows = offer.rows()
+    rows = offer.rows() if prepared_source_rows is None else tuple(prepared_source_rows)
     capability = offer.capability_id
     execution = source_context.release.execution_plan.capability_map[capability]
     delivery = describe_delivered_teaching(source_context.release, capability,
