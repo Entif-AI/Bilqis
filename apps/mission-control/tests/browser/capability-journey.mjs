@@ -13,8 +13,9 @@ async (page) => {
   await page.locator('#evidence-detail [data-record]').first().click();
   await page.getByText('"score_correct":', {exact:false}).last().waitFor();
   check((await page.locator('#evidence-detail').innerText()).includes('evidence:B.AND:fresh:3'), 'exact evidence');
-  await page.locator('[data-time-lens-form] input[name="generation"]').fill('1');
-  await page.locator('[data-time-lens-form] button[type="submit"]').click();
+  await page.locator('[data-test-id="investigation-time-toggle"]').click();
+  await page.locator('[data-test-id="investigation-time-generation"]').fill('1');
+  await page.locator('[data-test-id="investigation-time-apply"]').click();
   await page.getByRole('heading', {name:'Conjunction', exact:true}).waitFor();
   check(await page.locator('[data-kind="regression"]').count() === 0, 'no future regression at G1');
   check(await page.locator('[data-kind="recovery"]').count() === 0, 'no future recovery at G1');
