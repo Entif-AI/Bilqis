@@ -112,8 +112,38 @@ class _CacheEntry:
     cache_entry_sha256: str
 
 
-_LOCK = threading.RLock()
-_BY_RUN: dict[str, _CacheEntry] = {}
+class _ParentAssessmentCache:
+    def __init__(self):
+        self._lock = threading.RLock()
+        self._by_run: dict[str, _CacheEntry] = {}
+
+    def use(
+            self, identity: ParentAssessmentCacheIdentity, solver: CompleteSolver,
+            cohort: EvaluationCohort, generation: str,
+    ) -> tuple[Assessment, ParentAssessmentCacheReceipt]:
+        with self._lock:
+            current = self._by_run.get(identity.run_id)
+            if current is not None and current.identity == identity:
+                assessment = _require_assessment(
+                    current.assessment, cohort, generation)
+                if (_entry_digest(identity, assessment)
+                        != current.cache_entry_sha256):
+                    _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_DRIFT")
+                return assessment, _receipt(current, True)
+            assessment = _require_assessment(
+                evaluate_capabilities(solver, cohort, generation),
+                cohort, generation)
+            entry = _CacheEntry(
+                identity, assessment, _entry_digest(identity, assessment))
+            self._by_run[identity.run_id] = entry
+            return assessment, _receipt(entry, False)
+
+    def clear(self) -> None:
+        with self._lock:
+            self._by_run.clear()
+
+
+_CACHE = _ParentAssessmentCache()
 
 
 def _entry_digest(identity: ParentAssessmentCacheIdentity,
@@ -167,21 +197,7 @@ def use_parent_assessment(
     ):
         _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_INPUT_INVALID")
     identity.__post_init__()
-    with _LOCK:
-        current = _BY_RUN.get(identity.run_id)
-        if current is not None and current.identity == identity:
-            assessment = _require_assessment(
-                current.assessment, cohort, generation)
-            if _entry_digest(identity, assessment) != current.cache_entry_sha256:
-                _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_DRIFT")
-            return assessment, _receipt(current, True)
-        assessment = _require_assessment(
-            evaluate_capabilities(solver, cohort, generation),
-            cohort, generation)
-        entry = _CacheEntry(
-            identity, assessment, _entry_digest(identity, assessment))
-        _BY_RUN[identity.run_id] = entry
-        return assessment, _receipt(entry, False)
+    return _CACHE.use(identity, solver, cohort, generation)
 
 
 def factory_parent_assessment_identity(
@@ -234,8 +250,7 @@ def factory_parent_assessment_identity(
 
 def clear_parent_assessment_cache() -> None:
     """Test/recovery hook; production invalidation normally occurs by identity."""
-    with _LOCK:
-        _BY_RUN.clear()
+    _CACHE.clear()
 
 
 __all__ = (

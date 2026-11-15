@@ -153,6 +153,53 @@ def prepare_exam(
         candidate_measured, candidate_guesses)
 
 
+def _routine_assessment(s, measured):
+    return _curriculum_scheduler.Assessment(
+        checkpoint_sha256=s.school.current_student.sha256,
+        optimizer_step=s.school.current_student.optimizer_step,
+        course_digest=s.program.digest(),
+        rubric_digest=s.rubric,
+        scores={
+            cap: _curriculum_scheduler.Score(**entry)
+            for cap, entry in measured["scores"].items()
+        },
+        evaluation_id=(
+            "source-oracled-routine-cohort/" + s.routine_cohort.digest + "/" +
+            s.school.current_student.sha256))
+
+
+def _routine_last_exam(s, measured, assessment):
+    return {
+        **s.routine_pointer,
+        "assessment_grade": s.school.grade,
+        "grade_exam_epoch": s.school.grade_exam_epoch,
+        "exam_plane": "ROUTINE",
+        "grade_test_lifecycle": _bilqis_mlx_generated_assessment.ROUTINE_EVAL_LIFECYCLE,
+        "assessment_scope_sha256": _assessment_scope_sha256(
+            s.full_scope, {cap: None for cap in s.active_scope}),
+        "evaluation_id": assessment.evaluation_id,
+        "exam_rubric_sha256": assessment.rubric_digest,
+        "cohort_sha256": s.routine_cohort.digest,
+        "cohort_file": s.routine_file,
+        "cohort_seed": s.routine_cohort.seed,
+        "generator_version": s.generator,
+        "misses_for_teacher": list(measured["misses_for_teacher"]),
+        "student_sha256": assessment.checkpoint_sha256,
+        "optimizer_step": assessment.optimizer_step,
+        "scores": measured["scores"],
+    }
+
+
+def _routine_advanced(s, assessment, scheduler_only):
+    return (
+        _curriculum_scheduler.assess_withheld(
+            s.program, s.school, assessment, s.blocked_before)
+        if s.blocked_before else
+        _curriculum_scheduler.assess_flash(s.program, s.school, assessment)
+        if scheduler_only else
+        _curriculum_scheduler.assess(s.program, s.school, assessment))
+
+
 def run_routine(
         mx, run_dir, setup, graph, parameters, *, scheduler_only,
         session_elapsed_seconds):
@@ -172,44 +219,9 @@ def run_routine(
     parent_scores, parent_issue = _score_parent_for_paired_s3(
         mx, run_dir, s.receipt, s.parent_checkpoint, s.routine_cohort, graph,
         measured["scores"])
-    assessment = _curriculum_scheduler.Assessment(
-        checkpoint_sha256=s.school.current_student.sha256,
-        optimizer_step=s.school.current_student.optimizer_step,
-        course_digest=s.program.digest(),
-        rubric_digest=s.rubric,
-        scores={
-            cap: _curriculum_scheduler.Score(**entry)
-            for cap, entry in measured["scores"].items()
-        },
-        evaluation_id=(
-            "source-oracled-routine-cohort/" + s.routine_cohort.digest + "/" +
-            s.school.current_student.sha256))
-    advanced = (
-        _curriculum_scheduler.assess_withheld(
-            s.program, s.school, assessment, s.blocked_before)
-        if s.blocked_before else
-        _curriculum_scheduler.assess_flash(s.program, s.school, assessment)
-        if scheduler_only else
-        _curriculum_scheduler.assess(s.program, s.school, assessment))
-    last_exam = {
-        **s.routine_pointer,
-        "assessment_grade": s.school.grade,
-        "grade_exam_epoch": s.school.grade_exam_epoch,
-        "exam_plane": "ROUTINE",
-        "grade_test_lifecycle": _bilqis_mlx_generated_assessment.ROUTINE_EVAL_LIFECYCLE,
-        "assessment_scope_sha256": _assessment_scope_sha256(
-            s.full_scope, {cap: None for cap in s.active_scope}),
-        "evaluation_id": assessment.evaluation_id,
-        "exam_rubric_sha256": assessment.rubric_digest,
-        "cohort_sha256": s.routine_cohort.digest,
-        "cohort_file": s.routine_file,
-        "cohort_seed": s.routine_cohort.seed,
-        "generator_version": s.generator,
-        "misses_for_teacher": list(measured["misses_for_teacher"]),
-        "student_sha256": assessment.checkpoint_sha256,
-        "optimizer_step": assessment.optimizer_step,
-        "scores": measured["scores"],
-    }
+    assessment = _routine_assessment(s, measured)
+    advanced = _routine_advanced(s, assessment, scheduler_only)
+    last_exam = _routine_last_exam(s, measured, assessment)
     _runtime_checkpoints._notify_viewer({
         "_runtime_phase": "DIAGNOSTICS", "_dashboard_redraw": True})
     warnings = _diagnostics_exam_events.summarize_completed_exam_safely(

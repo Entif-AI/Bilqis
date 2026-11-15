@@ -120,12 +120,8 @@ def _fixed_evidence_digest(
     })
 
 
-def _evaluate_fixed_school(
-        parent_solver, candidate_solver, target_capability, policy, fixed,
-        parent_generation, candidate_generation, evidence_digest,
-        parent_assessment=None):
+def _fixed_capability_order(target_capability, policy, fixed):
     target_group = dict(policy.capability_groups)[target_capability]
-    groups = dict(fixed.capability_groups)
     references = dict(policy.protected_reference_losses)
     same_grade = tuple(
         capability for capability, group in fixed.capability_groups
@@ -138,8 +134,10 @@ def _evaluate_fixed_school(
     remaining = tuple(
         capability for capability, _group in fixed.capability_groups
         if capability not in same_grade and capability not in other_protected)
-    capability_order = (*same_grade, *other_protected, *remaining)
+    return target_group, references, (*same_grade, *other_protected, *remaining)
 
+
+def _parent_case_index(parent_solver, fixed, parent_generation, parent_assessment):
     if parent_assessment is None:
         parent_assessment = evaluate_capabilities(
             parent_solver, fixed, parent_generation)
@@ -147,12 +145,59 @@ def _evaluate_fixed_school(
             or parent_assessment.cohort != fixed
             or parent_assessment.generation_digest != parent_generation):
         _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_DRIFT")
-    parent_by_case = {
+    return {
         case.case_id: (result, contract)
         for case, result, contract in zip(
             fixed.cases, parent_assessment.results,
             parent_assessment.solver_contracts)
     }
+
+
+def _final_fixed_school_decision(
+        target_group, policy, fixed, parent_generation, candidate_generation,
+        evidence_digest, pair_digests, parent_results, parent_contracts,
+        candidate_results, candidate_contracts):
+    parent_assessment = Assessment(
+        fixed, parent_generation,
+        tuple(parent_results[case.case_id] for case in fixed.cases),
+        tuple(parent_contracts[case.case_id] for case in fixed.cases))
+    candidate_assessment = Assessment(
+        fixed, candidate_generation,
+        tuple(candidate_results[case.case_id] for case in fixed.cases),
+        tuple(candidate_contracts[case.case_id] for case in fixed.cases))
+    fixed_pair = AssessmentPair(parent_assessment, candidate_assessment)
+    census = dict(policy.capability_groups)
+
+    def net(capabilities):
+        return sum(fixed_pair.delta(capability) for capability in capabilities)
+
+    lesson = tuple(capability for capability, group in census.items()
+                   if group == target_group)
+    reason = retention_reason(
+        no_target_gain=False, same_grade_net_gain=0,
+        fixed_grade_regression=net(lesson) < 0,
+        active_grade_regression=any(
+            net(tuple(capability for capability, group in census.items()
+                      if group == protected)) < 0
+            for protected in policy.protected_groups),
+        whole_school_regression=net(tuple(census)) < 0,
+        frontier_measured=True, fragile_losses=False, exceeded=False)
+    return Decision(
+        DecisionStatus.ELIGIBLE if reason == "PAIRED_SCREEN_WITHIN_BUDGET"
+        else DecisionStatus.REJECT,
+        reason, parent_generation, candidate_generation,
+        evidence_digest(pair_digests, None), policy.digest())
+
+
+def _evaluate_fixed_school(
+        parent_solver, candidate_solver, target_capability, policy, fixed,
+        parent_generation, candidate_generation, evidence_digest,
+        parent_assessment=None):
+    target_group, references, capability_order = _fixed_capability_order(
+        target_capability, policy, fixed)
+    groups = dict(fixed.capability_groups)
+    parent_by_case = _parent_case_index(
+        parent_solver, fixed, parent_generation, parent_assessment)
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
@@ -191,36 +236,10 @@ def _evaluate_fixed_school(
                 evidence_digest(pair_digests, capability), policy.digest(),
                 blocking_capability=capability)
 
-    parent_assessment = Assessment(
-        fixed, parent_generation,
-        tuple(parent_results[case.case_id] for case in fixed.cases),
-        tuple(parent_contracts[case.case_id] for case in fixed.cases))
-    candidate_assessment = Assessment(
-        fixed, candidate_generation,
-        tuple(candidate_results[case.case_id] for case in fixed.cases),
-        tuple(candidate_contracts[case.case_id] for case in fixed.cases))
-    fixed_pair = AssessmentPair(parent_assessment, candidate_assessment)
-    census = dict(policy.capability_groups)
-
-    def net(capabilities):
-        return sum(fixed_pair.delta(capability) for capability in capabilities)
-
-    lesson = tuple(capability for capability, group in census.items()
-                   if group == target_group)
-    reason = retention_reason(
-        no_target_gain=False, same_grade_net_gain=0,
-        fixed_grade_regression=net(lesson) < 0,
-        active_grade_regression=any(
-            net(tuple(capability for capability, group in census.items()
-                      if group == protected)) < 0
-            for protected in policy.protected_groups),
-        whole_school_regression=net(tuple(census)) < 0,
-        frontier_measured=True, fragile_losses=False, exceeded=False)
-    return Decision(
-        DecisionStatus.ELIGIBLE if reason == "PAIRED_SCREEN_WITHIN_BUDGET"
-        else DecisionStatus.REJECT,
-        reason, parent_generation, candidate_generation,
-        evidence_digest(pair_digests, None), policy.digest())
+    return _final_fixed_school_decision(
+        target_group, policy, fixed, parent_generation, candidate_generation,
+        evidence_digest, pair_digests, parent_results, parent_contracts,
+        candidate_results, candidate_contracts)
 
 
 def evaluate_foundation_retention_candidate(
