@@ -10,7 +10,7 @@ import {
   HISTORICAL_TOPOLOGY,
   INSTRUMENTATION_STATES,
   REFINEMENT_RECEIPTS,
-} from "../../renderer/neural/neural-fixture.mjs";
+} from "../../../renderer/neural/neural-fixture.mjs";
 import {
   ccgqaEvidenceState,
   depthWeightRows,
@@ -18,13 +18,13 @@ import {
   refinementCostSummary,
   refinementHistogram,
   topologyPath,
-} from "../../renderer/neural/neural-model.mjs";
-import { renderNeuralMarkup } from "../../renderer/neural/neural-view.mjs";
-import { duplicateTestIds } from "../../renderer/foundation/test-hooks.mjs";
+} from "../../../renderer/neural/neural-model.mjs";
+import { renderNeuralMarkup } from "../../../renderer/neural/neural-view.mjs";
+import { duplicateTestIds } from "../../../renderer/foundation/test-hooks.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const repoRoot = path.resolve(here, "../../../..");
-const rendererRoot = path.resolve(here, "../../renderer");
+const repoRoot = path.resolve(here, "../../../../..");
+const rendererRoot = path.resolve(here, "../../../renderer");
 
 test("current topology fixture matches exact BAMF v2 production geometry", () => {
   const source = fs.readFileSync(

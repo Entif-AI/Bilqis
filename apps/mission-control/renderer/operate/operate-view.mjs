@@ -37,7 +37,7 @@ function stageHeader(stepKey, eyebrowKey, title, state = null, hook = "stage") {
 function actionCatalog(state) {
   return `<section class="operate-catalog" aria-labelledby="operate-catalog-title" ${testIdAttribute("operate", "catalog")}>
     <header><h3 id="operate-catalog-title">${esc(t("operate.catalog.title"))}</h3><p>${esc(t("operate.catalog.summary"))}</p></header>
-    <div class="operate-action-list" role="list">
+    <div class="operate-action-list">
       ${OPERATE_ACTIONS.map((item) => {
         const posture = !item.supported ? "unavailable" : item.mutation ? "authorization" : "read-only";
         return `<button type="button" class="${controlClass(item.mutation ? "mutate" : "secondary")} operate-action"

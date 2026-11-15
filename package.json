@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "mission-control": "electron apps/mission-control/main.cjs",
-    "mission-control:test": "node --test apps/mission-control/tests/*.test.mjs apps/mission-control/tests/domains/*.test.mjs apps/mission-control/tests/resources/*.test.mjs apps/mission-control/tests/operate/*.test.mjs",
+    "mission-control:test": "node --test apps/mission-control/tests/*.test.mjs apps/mission-control/tests/domains/*.test.mjs apps/mission-control/tests/domains/*/*.test.mjs apps/mission-control/tests/resources/*.test.mjs apps/mission-control/tests/operate/*.test.mjs",
     "abi:verify": "python3 -B scripts/check_historical_abi.py",
     "backup:copy": "python3 -m bilqis_mlx.backup copy",
     "backup:plan": "python3 -m bilqis_mlx.backup plan",

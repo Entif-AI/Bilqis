@@ -8,7 +8,7 @@ import {
   loadRecordById,
   loadRecordLinks,
   mergeEvidencePages,
-} from "../../renderer/evidence/evidence-query.mjs";
+} from "../../../renderer/evidence/evidence-query.mjs";
 
 const context = Object.freeze({ mode: "LIVE", runId: "run-7", generation: 7 });
 const historical = Object.freeze({ mode: "HISTORICAL", runId: "run-7", generation: 6 });

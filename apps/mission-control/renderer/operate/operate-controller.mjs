@@ -206,8 +206,6 @@ export function createOperateController(api) {
     onAnnounce = options.onAnnounce;
     active = true;
     if (typeof document !== "undefined") {
-      document.querySelector("#domain-context-boundary").hidden = true;
-      document.querySelector("#visual-catalog").hidden = true;
       document.querySelector("#view-summary").textContent = t("shell.destination.operate.purpose");
     }
     if (changed) state = initialOperateState();

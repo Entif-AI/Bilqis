@@ -16,13 +16,9 @@ export function renderCurrentView(
   state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn, bootstrap = null,
 ) {
   const domain = document.querySelector("#domain-view");
-  const fixture = document.querySelector("#domain-context-boundary");
-  const catalog = document.querySelector("#visual-catalog");
   const summary = document.querySelector("#view-summary");
   document.querySelector("#shell").dataset.view = state?.view ?? "mission-control";
   if (!state) {
-    fixture.hidden = true;
-    catalog.hidden = true;
     domain.hidden = false;
     const connection = bootstrap?.connection ?? null;
     const serviceState = connection?.serviceReady
@@ -58,12 +54,10 @@ export function renderCurrentView(
   }
   if (state.view === "school") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.school.purpose");
     if (state.context.mode === "HISTORICAL") {
-      domain.innerHTML = `<section class="fixture-card"><span class="eyebrow">Historical School lens</span><h2>UNAVAILABLE</h2>
-        <p>The checked-in School matrix has no exact snapshot for generation ${state.context.generation}. The global historical lens remains unchanged.</p></section>`;
+      domain.innerHTML = `<section class="fixture-card" data-test-id="school-historical-unavailable"><span class="eyebrow">${esc(t("shell.school.historical.eyebrow"))}</span><h2>${esc(t("shell.school.historical.title"))}</h2>
+        <p>${esc(t("shell.school.historical.summary", { generation: state.context.generation }))}</p></section>`;
       return;
     }
     renderSchoolView(domain, (id, row, neighborhood) => onInspect({
@@ -92,34 +86,25 @@ export function renderCurrentView(
   }
   if (state.view === "mission-control") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.mission-control.purpose");
     return;
   }
   if (state.view === "atlas") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.atlas.purpose");
     return;
   }
   if (state.view === "capability") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.capability.purpose");
     return;
   }
   if (state.view === "model") {
     domain.hidden = state.modelSection === "frames";
     if (state.modelSection === "frames") {
-      fixture.hidden = true; catalog.hidden = true;
       summary.textContent = t("shell.destination.model.framesPurpose");
       return;
     }
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.model.purpose");
     renderNeuralView(domain, (id, kind) => onInspect({
       kind: "neural",
@@ -133,8 +118,6 @@ export function renderCurrentView(
   }
   if (state.view === "learning") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("learning.currentView.summary");
     renderEpisodesView(domain, (id, kind) => onInspect({
       kind: "evidence",
@@ -160,8 +143,6 @@ export function renderCurrentView(
   }
   if (state.view === "memory") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.memory.purpose");
     renderMemoryView(domain, (id, slot) => onInspect({
       kind: "memory",
@@ -189,8 +170,6 @@ export function renderCurrentView(
   }
   if (state.view === "teacher") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.teacher.purpose");
     renderTeacherView(domain, (id, strategy, relations) => onInspect({
       kind: "strategy",
@@ -211,8 +190,6 @@ export function renderCurrentView(
   }
   if (state.view === "corrections") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = correctionsT("corrections.summary");
     renderCorrectionsView(domain, (id, node) => onInspect({
       kind: "correction", id, fixtureBacked: true,
@@ -234,8 +211,6 @@ export function renderCurrentView(
   }
   if (state.view === "salience") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.salience.purpose");
     renderSalienceView(domain, (id, details) => onInspect({
       kind: "salience-observation",
@@ -246,8 +221,6 @@ export function renderCurrentView(
   }
   if (state.view === "lineage") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.lineage.purpose");
     renderLineageView(domain, (id, node) => onInspect({
       kind: "generation",
@@ -268,8 +241,6 @@ export function renderCurrentView(
   }
   if (state.view === "evidence") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = evidenceT("evidence.summary");
     renderEvidenceView(
       domain, api, state.context, state.selected, onEvidenceSelect,
@@ -279,17 +250,15 @@ export function renderCurrentView(
   }
   if (state.view === "resources") {
     domain.hidden = false;
-    fixture.hidden = true;
-    catalog.hidden = true;
     summary.textContent = t("shell.destination.resources.purpose");
     return;
   }
-  fixture.hidden = false;
-  catalog.hidden = false;
-  domain.hidden = true;
+  if (state.view === "operate") {
+    domain.hidden = false;
+    summary.textContent = t("shell.destination.operate.purpose");
+    return;
+  }
+  domain.hidden = false;
   domain.innerHTML = "";
-  summary.textContent = defense.historical
-    ? t("shell.destination.fallback.historical")
-    : t("shell.destination.fallback.ready");
-  catalog.innerHTML = renderComponentCatalog();
+  summary.textContent = t("shell.destination.fallback.ready");
 }

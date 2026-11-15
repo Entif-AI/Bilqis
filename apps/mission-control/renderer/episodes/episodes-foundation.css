@@ -1,0 +1,230 @@
+.episodes-view {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: 0;
+}
+
+.episodes-view > * {
+  min-width: 0;
+}
+
+.episodes-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-5);
+  align-items: end;
+}
+
+.episodes-heading h2 {
+  margin: 5px 0 0;
+  font-size: var(--type-section);
+}
+
+.episodes-heading p {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.episodes-fixture-notice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-left: 3px solid var(--attention);
+  background: var(--surface-1);
+}
+
+.episodes-fixture-notice strong {
+  white-space: nowrap;
+  font-size: var(--type-label);
+}
+
+.episodes-fixture-notice span {
+  color: var(--text-muted);
+}
+
+.episode-picker {
+  display: grid;
+  grid-template-columns: minmax(180px, 260px) minmax(280px, 1fr);
+  align-items: end;
+  gap: var(--space-4);
+}
+
+.episode-picker label {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.episode-picker label > span {
+  font-weight: 650;
+}
+
+.episode-picker label > small {
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.episode-picker select,
+.episode-inspect-candidate,
+.episode-stage button,
+.episode-evidence button {
+  min-height: var(--control-height);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.episode-picker select {
+  width: 100%;
+  padding: 0 var(--space-3);
+  font: inherit;
+}
+
+.episode-picker select:focus-visible,
+.episode-inspect-candidate:focus-visible,
+.episode-stage button:focus-visible,
+.episode-evidence button:focus-visible,
+.episode-custody summary:focus-visible,
+.episode-evidence-disclosure summary:focus-visible,
+.episode-diff-wrap:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.episode-summary {
+  padding: var(--space-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-1);
+}
+
+.episode-summary-heading,
+.episode-section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.episode-summary-heading h3,
+.episode-section-heading h3 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-section);
+}
+
+.episode-summary-heading p,
+.episode-section-heading p {
+  max-width: 720px;
+  margin: var(--space-2) 0 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.episode-summary-capability {
+  font-size: var(--type-body-lg);
+  letter-spacing: -0.01em;
+}
+
+.episode-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--type-label);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.episode-state[data-state="retained"],
+.episode-state[data-state="present"],
+.episode-state[data-state="measured"] {
+  color: var(--healthy);
+  border-style: double;
+}
+
+.episode-state[data-state="rejected"],
+.episode-state[data-state="invalid"] {
+  color: var(--invalid);
+  border-width: 2px;
+}
+
+.episode-state[data-state="unknown"],
+.episode-state[data-state="pending"],
+.episode-state[data-state="partial"] {
+  color: var(--attention);
+  border-style: dashed;
+}
+
+.episode-state[data-state="missing"],
+.episode-state[data-state="unavailable"] {
+  color: var(--text-muted);
+  border-style: dotted;
+}
+
+.episode-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(210px, .8fr) minmax(260px, 1.2fr) minmax(230px, 1fr);
+  gap: var(--space-5);
+  margin-top: var(--space-5);
+}
+
+.episode-summary dl,
+.episode-resource-posture dl,
+.episode-custody dl,
+.episode-transition {
+  margin: 0;
+}
+
+.episode-summary dl > div,
+.episode-resource-posture dl > div,
+.episode-custody dl > div {
+  display: grid;
+  gap: 3px;
+}
+
+.episode-summary-primary,
+.episode-summary-secondary,
+.episode-resource-posture dl {
+  display: grid;
+  align-content: start;
+  gap: var(--space-3);
+}
+
+.episode-summary dt,
+.episode-resource-posture dt,
+.episode-custody dt,
+.episode-transition dt {
+  color: var(--text-muted);
+  font-size: var(--type-label);
+}
+
+.episode-summary dd,
+.episode-resource-posture dd,
+.episode-custody dd,
+.episode-transition dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.episode-summary-primary dd {
+  font-variant-numeric: tabular-nums;
+}
+
+.episode-subheading {
+  display: block;
+  margin-bottom: var(--space-3);
+  font-size: var(--type-label);
+  font-weight: 700;
+}
+
+.machine-value,
+.episode-evidence code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--type-label);
+}

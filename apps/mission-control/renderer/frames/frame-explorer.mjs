@@ -22,7 +22,7 @@ export function renderPackingMetrics(examples, label, hook = "metrics") {
 }
 
 export function renderFrameExample(example, frontier) {
-  const identity = `<details class="frame-disclosure" ${testIdAttribute("model", "frame", "receipt", "provenance")}><summary>${esc(t("model.frame.receiptProvenance", { version: example.compiler?.version ?? unavailable() }))}</summary><dl class="frame-identity">${pair(t("model.frame.receipt"), example.receiptId)}${pair(t("model.neural.frame"), example.frameId)}
+  const identity = `<details class="frame-disclosure" ${testIdAttribute("model", "frame", "receipt", "provenance")}><summary ${testIdAttribute("model", "frame", "receipt", "provenance", "toggle")}>${esc(t("model.frame.receiptProvenance", { version: example.compiler?.version ?? unavailable() }))}</summary><dl class="frame-identity">${pair(t("model.frame.receipt"), example.receiptId)}${pair(t("model.neural.frame"), example.frameId)}
     ${pair(t("model.frame.source"), example.sourceId)}${pair(t("model.frame.generationManifest"), example.generationManifest)}
     ${pair(t("model.frame.compilerVersion"), example.compiler?.version)}${pair(t("model.frame.compilerDigest"), example.compiler?.digest)}
     ${pair(t("model.frame.sourceDigest"), example.sourceDigest)}${pair(t("model.frame.compiledDigest"), example.compiledDigest)}</dl></details>`;

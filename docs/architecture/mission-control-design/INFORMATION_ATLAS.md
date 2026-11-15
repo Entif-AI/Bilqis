@@ -284,6 +284,10 @@ flowchart LR
 - **Effect:** Announces meaningful state changes without stealing focus.
 - **Current substrate / disposition:** Retain CUR-COMP-016.
 
+#### Removed current-state shell substrate
+- **CUR-COMP-009 · Fixture provenance boundary:** Remove from the production shell. The redesign leaves carry their own explicit fixture/reference posture where a fixture remains part of a destination. The scientific visual-language catalog remains test/reference material, not a permanent application surface.
+- **CUR-COMP-014 · App URI / deep-link affordance:** Merge into `COMP-D-007 · Global inspector`, as specified above. Exact deep-link construction and hydration remain functional behavior, but no separate permanent shell surface survives.
+
 ## VIEW-D-001 · Mission Control
 
 Answer, at a glance: Is it running? Is it learning? Is it regressing, blocked, or invalid? What is it doing now, and what needs my attention?
@@ -708,7 +712,7 @@ flowchart LR
 - **Treatment:** Document-like sections, not nested cards.
 - **Interaction:** Expand evidence/related-object details within entries.
 - **Effect:** Organizes the longitudinal dossier by question.
-- **Current substrate / disposition:** Transform CUR-COMP-305.
+- **Current substrate / disposition:** Transform CUR-COMP-305; merge CUR-COMP-303 source/evidence dossier material into the Sources section and COMP-D-306 inline evidence detail.
 
 #### COMP-D-306 · Inline evidence detail
 - **Target constituents:** `COMP-D-306.1` Selected evidence identity; `COMP-D-306.2` Literal detail; `COMP-D-306.3` Related objects; `COMP-D-306.4` Pagination / bounded continuation
@@ -1068,7 +1072,7 @@ flowchart LR
 - **Treatment:** Dedicated peer workspace with progressive forensic disclosure.
 - **Interaction:** Select exact generation/example/frontier; expand aggregate detail.
 - **Effect:** Explains compiler behavior and causal visibility under fixture/reference custody.
-- **Current substrate / disposition:** Transform CUR-COMP-606..610 into one coherent target workspace with internal sections.
+- **Current substrate / disposition:** Transform CUR-COMP-606, CUR-COMP-607, CUR-COMP-608, CUR-COMP-609, and CUR-COMP-610 into one coherent target workspace with internal sections.
 
 ## VIEW-D-007 · Memory
 

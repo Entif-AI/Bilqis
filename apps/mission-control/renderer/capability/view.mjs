@@ -45,7 +45,7 @@ function entryRow(entry, section, index) {
       }))}</span></header>
     ${facts ? `<dl class="dossier-facts">${facts}</dl>` : ""}
     <details class="dossier-entry-evidence" ${testIdAttribute(...entryHook, "evidence")}>
-      <summary>${e(t("capability.entry.evidence", { count: refs.length }))}</summary>
+      <summary ${testIdAttribute(...entryHook, "evidence", "toggle")}>${e(t("capability.entry.evidence", { count: refs.length }))}</summary>
       <div class="dossier-links">${refButtons}${related}</div>
     </details></article>`;
 }

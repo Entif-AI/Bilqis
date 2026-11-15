@@ -4,13 +4,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { buildEvidenceRequest } from "../../renderer/evidence/evidence-query.mjs";
-import { renderEvidenceMarkup } from "../../renderer/evidence/evidence-markup.mjs";
-import { renderEvidenceView } from "../../renderer/evidence/evidence-view.mjs";
+import { buildEvidenceRequest } from "../../../renderer/evidence/evidence-query.mjs";
+import { renderEvidenceMarkup } from "../../../renderer/evidence/evidence-markup.mjs";
+import { renderEvidenceView } from "../../../renderer/evidence/evidence-view.mjs";
 
-import { EVIDENCE_MESSAGES, evidenceT } from "../../renderer/evidence/evidence-messages.mjs";
-import { createTranslator } from "../../renderer/foundation/i18n.mjs";
-import { assertUniqueTestIds } from "../../renderer/foundation/test-hooks.mjs";
+import { EVIDENCE_MESSAGES, evidenceT } from "../../../renderer/evidence/evidence-messages.mjs";
+import { createTranslator } from "../../../renderer/foundation/i18n.mjs";
+import { assertUniqueTestIds } from "../../../renderer/foundation/test-hooks.mjs";
 
 const context = Object.freeze({ mode: "LIVE", runId: "run-7", generation: 7 });
 
@@ -205,7 +205,7 @@ test("evidence markup exposes explicit return control when origin is retained", 
 test("forensic renderer has no direct provider filesystem process or network escape", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
   const source = ["evidence-view.mjs", "evidence-query.mjs", "evidence-markup.mjs"]
-    .map((name) => fs.readFileSync(path.join(here, "../../renderer/evidence", name), "utf8")).join("\n");
+    .map((name) => fs.readFileSync(path.join(here, "../../../renderer/evidence", name), "utf8")).join("\n");
   for (const forbidden of ["require(", "node:fs", "process.", "electron", "fetch(", "XMLHttpRequest"]) {
     assert.equal(source.includes(forbidden), false, forbidden);
   }
@@ -213,7 +213,7 @@ test("forensic renderer has no direct provider filesystem process or network esc
 
 test("shell inspector exposes evidence navigation beside owning-view navigation", () => {
   const here = path.dirname(fileURLToPath(import.meta.url));
-  const html = fs.readFileSync(path.join(here, "../../renderer/index.html"), "utf8");
+  const html = fs.readFileSync(path.join(here, "../../../renderer/index.html"), "utf8");
   assert.ok(html.includes('data-test-id="inspector-open-evidence"'));
   assert.ok(html.includes('data-test-id="inspector-open-owner"'));
 });

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
-    <title>Bilqis Mission Control</title>
+    <title data-i18n="shell.documentTitle"></title>
     <link rel="stylesheet" href="./visual-tokens.css" />
     <link rel="stylesheet" href="./shell.css" />
     <link rel="stylesheet" href="./components.css" />
@@ -40,7 +40,7 @@
         </button>
       </aside>
 
-      <main id="main-content" class="workspace" tabindex="-1">
+      <main id="main-content" class="workspace" tabindex="-1" data-test-id="shell-main-content">
         <header class="context-bar" data-test-id="shell-context-bar">
           <div class="context-primary">
             <div class="identity" data-test-id="shell-run-identity">
@@ -76,7 +76,7 @@
         <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"
              data-test-id="shell-announcer"></div>
 
-        <section id="view-host" class="view-host" aria-labelledby="view-title">
+        <section id="view-host" class="view-host" aria-labelledby="view-title" data-test-id="shell-view-host">
           <header class="destination-header" data-test-id="shell-destination-header">
             <h1 id="view-title" data-test-id="shell-destination-title"></h1>
             <p id="view-summary" data-test-id="shell-destination-purpose"></p>
@@ -91,15 +91,8 @@
           </nav>
           <section id="frame-explorer" hidden data-i18n-aria-label="shell.model.frames"
                    data-test-id="model-frame-workspace-host"></section>
-          <p id="domain-context-note" hidden data-i18n="shell.reference.contextNote"
-             data-test-id="shell-reference-context-note"></p>
-          <section id="domain-context-boundary" class="domain-context-boundary" hidden>
-            <div><span class="status-dot" aria-hidden="true"></span><strong data-i18n="shell.reference.label"></strong></div>
-            <p data-i18n="shell.reference.description"></p>
-            <div class="demo-actions" id="demo-actions"></div>
-          </section>
-          <section id="visual-catalog" class="visual-catalog" aria-label="Scientific visual language catalog"></section>
-          <section id="domain-view" class="domain-view" aria-label="Current domain view"></section>
+          <section id="domain-view" class="domain-view" data-i18n-aria-label="shell.domainView.aria"
+                   data-test-id="shell-domain-view"></section>
         </section>
       </main>
 

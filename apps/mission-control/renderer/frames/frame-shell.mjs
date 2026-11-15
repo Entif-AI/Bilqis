@@ -42,7 +42,6 @@ export function createFrameShell({ getState, setState, getDefense, render, refre
       document.querySelectorAll("[data-model-section]").forEach(button => {
         button.setAttribute("aria-pressed", String(button.dataset.modelSection === state?.modelSection));
       });
-      document.querySelector('[data-test-id="shell-reference-context-note"]').hidden = !["school", "learning", "model", "memory", "teacher"].includes(state?.view) || active();
       if (!active()) return;
       const selectedId = state.selected?.kind === "frame" ? state.selected.id : null;
       if (mounted && (!selectedId || routeId === selectedId)) return;

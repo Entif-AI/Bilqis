@@ -1,12 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import { activateDomainViews } from "../../renderer/foundation/domain-controller.mjs";
-import { renderEvidenceMarkup } from "../../renderer/evidence/evidence-markup.mjs";
+import { activateDomainViews } from "../../../renderer/foundation/domain-controller.mjs";
+import { renderEvidenceMarkup } from "../../../renderer/evidence/evidence-markup.mjs";
 import {
   prepareEvidenceSearch,
   renderEvidenceView,
-} from "../../renderer/evidence/evidence-view.mjs";
+} from "../../../renderer/evidence/evidence-view.mjs";
 
 const context = Object.freeze({ mode: "LIVE", runId: "run-7", generation: 901 });
 

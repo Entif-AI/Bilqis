@@ -87,7 +87,7 @@ export function renderComponentCatalog() {
     ${evidencePanel()}
     ${panelMarkup({
       title: t("foundation.catalog.provenance.title"),
-      body: `<div class="identity-row"><span class="run-identity">${t("foundation.catalog.identity.runGeneration", { runId: "fixture:prometheus-disposable", generation: 44238 })}</span><span class="provenance-chip" data-authority="source">S · FactoryRelease</span><span class="provenance-chip" data-authority="derived">${t("foundation.catalog.provenance.learnedProjection")}</span></div><div class="alert" data-state="attention"><strong>! ${t("foundation.catalog.alert.attention")}</strong><span>${t("foundation.catalog.alert.diskReserve")}</span></div>${evidenceRow()}${graphLegend()}`,
+      body: `<div class="identity-row"><span class="run-identity">${t("foundation.catalog.identity.runGeneration", { runId: "fixture:prometheus-disposable", generation: 44238 })}</span><span class="provenance-chip" data-authority="source">${t("foundation.catalog.provenance.factoryRelease")}</span><span class="provenance-chip" data-authority="derived">${t("foundation.catalog.provenance.learnedProjection")}</span></div><div class="alert" data-state="attention"><strong>! ${t("foundation.catalog.alert.attention")}</strong><span>${t("foundation.catalog.alert.diskReserve")}</span></div>${evidenceRow()}${graphLegend()}`,
       testId: "foundation-provenance-alerting",
       level: "surface-1",
     })}

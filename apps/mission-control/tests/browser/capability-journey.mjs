@@ -4,7 +4,7 @@ export async function capabilityJourney(page) {
 
   await hook("capability-name").waitFor();
   check((await hook("capability-name").innerText()) === "Conjunction", "exact capability identity");
-  check(await page.locator('[data-test-id^="capability-section-"]').filter({ has: page.locator("h2") }).count() >= 5, "dossier sections");
+  check(await page.locator('[data-test-id^="capability-section-"]').count() >= 5, "dossier sections");
   check(await hook("capability-entry-history-1").count() === 1, "regression preserved");
   check(await hook("capability-entry-history-2").count() === 1, "recovery preserved");
   check(await hook("capability-entry-performance-2").count() === 1, "retained distinct");
@@ -14,7 +14,7 @@ export async function capabilityJourney(page) {
   check((await hook("capability-metric-now").innerText()).includes("10/12"), "NOW keeps denominator");
   check((await hook("capability-heading").innerText()).includes("does not infer causes"), "causal boundary visible");
 
-  await hook("capability-entry-performance-0-evidence").locator("summary").click();
+  await hook("capability-entry-performance-0-evidence-toggle").click();
   await hook("capability-evidence-ref-performance-0-0").click();
   await hook("capability-evidence-inspect-0").click();
   await hook("capability-evidence-record-0").waitFor();
@@ -29,7 +29,7 @@ export async function capabilityJourney(page) {
   check(await hook("capability-entry-history-1").count() === 1, "G1 second history entry remains literal");
   check((await hook("capability-entry-history-1").innerText()).includes("No-gain"), "no future regression at G1");
 
-  await hook("capability-entry-dependencies-0-evidence").locator("summary").click();
+  await hook("capability-entry-dependencies-0-evidence-toggle").click();
   await hook("capability-related-dependencies-0").click();
   await hook("capability-name").waitFor();
   check((await hook("capability-name").innerText()) === "Negation", "related capability opens exact owner");

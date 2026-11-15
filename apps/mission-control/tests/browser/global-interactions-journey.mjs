@@ -7,15 +7,17 @@ async (page) => {
     window.bamfMissionControl.connect = async () => ({state: "healthy"});
   });
   await page.locator('[data-test-id="foundation-reconnect"]').click();
-  await page.getByTitle("Inspect exact capability B.AND").waitFor();
+  const andCapability = page.locator('[data-test-id="school-matrix-capability-b-and"]');
+  const notCapability = page.locator('[data-test-id="school-matrix-capability-b-not"]');
+  await andCapability.waitFor();
 
-  await page.getByTitle("Inspect exact capability B.AND").click();
+  await andCapability.click();
   await page.locator('[data-test-id="investigation-inspector-compare-left"]').click();
-  await page.getByTitle("Inspect exact capability B.NOT").click();
+  await notCapability.click();
   await page.locator('[data-test-id="investigation-inspector-compare-right"]').click();
   await page.locator('[data-test-id="investigation-compare-table"]').waitFor();
 
-  await page.getByTitle("Inspect exact capability B.AND").hover();
+  await andCapability.hover();
   const highlighted = await page.evaluate(() => Array.from(
     document.querySelectorAll("[data-global-highlight]"),
   ).map((element) => [
@@ -50,19 +52,25 @@ async (page) => {
     input.dispatchEvent(new Event("input", {bubbles: true}));
   });
   await generation.press("Enter");
-  await page.getByRole("heading", {name: "UNAVAILABLE", exact: true}).waitFor();
+  await page.locator('[data-test-id="school-historical-unavailable"]').waitFor();
   check(page.url().includes("generation=44238") && page.url().includes("mode=HISTORICAL"),
     "School preserves the exact historical lens while unavailable");
 
   await page.locator('[data-test-id="nav-destination-memory"]').click();
-  await page.getByText("motif-read:fixture:g44238:s0", {exact: false}).waitFor();
+  const memoryWorkspace = page.locator('[data-test-id="memory-workspace"]');
+  await memoryWorkspace.waitFor();
+  check((await memoryWorkspace.innerText()).includes("motif-read:fixture:g44238:s0"),
+    "Memory renders the exact historical motif identity");
   check(page.url().includes("generation=44238") && page.url().includes("mode=HISTORICAL"),
     "Memory uses the same historical lens");
   if (!await page.locator('[data-test-id="investigation-time-lens"]').evaluate((element) => element.hasAttribute("open"))) {
     await page.locator('[data-test-id="investigation-time-toggle"]').click();
   }
   await page.locator('[data-test-id="investigation-time-current"]').click();
-  await page.getByText("Generation 7", {exact: false}).first().waitFor();
+  const generationSummary = page.locator('[data-test-id="shell-generation-summary"]');
+  await generationSummary.waitFor();
+  check((await generationSummary.innerText()).includes("7"),
+    "verified current restores generation 7 in shell context");
   check(page.url().includes("generation=7") && page.url().includes("mode=LIVE"),
     "verified current restores exact current route");
 
@@ -82,10 +90,10 @@ async (page) => {
     candidateTable.includes("48/48"), "candidate compare keeps protected committed evidence");
 
   await page.locator('[data-test-id="nav-destination-lineage"]').click();
-  await page.getByRole("button", {name: /Generation 44238 Retained candidate progression/}).click();
+  await page.locator('[data-test-id="lineage-graph-generation-44238"]').click();
   await page.locator('[data-test-id="investigation-inspector-compare-left"]').click();
   await page.keyboard.press("Escape");
-  await page.getByRole("button", {name: /Generation 44240 Explicit recovery fork/}).click();
+  await page.locator('[data-test-id="lineage-graph-generation-44240"]').click();
   await page.locator('[data-test-id="investigation-inspector-compare-right"]').click();
   await page.locator('[data-test-id="investigation-compare-row-topology-digest-version"]').waitFor();
   const generationTable = await page.locator('[data-test-id="investigation-compare-table"]').innerText();
