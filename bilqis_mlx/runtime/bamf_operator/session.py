@@ -195,9 +195,7 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
             "retention_reason": decision.reason,
             "capability": capability,
             "decision": decision.to_record(),
-            "resource": _resource_observation(
-                run_dir, prepared.steps if prepared.steps else prepared.step,
-                identity_metrics=prepared.identity_metrics),
+            "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
         })
         return "REJECTED"

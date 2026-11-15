@@ -114,17 +114,17 @@ def retention_result(
         evaluation.candidate_state if decision.accepted else evaluation.parent_state)
     candidate_evidence = capture.finalize(
         accepted=decision.accepted, decision=decision.to_record())
+    resource = resource_observation(
+        run_dir, tuple(steps), identity_metrics=identity_metrics)
+    resource.update({
+        "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
+        "evidence_file_fsyncs": candidate_evidence["persistence"]["file_fsyncs"],
+        "evidence_directory_fsyncs": candidate_evidence["persistence"]["directory_fsyncs"],
+        "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
+        "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
+    })
     successor = None
     if decision.accepted:
-        resource = resource_observation(
-            run_dir, tuple(steps), identity_metrics=identity_metrics)
-        resource.update({
-            "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
-            "evidence_file_fsyncs": candidate_evidence["persistence"]["file_fsyncs"],
-            "evidence_directory_fsyncs": candidate_evidence["persistence"]["directory_fsyncs"],
-            "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
-            "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
-        })
         successor = derive_successor(
             run_dir, retained, selection.visit,
             delivery_events=({
@@ -144,7 +144,8 @@ def retention_result(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
         retained=retained, capability=capability, successor=successor,
-        identity_metrics=identity_metrics, candidate_evidence=candidate_evidence,
+        identity_metrics=identity_metrics, resource=resource,
+        candidate_evidence=candidate_evidence,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)
 

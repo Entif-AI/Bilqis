@@ -35,6 +35,7 @@ class BamfPreparedVisit:
     capability: str | None = None
     successor: object | None = None
     identity_metrics: dict | None = None
+    resource: dict | None = None
     candidate_evidence: dict | None = None
     rejection_journal_ordinal: int | None = None
     rejection_attempt_ordinal: int | None = None

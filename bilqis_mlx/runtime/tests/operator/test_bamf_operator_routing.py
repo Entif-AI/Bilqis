@@ -20,6 +20,15 @@ def _evidence_receipt():
     }
 
 
+def _assert_rejected_resource(case, resource):
+    case.assertEqual(resource["schema"], "bilqis.bamf.c16.3-resource-observation/v2")
+    case.assertEqual(resource["evidence_bytes_written"], 300)
+    case.assertEqual(resource["evidence_file_fsyncs"], 1)
+    case.assertEqual(resource["evidence_directory_fsyncs"], 1)
+    case.assertEqual(resource["evidence_objects"], 4)
+    case.assertEqual(resource["evidence_persistence_seconds"], 0.005)
+
+
 class BamfOperatorRoutingContinuationTests(unittest.TestCase):
     def test_priority_hold_never_counts_as_a_neural_visit(self):
         with TemporaryDirectory() as temporary:
@@ -150,6 +159,7 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
         self.assertEqual(evidence["retained_optimizer_step"], 11)
         self.assertEqual(evidence["retention_reason"], "retention_gate")
         self.assertEqual(evidence["candidate_evidence"], evidence_receipt)
+        _assert_rejected_resource(self, evidence["resource"])
         self.assertEqual(parent.retained_state.optimizer_step, 11)
 
     def test_operator_executes_c03_selection_without_reading_factory_release_order(self):

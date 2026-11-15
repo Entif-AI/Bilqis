@@ -227,7 +227,7 @@ Before migration, classify every production candidate_identity_digest call as on
 
 Record the final matrix in tests or turn-in evidence.
 
-The initial exact migration surface for this issue is deliberately narrower than the repository-wide 80-call census on refreshed unified base `df58fd5b`. Modify only these live-path consumers unless implementation proof exposes another duplicate scan on the same exact state:
+The initial exact migration surface for this issue is deliberately narrower than the repository-wide 80-call census on refreshed unified base `5e6512d3`. Modify only these live-path consumers unless implementation proof exposes another duplicate scan on the same exact state:
 
 - `learning/_retention/_atlas_candidate/identity.py`: canonical raw-v2 remains authoritative; add counters only, no memoization.
 - new `learning/_retention/_atlas_candidate/identity_guard.py`: MLX guard capability, protected-storage ownership, span currentness, self-test and poisoning.
@@ -241,12 +241,13 @@ The initial exact migration surface for this issue is deliberately narrower than
 - `runtime/_custody/bamf_bundle/admission.py`: thread the exact retained state/binding into live acceptance and ordinary/motif successor derivation; leave #1231 candidate-step currentness untouched.
 - `runtime/_custody/bamf_bundle/publication/authority.py`: live B13 acceptance consumes the live binding; canonical fallback remains for historical/unbindable paths.
 - `runtime/_custody/bamf_bundle/publication/acceptance.py`: cold persisted acceptance performs one full proof and only then issues the process-local binding for the loaded state; parent hydration ordering remains #1237-owned.
-- `runtime/bamf_operator/session.py` and `session_support.py`: preserve evaluation.candidate_state and report visit deltas; do not change scheduling/retention policy.
+- `runtime/bamf_operator/session.py`, private `_session_execution.py`, and `session_support.py`: preserve evaluation.candidate_state, report visit deltas, and carry one terminal resource payload for accepted/rejected outcomes; do not change scheduling/retention policy. The private extraction is structural only and keeps the coordinator below the repository size threshold after consuming unified-base evidence capture.
+- `control_plane/native_mapping.py`: accept both resource-observation/v1 and v2 while projecting their shared resource fields, preserving historical v1 projection compatibility.
 - `runtime/_batch/factory_candidate_training.py`: report per-step identity metric deltas in existing `FactoryCandidateStep.realized_cost` only.
 
 All other production `candidate_identity_digest(...)` calls remain canonical full proof in #1238 unless the exact same bound object is already present at that call and a focused migration is necessary to satisfy one of the acceptance bullets. In particular, teacher/current-visit and candidate-step guards remain #1231-owned; persisted bundle hydration/reload orchestration remains #1237-owned; public Atlas/factory-release/package-import/parameter-extension paths remain canonical fallback unless they already receive a private owner-issued binding without changing their authority boundary.
 
-### Exhaustive current production census at refreshed base `df58fd5b`
+### Exhaustive current production census at refreshed base `5e6512d3`
 
 Categories: `CORE` = canonical definition/wrapper; `R` = #1238 live bind/reuse migration; `C` = cold full-proof performed by first bind against durable expected digest; `F` = canonical fallback intentionally unchanged; `P` = intentional independent full-content proof unchanged; `#1231` = sibling currentness ownership unchanged. A row with several line numbers accounts for every occurrence in that function.
 
@@ -337,6 +338,8 @@ This census includes the two generation-digest function definitions because the 
 | Modify | `bilqis_mlx/runtime/_batch/factory_candidate_training.py` | Per-step metric snapshot/delta fields in existing realized cost. |
 | Modify | `bilqis_mlx/runtime/bamf_operator/session_support.py` | Resource observation v2 with exact identity metrics. |
 | Modify | `bilqis_mlx/runtime/bamf_operator/session.py` | Visit snapshot/delta; identical resource object on accepted/rejected visits; exact evaluation state reuse. |
+| Create | `bilqis_mlx/runtime/bamf_operator/_session_execution.py` | Structural extraction of horizon/retention/operate mechanics after unified-base evidence capture enlarged the coordinator; preserve session API/patch seams and keep both modules below structural thresholds. |
+| Modify | `bilqis_mlx/control_plane/native_mapping.py` | Preserve v1 projection and admit resource-observation/v2 shared fields so #1238 telemetry remains consumable by the native control-plane projection. |
 | Create | `bilqis_mlx/learning/_retention/tests/test_candidate_identity_binding.py` | Guard capability, geometry, currentness, fallback, raw-v2 compatibility. |
 | Modify/Create | Existing directly affected Factory/operator/publication tests plus `learning/_retention/tests/test_candidate_identity_binding.py` | Keep exact-state continuity and cold/hot hash-count proofs beside the authority seams they exercise. Do not create an artificial nested test package when the existing focused owner/publication tests remain below structural thresholds. |
 | Modify | Existing directly affected genesis/publication/operator tests | Update schema/version expectations and add cold/fresh single-hash assertions beside their owners. |

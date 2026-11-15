@@ -168,6 +168,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             context, transactions[-1], "atlas", "capability:horizon", run_dir=Path("/run"))
         decide.assert_called_once_with(evaluate.return_value)
         event = derive.call_args.kwargs["delivery_events"][0]
+        self.assertIs(prepared.resource, event["resource"])
         self.assertEqual(event["resource"]["optimizer_steps"], 4)
         self.assertEqual(event["resource"]["wall_seconds"], 10.0)
         self.assertEqual(event["visit_id"], "visit:horizon")
@@ -284,6 +285,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
         self.assertEqual(resource["evidence_file_fsyncs"], 1)
         self.assertEqual(resource["evidence_directory_fsyncs"], 1)
         self.assertEqual(resource["evidence_objects"], 4)
+        self.assertEqual(resource["evidence_persistence_seconds"], 0.005)
         self.assertEqual(event["candidate_evidence"], evidence)
 
     def test_execution_context_uses_accepted_release_without_requiring_c07_lease(self):
