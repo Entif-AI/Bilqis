@@ -104,6 +104,7 @@ def _decode_bamf_producer_row(
     accepted_cache=None,
 ) -> ModelOutput:
     """Decode one task-owned row from a B11 source producer and issue its provenance."""
+    expected_hidden_rank = 3
     if (
         type(compiled_batch) is not BamfCompiledBatch
         or type(answer_plan) is not AnswerPlan
@@ -111,7 +112,7 @@ def _decode_bamf_producer_row(
         or type(row_index) is not int
         or row_index < 0
         or not isinstance(final_hidden, mx.array)
-        or final_hidden.ndim != 3
+        or final_hidden.ndim != expected_hidden_rank
         or row_index >= final_hidden.shape[0]
     ):
         _invalid("B11_FORWARD_ROW_INPUT_INVALID")

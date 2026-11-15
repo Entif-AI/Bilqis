@@ -24,6 +24,7 @@ from .capability_evaluation import _invalid
 
 _LEGACY_BATCH_ROWS = 24
 _LEGACY_POSITION_LIMIT = 96
+_MIN_SHARED_BATCH_ROWS = 2
 _ACTIVATION_POSITION_BUDGET = _LEGACY_BATCH_ROWS * _LEGACY_POSITION_LIMIT
 _ATTENTION_POSITION_BUDGET = _LEGACY_BATCH_ROWS * _LEGACY_POSITION_LIMIT ** 2
 
@@ -108,7 +109,7 @@ def _execute_chunk(
     items: tuple[PreparedFactoryEvaluation, ...],
     on_launch: Callable[[int, int], None] | None,
 ) -> tuple[ModelOutput, ...]:
-    if len(items) < 2 or any(not _batchable(item) for item in items):
+    if len(items) < _MIN_SHARED_BATCH_ROWS or any(not _batchable(item) for item in items):
         _invalid("BAMF_C05_BATCH_CHUNK_INVALID")
     if any(not _compatible(items[0], item) for item in items[1:]):
         _invalid("BAMF_C05_BATCH_CHUNK_INCOMPATIBLE")
