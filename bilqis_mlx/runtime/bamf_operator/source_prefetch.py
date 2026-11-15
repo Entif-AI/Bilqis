@@ -129,7 +129,7 @@ def _thaw(value):
     if not isinstance(value, tuple):
         _invalid("BAMF_SOURCE_PREFETCH_PACKET_INVALID")
     if value and all(
-            isinstance(item, tuple) and len(item) == 2
+            isinstance(item, tuple) and len(item) == FROZEN_MAPPING_ENTRY_WIDTH
             and isinstance(item[0], str) for item in value):
         return {key: _thaw(item) for key, item in value}
     return [_thaw(item) for item in value]
