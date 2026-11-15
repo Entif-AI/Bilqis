@@ -4,8 +4,14 @@
 .resource-provenance { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; padding: var(--space-3); border-left: 3px solid var(--attention); background: var(--surface-1); }
 .resource-provenance[data-provenance="live_query"] { border-color: var(--border-strong); }
 .resource-provenance span, .resource-muted { color: var(--text-muted); }
+.resource-tabs { display: flex; gap: var(--space-1); min-width: 0; overflow-x: auto; border-bottom: 1px solid var(--border); }
+.resource-tabs .ui-control { flex: 0 0 auto; }
+.resource-tabpanel[hidden] { display: none; }
+.resource-tabpanel { min-width: 0; }
+.resource-tabpanel > .resource-panel:first-child { border-top: 0; }
 .resource-panel { padding: var(--space-3) 0; border-top: 1px solid var(--border); }
 .resource-panel > header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.resource-panel-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
 .resource-panel h3 { margin: 0; font-size: var(--type-section); }
 .resource-panel p { line-height: 1.5; }
 .resource-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin: var(--space-4) 0; }
@@ -26,9 +32,10 @@
 .resource-table tbody th { font-weight: 500; }
 .resource-table td:nth-child(2), .resource-table td:nth-child(3):not(:has(.resource-semantic)), .resource-table td:nth-child(4):not(:has(.resource-state)), .resource-table td:nth-child(n+5) { text-align: end; }
 .resource-table td small, .resource-table th small { display: block; color: var(--text-muted); }
-.resource-table button, .resource-compare-form input, .resource-compare-form button { min-height: var(--control-height); border: 1px solid var(--border); background: var(--surface-1); color: var(--text); padding: 6px 9px; }
+.resource-table button, .resource-compare-form input, .resource-compare-form button { min-height: var(--control-height); border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); padding: 6px 9px; }
 .resource-compare-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); margin-top: var(--space-4); }
 .resource-compare-form label { display: grid; gap: 4px; color: var(--text-muted); }
+.resource-compare-input { min-width: 13ch; }
 .resource-compare-form span { color: var(--text-muted); font-size: var(--type-label); }
 .resource-view :is(button, input, summary, [tabindex="0"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
 :root[data-density="compact"] .resource-table th, :root[data-density="compact"] .resource-table td { padding: 5px 7px; }
@@ -45,6 +52,8 @@
 .resource-summary article > *, .resource-panel > header > * { min-inline-size: 0; max-inline-size: 100%; }
 .resource-summary .resource-semantic, .resource-panel > header .resource-state { white-space: normal; }
 @media (max-width: 640px) {
+  .resource-panel > header { align-items: flex-start; }
+  .resource-panel-tools { justify-content: flex-start; }
   .resource-table :is(th, td):first-child { inline-size: 40vw; min-inline-size: 40vw; max-inline-size: 40vw; white-space: normal; overflow-wrap: anywhere; }
   .resource-table button { max-inline-size: 100%; }
 }
