@@ -38,6 +38,7 @@ import {
 import { createHomeController } from "./home/home-controller.mjs";
 import { createResourceController } from "./resources/resource-controller.mjs";
 import { createTeacherController } from "./teacher/teacher-controller.mjs";
+import { createSalienceController } from "./salience/salience-controller.mjs";
 import { createOperateController } from "./operate/operate-controller.mjs";
 import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
@@ -69,9 +70,8 @@ let focusReturnToken = null;
 let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
 const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
-const teacherController = createTeacherController(window.bamfMissionControl, {
-  fixtureSupport: fixtureSupport?.teacher ?? null,
-});
+const teacherController = createTeacherController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.teacher ?? null });
+const salienceController = createSalienceController(window.bamfMissionControl, { fixtureSupport: fixtureSupport?.salience ?? null });
 const learningController = createProductionLearningController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
@@ -208,7 +208,7 @@ function render() {
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
-    teacherController, capabilityExplorer, learningController, onInspect: openInspector,
+    teacherController, salienceController, capabilityExplorer, learningController, onInspect: openInspector,
     onSelectionChange: syncDomainSelection,
     onNavigate: navigateTo, onAnnounce: announce,
     schoolDomainSupport: fixtureSupport?.school ?? null,

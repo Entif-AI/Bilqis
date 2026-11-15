@@ -4,9 +4,16 @@ import { aggregationPanel } from "./salience-aggregation-view.mjs";
 import { observationPanel } from "./salience-observation-view.mjs";
 import { projectionDisclosure, routingPanel } from "./salience-routing-view.mjs";
 import { esc, t, testIdAttribute } from "./salience-view-shared.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+import { bindSalienceTabs, salienceTabPanelMarkup, salienceTabsMarkup, SALIENCE_TABS } from "./salience-tabs.mjs";
 
 let selectedSnapshotId = "current";
 let selectedObservationId = null;
+let activeTab = "observations";
+
+function help(labelKey, descriptionKey, testId) {
+  return contextHelpMarkup({ label: t(labelKey), description: t(descriptionKey), testId });
+}
 
 function snapshotOption(snapshot) {
   const key = snapshot.mode === "HISTORICAL" ? "salience.snapshot.historical" : "salience.snapshot.current";
@@ -21,7 +28,7 @@ function snapshotControl(snapshot) {
       <select data-snapshot-select ${testIdAttribute("salience", "snapshot", "select")}>
         ${SALIENCE_SNAPSHOTS.map(snapshotOption).join("")}
       </select>
-      <small>${esc(t("salience.snapshot.help"))}</small>
+      <span class="salience-control-help">${help("salience.help.snapshot.label", "salience.help.snapshot.fixtureBody", "salience-help-snapshot")}</span>
     </label>
     <p class="salience-fixture-boundary" role="note" ${testIdAttribute("salience", "fixture", "boundary")}>
       ${esc(t("salience.fixture.boundary"))}
@@ -52,6 +59,12 @@ function inspectDetails(event, axis) {
 }
 
 function bind(container, inspect) {
+  bindSalienceTabs(container, (tab) => {
+    if (!SALIENCE_TABS.includes(tab) || tab === activeTab) return;
+    activeTab = tab;
+    renderSalienceView(container, inspect);
+    container.querySelector(`[data-salience-tab="${tab}"]`)?.focus({ preventScroll: true });
+  });
   container.querySelector("[data-snapshot-select]")?.addEventListener("change", (event) => {
     selectedSnapshotId = event.currentTarget.value;
     selectedObservationId = null;
@@ -74,17 +87,22 @@ function bind(container, inspect) {
 export function salienceMarkupForTest(
   snapshotId = selectedSnapshotId,
   selectedId = selectedObservationId,
+  tab = "observations",
 ) {
   const snapshot = snapshotById(snapshotId);
   selectedSnapshotId = snapshot.id;
+  const selectedTab = SALIENCE_TABS.includes(tab) ? tab : "observations";
   return `<div class="salience-view" ${testIdAttribute("salience", "view")}>
+    <header class="salience-heading" ${testIdAttribute("salience", "heading")}><div>
+      <span class="eyebrow">${esc(t("salience.title"))}</span><h2>${esc(t("salience.fixture.title"))}</h2>
+    </div><div class="salience-heading-context"><p>${esc(t("salience.summary"))}</p><div class="salience-heading-tools">
+      ${help("salience.help.concept.label", "salience.help.concept.body", "salience-help-concept")}${help("salience.help.elsewhere.label", "salience.help.elsewhere.body", "salience-help-elsewhere")}
+    </div></div></header>
     ${snapshotControl(snapshot)}
-    ${observationPanel(snapshot, selectedId)}
-    ${aggregationPanel(snapshot)}
-    <section class="salience-derived" aria-label="${esc(t("salience.routing.summary"))}">
-      ${routingPanel(snapshot)}
-      ${projectionDisclosure()}
-    </section>
+    ${salienceTabsMarkup(selectedTab)}
+    ${salienceTabPanelMarkup("observations", observationPanel(snapshot, selectedId), selectedTab)}
+    ${salienceTabPanelMarkup("aggregation", aggregationPanel(snapshot), selectedTab)}
+    ${salienceTabPanelMarkup("routing", `<section class="salience-derived" aria-label="${esc(t("salience.routing.summary"))}">${routingPanel(snapshot)}${projectionDisclosure()}</section>`, selectedTab)}
   </div>`;
 }
 
@@ -97,6 +115,10 @@ export function renderSalienceView(container, inspect, selectedId = null) {
       event.recordId === selectedId || event.salienceId === selectedId)?.recordId ?? null;
   }
   container.hidden = false;
-  container.innerHTML = salienceMarkupForTest(selectedSnapshotId, selectedObservationId);
+  container.innerHTML = salienceMarkupForTest(selectedSnapshotId, selectedObservationId, activeTab);
   bind(container, inspect);
+}
+
+export function salienceUiStateForTest() {
+  return Object.freeze({ selectedSnapshotId, selectedObservationId, activeTab });
 }

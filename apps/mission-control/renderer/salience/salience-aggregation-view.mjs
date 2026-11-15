@@ -1,5 +1,10 @@
 import { aggregationForSnapshot, constituentObservationIds } from "./salience-model.mjs";
 import { esc, slug, stateBadge, t, testIdAttribute, yesNo } from "./salience-view-shared.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+
+function help(labelKey, descriptionKey, testId) {
+  return contextHelpMarkup({ label: t(labelKey), description: t(descriptionKey), testId });
+}
 
 function observationRef(snapshot, id, prefix) {
   const available = snapshot.events.some((event) => event.recordId === id);
@@ -70,12 +75,12 @@ export function aggregationPanel(snapshot) {
   const aggregation = aggregationForSnapshot(snapshot);
   if (!aggregation) return `<section class="salience-analysis salience-aggregation" ${testIdAttribute("salience", "aggregation")}>
     <header class="salience-section-heading"><div><span class="eyebrow">${esc(t("salience.aggregation.eyebrow"))}</span>
-      <h2>${esc(t("salience.aggregation.title"))}</h2></div>${stateBadge("UNAVAILABLE")}</header>
+      <h2>${esc(t("salience.aggregation.title"))}</h2></div><div class="salience-heading-tools">${stateBadge("UNAVAILABLE")}${help("salience.help.aggregation.label", "salience.help.aggregation.fixtureBody", "salience-help-aggregation")}</div></header>
     <p class="salience-analysis-note">${esc(t("salience.aggregation.unavailable"))}</p></section>`;
   const {windows, clusters, pattern, trend} = aggregation;
   return `<section class="salience-analysis salience-aggregation" ${testIdAttribute("salience", "aggregation")}>
     <header class="salience-section-heading"><div><span class="eyebrow">${esc(t("salience.aggregation.eyebrow"))}</span>
-      <h2>${esc(t("salience.aggregation.title"))}</h2></div>${stateBadge("CONJECTURE")}</header>
+      <h2>${esc(t("salience.aggregation.title"))}</h2></div><div class="salience-heading-tools">${stateBadge("CONJECTURE")}${help("salience.help.aggregation.label", "salience.help.aggregation.fixtureBody", "salience-help-aggregation")}</div></header>
     <p class="salience-analysis-note">${esc(t("salience.aggregation.doctrine"))}</p>
     <div class="salience-aggregation-tree">${windows.map((window) =>
       windowNode(snapshot, window, clusters.find((cluster) => cluster.windowId === window.id))).join("")}

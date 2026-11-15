@@ -26,7 +26,7 @@ function lineageControllerFor(api) {
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  teacherController, capabilityExplorer, learningController,
+  teacherController, salienceController, capabilityExplorer, learningController,
   onInspect, onSelectionChange, onNavigate, onAnnounce,
   schoolDomainSupport = null, atlasDomainSupport = null,
 }) {
@@ -91,6 +91,17 @@ export function activateDomainViews({
     });
   } else {
     void teacherController?.deactivate();
+  }
+  if (state?.view === "salience") {
+    void salienceController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void salienceController?.deactivate();
   }
   if (state?.view === "learning" && state.context?.fixture !== true) {
     void learningController?.activate(state.context, {

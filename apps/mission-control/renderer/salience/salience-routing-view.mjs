@@ -1,6 +1,11 @@
 import { SALIENCE_PROJECTION } from "./salience-fixture.mjs";
 import { routingForSnapshot } from "./salience-model.mjs";
 import { esc, slug, stateBadge, t, testIdAttribute } from "./salience-view-shared.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
+
+function help(labelKey, descriptionKey, testId) {
+  return contextHelpMarkup({ label: t(labelKey), description: t(descriptionKey), testId });
+}
 
 function citedObservation(snapshot, id) {
   const available = snapshot.events.some((event) => event.recordId === id);
@@ -16,7 +21,7 @@ export function routingPanel(snapshot) {
   return `<details class="salience-routing ui-disclosure" ${testIdAttribute("salience", "routing")}>
     <summary><span>${esc(t("salience.routing.summary"))}</span>
       <span>${routes.length ? esc(t(countKey, {count: routes.length})) : esc(t("salience.value.unavailable"))}</span></summary>
-    <div class="ui-disclosure__body salience-routing-body">${routes.length ? routes.map((route) => `<section class="salience-route"
+    <div class="ui-disclosure__body salience-routing-body"><div class="salience-panel-help">${help("salience.help.routing.label", "salience.help.routing.fixtureBody", "salience-help-routing")}</div>${routes.length ? routes.map((route) => `<section class="salience-route"
       ${testIdAttribute("salience", "routing", "record", slug(route.id))}><h3><code>${esc(route.id)}</code></h3>
       <dl><div><dt>${esc(t("salience.routing.tier"))}</dt><dd class="machine-value">${esc(route.tier)}</dd></div>
         <div><dt>${esc(t("salience.routing.rule"))}</dt><dd class="machine-value">${esc(route.rule)}</dd></div>
@@ -33,7 +38,7 @@ export function routingPanel(snapshot) {
 export function projectionDisclosure() {
   return `<details class="salience-projection ui-disclosure" ${testIdAttribute("salience", "projection")}>
     <summary><span>${esc(t("salience.projection.summary"))}</span>${stateBadge("PARTIAL")}</summary>
-    <div class="ui-disclosure__body"><dl class="salience-projection-grid">
+    <div class="ui-disclosure__body"><div class="salience-panel-help">${help("salience.help.projection.label", "salience.help.projection.body", "salience-help-projection")}</div><dl class="salience-projection-grid">
       <div><dt>${esc(t("salience.projection.schema"))}</dt><dd class="machine-value">${esc(SALIENCE_PROJECTION.schema)}</dd></div>
       <div><dt>${esc(t("salience.projection.coverage"))}</dt><dd>${esc(t("salience.value.partial"))}</dd></div>
       <div><dt>${esc(t("salience.projection.fields"))}</dt><dd class="machine-value">${esc(SALIENCE_PROJECTION.fields.join(", "))}</dd></div>
