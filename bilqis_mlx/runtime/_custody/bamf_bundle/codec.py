@@ -273,10 +273,14 @@ def load_bamf_bundle(root: Path, *, expected_manifest_sha256: str | None = None)
         parts.records["evaluation_contract"], manifest["transition"],
         tuple(parts.records["outbox"]), parts.run_identity)
     if student.run_identity is not None and student.generation == 0:
-        from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+        from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+            bind_candidate_identity_or_fallback,
+        )
         identity = student.run_identity
-        if (identity.initial_candidate_identity_sha256
-                != candidate_identity_digest(student.retained_state)
+        candidate_digest = bind_candidate_identity_or_fallback(
+            student.retained_state, student.topology.digest, student.extents.digest,
+            expected_digest=identity.initial_candidate_identity_sha256)
+        if (candidate_digest != identity.initial_candidate_identity_sha256
                 or identity.initial_topology_digest != student.topology.digest
                 or identity.initial_extents_digest != student.extents.digest
                 or identity.initial_implementation_sha256 != student.implementation_sha256

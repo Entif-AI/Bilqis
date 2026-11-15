@@ -19,7 +19,8 @@ from .atlas_model_forward import (
     _decode_bamf_producer_row, _finalize_source_hidden, _source_producer,
 )
 from .atlas_model_forward_validation import (
-    finalize_microbatch_gradient, microbatch_trace_preflight,
+    finalize_microbatch_gradient, microbatch_trace_from_hidden,
+    microbatch_trace_preflight,
 )
 from .atlas_model_training import (
     _gradient_execution_rebinder, _require_finite_tensor_tree, loss_bearing_bamf,
@@ -29,7 +30,7 @@ from .microbatch.refinement_kernel import (
 )
 from .microbatch.route_kernel import (
     prepare_route_microbatch_kernel, route_microbatch_compatible,
-    route_microbatch_mean_loss,
+    route_microbatch_loss_and_trajectory,
 )
 from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
@@ -39,6 +40,7 @@ from bilqis_mlx.b11_observation import (
 
 
 _MIN_ROWS = 2
+_ROUTE_CONTEXT_FIELDS = 3
 
 
 @dataclass(frozen=True)
@@ -142,6 +144,46 @@ def _microbatch_salience_labels(row_batches, salience_supervision):
         salience_supervision.labels_for(row_batch) for row_batch in row_batches)
 
 
+def _gradient_path(
+        backend, params, batch, row_batches, answer_plans, targets, masks,
+        generation, cache, rebind_execution, salience_supervision, snapshot,
+        salience_labels):
+    route_vectorized = route_microbatch_compatible(
+        row_batches, answer_plans, targets, masks)
+    if not route_vectorized:
+        preflight = microbatch_trace_preflight(
+            backend, params, batch, row_batches, answer_plans, targets, masks,
+            generation, cache, rebind_execution, salience_supervision, snapshot)
+        return False, preflight, None, None
+    refinement = prepare_refinement_selections(
+        row_batches, answer_plans, generation)
+    kernel = prepare_route_microbatch_kernel(
+        row_batches, answer_plans, targets, masks, None, salience_labels)
+    return True, None, refinement, kernel
+
+
+def _materialize_gradient(
+        objective, params, route_vectorized, holder, backend, row_batches,
+        answer_plans, targets, masks, salience_supervision):
+    if not route_vectorized:
+        mean_loss, gradients = mx.value_and_grad(objective)(params)
+        mx.eval(mean_loss, gradients)
+        return mean_loss, gradients, holder.get("executions"), None
+    (mean_loss, route_hidden, route_trajectory), gradients = mx.value_and_grad(
+        objective)(params)
+    mx.eval(mean_loss, gradients, route_hidden, route_trajectory)
+    route_context = holder.get("route_context")
+    if (type(route_context) is not tuple
+            or len(route_context) != _ROUTE_CONTEXT_FIELDS):
+        _invalid("B11_MICROBATCH_EXECUTION_MISSING")
+    producer, accepted_cache, execution_binding = route_context
+    executions = microbatch_trace_from_hidden(
+        backend, params, row_batches, answer_plans, targets, masks,
+        producer, route_hidden, accepted_cache, execution_binding,
+        salience_supervision)
+    return mean_loss, gradients, executions, route_trajectory
+
+
 def _bamf_microbatch_value_and_grad_impl(
     backend: Backend,
     params,
@@ -173,19 +215,11 @@ def _bamf_microbatch_value_and_grad_impl(
         rebind_execution = _gradient_execution_rebinder(
             params, cache, spec=backend.topology, extents=batch.compiled.extents,
             generation=generation)
-        preflight_executions = microbatch_trace_preflight(
-            backend, params, batch, row_batches, answer_plans, targets, masks,
-            generation, cache, rebind_execution, salience_supervision, snapshot)
-        route_vectorized = route_microbatch_compatible(
-            row_batches, answer_plans, targets, masks)
-        refinement_selections = (
-            prepare_refinement_selections(row_batches, answer_plans, generation)
-            if route_vectorized else None)
-        route_kernel = (
-            prepare_route_microbatch_kernel(
-                row_batches, answer_plans, targets, masks, preflight_executions,
-                salience_labels)
-            if route_vectorized else None)
+        route_vectorized, preflight_executions, refinement_selections, route_kernel = (
+            _gradient_path(
+                backend, params, batch, row_batches, answer_plans, targets, masks,
+                generation, cache, rebind_execution, salience_supervision, snapshot,
+                salience_labels))
         preflight_wall_seconds = time.perf_counter() - preflight_started
         holder = {}
 
@@ -217,21 +251,25 @@ def _bamf_microbatch_value_and_grad_impl(
                         total = total + execution.loss.total
                     holder["executions"] = tuple(executions)
                     return total / len(row_batches)
+                holder["route_context"] = (
+                    producer, accepted_cache, execution_binding)
                 salience_hidden = hidden
                 refined = batched_refine_hidden(
                     current, row_batches, producer, hidden, refinement_selections)
-                return route_microbatch_mean_loss(
+                mean_loss, trajectory = route_microbatch_loss_and_trajectory(
                     current, refined, route_kernel, salience_hidden=salience_hidden)
+                return mean_loss, hidden, trajectory
 
         autodiff_started = time.perf_counter()
-        mean_loss, gradients = mx.value_and_grad(objective)(params)
-        mx.eval(mean_loss, gradients)
+        mean_loss, gradients, executions, route_trajectory = _materialize_gradient(
+            objective, params, route_vectorized, holder, backend, row_batches,
+            answer_plans, targets, masks, salience_supervision)
         autodiff_wall_seconds = time.perf_counter() - autodiff_started
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
-    executions = None if route_vectorized else holder.get("executions")
     result = finalize_microbatch_gradient(
         backend, batch, row_batches, preflight_executions,
-        executions, mean_loss, gradients)
+        executions, mean_loss, gradients, answer_plans=answer_plans,
+        route_trajectory=route_trajectory)
     attach_performance_observation(result, {
         "b11_preflight_wall_seconds": float(preflight_wall_seconds),
         "b11_autodiff_wall_seconds": float(autodiff_wall_seconds),

@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 from .atlas_retention_decision import CandidateRetentionDecision
-from bilqis_mlx.learning._retention._atlas_candidate.identity import candidate_identity_digest
 from ._atlas_acceptance_records import (
     ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
     EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
@@ -27,6 +26,14 @@ from ._atlas_acceptance_records import (
     is_digest as _is_digest, parse_accepted_candidate_binding,
     valid_source_anchors as _valid_source_anchors,
 )
+
+
+def candidate_identity_digest(state) -> str:
+    """Preserve the acceptance-owner seam while reusing a live full-state binding."""
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+        candidate_identity_for_canonical_consumer,
+    )
+    return candidate_identity_for_canonical_consumer(state)
 
 
 def _new_binding_owner():

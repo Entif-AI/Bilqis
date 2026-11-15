@@ -10,7 +10,9 @@ from bilqis_mlx.learning.atlas_acceptance import (
     EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
     EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
     _require_issued_binding,
-    candidate_identity_digest,
+)
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
 )
 
 from ..factory_release.admission import (
@@ -79,7 +81,7 @@ def require_acceptance(
             or acceptance.feature_sha256 != candidate.extents.factor_map_digest
             or acceptance.optimizer_step != candidate.retained_state.optimizer_step
             or acceptance.candidate_identity_sha256
-            != candidate_identity_digest(candidate.retained_state)
+            != candidate_identity_for_canonical_consumer(candidate.retained_state)
             or acceptance.step_proof_sha256 != tuple(
                 proof.digest for proof in candidate.retained_state.step_proofs)
             or acceptance.source_authority_registry_sha256
@@ -131,7 +133,7 @@ def validate_parent_transition(
                 != transition["parent_allocation_sha256"]
                 or candidate.retained_state.allocations.digest
                 != transition["candidate_allocation_sha256"]
-                or candidate_identity_digest(candidate.retained_state)
+                or candidate_identity_for_canonical_consumer(candidate.retained_state)
                 != transition["candidate_identity_sha256"]
                 or parent.extents.semantic_bank_count != candidate.extents.semantic_bank_count
                 or parent.extents.active_semantic_digest != candidate.extents.active_semantic_digest
@@ -208,7 +210,7 @@ def authenticate_current_successor_retry(
             or parent.generation + 1 != current_child.generation
             or parent.run_identity != current_child.run_identity
             or persisted.parent_candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            != candidate_identity_for_canonical_consumer(parent.retained_state)):
         invalid("BAMF_RUN_IDENTITY_DRIFT")
     return parent, persisted
 

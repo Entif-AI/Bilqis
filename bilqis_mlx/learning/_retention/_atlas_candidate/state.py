@@ -14,6 +14,9 @@ from .proofs import CandidateStepProof
 from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME, require_identity_scheme,
 )
+from .identity_binding import (
+    mark_candidate_state_unbindable, protect_candidate_state,
+)
 
 def _is_genesis_allocations(snapshot: MotifAllocationSnapshot) -> bool:
     return (type(snapshot) is MotifAllocationSnapshot
@@ -111,6 +114,7 @@ def _load_retained_candidate_state_with_parts(
             ('_issuance', RETAINED_STATE_ISSUER)):
         object.__setattr__(state, name, value)
     state.__post_init__()
+    protect_candidate_state(state)
     return state, parts
 
 
@@ -248,6 +252,7 @@ def _issue_parameter_extension_state(
             ('schema_version', STATE_SCHEMA), ('_issuance', RETAINED_STATE_ISSUER)):
         object.__setattr__(state, name, value)
     state.__post_init__()
+    mark_candidate_state_unbindable(state, "CALLER_OWNED_NUMERICAL_STATE")
     return state
 
 
@@ -281,4 +286,5 @@ def _issue_promotion_transition_state(parent: CandidateState, receipt) -> Candid
             ('schema_version', STATE_SCHEMA), ('_issuance', RETAINED_STATE_ISSUER)):
         object.__setattr__(state, name, value)
     state.__post_init__()
+    mark_candidate_state_unbindable(state, "CALLER_OWNED_NUMERICAL_STATE")
     return state

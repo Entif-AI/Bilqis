@@ -31,11 +31,16 @@ class SessionObservationTests(unittest.TestCase):
             capability_id='cap', source_seed=1, rows=lambda: ({'id': 'row'},),
             _planning_generation=NS(_accepted_currentness='currentness')),
             visit=NS(identity=NS(visit_id='visit')))
-        steps = [NS(transaction=NS(parent=NS(optimizer_step=4), update_steps=i)) for i in (1, 2, 3)]
+        steps = [NS(
+            transaction=NS(parent=NS(optimizer_step=4), update_steps=i),
+            realized_cost={
+                'wall_seconds': 1.0, 'optimizer_steps': 1,
+                'candidate_optimizer_steps': i, 'c08_memory_budget_bytes': 1,
+            }) for i in (1, 2, 3)]
         def assess(*args, observer, **kwargs):
             observer({'retention_completed': 1, 'retention_total': 2,
                       'retention_subject': 'cap', 'retention_role': 'parent'})
-            return 'evaluation'
+            return NS(candidate_state=object(), parent_state=parent.retained_state)
         prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
         patches = {
             '_execution_context': (parent, NS(release='release'), 'atlas', 'feature'),
@@ -60,7 +65,6 @@ class SessionObservationTests(unittest.TestCase):
             },
             'issue_factory_retention_decision': NS(
                 accepted=False, to_record=lambda: {'decision': 'REJECTED'}),
-            'resolve_candidate': 'retained',
         }
         from contextlib import ExitStack
         with ExitStack() as stack:

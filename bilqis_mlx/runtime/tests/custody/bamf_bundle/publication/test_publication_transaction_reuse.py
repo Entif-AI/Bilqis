@@ -11,6 +11,10 @@ from unittest.mock import patch
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 import bilqis_mlx.runtime.bamf_bundle.publication as publication
 from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    _reset_candidate_identity_metrics_for_tests, bind_candidate_identity,
+    candidate_identity_metrics_snapshot,
+)
 from bilqis_mlx.runtime.bamf_bundle import publish_bamf_generation
 from bilqis_mlx.runtime.bamf_bundle.accepted_runtime import (
     _reset_execution_cache_owner_for_tests,
@@ -108,19 +112,26 @@ class PublicationTransactionReuseTests(unittest.TestCase):
             raw_parent, transaction, retained, _authority = source_qualified_state(
                 parent.retained_state, extents=parent.extents,
                 spec=parent.topology, steps=1)
+            bind_candidate_identity(
+                retained, parent.topology.digest, parent.extents.digest)
             bundle = derive_successor_bundle(
                 parent, retained, parent_manifest_sha256=pointer["manifest_sha256"],
                 delivery_events=({"event": "FIXTURE_ACCEPTED"},))
+            _reset_candidate_identity_metrics_for_tests()
             accept_and_publish(
                 self.run, bundle, retained,
                 decision=retention_decision(parent=raw_parent, retained=retained),
                 feature_sha256=bundle.extents.factor_map_digest,
                 training_authorities=transaction.training_authorities,
                 reserve_gib=0., publication_observer=metrics.append)
+            identity_metrics = candidate_identity_metrics_snapshot()
         self.assertEqual(payload.call_count - baseline, 0)
         self.assertEqual(metrics[0].parent_bundle_loads, 0)
         self.assertEqual(metrics[0].child_bundle_loads, 0)
         self.assertEqual(metrics[0].tensor_bytes_read, 0)
+        self.assertEqual(identity_metrics["candidate_identity_full_computations"], 0)
+        self.assertEqual(identity_metrics["candidate_identity_numerical_bytes_hashed"], 0)
+        self.assertGreater(identity_metrics["candidate_identity_require_calls"], 0)
 
     def test_cold_retry_rehydrates_parent_and_already_written_child(self):
         pointer = self._genesis()

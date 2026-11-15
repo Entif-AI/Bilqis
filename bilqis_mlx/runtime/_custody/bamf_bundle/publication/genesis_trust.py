@@ -6,7 +6,9 @@ from pathlib import Path
 import sqlite3
 
 from bilqis_mlx.data_plane import SHA256_HEX_LENGTH, data_plane
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
+)
 
 from ..codec import load_bamf_bundle
 from ..records import CompleteStudent, canonical, invalid, sha
@@ -45,7 +47,8 @@ def _trust_record(prepared, manifest_sha256: str) -> dict:
         "manifest_sha256": manifest_sha256,
         "acceptance_sha256": prepared.binding.digest,
         "run_identity_sha256": identity.digest,
-        "candidate_identity_sha256": candidate_identity_digest(candidate.retained_state),
+        "candidate_identity_sha256": candidate_identity_for_canonical_consumer(
+            candidate.retained_state),
         "topology_digest": candidate.topology.digest,
         "extents_digest": candidate.extents.digest,
         "implementation_sha256": candidate.implementation_sha256,
@@ -158,7 +161,8 @@ def require_initial_generation_trust_root(
         "manifest_sha256": manifest_sha256,
         "acceptance_sha256": binding.digest,
         "run_identity_sha256": identity.digest,
-        "candidate_identity_sha256": candidate_identity_digest(student.retained_state),
+        "candidate_identity_sha256": candidate_identity_for_canonical_consumer(
+            student.retained_state),
         "topology_digest": student.topology.digest,
         "extents_digest": student.extents.digest,
         "implementation_sha256": student.implementation_sha256,
