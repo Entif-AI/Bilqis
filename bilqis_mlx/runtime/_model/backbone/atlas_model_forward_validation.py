@@ -90,7 +90,7 @@ def validate_task_plan_custody(
 
 def microbatch_trace_preflight(
     backend, params, batch, row_batches, answer_plans, targets, masks,
-    generation, cache, rebind_execution, salience_supervision,
+    generation, cache, rebind_execution, salience_supervision, snapshot,
 ):
     """Capture model-derived row trajectories outside the autodiff tape."""
     from .atlas_model_forward import (
@@ -100,8 +100,7 @@ def microbatch_trace_preflight(
 
     binding = rebind_execution(params)
     producer, accepted_cache, _ = _source_producer(
-        params, batch, generation, cache, binding, trace=True,
-        snapshot=answer_plans[0].snapshot)
+        params, batch, generation, cache, binding, trace=True, snapshot=snapshot)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, batch, capture_derived_cache=False)
     if hidden.shape[0] != len(row_batches):

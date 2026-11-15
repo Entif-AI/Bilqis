@@ -1,6 +1,7 @@
 """#1172 true B11/C08 MLX microbatch parity witnesses."""
 from __future__ import annotations
 
+from types import SimpleNamespace
 import unittest
 from types import SimpleNamespace
 from unittest import skipUnless
@@ -10,6 +11,7 @@ import mlx.core as mx
 import numpy as np
 
 import bilqis_mlx.runtime.backbone_identity as backbone_identity
+import bilqis_mlx.runtime.atlas_model_microbatch as microbatch_impl
 from bilqis_mlx.learning.atlas_readout import (
     AnswerPlan, ControlAction, DecisionKind, DecisionOutput, DecisionSpec,
     compile_frame_output,
@@ -189,6 +191,52 @@ class MicrobatchParticipationProjectionTests(unittest.TestCase):
         self.assertEqual(second.participating_slots, (7,))
         self.assertEqual(first.hidden.shape, (1, 1, 768))
         self.assertEqual(second.hidden.shape, (1, 1, 768))
+
+    def test_vectorized_microbatch_threads_one_bound_snapshot_through_preflight_and_autodiff(self):
+        snapshot = object()
+        plans = tuple(
+            SimpleNamespace(generation_binding="generation", snapshot=snapshot)
+            for _ in range(2))
+        row_batches = (object(), object())
+        batch = SimpleNamespace(compiled=SimpleNamespace(extents=object()))
+        seen = {"preflight": None, "autodiff": None}
+
+        class Backend:
+            topology = object()
+
+            def __post_init__(self):
+                return None
+
+        def preflight(*args):
+            seen["preflight"] = args[-1]
+            return (SimpleNamespace(output=None),) * 2
+
+        def producer(*_args, **kwargs):
+            seen["autodiff"] = kwargs.get("snapshot")
+            return object(), None, False
+
+        with patch.object(microbatch_impl, "_compiled_microbatch", return_value=batch), patch.object(
+                microbatch_impl, "_require_finite_tensor_tree"), patch.object(
+                    microbatch_impl, "_gradient_execution_rebinder",
+                    return_value=lambda current: object()), patch.object(
+                        microbatch_impl, "microbatch_trace_preflight",
+                        side_effect=preflight), patch.object(
+                            microbatch_impl, "_source_producer", side_effect=producer), patch.object(
+                                microbatch_impl, "_finalize_source_hidden",
+                                return_value=mx.zeros((2, 1, 1), dtype=mx.float32)), patch.object(
+                                    microbatch_impl, "_decode_bamf_producer_row",
+                                    side_effect=lambda _backend, current, *_args, **_kwargs: current["x"]), patch.object(
+                                        microbatch_impl, "loss_bearing_bamf",
+                                        side_effect=lambda output, *_args, **_kwargs: SimpleNamespace(
+                                            loss=SimpleNamespace(total=output))), patch.object(
+                                                microbatch_impl, "finalize_microbatch_gradient",
+                                                return_value="done"):
+            result = microbatch_impl._bamf_microbatch_value_and_grad_impl(
+                Backend(), {"x": mx.array(1.0, dtype=mx.float32)}, row_batches,
+                plans, ((), ()), ({}, {}), None)
+        self.assertEqual(result, "done")
+        self.assertIs(seen["preflight"], snapshot)
+        self.assertIs(seen["autodiff"], snapshot)
 
 
 @skipUnless(REAL_BUNDLE, "real pinned A01 artifact not mounted")

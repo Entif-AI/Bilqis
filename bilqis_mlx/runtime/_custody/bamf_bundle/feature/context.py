@@ -56,6 +56,7 @@ class AuthenticatedGenerationFeatureContext:
     schema: FeatureSchema
     features: object
     receipt: AcceptedGenerationFeatureReceipt
+    construction_predecessor: object | None
     atlas_reload_count: int
     feature_manifest_rebuild_count: int
     _issuance: object = field(repr=False, compare=False)
@@ -91,12 +92,13 @@ def _issue_candidate_feature_context(
 
 def _issue_generation_feature_context(
         selection, snapshot, schema, features,
-        receipt, *, atlas_reload_count=1,
+        receipt, *, construction_predecessor=None, atlas_reload_count=1,
         feature_manifest_rebuild_count=1) -> AuthenticatedGenerationFeatureContext:
     context = object.__new__(AuthenticatedGenerationFeatureContext)
     for name, value in (
             ("selection", selection), ("snapshot", snapshot), ("schema", schema),
             ("features", features), ("receipt", receipt),
+            ("construction_predecessor", construction_predecessor),
             ("atlas_reload_count", atlas_reload_count),
             ("feature_manifest_rebuild_count", feature_manifest_rebuild_count),
             ("_issuance", _FEATURE_CONTEXT_ISSUER)):

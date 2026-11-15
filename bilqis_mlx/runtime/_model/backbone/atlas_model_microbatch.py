@@ -155,13 +155,16 @@ def _bamf_microbatch_value_and_grad_impl(
     generation = answer_plans[0].generation_binding
     if any(plan.generation_binding != generation for plan in answer_plans):
         _invalid("B11_MICROBATCH_GENERATION_BINDING_MISMATCH")
+    snapshot = answer_plans[0].snapshot
+    if any(plan.snapshot != snapshot for plan in answer_plans):
+        _invalid("B11_MICROBATCH_SEMANTIC_SNAPSHOT_MISMATCH")
     _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
     rebind_execution = _gradient_execution_rebinder(
         params, cache, spec=backend.topology, extents=batch.compiled.extents,
         generation=generation)
     preflight_executions = microbatch_trace_preflight(
         backend, params, batch, row_batches, answer_plans, targets, masks,
-        generation, cache, rebind_execution, salience_supervision)
+        generation, cache, rebind_execution, salience_supervision, snapshot)
     route_vectorized = route_microbatch_compatible(
         row_batches, answer_plans, targets, masks)
     refinement_selections = (
@@ -178,8 +181,8 @@ def _bamf_microbatch_value_and_grad_impl(
         with defer_host_tensor_validation():
             execution_binding = rebind_execution(current)
             producer, accepted_cache, _capture_derived_cache = _source_producer(
-                current, batch, generation, cache, execution_binding, trace=True,
-                snapshot=answer_plans[0].snapshot)
+                current, batch, generation, cache, execution_binding,
+                trace=True, snapshot=snapshot)
             hidden = _finalize_source_hidden(
                 producer, accepted_cache, batch, capture_derived_cache=False)
             if hidden.shape[0] != len(row_batches):

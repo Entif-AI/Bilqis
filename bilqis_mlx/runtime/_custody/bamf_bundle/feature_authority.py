@@ -186,7 +186,7 @@ def authenticate_bamf_candidate_feature_context(
 
 
 def authenticate_bamf_generation_feature_context(
-        student: CompleteStudent, artifact_path: str,
+        student: CompleteStudent, artifact_path: str | None,
         pointer_path: Path) -> AuthenticatedGenerationFeatureContext:
     """Replay feature inputs for one exact accepted generation through B13 custody."""
     if type(student) is not CompleteStudent or not isinstance(pointer_path, Path):
@@ -204,11 +204,13 @@ def authenticate_bamf_generation_feature_context(
             or receipt.active_set_sha256 != student.extents.active_semantic_digest
             or receipt.feature_sha256 != student.extents.factor_map_digest):
         invalid("BAMF_ACCEPTED_FEATURE_GENERATION_DRIFT")
-    source = _feature_source(student.compiler_features)
-    identity = _artifact_identity(source)
-    selection = AtlasArtifactSelection(
-        str(artifact_path), identity.bundle_id,
-        identity.release_sha256, identity.source_bundle_id)
+    selection = materialization.selection
+    if artifact_path is not None:
+        source = _feature_source(student.compiler_features)
+        identity = _artifact_identity(source)
+        selection = AtlasArtifactSelection(
+            str(artifact_path), identity.bundle_id,
+            identity.release_sha256, identity.source_bundle_id)
     schema = _feature_schema(student.compiler_features)
     snapshot = materialization.snapshot
     if (materialization.schema != schema
@@ -218,6 +220,7 @@ def authenticate_bamf_generation_feature_context(
         invalid("BAMF_ACCEPTED_FEATURE_GENERATION_DRIFT")
     return _issue_generation_feature_context(
         selection, snapshot, schema, features, receipt,
+        construction_predecessor=_construction,
         atlas_reload_count=materialization_count,
         feature_manifest_rebuild_count=materialization_count)
 
