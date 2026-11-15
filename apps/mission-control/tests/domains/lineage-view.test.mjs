@@ -6,6 +6,8 @@ import { fileURLToPath } from "node:url";
 
 import { parseDeepLink } from "../../renderer/deep-link.mjs";
 import { LINEAGE_FIXTURE } from "../../renderer/lineage/lineage-fixture.mjs";
+import { lineageT } from "../../renderer/lineage/lineage-messages.mjs";
+import { renderLineageMarkup } from "../../renderer/lineage/lineage-view.mjs";
 import {
   capabilityChanges,
   compareGenerations,
@@ -17,6 +19,7 @@ import {
   nodeByIdentity,
   rejectedCandidateCommitted,
 } from "../../renderer/lineage/lineage-model.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../../renderer/foundation/test-hooks.mjs";
 import { INSPECTOR_OWNERS } from "../../renderer/shell-state.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -65,7 +68,7 @@ test("compare is literal, branch aware, and never synthesizes an overall winner"
   const after = currentLineageNode();
   const comparison = compareGenerations(before.id, after.id);
   assert.equal(comparison.sameRun, true);
-  assert.match(comparison.interpretation, /No overall winner/);
+  assert.match(lineageT(`lineage.compare.${comparison.interpretationKey}`), /No overall winner/);
   assert.equal(comparison.rows.some((row) => row.state === "DIFFERENT"), true);
   assert.equal(comparison.capabilityChanges.some((row) => row.state !== "UNCHANGED"), false);
 });
@@ -89,9 +92,10 @@ test("capability diff can report lost and regressed evidence explicitly", () => 
 test("incompatible topology explains resource comparison unavailability", () => {
   const v1 = LINEAGE_FIXTURE.nodes[2];
   const v2 = LINEAGE_FIXTURE.nodes[3];
-  const row = compareGenerations(v1.id, v2.id).rows.find((item) => item.label === "Resource profile");
+  const row = compareGenerations(v1.id, v2.id).rows.find((item) => item.key === "resources");
   assert.equal(row.state, "UNAVAILABLE");
-  assert.match(row.reason, /Topology\/version changed/);
+  assert.equal(row.reasonKey, "topologyMismatch");
+  assert.match(lineageT(`lineage.compare.reason.${row.reasonKey}`), /Topology\/version changed/);
 });
 
 test("historical node is recursively immutable while current lineage advances", () => {
@@ -143,5 +147,70 @@ test("GUI14 fixture is grounded in current CP03, B13 and C10 executable contract
 test("lineage view exposes no checkpoint mutation, pruning, restore, or champion controls", () => {
   const source = fs.readFileSync(path.join(rendererRoot, "lineage/lineage-view.mjs"), "utf8");
   assert.doesNotMatch(source, /data-(restore|prune|delete|champion|mutate)=/i);
-  assert.match(source, /cannot restore, prune, mutate checkpoints, or select champions/i);
+  const markup = renderLineageMarkup();
+  assert.match(markup, new RegExp(lineageT("lineage.boundary.detail").replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i"));
+});
+
+test("target lineage markup is graph-led, dossier-oriented, localized, and stable-hooked", () => {
+  const markup = renderLineageMarkup();
+  assert.equal(assertUniqueTestIds(markup), true);
+  const hooks = new Set(collectTestIds(markup));
+  for (const id of [
+    "lineage-workspace", "lineage-heading", "lineage-fixture", "lineage-accepted",
+    "lineage-graph-scroll", "lineage-graph-tree", "lineage-accepted-table",
+    "lineage-dossier", "lineage-dossier-manifest", "lineage-compare",
+    "lineage-compare-before", "lineage-compare-after", "lineage-diff-table",
+    "lineage-capability-table", "lineage-rejected-boundary", "lineage-authority",
+  ]) assert.equal(hooks.has(id), true, id);
+  assert.match(markup, new RegExp(lineageT("lineage.title")));
+  assert.match(markup, /<ol class="lineage-tree"/);
+  assert.match(markup, /data-sticky="identity"/);
+  assert.match(markup, /<th scope="col"[^>]*>Source<\/th>/);
+  assert.doesNotMatch(markup, /overall winner is synthesized\.<\/strong>/i);
+});
+
+test("accepted lineage graph and table both expose exact generation selection hooks", () => {
+  const markup = renderLineageMarkup();
+  for (const node of LINEAGE_FIXTURE.nodes) {
+    assert.match(markup, new RegExp(`data-test-id="lineage-graph-generation-${node.generation}"`));
+    assert.match(markup, new RegExp(`data-test-id="lineage-table-generation-${node.generation}"`));
+  }
+});
+
+test("historical generation unavailable is a no-substitution boundary state", () => {
+  const markup = renderLineageMarkup({ context: { mode: "HISTORICAL", generation: 999999 } });
+  assert.match(markup, /data-test-id="lineage-historical-unavailable"/);
+  assert.match(markup, /999999/);
+  assert.match(markup, /Current generation data is not substituted/);
+  assert.doesNotMatch(markup, /data-test-id="lineage-accepted"/);
+  assert.doesNotMatch(markup, /data-test-id="lineage-dossier"/);
+});
+
+test("exact historical lineage pins the requested accepted generation without mutation", () => {
+  const historical = LINEAGE_FIXTURE.nodes[1];
+  const markup = renderLineageMarkup({ context: { mode: "HISTORICAL", generation: historical.generation } });
+  assert.match(markup, /data-test-id="lineage-historical-pinned"/);
+  assert.match(markup, new RegExp(`data-test-id="lineage-graph-generation-${historical.generation}"[^>]*aria-pressed="true"`));
+  assert.match(markup, /Historical lens pins generation/);
+});
+
+test("lineage owned human copy resolves through stable message keys", () => {
+  for (const key of [
+    "lineage.title", "lineage.graph.title", "lineage.dossier.fields", "lineage.compare.title",
+    "lineage.rejected.title", "lineage.historical.title", "lineage.boundary.detail",
+  ]) assert.equal(typeof lineageT(key), "string");
+  assert.equal(lineageT("lineage.dossier.title", { generation: 42 }), "Generation 42");
+});
+
+test("lineage CSS owns wide overflow and responsive accessibility states", () => {
+  const css = fs.readFileSync(path.join(rendererRoot, "lineage/lineage.css"), "utf8");
+  assert.match(css, /\.lineage-graph-scroll, \.lineage-table-wrap[^}]*overflow:\s*auto/);
+  assert.match(css, /data-sticky="identity"/);
+  assert.match(css, /data-density="compact"/);
+  assert.match(css, /@media \(max-width:\s*980px\)/);
+  assert.match(css, /@media \(max-width:\s*720px\)/);
+  assert.match(css, /prefers-reduced-motion/);
+  assert.match(css, /forced-colors/);
+  assert.match(css, /focus-visible/);
+  assert.doesNotMatch(css, /repeating-linear-gradient|box-shadow:\s*0\s+\d+px\s+\d+px/);
 });

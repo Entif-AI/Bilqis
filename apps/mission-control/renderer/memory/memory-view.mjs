@@ -18,44 +18,93 @@ import {
   slotsForPage,
   stableMemoryIdentity,
 } from "./memory-model.mjs";
+import { buildDeepLink } from "../deep-link.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
+import { t } from "../foundation/i18n.mjs";
 
 const ui = {
-  generation: currentMemoryGeneration().generation,
   compareGeneration: priorMemoryGeneration().generation,
   selectedPage: 0,
   selectedIdentity: stableMemoryIdentity(currentMemoryGeneration().slots[0]),
 };
 
+const STATE_KEYS = Object.freeze({
+  PRESENT: "memory.state.present",
+  ACTIVE: "memory.state.active",
+  HELD: "memory.state.held",
+  REJECTED: "memory.state.rejected",
+  MISSING: "memory.state.missing",
+  DIFF: "memory.state.diff",
+});
+
+function e(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
 function pct(value) {
-  return value === null ? "UNAVAILABLE" : `${(100 * value).toFixed(1)}%`;
+  return value === null ? t("memory.value.unavailable") : `${(100 * value).toFixed(1)}%`;
 }
 
 function bytes(value) {
   return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
 }
 
+function signed(value) {
+  return `${value >= 0 ? "+" : ""}${value}`;
+}
+
 function stateBadge(state) {
   const normalized = String(state).toLowerCase().replaceAll("_", "-");
-  return `<span class="memory-state" data-memory-state="${normalized}">${state}</span>`;
+  const label = t(STATE_KEYS[state] ?? "memory.state.present");
+  return `<span class="memory-state" data-memory-state="${e(normalized)}">${e(label)}</span>`;
+}
+
+function normalizedRouteContext(context) {
+  if (!context?.runId || !Number.isSafeInteger(context.generation)) return null;
+  return {
+    ...context,
+    historicalPinned: context.mode === "HISTORICAL",
+  };
+}
+
+function relationHref(view, kind, id, context) {
+  return buildDeepLink({
+    view,
+    selected: { kind, id },
+    ...(normalizedRouteContext(context) ? { context: normalizedRouteContext(context) } : {}),
+  });
 }
 
 function summaryPanel(snapshot) {
   const totals = receiptTotals(snapshot);
-  return `<section class="memory-panel">
-    <header><div><span class="eyebrow">Generation ${snapshot.generation}</span><h3>Engram memory summary</h3></div>${stateBadge("PRESENT")}</header>
-    <div class="memory-summary-grid">
-      <div><small>Allocated / capacity</small><strong>${snapshot.allocatedSlots} / ${snapshot.capacitySlots}</strong></div>
-      <div><small>Eligible hits</small><strong>${totals.hits}</strong><span>${totals.exact} exact · ${totals.structural} structural</span></div>
-      <div><small>Misses</small><strong>${totals.misses}</strong><span>held/foreign/quarantine count as non-reads upstream</span></div>
-      <div><small>Hit rate</small><strong>${pct(totals.hitRate)}</strong><span>retrieval telemetry only</span></div>
-      <div><small>Gate/use rate</small><strong>${pct(totals.gateUseRate)}</strong><span>${totals.gateUses} / ${totals.gateEligibleHits} eligible hits used</span></div>
-      <div><small>Memory state footprint</small><strong>${bytes(snapshot.memoryFootprint.stateBytes)}</strong><span>${bytes(snapshot.memoryFootprint.parameterBytes)} params · ${bytes(snapshot.memoryFootprint.optimizerBytes)} optimizer</span></div>
-    </div>
-    <div class="memory-site-receipts">${snapshot.readReceipts.map((receipt) => `<article>
-      <strong>Read site ${receipt.siteIndex}</strong><span>${receipt.exactCount} exact · ${receipt.structuralCount} structural · ${receipt.missCount} miss</span><small>${receipt.receiptId}</small>
-    </article>`).join("")}</div>
-    <p class="memory-doctrine"><strong>Boundary:</strong> memory hits and gate use are operational evidence. They are not source truth and do not prove learned capability.</p>
+  return `<section class="memory-surface memory-summary" data-test-id="memory-summary">
+    <header class="memory-section-heading">
+      <div><span class="eyebrow">${t("memory.summary.eyebrow")}</span><h3>${t("memory.summary.title")}</h3></div>
+      ${stateBadge("PRESENT")}
+    </header>
+    <dl class="memory-metric-band">
+      <div data-test-id="memory-summary-allocation"><dt>${t("memory.summary.allocatedCapacity")}</dt><dd>${snapshot.allocatedSlots} / ${snapshot.capacitySlots}</dd></div>
+      <div><dt>${t("memory.summary.eligibleHits")}</dt><dd>${totals.hits}</dd><small>${t("memory.summary.hitBreakdown", { exact: totals.exact, structural: totals.structural })}</small></div>
+      <div><dt>${t("memory.summary.misses")}</dt><dd>${totals.misses}</dd><small>${t("memory.summary.missDetail")}</small></div>
+      <div><dt>${t("memory.summary.hitRate")}</dt><dd>${pct(totals.hitRate)}</dd><small>${t("memory.summary.hitRateDetail")}</small></div>
+      <div><dt>${t("memory.summary.gateRate")}</dt><dd>${pct(totals.gateUseRate)}</dd><small>${t("memory.summary.gateRateDetail", { used: totals.gateUses, eligible: totals.gateEligibleHits })}</small></div>
+      <div><dt>${t("memory.summary.footprint")}</dt><dd>${bytes(snapshot.memoryFootprint.stateBytes)}</dd><small>${t("memory.summary.footprintDetail", { parameters: bytes(snapshot.memoryFootprint.parameterBytes), optimizer: bytes(snapshot.memoryFootprint.optimizerBytes) })}</small></div>
+    </dl>
+    <details class="memory-receipts" data-test-id="memory-read-site-receipts">
+      <summary>${t("memory.summary.receipts", { count: snapshot.readReceipts.length })}</summary>
+      <div class="memory-receipt-list">
+        ${snapshot.readReceipts.map((receipt, index) => `<div data-test-id="memory-read-site-${index}">
+          <strong>${t("memory.summary.readSite", { site: receipt.siteIndex })}</strong>
+          <span>${t("memory.summary.readSiteCounts", { exact: receipt.exactCount, structural: receipt.structuralCount, misses: receipt.missCount })}</span>
+          <code>${e(receipt.receiptId)}</code>
+        </div>`).join("")}
+      </div>
+    </details>
+    <p class="memory-boundary"><strong>${t("memory.summary.boundary")}:</strong> ${t("memory.summary.boundaryDetail")}</p>
   </section>`;
 }
 
@@ -69,93 +118,171 @@ function memoryRelations(slot) {
 function atlasPanel(snapshot) {
   const pages = pageSummaries(snapshot);
   const pageSlots = slotsForPage(snapshot, ui.selectedPage);
-  return `<section class="memory-panel">
-    <header><div><span class="eyebrow">Memory atlas</span><h3>Aggregate → page → stable motif</h3></div><span>${snapshot.pageCount} page · ${snapshot.pageRows} rows/page</span></header>
-    <div class="memory-pages">${pages.map((page) => `<button type="button" data-memory-page="${page.pageIndex}" aria-pressed="${page.pageIndex === ui.selectedPage}">
-      <strong>motif.page.${page.pageIndex}</strong><span>${page.allocated} allocated · ${page.active} active · ${page.held} held</span><small>${page.optimizerParticipating} currently optimizer-participating</small>
-    </button>`).join("")}</div>
-    <div class="memory-slot-list">${pageSlots.length ? pageSlots.map((slot) => {
-      const identity = stableMemoryIdentity(slot);
-      return `<button type="button" data-memory-slot="${identity}" ${objectDomAttributes({
-        kind: "memory", id: identity, relations: memoryRelations(slot),
-      })} aria-pressed="${identity === ui.selectedIdentity}">
-        <span class="slot-address">${slotAddress(slot)}</span><strong>${identity}</strong><span>${slot.frameSchemaId}</span>${stateBadge(slot.allocationState)}
-      </button>`;
-    }).join("") : `<p class="memory-muted">No allocated slots on this page.</p>`}</div>
+  const currentPosition = Math.max(0, pages.findIndex((page) => page.pageIndex === ui.selectedPage));
+  return `<section class="memory-surface memory-atlas" data-test-id="memory-atlas">
+    <header class="memory-section-heading">
+      <div><span class="eyebrow">${t("memory.atlas.eyebrow")}</span><h3>${t("memory.atlas.title")}</h3><p>${t("memory.atlas.summary")}</p></div>
+    </header>
+    <nav class="memory-page-nav" aria-label="${e(t("memory.atlas.eyebrow"))}" data-test-id="memory-page-navigation">
+      <button type="button" data-memory-page-step="-1" data-test-id="memory-page-previous" ${currentPosition === 0 ? "disabled" : ""}>${t("memory.atlas.previous")}</button>
+      <strong data-test-id="memory-page-position">${t("memory.atlas.page", { current: currentPosition + 1, total: pages.length })}</strong>
+      <button type="button" data-memory-page-step="1" data-test-id="memory-page-next" ${currentPosition >= pages.length - 1 ? "disabled" : ""}>${t("memory.atlas.next")}</button>
+    </nav>
+    <div class="memory-table-wrap" tabindex="0" role="region" aria-label="${e(t("memory.atlas.title"))}">
+      <table class="memory-slot-table">
+        <thead><tr>
+          <th scope="col">${t("memory.atlas.address")}</th>
+          <th scope="col">${t("memory.atlas.identity")}</th>
+          <th scope="col">${t("memory.atlas.frameSchema")}</th>
+          <th scope="col">${t("memory.atlas.state")}</th>
+          <th scope="col">${t("memory.atlas.relations")}</th>
+        </tr></thead>
+        <tbody>${pageSlots.length ? pageSlots.map((slot) => {
+          const identity = stableMemoryIdentity(slot);
+          const selected = identity === ui.selectedIdentity;
+          return `<tr data-memory-allocation-state="${e(slot.allocationState.toLowerCase())}" data-selected="${selected}" data-test-id="memory-slot-row-${slot.pageIndex}-${slot.rowIndex}">
+            <td><code>${e(slotAddress(slot))}</code></td>
+            <td><button type="button" class="memory-slot-action" data-memory-slot="${e(identity)}" data-test-id="memory-slot-select-${slot.pageIndex}-${slot.rowIndex}" ${objectDomAttributes({
+              kind: "memory", id: identity, relations: memoryRelations(slot),
+            })} aria-pressed="${selected}" aria-label="${e(t("memory.atlas.select", { identity }))}"><code>${e(identity)}</code></button></td>
+            <td><code>${e(slot.frameSchemaId)}</code></td>
+            <td>${stateBadge(slot.allocationState)}</td>
+            <td>${t("memory.atlas.relationCounts", { capabilities: slot.capabilities.length, episodes: slot.episodes.length })}</td>
+          </tr>`;
+        }).join("") : `<tr><td colspan="5" class="memory-muted">${t("memory.atlas.empty")}</td></tr>`}</tbody>
+      </table>
+    </div>
   </section>`;
 }
 
-function slotPanel(snapshot) {
+function refList(items) {
+  return items.length
+    ? `<ul class="memory-ref-list">${items.map((item) => `<li><code>${e(item)}</code></li>`).join("")}</ul>`
+    : `<span class="memory-muted">${t("memory.value.none")}</span>`;
+}
+
+function relationList(items, view, kind, messageKey, context) {
+  return items.length
+    ? `<ul class="memory-action-list">${items.map((id, index) => `<li><a href="${e(relationHref(view, kind, id, context))}" data-test-id="memory-related-${kind}-${index}">${e(t(messageKey, { id }))}</a></li>`).join("")}</ul>`
+    : `<span class="memory-muted">${t("memory.value.none")}</span>`;
+}
+
+function evidenceList(slot, context) {
+  return slot.evidenceRefs.length
+    ? `<ul class="memory-action-list">${slot.evidenceRefs.map((id, index) => `<li><code>${e(id)}</code><a href="${e(relationHref("evidence", "evidence", id, context))}" data-test-id="memory-related-evidence-${index}">${e(t("memory.dossier.openEvidence", { id }))}</a></li>`).join("")}</ul>`
+    : `<span class="memory-muted">${t("memory.value.none")}</span>`;
+}
+
+function slotPanel(snapshot, context) {
   const slot = slotByIdentity(snapshot, ui.selectedIdentity);
   if (!slot) {
-    return `<section class="memory-panel"><header><div><span class="eyebrow">Motif inspector</span><h3>No committed slot selected</h3></div>${stateBadge("MISSING")}</header></section>`;
+    return `<section class="memory-surface memory-dossier" data-test-id="memory-dossier">
+      <header class="memory-section-heading"><div><span class="eyebrow">${t("memory.dossier.eyebrow")}</span><h3>${t("memory.dossier.missingTitle")}</h3></div>${stateBadge("MISSING")}</header>
+    </section>`;
   }
   const interpretation = capabilityInterpretation(slot);
-  return `<section class="memory-panel memory-inspector">
-    <header><div><span class="eyebrow">Stable BAMF memory identity</span><h3>${stableMemoryIdentity(slot)}</h3></div>${stateBadge(slot.allocationState)}</header>
-    <dl class="memory-details">
-      <dt>Identity contract</dt><dd><code>${slot.schema}</code></dd>
-      <dt>Key digest</dt><dd><code>${slot.keyDigest}</code></dd>
-      <dt>Semantic release</dt><dd><code>${slot.semanticRelease}</code></dd>
-      <dt>Exact address</dt><dd>${slotAddress(slot)} · slot ${slot.slotId}</dd>
-      <dt>Source eligibility</dt><dd>${slot.sourceEligibility}${slot.heldReason ? ` · ${slot.heldReason}` : ""}</dd>
-      <dt>Creation generation</dt><dd>${slot.createdGeneration}</dd>
-      <dt>Last use</dt><dd>g${slot.lastUse.generation} · step ${slot.lastUse.optimizerStep} · ${slot.lastUse.receiptId}</dd>
-      <dt>Lifetime hits</dt><dd>${slot.hitCount} / ${slot.eligibleReadCount} eligible reads · ${pct(slotHitRate(slot))}</dd>
-      <dt>Gate activity</dt><dd>${slot.gateUseCount} uses · ${pct(slotGateUseRate(slot))} of hits</dd>
-      <dt>Parameter bank</dt><dd>${slot.parameterBank} · ${slot.allocationExtent}</dd>
-      <dt>Optimizer participation</dt><dd>${slot.optimizerParticipated ? `YES · ${slot.optimizerUpdateCount} updates` : "NO"}</dd>
-      <dt>Correction / requalification</dt><dd>${slot.correctionState}${slot.correctionRef ? ` · ${slot.correctionRef}` : ""}</dd>
-      <dt>Source refs</dt><dd>${slot.sourceRefs.join("<br>")}</dd>
-      <dt>Evidence refs</dt><dd>${slot.evidenceRefs.join("<br>")}</dd>
-      <dt>Related capabilities</dt><dd>${slot.capabilities.join("<br>") || "none"}</dd>
-      <dt>Related episodes</dt><dd>${slot.episodes.join("<br>") || "none"}</dd>
-      <dt>Capability interpretation</dt><dd><strong>${interpretation.label}</strong></dd>
-    </dl>
+  return `<section class="memory-surface memory-dossier" data-test-id="memory-dossier">
+    <header class="memory-section-heading">
+      <div><span class="eyebrow">${t("memory.dossier.eyebrow")}</span><h3>${t("memory.dossier.title")}</h3><code class="memory-primary-identity">${e(stableMemoryIdentity(slot))}</code></div>
+      ${stateBadge(slot.allocationState)}
+    </header>
+    <div class="memory-dossier-grid">
+      <section><h4>${t("memory.dossier.identitySection")}</h4><dl>
+        <div><dt>${t("memory.dossier.identityContract")}</dt><dd><code>${e(slot.schema)}</code></dd></div>
+        <div><dt>${t("memory.dossier.keyDigest")}</dt><dd><code>${e(slot.keyDigest)}</code></dd></div>
+        <div><dt>${t("memory.dossier.semanticRelease")}</dt><dd><code>${e(slot.semanticRelease)}</code></dd></div>
+        <div><dt>${t("memory.dossier.exactAddress")}</dt><dd>${e(t("memory.dossier.exactAddressValue", { address: slotAddress(slot), slot: slot.slotId }))}</dd></div>
+      </dl></section>
+      <section><h4>${t("memory.dossier.useSection")}</h4><dl>
+        <div><dt>${t("memory.dossier.sourceEligibility")}</dt><dd>${e(slot.sourceEligibility)}${slot.heldReason ? ` · ${e(slot.heldReason)}` : ""}</dd></div>
+        <div><dt>${t("memory.dossier.created")}</dt><dd>${t("memory.dossier.createdValue", { generation: slot.createdGeneration })}</dd></div>
+        <div><dt>${t("memory.dossier.lastUse")}</dt><dd>${e(t("memory.dossier.lastUseValue", { generation: slot.lastUse.generation, step: slot.lastUse.optimizerStep, receipt: slot.lastUse.receiptId }))}</dd></div>
+        <div><dt>${t("memory.dossier.lifetimeHits")}</dt><dd>${t("memory.dossier.lifetimeHitsValue", { hits: slot.hitCount, eligible: slot.eligibleReadCount, rate: pct(slotHitRate(slot)) })}</dd></div>
+        <div><dt>${t("memory.dossier.gateActivity")}</dt><dd>${t("memory.dossier.gateActivityValue", { uses: slot.gateUseCount, rate: pct(slotGateUseRate(slot)) })}</dd></div>
+      </dl></section>
+      <section><h4>${t("memory.dossier.stateSection")}</h4><dl>
+        <div><dt>${t("memory.dossier.parameterBank")}</dt><dd>${e(slot.parameterBank)} · ${e(slot.allocationExtent)}</dd></div>
+        <div><dt>${t("memory.dossier.optimizer")}</dt><dd>${slot.optimizerParticipated ? t("memory.dossier.optimizerYes", { updates: slot.optimizerUpdateCount }) : t("memory.dossier.optimizerNo")}</dd></div>
+        <div><dt>${t("memory.dossier.correction")}</dt><dd>${e(slot.correctionState)}${slot.correctionRef ? ` · ${e(slot.correctionRef)}` : ""}</dd></div>
+      </dl></section>
+    </div>
+    <p class="memory-capability-boundary"><strong>${t("memory.dossier.capabilityBoundary")}:</strong> ${t(interpretation.messageKey)}</p>
+    <details class="memory-provenance" data-test-id="memory-dossier-provenance">
+      <summary>${t("memory.dossier.provenance")}</summary>
+      <div class="memory-provenance-grid">
+        <section><h4>${t("memory.dossier.sourceRefs")}</h4>${refList(slot.sourceRefs)}</section>
+        <section><h4>${t("memory.dossier.evidenceRefs")}</h4>${evidenceList(slot, context)}</section>
+        <section><h4>${t("memory.dossier.relatedCapabilities")}</h4>${relationList(slot.capabilities, "capability", "capability", "memory.dossier.openCapability", context)}</section>
+        <section><h4>${t("memory.dossier.relatedEpisodes")}</h4>${relationList(slot.episodes, "learning", "episode", "memory.dossier.openEpisode", context)}</section>
+      </div>
+    </details>
   </section>`;
 }
 
 function comparePanel(snapshot) {
-  const before = MEMORY_GENERATIONS.find((item) => item.generation === ui.compareGeneration) ?? priorMemoryGeneration();
+  const candidates = MEMORY_GENERATIONS.filter((item) => item.generation !== snapshot.generation);
+  const before = candidates.find((item) => item.generation === ui.compareGeneration) ?? candidates[0] ?? snapshot;
   const delta = memoryCompare(before, snapshot);
   const rows = [
-    ["Created", delta.created],
-    ["Removed", delta.removed],
-    ["Held", delta.held],
-    ["Requalified", delta.requalified],
+    ["created", "memory.compare.created", delta.created],
+    ["removed", "memory.compare.removed", delta.removed],
+    ["held", "memory.compare.held", delta.held],
+    ["requalified", "memory.compare.requalified", delta.requalified],
   ];
-  return `<section class="memory-panel">
-    <header><div><span class="eyebrow">Generation comparison</span><h3>g${before.generation} → g${snapshot.generation}</h3></div>${stateBadge("DIFF")}</header>
-    <div class="memory-compare-controls"><label>Compare from <select data-memory-compare>${MEMORY_GENERATIONS.filter((item) => item.generation !== snapshot.generation).map((item) => `<option value="${item.generation}" ${item.generation === before.generation ? "selected" : ""}>Generation ${item.generation}</option>`).join("")}</select></label></div>
-    <div class="memory-delta-grid">${rows.map(([label, identities]) => `<article data-delta-kind="${label.toLowerCase()}"><strong>${label} · ${identities.length}</strong>${identities.length ? `<ul>${identities.map((identity) => `<li>${identity}</li>`).join("")}</ul>` : `<span>none</span>`}</article>`).join("")}</div>
+  return `<section class="memory-surface memory-compare" data-test-id="memory-generation-comparison">
+    <header class="memory-section-heading"><div><span class="eyebrow">${t("memory.compare.eyebrow")}</span><h3>${t("memory.compare.title")}</h3></div>${stateBadge("DIFF")}</header>
+    <label class="memory-compare-control">${t("memory.compare.from")}
+      <select data-memory-compare data-test-id="memory-compare-generation">${candidates.map((item) => `<option value="${item.generation}" ${item.generation === before.generation ? "selected" : ""}>${t("memory.compare.option", { generation: item.generation })}</option>`).join("")}</select>
+    </label>
+    <div class="memory-table-wrap">
+      <table class="memory-delta-table"><thead><tr><th>${t("memory.compare.dimension")}</th><th>${t("memory.compare.count")}</th><th>${t("memory.compare.identities")}</th></tr></thead>
+        <tbody>${rows.map(([kind, key, identities]) => `<tr data-delta-kind="${kind}" data-test-id="memory-compare-${kind}"><th scope="row">${t(key)}</th><td>${identities.length}</td><td>${identities.length ? identities.map((identity) => `<code>${e(identity)}</code>`).join("<br>") : t("memory.value.none")}</td></tr>`).join("")}</tbody>
+      </table>
+    </div>
+    <h4>${t("memory.compare.metrics")}</h4>
     <dl class="memory-compare-metrics">
-      <div><dt>Allocation Δ</dt><dd>${delta.allocationDelta >= 0 ? "+" : ""}${delta.allocationDelta}</dd></div>
-      <div><dt>Capacity Δ</dt><dd>${delta.capacityDelta >= 0 ? "+" : ""}${delta.capacityDelta}</dd></div>
-      <div><dt>Batch hit Δ</dt><dd>${delta.hitDelta >= 0 ? "+" : ""}${delta.hitDelta}</dd></div>
-      <div><dt>Batch miss Δ</dt><dd>${delta.missDelta >= 0 ? "+" : ""}${delta.missDelta}</dd></div>
-      <div><dt>Gate-use Δ</dt><dd>${delta.gateUseDelta >= 0 ? "+" : ""}${delta.gateUseDelta}</dd></div>
+      <div><dt>${t("memory.compare.allocation")}</dt><dd>${signed(delta.allocationDelta)}</dd></div>
+      <div><dt>${t("memory.compare.capacity")}</dt><dd>${signed(delta.capacityDelta)}</dd></div>
+      <div><dt>${t("memory.compare.hits")}</dt><dd>${signed(delta.hitDelta)}</dd></div>
+      <div><dt>${t("memory.compare.misses")}</dt><dd>${signed(delta.missDelta)}</dd></div>
+      <div><dt>${t("memory.compare.gate")}</dt><dd>${signed(delta.gateUseDelta)}</dd></div>
     </dl>
-    <p class="memory-doctrine">The retained manifest is append-only. A zero physical-removal count is expected here; correction-driven loss of eligibility appears as HELD rather than silently deleting memory identity.</p>
+    <p class="memory-boundary">${t("memory.compare.boundary")}</p>
   </section>`;
 }
 
 function rejectedCandidatePanel(snapshot) {
   const invariant = rejectedCandidateInvariant(REJECTED_MEMORY_CANDIDATE, snapshot);
-  return `<section class="memory-panel rejected-memory">
-    <header><div><span class="eyebrow">Rejected candidate boundary</span><h3>${REJECTED_MEMORY_CANDIDATE.candidateId}</h3></div>${stateBadge("REJECTED")}</header>
-    <div class="rejected-memory-proof">
-      <div><small>Proposed-only memory identity</small><strong>${invariant.proposedIdentity}</strong></div>
-      <div><small>Parent allocation preserved</small><strong>${invariant.parentAllocationPreserved ? "YES" : "NO"}</strong></div>
-      <div><small>Committed child generation</small><strong>${invariant.noCommittedGeneration ? "NONE" : REJECTED_MEMORY_CANDIDATE.committedGeneration}</strong></div>
-      <div><small>Proposed slot in committed memory</small><strong>${invariant.proposedSlotAbsent ? "ABSENT" : "PRESENT · INVALID"}</strong></div>
-    </div>
-    <p>${REJECTED_MEMORY_CANDIDATE.reasonCode} · candidate-local allocation evidence is not retained memory.</p>
+  return `<section class="memory-rejected" data-test-id="memory-rejected-boundary">
+    <header class="memory-section-heading"><div><span class="eyebrow">${t("memory.rejected.eyebrow")}</span><h3>${t("memory.rejected.title")}</h3></div>${stateBadge("REJECTED")}</header>
+    <dl class="memory-rejected-proof">
+      <div><dt>${t("memory.rejected.candidate")}</dt><dd><code>${e(REJECTED_MEMORY_CANDIDATE.candidateId)}</code></dd></div>
+      <div><dt>${t("memory.rejected.proposed")}</dt><dd><code>${e(invariant.proposedIdentity)}</code></dd></div>
+      <div><dt>${t("memory.rejected.parent")}</dt><dd>${invariant.parentAllocationPreserved ? t("memory.value.yes") : t("memory.value.no")}</dd></div>
+      <div><dt>${t("memory.rejected.committed")}</dt><dd>${invariant.noCommittedGeneration ? t("memory.value.none") : REJECTED_MEMORY_CANDIDATE.committedGeneration}</dd></div>
+      <div><dt>${t("memory.rejected.slot")}</dt><dd>${invariant.proposedSlotAbsent ? t("memory.value.absent") : t("memory.value.presentInvalid")}</dd></div>
+      <div><dt>${t("memory.rejected.reason")}</dt><dd><code>${e(REJECTED_MEMORY_CANDIDATE.reasonCode)}</code></dd></div>
+    </dl>
+    <p class="memory-boundary">${t("memory.rejected.boundary")}</p>
   </section>`;
 }
 
+function historicalUnavailable(generation) {
+  return `<div class="memory-view" data-test-id="memory-workspace">
+    <section class="memory-historical-unavailable" data-test-id="memory-historical-unavailable">
+      <header class="memory-section-heading"><div><span class="eyebrow">${t("memory.historical.eyebrow")}</span><h2>${t("memory.historical.title")}</h2></div>${stateBadge("MISSING")}</header>
+      <p>${t("memory.historical.detail", { generation })}</p>
+    </section>
+  </div>`;
+}
+
 function bind(container, inspectMemory, snapshot, context) {
-  container.querySelectorAll("[data-memory-page]").forEach((button) => button.addEventListener("click", () => {
-    ui.selectedPage = Number(button.dataset.memoryPage);
+  container.querySelectorAll("[data-memory-page-step]").forEach((button) => button.addEventListener("click", () => {
+    const pages = pageSummaries(snapshot);
+    const current = pages.findIndex((page) => page.pageIndex === ui.selectedPage);
+    const next = pages[current + Number(button.dataset.memoryPageStep)];
+    if (!next) return;
+    ui.selectedPage = next.pageIndex;
     const first = slotsForPage(snapshot, ui.selectedPage)[0];
     if (first) ui.selectedIdentity = stableMemoryIdentity(first);
     renderMemoryView(container, inspectMemory, ui.selectedIdentity, context);
@@ -178,24 +305,20 @@ export function renderMemoryView(container, inspectMemory, selectedIdentity = nu
     try {
       snapshot = memoryGeneration(context.generation);
     } catch (_error) {
-      container.innerHTML = `<div class="memory-view"><section class="memory-panel">
-        <header><div><span class="eyebrow">Historical memory</span><h2>UNAVAILABLE</h2></div>${stateBadge("MISSING")}</header>
-        <p class="memory-doctrine">No exact Engram fixture exists for generation ${context.generation}. The global historical lens remains unchanged.</p>
-      </section></div>`;
+      container.innerHTML = historicalUnavailable(context.generation);
       return;
     }
   }
-  if (selectedIdentity && slotByIdentity(snapshot, selectedIdentity)) {
-    ui.selectedIdentity = selectedIdentity;
-  }
+  if (selectedIdentity && slotByIdentity(snapshot, selectedIdentity)) ui.selectedIdentity = selectedIdentity;
+  if (!slotByIdentity(snapshot, ui.selectedIdentity)) ui.selectedIdentity = stableMemoryIdentity(snapshot.slots[0]);
   const selected = slotByIdentity(snapshot, ui.selectedIdentity);
   if (selected) ui.selectedPage = selected.pageIndex;
-  container.innerHTML = `<div class="memory-view">
-    <header class="memory-heading"><div><span class="eyebrow">GUI10 · Engram Memory</span><h2>Retained motif memory atlas</h2></div><p>Inspect retained allocation and read telemetry. Memory retrieval is not semantic authority and is never promoted into a capability claim.</p></header>
-    <div class="memory-fixture-notice" role="status"><strong>FIXTURE · RETAINED-CONTRACT SHAPE</strong><span>Detailed slot telemetry is a checked-in fixture grounded in B07/B08/B12 contracts because the current CP03 MemorySnapshot remains summary-only.</span></div>
+  container.innerHTML = `<div class="memory-view" data-test-id="memory-workspace">
+    <header class="memory-heading" data-test-id="memory-heading"><div><span class="eyebrow">${t("memory.heading.eyebrow")}</span><h2>${t("memory.heading.title")}</h2></div><p>${t("memory.heading.summary")}</p></header>
+    <div class="memory-fixture-notice" role="note" data-test-id="memory-fixture-posture"><strong>${t("memory.fixture.label")}</strong><span>${t("memory.fixture.detail")}</span></div>
     ${summaryPanel(snapshot)}
     ${atlasPanel(snapshot)}
-    ${slotPanel(snapshot)}
+    ${slotPanel(snapshot, context)}
     ${comparePanel(snapshot)}
     ${rejectedCandidatePanel(snapshot)}
   </div>`;

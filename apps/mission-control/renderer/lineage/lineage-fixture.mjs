@@ -6,12 +6,12 @@ function deepFreeze(value) {
   return Object.freeze(value);
 }
 
-const manifestField = (key, label, value, sourceRef) => ({
-  key, label, value, sourceRef,
+const manifestField = (key, value, sourceRef) => ({
+  key, value, sourceRef,
 });
 
 const generation = ({
-  generation, manifest, parent, checkpoint, receipt, transitionClass, transitionLabel,
+  generation, manifest, parent, checkpoint, receipt, transitionClass,
   manifestTransition,
   topologyVersion, topologyDigest, implementationDigest, semanticRelease, factoryRelease,
   bankCount, activeSetDigest, frameCompiler, correctionFrontier, optimizerStep,
@@ -27,33 +27,32 @@ const generation = ({
   checkpointSha256: checkpoint,
   receiptId: receipt,
   transitionClass,
-  transitionLabel,
   manifestFields: [
-    manifestField("topology", "Topology digest / version",
+    manifestField("topology",
       `${topologyDigest} · ${topologyVersion}`, `manifest:${manifest}#topology`),
-    manifestField("implementation", "Implementation digest",
+    manifestField("implementation",
       implementationDigest, `manifest:${manifest}#implementation_sha256`),
-    manifestField("transition", "Manifest transition",
+    manifestField("transition",
       manifestTransition, `manifest:${manifest}#transition.kind`),
-    manifestField("releases", "Semantic / Factory release",
+    manifestField("releases",
       `${semanticRelease} / ${factoryRelease}`, `${receipt}#semantic_release+factory_release`),
-    manifestField("abi", "Active ABI / banks",
+    manifestField("abi",
       `${bankCount} banks · set ${activeSetDigest}`, `manifest:${manifest}#sidecars.semantic_abi`),
-    manifestField("compiler", "Frame compiler identity",
+    manifestField("compiler",
       frameCompiler, `${receipt}#compiler_sha256`),
-    manifestField("correction", "Source / rights / correction frontier",
+    manifestField("correction",
       correctionFrontier, `manifest:${manifest}#sidecars.correction_frontier`),
-    manifestField("optimizer", "Retained optimizer step",
+    manifestField("optimizer",
       String(optimizerStep), `manifest:${manifest}#optimizer.step`),
-    manifestField("motif", "Motif allocation identity",
+    manifestField("motif",
       motifAllocation, `manifest:${manifest}#sidecars.motif_allocation`),
-    manifestField("teacher", "Teacher epoch",
+    manifestField("teacher",
       String(teacherEpoch), `manifest:${manifest}#sidecars.teacher_state`),
-    manifestField("evaluation", "Evaluation contract",
+    manifestField("evaluation",
       evaluationContract, `manifest:${manifest}#sidecars.evaluation_contract`),
-    manifestField("projection", "Outbox / projection frontier",
+    manifestField("projection",
       projectionFrontier, `manifest:${manifest}#sidecars.outbox`),
-    manifestField("checkpoint", "Checkpoint / acceptance receipt",
+    manifestField("checkpoint",
       `checkpoint:${checkpoint} · ${receipt}`, `generation:${generation}#meta.receipt_refs`),
   ],
   compare: {
@@ -89,7 +88,7 @@ export const LINEAGE_FIXTURE_CONTRACT = deepFreeze({
   bundleSchema: "bilqis.mlx.bamf-generation-bundle/v2",
   featureReceiptSchema: "bilqis.mlx.bamf-accepted-generation-feature-receipt/v1",
   projectionSchema: "bilqis.c10.generation-projection/v1",
-  posture: "FIXTURE · RETAINED-CONTRACT SHAPE",
+  posture: "FIXTURE_RETAINED_CONTRACT_SHAPE",
 });
 
 export const LINEAGE_FIXTURE = deepFreeze({
@@ -99,7 +98,7 @@ export const LINEAGE_FIXTURE = deepFreeze({
     generation({
       generation: 44237, manifest: M37, parent: null, checkpoint: digest("a"),
       receipt: "receipt:acceptance:44237", transitionClass: "INITIAL",
-      transitionLabel: "Initial accepted generation", manifestTransition: "INITIAL",
+      manifestTransition: "INITIAL",
       topologyVersion: "BAMF-V1",
       topologyDigest: digest("6"), implementationDigest: digest("7"),
       semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
@@ -114,7 +113,7 @@ export const LINEAGE_FIXTURE = deepFreeze({
     generation({
       generation: 44238, manifest: M38, parent: M37, checkpoint: digest("f"),
       receipt: "receipt:acceptance:44238", transitionClass: "RETAINED_CANDIDATE",
-      transitionLabel: "Retained candidate progression", manifestTransition: "RETAINED_CANDIDATE",
+      manifestTransition: "RETAINED_CANDIDATE",
       topologyVersion: "BAMF-V1",
       topologyDigest: digest("6"), implementationDigest: digest("7"),
       semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
@@ -129,7 +128,7 @@ export const LINEAGE_FIXTURE = deepFreeze({
     generation({
       generation: 44239, manifest: M39, parent: M38, checkpoint: digest("a"),
       receipt: "receipt:acceptance:44239", transitionClass: "PARAMETER_EXTENSION",
-      transitionLabel: "Semantic admission / bank expansion", manifestTransition: "PARAMETER_EXTENSION",
+      manifestTransition: "PARAMETER_EXTENSION",
       topologyVersion: "BAMF-V1",
       topologyDigest: digest("6"), implementationDigest: digest("7"),
       semanticRelease: digest("1"), factoryRelease: digest("9"), bankCount: 3,
@@ -144,7 +143,7 @@ export const LINEAGE_FIXTURE = deepFreeze({
     generation({
       generation: 44240, manifest: M40, parent: M38, checkpoint: digest("4"),
       receipt: "receipt:recovery:44240", transitionClass: "RECOVERY_FORK",
-      transitionLabel: "Explicit recovery fork from generation 44238", manifestTransition: "MODEL_SWAP",
+      manifestTransition: "MODEL_SWAP",
       topologyVersion: "BAMF-V2",
       topologyDigest: digest("5"), implementationDigest: digest("6"),
       semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
@@ -159,7 +158,7 @@ export const LINEAGE_FIXTURE = deepFreeze({
     generation({
       generation: 44241, manifest: M41, parent: M40, checkpoint: digest("9"),
       receipt: "receipt:requalification:44241", transitionClass: "CORRECTION_REQUALIFICATION",
-      transitionLabel: "Correction and requalification epoch", manifestTransition: "RETAINED_CANDIDATE",
+      manifestTransition: "RETAINED_CANDIDATE",
       topologyVersion: "BAMF-V2",
       topologyDigest: digest("5"), implementationDigest: digest("6"),
       semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,

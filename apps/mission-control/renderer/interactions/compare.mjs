@@ -24,29 +24,29 @@ function row(key, label, left, right, state = null, reason = null) {
 }
 
 const GENERATION_ROWS = Object.freeze({
-  "Capability debt": ["capability-debt", "investigation.compare.row.capabilityDebt"],
-  "Retention disposition": ["retention-disposition", "investigation.compare.row.retentionDisposition"],
-  "Active semantic set": ["active-semantic-set", "investigation.compare.row.activeSemanticSet"],
-  "Active bank count": ["active-bank-count", "investigation.compare.row.activeBankCount"],
-  "Memory allocation/state": ["memory-allocation-state", "investigation.compare.row.memoryAllocation"],
-  "Source/correction frontier": ["source-correction-frontier", "investigation.compare.row.correctionFrontier"],
-  "Teacher epoch": ["teacher-epoch", "investigation.compare.row.teacherEpoch"],
-  "Topology digest/version": ["topology-digest-version", "investigation.compare.row.topology"],
-  "Implementation digest": ["implementation-digest", "investigation.compare.row.implementationDigest"],
-  "Resource profile": ["resource-profile", "investigation.compare.row.resourceProfile"],
-  "Evaluation contract": ["evaluation-contract", "investigation.compare.row.evaluationContract"],
-  "Projection frontier": ["projection-frontier", "investigation.compare.row.projectionFrontier"],
+  debt: ["capability-debt", "investigation.compare.row.capabilityDebt"],
+  retention: ["retention-disposition", "investigation.compare.row.retentionDisposition"],
+  activeSemanticSet: ["active-semantic-set", "investigation.compare.row.activeSemanticSet"],
+  bankCount: ["active-bank-count", "investigation.compare.row.activeBankCount"],
+  memory: ["memory-allocation-state", "investigation.compare.row.memoryAllocation"],
+  correctionFrontier: ["source-correction-frontier", "investigation.compare.row.correctionFrontier"],
+  teacherEpoch: ["teacher-epoch", "investigation.compare.row.teacherEpoch"],
+  topology: ["topology-digest-version", "investigation.compare.row.topology"],
+  implementation: ["implementation-digest", "investigation.compare.row.implementationDigest"],
+  resources: ["resource-profile", "investigation.compare.row.resourceProfile"],
+  evaluation: ["evaluation-contract", "investigation.compare.row.evaluationContract"],
+  projection: ["projection-frontier", "investigation.compare.row.projectionFrontier"],
 });
 
-function generationLabel(label) {
-  const row = GENERATION_ROWS[label];
-  return row ? t(row[1]) : label;
+function generationLabel(key) {
+  const definition = GENERATION_ROWS[key];
+  return definition ? t(definition[1]) : key;
 }
 
-function generationReason(reason) {
-  return reason === "Topology/version changed; these resource profiles are not declared comparable."
+function generationReason(reasonKey) {
+  return reasonKey === "topologyMismatch"
     ? t("investigation.compare.topologyUnavailable")
-    : reason;
+    : null;
 }
 
 function relationLabel(value) {
@@ -108,7 +108,7 @@ function compareGenerationRefs(left, right) {
   const rows = [
     row("relation", t("investigation.compare.row.relation"), relationLabel(comparison.relation), relationLabel(comparison.relation), "SAME"),
     ...comparison.rows.map((item) =>
-      row(GENERATION_ROWS[item.label]?.[0] ?? item.label, generationLabel(item.label), item.before, item.after, item.state, generationReason(item.reason))),
+      row(GENERATION_ROWS[item.key]?.[0] ?? item.key, generationLabel(item.key), item.before, item.after, item.state, generationReason(item.reasonKey))),
     ...comparison.capabilityChanges.map((item) =>
       row(`capability-${item.id}`, t("investigation.compare.row.capability", { id: item.id }), item.before, item.after, item.state)),
   ];
