@@ -63,10 +63,24 @@ def _released_categorical_factors(parameters, row):
     return type_mean, role, schema
 
 
-def _source_qualified_feature_row(features, request, atlas_selection=None):
+def _source_qualified_feature_row(
+        features, request, atlas_selection=None, qualified_feature_rows=None):
     if type(request) is not FeatureRequest:
         _invalid()
     request.__post_init__()
+    if qualified_feature_rows is not None:
+        if not isinstance(qualified_feature_rows, Mapping):
+            _invalid()
+        row = qualified_feature_rows.get(
+            (request.frame_handle, request.member_handle))
+        if (row is None
+                or row.semantic_id != request.concept.semantic_id
+                or row.abi_index != request.concept.abi_index
+                or row.role_id != request.role_id
+                or row.schema_id != request.schema_id
+                or row.scope != request.scope):
+            _invalid()
+        return row
     frame = request.projection.frame(request.frame_handle)
     return source_qualified_feature_row(
         features, request.concept, request.role_id, frame, request.scope,
@@ -82,17 +96,23 @@ def _released_factor_terms(parameters, row):
             gates[FactorGate.GRAPH] * (mx.array(row.graph64, dtype=mx.float32) @
                                       parameters["features.project_graph"].T))
 
-def _compose_one(parameters, request, features, atlas_selection=None):
-    row = _source_qualified_feature_row(features, request, atlas_selection)
+def _compose_one(
+        parameters, request, features, atlas_selection=None,
+        qualified_feature_rows=None):
+    row = _source_qualified_feature_row(
+        features, request, atlas_selection, qualified_feature_rows)
     terms = _released_factor_terms(parameters, row)
     type_role = terms[FactorGate.TYPE] + terms[FactorGate.ROLE]
     factors = (type_role + terms[FactorGate.SCHEMA] + terms[FactorGate.GRAPH] +
                _local_position(parameters["features.local_slot"], request.local_slot))
     return type_role, factors
 
-def compose_factor_features(parameters: Mapping[str, mx.array], requests: tuple[tuple[FeatureRequest, ...], ...],
-                            features: AtlasFeatures, *, extents: GenerationExtents,
-                            atlas_selection: AtlasArtifactSelection | None = None) -> FactorComposition:
+def compose_factor_features(
+        parameters: Mapping[str, mx.array],
+        requests: tuple[tuple[FeatureRequest, ...], ...],
+        features: AtlasFeatures, *, extents: GenerationExtents,
+        atlas_selection: AtlasArtifactSelection | None = None,
+        qualified_feature_rows=None) -> FactorComposition:
     """Use actual A06 rows and shared B01 tables; never accept anonymous feature tensors.
 
     Each projected type/role/schema/graph term has its learned sigmoid gate.
@@ -102,8 +122,9 @@ def compose_factor_features(parameters: Mapping[str, mx.array], requests: tuple[
     Identity-bank activation and model-generation admission remain upstream.
     """
     _validate_composer(parameters, requests, features, extents)
-    composed = [[_compose_one(parameters, request, features, atlas_selection)
-                 for request in batch] for batch in requests]
+    composed = [[_compose_one(
+        parameters, request, features, atlas_selection, qualified_feature_rows)
+        for request in batch] for batch in requests]
     type_role = mx.stack([mx.stack([item[0] for item in batch]) for batch in composed])
     all_factors = mx.stack([mx.stack([item[1] for item in batch]) for batch in composed])
     return FactorComposition(type_role, all_factors, features.digest, features.semantic_release,
