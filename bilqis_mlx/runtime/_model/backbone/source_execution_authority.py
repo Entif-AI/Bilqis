@@ -174,16 +174,16 @@ def require_b11_source_execution_authority(
     config: FrameCompilerConfig,
     source: SourceAtomRow,
 ) -> B11SourceExecutionAuthority:
-    """Require the exact process-live row/config/source objects bound at issuance."""
+    """Require cheap exact-object currentness after the bind-time content proof."""
     if (
         type(authority) is not B11SourceExecutionAuthority
         or authority._issuance is not _ISSUER
         or authority._compiled_row is not compiled_row
         or authority._config is not config
         or authority._source is not source
+        or authority.source_digest != _source_digest(source)
     ):
         _invalid("B11_SOURCE_EXECUTION_AUTHORITY_DRIFT")
-    authority.__post_init__()
     return authority
 
 
