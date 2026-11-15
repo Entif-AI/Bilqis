@@ -12,6 +12,7 @@ from .model_topology_v2 import GenerationExtents, ModelTopologySpecV2
 
 
 UNADMITTED_TRACE = "UNADMITTED_TRACE"
+HIDDEN_RANK = 3
 _ATTENTION_PARAMETERS = (
     "query", "key", "value", "output", "conv_q", "conv_k", "conv_v")
 
@@ -40,7 +41,7 @@ class BackboneGroupTrace:
     def __post_init__(self) -> None:
         if (type(self.hidden) is not mx.array
                 or self.hidden.dtype != mx.float32
-                or self.hidden.ndim != 3
+                or self.hidden.ndim != HIDDEN_RANK
                 or type(self.group_index) is not int
                 or type(self.layer_start) is not int
                 or type(self.layer_end) is not int
