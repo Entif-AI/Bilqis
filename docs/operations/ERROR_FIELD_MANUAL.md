@@ -1886,7 +1886,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2097** raw raises across **270** files. The baseline gate permits only reduction.
+Current production scan: **2098** raw raises across **271** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -3779,7 +3779,7 @@ Current production scan: **2097** raw raises across **270** files. The baseline 
 | `_DIGEST_INVALID` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
 | `_INVALID` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
 | `_STALE` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
-| `bamf_operator must not inspect Factory capability order` | 1 | `bilqis_mlx/runtime/tests/operator/test_bamf_operator_session.py` |
+| `bamf_operator must not inspect Factory capability order` | 1 | `bilqis_mlx/runtime/tests/operator/test_bamf_operator_routing.py` |
 | `boom` | 1 | `bilqis_mlx/runtime/tests/model/parity/test_mlx_memory.py` |
 | `disposable interruption before pointer publication` | 1 | `bilqis_mlx/runtime/tests/admission/atlas/lease/test_renewal.py` |
 | `durability failure` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication.py` |
@@ -3798,6 +3798,7 @@ Current production scan: **2097** raw raises across **270** files. The baseline 
 | `signature` | 1 | `bilqis_mlx/runtime/tests/teacher/priority/test_priority_qualification.py` |
 | `snapshot must not mutate MLX telemetry` | 1 | `bilqis_mlx/runtime/tests/model/resources/test_memory_retry.py` |
 | `source-owned context was not approved` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/correction_runtime/temporal_support.py` |
+| `steps must be a positive integer` | 1 | `bilqis_mlx/runtime/tests/correction/capability_support_owner_support.py` |
 | `test synchronization timed out` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication_recovery.py` |
 | `undefined` | 1 | `bilqis_mlx/semantics/tests/foundation/test_source_memo.py` |
 | `unlock failed` | 4 | `bilqis_mlx/runtime/_coordination/tests/test_run_root_claim.py`, `bilqis_mlx/runtime/tests/admission/atlas/lease/test_storage.py` |

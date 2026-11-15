@@ -5,12 +5,12 @@
   "decision_equal": true,
   "evidence_sha_equal": true,
   "first_cache_reused": false,
-  "first_screen_ns": 279054250,
+  "first_screen_ns": 304093834,
   "fixed_case_count": 16,
   "parent_context_calls_first": 16,
   "parent_context_calls_total": 16,
   "schema": "bilqis.mlx.c05-parent-assessment-cache-timing/v1",
   "second_cache_reused": true,
-  "second_over_first": 0.34813033666392823,
-  "second_screen_ns": 97147250
+  "second_over_first": 0.4427149121346538,
+  "second_screen_ns": 134626875
 }

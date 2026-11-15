@@ -132,6 +132,7 @@ def _rejection_custody():
     evidence = {
         "schema": "bilqis.bamf.c16.3-rejection/v2",
         "visit_id": "visit:beta",
+        "capability": "capability:beta",
         "selected_option_id": "capability:beta",
         "selected_policy_key": "policy",
         "candidate_optimizer_step": 12,

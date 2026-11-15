@@ -105,8 +105,14 @@ def _add_training_execution_args(parser) -> None:
                         help="After --human-run authorization, autonomously measure, teach, and remeasure factory evidence while preserving the school scheduler")
     parser.add_argument("--issue-349-experiment-root", type=Path,
                         help="Register/enforce this run under issue #349's <=2-run, 100-GB collective experiment custody root")
-    parser.add_argument("--minutes", type=int, default=90)
-    parser.add_argument("--steps-per-visit", type=int, default=16)
+    parser.add_argument(
+        "--minutes", type=int, default=90,
+        help=("Session admission window in minutes. A bounded candidate already in flight "
+              "finishes atomically before the next time-limit check."))
+    parser.add_argument(
+        "--steps-per-visit", type=int, default=16,
+        help=("Training steps per visit. For BAMF --resume the atomic candidate ceiling is "
+              "1-16 and teacher-owned interference policy may shorten it."))
     parser.add_argument("--max-visits", type=int, default=0,
                         help="Optional complete visit cap (default 0: use --minutes and disk reserve)")
     parser.add_argument("--timing-trace", action="store_true",

@@ -26,17 +26,21 @@ from bilqis_mlx.runtime.bamf_bundle import (
     read_accepted_generation_feature_context, record_bamf_rejection,
 )
 from bilqis_mlx.runtime.bamf_bundle.admission import (
-    accept_and_publish, load_accepted_generation,
+    accept_and_publish, bind_accepted_execution_cache, load_accepted_generation,
 )
 from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObservation
 from bilqis_mlx.runtime.factory_retention_owner import evaluate_factory_retention_candidate
 from bilqis_mlx.runtime.foundation_teacher_owner import (
     derive_accepted_teacher_successor, select_foundation_priority_visit,
 )
+from bilqis_mlx.runtime.priority_rejection_replay import candidate_step_horizon
 from bilqis_mlx.semantics.atlas.feature_io import persist_feature_manifest
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactIdentity
 import bilqis_mlx.semantics.atlas.snapshot as _atlas_snapshot
 from .locking import bamf_operator_lock
+
+
+_MAX_CANDIDATE_HORIZON = 16
 
 
 def _invalid(reason: str):
@@ -61,6 +65,7 @@ class BamfPreparedVisit:
     parent: object
     selection: object | None = None
     step: object | None = None
+    steps: tuple = ()
     decision: object | None = None
     retained: object | None = None
     capability: str | None = None
@@ -116,23 +121,38 @@ class _Capture:
         })
 
 
-def _step_seed(visit_id: str) -> int:
+def _step_seed(visit_id: str, ordinal: int = 1) -> int:
+    if type(ordinal) is not int or ordinal < 1:
+        _invalid("BAMF_C16_3_STEP_ORDINAL_INVALID")
+    suffix = "" if ordinal == 1 else f"|step={ordinal}"
     return int.from_bytes(sha256(
-        f"bilqis.bamf.c16.3-step-seed/v1|{visit_id}".encode()).digest()[:8], "big")
+        f"bilqis.bamf.c16.3-step-seed/v1|{visit_id}{suffix}".encode()).digest()[:8], "big")
 
 
 def _resource_observation(run_dir: Path, step) -> dict:
     """Capture only resource facts the accepted visit can truthfully support."""
-    cost = getattr(step, "realized_cost", None)
-    if not isinstance(cost, dict):
+    steps = step if type(step) is tuple else (step,)
+    if not steps:
         _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
-    budget = cost.get("c08_memory_budget_bytes")
-    wall_seconds = cost.get("wall_seconds")
-    optimizer_steps = cost.get("optimizer_steps")
-    if (type(budget) is not int or budget <= 0
-            or type(wall_seconds) not in (int, float) or type(wall_seconds) is bool
-            or not math.isfinite(wall_seconds) or wall_seconds <= 0
-            or type(optimizer_steps) is not int or optimizer_steps < 1):
+    budget, wall_seconds = None, 0.0
+    for ordinal, item in enumerate(steps, 1):
+        cost = getattr(item, "realized_cost", None)
+        if not isinstance(cost, dict):
+            _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+        current_budget = cost.get("c08_memory_budget_bytes")
+        current_wall = cost.get("wall_seconds")
+        if (type(current_budget) is not int or current_budget <= 0
+                or (budget is not None and current_budget != budget)
+                or type(current_wall) not in (int, float) or type(current_wall) is bool
+                or not math.isfinite(current_wall) or current_wall <= 0
+                or cost.get("optimizer_steps") != 1
+                or cost.get("candidate_optimizer_steps", ordinal) != ordinal):
+            _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+        budget = current_budget
+        wall_seconds += float(current_wall)
+    final_transaction = getattr(steps[-1], "transaction", None)
+    optimizer_steps = getattr(final_transaction, "update_steps", len(steps))
+    if optimizer_steps != len(steps):
         _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
     disk_used = shutil.disk_usage(Path(run_dir)).used
     return {
@@ -149,8 +169,13 @@ def _emit_progress(progress, message: str) -> None:
         progress(message)
 
 
-def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
+def prepare_bamf_visit(
+        run_dir: Path, *, steps_per_visit: int = 16,
+        progress=None) -> BamfPreparedVisit:
     """Compose the production visit through retention without publishing it."""
+    if (type(steps_per_visit) is not int
+            or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON):
+        _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
     _emit_progress(progress, "validating accepted generation and source custody")
     parent, context, atlas_path, feature_path = _execution_context(run_dir)
     program = schedule_program_from_executable_release(context.release)
@@ -166,17 +191,35 @@ def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
     _emit_progress(
         progress,
         f"selected {selection.offer.capability_id} with {len(rows)} source rows")
-    observation = FactoryDeliveryObservation(
-        _Capture(run_dir, selection), parent.retained_state.optimizer_step + 1,
-        rows, selection.offer.source_seed)
-    _emit_progress(progress, "executing selected neural candidate")
-    step = execute_accepted_priority_candidate(
-        selection, context, atlas_path, feature_path,
-        teacher_hparams=parent.optimizer_hyperparameters,
-        observation=observation,
-        optimizer_step_seed=_step_seed(selection.visit.identity.visit_id),
-        max_norm=1.0)
     capability = selection.offer.capability_id
+    cache = bind_accepted_execution_cache(run_dir)
+    horizon = candidate_step_horizon(
+        run_dir, parent, cache, capability, steps_per_visit)
+    _emit_progress(
+        progress,
+        f"candidate horizon is atomic for up to {horizon} optimizer steps; "
+        "the session time limit is checked between candidate visits")
+    capture = _Capture(run_dir, selection)
+    steps, candidate = [], None
+    for ordinal in range(1, horizon + 1):
+        observation = FactoryDeliveryObservation(
+            capture, parent.retained_state.optimizer_step + ordinal,
+            rows, selection.offer.source_seed)
+        _emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
+        step = execute_accepted_priority_candidate(
+            selection, context, atlas_path, feature_path,
+            teacher_hparams=parent.optimizer_hyperparameters,
+            observation=observation,
+            optimizer_step_seed=_step_seed(selection.visit.identity.visit_id, ordinal),
+            max_norm=1.0, candidate=candidate,
+            finalize_candidate=(ordinal == horizon))
+        candidate = step.transaction
+        if candidate.update_steps != ordinal:
+            _invalid("BAMF_C16_3_CANDIDATE_HORIZON_DRIFT")
+        steps.append(step)
+        if getattr(candidate, "motif_transition", None) is not None:
+            break
+    step = steps[-1]
     _emit_progress(progress, "evaluating retention evidence")
     evaluation = evaluate_factory_retention_candidate(
         context, step.transaction, atlas_path, capability, run_dir=run_dir)
@@ -190,15 +233,18 @@ def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
                 "event": "BAMF_C16_3_ACCEPTED",
                 "optimizer_step": retained.optimizer_step,
                 "capability": capability,
-                "resource": _resource_observation(run_dir, step),
+                "resource": _resource_observation(run_dir, tuple(steps)),
             },))
     return BamfPreparedVisit(
-        "ACCEPTED" if decision.accepted else "REJECTED",
-        parent, selection, step, decision, retained, capability, successor)
+        "ACCEPTED" if decision.accepted else "REJECTED", parent,
+        selection=selection, step=step, steps=tuple(steps), decision=decision,
+        retained=retained, capability=capability, successor=successor)
 
 
-def _visit(run_dir: Path, reserve_gib: float, *, progress=None):
-    prepared = prepare_bamf_visit(run_dir, progress=progress)
+def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
+           progress=None):
+    prepared = prepare_bamf_visit(
+        run_dir, steps_per_visit=steps_per_visit, progress=progress)
     if prepared.status in {"HELD", "ACTION_REQUIRED"}:
         return prepared.status
     parent = prepared.parent
@@ -234,12 +280,15 @@ def _visit(run_dir: Path, reserve_gib: float, *, progress=None):
 
 def operate_bamf(
     run_dir: Path, *, minutes: int = 90,
-    max_visits: int = 0, reserve_gib: float = 100.0,
+    max_visits: int = 0, steps_per_visit: int = 16,
+    reserve_gib: float = 100.0,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
-            or max_visits < 0 or reserve_gib < 0):
+            or max_visits < 0 or type(steps_per_visit) is not int
+            or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON
+            or reserve_gib < 0):
         _invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
     run_dir = Path(run_dir).resolve()
     deadline = time.monotonic() + minutes * 60
@@ -248,7 +297,9 @@ def operate_bamf(
     with bamf_operator_lock(run_dir):
         while time.monotonic() < deadline and (not max_visits or visits < max_visits):
             _emit_progress(progress, f"starting visit {visits + 1}")
-            outcome = _visit(run_dir, reserve_gib, progress=progress)
+            outcome = _visit(
+                run_dir, reserve_gib, steps_per_visit=steps_per_visit,
+                progress=progress)
             _emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
             if outcome in {"HELD", "ACTION_REQUIRED"}:
                 status = "PRIORITY_HOLD" if outcome == "HELD" else "ACTION_REQUIRED"
