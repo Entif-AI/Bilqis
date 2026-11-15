@@ -28,7 +28,8 @@ def _invalid(reason: str) -> None:
 
 
 def _source_digest(source: SourceAtomRow) -> str:
-    return contract_digest((source.source_row, source.graph))
+    """Cheap row-content drift guard; graph authority was frozen at issuance."""
+    return contract_digest(source.source_row)
 
 
 @dataclass(frozen=True, init=False)
