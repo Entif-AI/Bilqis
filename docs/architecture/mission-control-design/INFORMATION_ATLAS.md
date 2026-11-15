@@ -1,6 +1,6 @@
-# Mission Control target-state information atlas
+# Admin Main Frame target-state information atlas
 
-Status: proposed target UI anatomy for the Mission Control redesign
+Status: proposed target UI anatomy for the Admin Main Frame redesign
 Parent authority: GitHub issue #1124
 Current implementation substrate: `CURRENT_STATE_UI_INVENTORY.md`
 Cross-view relationships: `FLOWS.md`
@@ -11,7 +11,7 @@ This atlas specifies **everything we currently intend to show or operate in the 
 
 A target node belongs here only when it earns a place in the redesigned experience: it conveys operator-relevant information, supports an interaction, communicates a meaningful state, provides required accessibility behavior, or creates a necessary transition/effect. Current elements with no target-state purpose are removed rather than memorialized.
 
-Concrete consequence: the current standalone `B` brand mark is **not part of the target UI**. Product identity is conveyed by a quiet textual `Mission Control` navigation label and the window/application context; the rail does not spend permanent space on an ornamental glyph.
+Concrete consequence: the current standalone `B` brand mark is **not part of the target UI**. Product identity is conveyed by a quiet textual `Admin Main Frame` navigation label and the window/application context; the rail does not spend permanent space on an ornamental glyph.
 
 ## Diagram convention
 
@@ -42,9 +42,9 @@ flowchart LR
   COMPD015 --> COMPD015C1["COMP-D-015.1<br/>Skip link"]
   COMPD015 --> COMPD015C2["COMP-D-015.2<br/>Main-content focus target"]
   SHELLD001 --> COMPD001["COMP-D-001<br/>Primary navigation rail"]
-  COMPD001 --> COMPD001C1["COMP-D-001.1<br/>Mission Control text label"]
+  COMPD001 --> COMPD001C1["COMP-D-001.1<br/>Admin Main Frame text label"]
   COMPD001 --> COMPD001C2["COMP-D-001.2<br/>Overview & learning group"]
-  COMPD001C2 --> NCOMP_D_001_2_1["COMP-D-001.2.1<br/>Mission Control"]
+  COMPD001C2 --> NCOMP_D_001_2_1["COMP-D-001.2.1<br/>Admin Main Frame"]
   COMPD001C2 --> NCOMP_D_001_2_2["COMP-D-001.2.2<br/>School"]
   COMPD001C2 --> NCOMP_D_001_2_3["COMP-D-001.2.3<br/>Capability Explorer"]
   COMPD001C2 --> NCOMP_D_001_2_4["COMP-D-001.2.4<br/>Learning"]
@@ -145,7 +145,7 @@ flowchart LR
   SHELLD001 --> COMPD008["COMP-D-008<br/>Command palette"]
   COMPD008 --> COMPD008C1["COMP-D-008.1<br/>Grouped destinations"]
   COMPD008C1 --> NCOMP_D_008_1_1["COMP-D-008.1.1<br/>Overview & learning"]
-  NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_1["COMP-D-008.1.1.1<br/>Mission Control"]
+  NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_1["COMP-D-008.1.1.1<br/>Admin Main Frame"]
   NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_2["COMP-D-008.1.1.2<br/>School"]
   NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_3["COMP-D-008.1.1.3<br/>Capability Explorer"]
   NCOMP_D_008_1_1 --> NCOMP_D_008_1_1_4["COMP-D-008.1.1.4<br/>Learning"]
@@ -181,7 +181,7 @@ flowchart LR
 - **Current substrate / disposition:** Retain CUR-COMP-015; simplify naming only.
 
 #### COMP-D-001 · Primary navigation rail
-- **Target constituents:** `COMP-D-001.1` Mission Control text label; `COMP-D-001.2` Overview & learning group; `COMP-D-001.3` Representation & mechanisms group; `COMP-D-001.4` Decision & correction group; `COMP-D-001.5` Provenance & operations group; `COMP-D-001.6` Command trigger; `COMP-D-001.7` Responsive navigation mode
+- **Target constituents:** `COMP-D-001.1` Admin Main Frame text label; `COMP-D-001.2` Overview & learning group; `COMP-D-001.3` Representation & mechanisms group; `COMP-D-001.4` Decision & correction group; `COMP-D-001.5` Provenance & operations group; `COMP-D-001.6` Command trigger; `COMP-D-001.7` Responsive navigation mode
 - **Information shown:** Grouped access to all fourteen destinations and the command palette. No standalone logo glyph.
 - **Treatment:** Quiet fixed rail; textual identity only; selected destination visible without a giant filled block.
 - **Interaction:** Navigate by pointer/keyboard; Command trigger opens palette.
@@ -288,13 +288,13 @@ flowchart LR
 - **CUR-COMP-009 · Fixture provenance boundary:** Remove from the production shell. The redesign leaves carry their own explicit fixture/reference posture where a fixture remains part of a destination. The scientific visual-language catalog remains test/reference material, not a permanent application surface.
 - **CUR-COMP-014 · App URI / deep-link affordance:** Merge into `COMP-D-007 · Global inspector`, as specified above. Exact deep-link construction and hydration remain functional behavior, but no separate permanent shell surface survives.
 
-## VIEW-D-001 · Mission Control
+## VIEW-D-001 · Admin Main Frame
 
 Answer, at a glance: Is it running? Is it learning? Is it regressing, blocked, or invalid? What is it doing now, and what needs my attention?
 
 ```mermaid
 flowchart LR
-  VIEWD001["VIEW-D-001<br/>Mission Control"]
+  VIEWD001["VIEW-D-001<br/>Admin Main Frame"]
   VIEWD001 --> COMPD107["COMP-D-107<br/>Startup / no-learning state"]
   COMPD107 --> COMPD107C1["COMP-D-107.1<br/>Accepted generation"]
   COMPD107 --> COMPD107C2["COMP-D-107.2<br/>Optimizer step"]
@@ -1762,7 +1762,7 @@ flowchart LR
 
 ## VIEW-D-013 · Evidence
 
-Find and inspect exact Mission Control records, literal payloads and provenance while preserving degraded/partial states and investigation origin.
+Find and inspect exact Admin Main Frame records, literal payloads and provenance while preserving degraded/partial states and investigation origin.
 
 ```mermaid
 flowchart LR
@@ -2023,7 +2023,7 @@ The component register owns composition and behavior. The concern profiles below
 | Scope | State / authority posture | Accessibility posture | i18n posture | Test-hook posture |
 | --- | --- | --- | --- | --- |
 | SHELL-D-001 | Live/historical/defensive/investigation context remains explicit; shell never upgrades source, derived or operator-local authority; Operate gating follows verified live context. | Skip path, landmarks, keyboard navigation, focus return, live announcements, non-color defensive cues, reduced-motion/forced-colors behavior. | Every visible shell label/status/help string tokenized; machine identities remain data; grouped nav tolerates expansion. | `shell-*`, `nav-*`, `investigation-*`, `inspector-*`, `palette-*`; one exact ID per rendered element. |
-| VIEW-D-001 Mission Control | Summary only; current work, retained learning, attention and health remain distinct. | Heading/focus order, state cues, quiet empty/startup states, drill-through controls keyboard reachable. | Startup/status/attention/pulse/health copy tokenized. | `home-*` families. |
+| VIEW-D-001 Admin Main Frame | Summary only; current work, retained learning, attention and health remain distinct. | Heading/focus order, state cues, quiet empty/startup states, drill-through controls keyboard reachable. | Startup/status/attention/pulse/health copy tokenized. | `home-*` families. |
 | VIEW-D-002 School | Measured capability evidence stays distinct from declared curriculum/topology and semantic binding. | Sticky table orientation; local overflow discoverable; graph keyboard operation; equivalent tables for both dependency and curriculum graphs. | Filters, columns, topology/semantic guidance tokenized. | `school-*`, `curriculum-*`, stable row/node suffixes. |
 | VIEW-D-003 Capability Explorer | Measured chronology/source support only; no inferred causes. | Dossier section order, evidence disclosures, bounded pagination and exact-value access. | Section labels, helper copy, source/evidence controls tokenized. | `capability-*`, `capability-evidence-*`. |
 | VIEW-D-004 Learning | Episode, candidate state, accepted lineage and retention/rollback proof remain separate. | Ordered replay controls, comparison semantics, terminal-state announcements. | Stage/outcome/retention copy tokenized. | `learning-*`, `learning-stage-*`. |

@@ -99,7 +99,7 @@ Fresh reconciled proof:
 - focused Memory + accessibility + layout + renderer-protocol seam: **39/39 PASS**
 - exact Chrome/CDP browser qualification: **7/7 variants PASS**
 - `verify:leaf`: **PASS**
-  - Mission Control renderer: **352/352 PASS**
+  - Admin Main Frame renderer: **352/352 PASS**
   - Electron security: **53/53 PASS**
   - Python bridge: **6/6 PASS**
   - development structure, governance integrity, legacy trainer authority, and BAMF flow control: PASS

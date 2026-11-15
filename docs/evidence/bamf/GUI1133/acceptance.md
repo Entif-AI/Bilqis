@@ -107,9 +107,9 @@ Final composed-tree qualification against current unified
 
 - `verify:leaf`: **PASS** with quality/structure/governance green, static
   adaptation-source authority green, flow-control green, differential gate
-  correctly reused/skipped for the UI-only delta, **301/301 Mission Control UI
+  correctly reused/skipped for the UI-only delta, **301/301 Admin Main Frame UI
   tests**, **53/53 Electron security tests**, and **6/6 Python bridge tests**.
-- Mission Control Python discovery: **80/80 passed**. Python 3.14 emitted
+- Admin Main Frame Python discovery: **80/80 passed**. Python 3.14 emitted
   `ResourceWarning` messages for unclosed SQLite connections during teardown;
   the suite still exited `0`. This leaf does not modify that backend lifecycle.
 - The fresh worktree initially lacked the checked-in npm dependency tree, so the

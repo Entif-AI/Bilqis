@@ -1,4 +1,4 @@
-# Mission Control Home rendered acceptance evidence
+# Admin Main Frame Home rendered acceptance evidence
 
 Issue #1129 redesigns `VIEW-D-001` from the unified baseline
 `dc9b881e20b8c825042e4697e60f396264d16156`.

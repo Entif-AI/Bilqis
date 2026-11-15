@@ -25,7 +25,7 @@ class MissionControlConsumerFixtureTests(unittest.TestCase):
         terminal_view = bamf_status(payload)
         self.assertEqual(terminal_view, decoded)
         terminal = render_panel(terminal_view, {}, width=None)
-        self.assertIn("MISSION CONTROL | run fixture-run | generation 7", terminal)
+        self.assertIn("ADMIN MAIN FRAME | run fixture-run | generation 7", terminal)
         self.assertIn("RECORD | operator-view:fixture-run:7 | coverage COMPLETE", terminal)
 
     def test_valid_non_operator_schema_has_deterministic_type_mismatch(self):

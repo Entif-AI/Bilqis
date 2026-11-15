@@ -1,4 +1,4 @@
-# BAMF Mission Control Operate (GUI17)
+# BAMF Admin Main Frame Operate (GUI17)
 
 Issue: #1072
 Parent: #1047
@@ -6,7 +6,7 @@ Command owner: CP05 / #1053 over C11 / #384
 
 ## Purpose
 
-GUI17 is the explicit Mission Control mutation zone. It does not create a second BAMF operator, command language, trainer, scheduler, or shell. It exposes the command semantics already admitted by CP05 and C11 through the fixed GUI20 Electron boundary.
+GUI17 is the explicit Admin Main Frame mutation zone. It does not create a second BAMF operator, command language, trainer, scheduler, or shell. It exposes the command semantics already admitted by CP05 and C11 through the fixed GUI20 Electron boundary.
 
 Observation destinations remain read-only. Only the Operate controller may call the renderer command APIs `requestDryRun`, `requestCommand`, and `fetchReceipt`; a source-level boundary test enforces that invariant.
 
@@ -41,7 +41,7 @@ This design makes preview a review aid rather than an authorization token. The a
 
 ## Stale-context behavior
 
-For a real non-fixture Mission Control context, GUI17 also compares any known shell run/generation/generation-manifest/topology/Factory/semantic identities with the CP05 preview target. A mismatch blocks authorization in the renderer and tells the operator to refresh and preflight again.
+For a real non-fixture Admin Main Frame context, GUI17 also compares any known shell run/generation/generation-manifest/topology/Factory/semantic identities with the CP05 preview target. A mismatch blocks authorization in the renderer and tells the operator to refresh and preflight again.
 
 The CP05 `expectedTargetRef` check remains the authoritative stale-target guard. Renderer comparison is defense in depth and operator feedback, not command authority.
 

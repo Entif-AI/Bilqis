@@ -1,4 +1,4 @@
-# GUI1143 · Mission Control redesign integrated acceptance
+# GUI1143 · Admin Main Frame redesign integrated acceptance
 
 Issue: #1143
 Parent design authority: #1124
@@ -6,7 +6,7 @@ Unified base at final acceptance: `2dac4d9273af2a0fe6a0161352c21e295ddfbc39`
 
 ## Result
 
-The redesigned Mission Control application passes the integrated closeout gate across all fourteen destinations. The final pass reconciles the target atlas with the current-state inventory, removes stale shell surfaces that had no target-state owner, enforces stable test-hook selection, closes cross-leaf accessibility and responsive-layout defects, and records whole-app rendered evidence instead of relying on leaf-local unit tests alone.
+The redesigned Admin Main Frame application passes the integrated closeout gate across all fourteen destinations. The final pass reconciles the target atlas with the current-state inventory, removes stale shell surfaces that had no target-state owner, enforces stable test-hook selection, closes cross-leaf accessibility and responsive-layout defects, and records whole-app rendered evidence instead of relying on leaf-local unit tests alone.
 
 The closeout changed presentation and testability only where the integrated application proved a defect. It does not change BAMF semantic authority, trainer policy, source-gold behavior, model state, or mutation authority.
 
@@ -49,7 +49,7 @@ All `FLOW-D-*` and `CON-D-*` references used by the design bundle resolve to the
 - BAMF flow control: PASS
 - BAMF flow-control tests: 15/15 PASS
 - differential leaf gate: policy skip for this presentation-only change set
-- Mission Control renderer: 368/368 PASS
+- Admin Main Frame renderer: 368/368 PASS
 - Electron security: 53/53 PASS
 - Python bridge: 6/6 PASS
 - `git diff --check`: PASS

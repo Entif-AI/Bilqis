@@ -1,6 +1,6 @@
 ---
 version: alpha
-name: Bilqis Mission Control
+name: Bilqis Admin Main Frame
 description: Calm scientific workstation for inspecting and operating the Bilqis learner with progressive disclosure, evidence-first semantics, and defensive-state clarity.
 colors:
   primary: "#7CC8EA"
@@ -160,11 +160,11 @@ components:
     padding: 16px
 ---
 
-# Bilqis Mission Control Design System
+# Bilqis Admin Main Frame Design System
 
 ## Overview
 
-Mission Control is a **calm scientific workstation**: the screen equivalent of a high-end benchtop laboratory instrument with the editorial clarity of a well-composed scientific figure. It exists to help a technically sophisticated operator inspect a learning system, compare evidence, understand uncertainty, and take deliberate action under normal, historical, partial, stale, and failure conditions.
+Admin Main Frame is a **calm scientific workstation**: the screen equivalent of a high-end benchtop laboratory instrument with the editorial clarity of a well-composed scientific figure. It exists to help a technically sophisticated operator inspect a learning system, compare evidence, understand uncertainty, and take deliberate action under normal, historical, partial, stale, and failure conditions.
 
 The interface is an instrument, not a marketing surface. It should feel quiet, exact, legible, and trustworthy. Information density is welcome when the task requires it, but density must be earned by hierarchy and progressive disclosure. The default view of a screen should reveal the operator's current context, the purpose of the destination, the primary working surface, and the next meaningful action. Forensic depth belongs behind inspection, disclosure, or deliberate navigation.
 
@@ -216,7 +216,7 @@ Never silently truncate operator-significant values such as strategy, intent, ca
 
 ## Layout
 
-Mission Control uses a responsive workstation layout, not a fixed dashboard grid. The shell establishes persistent context and navigation; the workspace adapts to the task.
+Admin Main Frame uses a responsive workstation layout, not a fixed dashboard grid. The shell establishes persistent context and navigation; the workspace adapts to the task.
 
 Spacing follows an 8px base rhythm with a 4px half-step. Related content is closer together than unrelated content. Empty space is semantic structure, not wasted capacity.
 
@@ -246,7 +246,7 @@ The default disclosure ladder is:
 
 ## Elevation & Depth
 
-Mission Control is primarily flat. Depth comes from tonal layers, spacing, and occlusion rather than shadows.
+Admin Main Frame is primarily flat. Depth comes from tonal layers, spacing, and occlusion rather than shadows.
 
 - The canvas is the substrate. A bounded card/panel placed directly on canvas must use a visibly distinct surface treatment; it may not dissolve into the canvas and rely on radius or hover to reveal its edge.
 - Persistent shell regions and primary working surfaces may use adjacent surface tones.
@@ -270,7 +270,7 @@ The shape language is engineered but not harsh. Small radii soften controls and 
 
 ## Components
 
-Mission Control evolves by refining canonical primitives inside the existing vanilla HTML/CSS/JavaScript application. The redesign does not migrate to an external runtime UI framework.
+Admin Main Frame evolves by refining canonical primitives inside the existing vanilla HTML/CSS/JavaScript application. The redesign does not migrate to an external runtime UI framework.
 
 ### Shell context
 
@@ -361,7 +361,7 @@ The existing `docs/architecture/BAMF_MISSION_CONTROL_ACCESSIBILITY_DEFENSIVE_UX.
 
 ## Internationalization
 
-Every human-facing string in a micro-surface owned by a redesign leaf moves behind a stable localization token during that leaf, whether or not the line was otherwise edited for layout. By final acceptance, no Mission Control human-facing application copy remains outside the localization boundary except explicitly documented machine/source data. Do not build complete sentences by concatenating translated fragments. Variables are explicit parameters. Machine identifiers and source-authoritative values remain data rather than translation keys.
+Every human-facing string in a micro-surface owned by a redesign leaf moves behind a stable localization token during that leaf, whether or not the line was otherwise edited for layout. By final acceptance, no Admin Main Frame human-facing application copy remains outside the localization boundary except explicitly documented machine/source data. Do not build complete sentences by concatenating translated fragments. Variables are explicit parameters. Machine identifiers and source-authoritative values remain data rather than translation keys.
 
 Layouts must tolerate realistic string expansion. Prefer logical CSS properties so future RTL support is not structurally blocked. Test hooks, CSS tokens, object identities, and localization keys are separate namespaces.
 
@@ -369,7 +369,7 @@ Layouts must tolerate realistic string expansion. Prefer logical CSS properties 
 
 Application UI tests target rendered application elements only through exact `[data-test-id="foo"]` selectors or intentional groups through `[data-test-id^="foo-prefix-"]`.
 
-Every exact test ID identifies one rendered element. Test IDs are stable, semantic, nonlocalized, and independent of copy, CSS class, DOM ancestry, visual order, ARIA label, or element ID. Each micro-redesign audits every Mission Control UI test that selects elements in its owned surface, not merely the assertions changed by the visual diff. Final integrated acceptance verifies that all Mission Control application UI element selection conforms globally.
+Every exact test ID identifies one rendered element. Test IDs are stable, semantic, nonlocalized, and independent of copy, CSS class, DOM ancestry, visual order, ARIA label, or element ID. Each micro-redesign audits every Admin Main Frame UI test that selects elements in its owned surface, not merely the assertions changed by the visual diff. Final integrated acceptance verifies that all Admin Main Frame application UI element selection conforms globally.
 
 ## Motion
 

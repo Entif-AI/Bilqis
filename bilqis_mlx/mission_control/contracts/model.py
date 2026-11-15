@@ -1,4 +1,4 @@
-"""Shared immutable vocabulary for BAMF Mission Control view contracts."""
+"""Shared immutable vocabulary for BAMF Admin Main Frame view contracts."""
 from __future__ import annotations
 
 from dataclasses import dataclass

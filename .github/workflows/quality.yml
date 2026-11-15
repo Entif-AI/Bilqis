@@ -117,12 +117,12 @@ jobs:
           else
             python3 -B scripts/error_control_plane.py --check
           fi
-      - name: Verify Mission Control shell and Electron security boundary
+      - name: Verify Admin Main Frame shell and Electron security boundary
         run: |
           node --version
           npm ci --ignore-scripts
-          npm run mission-control:test
-          npm run mission-control:security:test
+          npm run bamf:test
+          npm run bamf:security:test
       - name: Reject newly introduced code hygiene regressions
         env:
           QUALITY_BASE_REF: ${{ steps.comparison-base.outputs.base_ref }}

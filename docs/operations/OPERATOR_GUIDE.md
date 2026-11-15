@@ -61,8 +61,8 @@ Verify the command surfaces before touching a run:
 ~~~bash
 python -m bilqis_mlx.cli train --help
 python -m bilqis_mlx.control_plane --help
-npm run mission-control:test
-npm run mission-control:security:test
+npm run bamf:test
+npm run bamf:security:test
 ~~~
 
 These commands do not start neural training.
@@ -75,7 +75,7 @@ A plain clone can:
 
 - run portable and native tests when its dependencies are installed;
 - inspect CLI help and documentation;
-- launch Mission Control;
+- launch Admin Main Frame;
 - run a local control plane;
 - inspect an accepted run if its run data is available;
 - exercise disposable fixtures and neural-inert dry-runs.
@@ -86,7 +86,7 @@ It cannot invent missing production custody.
 
 If you have an accepted BAMF run directory, keep the entire directory intact. Its accepted pointer, generation manifests, model state, AdamW state, source identities, event history, and receipts form one custody chain.
 
-Use that exact run directory for inspection, Mission Control, resume, and recovery.
+Use that exact run directory for inspection, Admin Main Frame, resume, and recovery.
 
 ### New production lineage
 
@@ -164,9 +164,9 @@ If preflight reports a blocker, preserve the run and follow the [Operator Field 
 
 ## Start the local control plane
 
-Mission Control does not start CP01 for you. Run the control plane as a separate local process.
+Admin Main Frame does not start CP01 for you. Run the control plane as a separate local process.
 
-Do this only after the target contains an accepted `bamf-state.json`. Starting CP01 against a fresh pointerless directory is safe, but its learner state is `learner-unavailable` and Mission Control has no accepted learner to operate.
+Do this only after the target contains an accepted `bamf-state.json`. Starting CP01 against a fresh pointerless directory is safe, but its learner state is `learner-unavailable` and Admin Main Frame has no accepted learner to operate.
 
 Choose an explicit socket so the GUI and service cannot disagree about which run they are using:
 
@@ -178,23 +178,23 @@ python -m bilqis_mlx.control_plane \
   --socket "$BILQIS_CONTROL_PLANE_SOCKET"
 ~~~
 
-The service prints a startup record and serves the local Unix socket. Leave it running while Mission Control is open.
+The service prints a startup record and serves the local Unix socket. Leave it running while Admin Main Frame is open.
 
-Ctrl-C stops the control-plane service. Stopping CP01 does not itself stop or mutate the learner. Likewise, closing or quitting Mission Control disconnects the UI; it does not stop a detached trainer. Stop the trainer first when you intend to end a training session.
+Ctrl-C stops the control-plane service. Stopping CP01 does not itself stop or mutate the learner. Likewise, closing or quitting Admin Main Frame disconnects the UI; it does not stop a detached trainer. Stop the trainer first when you intend to end a training session.
 
-## Launch Mission Control
+## Launch Admin Main Frame
 
-Mission Control discovers an active human BAMF trainer automatically and starts
+Admin Main Frame discovers an active human BAMF trainer automatically and starts
 the local CP01 service for that exact run. From the trainer checkout:
 
 ~~~bash
 cd /path/to/Bilqis-MLX
 source .venv/bin/activate
 
-npm run mission-control
+npm run bamf
 ~~~
 
-Mission Control keeps filesystem, subprocess, credentials, and raw control-plane sessions outside the renderer. The renderer receives bounded validated projections.
+Admin Main Frame keeps filesystem, subprocess, credentials, and raw control-plane sessions outside the renderer. The renderer receives bounded validated projections.
 
 The major operator surfaces are:
 
@@ -205,21 +205,21 @@ The major operator surfaces are:
 - **Evidence:** exact receipts and provenance;
 - **Operate:** read-only previews and human-authorized commands.
 
-If Mission Control is already open before the trainer starts, it retries local
+If Admin Main Frame is already open before the trainer starts, it retries local
 discovery automatically and moves from the passive inspection target to the
 new active operator run. To inspect a specific inactive run instead, set
-`RUN_DIR=/absolute/path/to/bamf-run` before launching Mission Control.
+`RUN_DIR=/absolute/path/to/bamf-run` before launching Admin Main Frame.
 `BILQIS_CONTROL_PLANE_SOCKET` remains available as an explicit advanced socket
 override; normal operation no longer requires a separately managed CP01
 terminal.
 
-## Start or resume through Mission Control
+## Start or resume through Admin Main Frame
 
 Use **Operate**.
 
 For a real mutating Resume:
 
-1. choose **Resume**. Mission Control initially selects the final dry-run posture;
+1. choose **Resume**. Admin Main Frame initially selects the final dry-run posture;
 2. run Preflight and inspect the target identity with no neural mutation permitted;
 3. turn **Final dry-run** off; this clears the old preview;
 4. run Preflight again and confirm that the exact run, generation, topology, and consequence are still the ones you intend;
@@ -230,9 +230,9 @@ Owner Launch follows the same preview, dry-run-off, re-preview, authorization se
 
 When a command is accepted, Operate retains its exact operation identity and can inspect the receipt and bounded command log tail.
 
-**Pause is not implemented.** Use **Stop** for a GUI-launched active trainer. First generation-zero Create is currently a CLI workflow: the production shell requires a healthy accepted learner context before it enables mutation, so a pointerless fresh target cannot yet be created from Mission Control.
+**Pause is not implemented.** Use **Stop** for a GUI-launched active trainer. First generation-zero Create is currently a CLI workflow: the production shell requires a healthy accepted learner context before it enables mutation, so a pointerless fresh target cannot yet be created from Admin Main Frame.
 
-Mission Control's safe Stop flow is bound to the active operation retained by the current renderer session. Do not close and reopen Mission Control during a GUI-launched training session and assume Stop ownership will be reconstructed. Reconnect-safe Stop recovery is deferred work.
+Admin Main Frame's safe Stop flow is bound to the active operation retained by the current renderer session. Do not close and reopen Admin Main Frame during a GUI-launched training session and assume Stop ownership will be reconstructed. Reconnect-safe Stop recovery is deferred work.
 
 ## Start or resume from the CLI
 
@@ -256,7 +256,7 @@ For a terminal-launched run, Ctrl-C uses the trainer's normal interrupt path.
 
 ## Stop safely
 
-### Mission Control launch
+### Admin Main Frame launch
 
 Use **Operate → Stop**. Stop is sent only after the control plane rechecks the exact operation, accepted lineage, and recorded trainer process identity. The trainer receives its normal SIGINT boundary.
 
@@ -274,7 +274,7 @@ npm run train -- --dry-run --resume --run-dir "$RUN_DIR"
 
 ## Verify the checkpoint and recover
 
-Mission Control exposes a read-only **Checkpoint Verify** action in Operate. It validates the accepted generation without starting the trainer.
+Admin Main Frame exposes a read-only **Checkpoint Verify** action in Operate. It validates the accepted generation without starting the trainer.
 
 The CLI recovery posture is:
 
@@ -283,7 +283,7 @@ npm run train -- --dry-run --resume --run-dir "$RUN_DIR"
 npm run dashboard -- --run-dir "$RUN_DIR" --once --atlas-details
 ~~~
 
-If those checks are clean, resume through Mission Control or the human CLI command.
+If those checks are clean, resume through Admin Main Frame or the human CLI command.
 
 If a fresh generation-zero create was interrupted before its accepted pointer was installed, do not switch to ordinary resume. The CLI reports BAMF_OPERATOR_INTERRUPTED_GENESIS_REQUIRES_CREATE_RETRY. Repeat the original create command with exactly the same identity, topology, manifest, and optimizer inputs. The generation-zero custody owner decides whether that exact retry can converge safely.
 
@@ -320,7 +320,7 @@ npm run train -- --dry-run \
   --source-prefetch-workers 0
 ~~~
 
-Expected disposition: `READY_TO_CREATE`, zero neural updates, and no created target directory. This is preflight only. Do not run `status`, `dashboard`, CP01, Mission Control, or `--resume` against the new target yet because no accepted lineage exists.
+Expected disposition: `READY_TO_CREATE`, zero neural updates, and no created target directory. This is preflight only. Do not run `status`, `dashboard`, CP01, Admin Main Frame, or `--resume` against the new target yet because no accepted lineage exists.
 
 After reviewing that identity, create generation zero with the same inputs and the explicit human boundary:
 
@@ -347,7 +347,7 @@ test -f "$RUN_DIR/bamf-state.json"
 npm run train -- --dry-run --resume --run-dir "$RUN_DIR"
 ~~~
 
-Only after those commands succeed should you start CP01, Mission Control, or the persistent `--resume` training command.
+Only after those commands succeed should you start CP01, Admin Main Frame, or the persistent `--resume` training command.
 
 The default admission policy is staged. If the lineage must enroll in an atlas-release policy, use the versioned enrollment request described in the [BAMF-0.2 runbook](BAMF_0_2_RUNBOOK.md#preflight-launch-and-resume-boundary). The request file is not source authority by itself.
 
@@ -369,7 +369,7 @@ npm run dashboard -- --run-dir "$RUN_DIR" --atlas-details
 
 Do not infer a learning result from activity alone. Source coverage, staged work, retained optimizer steps, capability gain, debt, mastery, and transfer are separate observations.
 
-Mission Control gives the same operating workflow a graphical surface. When data is missing or stale, the UI should say so rather than convert missing evidence into a healthy zero.
+Admin Main Frame gives the same operating workflow a graphical surface. When data is missing or stale, the UI should say so rather than convert missing evidence into a healthy zero.
 
 ## Storage, checkpoints, and backups
 
@@ -413,8 +413,8 @@ The current operator surface intentionally has some sharp edges:
 - Native learner execution targets a single Apple Silicon training host.
 - Production source-authority provisioning is external to the runtime. A clean clone cannot create that trust root.
 - Fresh BAMF creation consumes an already accepted source lineage; it is not a from-scratch bootstrap wizard.
-- Mission Control requires the CP01 control-plane process to be started separately.
-- Mission Control implements Stop, not Pause. Fresh generation-zero Create is currently CLI-only because the GUI mutation posture requires an accepted learner context.
+- Admin Main Frame requires the CP01 control-plane process to be started separately.
+- Admin Main Frame implements Stop, not Pause. Fresh generation-zero Create is currently CLI-only because the GUI mutation posture requires an accepted learner context.
 - GUI Stop ownership is retained for the active GUI operation; reconnect-safe Stop recovery is not yet a complete workflow.
 - Multi-user authorization, remote hosting, and generalized production observability are later work.
 - Model weights, AdamW state, and live authority material are local artifacts, not downloadable repository contents.

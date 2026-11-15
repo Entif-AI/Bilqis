@@ -2,7 +2,7 @@
 
 ## Outcome and authority
 
-Issue #1170 owns immediate Mission Control visibility before accepted generation 1.
+Issue #1170 owns immediate Admin Main Frame visibility before accepted generation 1.
 Baseline: reviewed unified `2c8cda55d1344626bc6c6f11d9b5db5836a36604`.
 This change adds observations, never retention, teacher, selection, optimizer,
 publication or training authority. No real student is started by verification.

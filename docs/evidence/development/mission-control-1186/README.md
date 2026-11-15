@@ -1,4 +1,4 @@
-# Mission Control Atlas rendered acceptance evidence
+# Admin Main Frame Atlas rendered acceptance evidence
 
 Issue #1186 refines the Atlas route on top of the latest #1182 inspector-geometry
 dependency (`6a9a066dc65c226ce379dca9466505ccdf097f42`). The route keeps the compact

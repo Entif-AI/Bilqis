@@ -14,7 +14,7 @@ const {
   rendererAssetsForLaunchMode,
 } = require("../../shell/renderer-protocol.cjs");
 
-test("renderer protocol resolves only the checked-in Mission Control asset allowlist", () => {
+test("renderer protocol resolves only the checked-in Admin Main Frame asset allowlist", () => {
   const root = "/Applications/Bilqis/MissionControl/renderer";
   assert.equal(
     assetPathForRendererRequest(RENDERER_ENTRY_URL, root),

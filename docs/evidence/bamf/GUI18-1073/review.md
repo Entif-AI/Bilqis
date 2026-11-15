@@ -15,7 +15,7 @@ authority:
 - generation, candidate, capability, strategy, and identity comparison adapters;
 - evidence-only cross-highlighting;
 - versioned operator-local pins and annotations;
-- exact `bilqis://` app URIs mapped back to the trusted Mission Control renderer;
+- exact `bilqis://` app URIs mapped back to the trusted Admin Main Frame renderer;
 - inspector actions and keyboard-accessible investigation controls.
 
 The implementation follows the locked Option A design in
@@ -166,10 +166,10 @@ lines, below the 360-line structural interruption threshold.
 Exact composed-tree receipts:
 
 - GUI18 + GUI17 + GUI22 focused seam: 60/60 PASS;
-- full Mission Control renderer: 259/259 PASS;
+- full Admin Main Frame renderer: 259/259 PASS;
 - Electron security: 51/51 PASS;
 - Python Electron bridge: 6/6 PASS;
-- Mission Control Python: 80/80 PASS;
+- Admin Main Frame Python: 80/80 PASS;
 - development structure: 0 violations;
 - governance integrity: 0 violations;
 - BAMF flow control: PASS, tests 15/15;
@@ -192,6 +192,6 @@ execution was required.
 ## Review decision
 
 The interaction architecture remains aligned with #1073 and the existing
-Mission Control authority model. No control-plane schema or learner mutation is
+Admin Main Frame authority model. No control-plane schema or learner mutation is
 required. Local acceptance and the scoped leaf wrapper are complete; only remote
 fencing and hosted verification remain before human merge review.

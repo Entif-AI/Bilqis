@@ -1,1 +1,1 @@
-"""Electron main-process bridge helpers for Mission Control."""
+"""Electron main-process bridge helpers for Admin Main Frame."""

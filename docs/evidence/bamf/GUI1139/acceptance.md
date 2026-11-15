@@ -38,9 +38,9 @@ same semantic row keys rather than depending on presentation strings.
   31/31 pass.
 - Accessibility, layout, domain-context, Lineage and renderer-protocol slice:
   49/49 pass.
-- Mission Control: 346/346 pass.
+- Admin Main Frame: 346/346 pass.
 - Electron security: 53/53 pass.
-- Python Mission Control bridge: 6/6 pass.
+- Python Admin Main Frame bridge: 6/6 pass.
 - Development structure: pass, zero violations.
 - Governance integrity: pass, zero violations.
 - Changed-file code-smell delta: zero new findings.
@@ -49,14 +49,14 @@ same semantic row keys rather than depending on presentation strings.
 - Differential leaf gate: policy skip for this UI-only change set.
 - `git diff --check`: pass.
 
-The first full Mission Control pass exposed one cross-view compatibility seam: the
+The first full Admin Main Frame pass exposed one cross-view compatibility seam: the
 global generation-comparison adapter still consumed the previous human `label` /
 `reason` row shape. The adapter was migrated to Lineage semantic keys and the same
-localization catalog; the final full Mission Control pass is 346/346.
+localization catalog; the final full Admin Main Frame pass is 346/346.
 
 ## Comparative rendered evidence
 
-Rendered through the checked-in Mission Control preview harness using isolated local
+Rendered through the checked-in Admin Main Frame preview harness using isolated local
 ports 8773 (exact baseline) and 8774 (redesign).
 
 ### Exact baseline, dark comfortable, current accepted generation

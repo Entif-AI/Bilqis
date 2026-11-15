@@ -4,13 +4,13 @@ Authority: issue #1073, additive child of #1047. Baseline:
 `origin/codex/bamf-unified-base-20261028` at
 `17f003eb1b1b000db6d24efaad7547ac24603e12`.
 
-GUI18 owns Mission Control interaction state and operator-local metadata. It does
+GUI18 owns Admin Main Frame interaction state and operator-local metadata. It does
 not add learner, source, teacher, optimizer, admission, semantic, or evidence
 authority.
 
 ## Product acceptance
 
-Issue #1073 requires one connected investigation grammar across Mission Control:
+Issue #1073 requires one connected investigation grammar across Admin Main Frame:
 
 - one explicit run/generation lens across compatible views;
 - historical failure in one view must stay local and must not restore other views
@@ -309,7 +309,7 @@ internal route contract used by `deep-link.mjs`.
 
 The Electron main process registers the protocol only for app routing. Incoming
 URIs are normalized, converted to a trusted renderer hash, and delivered to the
-existing Mission Control window. Invalid URIs are ignored. The app never
+existing Admin Main Frame window. Invalid URIs are ignored. The app never
 navigates the renderer to the external URI itself.
 
 Internal hash links continue to work and remain the browser-test surface.
@@ -371,8 +371,8 @@ Focused tests must prove:
 - renderer protocol allowlist includes GUI18 modules;
 - existing defensive reconnect and GUI05 historical-pin tests remain green.
 
-After focused verification, run `npm run mission-control:test`,
-`npm run mission-control:security:test`, the Mission Control Python owner tests,
+After focused verification, run `npm run bamf:test`,
+`npm run bamf:security:test`, the Admin Main Frame Python owner tests,
 structure/governance checks, and `npm run verify:leaf`. Re-fence current unified
 before turn-in. Open the PR only after the final candidate is ready for human
 review.

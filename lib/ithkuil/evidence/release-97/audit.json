@@ -8799,7 +8799,7 @@
           "$ref": "#/groups/release/receipts"
         }
       ],
-      "requirement": "ABI, typed AST, lesson/curriculum manifests, Falkor/Akasha projections and Mission Control views are consumers/projections of the semantic release. None becomes a shadow semantic source of truth.",
+      "requirement": "ABI, typed AST, lesson/curriculum manifests, Falkor/Akasha projections and Admin Main Frame views are consumers/projections of the semantic release. None becomes a shadow semantic source of truth.",
       "reviewer_note": "Authority boundary verified: stable concept/source identity and exact release/implementation identities remain distinct; releases/evidence stay addressable. VocabPack/Rosetta integration is a separate consumer seam, not an implemented deployment or an added release requirement; the amendment explicitly forbids widening this family into Rosetta Core work.",
       "status": "PASS",
       "test_or_conformance_commands": [

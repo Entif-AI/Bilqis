@@ -1,5 +1,5 @@
 export const DESTINATIONS = Object.freeze([
-  ["mission-control", "Mission Control"],
+  ["mission-control", "Admin Main Frame"],
   ["school", "School"],
   ["capability", "Capability Explorer"],
   ["learning", "Learning"],

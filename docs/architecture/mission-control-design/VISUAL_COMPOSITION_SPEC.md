@@ -1,6 +1,6 @@
-# Mission Control Visual Composition & Home View Specification
+# Admin Main Frame Visual Composition & Home View Specification
 
-Status: proposed design authority for Mission Control redesign  
+Status: proposed design authority for Admin Main Frame redesign
 Parent authority: GitHub issue #1124  
 Canonical machine-readable design system: `apps/mission-control/DESIGN.md`  
 Target UI anatomy: `INFORMATION_ATLAS.md`  
@@ -9,12 +9,12 @@ Human style guide: `STYLE_GUIDE.md`
 
 ## 1. Purpose
 
-This specification converts the Mission Control visual-design critique into implementation-grade rules.
+This specification converts the Admin Main Frame visual-design critique into implementation-grade rules.
 
 It governs two related things:
 
 1. **application-wide composition practice**: hierarchy, canvas/surface separation, containment, typography, spacing, interaction semantics, responsiveness, accessibility, content economy, and use of visualizations; and
-2. **the Mission Control Home view**: the exact information hierarchy and adaptive composition used to answer the operator's first questions about the learner.
+2. **the Admin Main Frame Home view**: the exact information hierarchy and adaptive composition used to answer the operator's first questions about the learner.
 
 The intended result is not a generic SaaS dashboard and not a collage of individually polished components. It is a **calm scientific workstation** whose composition makes the operator's next question visually obvious.
 

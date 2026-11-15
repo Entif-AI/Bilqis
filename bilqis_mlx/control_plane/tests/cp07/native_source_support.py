@@ -1,4 +1,4 @@
-"""Shared fixture helpers for native BAMF -> Mission Control CP07 tests."""
+"""Shared fixture helpers for native BAMF -> Admin Main Frame CP07 tests."""
 from __future__ import annotations
 
 import random

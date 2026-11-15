@@ -1,4 +1,4 @@
-"""Mission Control discovery is live for the full human BAMF operator visit."""
+"""Admin Main Frame discovery is live for the full human BAMF operator visit."""
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import io
 import json

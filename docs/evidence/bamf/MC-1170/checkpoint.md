@@ -17,7 +17,7 @@ snapshot-frontier retry case remains to add before final qualification.
 
 Observed verification before current-unified intake:
 
-- 82 existing Mission Control Python tests passed.
+- 82 existing Admin Main Frame Python tests passed.
 - 18 existing control-plane event/query/reconnect tests passed.
 - 379 renderer tests passed; 53 Electron checks and 8 Python bridge tests passed.
 - Focused observed contracts, producer/lifecycle, retention callbacks, and Home tests

@@ -1,6 +1,6 @@
-# BAMF Mission Control CP07 disposable acceptance
+# BAMF Admin Main Frame CP07 disposable acceptance
 
-CP07 joins the existing CP01–CP06 surfaces without granting Mission Control
+CP07 joins the existing CP01–CP06 surfaces without granting Admin Main Frame
 ownership of a learner, optimizer, checkpoint, or source record. The acceptance
 tests use only temporary directories and a fixture-scoped generation-zero C11
 creation. They do not train a model or launch a production learner.

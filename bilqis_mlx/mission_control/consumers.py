@@ -21,7 +21,7 @@ def terminal_status(view: OperatorView) -> tuple[str, ...]:
     if type(view) is not OperatorView or run is None:
         raise TypeError
     return (
-        f"MISSION CONTROL | run {run.run_id} | generation {run.generation}",
+        f"ADMIN MAIN FRAME | run {run.run_id} | generation {run.generation}",
         f"STATE | {view.learner_state} | stage {view.stage}",
         f"RECORD | {view.meta.record_id} | coverage {view.meta.coverage.value}",
     )

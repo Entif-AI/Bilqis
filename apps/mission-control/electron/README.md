@@ -1,6 +1,6 @@
-# Mission Control Electron security boundary
+# Bilqis Admin Main Frame Electron security boundary
 
-GUI20 owns the Electron security membrane. It does not own the Mission Control
+GUI20 owns the Electron security membrane. It does not own the Admin Main Frame
 views, the CP01 transport, or the CP02 BAMF records.
 
 The renderer receives one frozen preload object, `window.bamfMissionControl`.
@@ -40,7 +40,7 @@ explicit fixture evidence rather than command authority.
 integration, no webviews, and normal web security even when caller options try to
 weaken them. Production renderer loading is pinned to
 `bamf-mc://app/index.html`; `file:`, `http:`, `https:`, `data:` and `javascript:`
-documents are never privileged renderer locations. The real Mission Control entry
+documents are never privileged renderer locations. The real Admin Main Frame entry
 point registers the `bamf-mc` scheme before Electron readiness and serves only the
 checked-in GUI01/GUI02 asset allowlist from that origin. The scheme is registered as
 standard/secure without a CSP bypass. New windows, external navigation, webview
@@ -61,12 +61,12 @@ desktop app.
 Run the bounded security suite with:
 
 ```bash
-npm run mission-control:security:test
+npm run bamf:security:test
 ```
 
 The suite does not launch Electron or a learner. It does exercise a disposable CP01
 service over its real Unix socket, the Node-to-Python broker, the accepted CP01
 client, the CP02 `OperatorView` consumer, the actual sandboxed preload source and
 the GUI01/GUI02 renderer asset protocol. The canonical leaf/premerge commands and
-the hosted portable-core workflow run the Mission Control suites so CJS-only
+the hosted portable-core workflow run the Admin Main Frame suites so CJS-only
 security changes cannot bypass repository gates.

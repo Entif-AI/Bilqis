@@ -13,7 +13,7 @@ const {
   resolveLaunchMode,
 } = require("../../shell/launch-mode.cjs");
 
-test("Mission Control launch mode defaults closed to production", () => {
+test("Admin Main Frame launch mode defaults closed to production", () => {
   assert.equal(resolveLaunchMode([]), LAUNCH_MODE_PRODUCTION);
   assert.equal(resolveLaunchMode(["electron", "main.cjs"]), LAUNCH_MODE_PRODUCTION);
   assert.equal(resolveLaunchMode(["--mission-control-fixture"]), LAUNCH_MODE_PRODUCTION);

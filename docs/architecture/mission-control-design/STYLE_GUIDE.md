@@ -1,4 +1,4 @@
-# Bilqis Mission Control style guide
+# Bilqis Admin Main Frame style guide
 
 Status: human-facing design constitution
 Parent authority: GitHub issue #1124
@@ -9,7 +9,7 @@ Exact screenshot-derived examples: `ANTI_PATTERN_GALLERY.md`
 
 ## The object we are designing
 
-Mission Control is a **calm scientific workstation**. Imagine a high-end benchtop research instrument whose display has been composed by someone who also knows how to lay out a good scientific figure. The operator is technically sophisticated, but sophistication is not permission to make every screen look like a terminal dump.
+Admin Main Frame is a **calm scientific workstation**. Imagine a high-end benchtop research instrument whose display has been composed by someone who also knows how to lay out a good scientific figure. The operator is technically sophisticated, but sophistication is not permission to make every screen look like a terminal dump.
 
 The product should feel:
 
@@ -151,7 +151,7 @@ A wide table is allowed to be wide. The page is not allowed to become accidental
 
 ## Status and defensive states
 
-Mission Control has one visual grammar for state:
+Admin Main Frame has one visual grammar for state:
 
 1. concise human-readable label;
 2. a non-color structural cue;
@@ -228,7 +228,7 @@ Preserve and extend the existing keyboard/focus/live-region/graph-equivalence/re
 
 ## Internationalization
 
-Every human-facing string in a redesign leaf's owned micro-surface moves behind a stable localization key during that leaf, including copy not otherwise changed for layout. The final application target is complete Mission Control human-copy coverage, not “only whatever happened to be edited.”
+Every human-facing string in a redesign leaf's owned micro-surface moves behind a stable localization key during that leaf, including copy not otherwise changed for layout. The final application target is complete Admin Main Frame human-copy coverage, not “only whatever happened to be edited.”
 
 Do not concatenate translated sentence fragments. Pass variables as named parameters. Do not translate machine identifiers, source-authoritative values, CSS tokens, or test IDs.
 

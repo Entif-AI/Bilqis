@@ -1,4 +1,4 @@
-# Mission Control shell #1127 visual QA
+# Admin Main Frame shell #1127 visual QA
 
 Issue: #1127. Baseline: `dc9b881e20b8c825042e4697e60f396264d16156`.
 

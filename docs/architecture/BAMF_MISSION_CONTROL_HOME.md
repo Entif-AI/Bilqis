@@ -1,6 +1,6 @@
-# BAMF Mission Control GUI03 home
+# BAMF Admin Main Frame GUI03 home
 
-GUI03 is the outcome-first Mission Control home. Its job is not to prove that work
+GUI03 is the outcome-first Admin Main Frame home. Its job is not to prove that work
 is happening. It must let an operator answer, in roughly one glance:
 
 1. Is Bilqis running?
@@ -49,12 +49,12 @@ derives its live identity from CP01 and CP03 only.
 
 ## Startup and sparse telemetry
 
-Mission Control reports startup as separate service boundaries instead of rendering a
+Admin Main Frame reports startup as separate service boundaries instead of rendering a
 fully populated dashboard before evidence exists:
 
 1. local CP01 connection;
 2. accepted learner discovery;
-3. first accepted Mission Control operator projection;
+3. first accepted Admin Main Frame operator projection;
 4. trainer activity.
 
 CP01 status may prove that the service is healthy and an accepted learner exists even

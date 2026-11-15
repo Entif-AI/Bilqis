@@ -1,4 +1,4 @@
-# Mission Control current-state UI inventory
+# Admin Main Frame current-state UI inventory
 
 Status: descriptive map of the current implementation, not target-screen approval
 Parent authority: GitHub issue #1124
@@ -21,7 +21,7 @@ The register and nested outlines below preserve the source-grounded current rend
 
 ## Current renderer hierarchy outline
 
-- Bilqis Mission Control
+- Bilqis Admin Main Frame
   - CUR-SHELL-001 Application shell
     - CUR-COMP-015 Skip to main access path
     - CUR-COMP-001 Primary navigation
@@ -36,7 +36,7 @@ The register and nested outlines below preserve the source-grounded current rend
     - Workspace
       - CUR-COMP-005 Destination header
       - CUR-COMP-006 Local subnavigation
-      - CUR-VIEW-001 Mission Control
+      - CUR-VIEW-001 Admin Main Frame
         - CUR-COMP-107 Startup state
         - CUR-COMP-101 Learner posture
         - CUR-COMP-102 Learning pulse
@@ -151,7 +151,7 @@ The register and nested outlines below preserve the source-grounded current rend
 - Effect: moves keyboard focus past persistent shell chrome to `#main-content`.
 
 ### CUR-COMP-001 · Primary navigation rail
-- Information: Bilqis/Mission Control identity; current destination; fourteen destination actions; command-palette trigger.
+- Information: Bilqis/Admin Main Frame identity; current destination; fourteen destination actions; command-palette trigger.
 - Treatment: persistent left rail with flat destination buttons.
 - Interaction: click or roving keyboard navigation; command palette via keyboard shortcut.
 - Effect: changes destination while preserving current run/generation context where allowed.
@@ -244,7 +244,7 @@ The register and nested outlines below preserve the source-grounded current rend
 - Effect: announces repeated navigation, selection, recovery, metadata and validation changes; content is cleared before the next microtask so repeated messages are voiced.
 
 ### CUR-STATE-001 · Bootstrap
-- Four-stage startup: control plane, learner discovery, Mission Control telemetry, trainer.
+- Four-stage startup: control plane, learner discovery, Admin Main Frame telemetry, trainer.
 - Must not substitute fixtures for missing live telemetry.
 
 ### CUR-STATE-002 · Live verified context
@@ -271,7 +271,7 @@ The register and nested outlines below preserve the source-grounded current rend
 ### CUR-STATE-009 · Display / focus / fixture-custody state
 - Theme, density, focus-return tokens, and temporary fixture/reference context ownership where a surface is not using the live shell context.
 
-## CUR-VIEW-001 · Mission Control
+## CUR-VIEW-001 · Admin Main Frame
 
 Purpose: outcome-first learner health, current work, learning pulse, actionable attention.
 
@@ -759,7 +759,7 @@ Purpose: measured resource budgets, exact historical comparison, and spike corre
 
 ## CUR-VIEW-013 · Evidence
 
-Purpose: exact Mission Control records, provenance links, bounded pagination, literal raw payloads.
+Purpose: exact Admin Main Frame records, provenance links, bounded pagination, literal raw payloads.
 
 ### CUR-COMP-1301 · Evidence query/filter
 - Information: query constraints/context.
@@ -833,12 +833,12 @@ Purpose: command boundary, not another dashboard.
 
 ## Concern overlay
 
-Every component above inherits the concern profile for its containing shell/view unless the node text states a stricter rule. This overlay records both **current implementation posture** and **required redesign posture**. It must not be read as claiming that localization/test-hook work already exists: as of the #1124 baseline, human-facing strings remain largely inline and Mission Control has zero implemented `data-test-id` hooks.
+Every component above inherits the concern profile for its containing shell/view unless the node text states a stricter rule. This overlay records both **current implementation posture** and **required redesign posture**. It must not be read as claiming that localization/test-hook work already exists: as of the #1124 baseline, human-facing strings remain largely inline and Admin Main Frame has zero implemented `data-test-id` hooks.
 
 | Scope | State concerns | Authority concerns | Accessibility concerns | Required i18n posture | Required test-hook posture |
 | --- | --- | --- | --- | --- | --- |
 | CUR-SHELL-001 / CUR-COMP-001..016 | CUR-STATE-001..009; route, selection, defensive, investigation, focus/display, fixture custody | Shell may display source/derived/operator-local facts but never upgrades their authority; mutation gating follows verified context | landmarks, skip link, roving navigation, dialog/inert semantics, focus return, live regions, target size, reduced motion/forced colors | all human labels, summaries, help, state explanations and recovery copy tokenized; machine IDs remain data | `shell-*`, `nav-destination-*`, `investigation-*`, `inspector-*`, `palette-*`; exact IDs unique |
-| CUR-VIEW-001 Mission Control / CUR-COMP-101..107 | live overview query families; startup projection; defensive projection; no historical event refresh | summary only; retained/current work/evidence distinctions remain explicit | heading/focus order, status non-color cues, inspectable summaries keyboard-reachable | all startup/overview questions, labels, health copy, attention guidance | `home-*` |
+| CUR-VIEW-001 Admin Main Frame / CUR-COMP-101..107 | live overview query families; startup projection; defensive projection; no historical event refresh | summary only; retained/current work/evidence distinctions remain explicit | heading/focus order, status non-color cues, inspectable summaries keyboard-reachable | all startup/overview questions, labels, health copy, attention guidance | `home-*` |
 | CUR-VIEW-002 School / CUR-COMP-201..209 | matrix UI, curriculum mode, selected capability/node, filters/sort/page, context-bound async epoch | declared curriculum/topology and measured capability evidence stay distinct | matrix orientation, keyboard graph selection, equivalent relationship table, scale disclosure, scroll discoverability | filters, column labels, explanations, topology/scale guidance | `school-*`, `school-capability-row-*`, `curriculum-*` |
 | CUR-VIEW-003 Capability Explorer / CUR-COMP-301..306 | selected capability, lens/source, cursor/page, evidence query epoch | measured chronology/source support only; no inferred causes | dossier navigation, bounded pagination, exact-value access, focus on loaded detail | section labels, helper copy, evidence controls | `capability-*`, `capability-evidence-*` |
 | CUR-VIEW-004 Learning / CUR-COMP-401..405 | selected episode/candidate and replay stage | episode evidence, candidate state, retention/rollback custody remain separate | ordered stage controls, comparison tables, status announcements | stage labels, terminal/retention explanations, comparison labels | `learning-*`, `learning-stage-*` |
@@ -859,7 +859,7 @@ For repeated elements, exact IDs are never duplicated. Repeated rows/nodes use a
 
 These are design hypotheses for decomposition, not authorization to change navigation yet:
 
-1. **Overview & learning**: CUR-VIEW-001 Mission Control, CUR-VIEW-002 School, CUR-VIEW-003 Capability Explorer, CUR-VIEW-004 Learning.
+1. **Overview & learning**: CUR-VIEW-001 Admin Main Frame, CUR-VIEW-002 School, CUR-VIEW-003 Capability Explorer, CUR-VIEW-004 Learning.
 2. **Representation & mechanisms**: CUR-VIEW-005 Atlas, CUR-VIEW-006 Model, CUR-VIEW-007 Memory.
 3. **Decision & correction**: CUR-VIEW-008 Teacher, CUR-VIEW-009 SÍ SÉ SON, CUR-VIEW-010 Corrections.
 4. **Provenance & operations**: CUR-VIEW-011 Lineage, CUR-VIEW-012 Resources, CUR-VIEW-013 Evidence, CUR-VIEW-014 Operate.
@@ -881,9 +881,9 @@ These outlines preserve the source-grounded recursion discovered in the current 
     - CUR-COMP-001.1 Brand identity
       - CUR-COMP-001.1.1 B brand mark datum
       - CUR-COMP-001.1.2 Bilqis product name datum
-      - CUR-COMP-001.1.3 Mission Control subtitle datum
+      - CUR-COMP-001.1.3 Admin Main Frame subtitle datum
     - CUR-COMP-001.2 Destination navigator
-      - CUR-COMP-001.2.01 Mission Control control-instance
+      - CUR-COMP-001.2.01 Admin Main Frame control-instance
       - CUR-COMP-001.2.02 School control-instance
       - CUR-COMP-001.2.03 Capability Explorer control-instance
       - CUR-COMP-001.2.04 Learning control-instance
@@ -1100,7 +1100,7 @@ These outlines preserve the source-grounded recursion discovered in the current 
     - CUR-COMP-008.4 Close control
     - CUR-COMP-008.5 destination-jump mutation-gate guidance datum
     - CUR-COMP-008.6 destination option family
-      - CUR-COMP-008.6.01 Mission Control
+      - CUR-COMP-008.6.01 Admin Main Frame
       - CUR-COMP-008.6.02 School
       - CUR-COMP-008.6.03 Capability Explorer
       - CUR-COMP-008.6.04 Learning
@@ -1146,9 +1146,9 @@ These outlines preserve the source-grounded recursion discovered in the current 
     - CUR-COMP-016.1 sr-only aria-live atomic region treatment
     - CUR-COMP-016.2 clear-then-microtask repeated-message announcement effect
 
-### CUR-VIEW-001 · Mission Control
+### CUR-VIEW-001 · Admin Main Frame
 
-- CUR-VIEW-001 Mission Control
+- CUR-VIEW-001 Admin Main Frame
   - CUR-COMP-107 Startup state
     - CUR-COMP-107.1 startup posture narrative datum
     - CUR-COMP-107.2 startup fact set

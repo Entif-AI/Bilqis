@@ -1,6 +1,6 @@
-# Mission Control cross-view flows
+# Admin Main Frame cross-view flows
 
-Status: target-state cross-view relationship map for the Mission Control redesign
+Status: target-state cross-view relationship map for the Admin Main Frame redesign
 Atlas authority: `INFORMATION_ATLAS.md`
 Parent authority: GitHub issue #1124
 

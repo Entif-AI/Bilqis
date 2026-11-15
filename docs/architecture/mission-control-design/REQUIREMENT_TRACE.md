@@ -1,4 +1,4 @@
-# Mission Control redesign requirement trace
+# Admin Main Frame redesign requirement trace
 
 Parent authority: GitHub issue #1124
 Purpose: literal trace from the controlling user instruction to durable artifacts and execution gates.
@@ -54,7 +54,7 @@ The redesign authority therefore:
 
 ## Implementation gate
 
-Runtime Mission Control redesign work, beginning with #1126, is blocked until **REQ-D-020** is explicitly ratified by the human operator in durable project authority.
+Runtime Admin Main Frame redesign work, beginning with #1126, is blocked until **REQ-D-020** is explicitly ratified by the human operator in durable project authority.
 
 Ratification should cover, at minimum:
 

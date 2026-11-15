@@ -1,4 +1,4 @@
-"""Literal CP03 queries cover every required Mission Control read family."""
+"""Literal CP03 queries cover every required Admin Main Frame read family."""
 from dataclasses import replace
 import unittest
 

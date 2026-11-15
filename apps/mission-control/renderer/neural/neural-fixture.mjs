@@ -219,6 +219,6 @@ export const INSTRUMENTATION_STATES = Object.freeze([
     id: "per-head-salience",
     state: "PARTIAL",
     label: "Per-head salience",
-    source: "no authoritative Mission Control projection",
+    source: "no authoritative Admin Main Frame projection",
   }),
 ]);
