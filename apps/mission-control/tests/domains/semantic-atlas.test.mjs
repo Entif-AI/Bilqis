@@ -16,6 +16,7 @@ import {
   renderAtlasMarkup,
   stateRecordId,
 } from "../../renderer/atlas/semantic-atlas.mjs";
+import { duplicateTestIds } from "../../renderer/foundation/test-hooks.mjs";
 
 const RELEASE = "1".repeat(64);
 const ROOT_ID = "https://github.com/Entif-AI/Bilqis-MLX/id/root/NI-LEXICON-CURRICULUM/LEXROOT-007a2c39cfe74c";
@@ -140,7 +141,8 @@ test("canonical lens never imports learned similarity as a graph edge", () => {
   assert.ok(canonicalMarkup.includes("skos:broader"));
   assert.equal(canonicalMarkup.includes("0.97"), false);
   assert.ok(learnedMarkup.includes("0.97"));
-  assert.ok(learnedMarkup.includes("canonical equivalence: false"));
+  assert.ok(learnedMarkup.includes("canonical equivalence false"));
+  assert.ok(learnedMarkup.includes('data-authority="derived"'));
   assert.throws(
     () => lensEdges({ ...selection, similarities: [{ ...similarity(), canonical_equivalence: true }] }, "learned"),
     /MISSION_CONTROL_SEMANTIC_QUERY_INVALID:SIMILARITY_CANONICAL_EQUIVALENCE/,
@@ -267,7 +269,24 @@ test("overview aggregates bank state while held mappings remain a separate sourc
   };
   const overview = await loadAtlasOverview(api, context);
   const markup = renderAtlasMarkup({ status: "ready", overview, lens: "canonical" });
-  assert.ok(markup.includes("2 active · 1 reserved/masked"));
+  assert.ok(markup.includes(">2</strong>"));
+  assert.ok(markup.includes(">1</td>"));
   assert.ok(markup.includes("AMBIGUOUS_MAPPING"));
-  assert.ok(markup.includes("Held"));
+  assert.ok(markup.includes("Held mappings"));
+});
+
+test("Atlas markup exposes stable unique test hooks and explicit no-projection state", () => {
+  const markup = renderAtlasMarkup({
+    status: "ready",
+    overview: null,
+    selection: { concept: concept(), state: null, similarities: [] },
+    lens: "canonical",
+  });
+  assert.deepEqual(duplicateTestIds(markup), []);
+  for (const id of [
+    "atlas-view", "atlas-lens-canonical", "atlas-lens-learned",
+    "atlas-search-form", "atlas-abi-form", "atlas-semantic-dossier",
+    "atlas-request-no-projection",
+  ]) assert.ok(markup.includes(`data-test-id="${id}"`), id);
+  assert.ok(markup.includes("No exact generation projection"));
 });

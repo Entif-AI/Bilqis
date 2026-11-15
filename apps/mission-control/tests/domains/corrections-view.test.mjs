@@ -65,7 +65,7 @@ test("graph and table share one identity-state projection", () => {
   assert.match(source, /evidencedDescendants\(\)/);
   assert.match(source, /impactRows\(\)/);
   for (const edge of CORRECTION_FIXTURE.edges) assert.equal(source.includes(edge.relation), false);
-  assert.match(source, /CORRECTION_FIXTURE\.edges\.map/);
+  assert.match(source, /const edges = CORRECTION_FIXTURE\.edges/);
   assert.equal(new Set(rows.map((row) => `${row.id}:${row.state}`)).size, rows.length);
 });
 
@@ -77,10 +77,10 @@ test("requalified and recomputed UI states cannot exist without evidence receipt
 });
 
 test("GUI13 source preserves epistemic limits and contains no mutating correction controls", () => {
-  const files = ["corrections-fixture.mjs", "corrections-model.mjs", "corrections-view.mjs"];
+  const files = ["corrections-fixture.mjs", "corrections-model.mjs", "corrections-view.mjs", "corrections-messages.mjs"];
   const source = files.map((name) => fs.readFileSync(path.join(repoRoot, "apps/mission-control/renderer/corrections", name), "utf8")).join("\n").toLowerCase();
   assert.equal(source.includes("known exposure is not proof of invalidity"), true);
-  assert.equal(source.includes("arbitrary neural influence was erased"), true);
+  assert.equal(source.includes("perfect neural unlearning"), true);
   for (const forbidden of ["apply correction now", "mark requalified", "erase learned influence", "automatic source correction"]) {
     assert.equal(source.includes(forbidden), false, forbidden);
   }
@@ -96,4 +96,48 @@ test("fixture is grounded in executable correction and CP03 contracts", () => {
   assert.match(runtimeQueue, /history: tuple\[StateTransition/);
   assert.match(runtimeRequal, /REQUALIFICATION_REQUIRED/);
   assert.match(querySupport, /QueryFamily\.CORRECTION: \(CorrectionEvent,\)/);
+});
+
+test("redesigned Corrections owns distinct context, impact, queue and complete history", async () => {
+  const { renderCorrectionsMarkup } = await import("../../renderer/corrections/corrections-view.mjs");
+  const { assertUniqueTestIds } = await import("../../renderer/foundation/test-hooks.mjs");
+  const markup = renderCorrectionsMarkup();
+  assertUniqueTestIds(markup);
+  for (const id of ["corrections-workspace", "corrections-context", "corrections-impact", "corrections-impact-table", "corrections-graph-toggle", "corrections-queue-table", "corrections-history", "corrections-fixture-notice"]) assert.ok(markup.includes(`data-test-id="${id}"`),id);
+  for (const node of evidencedDescendants()) assert.ok(markup.includes(node.id));
+  for (const event of CORRECTION_FIXTURE.history) {
+    assert.ok(markup.includes(event.id)); assert.ok(markup.includes(event.receipt));
+    for (const id of Object.keys(event.states)) assert.ok(markup.includes(id));
+  }
+  assert.doesNotMatch(markup, /ui-glossary/);
+  assert.match(markup, /Not requalified/);
+  assert.match(markup, /Fixture projection/);
+  assert.match(markup, /perfect neural unlearning/);
+});
+
+test("Corrections translation expansion preserves exact source values", async () => {
+  const { renderCorrectionsMarkup } = await import("../../renderer/corrections/corrections-view.mjs");
+  const { correctionsT } = await import("../../renderer/corrections/corrections-messages.mjs");
+  const markup = renderCorrectionsMarkup((key,parameters)=>`Expanded wording ${correctionsT(key,parameters)}`);
+  assert.match(markup, /Expanded wording/);
+  assert.ok(markup.includes(CORRECTION_FIXTURE.correction.id));
+  assert.ok(markup.includes(CORRECTION_FIXTURE.queue[0].checkpoint));
+});
+
+test("graph endpoints carry their own identity, kind and state", async () => {
+  const { renderCorrectionsMarkup } = await import("../../renderer/corrections/corrections-view.mjs");
+  const markup=renderCorrectionsMarkup();
+  const endpoints=[...markup.matchAll(/data-test-id="corrections-graph-endpoint-[^"]+"[^>]*>([\s\S]*?)<\/article>/g)].map(match=>match[1]);
+  assert.equal(endpoints.length,CORRECTION_FIXTURE.edges.length*2);
+  for(const node of evidencedDescendants()) assert.ok(endpoints.some(endpoint=>endpoint.includes(node.id) && endpoint.includes(`>${node.kind}<`) && endpoint.includes(`data-correction-state="${node.state}"`)),node.id);
+});
+
+test("reference inspection supplies the declared reference type", async () => {
+  const { renderCorrectionsView } = await import("../../renderer/corrections/corrections-view.mjs");
+  const seen=[];
+  const buttons=["receipt","reference"].map(kind=>({dataset:{correctionRef:`${kind}:exact`,correctionRefKind:kind},addEventListener(_event,handler){this.click=handler;}}));
+  const host={innerHTML:"",querySelectorAll(selector){return selector==="[data-correction-ref]"?buttons:[];}};
+  renderCorrectionsView(host,()=>{}, {onReference:(...args)=>seen.push(args)});
+  buttons.forEach(button=>button.click());
+  assert.deepEqual(seen,[["receipt:exact","receipt"],["reference:exact","reference"]]);
 });

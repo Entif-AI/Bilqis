@@ -7,6 +7,12 @@ import { fileURLToPath } from "node:url";
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../renderer");
 const source = (name) => fs.readFileSync(path.join(rendererRoot, name), "utf8");
+const teacherCss = () => [
+  "teacher/teacher.css",
+  "teacher/teacher-core.css",
+  "teacher/teacher-detail.css",
+  "teacher/teacher-comparison.css",
+].map(source).join("\n");
 
 test("shared shell owns stable grouped navigation and compact destination geometry", () => {
   const tokens = source("visual-tokens.css");
@@ -54,13 +60,15 @@ test("shell target anatomy removes redundant chrome and keeps secondary context 
   assert.doesNotMatch(shell, /font-size:\s*0/);
 });
 
-test("dense values and wide School data stay inside their owning surfaces", () => {
+test("operator values and wide School data stay inside their owning surfaces", () => {
   const home = source("home/home.css");
   const school = source("school/school.css");
-  const teacher = source("teacher/teacher.css");
+  const teacher = teacherCss();
 
-  assert.match(home, /grid-template-columns:minmax\(0,1fr\) max-content/);
-  assert.match(home, /\.home-metric-card dd[^}]*white-space:nowrap/s);
+  assert.match(home, /\.home-current dd[^}]*overflow-wrap:\s*anywhere/s);
+  assert.match(home, /\.home-school-table-wrap[^}]*overflow:\s*auto/s);
+  assert.doesNotMatch(home, /text-overflow:\s*ellipsis/);
+  assert.doesNotMatch(home, /\.home-metric-card/);
   assert.match(school, /\.school-panel\s*\{[^}]*min-width:\s*0[^}]*overflow:\s*hidden/s);
   assert.match(school, /\.matrix-scroll\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
   assert.match(teacher, /\.teacher-table-wrap\s*\{[^}]*min-width:\s*0[^}]*width:\s*100%[^}]*overflow:\s*auto/s);
@@ -92,9 +100,10 @@ test("operator typography and explanatory surfaces use the shared visual languag
   assert.match(shell, /\.context-facts\s*\{[^}]*repeat\(3, minmax\(140px, 1fr\)\)/s);
   assert.doesNotMatch(shell, /\.selector\s*\{/);
   assert.match(shell, /\.ui-glossary\s*\{/);
-  for (const markup of [school, salience, corrections]) {
+  for (const markup of [school, salience]) {
     assert.match(markup, /class="ui-glossary"/);
   }
+  assert.doesNotMatch(corrections, /class="ui-glossary"/);
   assert.doesNotMatch(teacher, /class="ui-glossary"/);
   assert.match(teacher, /teacher-glossary/);
   assert.doesNotMatch(evidence, /class="ui-glossary"/);

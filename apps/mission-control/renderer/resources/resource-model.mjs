@@ -78,6 +78,11 @@ function liveTimeline(records) {
     batchId: null,
     checkpointId: null,
     sourceWorkload: null,
+    exactRefGroups: Object.freeze({
+      source: Object.freeze([...(record.meta?.source_refs ?? [])]),
+      evidence: Object.freeze([...(record.meta?.evidence_refs ?? [])]),
+      receipt: Object.freeze([...(record.meta?.receipt_refs ?? [])]),
+    }),
     exactRefs: Object.freeze([
       ...(record.meta?.source_refs ?? []),
       ...(record.meta?.evidence_refs ?? []),
@@ -132,10 +137,12 @@ export function resourceProfileFromPage(page, context) {
 export function decomposition(profile) {
   const measured = profile.memoryDecomposition.filter((item) => item.state === PRESENT && Number.isFinite(item.value));
   const allocated = measured.reduce((sum, item) => sum + item.value, 0);
-  const aggregate = profile.aggregate.unifiedMemoryUsed?.state === PRESENT
-    ? profile.aggregate.unifiedMemoryUsed.value : null;
-  const remainder = Number.isFinite(aggregate) ? Math.max(0, aggregate - allocated) : null;
-  return Object.freeze({ allocated, aggregate, remainder, complete: remainder === 0 });
+  const datum = profile.aggregate.unifiedMemoryUsed;
+  const aggregate = datum?.state === PRESENT && Number.isFinite(datum.value) ? datum.value : null;
+  const remainder = aggregate === null ? null : aggregate - allocated;
+  const complete = aggregate !== null && remainder === 0 && measured.length === profile.memoryDecomposition.length;
+  const reconciliationState = aggregate === null ? "UNAVAILABLE" : complete ? "COMPLETE" : "PARTIAL";
+  return Object.freeze({ allocated, aggregate, remainder, complete, reconciliationState });
 }
 
 export function resourceComparison(before, after) {
