@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "8390a7aedffc7e0e353b73d9a7868f6307a445bd",
-  "updated_at": "2026-11-15T07:21:51.748036+00:00",
+  "observed_unified": "d2815e3151013c51fe11a298157625dce1aee6f5",
+  "updated_at": "2026-11-15T08:35:10+00:00",
   "exception": null,
   "items": [
     {
@@ -429,6 +429,16 @@
       "summary": "Issue #1171 is active on an isolated branch from reviewed unified 8390a7ae. It owns pre-neural planner throughput only: reuse an exact content-addressed candidate-frontier release when every bound builder/source/release/input identity still matches, authenticate the accepted planning generation/custody once per immutable planning transaction, and retain cheap fail-closed currentness checks at downstream offer boundaries. No neural updates are authorized.",
       "resume_trigger": null,
       "preserved_branch": "codex/1171-planner-frontier-20261115"
+    },
+    {
+      "issue": 1170,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "1111a7eb",
+      "preserved_branch": "codex/1170-live-trainer-telemetry-20261115",
+      "summary": "Observed trainer telemetry candidate consumes unified406e30c. Pinned design and intake review PASS; scoped NO_DRIFT. Native28, renderer382, Electron53 and bridge8 pass; broad leaf/premerge qualification remains pending. No PR or real learner mutation.",
+      "resume_trigger": null,
+      "head_sha_role": "Semantic implementation after unified406e30c intake; later review/evidence metadata does not change source behavior."
     }
   ]
 }

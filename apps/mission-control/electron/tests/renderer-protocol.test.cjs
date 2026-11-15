@@ -112,6 +112,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/foundation/test-hooks.mjs",
     "/home/home-controller.mjs",
     "/home/home-model.mjs",
+    "/home/home-observed.mjs",
     "/home/home-view.mjs",
     "/home/home.css",
     "/renderer.mjs",

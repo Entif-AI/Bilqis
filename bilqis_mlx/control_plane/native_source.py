@@ -12,6 +12,9 @@ from .native_contracts import AuthenticatedGeneration, NativeProjectionMaterial
 from .native_custody import accepted_pointer, authenticated_history
 from .native_mapping import accepted_records
 from .native_rejections import rejection_material
+from .native_contracts import run_ref
+from .observed import observed_records, publish_observed_events
+from bilqis_mlx.mission_control.contracts.trainer import TrainerObservation
 
 
 _SEEN_ATTR = "_cp07_native_event_ids"
@@ -49,6 +52,8 @@ def materialize_native_projection(
             or after["acceptance_sha256"] != history[-1].acceptance_sha256):
         from .native_contracts import invalid
         invalid("CONTROL_PLANE_NATIVE_HISTORY_POINTER_CHANGED")
+    if include_live_rejections:
+        records.extend(observed_records(run_dir, tuple(run_ref(item) for item in history)))
     records.extend(rejected_records)
     events.extend(rejected_events)
     return NativeProjectionMaterial(tuple(records), tuple(events), tuple(manifests))
@@ -69,7 +74,8 @@ def publish_native_events(service, *, seen_event_ids: set[str] | None = None):
     seen = set() if seen_event_ids is None else seen_event_ids
     material = materialize_native_projection(
         service.run_dir, include_live_rejections=True)
-    published = []
+    published = list(publish_observed_events(service, tuple(
+        record for record in material.records if isinstance(record, TrainerObservation))))
     resource_pending = False
     for family, record, event_id in material.events:
         if event_id in seen:
@@ -100,7 +106,9 @@ def refresh_native_events(service):
                     service.run_dir, include_live_rejections=True)
                 setattr(service, _SEEN_ATTR, {
                     event_id for _family, _record, event_id in material.events})
-                return ()
+                return publish_observed_events(service, tuple(
+                    record for record in material.records
+                    if isinstance(record, TrainerObservation)))
             _material, published = publish_native_events(service, seen_event_ids=seen)
             return published
         except BilqisError as error:
