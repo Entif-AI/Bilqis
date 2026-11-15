@@ -2,7 +2,7 @@
 
 Issue: #1128
 
-Exact comparative baseline: `44b64de2ee772790924cc20ca12aa4d52441c864`
+Exact comparative baseline: `df57fe448af9c79db8f9a6a2704564baec7e4c84`
 
 The acceptance baseline is the exact unified integration head consumed by the final candidate. An earlier exploratory rendering at `490e86e1a284fd03c3824e0bce656d658df0052c` informed implementation but is not used as final comparative evidence.
 
@@ -20,7 +20,7 @@ The ordinary preview bridge supplies a disconnected/inspection posture. A bounde
 
 | Artifact | Base/head | Theme | Density | Viewport | Posture | Layout result |
 | --- | --- | --- | --- | ---: | --- | --- |
-| `baseline-44b64de2-dark-comfortable-1440.png` | exact baseline `44b64de2` | dark | comfortable | 1440 × 1100 | baseline/disconnected | 1425 px document width; no page overflow |
+| `baseline-df57fe44-dark-comfortable-1440.png` | exact baseline `df57fe44` | dark | comfortable | 1440 × 1100 | baseline/disconnected | 1425 px document width; no page overflow |
 | `after-dark-comfortable-live-1440.png` | candidate | dark | comfortable | 1440 × 1100 | verified-live rendering fixture | `Current · generation 7`; 1425 px document width; no page overflow |
 | `after-dark-comfortable-historical-1440.png` | candidate | dark | comfortable | 1440 × 1100 | explicit historical generation 6 + disconnected defense | `Historical · generation 6`; mutation unavailable; no page overflow |
 | `after-light-compact-defensive-1440.png` | candidate | light | compact | 1440 × 1100 | disconnected defensive | 1425 px document width; no page overflow |
@@ -33,7 +33,7 @@ The exact historical rendering showed the defensive banner `Offline`, `Last veri
 
 The baseline investigation plane permanently exposed more chrome than the target composition calls for. Time controls and forensic/deep-link identity occupied the investigation surface rather than behaving as subordinate disclosure. Inspector identity/detail hierarchy was comparatively flat.
 
-The checked-in exact-base capture is `baseline-44b64de2-dark-comfortable-1440.png`.
+The checked-in exact-base capture is `baseline-df57fe44-dark-comfortable-1440.png`.
 
 ## Candidate observations
 
