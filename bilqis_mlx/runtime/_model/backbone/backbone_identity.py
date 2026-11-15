@@ -10,6 +10,7 @@ import weakref
 import mlx.core as mx
 import numpy as np
 
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from .model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, expected_bamf_shapes,
@@ -75,7 +76,7 @@ class ExecutionGenerationBinding:
 
     def __post_init__(self) -> None:
         if (self._issuance is not _EXECUTION_BINDING_ISSUER
-                or any(not isinstance(value, str) or len(value) != 64
+                or any(not isinstance(value, str) or len(value) != SHA256_HEX_LENGTH
                        for value in (
                            self.generation_digest, self.parameter_tree_digest,
                            self.topology_digest, self.extents_digest))
