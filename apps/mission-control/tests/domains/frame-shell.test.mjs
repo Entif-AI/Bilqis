@@ -9,9 +9,17 @@ function harness(t) {
   const previous = { document: globalThis.document, window: globalThis.window };
   t.after(() => Object.assign(globalThis, previous));
   const element = () => ({ hidden: true, value: "7", innerHTML: "", textContent: "", replaceChildren() {}, addEventListener() {} });
-  const parts = new Map(["[data-frame-results]", "[data-frame-state]", "[data-frame-generation]"].map(key => [key, element()]));
+  const parts = new Map([
+    '[data-test-id="model-frame-results"]',
+    '[data-test-id="model-frame-request-state"]',
+    '[data-test-id="model-frame-generation"]',
+  ].map(key => [key, element()]));
   const host = { ...element(), querySelector: key => parts.get(key) };
-  const nodes = new Map([["#frame-explorer", host], ["#model-nav", element()], ["#domain-context-note", element()]]);
+  const nodes = new Map([
+    ['[data-test-id="model-frame-workspace-host"]', host],
+    ['[data-test-id="shell-model-subnav"]', element()],
+    ['[data-test-id="shell-reference-context-note"]', element()],
+  ]);
   globalThis.document = { querySelector: key => nodes.get(key), querySelectorAll: () => [] };
   let resolve;
   globalThis.window = { bamfMissionControl: { querySnapshot: () => new Promise(done => { resolve = done; }) } };
