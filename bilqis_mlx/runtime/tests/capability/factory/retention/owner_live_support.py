@@ -68,13 +68,13 @@ from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
 from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_live_support import (
     C05_GENESIS_SEED, C05_TRAINING_LEARNING_RATE, HP, live_factory_context,
 )
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_next_step_witness import (
+from bilqis_mlx.runtime.tests.capability.factory.retention.next_step.factory_retention_next_step_witness import (
     prove_source_qualified_continuation,
 )
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_lesson_diagnostic import (
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_lesson_diagnostic import (
     diagnose_factory_retention_lesson,
 )
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_target_diagnostic import (
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_target_diagnostic import (
     diagnose_factory_retention_target,
 )
 from bilqis_mlx.runtime.tests.capability.factory.retention.source_training_support import (
