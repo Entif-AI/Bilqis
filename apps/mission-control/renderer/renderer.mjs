@@ -38,6 +38,7 @@ import {
 import { createHomeController } from "./home/home-controller.mjs";
 import { createResourceController } from "./resources/resource-controller.mjs";
 import { createTeacherController } from "./teacher/teacher-controller.mjs";
+import { createSalienceController } from "./salience/salience-controller.mjs";
 import { createOperateController } from "./operate/operate-controller.mjs";
 import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
@@ -71,6 +72,9 @@ const homeController = createHomeController(window.bamfMissionControl, fixtureSu
 const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
 const teacherController = createTeacherController(window.bamfMissionControl, {
   fixtureSupport: fixtureSupport?.teacher ?? null,
+});
+const salienceController = createSalienceController(window.bamfMissionControl, {
+  fixtureSupport: fixtureSupport?.salience ?? null,
 });
 const learningController = createProductionLearningController(window.bamfMissionControl);
 const interactionController = createInteractionController({
@@ -207,7 +211,7 @@ function render() {
   setHash();
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl, homeController,
-    resourceController, operateController, teacherController, capabilityExplorer,
+    resourceController, operateController, teacherController, salienceController, capabilityExplorer,
     onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
     learningController, schoolDomainSupport: fixtureSupport?.school ?? null,
   });

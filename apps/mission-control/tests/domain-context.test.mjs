@@ -124,6 +124,7 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   assert.match(renderer, /homeController/);
   assert.match(renderer, /resourceController/);
   assert.match(renderer, /teacherController/);
+  assert.match(renderer, /salienceController/);
   assert.match(renderer, /operateController/);
   assert.match(renderer, /capabilityExplorer/);
 
@@ -136,6 +137,8 @@ test("production shell routes accepted domains and keeps fixture-only data behin
   assert.match(activation, /activateSchoolDomain/);
   assert.match(activation, /state\?\.view === "teacher"/);
   assert.match(activation, /teacherController\?\.activate/);
+  assert.match(activation, /state\?\.view === "salience"/);
+  assert.match(activation, /salienceController\?\.activate/);
   assert.match(activation, /state\?\.view === "capability"/);
   assert.match(activation, /capabilityExplorer\?\.update/);
   assert.match(capability, /new DossierController/);

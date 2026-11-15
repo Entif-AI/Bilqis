@@ -8,6 +8,77 @@
   min-width: 0;
 }
 
+.salience-heading {
+  display: grid;
+  grid-template-columns: minmax(180px, 0.6fr) minmax(0, 1.4fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.salience-heading h2 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-section);
+  line-height: var(--line-section);
+}
+
+.salience-heading-context {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.salience-heading-context > p {
+  max-width: 760px;
+  margin: 0;
+  line-height: var(--line-body);
+}
+
+.salience-heading-tools,
+.salience-panel-help,
+.salience-control-help,
+.salience-column-heading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.salience-heading-tools {
+  flex-wrap: wrap;
+}
+
+.salience-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-block-end: 1px solid var(--border);
+  padding-block-end: var(--space-2);
+}
+
+.salience-tab-panel {
+  min-width: 0;
+}
+
+.salience-snapshot-readout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: center;
+  min-width: 0;
+}
+
+.salience-snapshot-readout > span:first-child {
+  color: var(--text-muted);
+  font-size: var(--type-label);
+  font-weight: var(--weight-semibold);
+}
+
+.salience-snapshot-readout > strong {
+  overflow-wrap: anywhere;
+}
+
+.salience-column-heading {
+  justify-content: space-between;
+}
+
 .salience-view-controls {
   display: grid;
   grid-template-columns: minmax(220px, 320px) minmax(0, 1fr);
@@ -157,6 +228,10 @@
 
 .salience-observation-table {
   min-width: 1060px;
+}
+
+.salience-production-observations .salience-observation-table {
+  min-width: 1260px;
 }
 
 .salience-observation-table caption {

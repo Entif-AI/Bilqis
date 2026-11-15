@@ -135,6 +135,7 @@
 }
 
 .salience-table-wrap:focus-visible,
+.salience-tabs .ui-control:focus-visible,
 .salience-snapshot-control select:focus-visible,
 .salience-inspect:focus-visible,
 .salience-axis-guide summary:focus-visible,
@@ -166,6 +167,10 @@
 }
 
 @media (max-width: 980px) {
+  .salience-heading {
+    grid-template-columns: 1fr;
+  }
+
   .salience-view-controls {
     grid-template-columns: 1fr;
     align-items: start;
@@ -195,6 +200,11 @@
     flex-direction: column;
   }
 
+  .salience-snapshot-readout {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
   .salience-aggregate-node > summary > span:last-child {
     text-align: start;
   }
@@ -220,7 +230,8 @@
   .salience-table-wrap,
   .salience-aggregate-node,
   .salience-routing,
-  .salience-projection {
+  .salience-projection,
+  .salience-tabs {
     border-color: CanvasText;
   }
 }

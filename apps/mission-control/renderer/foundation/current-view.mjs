@@ -188,15 +188,7 @@ export function renderCurrentView(
   if (state.view === "salience") {
     domain.hidden = false;
     summary.textContent = t("shell.destination.salience.purpose");
-    if (!fixtureViews?.renderSalienceView || state.context.fixture !== true) {
-      domain.innerHTML = productionProjectionMarkup("salience");
-      return;
-    }
-    fixtureViews.renderSalienceView(domain, (id, details) => onInspect({
-      kind: "salience-observation",
-      id,
-      details,
-    }), state.selected?.kind === "salience-observation" ? state.selected.id : null);
+    domain.innerHTML = "";
     return;
   }
   if (state.view === "lineage") {

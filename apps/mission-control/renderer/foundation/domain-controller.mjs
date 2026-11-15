@@ -12,7 +12,7 @@ import {
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController, learningController,
-  teacherController, capabilityExplorer, onInspect, onNavigate, onAnnounce, schoolDomainSupport = null, 
+  teacherController, salienceController, capabilityExplorer, onInspect, onNavigate, onAnnounce, schoolDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
   if (state?.view === "atlas") {
@@ -72,6 +72,17 @@ export function activateDomainViews({
     });
   } else {
     void teacherController?.deactivate();
+  }
+  if (state?.view === "salience") {
+    void salienceController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void salienceController?.deactivate();
   }
   if (state?.view === "learning" && state.context?.fixture !== true) {
     void learningController?.activate(state.context, {
