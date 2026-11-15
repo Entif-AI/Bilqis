@@ -15,6 +15,7 @@ from bilqis_mlx.runtime.teacher_observation_capture import store_sidecar
 EVIDENCE_SCHEMA = "bilqis.bamf.c16.3-candidate-evidence/v1"
 REFERENCE_SCHEMA = "bilqis.bamf.c16.3-candidate-evidence-reference/v1"
 PERSISTENCE_SCHEMA = "bilqis.bamf.c16.3-evidence-persistence/v1"
+_SHA256_HEX_LENGTH = 64
 _SIDECAR_ROOT = Path("teacher-observations/objects")
 _ROLE_FIELDS = (
     ("option_rows", "selected_option"),
@@ -48,7 +49,7 @@ def candidate_attempt_id(
         visit_id: str, candidate_attempt_ordinal: int) -> str:
     if (type(generation) is not int or generation < 0
             or not isinstance(accepted_manifest_sha256, str)
-            or len(accepted_manifest_sha256) != 64
+            or len(accepted_manifest_sha256) != _SHA256_HEX_LENGTH
             or any(char not in "0123456789abcdef" for char in accepted_manifest_sha256)
             or not isinstance(visit_id, str) or not visit_id
             or type(candidate_attempt_ordinal) is not int
@@ -110,11 +111,12 @@ class CandidateEvidenceCapture:
                 or not isinstance(selected_option, str) or not selected_option
                 or not isinstance(capability, str) or not capability
                 or type(source_seed) is not int or source_seed < 0
-                or not isinstance(release_sha256, str) or len(release_sha256) != 64
+                or not isinstance(release_sha256, str)
+                or len(release_sha256) != _SHA256_HEX_LENGTH
                 or any(char not in "0123456789abcdef" for char in release_sha256)
                 or type(generation) is not int or generation < 0
                 or not isinstance(accepted_manifest_sha256, str)
-                or len(accepted_manifest_sha256) != 64
+                or len(accepted_manifest_sha256) != _SHA256_HEX_LENGTH
                 or any(char not in "0123456789abcdef"
                        for char in accepted_manifest_sha256)
                 or type(candidate_attempt_ordinal) is not int

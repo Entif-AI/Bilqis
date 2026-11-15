@@ -13,6 +13,10 @@ from .evidence import (
 )
 
 
+_HORIZON_ENVELOPE_RECORDS = 2
+_MIN_HORIZON_LOGICAL_RECORDS = 3
+
+
 def _invalid(reason: str):
     ErrorBus.raise_(SCHOOL.BAMF_FIRST_STUDENT.INVALID, reason=reason)
 
@@ -28,7 +32,7 @@ def _persistence(receipt):
             or type(persistence.get("evidence_objects")) is not int
             or persistence["evidence_objects"] not in (0, 1)
             or type(persistence.get("logical_records")) is not int
-            or persistence["logical_records"] < 3
+            or persistence["logical_records"] < _MIN_HORIZON_LOGICAL_RECORDS
             or type(persistence.get("unique_source_objects")) is not int
             or persistence["unique_source_objects"] < 1
             or type(persistence.get("delivery_records")) is not int
@@ -60,7 +64,8 @@ def _payload_parts(receipt, persistence, payload):
             or not isinstance(outcome, dict) or type(outcome.get("accepted")) is not bool
             or not isinstance(outcome.get("decision"), dict)):
         _invalid("BAMF_C16_3_EVIDENCE_PAYLOAD_INVALID")
-    if (persistence["logical_records"] != len(steps) + 2
+    if (persistence["logical_records"]
+            != len(steps) + _HORIZON_ENVELOPE_RECORDS
             or persistence["unique_source_objects"] != len(objects)
             or persistence["delivery_records"] != len(steps)
             or persistence["evidence_objects"] != int(persistence["bytes_written"] > 0)):
