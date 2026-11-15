@@ -181,36 +181,38 @@ def _require_publication_parent_locked(lock, hydrations, run_dir, pointer, witne
     return witness
 
 
+def _current_hydration_locked(lock, hydrations, executions, run_dir, key, pointer):
+    with lock:
+        retained = hydrations.get(key)
+    if (retained is not None and pointer is not None
+            and pointer.get("manifest_sha256") == retained.manifest_sha256):
+        return _require_current_hydration(run_dir, pointer, retained)
+    accepted_parent = (
+        (retained.manifest_sha256, retained.student)
+        if retained is not None else None)
+    pointer, student = _read_accepted_locked(
+        run_dir, accepted_parent=accepted_parent)
+    _published_in_memory_identity_locked(
+        run_dir, student, pointer, accepted_parent=accepted_parent,
+        acceptance_verified=True)
+    hydration = _new_hydration(run_dir, pointer, student)
+    with lock:
+        hydrations[key] = hydration
+        executions.pop(key, None)
+    return hydration
+
+
 def _make_execution_cache_runtime():
     lock = RLock()
     hydrations, executions = {}, {}
-
-    def current_hydration_locked(run_dir: Path, key: str, pointer):
-        with lock:
-            retained = hydrations.get(key)
-        if (retained is not None and pointer is not None
-                and pointer.get("manifest_sha256") == retained.manifest_sha256):
-            return _require_current_hydration(run_dir, pointer, retained)
-        accepted_parent = (
-            (retained.manifest_sha256, retained.student)
-            if retained is not None else None)
-        pointer, student = _read_accepted_locked(
-            run_dir, accepted_parent=accepted_parent)
-        _published_in_memory_identity_locked(
-            run_dir, student, pointer, accepted_parent=accepted_parent,
-            acceptance_verified=True)
-        hydration = _new_hydration(run_dir, pointer, student)
-        with lock:
-            hydrations[key] = hydration
-            executions.pop(key, None)
-        return hydration
 
     def current_hydration(run_dir: Path):
         run_dir = Path(run_dir).resolve()
         key = str(run_dir)
         with _pointer_lock(run_dir):
             pointer = _read_pointer(run_dir / "bamf-state.json")
-            return current_hydration_locked(run_dir, key, pointer)
+            return _current_hydration_locked(
+                lock, hydrations, executions, run_dir, key, pointer)
 
     def bind(run_dir: Path):
         run_dir = Path(run_dir).resolve()
@@ -249,7 +251,8 @@ def _make_execution_cache_runtime():
         key = str(run_dir)
         from .publication.instrumentation import publication_bundle_load
         with publication_bundle_load("parent"):
-            hydration = current_hydration_locked(run_dir, key, pointer)
+            hydration = _current_hydration_locked(
+                lock, hydrations, executions, run_dir, key, pointer)
         return _new_publication_parent(run_dir, hydration)
 
     def bind_publication_parent(run_dir: Path):
