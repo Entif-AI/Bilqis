@@ -1,7 +1,7 @@
 """MLX storage guard for process-local immutable CandidateState custody."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import copy
 from threading import RLock
 import weakref
@@ -18,12 +18,27 @@ _MUTATION_SLOTS = (
 )
 _EXPORT_SLOTS = ("__buffer__", "__dlpack__", "__getstate__", "__reduce_ex__",
                  "__setstate__")
+_STATE_TUPLE_WIDTH = 2
+_REDUCER_STATE_INDEX = 2
 _LOCK = RLock()
 _ARRAY_TYPE = type(mx.array([0], dtype=mx.int32))
-_ORIGINALS: dict[str, object] = {}
-_GUARDS: dict[str, object] = {}
-_PROTECTED_SPANS: dict[tuple[int, int], int] = {}
-_PROTECTIONS: dict[int, tuple[weakref.ReferenceType, tuple[tuple[int, int], ...]]] = {}
+
+
+@dataclass
+class _GuardOwnerState:
+    originals: dict[str, object] = field(default_factory=dict)
+    guards: dict[str, object] = field(default_factory=dict)
+    protected_spans: dict[tuple[int, int], int] = field(default_factory=dict)
+    protections: dict[
+        int, tuple[weakref.ReferenceType, tuple[tuple[int, int], ...]]
+    ] = field(default_factory=dict)
+
+
+class _GuardViolation(RuntimeError):
+    pass
+
+
+_OWNER = _GuardOwnerState()
 _CAPABILITY = None
 _UNSUPPORTED = False
 _POISONED = False
@@ -57,10 +72,10 @@ def _numpy_span(view: np.ndarray) -> tuple[int, int] | None:
 
 
 def storage_span(array) -> tuple[int, int] | None:
-    state = _ORIGINALS["__getstate__"](array)
-    if (type(state) is not tuple or len(state) != 2
+    state = _OWNER.originals["__getstate__"](array)
+    if (type(state) is not tuple or len(state) != _STATE_TUPLE_WIDTH
             or not isinstance(state[0], np.ndarray)):
-        raise RuntimeError("MLX storage witness unavailable")
+        raise _GuardViolation()
     return _numpy_span(state[0])
 
 
@@ -74,20 +89,20 @@ def _overlaps(array) -> bool:
     lo, hi = current
     with _LOCK:
         return any(lo < other_hi and other_lo < hi
-                   for (other_lo, other_hi), count in _PROTECTED_SPANS.items()
+                   for (other_lo, other_hi), count in _OWNER.protected_spans.items()
                    if count > 0)
 
 
 def _guard_mutation(name, original):
     def guarded(self, *args, **kwargs):
         if _overlaps(self):
-            raise RuntimeError(f"protected CandidateState storage: {name}")
+            raise _GuardViolation()
         return original(self, *args, **kwargs)
     return guarded
 
 
 def _guarded_state(self):
-    state = _ORIGINALS["__getstate__"](self)
+    state = _OWNER.originals["__getstate__"](self)
     if not _overlaps(self):
         return state
     return np.array(state[0], copy=True), state[1]
@@ -111,7 +126,7 @@ def _build_guard(name, original):
     if name == "__dlpack__":
         def guarded(self, *args, **kwargs):
             if _overlaps(self):
-                raise RuntimeError("protected CandidateState storage: __dlpack__")
+                raise _GuardViolation()
             return original(self, *args, **kwargs)
         return guarded
     if name == "__getstate__":
@@ -122,27 +137,27 @@ def _build_guard(name, original):
             if not _overlaps(self):
                 return value
             items = list(value)
-            if len(items) < 3:
-                raise RuntimeError("protected CandidateState reducer unsupported")
-            items[2] = _guarded_state(self)
+            if len(items) <= _REDUCER_STATE_INDEX:
+                raise _GuardViolation()
+            items[_REDUCER_STATE_INDEX] = _guarded_state(self)
             return tuple(items)
         return guarded
-    raise RuntimeError(f"unsupported guard slot {name}")
+    raise _GuardViolation()
 
 
 def _add_span(value):
     if value is not None:
-        _PROTECTED_SPANS[value] = _PROTECTED_SPANS.get(value, 0) + 1
+        _OWNER.protected_spans[value] = _OWNER.protected_spans.get(value, 0) + 1
 
 
 def _remove_span(value):
     if value is None:
         return
-    count = _PROTECTED_SPANS.get(value, 0)
+    count = _OWNER.protected_spans.get(value, 0)
     if count <= 1:
-        _PROTECTED_SPANS.pop(value, None)
+        _OWNER.protected_spans.pop(value, None)
     else:
-        _PROTECTED_SPANS[value] = count - 1
+        _OWNER.protected_spans[value] = count - 1
 
 
 def _self_test() -> None:
@@ -156,31 +171,31 @@ def _self_test() -> None:
         )
         for alias in aliases:
             if storage_span(alias) is None or not _overlaps(alias):
-                raise RuntimeError("MLX sharing alias not protected")
+                raise _GuardViolation()
             if not memoryview(alias).readonly or np.asarray(alias).flags.writeable:
-                raise RuntimeError("MLX writable export remained")
+                raise _GuardViolation()
             try:
                 alias[0] = 0
             except Exception:
                 pass
             else:
-                raise RuntimeError("MLX indexed mutation remained")
+                raise _GuardViolation()
             try:
                 alias.__dlpack__()
             except Exception:
                 pass
             else:
-                raise RuntimeError("MLX DLPack export remained")
+                raise _GuardViolation()
             if hasattr(alias, "__array__"):
                 exported = alias.__array__()
                 if exported.flags.writeable:
-                    raise RuntimeError("MLX __array__ export remained writable")
+                    raise _GuardViolation()
             try:
-                alias.__setstate__(_ORIGINALS["__getstate__"](alias))
+                alias.__setstate__(_OWNER.originals["__getstate__"](alias))
             except Exception:
                 pass
             else:
-                raise RuntimeError("MLX state mutation remained")
+                raise _GuardViolation()
         for name in _MUTATION_SLOTS:
             if name == "__setitem__":
                 continue
@@ -189,22 +204,22 @@ def _self_test() -> None:
             except Exception:
                 pass
             else:
-                raise RuntimeError(f"MLX in-place mutation remained: {name}")
+                raise _GuardViolation()
         for candidate in (copy.copy(root), copy.deepcopy(root)):
             if _overlaps(candidate) and np.asarray(candidate).flags.writeable:
-                raise RuntimeError("MLX copy retained writable shared storage")
+                raise _GuardViolation()
         if storage_span(root) == _numpy_span(_guarded_state(root)[0]):
-            raise RuntimeError("MLX state serialization remained shared")
+            raise _GuardViolation()
     finally:
         _remove_span(root_span)
     ordinary = mx.array([1.0, 2.0], dtype=mx.float32)
     ordinary[0] = 9.0
     if (float(ordinary[0]) != 9.0 or memoryview(ordinary).readonly
             or not np.asarray(ordinary).flags.writeable):
-        raise RuntimeError("MLX unprotected mutation was changed")
+        raise _GuardViolation()
     ordinary.__dlpack__()
     if hasattr(ordinary, "__array__") and not ordinary.__array__().flags.writeable:
-        raise RuntimeError("MLX unprotected __array__ export was changed")
+        raise _GuardViolation()
 
 
 def guard_intact(capability) -> bool:
@@ -214,7 +229,7 @@ def guard_intact(capability) -> bool:
     intact = (capability is not None and capability.guarded_type is _ARRAY_TYPE
               and all(getattr(_ARRAY_TYPE, name, None) is guard
                       for name, _original, guard in capability.slots))
-    if not intact and _PROTECTIONS:
+    if not intact and _OWNER.protections:
         _POISONED = True
     return intact
 
@@ -233,21 +248,21 @@ def binding_supported() -> bool:
         try:
             for name in names:
                 original = getattr(_ARRAY_TYPE, name)
-                _ORIGINALS.setdefault(name, original)
-                guard = _build_guard(name, _ORIGINALS[name])
+                _OWNER.originals.setdefault(name, original)
+                guard = _build_guard(name, _OWNER.originals[name])
                 setattr(_ARRAY_TYPE, name, guard)
-                _GUARDS[name] = guard
+                _OWNER.guards[name] = guard
                 changed.append(name)
             _self_test()
         except Exception:
             for name in reversed(changed):
-                setattr(_ARRAY_TYPE, name, _ORIGINALS[name])
+                setattr(_ARRAY_TYPE, name, _OWNER.originals[name])
             _UNSUPPORTED = True
             return False
         _GENERATION += 1
         _CAPABILITY = GuardCapability(
             _GENERATION, _TOKEN, _ARRAY_TYPE,
-            tuple((name, _ORIGINALS[name], _GUARDS[name]) for name in names))
+            tuple((name, _OWNER.originals[name], _OWNER.guards[name]) for name in names))
         return True
 
 
@@ -267,11 +282,11 @@ def numerical_witnesses(state):
 
 def _release_protection(key, reference):
     with _LOCK:
-        current = _PROTECTIONS.get(key)
+        current = _OWNER.protections.get(key)
         if current is not None and current[0] is reference:
             for span in current[1]:
                 _remove_span(span)
-            _PROTECTIONS.pop(key, None)
+            _OWNER.protections.pop(key, None)
 
 
 def protect_state_storage(state) -> bool:
@@ -279,7 +294,7 @@ def protect_state_storage(state) -> bool:
         return False
     key = id(state)
     with _LOCK:
-        current = _PROTECTIONS.get(key)
+        current = _OWNER.protections.get(key)
         if current is not None and current[0]() is state:
             return True
         spans = tuple(item[4] for item in numerical_witnesses(state)
@@ -288,11 +303,11 @@ def protect_state_storage(state) -> bool:
             _add_span(span)
         reference = weakref.ref(
             state, lambda ref, key=key: _release_protection(key, ref))
-        _PROTECTIONS[key] = (reference, spans)
+        _OWNER.protections[key] = (reference, spans)
     return True
 
 
 def state_storage_protected(state) -> bool:
     with _LOCK:
-        current = _PROTECTIONS.get(id(state))
+        current = _OWNER.protections.get(id(state))
         return bool(current is not None and current[0]() is state)

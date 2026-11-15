@@ -1,7 +1,7 @@
 """Process-local full CandidateState identity binding for immutable custody."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import hashlib
 import json
 from threading import RLock
@@ -19,17 +19,28 @@ from .identity_guard import (
 
 _GROUPS = ("parameters", "m", "v", "update_counts")
 _LOCK = RLock()
-_STATUSES: dict[int, tuple[weakref.ReferenceType, str, str]] = {}
-_BINDINGS: dict[int, tuple[weakref.ReferenceType, "CandidateIdentityBinding"]] = {}
-_METRICS = {
-    "candidate_identity_full_computations": 0,
-    "candidate_identity_numerical_bytes_hashed": 0,
-    "candidate_identity_binding_issues": 0,
-    "candidate_identity_binding_reuses": 0,
-    "candidate_identity_require_calls": 0,
-    "candidate_identity_full_hash_wall_seconds": 0.0,
-    "candidate_identity_require_wall_seconds": 0.0,
-}
+_NUMERICAL_WITNESS_PREFIX_WIDTH = 3
+_NUMERICAL_WITNESS_REF_INDEX = 3
+_NUMERICAL_WITNESS_SPAN_INDEX = 4
+
+
+@dataclass
+class _BindingOwnerState:
+    statuses: dict[int, tuple[weakref.ReferenceType, str, str]] = field(default_factory=dict)
+    bindings: dict[int, tuple[weakref.ReferenceType, "CandidateIdentityBinding"]] = field(
+        default_factory=dict)
+    metrics: dict[str, int | float] = field(default_factory=lambda: {
+        "candidate_identity_full_computations": 0,
+        "candidate_identity_numerical_bytes_hashed": 0,
+        "candidate_identity_binding_issues": 0,
+        "candidate_identity_binding_reuses": 0,
+        "candidate_identity_require_calls": 0,
+        "candidate_identity_full_hash_wall_seconds": 0.0,
+        "candidate_identity_require_wall_seconds": 0.0,
+    })
+
+
+_OWNER = _BindingOwnerState()
 
 
 @dataclass(frozen=True)
@@ -56,7 +67,7 @@ class CandidateIdentityBinding:
 
 def _cleanup_state(key, reference):
     with _LOCK:
-        for registry in (_STATUSES, _BINDINGS):
+        for registry in (_OWNER.statuses, _OWNER.bindings):
             current = registry.get(key)
             if current is not None and current[0] is reference:
                 registry.pop(key, None)
@@ -65,7 +76,7 @@ def _cleanup_state(key, reference):
 def _set_status(state, status, reason):
     key = id(state)
     reference = weakref.ref(state, lambda ref, key=key: _cleanup_state(key, ref))
-    _STATUSES[key] = (reference, status, reason)
+    _OWNER.statuses[key] = (reference, status, reason)
 
 
 def protect_candidate_state(state) -> bool:
@@ -79,7 +90,7 @@ def protect_candidate_state(state) -> bool:
 
 def mark_candidate_state_unbindable(state, reason: str) -> None:
     with _LOCK:
-        current = _BINDINGS.get(id(state))
+        current = _OWNER.bindings.get(id(state))
         if current is not None and current[0]() is state:
             invalid()
         _set_status(state, "UNBINDABLE", reason)
@@ -99,7 +110,7 @@ def _custody_witness(custody):
 
 
 def _binding_for(state):
-    current = _BINDINGS.get(id(state))
+    current = _OWNER.bindings.get(id(state))
     return current[1] if current is not None and current[0]() is state else None
 
 
@@ -113,7 +124,7 @@ def bind_candidate_identity(state, topology_digest: str, extents_digest: str, *,
         if expected_digest is not None and binding.digest != expected_digest:
             invalid()
         with _LOCK:
-            _METRICS["candidate_identity_binding_reuses"] += 1
+            _OWNER.metrics["candidate_identity_binding_reuses"] += 1
         return binding
     if not protect_candidate_state(state):
         invalid()
@@ -136,8 +147,8 @@ def bind_candidate_identity(state, topology_digest: str, extents_digest: str, *,
         guard_generation=capability.generation, guard_token=capability.token)
     reference = weakref.ref(state, lambda ref, key=id(state): _cleanup_state(key, ref))
     with _LOCK:
-        _BINDINGS[id(state)] = (reference, binding)
-        _METRICS["candidate_identity_binding_issues"] += 1
+        _OWNER.bindings[id(state)] = (reference, binding)
+        _OWNER.metrics["candidate_identity_binding_issues"] += 1
     return binding
 
 
@@ -147,7 +158,7 @@ def bind_candidate_identity_or_fallback(
     """Bind owner-controlled state when supported, otherwise prove canonically."""
     with _LOCK:
         existing = _binding_for(state)
-        status = _STATUSES.get(id(state))
+        status = _OWNER.statuses.get(id(state))
         status_value = (status[1] if status is not None and status[0]() is state
                         else "UNCLASSIFIED")
     if existing is not None:
@@ -175,7 +186,7 @@ def require_candidate_identity_binding(state, topology_digest: str, extents_dige
     started = perf_counter()
     try:
         with _LOCK:
-            _METRICS["candidate_identity_require_calls"] += 1
+            _OWNER.metrics["candidate_identity_require_calls"] += 1
             binding = binding or _binding_for(state)
         capability = current_capability()
         if (binding is None or capability is None or not guard_intact(capability)
@@ -205,14 +216,19 @@ def require_candidate_identity_binding(state, topology_digest: str, extents_dige
             invalid()
         current = numerical_witnesses(state)
         if (len(current) != len(binding.numerical_witnesses)
-                or any(saved[:3] != now[:3] or saved[3]() is not now[3]()
-                       or saved[4] != now[4]
+                or any(
+                    saved[:_NUMERICAL_WITNESS_PREFIX_WIDTH]
+                    != now[:_NUMERICAL_WITNESS_PREFIX_WIDTH]
+                    or saved[_NUMERICAL_WITNESS_REF_INDEX]()
+                    is not now[_NUMERICAL_WITNESS_REF_INDEX]()
+                    or saved[_NUMERICAL_WITNESS_SPAN_INDEX]
+                    != now[_NUMERICAL_WITNESS_SPAN_INDEX]
                        for saved, now in zip(binding.numerical_witnesses, current))):
             invalid()
         return binding
     finally:
         with _LOCK:
-            _METRICS["candidate_identity_require_wall_seconds"] += perf_counter() - started
+            _OWNER.metrics["candidate_identity_require_wall_seconds"] += perf_counter() - started
 
 
 def candidate_identity_for_state(state, topology_digest: str, extents_digest: str,
@@ -222,7 +238,7 @@ def candidate_identity_for_state(state, topology_digest: str, extents_digest: st
             state, topology_digest, extents_digest, binding).digest
     with _LOCK:
         existing = _binding_for(state)
-        status = _STATUSES.get(id(state))
+        status = _OWNER.statuses.get(id(state))
         status_value = (status[1] if status is not None and status[0]() is state
                         else "UNCLASSIFIED")
     if existing is not None:
@@ -237,7 +253,7 @@ def candidate_identity_for_bound_state(state) -> str:
     """Reuse an exact live binding without making callers restate its B01 context."""
     with _LOCK:
         binding = _binding_for(state)
-        status = _STATUSES.get(id(state))
+        status = _OWNER.statuses.get(id(state))
         status_value = (status[1] if status is not None and status[0]() is state
                         else "UNCLASSIFIED")
     if binding is not None:
@@ -270,7 +286,7 @@ def candidate_identity_for_canonical_consumer(state) -> str:
 
 def candidate_identity_metrics_snapshot() -> dict:
     with _LOCK:
-        return dict(_METRICS)
+        return dict(_OWNER.metrics)
 
 
 def candidate_identity_metrics_delta(before: dict) -> dict:
@@ -283,12 +299,12 @@ def _record_full_identity_computation(state, elapsed_seconds: float) -> None:
         int(value.nbytes) for group in _GROUPS
         for value in getattr(state.optimizer, group).values())
     with _LOCK:
-        _METRICS["candidate_identity_full_computations"] += 1
-        _METRICS["candidate_identity_numerical_bytes_hashed"] += numerical_bytes
-        _METRICS["candidate_identity_full_hash_wall_seconds"] += elapsed_seconds
+        _OWNER.metrics["candidate_identity_full_computations"] += 1
+        _OWNER.metrics["candidate_identity_numerical_bytes_hashed"] += numerical_bytes
+        _OWNER.metrics["candidate_identity_full_hash_wall_seconds"] += elapsed_seconds
 
 
 def _reset_candidate_identity_metrics_for_tests() -> None:
     with _LOCK:
-        for key, value in _METRICS.items():
-            _METRICS[key] = 0.0 if isinstance(value, float) else 0
+        for key, value in _OWNER.metrics.items():
+            _OWNER.metrics[key] = 0.0 if isinstance(value, float) else 0
