@@ -115,6 +115,12 @@ class AtlasModelMixedFrameTests(unittest.TestCase):
                 current = current + (
                     (activated * activated)
                     @ cls.parameters[prefix + "ffn_out"].T)
+                if (layer + 1) % 4 == 0:
+                    # Production fingerprints each four-layer B11.1a group,
+                    # which materializes MLX's lazy graph at the group
+                    # boundary. Match that evaluation schedule so this
+                    # witness compares equations rather than fusion choices.
+                    mx.eval(current)
             outputs.append(current)
             left = right
             parent = prefix_name

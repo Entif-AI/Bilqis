@@ -67,12 +67,12 @@ class AcceptedMultiContextReplayTests(unittest.TestCase):
     def _publish(self):
         provision_source_authority_registry(self.run, AUTHORITY)
         source = with_source_authority_registry(candidate(parent_state()), AUTHORITY)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
             publish_candidate(self.run, source)
             return bind_accepted_execution_cache(self.run)
 
     def _persist_invalidation(self, cache, event):
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             record = context_invalidation_record(
                 cache.accepted_manifest_sha256, event)
             append_record(self.run, cache.accepted_manifest_sha256, record)
@@ -113,7 +113,7 @@ class AcceptedMultiContextReplayTests(unittest.TestCase):
 
     def _bind_origin_sets(self, case, rows, owner, cache):
         compiled = self._compiled_with_owner(cache, owner)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "PACKED_FRAME", owner)
             motif = bind_motif_artifact_owner(cache, compiled)
@@ -121,7 +121,7 @@ class AcceptedMultiContextReplayTests(unittest.TestCase):
         alternate_owner = PackedFrameArtifactOwner(
             self._two_context_rows(case, "c" * 64))
         alternate_compiled = self._compiled_with_owner(cache, alternate_owner)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,
                 "PACKED_FRAME", alternate_owner)
@@ -157,7 +157,7 @@ class AcceptedMultiContextReplayTests(unittest.TestCase):
             view, invalidation=invalidation, accepted_event_id=receipt,
             dependencies=tuple(sorted(
                 (set(view.immediate_dependencies) - {old_time}) | {new_time})))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((view_result,)))
         motif_result = _signed_context_result(
@@ -166,7 +166,7 @@ class AcceptedMultiContextReplayTests(unittest.TestCase):
             dependencies=tuple(sorted(
                 (set(motif.current_node.immediate_dependencies) - {old_time})
                 | {new_time})))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((motif_result,)))
             self.assertIs(motif, bind_motif_artifact_owner(cache, compiled))
@@ -180,7 +180,7 @@ class AcceptedMultiContextReplayTests(unittest.TestCase):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         cold_owner = PackedFrameArtifactOwner(rows)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cold_cache.accepted_manifest_sha256,

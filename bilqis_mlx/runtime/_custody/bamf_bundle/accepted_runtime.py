@@ -216,10 +216,16 @@ def _published_in_memory_identity(
 def _require_current_execution_cache(run_dir: Path, cache, entries, lock):
     key = str(run_dir)
     with _pointer_lock(run_dir):
+        pointer = _read_pointer(run_dir / "bamf-state.json")
+        if (pointer is None
+                or pointer.get("manifest_sha256") != cache.accepted_manifest_sha256
+                or pointer.get("run_id") != cache.run_id
+                or pointer.get("generation") != cache.generation):
+            invalid("B13_EXECUTION_CACHE_STALE")
         with lock:
             retained = entries.get(key)
         current_registry = _fast_retained_registry(
-            run_dir, _read_pointer(run_dir / "bamf-state.json"), retained)
+            run_dir, pointer, retained)
         with lock:
             _require_retained_entry(entries.get(key), cache, current_registry)
     return cache

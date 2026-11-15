@@ -42,17 +42,22 @@ class AcceptedCorrectionCompositionCase(unittest.TestCase):
         self.environment = patch.dict(
             os.environ, {"BILQIS_DATA_PLANE": str(self.root / "plane.sqlite3")})
         self.environment.start()
+        self._authority_registry = AUTHORITY
 
     def tearDown(self):
         self.environment.stop()
         self.temporary.cleanup()
 
     def publish(self, source, registry=AUTHORITY):
+        self._authority_registry = registry
         provision_source_authority_registry(self.run, registry)
         source = with_source_authority_registry(source, registry)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with self._shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             pointer = publish_candidate(self.run, source)
             return pointer
+
+    def _shape_patch(self):
+        return shape_patch(self._authority_registry)
 
     def _composition_context(self, count):
         binding, generation, _budget, add, _ambiguous = _fixture()
@@ -87,7 +92,7 @@ class AcceptedCorrectionCompositionCase(unittest.TestCase):
 
     def _record_equal_revalidation(self, owner, composition, correction):
         node = owner.node_for(composition)
-        with shape_patch():
+        with self._shape_patch():
             return AcceptedRuntimeHost(self.run).record_revalidation(_result(
                     node, digest=node.content_digest,
                     correction=correction),

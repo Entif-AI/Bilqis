@@ -74,12 +74,12 @@ def rewrite_motif_bundle_fixture(
     return {**record, "manifest_sha256": manifest_sha}
 
 
-def shape_patch():
+def shape_patch(registry=REGISTRY):
     from ..helpers import DECLARED
     from ..genesis_authority_fixtures import genesis_feature_source_patch
 
     stack = ExitStack()
-    stack.enter_context(host_source_authority_patch())
+    stack.enter_context(host_source_authority_patch(registry))
     stack.enter_context(genesis_feature_source_patch())
     for target in ("bilqis_mlx.runtime.model_topology_v2.expected_bamf_shapes",
                    "bilqis_mlx.runtime.topology_v2.ledger.expected_bamf_shapes",
@@ -205,16 +205,21 @@ def _normalize_candidate_for_parent(bundle, parent):
         provenance = replace(
             parent.provenance, release_digest=bundle.provenance.release_digest)
         correction = {
-            **bundle.correction_frontier,
+            **parent.correction_frontier,
             "source_identity": provenance.source_identity,
             "release_digest": provenance.release_digest,
+        }
+        compiler = {
+            **parent.compiler_features,
+            "factor_map_sha256": extents.factor_map_digest,
+            "compiler_sha256": bundle.compiler_features["compiler_sha256"],
         }
         bundle = replace(
             bundle, implementation_sha256=parent.implementation_sha256,
             topology=parent.topology, extents=extents,
             retained_state=retained, provenance=provenance,
             semantic_abi=semantic,
-            compiler_features=dict(bundle.compiler_features),
+            compiler_features=compiler,
             correction_frontier=correction,
             teacher_state=dict(parent.teacher_state),
             evaluation_contract=dict(parent.evaluation_contract),

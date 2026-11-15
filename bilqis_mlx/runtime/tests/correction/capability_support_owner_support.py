@@ -105,8 +105,14 @@ def source_qualified_state(
 def publish_support_fixture(
         run, *, authority=None, authority_registry=None,
         delivery_event="FIXTURE_CAPABILITY_SUPPORT", **authority_kwargs):
-    with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
-        pointer = publish_genesis(run)
+    patch_context = (
+        shape_patch()
+        if authority_registry is None
+        else shape_patch(authority_registry)
+    )
+    with patch_context, patch.object(mlx_checkpoint, "assert_headroom"):
+        pointer = publish_genesis(
+            run, source_authority_registry=authority_registry)
         accepted_parent = load_accepted_generation(run)
         parent, transaction, retained, authority = source_qualified_state(
             accepted_parent.retained_state,
@@ -140,20 +146,39 @@ class CapabilitySupportOwnerFixture(unittest.TestCase):
         self.environment = patch.dict(
             os.environ, {"BILQIS_DATA_PLANE": str(self.root / "plane.sqlite3")})
         self.environment.start()
+        self._authority_registry = None
 
     def tearDown(self):
         self.environment.stop()
         self.temporary.cleanup()
 
     def publish_support(self, *, authority=None, authority_registry=None):
+        self._authority_registry = authority_registry
         return publish_support_fixture(
             self.run, authority=authority,
             authority_registry=authority_registry)
 
+    def _shape_patch(self):
+        return (
+            shape_patch()
+            if self._authority_registry is None
+            else shape_patch(self._authority_registry)
+        )
+
     def load_support(self, authority_registry=None):
-        with shape_patch():
-            if authority_registry is not None:
+        registry = (
+            self._authority_registry
+            if authority_registry is None
+            else authority_registry
+        )
+        patch_context = (
+            shape_patch()
+            if registry is None
+            else shape_patch(registry)
+        )
+        with patch_context:
+            if registry is not None:
                 from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
                 cache = bind_accepted_execution_cache(self.run)
-                self.assertEqual(cache._correction_registry, authority_registry)
+                self.assertEqual(cache._correction_registry, registry)
             return load_capability_support_owner(self.run, TARGET)

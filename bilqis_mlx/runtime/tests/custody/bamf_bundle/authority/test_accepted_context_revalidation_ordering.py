@@ -80,12 +80,12 @@ class AcceptedContextOrderingTests(unittest.TestCase):
     def _publish(self):
         provision_source_authority_registry(self.run, AUTHORITY)
         source = with_source_authority_registry(candidate(parent_state()), AUTHORITY)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
             publish_candidate(self.run, source)
             return bind_accepted_execution_cache(self.run)
 
     def _persist_invalidation(self, cache, event):
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             record = context_invalidation_record(
                 cache.accepted_manifest_sha256, event)
             append_record(self.run, cache.accepted_manifest_sha256, record)
@@ -109,7 +109,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
             tuple(sorted((source_ref, x_time))), impact=3, exigency=3)
         owner = _ContextOwner((direct,))
         cache = self._publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "ORDERING", owner
             )
@@ -123,7 +123,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         result_b = _signed_context_result(
             direct, invalidation=event_b, accepted_event_id=receipt_b,
             dependencies=tuple(sorted((source_ref, z_time))))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((result_b,)))
         with self.assertRaises(BilqisError):
@@ -132,7 +132,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         result_a = _signed_context_result(
             direct, invalidation=event_a, accepted_event_id=receipt_a,
             dependencies=tuple(sorted((source_ref, y_time))))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((result_a,)))
 
@@ -146,7 +146,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         cold_owner = _ContextOwner((direct,))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cold_cache.accepted_manifest_sha256,
@@ -174,7 +174,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
             (old_time,), impact=1, exigency=1)
         owner = _ContextOwner((high, low))
         cache = self._publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "PRIORITY", owner
             )
@@ -185,7 +185,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         low_result = _signed_context_result(
             low, invalidation=invalidation, accepted_event_id=receipt,
             dependencies=(new_time,))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             low_record = host.record_context_revalidation(
                 ContextRevalidationFrontier((low_result,)))
         with self.assertRaises(BilqisError):
@@ -194,7 +194,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         high_result = _signed_context_result(
             high, invalidation=invalidation, accepted_event_id=receipt,
             dependencies=(new_time,))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((high_result,)))
         self.assertIsNone(require_pending_corrections(owner, high.artifact_id))
@@ -203,7 +203,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         cold_owner = _ContextOwner((high, low))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cold_cache.accepted_manifest_sha256,
@@ -218,7 +218,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         case = source_owned_temporal_case()
         owner = case.owner()
         cache = self._publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,
                 "PACKED_FRAME", owner
@@ -238,7 +238,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         result = _signed_context_result(
             held, invalidation=invalidation, accepted_event_id=receipt,
             dependencies=dependencies)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((result,)))
         self.assertTrue(owner.require_row(case.row))
@@ -247,7 +247,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
         case = source_owned_temporal_case()
         owner = case.owner()
         cache = self._publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,
                 "PACKED_FRAME", owner
@@ -270,7 +270,7 @@ class AcceptedContextOrderingTests(unittest.TestCase):
             held, invalidation=invalidation,
             accepted_event_id=record["event_id"],
             dependencies=dependencies, eligible=False)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(
                 ContextRevalidationFrontier((result,)))
         with self.assertRaises(BilqisError) as caught:

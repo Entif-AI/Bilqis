@@ -14,7 +14,8 @@ from pathlib import Path
 from bilqis_mlx.data_plane import DataPlaneError, SHA256_HEX_LENGTH
 from ..codec import validate_bamf_bundle_custody
 from ..records import (
-    BAMF_POINTER_SCHEMA, LEGACY_BAMF_POINTER_SCHEMA, canonical, invalid,
+    BAMF_BUNDLE_SCHEMA, BAMF_POINTER_SCHEMA, LEGACY_BAMF_POINTER_SCHEMA,
+    canonical, invalid,
 )
 
 ACCEPTANCE_DIR = "bamf-acceptance"
@@ -142,6 +143,34 @@ def _pointer_lock(run_dir: Path, *, create: bool = False):
 def _initial_generation_pointer_lock(run_dir: Path):
     """Generation-zero-only capability for first creation of the persistent lock."""
     return _pointer_lock(run_dir, create=True)
+
+
+@contextlib.contextmanager
+def _publication_pointer_lock(run_dir: Path):
+    """Writer lock with one authenticated migration path for pre-lock v2 runs."""
+    run_dir = Path(run_dir)
+    lock = run_dir / ".bamf-pointer.lock"
+    if lock.exists() or lock.is_symlink():
+        with _pointer_lock(run_dir):
+            yield
+        return
+
+    pointer_path = run_dir / "bamf-state.json"
+    prior = _read_pointer(pointer_path)
+    if prior is None:
+        invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+    manifest = _live_bundle_manifest(run_dir, prior)
+    if manifest.get("schema") != BAMF_BUNDLE_SCHEMA:
+        invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+
+    with _pointer_lock(run_dir, create=True):
+        current = _read_pointer(pointer_path)
+        if current != prior:
+            invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
+        current_manifest = _live_bundle_manifest(run_dir, current)
+        if current_manifest.get("schema") != BAMF_BUNDLE_SCHEMA:
+            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+        yield
 
 
 def _read_pointer(path: Path) -> dict | None:

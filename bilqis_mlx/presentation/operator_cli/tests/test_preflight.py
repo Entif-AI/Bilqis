@@ -14,13 +14,15 @@ class OperatorTests(unittest.TestCase):
     def test_worktree_preflight_uses_explicit_source_paths_without_global_mutation(self):
         from bilqis_mlx import cli
         original = cli.LEGACY_ROOT, cli.ORIGINAL_CHECKPOINT
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, patch(
+                "bilqis_mlx.presentation.operator_cli.command.ROOT", Path(tmp)):
             donor = Path(tmp) / "explicit-donor"
+            run = Path(tmp) / "runs" / "aspirant"
             out = io.StringIO()
             with patch("bilqis_mlx.grade_a_manifest.verify_manifest", return_value={
                     "verified_items": 216, "exam_rubric_sha256": "a" * 64}) as verify, \
                     patch("bilqis_mlx.presentation.operator_cli.preflight.assert_headroom", return_value={}), redirect_stdout(out):
-                self.assertEqual(main(["train", "--dry-run", "--verify-source", "--run-dir", tmp,
+                self.assertEqual(main(["train", "--dry-run", "--verify-source", "--run-dir", str(run),
                                        "--legacy-code-root", str(donor)]), 0)
             self.assertEqual(verify.call_args.args[1], donor)
             self.assertEqual(verify.call_args.args[2], donor / "runs" / "primitive-consolidation-v16-triplets" /

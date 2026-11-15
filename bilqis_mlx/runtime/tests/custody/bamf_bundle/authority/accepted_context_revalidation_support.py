@@ -90,7 +90,7 @@ class AcceptedContextFixture(unittest.TestCase):
     def publish(self):
         provision_source_authority_registry(self.run, AUTHORITY)
         source = with_source_authority_registry(candidate(parent_state()), AUTHORITY)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
             publish_candidate(self.run, source)
             return bind_accepted_execution_cache(self.run)
 
@@ -109,7 +109,7 @@ class AcceptedContextFixture(unittest.TestCase):
         )
         owner = ContextOwner((direct, descendant))
         cache = self.publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "TEST_CONTEXT", owner
             )
@@ -132,7 +132,7 @@ class AcceptedContextFixture(unittest.TestCase):
                 for handle in (frame.frame_handle, *frame.member_handles)
             })),
         )
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             record = context_invalidation_record(
                 cache.accepted_manifest_sha256, invalidation)
             append_record(self.run, cache.accepted_manifest_sha256, record)

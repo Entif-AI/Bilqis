@@ -107,6 +107,10 @@ def _exam_receipt(*, school, run_id, release, manifest, course, graph,
 
 
 def _patch_owner(name, **kwargs):
+    if name == "_cook_new_grade_soups":
+        return patch(
+            "bilqis_mlx.learning.lesson_guidance._cook_new_grade_soups",
+            **kwargs)
     function = getattr(trainer, name)
     return patch(function.__module__ + "." + function.__name__, **kwargs)
 

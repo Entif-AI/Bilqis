@@ -6,7 +6,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 import unittest
-from unittest.mock import patch
+from unittest.mock import ANY, patch
 
 from bilqis_mlx.cli import main
 from bilqis_mlx.factory.autonomy import (
@@ -290,7 +290,8 @@ class AcceptedAtlasFlywheelRuntimeTests(MixedWitnessSupport, unittest.TestCase):
     def _invoke_real_human_resume(self):
         output, errors = io.StringIO(), io.StringIO()
 
-        def cold_operator_probe(run_dir, *, minutes, max_visits, reserve_gib):
+        def cold_operator_probe(
+                run_dir, *, minutes, max_visits, reserve_gib, progress=None):
             from bilqis_mlx.runtime.bamf_operator import BamfOperatorResult
             from bilqis_mlx.runtime.bamf_operator.session import _execution_context
 
@@ -316,7 +317,8 @@ class AcceptedAtlasFlywheelRuntimeTests(MixedWitnessSupport, unittest.TestCase):
                 "--max-visits", "1"])
         self.assertEqual((code, errors.getvalue()), (0, ""))
         operate.assert_called_once_with(
-            self.run, minutes=90, max_visits=1, reserve_gib=100.0)
+            self.run, minutes=90, max_visits=1, reserve_gib=100.0,
+            progress=ANY)
         return self._json_records(output.getvalue())[-1]
 
     def test_human_resume_runs_real_parameter_flywheel_from_accepted_custody(self):

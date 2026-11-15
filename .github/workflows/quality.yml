@@ -52,55 +52,18 @@ jobs:
             echo "Bridge cutover: comparing against joined unified baseline $BASE_REF"
           fi
           echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
-      - name: Determine whether passing expensive suites were invalidated
+      - name: Require fresh expensive verification
         id: test-impact
         shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          QUALITY_BASE_REF: ${{ steps.comparison-base.outputs.base_ref }}
-          QUALITY_HEAD_REF: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
           set -euo pipefail
-          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
-            echo "expensive_tests=true" >> "$GITHUB_OUTPUT"
-            echo "Manual dispatch explicitly requests fresh verification."
-            exit 0
-          fi
-
-          BASE_REF="$QUALITY_BASE_REF"
-          case "$BASE_REF" in
-            ""|0000000000000000000000000000000000000000)
-              echo "expensive_tests=true" >> "$GITHUB_OUTPUT"
-              echo "No trustworthy base ref; fail safe to fresh verification."
-              exit 0
-              ;;
-          esac
-
-          expensive=false
-          while IFS= read -r path; do
-            case "$path" in
-              bilqis_mlx/*|\
-              lib/ithkuil/*|\
-              skills/ithkuil-ingestion/*|\
-              pyproject.toml|\
-              requirements*.txt|\
-              package.json|\
-              scripts/run_tests.py|\
-              scripts/run_required_tests.py|\
-              scripts/skos_test_policy.py|\
-              scripts/skos_policy/*|\
-              scripts/check_historical_abi.py|\
-              scripts/check_semantic_boundaries.py)
-                expensive=true
-                echo "Expensive verification invalidated by: $path"
-                break
-                ;;
-            esac
-          done < <(git diff --name-only "$BASE_REF" "$QUALITY_HEAD_REF")
-          echo "expensive_tests=$expensive" >> "$GITHUB_OUTPUT"
-          if [[ "$expensive" != "true" ]]; then
-            echo "No expensive-suite dependency surface changed; reusing prior passing evidence."
-          fi
+          # EXPENSIVE_SUITE_REUSE_DISABLED_UNTIL_PROOF_BOUND
+          # The previous path-only policy could reuse a failed or never-run
+          # baseline. Until reuse is backed by an exact passing-head receipt
+          # plus a dependency-frontier digest, every workflow proves the
+          # expensive verification surfaces afresh.
+          echo "expensive_tests=true" >> "$GITHUB_OUTPUT"
+          echo "Fresh expensive verification required: reusable proof is disabled."
       - name: Enforce ratified development structure on changed paths
         env:
           QUALITY_BASE_REF: ${{ steps.comparison-base.outputs.base_ref }}
@@ -209,12 +172,6 @@ jobs:
           python3 -B scripts/skos_test_policy.py plan \
             --base-ref "$SKOS_BASE_REF" \
             --github-output "$GITHUB_OUTPUT"
-      - name: Record reused passing test evidence
-        if: steps.test-impact.outputs.expensive_tests != 'true'
-        run: |
-          echo "expensive test suites: NOT INVALIDATED"
-          echo "No production/test dependency surface changed; prior passing evidence remains applicable."
-
   bamf-readiness:
     name: bamf-readiness
     needs: core
@@ -339,4 +296,4 @@ jobs:
               exit 1
               ;;
           esac
-          echo "PORTABLE_VERIFICATION_OK semantic=${SKOS_ACTION:-REUSED}"
+          echo "PORTABLE_VERIFICATION_OK semantic=${SKOS_ACTION:-UNPLANNED}"

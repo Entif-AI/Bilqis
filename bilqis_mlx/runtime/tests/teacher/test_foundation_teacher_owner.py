@@ -51,7 +51,10 @@ class FoundationTeacherOwnerTests(unittest.TestCase):
                 return_value=parent), patch.object(
                 owner_module, "current_foundation_teacher_projection",
                 return_value=projection), patch.object(
-                owner_module, "restore_teacher_lineage", return_value=epoch), patch(
+                owner_module, "restore_teacher_lineage", return_value=epoch), patch.object(
+                owner_module, "foundation_teacher_bootstrap",
+                return_value=SimpleNamespace(
+                    legacy_receipt=None, adaptation=None, prior_region=None)), patch(
                 "bilqis_mlx.runtime.priority_authority.issue_foundation_priority_authority",
                 return_value=authority) as issue, patch(
                 "bilqis_mlx.runtime.accepted_priority_visit.select_accepted_priority_visit",

@@ -27,7 +27,7 @@ The repository contains the model and the local learning system around it:
 - **Mission Control:** an Electron desktop cockpit for inspection and owner-authorized trainer operations.
 - **Historical compatibility:** frozen predecessor code and source-oracle material under vendor/legacy-v16. New development belongs in bilqis_mlx.
 
-The architectural contract is [BAMF-0.2](docs/architecture/BAMF_0_2.md). Numbered specifications under [docs/specifications](docs/specifications/) own normative behavior.
+The architectural contract is [BAMF-0.2](docs/architecture/BAMF_0_2.md), including `ADR-BAMF02-004` for the functional recursive Factory. Numbered specifications under [docs/specifications](docs/specifications/) own normative behavior.
 
 ## What runs today
 

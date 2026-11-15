@@ -159,13 +159,8 @@ class AcceptedFeatureMigrationTests(FeatureLineageCase):
             changed, release=SUCCESSOR_RELEASE,
             atlas_bundle=SUCCESSOR_ATLAS_BUNDLE,
             source_bundle=SUCCESSOR_SOURCE_BUNDLE)
-        retained_acceptance = mint_acceptance_binding(
-            retention_decision(
-                parent=generation_one.retained_state,
-                retained=retained.retained_state),
-            retained.retained_state, run_id=retained.run_id,
-            generation=retained.generation,
-            feature_sha256=retained.extents.factor_map_digest)
+        retained_acceptance = acceptance(
+            retained, parent=generation_one.retained_state)
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             publish_bamf_generation(
                 self.run, retained, acceptance=retained_acceptance)

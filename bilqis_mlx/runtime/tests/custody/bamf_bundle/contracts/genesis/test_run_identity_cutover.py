@@ -11,7 +11,6 @@ from unittest.mock import patch
 
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.errors import BilqisError
-from bilqis_mlx.learning.atlas_acceptance import mint_acceptance_binding
 from bilqis_mlx.runtime.bamf_bundle import (
     load_bamf_generation, load_bamf_generation_authority,
     publish_bamf_generation,
@@ -45,14 +44,18 @@ class RunIdentityCutoverTests(unittest.TestCase):
     def _install_identityless_v2_parent(self):
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             first = publish_candidate(self.run, candidate(parent_state()))
+            published_parent = load_bamf_generation(self.run / "bamf-state.json")
         generation_one = candidate(
-            accepted_state(parent_state()), 1, first["manifest_sha256"])
+            accepted_state(
+                published_parent.retained_state, published_parent.extents),
+            1, first["manifest_sha256"])
         stage = self.run / "legacy-v2-stage"
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             manifest = save_bamf_bundle(generation_one, stage)
         target = self.run / "bamf-bundles" / manifest["manifest_sha256"]
         stage.rename(target)
-        accepted_one = acceptance(generation_one)
+        accepted_one = acceptance(
+            generation_one, parent=published_parent.retained_state)
         acceptance_dir = self.run / "bamf-acceptance"
         acceptance_dir.mkdir(exist_ok=True)
         (acceptance_dir / f"{manifest['manifest_sha256']}.json").write_bytes(
@@ -89,14 +92,7 @@ class RunIdentityCutoverTests(unittest.TestCase):
         )
 
     def _binding(self, parent, successor):
-        return mint_acceptance_binding(
-            retention_decision(
-                parent=parent.retained_state,
-                retained=successor.retained_state),
-            successor.retained_state,
-            run_id=successor.run_id,
-            generation=successor.generation,
-            feature_sha256=successor.extents.factor_map_digest)
+        return acceptance(successor, parent=parent.retained_state)
 
     def test_identityless_historical_parent_rejects_caller_minted_run_identity(self):
         parent, parent_manifest, _parent_acceptance = self._install_identityless_v2_parent()

@@ -80,17 +80,26 @@ class ProductionAuthorityTests(unittest.TestCase):
         self.environment = patch.dict(
             os.environ, {"BILQIS_DATA_PLANE": str(self.root / "plane.sqlite3")})
         self.environment.start()
+        self._authority_registry = None
 
     def tearDown(self):
         self.environment.stop()
         self.temporary.cleanup()
 
     def publish(self, source, registry=None):
+        self._authority_registry = registry
         if registry is not None:
             provision_source_authority_registry(self.run, registry)
             source = with_source_authority_registry(source, registry)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with self._shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             return publish_candidate(self.run, source)
+
+    def _shape_patch(self):
+        return (
+            shape_patch()
+            if self._authority_registry is None
+            else shape_patch(self._authority_registry)
+        )
 
     def test_production_step_accepts_no_caller_participation_facts(self):
         """The production API takes no caller-authored participation facts."""
@@ -104,7 +113,7 @@ class ProductionAuthorityTests(unittest.TestCase):
 
     def test_group_eligibility_comes_from_the_ledger_and_policy_owners(self):
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with self._shape_patch():
             student = admission.load_accepted_generation(self.run)
             eligibility, active = derive_participation_inputs(student)
         derived = set(eligibility.eligible_parameter_names) | set(
@@ -118,11 +127,11 @@ class ProductionAuthorityTests(unittest.TestCase):
 
     def test_only_accepted_b13_custody_mints_live_execution_cache(self):
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with self._shape_patch():
             accepted = admission.load_accepted_generation(self.run)
             cache = bind_accepted_execution_cache(self.run)
             rebound = bind_accepted_execution_cache(self.run)
-        self.assertIs(require_accepted_execution_cache(cache), cache)
+            self.assertIs(require_accepted_execution_cache(cache), cache)
         self.assertIs(rebound, cache)
         self.assertEqual(cache.run_id, "fixture-run")
         self.assertEqual(
@@ -134,7 +143,7 @@ class ProductionAuthorityTests(unittest.TestCase):
 
     def test_signed_accepted_correction_replays_into_motif_owner_after_cold_restart(self):
         self.publish(candidate(parent_state()), AUTHORITY)
-        with shape_patch():
+        with self._shape_patch():
             cache = bind_accepted_execution_cache(self.run)
         fixture = FrameEncoderTests()
         fixture.setUp()
@@ -146,10 +155,10 @@ class ProductionAuthorityTests(unittest.TestCase):
                 motif_key_map_digest=cache.motif_manifest.digest,
             ),
         )
-        with shape_patch():
+        with self._shape_patch():
             owner = bind_motif_artifact_owner(cache, compiled)
         correction = _event(owner.source_dependencies[0])
-        with shape_patch():
+        with self._shape_patch():
             AcceptedRuntimeHost(self.run).record_correction(correction)
         self.assertTrue(owner.queue.held_artifact_ids)
         with self.assertRaises(BilqisError):
@@ -157,15 +166,15 @@ class ProductionAuthorityTests(unittest.TestCase):
 
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
-        with shape_patch():
+        with self._shape_patch():
             cold_cache = bind_accepted_execution_cache(self.run)
         self.assertIsNot(cold_cache, cache)
-        with shape_patch(), self.assertRaises(BilqisError):
+        with self._shape_patch(), self.assertRaises(BilqisError):
             bind_motif_artifact_owner(cold_cache, compiled)
 
     def test_provenance_cannot_replay_onto_another_candidate_or_step(self):
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with self._shape_patch():
             student = admission.load_accepted_generation(self.run)
         issued = execution_provenance(student.retained_state, rows=(0,))
         with self.assertRaises(BilqisError):
@@ -187,7 +196,7 @@ class ProductionAuthorityTests(unittest.TestCase):
 
     def test_caller_created_candidate_cannot_publish_without_the_decision_owner(self):
         source = candidate(parent_state())
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with self._shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             with self.assertRaises(BilqisError):
                 publish_bamf_generation(self.run, source)
         self.assertFalse((self.run / "bamf-state.json").exists())
@@ -237,7 +246,7 @@ class ProductionAuthorityTests(unittest.TestCase):
         first = self.publish(candidate(initial))
         retained = accepted_state(initial)
         second = self.publish(candidate(retained, 1, first["manifest_sha256"]))
-        with shape_patch():
+        with self._shape_patch():
             student = load_bamf_generation(self.run / "bamf-state.json")
         proofs = student.retained_state.step_proofs
         self.assertEqual(len(proofs), 1)
@@ -257,7 +266,7 @@ class ProductionAuthorityTests(unittest.TestCase):
         record = json.loads(proofs.read_text())
         record["proofs"][0]["mask_sha256"] = "0" * 64
         proofs.write_text(json.dumps(record))
-        with shape_patch():
+        with self._shape_patch():
             with self.assertRaises(BilqisError):
                 load_bamf_generation(self.run / "bamf-state.json")
 

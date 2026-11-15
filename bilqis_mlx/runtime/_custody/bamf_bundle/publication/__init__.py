@@ -38,7 +38,8 @@ from .retry import (
 )
 from .storage import (
     ACCEPTANCE_DIR, _acceptance_path, _atomic_pointer, _live_bundle_manifest,
-    _fsync_directory, _initial_generation_pointer_lock, _pointer_lock, _read_pointer,
+    _fsync_directory, _initial_generation_pointer_lock, _pointer_lock,
+    _publication_pointer_lock, _read_pointer,
     _remove_stage, _require_bundle_root, _require_run_root, _stage, _write_acceptance,
 )
 
@@ -61,7 +62,7 @@ def _parent_acceptance_for_publication(
         accepted):
     pointer_lock = (
         _initial_generation_pointer_lock
-        if candidate.generation == 0 else _pointer_lock)
+        if candidate.generation == 0 else _publication_pointer_lock)
     return _parent_acceptance_for_publication_impl(
         run_dir, candidate, accepted,
         pointer_lock=pointer_lock, read_pointer=_read_pointer,
@@ -180,7 +181,7 @@ def _publish_authorized_generation(
         pointer_path = run_dir / "bamf-state.json"
         pointer_lock = (
             _initial_generation_pointer_lock
-            if candidate.generation == 0 else _pointer_lock)
+            if candidate.generation == 0 else _publication_pointer_lock)
         with pointer_lock(run_dir):
             current = _read_pointer(pointer_path)
             if current is not None and current["generation"] == candidate.generation:
