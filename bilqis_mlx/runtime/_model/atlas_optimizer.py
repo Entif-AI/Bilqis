@@ -17,8 +17,7 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.mlx_parity import clip_gradients
 from bilqis_mlx.runtime.optimizer_count_geometry import declared_update_count_shape
 from bilqis_mlx.runtime.optimizer_step import (
-    adamw_leaf_update, adamw_selected_rows_update, issue_optimizer_parent_witness,
-    optimizer_parent_witness_matches,
+    adamw_leaf_update, adamw_selected_rows_update, optimizer_parent_witness_matches,
 )
 
 
@@ -222,11 +221,12 @@ def _adamw_update(parent: AdamWStateTree, gradients: Mapping[str, mx.array],
     nonzero gradients. Selected zero gradients still advance moments/counts.
     No-loss and wholly frozen steps return the original state object.
     """
-    if parent_witness is None:
-        parent.validate()
-        parent_witness = issue_optimizer_parent_witness(parent)
-    elif not optimizer_parent_witness_matches(parent_witness, parent):
+    # Numerical validation belongs to this exact consumption boundary.  A
+    # witness may attest object ownership, but MLX leaves remain mutable, so it
+    # must never substitute for validating the state at the instant it is used.
+    if parent_witness is not None and not optimizer_parent_witness_matches(parent_witness, parent):
         _invalid()
+    parent.validate()
     any_participation = _preflight(
         parent, gradients, participation, hyperparameters, decay, loss_bearing)
     if max_norm is not None and (not _finite_number(max_norm) or max_norm <= 0):

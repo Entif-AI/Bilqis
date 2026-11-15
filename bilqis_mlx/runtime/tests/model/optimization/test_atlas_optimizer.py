@@ -8,6 +8,7 @@ import numpy as np
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.atlas_optimizer import AdamWHyperparameters, AdamWStateTree, _adamw_update
+from bilqis_mlx.runtime.optimizer_step import issue_optimizer_parent_witness
 from .optimizer_step_probe import realistic_step_report
 
 
@@ -216,6 +217,21 @@ class AdamWCountsTests(unittest.TestCase):
         self.assertEqual(len(calls), 2)
         self.assertIs(calls[0], parent)
         self.assertIs(calls[1], actual)
+
+    def test_stale_parent_witness_cannot_bypass_numerical_validation(self):
+        parent = self.state()
+        witness = issue_optimizer_parent_witness(parent)
+        parent.parameters["fixture.bank"][0, 0] = float("nan")
+        with self.assertRaises(BilqisError):
+            _adamw_update(
+                parent,
+                {"fixture.bank": mx.full((3, 2), .2, dtype=mx.float32)},
+                {"fixture.bank": mx.array([True, False, False])},
+                self.hp,
+                decay={"fixture.bank": True},
+                loss_bearing=False,
+                parent_witness=witness,
+            )
 
     def test_rowwise_update_does_not_construct_optimizer_or_extract_numpy_indices(self):
         parent = self.state()
