@@ -160,6 +160,27 @@ def _new_publication_parent(run_dir: Path, hydration) -> AcceptedPublicationPare
     return result
 
 
+def _require_publication_parent_locked(lock, hydrations, run_dir, pointer, witness):
+    run_dir = Path(run_dir).resolve()
+    key = str(run_dir)
+    if (type(witness) is not AcceptedPublicationParent
+            or getattr(witness, "_issuance", None) is not _PUBLICATION_PARENT_ISSUER):
+        invalid("B13_PUBLICATION_PARENT_REQUIRED")
+    with lock:
+        retained = hydrations.get(key)
+    if retained is not witness._hydration:
+        invalid("B13_PUBLICATION_PARENT_STALE")
+    if (pointer is None
+            or sha(canonical(pointer)) != witness._pointer_sha256
+            or pointer.get("manifest_sha256") != witness.manifest_sha256
+            or pointer.get("acceptance_sha256") != witness.acceptance_sha256
+            or _acceptance_file_sha256(run_dir, witness.manifest_sha256)
+            != witness._acceptance_file_sha256):
+        invalid("B13_PUBLICATION_PARENT_STALE")
+    require_bamf_bundle_currentness(witness._currentness)
+    return witness
+
+
 def _make_execution_cache_runtime():
     lock = RLock()
     hydrations, executions = {}, {}
@@ -238,24 +259,8 @@ def _make_execution_cache_runtime():
             return bind_publication_parent_locked(run_dir, pointer)
 
     def require_publication_parent_locked(run_dir: Path, pointer, witness):
-        run_dir = Path(run_dir).resolve()
-        key = str(run_dir)
-        if (type(witness) is not AcceptedPublicationParent
-                or getattr(witness, "_issuance", None) is not _PUBLICATION_PARENT_ISSUER):
-            invalid("B13_PUBLICATION_PARENT_REQUIRED")
-        with lock:
-            retained = hydrations.get(key)
-        if retained is not witness._hydration:
-            invalid("B13_PUBLICATION_PARENT_STALE")
-        if (pointer is None
-                or sha(canonical(pointer)) != witness._pointer_sha256
-                or pointer.get("manifest_sha256") != witness.manifest_sha256
-                or pointer.get("acceptance_sha256") != witness.acceptance_sha256
-                or _acceptance_file_sha256(run_dir, witness.manifest_sha256)
-                != witness._acceptance_file_sha256):
-            invalid("B13_PUBLICATION_PARENT_STALE")
-        require_bamf_bundle_currentness(witness._currentness)
-        return witness
+        return _require_publication_parent_locked(
+            lock, hydrations, run_dir, pointer, witness)
 
     def reset_for_tests():
         with lock:

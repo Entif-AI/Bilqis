@@ -175,6 +175,33 @@ def _require_successor_source_authority(run_dir, parent, child, authority):
     return trusted
 
 
+def _witnessed_parent_locked(run_dir, current, parent_witness):
+    if parent_witness is None:
+        return None, None
+    from ..accepted_execution_cache import (
+        _require_accepted_publication_parent_locked,
+    )
+    witness = _require_accepted_publication_parent_locked(
+        run_dir, current, parent_witness)
+    return witness.student, witness
+
+
+def _install_publication_target(stage, target, digest, published_student):
+    if target.exists() or target.is_symlink():
+        if target.is_symlink() or not target.is_dir():
+            invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
+        from .instrumentation import publication_bundle_load
+        with publication_bundle_load("child"):
+            published_student = load_bamf_bundle(
+                target, expected_manifest_sha256=digest)
+        _remove_stage(stage)
+        return published_student
+    stage.rename(target)
+    _fsync_directory(stage.parent)
+    _fsync_directory(target.parent)
+    return published_student
+
+
 def _publish_authorized_generation(
         run_dir: Path, candidate: BamfBundleCandidate, authority, *,
         reserve_gib: float, parent_witness=None) -> dict:
@@ -206,15 +233,8 @@ def _publish_authorized_generation(
             if prepared is not None:
                 from ..genesis import validate_initial_generation_preparation
                 validate_initial_generation_preparation(prepared)
-            if parent_witness is not None:
-                from ..accepted_execution_cache import (
-                    _require_accepted_publication_parent_locked,
-                )
-                parent_witness = _require_accepted_publication_parent_locked(
-                    run_dir, current, parent_witness)
-                witnessed_parent = parent_witness.student
-            else:
-                witnessed_parent = None
+            witnessed_parent, parent_witness = _witnessed_parent_locked(
+                run_dir, current, parent_witness)
             parent = _validate_parent_transition_impl(
                 run_dir, current, candidate,
                 load_bundle=load_bamf_bundle, reconcile=reconcile_bamf_outbox,
@@ -233,18 +253,8 @@ def _publish_authorized_generation(
                     _require_published_acceptance(run_dir, current, parent).digest)
                 if live_parent_acceptance != parent_acceptance:
                     invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-            if target.exists() or target.is_symlink():
-                if target.is_symlink() or not target.is_dir():
-                    invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
-                from .instrumentation import publication_bundle_load
-                with publication_bundle_load("child"):
-                    published_student = load_bamf_bundle(
-                        target, expected_manifest_sha256=digest)
-                _remove_stage(stage)
-            else:
-                stage.rename(target)
-                _fsync_directory(stage.parent)
-                _fsync_directory(target.parent)
+            published_student = _install_publication_target(
+                stage, target, digest, published_student)
             if prepared is not None:
                 persist_prepared_initial_factory_release(run_dir, prepared)
                 publish_initial_generation_trust_root(run_dir, prepared, digest)
