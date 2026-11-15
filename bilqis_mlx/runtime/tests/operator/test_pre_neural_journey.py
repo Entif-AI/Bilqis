@@ -119,7 +119,7 @@ class PreNeuralProductionJourneyTests(PreNeuralJourneySupport, unittest.TestCase
 
     def test_historical_accepted_run_reaches_real_teacher_offer_without_neural_mutation(self):
         (pointer, before, after, context, selected, rows,
-         pointer_bytes, event_bytes) = self._exercise_journey()
+         pointer_bytes, event_bytes) = self.exercise_journey()
         self.assertEqual(pointer["generation"], 0)
         self.assertEqual(len(context.release.execution_plan.capabilities), 21)
         self.assertEqual(selected.status, "TEACHER_SELECTED")
