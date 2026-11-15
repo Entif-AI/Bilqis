@@ -107,12 +107,6 @@ def values(root) -> tuple[tuple, ...]:
     return tuple(result)
 
 
-def values_with_prefix(root, prefix: str) -> tuple[tuple, ...]:
-    result = []
-    _collect_range(root, prefix, prefix + "\U0010ffff", result)
-    return tuple(result)
-
-
 def keys(root) -> tuple[str, ...]:
     result = []
     _collect(root, result, value=False)
@@ -127,18 +121,7 @@ def _collect(root, result, *, value):
     _collect(root.right, result, value=value)
 
 
-def _collect_range(root, lower: str, upper: str, result) -> None:
-    if root is None:
-        return
-    if root.key >= lower:
-        _collect_range(root.left, lower, upper, result)
-    if lower <= root.key < upper:
-        result.append(root.value)
-    if root.key < upper:
-        _collect_range(root.right, lower, upper, result)
-
-
 __all__ = (
     "IndexNode", "ZERO_DIGEST", "insert", "keys", "lookup",
-    "root_digest", "upsert", "values", "values_with_prefix",
+    "root_digest", "upsert", "values",
 )

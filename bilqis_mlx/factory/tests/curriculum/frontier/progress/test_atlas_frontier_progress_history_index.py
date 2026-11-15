@@ -8,9 +8,6 @@ from bilqis_mlx.factory.atlas_frontier_progress import plan_frontier_progress
 from bilqis_mlx.factory.atlas_frontier_progress_audit import (
     rebuild_frontier_history, rehydrate_frontier_progress,
 )
-from bilqis_mlx.factory.atlas_frontier_progress_contracts import (
-    _issue_frontier_progress,
-)
 from bilqis_mlx.factory.atlas_frontier_progress_index import FrontierHistoryOwner
 from bilqis_mlx.factory.atlas_frontier_progress_metrics import (
     frontier_verification_measurement,
@@ -95,43 +92,19 @@ def _lineage(steps: int, *, admission: bool = False):
 
 
 class FrontierHistoryIndexTests(ProjectionAuthorityFixture, unittest.TestCase):
-    def test_same_obligation_keeps_all_historical_credit_contexts(self):
+    def test_same_obligation_cannot_accumulate_duplicate_historical_credit(self):
         _release, snapshot, closure, selection, receipt = _staged_ready()
-        progress = plan_frontier_progress(
-            snapshot, closure, selection, staged_receipt=receipt)
-        obligation = obligation_digest(receipt.selection.selected_obligations)
         owner = FrontierHistoryOwner(snapshot)
         head = owner.append_receipt(
             owner.initial_head, receipt, verified=True)
-        blocked_selection = replace(
-            receipt.selection,
-            requested_obligation_keys=((receipt.selected_semantic_id, obligation),),
-        )
-        blocked_receipt = replace(
+        duplicate = replace(
             receipt,
-            selection=blocked_selection,
             staged_successor=replace(
                 receipt.staged_successor, release_sha256="e" * 64),
-            receipt_sha256="0" * 64,
+            receipt_sha256="f" * 64,
         )
-        head = owner.append_receipt(head, blocked_receipt, verified=True)
-        rebound = replace(
-            progress, history_head=head, progress_sha256="0" * 64)
-        rebound = replace(
-            rebound, progress_sha256=rebound.expected_digest())
-        rebound = _issue_frontier_progress(rebound, owner)
-        current = current_obligations(closure)
-
-        credits = owner.matching_credits(
-            head, receipt.selected_semantic_id, obligation)
-        self.assertEqual(
-            {credit.receipt_sha256 for credit in credits},
-            {receipt.receipt_sha256, blocked_receipt.receipt_sha256},
-        )
-        self.assertIn(
-            (receipt.selected_semantic_id, obligation),
-            credited_obligation_keys(snapshot, closure, rebound, current),
-        )
+        with self.assertRaises(BilqisError):
+            owner.append_receipt(head, duplicate, verified=True)
 
     def test_compact_credit_preserves_original_accepted_requested_context(self):
         fixture = CandidateStagingFixture()
