@@ -186,8 +186,41 @@ test("query state is aria-live and memory producer absence is explicit", () => {
   });
   assert.ok(markup.includes('role="status"'));
   assert.ok(markup.includes('aria-live="polite"'));
-  assert.ok(markup.includes("No accepted CP03 record exposes this memory motif/slot identity"));
-  assert.ok(markup.includes("GUI10 display fixtures are not durable evidence"));
+  assert.ok(markup.includes("This query returned no accepted CP03 memory record"));
+  assert.equal(markup.includes("GUI10 display fixtures"), false);
+});
+
+test("Evidence keeps one route title and uses grouped shared help", () => {
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const html = fs.readFileSync(path.join(here, "../../../renderer/index.html"), "utf8");
+  const markup = renderEvidenceMarkup(state);
+  assert.equal((html.match(/data-test-id="shell-destination-title"/g) ?? []).length, 1);
+  assert.doesNotMatch(markup, /<h[12][^>]*>\s*Evidence\s*<\/h[12]>/);
+  assert.doesNotMatch(markup, /role="tablist"/);
+  for (const hook of [
+    "evidence-help-search", "evidence-help-posture", "evidence-help-results",
+    "evidence-help-provenance", "evidence-help-display", "evidence-help-origin",
+    "evidence-help-traversal",
+  ]) assert.ok(markup.includes(`data-test-id="${hook}"`), hook);
+  assert.equal(markup.includes("About exact queries"), false);
+});
+
+test("readable Evidence renders authoritative times with shared temporal controls while raw metadata stays literal", () => {
+  const readable = renderEvidenceMarkup({ ...state, selected: receipt, raw: false });
+  for (const [hook, source] of [
+    ["evidence-time-materialized", "120"],
+    ["evidence-time-observed", "118"],
+    ["evidence-time-as-of", "118"],
+    ["evidence-time-field-acknowledged-at", "120"],
+  ]) {
+    assert.ok(readable.includes(`data-test-id="${hook}"`), hook);
+    assert.ok(readable.includes(`data-source-unix-seconds="${source}"`), source);
+  }
+  assert.ok(readable.includes("evidence-metadata-payload"));
+  assert.ok(readable.includes('&quot;materialized_at&quot;: 120'));
+  const raw = renderEvidenceMarkup({ ...state, selected: receipt, raw: true });
+  assert.ok(raw.includes('&quot;observed_at&quot;: 118'));
+  assert.ok(raw.includes('&quot;acknowledged_at&quot;: 120'));
 });
 
 test("evidence markup exposes explicit return control when origin is retained", () => {
