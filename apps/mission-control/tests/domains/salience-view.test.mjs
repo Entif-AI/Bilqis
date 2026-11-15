@@ -304,7 +304,9 @@ test("salience owned human copy resolves through stable message keys", () => {
 });
 
 test("salience CSS is analytical, responsive, compact-aware, focus-visible and pattern-free", () => {
-  const css = fs.readFileSync(path.join(rendererRoot, "salience/salience.css"), "utf8");
+  const css = ["salience.css", "salience-core.css", "salience-evidence.css", "salience-analysis.css"]
+    .map(name => fs.readFileSync(path.join(rendererRoot, "salience", name), "utf8"))
+    .join("\n");
   assert.match(css, /\.salience-table-wrap\s*\{[^}]*overflow:\s*auto/s);
   assert.match(css, /\.salience-observation-table\s*\{[^}]*min-width:/s);
   assert.match(css, /font-variant-numeric:\s*tabular-nums/);

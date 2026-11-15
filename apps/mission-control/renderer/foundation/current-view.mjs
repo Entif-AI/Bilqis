@@ -125,8 +125,8 @@ export function renderCurrentView(
       kind: "neural",
       id,
       details: {
-        [t("shell.inspector.detail.diagnosticClass")]: kind,
-        [t("shell.inspector.detail.interpretationBoundary")]: t("shell.inspector.detail.measuredRoutingOnly"),
+        [t("model.inspector.diagnosticClass")]: kind,
+        [t("model.inspector.interpretationBoundary")]: t("model.inspector.telemetryOnly"),
       },
     }));
     return;

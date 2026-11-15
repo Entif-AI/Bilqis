@@ -1,10 +1,11 @@
-import { LEARNING_MESSAGES } from "./i18n-learning.mjs";
-import { ATLAS_MESSAGES } from "./i18n-atlas.mjs";
-import { HOME_MESSAGES } from "./i18n-home.mjs";
-import { INVESTIGATION_MESSAGES } from "./i18n-investigation.mjs";
-import { SHELL_MESSAGES } from "./i18n-shell.mjs";
-import { SCHOOL_MESSAGES } from "./i18n-school.mjs";
-import { TEACHER_MESSAGES } from "./i18n-teacher.mjs";
+import { LEARNING_MESSAGES } from "./messages/learning.mjs";
+import { ATLAS_MESSAGES } from "./messages/atlas.mjs";
+import { HOME_MESSAGES } from "./messages/home.mjs";
+import { INVESTIGATION_MESSAGES } from "./messages/investigation.mjs";
+import { SHELL_MESSAGES } from "./messages/shell.mjs";
+import { MODEL_MESSAGES } from "./messages/model.mjs";
+import { SCHOOL_MESSAGES } from "./messages/school.mjs";
+import { TEACHER_MESSAGES } from "./messages/teacher.mjs";
 
 const EN_US = Object.freeze({
   "foundation.catalog.eyebrow": "GUI02 · reusable system",
@@ -131,6 +132,7 @@ const EN_US = Object.freeze({
   ...SHELL_MESSAGES,
   ...LEARNING_MESSAGES,
   ...HOME_MESSAGES,
+  ...MODEL_MESSAGES,
   ...SCHOOL_MESSAGES,
   ...TEACHER_MESSAGES,
 });
