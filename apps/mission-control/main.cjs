@@ -9,15 +9,15 @@ const { AcceptedControlPlaneAdapter } = require(
 const {
   LAUNCH_MODE_FIXTURES,
   resolveLaunchMode,
-} = require("./electron/launch-mode.cjs");
+} = require("./electron/shell/launch-mode.cjs");
 const { createAcceptedValidators } = require("./electron/accepted-contracts.cjs");
 const { ControlPlaneBridge } = require("./electron/control-plane-bridge.cjs");
 const { registerMissionControlIpc } = require("./electron/main-ipc.cjs");
-const { registerRendererSchemePrivileges } = require("./electron/renderer-location.cjs");
-const { registerMissionControlProtocol } = require("./electron/renderer-protocol.cjs");
-const { createMissionControlWindow } = require("./electron/window-security.cjs");
-const { appUriArgument, rendererHashForAppUri } = require("./electron/app-routing.cjs");
-const { rendererEntryUrl } = require("./electron/renderer-location.cjs");
+const { registerRendererSchemePrivileges } = require("./electron/shell/renderer-location.cjs");
+const { registerMissionControlProtocol } = require("./electron/shell/renderer-protocol.cjs");
+const { createMissionControlWindow } = require("./electron/shell/window-security.cjs");
+const { appUriArgument, rendererHashForAppUri } = require("./electron/shell/app-routing.cjs");
+const { rendererEntryUrl } = require("./electron/shell/renderer-location.cjs");
 
 registerRendererSchemePrivileges(protocol);
 
@@ -50,7 +50,7 @@ async function createWindow() {
   );
   const { window, loadRenderer } = createMissionControlWindow({
     BrowserWindow,
-    preloadPath: path.join(__dirname, "electron", "preload.cjs"),
+    preloadPath: path.join(__dirname, "electron", "shell", "preload.cjs"),
     browserWindowOptions: {
       width: 1440,
       height: 920,

@@ -3,13 +3,13 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { createAcceptedValidators } = require("../accepted-contracts.cjs");
-const { ControlPlaneBridge } = require("../control-plane-bridge.cjs");
-const { FixtureControlPlaneAdapter } = require("../fixture-control-plane-adapter.cjs");
+const { createAcceptedValidators } = require("../../accepted-contracts.cjs");
+const { ControlPlaneBridge } = require("../../control-plane-bridge.cjs");
+const { FixtureControlPlaneAdapter } = require("../../fixture-control-plane-adapter.cjs");
 
 async function fixtureBridge() {
-  const { assertOperatorView } = await import("../../renderer/shell-state.mjs");
-  const frameContracts = await import("../../renderer/frames/frame-contract.mjs");
+  const { assertOperatorView } = await import("../../../renderer/shell-state.mjs");
+  const frameContracts = await import("../../../renderer/frames/frame-contract.mjs");
   const adapter = new FixtureControlPlaneAdapter();
   return {
     adapter,

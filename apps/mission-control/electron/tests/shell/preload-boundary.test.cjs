@@ -3,8 +3,8 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { CHANNELS } = require("../channels.cjs");
-const { loadSandboxedPreload } = require("./_preload-fixture.cjs");
+const { CHANNELS } = require("../../channels.cjs");
+const { loadSandboxedPreload } = require("../_preload-fixture.cjs");
 
 const GLOBAL_NAME = "bamfMissionControl";
 

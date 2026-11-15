@@ -11,7 +11,7 @@ const {
   normalizeLaunchMode,
   preloadModeArgument,
   resolveLaunchMode,
-} = require("../launch-mode.cjs");
+} = require("../../shell/launch-mode.cjs");
 
 test("Mission Control launch mode defaults closed to production", () => {
   assert.equal(resolveLaunchMode([]), LAUNCH_MODE_PRODUCTION);
@@ -33,7 +33,7 @@ test("fixture mode requires the exact launch-time flag", () => {
 });
 
 test("package scripts expose distinct production and fixture launch commands", () => {
-  const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../../../package.json"), "utf8"));
+  const pkg = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../../../../../package.json"), "utf8"));
   assert.equal(pkg.scripts["mission-control"], "electron apps/mission-control/main.cjs");
   assert.equal(
     pkg.scripts["mission-control:fixtures"],
@@ -42,7 +42,7 @@ test("package scripts expose distinct production and fixture launch commands", (
 });
 
 test("main process owns launch mode for adapter, window, and renderer protocol", () => {
-  const main = fs.readFileSync(path.resolve(__dirname, "../../main.cjs"), "utf8");
+  const main = fs.readFileSync(path.resolve(__dirname, "../../../main.cjs"), "utf8");
   assert.match(main, /resolveLaunchMode\(process\.argv\)/);
   assert.match(main, /launchMode === LAUNCH_MODE_FIXTURES[\s\S]*FixtureControlPlaneAdapter/);
   assert.match(main, /createMissionControlWindow\(\{[\s\S]*launchMode,/);

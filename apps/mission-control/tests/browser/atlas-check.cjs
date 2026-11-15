@@ -3,7 +3,7 @@ const { execFileSync } = require('node:child_process');
 const http = require('node:http'), fs = require('node:fs'), path = require('node:path');
 const root = path.resolve(__dirname, '../../../..');
 const baseRef = process.env.BILQIS_ATLAS_BASE_REF || 'dada27e8b1776e0fb7917c61bd8df141a210f93a';
-const { assetPathForRendererRequest } = require('../../electron/renderer-protocol.cjs');
+const { assetPathForRendererRequest } = require('../../electron/shell/renderer-protocol.cjs');
 const baseline = {
   js: execFileSync('git', ['show', `${baseRef}:apps/mission-control/renderer/atlas/semantic-atlas.mjs`], { cwd: root, encoding: 'utf8' }),
   css: execFileSync('git', ['show', `${baseRef}:apps/mission-control/renderer/atlas/semantic-atlas.css`], { cwd: root, encoding: 'utf8' }),

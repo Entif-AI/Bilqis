@@ -9,12 +9,12 @@ const {
   createSecureWindowOptions,
   hardenWebContents,
   securityDiagnostic,
-} = require("../window-security.cjs");
+} = require("../../shell/window-security.cjs");
 const {
   RENDERER_ENTRY_URL,
   RENDERER_SCHEME,
   registerRendererSchemePrivileges,
-} = require("../renderer-location.cjs");
+} = require("../../shell/renderer-location.cjs");
 
 function webContentsFixture() {
   const handlers = new Map();

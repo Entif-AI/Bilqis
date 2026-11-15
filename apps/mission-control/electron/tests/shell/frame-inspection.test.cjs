@@ -2,13 +2,13 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { FixtureControlPlaneAdapter } = require("../fixture-control-plane-adapter.cjs");
-const { ControlPlaneBridge } = require("../control-plane-bridge.cjs");
-const { createAcceptedValidators } = require("../accepted-contracts.cjs");
+const { FixtureControlPlaneAdapter } = require("../../fixture-control-plane-adapter.cjs");
+const { ControlPlaneBridge } = require("../../control-plane-bridge.cjs");
+const { createAcceptedValidators } = require("../../accepted-contracts.cjs");
 
 async function setup() {
-  const { assertOperatorView } = await import("../../renderer/shell-state.mjs");
-  const contracts = await import("../../renderer/frames/frame-contract.mjs");
+  const { assertOperatorView } = await import("../../../renderer/shell-state.mjs");
+  const contracts = await import("../../../renderer/frames/frame-contract.mjs");
   const bridge = new ControlPlaneBridge(
     new FixtureControlPlaneAdapter(),
     createAcceptedValidators(assertOperatorView, contracts),
@@ -30,13 +30,13 @@ test("GUI08 accepted snapshot crosses the existing bridge with exact fixture con
 });
 
 test("GUI08 main binds response schema and exact generation to the original query", async () => {
-  const { assertOperatorView } = await import("../../renderer/shell-state.mjs");
-  const contracts = await import("../../renderer/frames/frame-contract.mjs");
-  const { frameFixturePage } = require("../frame-fixtures.cjs");
+  const { assertOperatorView } = await import("../../../renderer/shell-state.mjs");
+  const contracts = await import("../../../renderer/frames/frame-contract.mjs");
+  const { frameFixturePage } = require("../../frame-fixtures.cjs");
   const current = { schemaVersion: contracts.FRAME_QUERY, runId: "fixture-run", generation: 7, mode: "current" };
   const wrong = frameFixturePage({ ...current, generation: 6, mode: "historical" });
   const adapter = {
-    async connect() { return { session: "fixture", publicStatus: require("../accepted-control-plane-adapter.cjs").disconnectedStatus() }; },
+    async connect() { return { session: "fixture", publicStatus: require("../../accepted-control-plane-adapter.cjs").disconnectedStatus() }; },
     async snapshot() { return wrong; },
   };
   const bridge = new ControlPlaneBridge(adapter, createAcceptedValidators(assertOperatorView, contracts));

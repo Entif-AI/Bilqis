@@ -5,14 +5,14 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const { RENDERER_ENTRY_URL } = require("../renderer-location.cjs");
+const { RENDERER_ENTRY_URL } = require("../../shell/renderer-location.cjs");
 const {
   FIXTURE_ONLY_ASSETS,
   RENDERER_ASSETS,
   assetPathForRendererRequest,
   registerMissionControlProtocol,
   rendererAssetsForLaunchMode,
-} = require("../renderer-protocol.cjs");
+} = require("../../shell/renderer-protocol.cjs");
 
 test("renderer protocol resolves only the checked-in Mission Control asset allowlist", () => {
   const root = "/Applications/Bilqis/MissionControl/renderer";
@@ -190,7 +190,7 @@ test("production protocol excludes fixture-only assets while fixture mode admits
 });
 
 test("production renderer static dependency graph is fixture-free", () => {
-  const root = path.resolve(__dirname, "../../renderer");
+  const root = path.resolve(__dirname, "../../../renderer");
   const production = rendererAssetsForLaunchMode("production");
   const pending = ["/renderer.mjs"];
   const seen = new Set();
@@ -256,7 +256,7 @@ test("protocol handler never asks net.fetch for a non-allowlisted local file", a
 });
 
 test("packaged renderer assets include every local HTML and JavaScript dependency", () => {
-  const root = path.resolve(__dirname, "../../renderer");
+  const root = path.resolve(__dirname, "../../../renderer");
   for (const asset of RENDERER_ASSETS.values()) {
     const source = fs.readFileSync(path.join(root, asset), "utf8");
     const dependencies = asset.endsWith(".html")
