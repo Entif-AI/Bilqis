@@ -101,3 +101,23 @@ Warm median: **10.081268 s**.
 - all measurements are neural-inert.
 
 Disposition: **PASS** for #1171 acceptance item 6.
+
+## Turn-in evidence reuse after current-unified synchronization
+
+The final turn-in branch subsequently consumed reviewed unified
+`d280a3e8d47efdba34e1262ffa59018d93f7c443`. The intervening unified range from
+`4d743ecf` to `d280a3e8` changes Mission Control JavaScript/CSS/tests plus
+`package.json`; it does not change the Python planner, candidate-frontier, B13/C09
+currentness, accepted-correction, source-offer, qualification, or pre-neural journey
+owners measured above.
+
+The final #1171 repair moves accepted-target registrar issuance to **after** the
+already-required pointer/acceptance stability fence. On the stable success path it
+adds no builder launch, deep custody bind, registry resolution, source redraw, or
+other planning operation; it only prevents issuing a downstream process-live handle
+when the planning transaction has already drifted. Therefore the timing witness and
+its deterministic hot-path call-count evidence remain valid for turn-in under the
+repository passing-evidence reuse rule. `TEST_EVIDENCE_REUSED`: measured head
+`800a930ebc310d2aee3237f6b3e1e78d89d84c36`; comparison range through final turn-in
+contains no dependency-surface change that can plausibly invalidate the measured
+planner throughput claim.
