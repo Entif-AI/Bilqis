@@ -34,6 +34,9 @@ from .atlas_model_participation import _active_banks, _forward_participation
 from .atlas_model_refinement import _prediction_local_refinement
 
 
+_FORWARD_HIDDEN_RANK = 3
+
+
 def _source_producer(params, compiled_batch, generation, cache):
     speculative = type(cache) is CandidateExecutionCache
     execution_cache = (
@@ -93,18 +96,13 @@ def _finalize_source_hidden(
     return hidden
 
 
-def _decode_bamf_producer_row(
+def _validate_decode_row_input(
     backend: Backend,
-    params,
     compiled_batch: BamfCompiledBatch,
     answer_plan: AnswerPlan,
-    producer,
     final_hidden,
     row_index: int,
-    accepted_cache=None,
-) -> ModelOutput:
-    """Decode one task-owned row from a B11 source producer and issue its provenance."""
-    expected_hidden_rank = 3
+) -> None:
     if (
         type(compiled_batch) is not BamfCompiledBatch
         or type(answer_plan) is not AnswerPlan
@@ -112,17 +110,23 @@ def _decode_bamf_producer_row(
         or type(row_index) is not int
         or row_index < 0
         or not isinstance(final_hidden, mx.array)
-        or final_hidden.ndim != expected_hidden_rank
+        or final_hidden.ndim != _FORWARD_HIDDEN_RANK
         or row_index >= final_hidden.shape[0]
     ):
         _invalid("B11_FORWARD_ROW_INPUT_INVALID")
     compiled_batch.__post_init__()
     answer_plan.__post_init__()
     backend.__post_init__()
-    spec = backend.topology
+
+
+def _validate_decode_row_custody(
+    compiled_batch: BamfCompiledBatch,
+    answer_plan: AnswerPlan,
+    producer,
+    row_index: int,
+    generation: str,
+) -> None:
     extents = compiled_batch.compiled.extents
-    validate_bamf_parameters(spec, extents, params)
-    generation = execution_generation_digest(params, spec=spec, extents=extents)
     if (
         answer_plan.generation_binding != generation
         or getattr(producer, "_generation", None) != generation
@@ -142,6 +146,9 @@ def _decode_bamf_producer_row(
         != compiled_batch.compiled._projections[0]
     ):
         _invalid("B11_FORWARD_ROW_CUSTODY_MISMATCH")
+
+
+def _validate_task_plan_custody(compiled_batch: BamfCompiledBatch, answer_plan: AnswerPlan) -> None:
     authority = compiled_batch.task_authority
     if authority is not None:
         from bilqis_mlx.runtime.refinement_request import refinement_request_disposition
@@ -155,6 +162,28 @@ def _decode_bamf_producer_row(
                 or (not answer_plan.route_only
                     and answer_plan.decisions[:len(route)] != route)):
             _invalid("B11_FORWARD_TASK_PLAN_CUSTODY_MISMATCH")
+
+
+def _decode_bamf_producer_row(
+    backend: Backend,
+    params,
+    compiled_batch: BamfCompiledBatch,
+    answer_plan: AnswerPlan,
+    producer,
+    final_hidden,
+    row_index: int,
+    accepted_cache=None,
+) -> ModelOutput:
+    """Decode one task-owned row from a B11 source producer and issue its provenance."""
+    _validate_decode_row_input(
+        backend, compiled_batch, answer_plan, final_hidden, row_index)
+    spec = backend.topology
+    extents = compiled_batch.compiled.extents
+    validate_bamf_parameters(spec, extents, params)
+    generation = execution_generation_digest(params, spec=spec, extents=extents)
+    _validate_decode_row_custody(
+        compiled_batch, answer_plan, producer, row_index, generation)
+    _validate_task_plan_custody(compiled_batch, answer_plan)
     if (compiled_batch.training_authority is not None
             and compiled_batch.training_authority.generation_binding != generation):
         _invalid("B11_TRAINING_AUTHORITY_GENERATION_MISMATCH")
