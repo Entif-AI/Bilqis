@@ -2,7 +2,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { buildQuery, chooseDossier, historyEntries } from "../renderer/capability/model.mjs";
 import { DossierController } from "../renderer/capability/controller.mjs";
-import { renderDossier } from "../renderer/capability/view.mjs";
+import { renderDossier, renderEvidence } from "../renderer/capability/view.mjs";
+import { assertUniqueTestIds, collectTestIds } from "../renderer/foundation/test-hooks.mjs";
 const lens = { runId: "fixture:gui05", generation: 3, mode: "HISTORICAL" };
 const row = { schema_version: "bilqis.bamf.mission-control.capability-dossier/v1",
   capability_id: "B.AND", name: "Conjunction", meta: { run: { run_id: lens.runId, generation: 3 } },
@@ -85,4 +86,40 @@ test("fixture evidence comes from exact CP03 pages and preserves chronology", as
 test("absent dossier still shows literal projection markers", () => {
   const html = renderDossier({ dossier: null, lens, status: "DENIED", markers: [{ reason: "EXACT_REASON" }] });
   assert.match(html, /EXACT_REASON/);
+});
+
+test("redesigned dossier uses stable semantic hooks and keeps the no-causality boundary visible", async () => {
+  const { fixtureQuery } = await import("../renderer/capability/fixture.mjs");
+  const result = await fixtureQuery(buildQuery(lens));
+  const dossier = chooseDossier(result.records, lens, "B.AND");
+  const html = renderDossier({ dossier, lens, status: result.state, coverage: result.coverage, markers: [], fixture: true });
+  assert.equal(assertUniqueTestIds(html), true);
+  const ids = new Set(collectTestIds(html));
+  for (const id of [
+    "capability-document", "capability-heading", "capability-name", "capability-identity",
+    "capability-metrics", "capability-metric-now", "capability-metric-top",
+    "capability-section-performance", "capability-section-teaching", "capability-section-sources",
+    "capability-section-dependencies", "capability-section-history",
+    "capability-provenance",
+  ]) assert.equal(ids.has(id), true, id);
+  assert.match(html, /Measured chronology and declared evidence only/);
+  assert.match(html, /does not infer causes/);
+  assert.match(html, /10\/12/);
+});
+
+test("inline evidence is bounded, uniquely hooked, and offers the full Evidence route", () => {
+  const entry = { entry_id: "entry:1", section: "performance", refs: ["evidence:1"] };
+  const pageWithEvidence = {
+    state: "PRESENT",
+    links: [{ relation: "EVIDENCE", target_ref: "evidence:1", target_record_id: "record:1" }],
+    records: [{ schema_version: "test/v1", meta: { record_id: "record:1" }, exact: "literal" }],
+  };
+  const html = renderEvidence("evidence:1", entry, pageWithEvidence);
+  assert.equal(assertUniqueTestIds(html), true);
+  for (const id of ["capability-evidence-detail", "capability-evidence-heading", "capability-evidence-open",
+    "capability-evidence-link-0", "capability-evidence-inspect-0", "capability-evidence-record-0"]) {
+    assert.match(html, new RegExp(`data-test-id="${id}"`), id);
+  }
+  assert.match(html, /Open in Evidence/);
+  assert.match(html, /<details[^>]*data-test-id="capability-evidence-entry"/);
 });
