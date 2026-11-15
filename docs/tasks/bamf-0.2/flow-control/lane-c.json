@@ -411,6 +411,15 @@
       "preserved_branch": "codex/1140-resources-narrow-followup-20261114",
       "head_sha_role": "Exact ready narrow-screen follow-up candidate before this inventory-only receipt; initial PR #1155 merged at 490e86e1.",
       "merged_pr": 1155
+    },
+    {
+      "issue": 1167,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "2c8cda55d1344626bc6c6f11d9b5db5836a36604",
+      "summary": "Issue #1167 is active on an isolated branch from reviewed unified 2c8cda55. It owns fixed-school C05 MLX evaluation batching only: reduce per-case neural launches while preserving complete-solver semantics, per-case bindings/receipts, deterministic CPU execution, retention decisions, accepted-generation semantics and bounded resource fallback. Pinned EGM design review precedes implementation.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1167-retention-mlx-batch-20261115"
     }
   ]
 }
