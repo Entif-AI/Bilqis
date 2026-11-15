@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 from unittest import skipUnless
 from unittest.mock import patch
 
@@ -13,6 +14,8 @@ from bilqis_mlx.learning.atlas_readout import (
     AnswerPlan, ControlAction, DecisionKind, DecisionOutput, DecisionSpec,
     compile_frame_output,
 )
+from bilqis_mlx.learning.atlas_readout.causal_training import encode_feedback_value
+from bilqis_mlx.learning.atlas_readout.decoder.feedback import occurrence_vector
 from bilqis_mlx.learning.atlas_engram_reads import MotifReadResult
 from bilqis_mlx.learning.source_atoms.tests.backbone_test_support import (
     SourceBackboneTestBase,
@@ -23,6 +26,10 @@ from bilqis_mlx.runtime.atlas_model import (
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.atlas_model_participation import _row_motif_read
+from bilqis_mlx.runtime.microbatch.route_kernel import (
+    RouteMicrobatchKernel, prepare_route_microbatch_kernel,
+    route_microbatch_compatible, route_microbatch_mean_loss,
+)
 from bilqis_mlx.runtime.tests.model.execution.active_semantic_rows_support import (
     active_semantic_rows,
 )
@@ -36,6 +43,138 @@ from bilqis_mlx.source_adapters.tests.atoms.helpers import REAL_BUNDLE
 
 FP32_ATOL = 2e-5
 FP32_RTOL = 3e-5
+
+
+class RouteMicrobatchKernelTests(unittest.TestCase):
+    def _parameters(self):
+        width, inner = ModelTopologySpecV2.width, 192
+        return {
+            "features.role": mx.stack((
+                mx.zeros((width,), dtype=mx.float32),
+                mx.arange(width, dtype=mx.float32) / 1000.0,
+            )),
+            "features.gates": mx.zeros((4,), dtype=mx.float32),
+            "features.project_role": mx.eye(width, dtype=mx.float32),
+            "readout.feedback": mx.eye(width, dtype=mx.float32) * 0.02,
+            "readout.state_norm": mx.ones((width,), dtype=mx.float32),
+            "readout.output_norm": mx.ones((width,), dtype=mx.float32),
+            "readout.key": mx.eye(inner, width, dtype=mx.float32),
+            "readout.value": mx.eye(inner, width, dtype=mx.float32),
+            "readout.query": mx.eye(inner, width, dtype=mx.float32),
+            "readout.output": mx.eye(width, inner, dtype=mx.float32),
+        }
+
+    def _kernel(self):
+        width = ModelTopologySpecV2.width
+        candidates = (
+            (("op.a", "op.b"), ("op.x", "op.y")),
+            (("arg.a", "arg.b", "arg.c"), ("arg.x", "arg.y", "arg.z")),
+        )
+        candidate_vectors = tuple(mx.stack(tuple(
+            mx.stack(tuple(encode_feedback_value(value) for value in row))
+            for row in decision)) for decision in candidates)
+        candidate_masks = tuple(
+            mx.ones(value.shape[:2], dtype=mx.bool_) for value in candidate_vectors)
+        feedback = (
+            mx.zeros((2, width), dtype=mx.float32),
+            mx.stack((encode_feedback_value("op.b"), encode_feedback_value("op.x"))),
+        )
+        inactive = (
+            mx.zeros((2,), dtype=mx.int32), mx.zeros((2,), dtype=mx.bool_))
+        return RouteMicrobatchKernel(
+            mx.array((3, 2), dtype=mx.int32),
+            (mx.array((True, True), dtype=mx.bool_),
+             mx.array((False, False), dtype=mx.bool_)),
+            (mx.array((False, False), dtype=mx.bool_),
+             mx.array((True, True), dtype=mx.bool_)),
+            (
+                mx.stack((occurrence_vector(0), occurrence_vector(0))),
+                mx.stack((occurrence_vector(1), occurrence_vector(1))),
+            ),
+            feedback, candidate_vectors, candidate_masks,
+            (mx.array((1, 0), dtype=mx.int32),
+             mx.array((2, 1), dtype=mx.int32)),
+            mx.array((1, 1), dtype=mx.int32),
+            mx.array((1, 1), dtype=mx.int32),
+            (inactive, inactive, inactive), False,
+            SimpleNamespace(role_map=(("UNKNOWN", 0), ("NONE", 1))),
+            SimpleNamespace())
+
+    def _slice_kernel(self, kernel, index):
+        return RouteMicrobatchKernel(
+            kernel.lengths[index:index + 1],
+            tuple(value[index:index + 1] for value in kernel.operator_masks),
+            tuple(value[index:index + 1] for value in kernel.operand_masks),
+            tuple(value[index:index + 1] for value in kernel.occurrences),
+            tuple(value[index:index + 1] for value in kernel.feedback),
+            tuple(value[index:index + 1] for value in kernel.candidate_vectors),
+            tuple(value[index:index + 1] for value in kernel.candidate_masks),
+            tuple(value[index:index + 1] for value in kernel.target_indices),
+            kernel.operator_counts[index:index + 1],
+            kernel.operand_counts[index:index + 1],
+            tuple((targets[index:index + 1], active[index:index + 1])
+                  for targets, active in kernel.salience_targets),
+            kernel.has_salience, kernel.features, kernel.extents)
+
+    def test_batched_route_loss_and_gradients_match_scalar_rows_with_padding(self):
+        params = self._parameters()
+        kernel = self._kernel()
+        width = ModelTopologySpecV2.width
+        hidden = (mx.arange(2 * 3 * width, dtype=mx.float32)
+                  .reshape(2, 3, width) / 10000.0)
+        batched_loss, batched_gradients = mx.value_and_grad(
+            lambda values: route_microbatch_mean_loss(values, hidden, kernel))(params)
+        scalar = tuple(mx.value_and_grad(
+            lambda values, row=index: route_microbatch_mean_loss(
+                values, hidden[row:row + 1], self._slice_kernel(kernel, row)))(params)
+            for index in range(2))
+        expected_loss = mx.mean(mx.stack(tuple(item[0] for item in scalar)))
+        np.testing.assert_allclose(
+            np.asarray(batched_loss), np.asarray(expected_loss), atol=FP32_ATOL, rtol=FP32_RTOL)
+        for name in params:
+            with self.subTest(name=name):
+                expected = mx.mean(mx.stack(tuple(item[1][name] for item in scalar)), axis=0)
+                np.testing.assert_allclose(
+                    np.asarray(batched_gradients[name]), np.asarray(expected),
+                    atol=FP32_ATOL, rtol=FP32_RTOL)
+
+    def test_ragged_route_plans_remain_vector_compatible(self):
+        first = (
+            DecisionSpec("op.1", None, 0, DecisionKind.OPERATOR, ("a", "b")),
+            DecisionSpec("arg.1", None, 1, DecisionKind.OPERAND, ("x", "y"), ("op.1",)),
+        )
+        second = (
+            DecisionSpec("op.2", None, 0, DecisionKind.OPERATOR, ("c", "d")),
+        )
+        plans = (
+            SimpleNamespace(route_only=True, decisions=first,
+                            execution_order=("op.1", "arg.1")),
+            SimpleNamespace(route_only=True, decisions=second,
+                            execution_order=("op.2",)),
+        )
+        targets = (
+            (DecisionOutput("op.1", "b"), DecisionOutput("arg.1", "x")),
+            (DecisionOutput("op.2", "c"),),
+        )
+        masks = ({"op.1": True, "arg.1": True}, {"op.2": True})
+        features = SimpleNamespace(role_map=(("UNKNOWN", 0), ("NONE", 1)))
+        extents = SimpleNamespace()
+        rows = tuple(SimpleNamespace(compiled=SimpleNamespace(
+            compiled=SimpleNamespace(rows=(SimpleNamespace(positions=(None,) * length),)),
+            features=features, extents=extents)) for length in (3, 2))
+        preflight = (
+            SimpleNamespace(output=SimpleNamespace(committed=targets[0])),
+            SimpleNamespace(output=SimpleNamespace(committed=targets[1])),
+        )
+        self.assertTrue(route_microbatch_compatible(rows, plans, targets, masks))
+        kernel = prepare_route_microbatch_kernel(
+            rows, plans, targets, masks, preflight)
+        np.testing.assert_array_equal(
+            np.asarray(kernel.operand_masks[1]), np.asarray((True, False)))
+        np.testing.assert_array_equal(
+            np.asarray(kernel.operator_counts), np.asarray((1, 1)))
+        np.testing.assert_array_equal(
+            np.asarray(kernel.operand_counts), np.asarray((1, 0)))
 
 
 class MicrobatchParticipationProjectionTests(unittest.TestCase):

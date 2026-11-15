@@ -65,6 +65,9 @@ def _execute_prepared_candidate(
             max_norm=max_norm, candidate=candidate, execution_cache=cache)
         loss_total = gradient.loss_total
         gradient_launches, vectorized_microbatches = 1, 0
+        materialization_barriers = 1
+        scalar_fallback_rows = 0
+        logical_batch_wall_seconds = None
     else:
         gradient, authorities, target_rows = execute_factory_logical_batch(
             parameters, prepared, source_context, feature_context.snapshot,
@@ -80,6 +83,9 @@ def _execute_prepared_candidate(
         loss_total = gradient.weighted_mean_loss
         gradient_launches = gradient.gradient_launches
         vectorized_microbatches = gradient.vectorized_microbatches
+        materialization_barriers = gradient.materialization_barriers
+        scalar_fallback_rows = gradient.scalar_fallback_rows
+        logical_batch_wall_seconds = gradient.wall_seconds
     if finalize_candidate:
         transaction = _stage_retained_motifs(
             run_dir, parent, cache, transaction, prepared, resource_plan, memory_budget)
@@ -90,6 +96,9 @@ def _execute_prepared_candidate(
         "c08_memory_budget_bytes": memory_budget.allocation_bytes,
         "c08_gradient_launches": gradient_launches,
         "c08_vectorized_microbatches": vectorized_microbatches,
+        "c08_materialization_barriers": materialization_barriers,
+        "c08_scalar_fallback_rows": scalar_fallback_rows,
+        "c08_logical_batch_wall_seconds": logical_batch_wall_seconds,
         "c08_rows_per_gradient_launch": (
             len(prepared.compiled_rows) / gradient_launches),
         "optimizer_steps": 1,

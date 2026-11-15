@@ -100,7 +100,8 @@ def microbatch_trace_preflight(
 
     binding = rebind_execution(params)
     producer, accepted_cache, _ = _source_producer(
-        params, batch, generation, cache, binding, trace=True)
+        params, batch, generation, cache, binding, trace=True,
+        snapshot=answer_plans[0].snapshot)
     hidden = _finalize_source_hidden(
         producer, accepted_cache, batch, capture_derived_cache=False)
     if hidden.shape[0] != len(row_batches):
@@ -122,16 +123,19 @@ def finalize_microbatch_gradient(
     backend, batch, row_batches, preflight_executions,
     executions, mean_loss, gradients,
 ):
-    """Verify replay parity and issue one post-autodiff microbatch result."""
+    """Verify row evidence, numerical parity and issue one microbatch result."""
     from bilqis_mlx.learning.atlas_readout.decoder.prediction import (
         attest_issued_output,
     )
 
-    if (type(executions) is not tuple or len(executions) != len(row_batches)):
+    reused_preflight_evidence = executions is None
+    if reused_preflight_evidence:
+        executions = preflight_executions
+    elif type(executions) is not tuple or len(executions) != len(row_batches):
         _invalid("B11_MICROBATCH_EXECUTION_MISSING")
     if any(not attest_issued_output(execution.output) for execution in executions):
         _invalid("B11_MICROBATCH_OUTPUT_ATTESTATION_FAILED")
-    if any(
+    if not reused_preflight_evidence and any(
             execution.output.committed != preflight.output.committed
             or execution.output.status is not preflight.output.status
             for execution, preflight in zip(executions, preflight_executions)):
@@ -139,7 +143,6 @@ def finalize_microbatch_gradient(
     preflight_mean = sum(
         (execution.loss.total for execution in preflight_executions),
         mx.array(0.0, dtype=mx.float32)) / len(preflight_executions)
-    mx.eval(preflight_mean)
     if not bool(mx.allclose(mean_loss, preflight_mean, rtol=1e-5, atol=1e-6)):
         _invalid("B11_MICROBATCH_LOSS_DRIFT")
     validate_bamf_parameters(

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import time
 from typing import Callable, Mapping
 
 import mlx.core as mx
@@ -34,6 +35,9 @@ class LogicalBatchGradientExecution:
     plan_digest: str
     gradient_launches: int
     vectorized_microbatches: int
+    materialization_barriers: int
+    scalar_fallback_rows: int
+    wall_seconds: float
     _issuance: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -60,7 +64,13 @@ class LogicalBatchGradientExecution:
                 or type(self.gradient_launches) is not int
                 or self.gradient_launches < 1
                 or type(self.vectorized_microbatches) is not int
-                or not 0 <= self.vectorized_microbatches <= self.gradient_launches):
+                or not 0 <= self.vectorized_microbatches <= self.gradient_launches
+                or type(self.materialization_barriers) is not int
+                or self.materialization_barriers != 1
+                or type(self.scalar_fallback_rows) is not int
+                or not 0 <= self.scalar_fallback_rows <= len(self.loss_executions)
+                or type(self.wall_seconds) is not float
+                or self.wall_seconds < 0.0):
             _invalid("C08_LOGICAL_BATCH_GRADIENT_INVALID")
 
 
@@ -96,12 +106,14 @@ def accumulate_logical_batch_gradients(
             or (execute_group is not None and not callable(execute_group))):
         _invalid("C08_LOGICAL_BATCH_GRADIENT_ARGUMENT_INVALID")
     plan.__post_init__()
+    started = time.perf_counter()
     total_rows = len(plan.logical_row_ids)
     aggregate = None
     weighted_loss = mx.array(0.0, dtype=mx.float32)
     losses = []
     gradient_launches = 0
     vectorized_microbatches = 0
+    scalar_fallback_rows = 0
     for group in plan.groups:
         microbatch = execute_group(group) if execute_group is not None and len(group) > 1 else None
         if microbatch is not None:
@@ -120,8 +132,9 @@ def accumulate_logical_batch_gradients(
             losses.extend(microbatch.executions)
             gradient_launches += 1
             vectorized_microbatches += 1
-            mx.eval(aggregate, weighted_loss)
             continue
+        if len(group) > 1 and execute_group is not None:
+            scalar_fallback_rows += len(group)
         group_sum = None
         group_loss = mx.array(0.0, dtype=mx.float32)
         for index in group:
@@ -133,20 +146,18 @@ def accumulate_logical_batch_gradients(
                 _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
             group_sum = _sum_tree(group_sum, execution.gradients)
             group_loss = group_loss + execution.loss_total
-            mx.eval(group_sum, group_loss)
             losses.append(execution.execution)
             gradient_launches += 1
         group_mean = _scale_tree(group_sum, 1.0 / len(group))
-        mx.eval(group_mean, group_loss)
         aggregate = _sum_tree(
             aggregate,
             _scale_tree(group_mean, len(group) / total_rows))
         weighted_loss = weighted_loss + (
             group_loss / len(group)) * (len(group) / total_rows)
-        mx.eval(aggregate, weighted_loss)
     if len(losses) != total_rows or aggregate is None:
         _invalid("C08_LOGICAL_BATCH_EXECUTION_COVERAGE_DRIFT")
     mx.eval(aggregate, weighted_loss)
+    wall_seconds = float(time.perf_counter() - started)
     result = object.__new__(LogicalBatchGradientExecution)
     for name, value in (
         ("loss_executions", tuple(losses)),
@@ -157,6 +168,9 @@ def accumulate_logical_batch_gradients(
         ("plan_digest", plan.digest),
         ("gradient_launches", gradient_launches),
         ("vectorized_microbatches", vectorized_microbatches),
+        ("materialization_barriers", 1),
+        ("scalar_fallback_rows", scalar_fallback_rows),
+        ("wall_seconds", wall_seconds),
         ("_issuance", _ISSUER),
     ):
         object.__setattr__(result, name, value)
