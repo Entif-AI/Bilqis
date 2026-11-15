@@ -26,15 +26,18 @@ export function focusToken(element) {
   const key = element.dataset?.focusKey;
   if (typeof key === "string" && key) return `data:${key}`;
   if (typeof element.id === "string" && element.id) return `id:${element.id}`;
-  return null;
+  return typeof element.focus === "function" ? Object.freeze({ element }) : null;
 }
 
 export function restoreFocus(documentObject, token, fallbackSelector = "#main-content") {
   if (!documentObject || !token) return false;
   let target = null;
-  if (token.startsWith("id:")) {
+  if (typeof token === "object" && token.element?.isConnected !== false &&
+      typeof token.element?.focus === "function") {
+    target = token.element;
+  } else if (typeof token === "string" && token.startsWith("id:")) {
     target = documentObject.getElementById(token.slice(3));
-  } else if (token.startsWith("data:")) {
+  } else if (typeof token === "string" && token.startsWith("data:")) {
     const key = token.slice(5);
     target = [...documentObject.querySelectorAll("[data-focus-key]")]
       .find((candidate) => candidate.dataset.focusKey === key) ?? null;

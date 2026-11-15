@@ -14,6 +14,7 @@ const OWNER = Object.freeze({
   warning: "resources",
   resource: "resources",
   strategy: "teacher",
+  operation: "operate",
   "salience-observation": "salience",
 });
 
