@@ -97,12 +97,13 @@ class Offer:
         _authenticated_features='semantic-context',
         parent_candidate_identity_sha256='planned-id',
     )
+    materialized = object()
     def require_current_parent(self, context):
         return 'planned-parent', 'planned-cache'
     def rows(self):
         return ({'id': 'one', 'capability': 'cap'},)
     def require_current(self, context, parent):
-        pass
+        return self.materialized
 
 def test_execution_owns_rows_policy_and_teacher_rate(priority):
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
@@ -125,6 +126,7 @@ def test_execution_owns_rows_policy_and_teacher_rate(priority):
     assert kw['teacher_hparams'] == HParams(0.25, (0.8, 0.9), 1e-8, 0.2)
     assert kw['observation'] == Observation(args[5], 7)
     assert kw['capture_diagnostics'] is True
+    assert kw['prepared_source'] is selected.offer.materialized
 
 
 def test_execution_reuses_authenticated_planning_parent(priority):

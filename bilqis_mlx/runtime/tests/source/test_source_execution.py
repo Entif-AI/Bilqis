@@ -44,6 +44,21 @@ class SourceExecutionContextTests(unittest.TestCase):
         self.assertIs(context.answer_registry, self.answers)
         self.assertIsNone(context.source_root)
 
+    def test_bound_source_batch_draws_provider_once_and_revalidates_without_redraw(self):
+        from bilqis_mlx.factory import generation
+
+        context = SourceExecutionContext(**self.arguments)
+        original = generation.draw_executable_release_rows
+        with patch.object(
+                generation, "draw_executable_release_rows",
+                wraps=original) as draw:
+            rows, authority = context.draw_bound_rows(
+                seed=17, capability="Z.C0", each=1)
+            self.assertEqual(draw.call_count, 1)
+            self.assertIs(context.require_bound_rows(rows, authority), authority)
+            self.assertEqual(draw.call_count, 1)
+        self.assertEqual(context._source_preparation_metrics.provider_draws, 1)
+
     def test_unbound_source_context_cannot_claim_accepted_runtime_custody(self):
         from pathlib import Path
         context = SourceExecutionContext(**self.arguments)

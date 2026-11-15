@@ -60,7 +60,7 @@ def _step_seed(visit_id: str, ordinal: int = 1) -> int:
         f"bilqis.bamf.c16.3-step-seed/v1|{visit_id}{suffix}".encode()).digest()[:8], "big")
 
 
-def _resource_observation(run_dir: Path, step) -> dict:
+def _resource_observation(run_dir: Path, step, source_metrics=None) -> dict:
     """Capture only resource facts the accepted visit can truthfully support."""
     steps = step if type(step) is tuple else (step,)
     if not steps:
@@ -104,6 +104,18 @@ def _resource_observation(run_dir: Path, step) -> dict:
     optimizer_steps = getattr(final_transaction, "update_steps", len(steps))
     if optimizer_steps != len(steps):
         _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+    if source_metrics is None:
+        provider_draws = source_context_builds = compiled_source_builds = 0
+    else:
+        from bilqis_mlx.runtime.source_execution import SourcePreparationMetrics
+        if type(source_metrics) is not SourcePreparationMetrics:
+            _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
+        provider_draws = source_metrics.provider_draws
+        source_context_builds = source_metrics.source_context_builds
+        compiled_source_builds = source_metrics.compiled_source_builds
+        if any(type(value) is not int or value < 0 for value in (
+                provider_draws, source_context_builds, compiled_source_builds)):
+            _invalid("BAMF_C16_3_RESOURCE_OBSERVATION_INVALID")
     disk_used = shutil.disk_usage(Path(run_dir)).used
     return {
         "schema": "bilqis.bamf.c16.3-resource-observation/v1",
@@ -115,4 +127,7 @@ def _resource_observation(run_dir: Path, step) -> dict:
         "feature_manifest_rebuild_count": feature_rebuilds,
         "visit_atlas_reload_count": visit_atlas_reloads,
         "visit_feature_manifest_rebuild_count": visit_feature_rebuilds,
+        "provider_draw_count": provider_draws,
+        "source_context_build_count": source_context_builds,
+        "compiled_source_build_count": compiled_source_builds,
     }

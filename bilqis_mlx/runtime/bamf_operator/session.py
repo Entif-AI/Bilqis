@@ -164,7 +164,9 @@ def _retention_result(
         accepted=decision.accepted, decision=decision.to_record())
     successor = None
     if decision.accepted:
-        resource = _resource_observation(run_dir, tuple(steps))
+        resource = _resource_observation(
+            run_dir, tuple(steps),
+            getattr(context, "_source_preparation_metrics", None))
         resource.update({
             "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
             "evidence_file_fsyncs": candidate_evidence["persistence"]["file_fsyncs"],

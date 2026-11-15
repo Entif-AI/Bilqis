@@ -22,7 +22,7 @@
       ],
       "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
       "successor_evidence": [
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_reuse.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
         {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_rows"}
       ]
     },
@@ -37,7 +37,7 @@
       ],
       "bamf_owner": {"path": "bilqis_mlx/runtime/_source/source_packet_codec.py"},
       "successor_evidence": [
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_live_grade_a_rows_survive_immutable_packet_roundtrip_without_content_drift"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_reuse.py", "test": "test_live_grade_a_rows_survive_immutable_packet_roundtrip_without_content_drift"},
         {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/source/test_source_packet_boundary.py", "test": "test_roundtrip_preserves_empty_mappings_sequences_and_pair_sequences"}
       ]
     },
@@ -45,13 +45,13 @@
       "id": "source.deterministic-redraw-authority",
       "seam": "deterministic-source-redraw",
       "status": "TRANSFERRED",
-      "observable_invariant": "A worker redraw is bound to the issued source release, family, binding, capability, seed, and count, and yields the same rows as the direct source owner for that authority.",
+      "observable_invariant": "Worker consumption remains bound to the issued source release, family, binding, capability, seed, count, and exact content identity, and yields the same rows as the direct source owner without executing the provider again solely for authentication.",
       "predecessor_proofs": [
         {"path": "bilqis_mlx/runtime/tests/test_source_prefetch.py", "test": "test_step_packet_is_deterministic_and_rejects_neural_or_write_authority"}
       ],
       "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
       "successor_evidence": [
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_native_worker_redraws_only_the_issued_v2_source_authority"}
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_reuse.py", "test": "test_native_worker_transports_issued_content_without_redrawing_provider"}
       ]
     },
     {
@@ -137,7 +137,7 @@
       ],
       "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
       "successor_evidence": [
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_reuse.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
         {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_native_operator_preserves_zero_one_two_worker_configuration"}
       ]
     },
