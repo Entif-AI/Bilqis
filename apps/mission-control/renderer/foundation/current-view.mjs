@@ -8,6 +8,7 @@ import { renderCorrectionsView } from "../corrections/corrections-view.mjs";
 import { renderSalienceView } from "../salience/salience-view.mjs";
 import { renderLineageView } from "../lineage/lineage-view.mjs";
 import { renderEvidenceView } from "../evidence/evidence-view.mjs";
+import { t } from "./i18n.mjs";
 
 export function renderCurrentView(
   state, defense, onInspect, api, onEvidenceSelect, onEvidenceReturn, bootstrap = null,
@@ -120,11 +121,14 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = "Durable candidate transaction replay with explicit retention, rollback and evidence boundaries.";
+    summary.textContent = t("learning.currentView.summary");
     renderEpisodesView(domain, (id, kind) => onInspect({
       kind: "evidence",
       id,
-      details: { "Evidence type": kind, "Interpretation boundary": "Durable episode evidence only" },
+      details: {
+        [t("learning.inspector.evidenceType")]: kind,
+        [t("learning.inspector.interpretationBoundary")]: t("learning.inspector.durableEvidenceOnly"),
+      },
     }), ["episode", "candidate"].includes(state.selected?.kind) ? state.selected.id : null,
     (id, episode, relations) => onInspect({
       kind: "candidate",
@@ -132,10 +136,10 @@ export function renderCurrentView(
       label: id,
       relations,
       details: {
-        "Target capability": episode.capabilityId,
-        "Parent generation": episode.parentGeneration,
-        "Terminal state": episode.terminalState,
-        "Retention reason": episode.retentionReason,
+        [t("learning.inspector.targetCapability")]: episode.capabilityId,
+        [t("learning.inspector.parentGeneration")]: episode.parentGeneration,
+        [t("learning.inspector.terminalState")]: episode.terminalState,
+        [t("learning.inspector.retentionReason")]: episode.retentionReason,
       },
     }));
     return;
