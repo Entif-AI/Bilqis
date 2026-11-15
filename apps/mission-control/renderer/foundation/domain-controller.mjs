@@ -12,7 +12,7 @@ import {
 
 export function activateDomainViews({
   state, getState, defense, api, homeController, resourceController, operateController,
-  capabilityExplorer, learningController, onInspect, onNavigate, onAnnounce,
+  capabilityExplorer, learningController, lineageController, onInspect, onNavigate, onAnnounce,
   schoolDomainSupport = null,
 }) {
   if (state?.view !== "evidence") deactivateEvidenceView();
@@ -71,6 +71,14 @@ export function activateDomainViews({
     });
   } else {
     void learningController?.deactivate();
+  }
+  if (state?.view === "lineage" && state.context?.fixture !== true) {
+    void lineageController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+    });
+  } else {
+    void lineageController?.deactivate();
   }
   if (state?.view === "operate") {
     void operateController?.activate(state.context, {

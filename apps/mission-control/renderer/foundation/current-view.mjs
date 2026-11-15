@@ -221,7 +221,7 @@ export function renderCurrentView(
     domain.hidden = false;
     summary.textContent = t("shell.destination.lineage.purpose");
     if (!fixtureViews?.renderLineageView || state.context.fixture !== true) {
-      domain.innerHTML = productionProjectionMarkup("lineage");
+      domain.innerHTML = "";
       return;
     }
     fixtureViews.renderLineageView(domain, (id, node) => onInspect({

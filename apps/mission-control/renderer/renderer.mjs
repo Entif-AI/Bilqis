@@ -42,6 +42,7 @@ import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
 import { createInteractionController } from "./interactions/controller.mjs";
 import { createProductionLearningController } from "./learning/controller.mjs";
+import { createProductionLineageController } from "./lineage/production-controller.mjs";
 import { routeForObjectRef } from "./interactions/app-uri.mjs";
 import { withHistoricalLens } from "./interactions/model.mjs";
 import {
@@ -69,6 +70,7 @@ let paletteReturnToken = null;
 const homeController = createHomeController(window.bamfMissionControl, fixtureSupport?.home);
 const resourceController = createResourceController(window.bamfMissionControl, fixtureSupport?.resources);
 const learningController = createProductionLearningController(window.bamfMissionControl);
+const lineageController = createProductionLineageController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
   storage: window.localStorage,
@@ -204,7 +206,7 @@ function render() {
   activateDomainViews({
     state, getState: () => state, defense, api: window.bamfMissionControl,
     homeController, resourceController, operateController,
-    capabilityExplorer, learningController, onInspect: openInspector,
+    capabilityExplorer, learningController, lineageController, onInspect: openInspector,
     onNavigate: navigateTo, onAnnounce: announce,
     schoolDomainSupport: fixtureSupport?.school ?? null,
   });
