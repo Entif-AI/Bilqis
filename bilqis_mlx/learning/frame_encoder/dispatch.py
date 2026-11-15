@@ -37,15 +37,15 @@ def encode_frames(compiled: FrameEncoderInput | AtomicEncoderInput | CompiledEnc
                   atom_vectors: tuple[tuple[mx.array, ...], ...] | CompiledEmbeddingVectors,
                   parameters: Mapping[str, mx.array], *,
                   atlas_selections=None,
-                  qualified_feature_rows_by_row=None) -> FrameEncoding:
+                  source_execution_authorities=None) -> FrameEncoding:
     """Encode complete groups or preserve approved atomic vectors without detaching."""
     if not isinstance(parameters, Mapping):
         _invalid()
     if type(compiled) is CompiledEncoderInput:
         return _encode_compiled(
             compiled, atom_vectors, parameters, atlas_selections=atlas_selections,
-            qualified_feature_rows_by_row=qualified_feature_rows_by_row)
-    if atlas_selections is not None or qualified_feature_rows_by_row is not None:
+            source_execution_authorities=source_execution_authorities)
+    if atlas_selections is not None or source_execution_authorities is not None:
         _invalid()
     if type(compiled) not in (FrameEncoderInput, AtomicEncoderInput):
         _invalid()
