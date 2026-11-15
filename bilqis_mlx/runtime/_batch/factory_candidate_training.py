@@ -27,7 +27,7 @@ from .atlas_visit_provenance import BamfVisitProvenance
 
 from .factory_candidate_components import (
     FactoryCandidateDiagnostics, FactoryCandidateStep, FactoryDeliveryObservation,
-    _invalid, _reporting_diagnostics, _resource_plan,
+    _frame_stats, _invalid, _reporting_diagnostics, _resource_plan,
     _stage_retained_motifs,
 )
 
