@@ -15,21 +15,31 @@ from bilqis_mlx.semantics.cognitive_operators import TypedValue
 from bilqis_mlx.semantics.domains import contract_digest
 
 from .capability_evaluation import _invalid
-from .factory_evaluation_compiler import compile_factory_evaluation_batch
-from .factory_task_authority import factory_task_authority
+from .factory_evaluation_compiler import (
+    CompiledFactoryEvaluationCase, bind_factory_evaluation_case,
+    compile_factory_evaluation_case, compiled_case_matches_contract,
+)
+from .factory_compiled_cohort import (
+    compiled_cohort_candidates, compiled_cohort_record,
+    load_compiled_cohort_cases, seal_compiled_case, seal_compiled_cohort,
+)
 from .task_goal_readout import b11_task_goal_proposer, task_goal_route_plan
 
 
 @dataclass(frozen=True)
 class FactoryEvaluationInstrument:
     case: EvaluationCase
-    row: dict
+    compiled_case: CompiledFactoryEvaluationCase
+    source_row: dict
     source_seed: int
     source_each: int
 
     def __post_init__(self):
-        if (type(self.case) is not EvaluationCase or not isinstance(self.row, dict)
-                or self.row.get("id") != self.case.case_id
+        if (type(self.case) is not EvaluationCase
+                or type(self.compiled_case) is not CompiledFactoryEvaluationCase
+                or self.compiled_case.task_template.source_row_id != self.case.case_id
+                or not isinstance(self.source_row, dict)
+                or self.source_row.get("id") != self.case.case_id
                 or type(self.source_seed) is not int or self.source_seed < 0
                 or type(self.source_each) is not int or self.source_each < 1):
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_INVALID")
@@ -80,21 +90,35 @@ def _factory_evaluation_instrument(
     *,
     source_seed: int,
     source_each: int,
-    generation: str,
+    authenticated=None,
 ) -> FactoryEvaluationInstrument:
     """Freeze one independent Factory row into a C05 case without solver choice."""
-    batch = compile_factory_evaluation_batch(
+    compiled_case = compile_factory_evaluation_case(
         source_context, candidate, artifact_path, row,
+        source_seed=source_seed, source_each=source_each,
+        authenticated=authenticated)
+    return _instrument_from_compiled(
+        source_context, row, compiled_case,
         source_seed=source_seed, source_each=source_each)
-    authority = factory_task_authority(
-        source_context, batch, generation_binding=generation)
+
+
+def _instrument_from_compiled(
+    source_context: SourceExecutionContext,
+    row: dict,
+    compiled_case: CompiledFactoryEvaluationCase,
+    *,
+    source_seed: int,
+    source_each: int,
+) -> FactoryEvaluationInstrument:
+    authority = compiled_case.task_template
     execution = source_context.release.execution_plan.capability_map[
         authority.capability_id]
     case = EvaluationCase(
         authority.source_row_id, authority.capability_id, execution.grade_id,
         authority.source_family_id, authority.episode_id, authority.goal,
         _factory_gold(source_context, row, authority.goal))
-    return FactoryEvaluationInstrument(case, dict(row), source_seed, source_each)
+    return FactoryEvaluationInstrument(
+        case, compiled_case, row, source_seed, source_each)
 
 
 def factory_evaluation_instrument(
@@ -108,8 +132,75 @@ def factory_evaluation_instrument(
 ) -> FactoryEvaluationInstrument:
     return _factory_evaluation_instrument(
         source_context, candidate, artifact_path, row,
-        source_seed=source_seed, source_each=source_each,
-        generation=_generation(candidate))
+        source_seed=source_seed, source_each=source_each)
+
+
+def factory_evaluation_instruments(
+    source_context: SourceExecutionContext,
+    candidate: BamfBundleCandidate,
+    artifact_path: str,
+    rows,
+    *,
+    seed: int,
+    each: int | None = None,
+    source_cohort_sha256: str | None = None,
+) -> tuple[FactoryEvaluationInstrument, ...]:
+    """Compile one immutable cohort with one shared feature authentication."""
+    rows = tuple(rows)
+    if not rows:
+        _invalid("BAMF_C05_FACTORY_INSTRUMENTS_REQUIRED")
+    authenticated = authenticate_bamf_execution_feature_context(
+        candidate, artifact_path, source_context.run_dir)
+    counts = {}
+    if each is None:
+        for row in rows:
+            capability = row.get("capability")
+            counts[capability] = counts.get(capability, 0) + 1
+    each_values = tuple(
+        each if each is not None else counts[row.get("capability")] for row in rows)
+    if source_cohort_sha256 is not None:
+        candidates = compiled_cohort_candidates(
+            source_context.run_dir,
+            source_cohort_sha256=source_cohort_sha256,
+            factory_release_sha256=source_context.release.release_sha256,
+            semantic_catalog_sha256=source_context.release.semantic_catalog_sha256,
+            source_seed=seed)
+        for record in candidates:
+            artifacts = record.get("compiled_case_artifact_sha256")
+            if not isinstance(artifacts, list) or not artifacts:
+                continue
+            cached = load_compiled_cohort_cases(source_context.run_dir, record)
+            if (len(cached) == len(rows)
+                    and all(compiled_case_matches_contract(
+                        source_context, candidate, artifact_path, compiled_case, row,
+                        source_seed=seed, source_each=row_each,
+                        authenticated=authenticated)
+                        for compiled_case, row, row_each in zip(
+                            cached, rows, each_values))):
+                return tuple(_instrument_from_compiled(
+                    source_context, row, compiled_case,
+                    source_seed=seed, source_each=row_each)
+                    for compiled_case, row, row_each in zip(
+                        cached, rows, each_values))
+    instruments = tuple(_factory_evaluation_instrument(
+        source_context, candidate, artifact_path, row,
+        source_seed=seed,
+        source_each=row_each,
+        authenticated=authenticated,
+    ) for row, row_each in zip(rows, each_values))
+    if source_cohort_sha256 is not None:
+        artifacts = tuple(seal_compiled_case(
+            source_context.run_dir, item.compiled_case) for item in instruments)
+        record = compiled_cohort_record(
+            factory_release_sha256=source_context.release.release_sha256,
+            semantic_catalog_sha256=source_context.release.semantic_catalog_sha256,
+            source_cohort_sha256=source_cohort_sha256,
+            source_seed=seed,
+            case_records=tuple(
+                item.compiled_case.identity_record for item in instruments),
+            case_artifacts=artifacts)
+        seal_compiled_cohort(source_context.run_dir, record)
+    return instruments
 
 
 def factory_complete_solver(
@@ -140,11 +231,11 @@ def factory_complete_solver(
         cached = contexts.get(goal.goal_id)
         if cached is not None:
             return cached
-        batch = compile_factory_evaluation_batch(
-            source_context, candidate, artifact_path, instrument.row,
-            source_seed=instrument.source_seed, source_each=instrument.source_each)
-        authority = factory_task_authority(
-            source_context, batch, generation_binding=generation)
+        batch, authority = bind_factory_evaluation_case(
+            source_context, candidate, artifact_path, instrument.compiled_case,
+            instrument.source_row, generation=generation,
+            source_seed=instrument.source_seed, source_each=instrument.source_each,
+            authenticated=feature_context)
         if (authority.goal != instrument.case.goal
                 or authority.source_family_id != instrument.case.source_family_id
                 or authority.episode_id != instrument.case.episode_id):
@@ -165,5 +256,5 @@ def factory_complete_solver(
 
 __all__ = (
     "FactoryEvaluationInstrument", "factory_complete_solver",
-    "factory_evaluation_instrument",
+    "factory_evaluation_instrument", "factory_evaluation_instruments",
 )
