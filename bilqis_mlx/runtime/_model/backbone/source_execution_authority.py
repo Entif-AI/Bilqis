@@ -10,11 +10,15 @@ from bilqis_mlx.learning._engram.atlas_engram_source_context import (
 from bilqis_mlx.learning._engram.atlas_engram_identity import MotifFrameInput
 from bilqis_mlx.learning.source_atoms.inputs import SourceAtomRow
 from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
+from bilqis_mlx.semantics.atlas_features import AtlasFeatures
+from bilqis_mlx.semantics.atlas_features.formal import source_qualified_feature_row
+from bilqis_mlx.semantics.atlas_features.records import FeatureRow
 from bilqis_mlx.semantics.context_eligibility import (
     ApprovedContextProjection, ContextHold, SourceFrontier, TaskScope,
 )
 from bilqis_mlx.semantics.domains import contract_digest
 from bilqis_mlx.semantics.frame_compiler import CompiledFrameBatch, FrameCompilerConfig
+from bilqis_mlx.semantics.frame_schema import FrameInstance
 from bilqis_mlx.semantics.source_atom_binding import SourceAtomHandoff
 from bilqis_mlx.source_adapters.atom_binding import (
     _build_source_atom_handoff_from_snapshot,
@@ -42,6 +46,7 @@ class B11SourceExecutionAuthority:
     source_handoff: SourceAtomHandoff
     motif_projection: ApprovedContextProjection
     motif_inputs: tuple[MotifFrameInput, ...]
+    motif_feature_rows: tuple[tuple[str, str, FeatureRow], ...]
     motif_frontier: SourceFrontier
     task_scope: TaskScope
     source_digest: str
@@ -64,6 +69,14 @@ class B11SourceExecutionAuthority:
             or type(self.motif_projection) is not ApprovedContextProjection
             or type(self.motif_inputs) is not tuple
             or any(type(item) is not MotifFrameInput for item in self.motif_inputs)
+            or type(self.motif_feature_rows) is not tuple
+            or any(type(item) is not tuple or len(item) != 3
+                   or not isinstance(item[0], str) or not item[0]
+                   or not isinstance(item[1], str) or not item[1]
+                   or type(item[2]) is not FeatureRow
+                   for item in self.motif_feature_rows)
+            or len({(item[0], item[1]) for item in self.motif_feature_rows})
+            != len(self.motif_feature_rows)
             or type(self.motif_frontier) is not SourceFrontier
             or type(self.task_scope) is not TaskScope
             or type(self._compiled_row) is not CompiledFrameBatch
@@ -109,6 +122,7 @@ def bind_b11_source_execution_authority(
     source: SourceAtomRow,
     source_adapter,
     snapshot: FrozenAtlasSnapshot,
+    features: AtlasFeatures,
 ) -> B11SourceExecutionAuthority:
     """Qualify one source row once before B11 enters the neural hot path."""
     if (
@@ -116,6 +130,7 @@ def bind_b11_source_execution_authority(
         or type(config) is not FrameCompilerConfig
         or type(source) is not SourceAtomRow
         or type(snapshot) is not FrozenAtlasSnapshot
+        or type(features) is not AtlasFeatures
     ):
         _invalid("B11_SOURCE_EXECUTION_AUTHORITY_INPUT_INVALID")
     task_scope = replace(config.task, causal_prefix_end=compiled_row.visible_end)
@@ -148,6 +163,41 @@ def bind_b11_source_execution_authority(
     if isinstance(replayed, ContextHold):
         _invalid("B11_SOURCE_EXECUTION_MOTIF_CONTEXT_HELD")
     projection, motifs, frontier = replayed
+    schema_by_occurrence = {}
+
+    def collect_schema(item):
+        previous = schema_by_occurrence.get(item.frame.occurrence_id)
+        if previous is not None and previous != item.schema:
+            _invalid("B11_SOURCE_EXECUTION_MOTIF_SCHEMA_DRIFT")
+        schema_by_occurrence[item.frame.occurrence_id] = item.schema
+        for child in item.children:
+            collect_schema(child)
+
+    for motif in motifs:
+        collect_schema(motif)
+
+    feature_rows = []
+    for envelope in projection.envelopes:
+        if type(envelope.frame) is not FrameInstance:
+            continue
+        schema = schema_by_occurrence.get(envelope.frame.occurrence_id)
+        if schema is None:
+            _invalid("B11_SOURCE_EXECUTION_MOTIF_SCHEMA_MISSING")
+        for binding in envelope.frame.bindings:
+            if binding.concept is None:
+                continue
+            member = next((
+                item for item in envelope.members if item.key == binding.key
+            ), None)
+            if member is None:
+                _invalid("B11_SOURCE_EXECUTION_MOTIF_MEMBER_MISSING")
+            feature_row = source_qualified_feature_row(
+                features, binding.concept, binding.role_id, envelope.frame,
+                envelope.scope, source.selection,
+                invalid=lambda: _invalid(
+                    "B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID"))
+            feature_rows.append(
+                (envelope.frame_handle, member.source_handle, feature_row))
     authority = object.__new__(B11SourceExecutionAuthority)
     for name, value in (
         ("snapshot", snapshot),
@@ -155,6 +205,7 @@ def bind_b11_source_execution_authority(
         ("source_handoff", handoff),
         ("motif_projection", projection),
         ("motif_inputs", motifs),
+        ("motif_feature_rows", tuple(feature_rows)),
         ("motif_frontier", frontier),
         ("task_scope", task_scope),
         ("source_digest", _source_digest(source)),
