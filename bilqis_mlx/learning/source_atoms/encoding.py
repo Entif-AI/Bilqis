@@ -53,7 +53,7 @@ def encode_source_compiled_with_handoffs(
         (None,) * len(sources)
         if source_execution_authorities is None
         else source_execution_authorities)
-    atom_rows, member_rows, handoffs, qualified_rows = [], [], [], []
+    atom_rows, member_rows, handoffs = [], [], []
     for row, config, source, requests, source_authority in zip(
             compiled.compiled.rows, compiled.compiler_configs,
             sources, compiled.member_requests, authorities):
@@ -63,18 +63,11 @@ def encode_source_compiled_with_handoffs(
             snapshot=snapshot, source_execution_authority=source_authority)
         atom_rows.append(vectors)
         handoffs.append(handoff)
-        qualified_feature_rows = (
-            None if source_authority is None else {
-                (frame_handle, member_handle): feature_row
-                for frame_handle, member_handle, feature_row
-                in source_authority.motif_feature_rows
-            })
-        qualified_rows.append(qualified_feature_rows)
         if requests:
             members = embed_atoms(
                 parameters, ConceptBatch((requests,), row_banks, compiled.extents),
                 compiled.features, atlas_selection=source.selection,
-                qualified_feature_rows=qualified_feature_rows)[0]
+                source_execution_authority=source_authority)[0]
             member_rows.append(tuple(MemberEmbedding(request, members[index])
                                      for index, request in enumerate(requests)))
         else:
@@ -85,7 +78,7 @@ def encode_source_compiled_with_handoffs(
     return encode_frames(
         compiled, generated, parameters,
         atlas_selections=tuple(source.selection for source in sources),
-        qualified_feature_rows_by_row=tuple(qualified_rows)), tuple(handoffs)
+        source_execution_authorities=authorities), tuple(handoffs)
 
 
 def encode_source_compiled(
