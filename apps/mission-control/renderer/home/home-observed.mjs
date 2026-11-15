@@ -1,5 +1,6 @@
 import { t } from "../foundation/i18n.mjs";
 import { temporalMarkup } from "../foundation/temporal.mjs";
+import { testIdAttribute } from "../foundation/test-hooks.mjs";
 
 const SCHEMA = "bilqis.bamf.mission-control.trainer-observation/v1";
 
@@ -47,6 +48,6 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     <p class="home-observed-accepted">${esc(t("home.observed.acceptedGeneration"))}: ${esc(observed.acceptedGeneration ?? unknown)} · ${esc(t("home.observed.acceptedStep"))}: ${esc(observed.acceptedOptimizerStep ?? unknown)}</p>
     <dl>${fields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
 
-    <details><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(item.capability_id ?? unknown)} · ${esc(item.phase)} · ${esc(item.outcome)} · ${esc(item.connection_state)}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
+    <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(item.capability_id ?? unknown)} · ${esc(item.phase)} · ${esc(item.outcome)} · ${esc(item.connection_state)}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
   </div>`;
 }
