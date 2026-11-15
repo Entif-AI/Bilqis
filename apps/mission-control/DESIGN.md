@@ -230,7 +230,7 @@ Primary layout rules:
 - Wide analytical surfaces own their horizontal scroll. The document itself should not drift horizontally.
 - Wide tables use sticky headers where useful and sticky identity columns when horizontal comparison would otherwise destroy orientation.
 - Table column groups and optional secondary measures should be progressively disclosed rather than exposing every possible field simultaneously.
-- Comfortable mode must feel comfortable. Compact mode increases density without changing semantic hierarchy. Terminal-style density is not the default visual language.
+- Comfortable mode must feel comfortable. Compact mode increases density without changing semantic hierarchy. The legacy `terminal` display preference is retired by the shared-foundation redesign; persisted `terminal` values migrate deterministically to `compact` so there are exactly two supported density modes.
 
 ### Composition authority
 

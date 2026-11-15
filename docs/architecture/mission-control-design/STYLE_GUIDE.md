@@ -131,7 +131,7 @@ Canonical controls share geometry, focus treatment, disabled treatment, and pres
 
 A horizontal row of identical dark rectangles with different verbs is not an action hierarchy.
 
-Comfortable density must actually be comfortable. Compact mode is for deliberate high-density inspection and must remain readable and operable.
+Comfortable density must actually be comfortable. Compact mode is for deliberate high-density inspection and must remain readable and operable. The legacy `terminal` preference is no longer a supported density mode; persisted values migrate to `compact` at the shared settings boundary.
 
 ## Tables, matrices, and dense analytical surfaces
 
