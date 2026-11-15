@@ -1,3 +1,4 @@
+import { evidenceT } from "../evidence/evidence-messages.mjs";
 import { escapeText as esc } from "../frames/frame-model.mjs";
 import { renderSchoolView } from "../school/school-view.mjs";
 import { renderNeuralView } from "../neural/neural-view.mjs";
@@ -133,11 +134,14 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = t("shell.destination.learning.purpose");
+    summary.textContent = t("learning.currentView.summary");
     renderEpisodesView(domain, (id, kind) => onInspect({
       kind: "evidence",
       id,
-      details: { "Evidence type": kind, "Interpretation boundary": "Durable episode evidence only" },
+      details: {
+        [t("learning.inspector.evidenceType")]: kind,
+        [t("learning.inspector.interpretationBoundary")]: t("learning.inspector.durableEvidenceOnly"),
+      },
     }), ["episode", "candidate"].includes(state.selected?.kind) ? state.selected.id : null,
     (id, episode, relations) => onInspect({
       kind: "candidate",
@@ -145,10 +149,10 @@ export function renderCurrentView(
       label: id,
       relations,
       details: {
-        "Target capability": episode.capabilityId,
-        "Parent generation": episode.parentGeneration,
-        "Terminal state": episode.terminalState,
-        "Retention reason": episode.retentionReason,
+        [t("learning.inspector.targetCapability")]: episode.capabilityId,
+        [t("learning.inspector.parentGeneration")]: episode.parentGeneration,
+        [t("learning.inspector.terminalState")]: episode.terminalState,
+        [t("learning.inspector.retentionReason")]: episode.retentionReason,
       },
     }));
     return;
@@ -259,10 +263,10 @@ export function renderCurrentView(
     domain.hidden = false;
     fixture.hidden = true;
     catalog.hidden = true;
-    summary.textContent = t("shell.destination.evidence.purpose");
+    summary.textContent = evidenceT("evidence.summary");
     renderEvidenceView(
       domain, api, state.context, state.selected, onEvidenceSelect,
-      state.evidenceOrigin ? onEvidenceReturn : null,
+      state.evidenceOrigin ? onEvidenceReturn : null, state.evidenceOrigin,
     );
     return;
   }

@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "claims": [
+    "pagination-selection concurrency",
+    "draft/caret/disclosure custody",
+    "bootstrap cancellation",
+    "fresh-query cancellation",
+    "exact traversal/reference",
+    "raw parity",
+    "origin callback",
+    "pagination recovery/focus",
+    "defensive states"
+  ],
+  "variants": [
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "translationExpansion": true,
+  "rtlTextSpacingReducedMotion": true
+}

@@ -64,16 +64,12 @@ async (page) => {
     "verified current restores exact current route");
 
   await page.locator('[data-test-id="nav-destination-learning"]').click();
-  await page.getByRole("button", {
-    name: "Inspect candidate · candidate:fixture:retained-44239",
-  }).click();
+  await page.locator('[data-test-id="learning-candidate-inspect"]').click();
   await page.locator("#compare-left").click();
-  await page.getByRole("button", {
-    name: /C.NUMBER · REJECTED · PROTECTED_CAPABILITY_REGRESSION/,
-  }).click();
-  await page.getByRole("button", {
-    name: "Inspect candidate · candidate:fixture:interference-reject",
-  }).click();
+  await page.locator('[data-test-id="learning-episode-selector"]').selectOption(
+    "episode-record:fixture:interference-reject",
+  );
+  await page.locator('[data-test-id="learning-candidate-inspect"]').click();
   await page.locator("#compare-right").click();
   await page.getByText("Target committed", {exact: true}).waitFor();
   const candidateTable = await page.locator(".investigation-table").innerText();

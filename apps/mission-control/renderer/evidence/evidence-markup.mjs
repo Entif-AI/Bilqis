@@ -1,109 +1,56 @@
 import { SEARCH_KINDS } from "./evidence-query.mjs";
+import { evidenceT } from "./evidence-messages.mjs";
+import { controlClass, surfaceClass } from "../foundation/primitives.mjs";
+import { esc, hookFactory, linksMarkup, markersMarkup, pageStatus, recordDetail } from "./evidence-record.mjs";
 
-function esc(value) {
-  return String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
+function recordResults(state, t) {
+  const hook = hookFactory("record-result");
+  return state.records.map((record, index) => {
+    const meta = record.meta ?? {};
+    return `<li><button class="evidence-result" type="button" data-test-id="${hook(meta.record_id ?? JSON.stringify(record))}" data-evidence-record="${index}" aria-pressed="${Boolean(state.selected && state.selected.meta?.record_id === meta.record_id)}">
+      <code>${esc(meta.record_id ?? t("evidence.value.unidentified"))}</code>
+      <span class="evidence-result-schema">${esc(record.schema_version ?? t("evidence.value.unknown"))}</span>
+      <span>${esc(t("evidence.record.posture", {authority: meta.authority ?? t("evidence.value.unknown"), coverage: meta.coverage ?? t("evidence.value.unknown")}))}</span>
+      ${meta.run ? `<span>${esc(t("evidence.record.generation", {generation: meta.run.generation}))}</span>` : ""}</button></li>`;
+  }).join("");
 }
 
-function pageState(page) {
-  if (!page) return "NOT QUERIED";
-  return `${page.state} · ${page.coverage}${page.truncated ? " · TRUNCATED" : ""}`;
+function originMarkup(state, t) {
+  if (!state.returnAvailable) return "";
+  const origin = state.origin;
+  return `<div class="evidence-origin" data-test-id="evidence-origin"><button type="button" class="${controlClass("link")}" data-test-id="evidence-return" data-evidence-return>← ${esc(t("evidence.origin.return"))}</button>
+    ${origin ? `<span>${esc(t("evidence.origin.context", {view: origin.view, kind: origin.selected?.kind ?? "", identity: origin.selected?.id ?? ""}))}</span>
+` : ""}</div>`;
 }
 
-function markerSummary(marker) {
-  const meta = marker?.meta ?? {};
-  const details = [
-    ...(Array.isArray(marker?.missing_fields) ? marker.missing_fields : []),
-    marker?.reason ?? null, marker?.resource ?? null, marker?.stale_record_id ?? null,
-    Number.isSafeInteger(marker?.requested_as_of) ? `requested as-of ${marker.requested_as_of}` : null,
-    Number.isSafeInteger(marker?.available_as_of) ? `available as-of ${marker.available_as_of}` : null,
-  ].filter((value) => value !== null && value !== undefined);
-  return `<article class="evidence-marker"><strong>${esc(marker?.schema_version ?? "DEGRADED EVIDENCE MARKER")}</strong>
-    <code>${esc(meta.record_id ?? "marker:unidentified")}</code>
-    <span>${details.length ? esc(details.join(" · ")) : "Exact degraded-state marker; no additional detail reported."}</span></article>`;
-}
-
-function recordSummary(record, index) {
-  const meta = record.meta ?? {};
-  const run = meta.run ?? null;
-  return `<button class="evidence-result" type="button" data-evidence-record="${index}">
-    <strong>${esc(meta.record_id ?? "UNIDENTIFIED RECORD")}</strong>
-    <span>${esc(record.schema_version ?? "SCHEMA UNKNOWN")}</span>
-    <small>${esc(meta.authority ?? "AUTHORITY UNKNOWN")} · ${esc(meta.coverage ?? "COVERAGE UNKNOWN")}${run ? ` · gen ${esc(run.generation)}` : ""}</small>
-  </button>`;
-}
-
-function linkSummary(link, index, scope = "page") {
-  const targetAttribute = scope === "selected"
-    ? `data-evidence-selected-target="${index}"` : `data-evidence-target="${index}"`;
-  const target = link.target_record_id
-    ? `<button type="button" ${targetAttribute}>Open exact record</button>`
-    : `<span class="evidence-unresolved">EXTERNAL / NOT HYDRATED</span>`;
-  return `<article class="evidence-link"><strong>${esc(link.relation)}</strong>
-    <code>${esc(link.source_record_id)}</code><span>→</span><code>${esc(link.target_ref)}</code>${target}</article>`;
-}
-
-function refs(meta) {
-  const groups = [
-    ["SOURCE", meta?.source_refs ?? []], ["EVIDENCE", meta?.evidence_refs ?? []],
-    ["RECEIPT", meta?.receipt_refs ?? []],
-  ];
-  return groups.map(([kind, values]) => values.map((value) =>
-    `<button type="button" data-evidence-ref="${esc(value)}"><b>${kind}</b> ${esc(value)}</button>`,
-  ).join("")).join("") || '<span class="evidence-unresolved">No provenance refs reported.</span>';
-}
-
-function readable(record, linksPage, linkError = null) {
-  const meta = record.meta ?? {};
-  const body = Object.entries(record).filter(([key]) => key !== "meta")
-    .map(([key, value]) => `<dt>${esc(key)}</dt><dd><code>${esc(
-      typeof value === "object" ? JSON.stringify(value) : value,
-    )}</code></dd>`).join("");
-  const verification = record.verification_state ?? record.verification_status ?? "NOT SEPARATELY REPORTED";
-  return `<div class="evidence-readable"><dl><dt>Record ID</dt><dd>${esc(meta.record_id)}</dd>
-    <dt>Schema / version</dt><dd>${esc(record.schema_version)}</dd><dt>Authority</dt><dd>${esc(meta.authority)}</dd>
-    <dt>Coverage</dt><dd>${esc(meta.coverage)}</dd><dt>Verification</dt><dd>${esc(verification)}</dd>
-    <dt>Materialized</dt><dd>${esc(meta.materialized_at ?? "UNKNOWN")}</dd><dt>Observed</dt><dd>${esc(meta.observed_at ?? "UNKNOWN")}</dd>
-    <dt>As of</dt><dd>${esc(meta.as_of ?? "UNKNOWN")}</dd><dt>Record metadata</dt><dd><code>${esc(JSON.stringify(meta))}</code></dd>${body}</dl>
-    <section><h4>Provenance chain</h4><div class="evidence-refs">${refs(meta)}</div></section>
-    <section><h4>Exact links</h4><div class="evidence-links">${linkError
-      ? `<span class="evidence-unresolved">LINK HYDRATION UNAVAILABLE · ${esc(linkError)}</span>`
-      : (linksPage?.links ?? []).map((link, index) => linkSummary(link, index, "selected")).join("")
-        || '<span class="evidence-unresolved">No resolvable links reported.</span>'}</div></section></div>`;
-}
-
-export function renderEvidenceMarkup(state) {
+export function renderEvidenceMarkup(state, t = evidenceT) {
   const page = state.page;
-  const markers = (page?.markers ?? []).map(markerSummary).join("");
-  const results = [
-    ...state.records.map(recordSummary),
-    ...state.links.map((link, index) => linkSummary(link, index)),
-  ].join("");
-  const selectedMarkup = !state.selected ? "" : `<section class="evidence-detail">
-    <header><div><span class="eyebrow">Exact evidence item</span><h3>${esc(state.selected.meta?.record_id)}</h3></div>
-      <button type="button" data-evidence-raw>${state.raw ? "Readable view" : "Raw structured payload"}</button></header>
-    ${state.raw ? `<pre>${esc(JSON.stringify(state.selected, null, 2))}</pre>` : readable(state.selected, state.selectedLinks, state.traversalError)}</section>`;
-  const emptyText = state.criteria.kind === "memory"
-    ? "No accepted CP03 record exposes this memory motif/slot identity. GUI10 display fixtures are not durable evidence."
-    : "No evidence rows returned for this exact query.";
-  const queryState = state.status === "error" ? "error" : page?.state ?? state.status;
-  const queryLabel = state.status === "error"
-    ? "QUERY UNAVAILABLE" : state.status === "loading" ? "LOADING" : pageState(page);
-  const queryDetail = state.status === "error"
-    ? state.error ?? "Evidence query failed"
-    : state.status === "loading" ? "Awaiting bounded evidence page"
-      : page ? `${page.returned} returned / ${page.total_matches} exact matches` : "Ready";
-  const returnButton = state.returnAvailable
-    ? '<button type="button" data-evidence-return>Return to inspected object</button>' : "";
-  return `<div class="evidence-view"><header class="evidence-heading"><div><span class="eyebrow">GUI16 · Evidence &amp; Receipts</span>
-    <h2>Forensic provenance browser</h2></div><p>Literal CP03 records only. External payloads remain external unless the control plane exposes an exact record identity.</p>${returnButton}</header>
-    <div class="ui-glossary" aria-label="Evidence browser help"><span><strong>Exact identity</strong> searches a literal record/reference, not fuzzy text.</span><span><strong>Historical</strong> is inspection-only.</span><span><strong>Unavailable</strong> means the local evidence query surface is not connected.</span></div>
-    <form id="evidence-search-form" class="evidence-search"><label>Search by<select name="kind">${SEARCH_KINDS.map(([value, label]) =>
-      `<option value="${value}"${state.criteria.kind === value ? " selected" : ""}>${label}</option>`).join("")}</select></label>
-      <label>Exact identity<input name="value" value="${esc(state.criteria.value)}" autocomplete="off" /></label><button type="submit">Search</button></form>
-    <div class="evidence-query-state" data-state="${esc(queryState)}" role="${state.status === "error" ? "alert" : "status"}" aria-live="polite"><strong>${esc(queryLabel)}</strong><span>${esc(queryDetail)}</span></div>
-    ${state.traversalError ? `<div class="evidence-traversal-error" role="alert" aria-live="polite"><strong>Provenance traversal unavailable</strong><span>${esc(state.traversalError)}</span></div>` : ""}
-    ${markers ? `<section class="evidence-markers" aria-label="Omissions and degraded evidence">${markers}</section>` : ""}
-    <div class="evidence-results">${results || `<div class="evidence-empty">${emptyText}</div>`}</div>
-    ${page?.next_cursor ? '<button type="button" data-evidence-more>Load next bounded page</button>' : ""}${selectedMarkup}</div>`;
+  const failed = state.status === "error";
+  const loading = state.status === "loading";
+  const markers = markersMarkup(page?.markers, t);
+  const empty = loading ? t("evidence.results.pending") : failed ? t("evidence.query.failure")
+    : t(state.criteria.kind === "memory" ? "evidence.results.memoryEmpty" : "evidence.results.empty");
+  return `<div class="evidence-view" data-test-id="evidence-workspace">
+    <header class="evidence-heading"><div><h2>${esc(t("evidence.title"))}</h2><p>${esc(t("evidence.summary"))}</p></div>${originMarkup(state, t)}</header>
+    <section class="evidence-query" data-test-id="evidence-query">
+      <form class="evidence-search" data-test-id="evidence-query-form"><label>${esc(t("evidence.query.kind"))}<select name="kind" data-test-id="evidence-query-kind">${SEARCH_KINDS.map(([value]) => `<option value="${value}"${state.criteria.kind === value ? " selected" : ""}>${esc(t(`evidence.kind.${value}`))}</option>`).join("")}</select></label>
+      <label>${esc(t("evidence.query.identity"))}<input name="value" value="${esc(state.criteria.value)}" autocomplete="off" data-test-id="evidence-query-value" /></label><button type="submit" class="${controlClass("primary")}" data-test-id="evidence-query-submit">${esc(t("evidence.query.submit"))}</button></form>
+      <div class="evidence-query-state" data-state="${esc(failed ? "error" : page?.state ?? state.status)}" data-test-id="evidence-query-status" role="${failed ? "alert" : "status"}" aria-live="polite" aria-atomic="true">
+      ${failed ? `<strong>${esc(t("evidence.query.failure"))}</strong><span>${esc(t("evidence.query.recovery"))}</span>`
+    : loading ? `<strong>${esc(t("evidence.query.loading"))}</strong><span>${esc(t("evidence.query.waiting"))}</span>` : !page ? esc(t("evidence.query.ready")) : ""}
+      ${page ? pageStatus(page, t, "evidence-page-status") : ""}</div>
+      ${failed ? `<details class="ui-disclosure" data-test-id="evidence-query-error"><summary data-test-id="evidence-query-error-toggle">${esc(t("evidence.query.detail"))}</summary><code>${esc(state.error)}</code></details>` : ""}
+      <details class="evidence-help ui-disclosure" data-test-id="evidence-query-help"><summary data-test-id="evidence-query-help-toggle">${esc(t("evidence.query.help"))}</summary><p>${esc(t("evidence.query.guidance"))}</p></details>
+    </section>
+    ${markers ? `<section class="evidence-omissions" data-test-id="evidence-omissions"><h3>${esc(t("evidence.markers.title"))}</h3><ul class="evidence-markers">${markers}</ul></section>` : ""}
+    ${!state.selected && state.traversalError ? `<div role="alert" class="evidence-notice" data-test-id="evidence-traversal-error"><strong>${esc(t("evidence.links.failure"))}</strong><code>${esc(state.traversalError)}</code></div>` : ""}
+    <div class="evidence-workbench">
+      <section class="evidence-results" data-test-id="evidence-results" aria-busy="${loading}"><h3 tabindex="-1" data-test-id="evidence-results-heading">${esc(t("evidence.results.title"))}</h3>
+        ${state.records.length ? `<h4>${esc(t("evidence.results.records"))}</h4><ul class="evidence-record-list">${recordResults(state, t)}</ul>` : ""}
+        ${state.links.length ? `<h4>${esc(t("evidence.results.relationships"))}</h4><ul class="evidence-links">${linksMarkup(state.links, t)}</ul>` : ""}
+        ${!state.records.length && !state.links.length ? `<p class="evidence-empty" data-test-id="evidence-results-empty">${esc(empty)}</p>` : ""}
+        ${page?.next_cursor ? `<button type="button" class="${controlClass("secondary")}" data-test-id="evidence-more" data-evidence-more${loading ? " disabled" : ""}>${esc(t("evidence.query.more"))}</button>` : ""}
+      </section>
+      <div class="${surfaceClass("surface-1")} evidence-document">${recordDetail(state, t)}</div>
+    </div></div>`;
 }
