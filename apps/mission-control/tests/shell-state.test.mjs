@@ -233,3 +233,13 @@ test("inspector routes at least five stable object classes to owning views", () 
     assert.equal(opened.context, selected.context);
   }
 });
+
+test("synthetic Corrections selections cannot become owner or Evidence proof through the shell", () => {
+  for (const mode of ["LIVE","HISTORICAL"]) {
+    for (const tagged of [false,true]) {
+      const state = {view:"corrections",context:{mode,runId:"run",generation:7},selected:{kind:"correction",id:"capability:C.SUCCESSOR",...(tagged?{fixtureBacked:true}:{})}};
+      assert.equal(openEvidence(state),state);
+      assert.equal(openSelectionOwner(state),state);
+    }
+  }
+});

@@ -92,9 +92,10 @@ test("operator typography and explanatory surfaces use the shared visual languag
   assert.match(shell, /\.context-facts\s*\{[^}]*repeat\(3, minmax\(140px, 1fr\)\)/s);
   assert.doesNotMatch(shell, /\.selector\s*\{/);
   assert.match(shell, /\.ui-glossary\s*\{/);
-  for (const markup of [school, salience, corrections]) {
+  for (const markup of [school, salience]) {
     assert.match(markup, /class="ui-glossary"/);
   }
+  assert.doesNotMatch(corrections, /class="ui-glossary"/);
   assert.doesNotMatch(teacher, /class="ui-glossary"/);
   assert.match(teacher, /teacher-glossary/);
   assert.doesNotMatch(evidence, /class="ui-glossary"/);
