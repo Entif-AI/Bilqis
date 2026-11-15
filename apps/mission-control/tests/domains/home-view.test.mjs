@@ -134,6 +134,14 @@ test("Home pulse keeps observed and materialized time identities separate", () =
   assert.equal(model.pulse[0].materializedAt, 1_799_000_305);
 });
 
+test("Home fixtures never relabel generation coordinates as wall-clock time", () => {
+  const model = referenceHomeProjection();
+  assert.equal(model.pulse.every((event) => event.observedAt === null && event.materializedAt === null), true);
+  const markup = renderHomeMarkup(model);
+  assert.match(markup, /<time>Time unavailable<\/time>/);
+  assert.doesNotMatch(markup, /<time>4423[5-9]<\/time>/);
+});
+
 test("Home does not repeat the shell-owned Mission Control destination heading", () => {
   const markup = renderHomeMarkup(referenceHomeProjection());
   assert.doesNotMatch(markup, /<h1\b/i);

@@ -250,12 +250,12 @@ export function referenceHomeProjection() {
       strategy: row.strategy, recordId: row.id,
     }))),
     pulse: Object.freeze([
-      { kind: "gain", observedAt: 44239, capabilityId: retainedEpisode.capabilityId, before: "10/12", after: "12/12", target: { kind: "episode", id: retainedEpisode.recordId } },
-      { kind: "regress", observedAt: 44238, capabilityId: regression.id, detail: regression.lastRegression, target: { kind: "capability", id: regression.id } },
-      { kind: "retain", observedAt: 44239, capabilityId: retainedEpisode.capabilityId, reasonCode: retainedEpisode.retentionReason, target: { kind: "episode", id: retainedEpisode.recordId } },
-      { kind: "reject", observedAt: 44237, capabilityId: rejected[0].capabilityId, reasonCode: rejected[0].retentionReason, target: { kind: "episode", id: rejected[0].recordId } },
-      { kind: "source", observedAt: 44236, family: "future-source", target: { kind: "capability", id: "D.EVENT" } },
-      { kind: "correction", observedAt: 44235, count: 1, target: { kind: "correction", id: "correction:fixture:1" } },
+      { kind: "gain", observedAt: null, materializedAt: null, capabilityId: retainedEpisode.capabilityId, before: "10/12", after: "12/12", target: { kind: "episode", id: retainedEpisode.recordId } },
+      { kind: "regress", observedAt: null, materializedAt: null, capabilityId: regression.id, detail: regression.lastRegression, target: { kind: "capability", id: regression.id } },
+      { kind: "retain", observedAt: null, materializedAt: null, capabilityId: retainedEpisode.capabilityId, reasonCode: retainedEpisode.retentionReason, target: { kind: "episode", id: retainedEpisode.recordId } },
+      { kind: "reject", observedAt: null, materializedAt: null, capabilityId: rejected[0].capabilityId, reasonCode: rejected[0].retentionReason, target: { kind: "episode", id: rejected[0].recordId } },
+      { kind: "source", observedAt: null, materializedAt: null, family: "future-source", target: { kind: "capability", id: "D.EVENT" } },
+      { kind: "correction", observedAt: null, materializedAt: null, count: 1, target: { kind: "correction", id: "correction:fixture:1" } },
     ].map(Object.freeze)),
     attention: Object.freeze([
       Object.freeze({ kind: "stalled", severity: "attention", capabilities: "B.IFF · C.NUMBER", id: "B.IFF", target: { kind: "capability", id: "B.IFF" } }),
