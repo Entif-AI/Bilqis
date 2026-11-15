@@ -23,7 +23,10 @@ from bilqis_mlx.semantic_sampling import DEFAULT_BINARY_BALANCE
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, DependencyRef
 from bilqis_mlx.semantics.domains import contract_digest
 from .priority_planning_owner import priority_planning as _priority_planning
-from .priority_rejection_replay import current_rejections as _current_rejections
+from .priority_rejection_replay import (
+    current_rejections as _current_rejections,
+    rejection_recency as _rejection_recency,
+)
 
 
 _SCOPE = "factory/foundation"
@@ -134,11 +137,13 @@ def _priority_offers(source_context, parent, atlas_artifact_path, next_seed,
 
 
 def _priority_options(parent, release_sha256, offers, teacher_epoch, counter,
-                      last_selected, rejections, registry, signer, planning):
-    rejection_recency = {}
-    for offset, (capability, *_rest) in enumerate(rejections, start=1):
-        rejection_recency[capability] = counter + offset
-    now = counter + len(rejections)
+                      last_selected, rejection_count, rejection_positions,
+                      registry, signer, planning):
+    now = counter + rejection_count
+    rejection_recency = {
+        capability: counter + position
+        for capability, position in rejection_positions.items()
+    }
     policy = _policy(release_sha256,
                      (offer.source_family_id for _, offer in offers), now, signer)
     teacher_digest = contract_digest(teacher_epoch)
@@ -196,12 +201,14 @@ def issue_foundation_priority_authority(
     if progress is not None:
         progress("teacher: ranking priority options")
     rejections = _current_rejections(run_dir, parent, cache)
+    rejection_count, rejection_positions = _rejection_recency(run_dir, parent, cache)
     option_ids = {capability for capability, _ in offers}
-    if any(capability not in option_ids for capability, *_ in rejections):
+    if not set(rejection_positions).issubset(option_ids):
         _invalid("BAMF_PRIORITY_REJECTION_OPTION_DRIFT")
     now, policy, snapshot, options, evidence_rows = _priority_options(
         parent, source_context.release.release_sha256, offers, teacher_epoch,
-        counter, last_selected, rejections, registry, signer, planning)
+        counter, last_selected, rejection_count, rejection_positions,
+        registry, signer, planning)
     window = WindowPolicy(
         "bamf-foundation-window", "v1", policy.digest(),
         source_context.release.release_sha256, 2, now,
@@ -210,7 +217,10 @@ def issue_foundation_priority_authority(
                      "salience-policy:" + window.policy_id)
     evidence_by_id = dict(evidence_rows)
     history_events = []
-    for stable_id, visit_id, reason, receipt_sha256 in rejections:
+    # Rejection observations have no defect/action transition and therefore cannot
+    # nominate a procedure. Materialize only the active C06 window here; the full
+    # authenticated sequence remains authoritative in the rejection projection.
+    for stable_id, visit_id, reason, receipt_sha256 in rejections[-window.window_size:]:
         raw = SalienceEvent(
             "bamf-rejection:" + receipt_sha256, EventKind.OBSERVATION,
             f"{cache.run_id}:{cache.generation}:{cache.accepted_manifest_sha256}",

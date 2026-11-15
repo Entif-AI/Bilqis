@@ -76,6 +76,7 @@ def _validated_rejection(event, parent, cache):
     retained_step = evidence.get("retained_optimizer_step")
     reason = evidence.get("retention_reason")
     rejection_attempt_ordinal = evidence.get("rejection_attempt_ordinal")
+    rejection_journal_ordinal = evidence.get("rejection_journal_ordinal")
     if (not isinstance(selected, str) or not selected
             or not isinstance(visit_id, str) or not visit_id
             or type(candidate_step) is not int
@@ -84,17 +85,20 @@ def _validated_rejection(event, parent, cache):
             or not isinstance(reason, str) or not reason
             or (rejection_attempt_ordinal is not None
                 and (type(rejection_attempt_ordinal) is not int
-                     or rejection_attempt_ordinal < 1))):
+                     or rejection_attempt_ordinal < 1))
+            or (rejection_journal_ordinal is not None
+                and (type(rejection_journal_ordinal) is not int
+                     or rejection_journal_ordinal < 1))):
         _invalid("BAMF_PRIORITY_REJECTION_EVIDENCE_INVALID")
     return (
         receipt_sha256,
         (selected, visit_id, reason, receipt_sha256),
         rejection_attempt_ordinal,
+        rejection_journal_ordinal,
     )
 
 
-def current_rejections(run_dir, parent, cache):
-    """Project authenticated current-generation rejections from an append cursor."""
+def _current_projection(run_dir, parent, cache):
     journal = Path(run_dir) / "events.jsonl"
     path_key = str(Path(run_dir).absolute())
     identity = (
@@ -105,11 +109,32 @@ def current_rejections(run_dir, parent, cache):
         parent.retained_state.optimizer_step,
     )
     projection = _projection(identity)
-    return projection.refresh(
+    projection.refresh(
         journal,
         lambda event: _validated_rejection(event, parent, cache),
         _invalid,
     )
+    return projection
+
+
+def current_rejections(run_dir, parent, cache):
+    """O(1)-snapshot view of authenticated current-generation rejection rows."""
+    return _current_projection(run_dir, parent, cache).rows_view()
+
+
+def rejection_attempt_ordinals(run_dir, parent, cache, capability):
+    """Return next global and per-capability authenticated rejection ordinals."""
+    return _current_projection(run_dir, parent, cache).next_ordinals(capability)
+
+
+def rejection_pressure(run_dir, parent, cache, capability):
+    """Return bounded aggregates without folding the complete rejection sequence."""
+    return _current_projection(run_dir, parent, cache).pressure(capability)
+
+
+def rejection_recency(run_dir, parent, cache):
+    """Return total rejection count and latest global position for each capability."""
+    return _current_projection(run_dir, parent, cache).recency()
 
 
 def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps):
@@ -122,16 +147,8 @@ def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps)
     """
     from bilqis_mlx.learning.learning_experiment import candidate_step_budget
 
-    reasons = {}
-    consecutive_interference = 0
-    for selected, _visit_id, reason, _receipt in current_rejections(
-            run_dir, parent, cache):
-        if selected != capability:
-            continue
-        reasons[reason] = reasons.get(reason, 0) + 1
-        consecutive_interference = (
-            0 if reason == "NO_MEASURABLE_TARGET_GAIN"
-            else consecutive_interference + 1)
+    reasons, consecutive_interference = rejection_pressure(
+        run_dir, parent, cache, capability)
     projected_teacher = {
         "causal_experiment": {
             "capability_stagnation": {
@@ -145,4 +162,7 @@ def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps)
     return candidate_step_budget(configured_steps, projected_teacher, capability)
 
 
-__all__ = ("candidate_step_horizon", "current_rejections")
+__all__ = (
+    "candidate_step_horizon", "current_rejections", "rejection_attempt_ordinals",
+    "rejection_pressure", "rejection_recency",
+)

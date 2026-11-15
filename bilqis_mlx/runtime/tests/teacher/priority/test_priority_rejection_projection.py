@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from bilqis_mlx.errors import BilqisError
-from bilqis_mlx.runtime import checkpoint_outbox
+from bilqis_mlx.runtime import checkpoint_outbox, checkpoints
 from bilqis_mlx.runtime import priority_rejection_replay as rejection_replay
 from bilqis_mlx.runtime.bamf_bundle.records import canonical
 
@@ -38,10 +38,14 @@ def _cache(generation=2):
     )
 
 
-def _rejection(plane, ordinal, *, capability="capability:beta", generation=2):
+def _rejection(
+        plane, ordinal, *, capability="capability:beta", generation=2,
+        journal_ordinal=None):
     evidence = {
         "schema": "bilqis.bamf.c16.3-rejection/v2",
         "rejection_attempt_ordinal": ordinal,
+        **({"rejection_journal_ordinal": journal_ordinal}
+           if journal_ordinal is not None else {}),
         "visit_id": f"visit:{capability}:{ordinal}",
         "capability": capability,
         "selected_option_id": capability,
@@ -90,6 +94,10 @@ def _append(journal: Path, event):
         stream.write(json.dumps(event, sort_keys=True, separators=(",", ":")) + "\n")
 
 
+def _record(run_dir: Path, event):
+    checkpoints._record(run_dir, event)
+
+
 def test_rejection_projection_validates_only_newly_appended_events(monkeypatch, tmp_path):
     plane = CountingPlane()
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
@@ -97,7 +105,7 @@ def test_rejection_projection_validates_only_newly_appended_events(monkeypatch, 
     parent, cache = _parent(), _cache()
 
     for ordinal in range(1, 65):
-        _append(journal, _rejection(plane, ordinal))
+        _record(tmp_path, _rejection(plane, ordinal, journal_ordinal=ordinal))
         rows = rejection_replay.current_rejections(tmp_path, parent, cache)
         assert len(rows) == ordinal
 
@@ -125,8 +133,26 @@ def test_authenticated_rejection_ordinals_fail_closed_when_reordered(monkeypatch
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
-    second = _rejection(plane, 2)
-    first = _rejection(plane, 1)
+    second = _rejection(plane, 2, journal_ordinal=2)
+    first = _rejection(plane, 1, journal_ordinal=1)
+    _append(journal, second)
+    _append(journal, first)
+
+    with pytest.raises(BilqisError) as failure:
+        rejection_replay.current_rejections(tmp_path, parent, cache)
+
+    assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_ORDER_INVALID"
+
+
+def test_cross_capability_authenticated_order_is_global(monkeypatch, tmp_path):
+    plane = CountingPlane()
+    monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
+    journal = tmp_path / "events.jsonl"
+    parent, cache = _parent(), _cache()
+    first = _rejection(
+        plane, 1, capability="capability:alpha", journal_ordinal=1)
+    second = _rejection(
+        plane, 1, capability="capability:beta", journal_ordinal=2)
     _append(journal, second)
     _append(journal, first)
 
@@ -141,8 +167,8 @@ def test_generation_change_rebuilds_only_the_new_generation_projection(monkeypat
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent = _parent()
-    _append(journal, _rejection(plane, 1, generation=2))
-    _append(journal, _rejection(plane, 2, generation=2))
+    _record(tmp_path, _rejection(plane, 1, generation=2, journal_ordinal=1))
+    _record(tmp_path, _rejection(plane, 2, generation=2, journal_ordinal=2))
 
     generation_two = rejection_replay.current_rejections(tmp_path, parent, _cache(2))
     assert [row[1] for row in generation_two] == [
@@ -150,7 +176,7 @@ def test_generation_change_rebuilds_only_the_new_generation_projection(monkeypat
         "visit:capability:beta:2",
     ]
 
-    _append(journal, _rejection(plane, 1, generation=3))
+    _record(tmp_path, _rejection(plane, 1, generation=3, journal_ordinal=1))
     generation_three = rejection_replay.current_rejections(tmp_path, parent, _cache(3))
 
     assert [row[1] for row in generation_three] == ["visit:capability:beta:1"]
@@ -177,6 +203,33 @@ def test_hydrated_projection_fails_closed_if_verified_journal_prefix_is_rewritte
         encoding="utf-8",
     )
     os.utime(journal, ns=(journal.stat().st_atime_ns, before + 1_000_000_000))
+
+    with pytest.raises(BilqisError) as failure:
+        rejection_replay.current_rejections(tmp_path, parent, cache)
+
+    assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_JOURNAL_INVALID"
+
+
+def test_hydrated_projection_rejects_old_prefix_rewrite_followed_by_append(
+        monkeypatch, tmp_path):
+    plane = CountingPlane()
+    monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
+    journal = tmp_path / "events.jsonl"
+    parent, cache = _parent(), _cache()
+    events = [
+        _rejection(plane, ordinal, journal_ordinal=ordinal)
+        for ordinal in range(1, 6)
+    ]
+    for event in events[:4]:
+        _append(journal, event)
+    assert len(rejection_replay.current_rejections(tmp_path, parent, cache)) == 4
+
+    lines = journal.read_text(encoding="utf-8").splitlines()
+    forged = json.loads(lines[0])
+    forged["evidence"]["retention_reason"] = "retention_gato"
+    lines[0] = json.dumps(forged, sort_keys=True, separators=(",", ":"))
+    journal.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    _record(tmp_path, events[4])
 
     with pytest.raises(BilqisError) as failure:
         rejection_replay.current_rejections(tmp_path, parent, cache)
