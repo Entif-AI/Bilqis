@@ -232,6 +232,8 @@ def require_b11_source_feature_row(
     ):
         _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
     request.__post_init__()
+    if request.projection.digest != authority.motif_projection.digest:
+        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
     matches = tuple(
         row for frame_handle, member_handle, row in authority.motif_feature_rows
         if (frame_handle, member_handle)
