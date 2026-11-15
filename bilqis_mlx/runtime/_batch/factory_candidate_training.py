@@ -42,17 +42,43 @@ def _prepared_feature_context(prepared, semantic_context):
 
 def _realized_candidate_cost(
         start, loss_total, prepared, resource_plan, memory_budget, transaction,
-        feature_context, semantic_context_materialized_in_step, c08_metrics):
+        feature_context, semantic_context_materialized_in_step, c08_metrics,
+        stage_metrics, gradient):
     gradient_launches, vectorized_microbatches, materialization_barriers, \
         scalar_fallback_rows, logical_batch_wall_seconds = c08_metrics
+    b11 = getattr(gradient, "_performance_observation", {})
+    if not isinstance(b11, dict):
+        b11 = {}
     step_atlas_reloads = (
         feature_context.atlas_reload_count
         if semantic_context_materialized_in_step else 0)
     step_feature_rebuilds = (
         feature_context.feature_manifest_rebuild_count
         if semantic_context_materialized_in_step else 0)
+    elapsed = time.perf_counter() - start
     return {
-        "wall_seconds": time.perf_counter() - start,
+        "wall_seconds": elapsed,
+        "candidate_step_wall_seconds": (
+            elapsed + stage_metrics["upstream_currentness_binding_wall_seconds"]),
+        "pre_neural_source_compile_wall_seconds": stage_metrics[
+            "pre_neural_source_compile_wall_seconds"],
+        "currentness_binding_wall_seconds": stage_metrics[
+            "currentness_binding_wall_seconds"],
+        "b11_preflight_wall_seconds": float(
+            b11.get("b11_preflight_wall_seconds", 0.0)),
+        "b11_autodiff_wall_seconds": float(
+            b11.get("b11_autodiff_wall_seconds", 0.0)),
+        "optimizer_admission_wall_seconds": stage_metrics[
+            "optimizer_admission_wall_seconds"],
+        "motif_staging_wall_seconds": stage_metrics[
+            "motif_staging_wall_seconds"],
+        "candidate_terminal_step": stage_metrics["candidate_terminal_step"],
+        "b11_provider_draw_count": int(b11.get("b11_provider_draw_count", 0)),
+        "b11_atlas_reload_count": int(b11.get("b11_atlas_reload_count", 0)),
+        "logical_rows": len(prepared.compiled_rows),
+        "compiled_positions": sum(
+            len(item.compiled.compiled.rows[0].positions)
+            for item in prepared.compiled_rows),
         "loss_total": float(loss_total.item()),
         "c08_estimated_peak_bytes": resource_plan.estimated_peak_bytes,
         "c08_memory_budget_bytes": memory_budget.allocation_bytes,
@@ -80,7 +106,9 @@ def _execute_prepared_candidate(
         salience_supervision=None, candidate=None, currentness_transaction=None,
         semantic_context=None,
         semantic_context_materialized_in_step=False,
+        stage_metrics=None,
         finalize_candidate=True) -> FactoryCandidateStep:
+    stage_metrics = dict(stage_metrics or {})
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
     feature_context = _prepared_feature_context(prepared, semantic_context)
     parameters = dict((parent.retained_state.optimizer if candidate is None
@@ -92,11 +120,14 @@ def _execute_prepared_candidate(
             feature_context.snapshot, generation, cache,
             salience_supervision=salience_supervision)
         authorities, target_rows = (authority,), (targets,)
+        optimizer_started = time.perf_counter()
         transaction = admit_uninterrupted_candidate_step(
             Path(run_dir), parent, loss_bearing_target=True,
             gradient_execution=gradient, teacher_hparams=teacher_hparams,
             max_norm=max_norm, candidate=candidate, execution_cache=cache,
             currentness_transaction=currentness_transaction)
+        stage_metrics["optimizer_admission_wall_seconds"] = (
+            time.perf_counter() - optimizer_started)
         loss_total = gradient.loss_total
         c08_metrics = (1, 0, 1, 0, None)
     else:
@@ -104,6 +135,7 @@ def _execute_prepared_candidate(
             parameters, prepared, source_context, feature_context.snapshot,
             generation, cache, resource_plan,
             salience_supervision=salience_supervision)
+        optimizer_started = time.perf_counter()
         transaction = admit_uninterrupted_candidate_step(
             Path(run_dir), parent, loss_bearing_target=True,
             logical_batch_execution=gradient,
@@ -112,17 +144,25 @@ def _execute_prepared_candidate(
             teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
             execution_cache=cache,
             currentness_transaction=currentness_transaction)
+        stage_metrics["optimizer_admission_wall_seconds"] = (
+            time.perf_counter() - optimizer_started)
         loss_total = gradient.weighted_mean_loss
         c08_metrics = (
             gradient.gradient_launches, gradient.vectorized_microbatches,
             gradient.materialization_barriers, gradient.scalar_fallback_rows,
             gradient.wall_seconds)
+    motif_started = time.perf_counter()
     if finalize_candidate:
         transaction = _stage_retained_motifs(
             run_dir, parent, cache, transaction, prepared, resource_plan, memory_budget)
+    stage_metrics["motif_staging_wall_seconds"] = (
+        time.perf_counter() - motif_started if finalize_candidate else 0.0)
+    stage_metrics["candidate_terminal_step"] = finalize_candidate
     cost = _realized_candidate_cost(
         start, loss_total, prepared, resource_plan, memory_budget, transaction,
-        feature_context, semantic_context_materialized_in_step, c08_metrics)
+        feature_context, semantic_context_materialized_in_step, c08_metrics,
+        stage_metrics, gradient)
+    evidence_started = time.perf_counter()
     capture_realized_delivery(
         prepared.training_batch, source_context, observation.capture,
         capability, observation.step, tuple(delivered_rows),
@@ -132,6 +172,11 @@ def _execute_prepared_candidate(
         guidance=observation.guidance, controls=observation.controls,
         seed=observation.seed, cost=cost, prior=observation.prior,
         mentors=observation.mentors)
+    cost["evidence_capture_wall_seconds"] = time.perf_counter() - evidence_started
+    elapsed = time.perf_counter() - start
+    cost["wall_seconds"] = elapsed
+    cost["candidate_step_wall_seconds"] = (
+        elapsed + stage_metrics["upstream_currentness_binding_wall_seconds"])
     diagnostics = _reporting_diagnostics(gradient, capture_diagnostics)
     return FactoryCandidateStep(
         prepared, resource_plan,
@@ -191,6 +236,7 @@ def execute_factory_candidate_step(
     candidate=None,
     finalize_candidate: bool = True,
     currentness_transaction=None,
+    currentness_binding_wall_seconds: float = 0.0,
     semantic_context=None,
     prepared_source=None,
 ) -> FactoryCandidateStep:
@@ -206,9 +252,18 @@ def execute_factory_candidate_step(
             or type(finalize_candidate) is not bool):
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
     start = time.perf_counter()
+    binding_started = time.perf_counter()
     cache, generation = _candidate_cache_and_generation(
         run_dir, source_context, parent, candidate, currentness_transaction)
+    stage_metrics = {
+        "upstream_currentness_binding_wall_seconds": float(
+            currentness_binding_wall_seconds),
+        "currentness_binding_wall_seconds": (
+            float(currentness_binding_wall_seconds)
+            + time.perf_counter() - binding_started),
+    }
     semantic_context_materialized_in_step = semantic_context is None
+    pre_neural_started = time.perf_counter()
     prepared = prepare_factory_training_batch(
         source_context, parent, atlas_artifact_path, feature_artifact_path,
         delivered_rows, generation, capability=capability, delivery=delivery,
@@ -225,6 +280,8 @@ def execute_factory_candidate_step(
             _invalid("BAMF_SALIENCE_PROVIDER_REQUIRED")
         prepared, supervision = prepare_salience_training(
             prepared, source_context, salience_provider(prepared))
+    stage_metrics["pre_neural_source_compile_wall_seconds"] = (
+        time.perf_counter() - pre_neural_started)
     return _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows,
         capability=capability, teacher_hparams=teacher_hparams,
@@ -234,7 +291,8 @@ def execute_factory_candidate_step(
         salience_supervision=supervision, candidate=candidate,
         currentness_transaction=currentness_transaction,
         finalize_candidate=finalize_candidate, semantic_context=semantic_context,
-        semantic_context_materialized_in_step=semantic_context_materialized_in_step)
+        semantic_context_materialized_in_step=semantic_context_materialized_in_step,
+        stage_metrics=stage_metrics)
 
 
 __all__ = (

@@ -5,6 +5,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import time
 from weakref import WeakKeyDictionary
 
 from bilqis_mlx.factory.teaching import describe_delivered_teaching
@@ -190,6 +191,7 @@ def execute_accepted_priority_candidate(selection, source_context,
     from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
         refresh_accepted_currentness,
     )
+    currentness_started = time.perf_counter()
     refresh_accepted_currentness(
         planning_generation._accepted_currentness, planning_generation._parent)
     parent, cache = selection.offer.require_current_parent(source_context)
@@ -202,6 +204,7 @@ def execute_accepted_priority_candidate(selection, source_context,
         if prepared_source_rows is None else
         selection.offer.require_current(
             source_context, parent, prepared_rows=prepared_source_rows))
+    currentness_wall_seconds = time.perf_counter() - currentness_started
     policy = selection.policy
     lr = policy.get('lr') if isinstance(policy, dict) else None
     if (type(teacher_hparams) is not AdamWHyperparameters or type(lr) not in (int, float)
@@ -226,5 +229,6 @@ def execute_accepted_priority_candidate(selection, source_context,
         capture_diagnostics=capture_diagnostics, candidate=candidate,
         finalize_candidate=finalize_candidate,
         currentness_transaction=planning_generation._accepted_currentness,
+        currentness_binding_wall_seconds=currentness_wall_seconds,
         semantic_context=semantic_context,
         prepared_source=prepared_source)

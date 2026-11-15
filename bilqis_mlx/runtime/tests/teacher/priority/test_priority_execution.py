@@ -152,6 +152,7 @@ def test_execution_reuses_authenticated_planning_parent(priority):
     assert execute.call_args.args[2] == 'planned-parent'
     assert execute.call_args.kwargs['semantic_context'] == 'semantic-context'
     assert execute.call_args.kwargs['currentness_transaction'] == 'currentness'
+    assert execute.call_args.kwargs['currentness_binding_wall_seconds'] >= 0.0
 
 
 def test_accepted_priority_school_derives_all_admitted_grades_and_student(priority):

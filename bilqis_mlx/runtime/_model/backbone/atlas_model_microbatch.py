@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import time
 
 import mlx.core as mx
 
@@ -32,6 +33,9 @@ from .microbatch.route_kernel import (
 )
 from bilqis_mlx.runtime.autodiff_trace import defer_host_tensor_validation
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
+from bilqis_mlx.b11_observation import (
+    attach_performance_observation, source_replay_observation,
+)
 
 
 _MIN_ROWS = 2
@@ -163,66 +167,78 @@ def _bamf_microbatch_value_and_grad_impl(
     snapshot = answer_plans[0].snapshot
     if any(plan.snapshot != snapshot for plan in answer_plans):
         _invalid("B11_MICROBATCH_SEMANTIC_SNAPSHOT_MISMATCH")
-    _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
-    rebind_execution = _gradient_execution_rebinder(
-        params, cache, spec=backend.topology, extents=batch.compiled.extents,
-        generation=generation)
-    preflight_executions = microbatch_trace_preflight(
-        backend, params, batch, row_batches, answer_plans, targets, masks,
-        generation, cache, rebind_execution, salience_supervision, snapshot)
-    route_vectorized = route_microbatch_compatible(
-        row_batches, answer_plans, targets, masks)
-    refinement_selections = (
-        prepare_refinement_selections(row_batches, answer_plans, generation)
-        if route_vectorized else None)
-    route_kernel = (
-        prepare_route_microbatch_kernel(
-            row_batches, answer_plans, targets, masks, preflight_executions,
-            salience_labels)
-        if route_vectorized else None)
-    holder = {}
+    with source_replay_observation() as replay:
+        preflight_started = time.perf_counter()
+        _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
+        rebind_execution = _gradient_execution_rebinder(
+            params, cache, spec=backend.topology, extents=batch.compiled.extents,
+            generation=generation)
+        preflight_executions = microbatch_trace_preflight(
+            backend, params, batch, row_batches, answer_plans, targets, masks,
+            generation, cache, rebind_execution, salience_supervision, snapshot)
+        route_vectorized = route_microbatch_compatible(
+            row_batches, answer_plans, targets, masks)
+        refinement_selections = (
+            prepare_refinement_selections(row_batches, answer_plans, generation)
+            if route_vectorized else None)
+        route_kernel = (
+            prepare_route_microbatch_kernel(
+                row_batches, answer_plans, targets, masks, preflight_executions,
+                salience_labels)
+            if route_vectorized else None)
+        preflight_wall_seconds = time.perf_counter() - preflight_started
+        holder = {}
 
-    def objective(current):
-        with defer_host_tensor_validation():
-            execution_binding = rebind_execution(current)
-            producer, accepted_cache, _capture_derived_cache = _source_producer(
-                current, batch, generation, cache, execution_binding,
-                trace=True, snapshot=snapshot)
-            hidden = _finalize_source_hidden(
-                producer, accepted_cache, batch, capture_derived_cache=False)
-            if hidden.shape[0] != len(row_batches):
-                _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
-            if not route_vectorized:
-                executions = []
-                total = mx.array(0.0, dtype=mx.float32)
-                for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
-                        row_batches, answer_plans, targets, masks)):
-                    output = _decode_bamf_producer_row(
-                        backend, current, row_batch, plan, producer, hidden, index,
-                        accepted_cache, execution_binding, refinement_training=True,
-                        trace=True,
-                        replay_output=preflight_executions[index].output)
-                    execution = loss_bearing_bamf(
-                        output, row_targets, mask,
-                        salience_supervision=salience_supervision,
-                        validate_finite=False)
-                    executions.append(execution)
-                    total = total + execution.loss.total
-                holder["executions"] = tuple(executions)
-                return total / len(row_batches)
-            salience_hidden = hidden
-            refined = batched_refine_hidden(
-                current, row_batches, producer, hidden, refinement_selections)
-            return route_microbatch_mean_loss(
-                current, refined, route_kernel, salience_hidden=salience_hidden)
+        def objective(current):
+            with defer_host_tensor_validation():
+                execution_binding = rebind_execution(current)
+                producer, accepted_cache, _capture_derived_cache = _source_producer(
+                    current, batch, generation, cache, execution_binding,
+                    trace=True, snapshot=snapshot)
+                hidden = _finalize_source_hidden(
+                    producer, accepted_cache, batch, capture_derived_cache=False)
+                if hidden.shape[0] != len(row_batches):
+                    _invalid("B11_MICROBATCH_HIDDEN_BATCH_MISMATCH")
+                if not route_vectorized:
+                    executions = []
+                    total = mx.array(0.0, dtype=mx.float32)
+                    for index, (row_batch, plan, row_targets, mask) in enumerate(zip(
+                            row_batches, answer_plans, targets, masks)):
+                        output = _decode_bamf_producer_row(
+                            backend, current, row_batch, plan, producer, hidden, index,
+                            accepted_cache, execution_binding, refinement_training=True,
+                            trace=True,
+                            replay_output=preflight_executions[index].output)
+                        execution = loss_bearing_bamf(
+                            output, row_targets, mask,
+                            salience_supervision=salience_supervision,
+                            validate_finite=False)
+                        executions.append(execution)
+                        total = total + execution.loss.total
+                    holder["executions"] = tuple(executions)
+                    return total / len(row_batches)
+                salience_hidden = hidden
+                refined = batched_refine_hidden(
+                    current, row_batches, producer, hidden, refinement_selections)
+                return route_microbatch_mean_loss(
+                    current, refined, route_kernel, salience_hidden=salience_hidden)
 
-    mean_loss, gradients = mx.value_and_grad(objective)(params)
-    mx.eval(mean_loss, gradients)
+        autodiff_started = time.perf_counter()
+        mean_loss, gradients = mx.value_and_grad(objective)(params)
+        mx.eval(mean_loss, gradients)
+        autodiff_wall_seconds = time.perf_counter() - autodiff_started
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     executions = None if route_vectorized else holder.get("executions")
-    return finalize_microbatch_gradient(
+    result = finalize_microbatch_gradient(
         backend, batch, row_batches, preflight_executions,
         executions, mean_loss, gradients)
+    attach_performance_observation(result, {
+        "b11_preflight_wall_seconds": float(preflight_wall_seconds),
+        "b11_autodiff_wall_seconds": float(autodiff_wall_seconds),
+        "b11_provider_draw_count": replay["provider_draws"],
+        "b11_atlas_reload_count": replay["atlas_reloads"],
+    })
+    return result
 
 
 def bamf_microbatch_value_and_grad(

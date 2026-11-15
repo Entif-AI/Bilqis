@@ -31,6 +31,7 @@ from bilqis_mlx.runtime.priority_rejection_replay import (
 )
 from .evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root
 from .locking import bamf_operator_lock
+from .performance import measure_observed_phase, observe_completed_step
 from .telemetry import TrainerObservation
 from .session_support import (
     BamfPreparedVisit, _execution_context, _resource_observation, _step_seed,
@@ -102,9 +103,7 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
         if candidate.update_steps != ordinal:
             _invalid("BAMF_C16_3_CANDIDATE_HORIZON_DRIFT")
         steps.append(step)
-        if observer is not None:
-            observer.update(candidate_step=candidate.update_steps,
-                            candidate_optimizer_step=candidate.parent.optimizer_step + candidate.update_steps)
+        observe_completed_step(observer, step, candidate)
         if getattr(candidate, "motif_transition", None) is not None:
             break
     return steps, capture
@@ -154,14 +153,16 @@ def _retention_result(
     if observer is not None:
         observer.update(phase="RETENTION")
     _emit_progress(progress, "evaluating retention evidence")
-    evaluation = evaluate_factory_retention_candidate(
-        context, step.transaction, atlas_path, capability, run_dir=run_dir,
-        **({"observer": lambda fields: observer.update(**fields)}
-           if observer is not None else {}))
-    decision = issue_factory_retention_decision(evaluation)
-    retained = resolve_candidate(step.transaction, accepted=decision.accepted)
-    candidate_evidence = capture.finalize(
-        accepted=decision.accepted, decision=decision.to_record())
+    with measure_observed_phase(observer, "retention_wall_seconds"):
+        evaluation = evaluate_factory_retention_candidate(
+            context, step.transaction, atlas_path, capability, run_dir=run_dir,
+            **({"observer": lambda fields: observer.update(**fields)}
+               if observer is not None else {}))
+        decision = issue_factory_retention_decision(evaluation)
+        retained = resolve_candidate(step.transaction, accepted=decision.accepted)
+    with measure_observed_phase(observer, "evidence_finalization_wall_seconds"):
+        candidate_evidence = capture.finalize(
+            accepted=decision.accepted, decision=decision.to_record())
     successor = None
     if decision.accepted:
         resource = _resource_observation(
@@ -282,16 +283,17 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
     if observer is not None:
         observer.update(phase="PUBLISHING")
     _emit_progress(progress, "publishing accepted successor checkpoint")
-    accept_and_publish(
-        run_dir, successor, retained, decision=decision,
-        feature_sha256=successor.extents.factor_map_digest,
-        reserve_gib=reserve_gib,
-        training_authorities=step.transaction.training_authorities,
-        publication_observer=(
-            (lambda metrics: observer.update(**{
-                "publication_" + key: value
-                for key, value in metrics.to_record().items()}))
-            if observer is not None else None))
+    with measure_observed_phase(observer, "publishing_wall_seconds"):
+        accept_and_publish(
+            run_dir, successor, retained, decision=decision,
+            feature_sha256=successor.extents.factor_map_digest,
+            reserve_gib=reserve_gib,
+            training_authorities=step.transaction.training_authorities,
+            publication_observer=(
+                (lambda metrics: observer.update(**{
+                    "publication_" + key: value
+                    for key, value in metrics.to_record().items()}))
+                if observer is not None else None))
     return "ACCEPTED"
 
 def operate_bamf(

@@ -8,16 +8,24 @@ import time
 from bilqis_mlx.mission_control.contracts.model import (
     AuthorityClass, CoverageState, RecordMeta, is_time,
 )
-from bilqis_mlx.mission_control.contracts.trainer import TrainerObservation
+from bilqis_mlx.mission_control.contracts.trainer import (
+    TrainerObservation, TrainerObservationV2,
+)
 
 
 MAX_BYTES = 64 * 1024
 MAX_VISITS = 8
 MAX_HEARTBEAT_AGE_MS = 10_000
 MAX_FUTURE_SKEW_MS = 5_000
-_SCHEMA = 'bilqis.bamf.trainer-observed/v1'
+_SCHEMAS = {
+    'bilqis.bamf.trainer-observed/v1',
+    'bilqis.bamf.trainer-observed/v2',
+}
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
+_V2_FIELDS = {field.name for field in fields(TrainerObservationV2)} - {
+    'meta', 'posture', 'connection_state'}
+_V2_ONLY = _V2_FIELDS - _FIELDS
 
 
 def process_exists(pid: int) -> bool:
@@ -53,9 +61,12 @@ def _record(row, runs, now_ms):
         authority=AuthorityClass.MEASURED,
         source_refs=(f"trainer-observed:{row['observation_id']}",),
     )
-    return TrainerObservation(
+    record_type = (
+        TrainerObservationV2 if _V2_ONLY <= set(row) else TrainerObservation)
+    record_fields = _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS
+    return record_type(
         meta=meta, posture='OBSERVED', connection_state=state,
-        **{key: row[key] for key in _FIELDS},
+        **{key: row[key] for key in record_fields},
     )
 
 
@@ -68,7 +79,7 @@ def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObserv
         if len(raw) > MAX_BYTES:
             return ()
         payload = json.loads(raw)
-        if (not isinstance(payload, dict) or payload.get('schema') != _SCHEMA
+        if (not isinstance(payload, dict) or payload.get('schema') not in _SCHEMAS
                 or not isinstance(payload.get('visits'), list)
                 or len(payload['visits']) > MAX_VISITS):
             return ()

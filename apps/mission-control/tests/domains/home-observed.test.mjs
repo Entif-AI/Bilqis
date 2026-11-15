@@ -63,6 +63,44 @@ test("generation zero shows observed retention and separates accepted coordinate
   assert.equal(model.runtime.retainedCandidates, 0);
 });
 
+test("v2 observation exposes completed-step stage timing and hidden B11 multiplicity", () => {
+  const row = observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v2",
+    candidate_step_wall_seconds: 1.5,
+    pre_neural_source_compile_wall_seconds: 0.2,
+    currentness_binding_wall_seconds: 0.05,
+    b11_preflight_wall_seconds: 0.3,
+    b11_autodiff_wall_seconds: 0.6,
+    optimizer_admission_wall_seconds: 0.2,
+    motif_staging_wall_seconds: 0.0,
+    evidence_capture_wall_seconds: 0.01,
+    candidate_terminal_step: true,
+    c08_gradient_launches: 2,
+    c08_vectorized_microbatches: 1,
+    c08_materialization_barriers: 1,
+    c08_scalar_fallback_rows: 0,
+    c08_logical_batch_wall_seconds: 0.9,
+    c08_rows_per_gradient_launch: 4,
+    b11_provider_draw_count: 32,
+    b11_atlas_reload_count: 8,
+    logical_rows: 8,
+    compiled_positions: 64,
+    retention_wall_seconds: 0.4,
+    evidence_finalization_wall_seconds: 0.02,
+    publishing_wall_seconds: 0.1,
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Latest completed step performance/);
+  assert.match(html, /Step wall time<\/dt><dd>1.5 s/);
+  assert.match(html, /Source \+ compile<\/dt><dd>200 ms/);
+  assert.match(html, /B11 provider draws<\/dt><dd>32/);
+  assert.match(html, /B11 Atlas reloads<\/dt><dd>8/);
+  assert.match(html, /Terminal candidate step<\/dt><dd>Yes/);
+  assert.equal(model.observed.current.schema_version,
+    "bilqis.bamf.mission-control.trainer-observation/v2");
+});
+
 test("epoch-millisecond trainer heartbeat projected to Unix seconds renders near the real observation time", () => {
   const heartbeatMs = Date.UTC(2026, 10, 15, 13, 0, 0, 123);
   const projectedSeconds = Math.floor(heartbeatMs / 1000);

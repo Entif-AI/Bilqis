@@ -7,6 +7,7 @@ from typing import Callable, Mapping
 
 import mlx.core as mx
 
+from bilqis_mlx.b11_observation import attach_performance_observation
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.atlas_model import (
     BamfGradientExecution, BamfMicrobatchGradientExecution,
@@ -94,6 +95,16 @@ def _scale_tree(gradients, scale: float):
             for name, value in gradients.items()}
 
 
+def _add_b11_observation(total: dict, execution) -> None:
+    observed = getattr(execution, "_performance_observation", None)
+    if not isinstance(observed, dict):
+        return
+    for name in ("b11_preflight_wall_seconds", "b11_autodiff_wall_seconds"):
+        total[name] += float(observed.get(name, 0.0))
+    for name in ("b11_provider_draw_count", "b11_atlas_reload_count"):
+        total[name] += int(observed.get(name, 0))
+
+
 def accumulate_logical_batch_gradients(
         plan: BatchPlan,
         execute_row: Callable[[int], BamfGradientExecution],
@@ -114,12 +125,19 @@ def accumulate_logical_batch_gradients(
     gradient_launches = 0
     vectorized_microbatches = 0
     scalar_fallback_rows = 0
+    b11_observation = {
+        "b11_preflight_wall_seconds": 0.0,
+        "b11_autodiff_wall_seconds": 0.0,
+        "b11_provider_draw_count": 0,
+        "b11_atlas_reload_count": 0,
+    }
     for group in plan.groups:
         microbatch = execute_group(group) if execute_group is not None and len(group) > 1 else None
         if microbatch is not None:
             if type(microbatch) is not BamfMicrobatchGradientExecution:
                 _invalid("C08_LOGICAL_BATCH_MICROBATCH_EXECUTION_REQUIRED")
             microbatch.__post_init__()
+            _add_b11_observation(b11_observation, microbatch)
             if (len(microbatch.executions) != len(group)
                     or any(execution.output.generation_binding != plan.generation_binding
                            for execution in microbatch.executions)):
@@ -142,6 +160,7 @@ def accumulate_logical_batch_gradients(
             if type(execution) is not BamfGradientExecution:
                 _invalid("C08_LOGICAL_BATCH_B11_EXECUTION_REQUIRED")
             execution.__post_init__()
+            _add_b11_observation(b11_observation, execution)
             if execution.execution.output.generation_binding != plan.generation_binding:
                 _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
             group_sum = _sum_tree(group_sum, execution.gradients)
@@ -174,6 +193,7 @@ def accumulate_logical_batch_gradients(
         ("_issuance", _ISSUER),
     ):
         object.__setattr__(result, name, value)
+    attach_performance_observation(result, b11_observation)
     result.__post_init__()
     return result
 

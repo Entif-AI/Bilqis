@@ -19,11 +19,13 @@ class TrainerObservationTests(unittest.TestCase):
                     obs.update(candidate_step=1)
                     obs.finish('HELD')
             data = json.loads((root / 'trainer-observed.json').read_text())
+            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v2')
             self.assertEqual(len(data['visits']), 8)
             self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
             self.assertGreater(data['visits'][-1]['revision'], 3)
             self.assertEqual(data['visits'][-1]['candidate_step'], 1)
             self.assertEqual(data['visits'][-1]['run_id'], 'run')
+            self.assertIsNone(data['visits'][-1]['b11_preflight_wall_seconds'])
             with self.assertRaises(KeyboardInterrupt):
                 with TrainerObservation(root, 10):
                     raise KeyboardInterrupt()
