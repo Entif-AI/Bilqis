@@ -292,7 +292,9 @@ test("production Memory dependency graph contains no fixture module", () => {
 });
 
 test("owned Memory human copy is routed through the Memory message catalog", () => {
-  const source = fs.readFileSync(path.join(rendererRoot, "memory/memory-view.mjs"), "utf8");
+  const source = ["memory-view.mjs", "memory-fixture-panels.mjs"]
+    .map(name => fs.readFileSync(path.join(rendererRoot, "memory", name), "utf8"))
+    .join("\n");
   for (const legacyLiteral of ["Engram memory summary", "Aggregate → page → stable motif", "Motif inspector", "Rejected candidate boundary", "Historical memory"]) {
     assert.equal(source.includes(legacyLiteral), false, legacyLiteral);
   }

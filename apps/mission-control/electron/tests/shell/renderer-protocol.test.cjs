@@ -105,6 +105,7 @@ test("renderer protocol resolves only the checked-in Mission Control asset allow
     "/learning/query.mjs",
     "/learning/view.mjs",
     "/memory/memory-fixture.mjs",
+    "/memory/memory-fixture-panels.mjs",
     "/memory/memory-atlas.css",
     "/memory/memory-core.css",
     "/memory/memory-evidence.css",
