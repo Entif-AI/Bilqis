@@ -5,6 +5,7 @@ from pathlib import Path
 from ...factory.adapters import RegisteredSourceAdapter
 from ...factory.source_identity import canonical_source_adapter
 from ...generated_assessment import digest
+from bilqis_mlx.b11_observation import note_provider_draw
 from ..atlas_projection import FrozenAtlasSnapshot
 from ..context_eligibility import (
     PUBLIC_FORMAL, ApprovedContextProjection, ContextPolicy, SourceFrontier,
@@ -146,6 +147,7 @@ def verify_draw(adapter, row, source_root, graph, span, seed, each, profile, cou
     if profile is not None:
         arguments["profile_parameters"] = profile
     try:
+        note_provider_draw()
         rows = adapter.draw(**arguments)
     except (KeyError, TypeError, ValueError):
         _adapter_fail("BAMF_CONTEXT_PUBLIC_FORMAL_DRAW_PROVENANCE_INVALID",

@@ -1,0 +1,80 @@
+"""Best-effort live performance projection for the BAMF operator."""
+from __future__ import annotations
+
+from contextlib import contextmanager
+import time
+
+
+STEP_COST_FIELDS = (
+    "candidate_step_wall_seconds",
+    "pre_neural_source_compile_wall_seconds",
+    "currentness_binding_wall_seconds",
+    "b11_preflight_wall_seconds",
+    "b11_autodiff_wall_seconds",
+    "optimizer_admission_wall_seconds",
+    "motif_staging_wall_seconds",
+    "evidence_capture_wall_seconds",
+    "candidate_terminal_step",
+    "c08_gradient_launches",
+    "c08_vectorized_microbatches",
+    "c08_materialization_barriers",
+    "c08_scalar_fallback_rows",
+    "c08_logical_batch_wall_seconds",
+    "c08_rows_per_gradient_launch",
+    "b11_provider_draw_count",
+    "b11_atlas_reload_count",
+    "logical_rows",
+    "compiled_positions",
+)
+
+VISIT_PERFORMANCE_FIELDS = (
+    "retention_wall_seconds",
+    "evidence_finalization_wall_seconds",
+    "publishing_wall_seconds",
+)
+
+PERFORMANCE_FIELDS = STEP_COST_FIELDS + VISIT_PERFORMANCE_FIELDS
+
+
+def observe_completed_step(observer, step, candidate) -> None:
+    """Publish only already-realized host facts; never affect execution."""
+    if observer is None:
+        return
+    try:
+        cost = getattr(step, "realized_cost", {})
+        fields = {
+            name: cost[name] for name in STEP_COST_FIELDS
+            if isinstance(cost, dict) and name in cost
+        }
+        observer.update(
+            candidate_step=candidate.update_steps,
+            candidate_optimizer_step=candidate.parent.optimizer_step
+            + candidate.update_steps,
+            **fields,
+        )
+    except Exception:
+        pass
+
+
+@contextmanager
+def measure_observed_phase(observer, field: str):
+    """Time an existing host boundary without adding device synchronization."""
+    started = time.perf_counter()
+    try:
+        yield
+    finally:
+        if observer is not None:
+            try:
+                stage = getattr(observer, "stage", None)
+                if callable(stage):
+                    stage(**{field: time.perf_counter() - started})
+                else:
+                    observer.update(**{field: time.perf_counter() - started})
+            except Exception:
+                pass
+
+
+__all__ = (
+    "PERFORMANCE_FIELDS", "STEP_COST_FIELDS", "VISIT_PERFORMANCE_FIELDS",
+    "measure_observed_phase", "observe_completed_step",
+)

@@ -5,7 +5,7 @@ import hashlib
 import json
 from types import MappingProxyType
 
-from .contracts.trainer import TrainerObservation
+from .contracts.trainer import TrainerObservation, TrainerObservationV2
 from .contracts.codec import encode_record
 from .contracts.dossier import CapabilityDossier
 from .contracts.envelopes import (
@@ -37,7 +37,8 @@ from .semantic import (
 
 FAMILY_TYPES = MappingProxyType({
     QueryFamily.RECORD: ALL_RECORD_TYPES,
-    QueryFamily.RUN: (RunContext, OperatorView, TrainerObservation),
+    QueryFamily.RUN: (
+        RunContext, OperatorView, TrainerObservation, TrainerObservationV2),
     QueryFamily.SCHOOL: (SchoolSnapshot, CurriculumFrontier),
     QueryFamily.CAPABILITY: (CapabilitySnapshot, CapabilityDossier),
     QueryFamily.EPISODE: (LearningEpisode, CandidateDecision),
@@ -114,8 +115,11 @@ def _current_identity(record: WireRecord):
     run = record.meta.run
     if run is None:
         return None
-    base = (run.run_id, type(record))
-    if type(record) is TrainerObservation:
+    record_type = (
+        TrainerObservation if isinstance(record, TrainerObservation)
+        else type(record))
+    base = (run.run_id, record_type)
+    if isinstance(record, TrainerObservation):
         return (*base, record.observation_id)
     if type(record) is CapabilitySnapshot:
         return (*base, record.capability_id)

@@ -11,6 +11,7 @@ from ..semantics.source_atom_binding import (
 )
 from .school import live_source_registry
 from .atoms.authority import project_verified_row, require_canonical_graph
+from bilqis_mlx.b11_observation import note_provider_draw
 
 
 def _invalid(reason: str) -> None:
@@ -64,6 +65,7 @@ def verify_source_row(
     if source_profile_parameters is not None:
         draw_args["profile_parameters"] = source_profile_parameters
     try:
+        note_provider_draw()
         rows = canonical.draw(**draw_args)
         checked = canonical.check(
             row, source_root=Path(source_root), graph=graph, course=course)

@@ -12100,6 +12100,682 @@
       "type": "object",
       "x-bilqis-runtime-validator": "bilqis_mlx.mission_control.codec.decode_record"
     },
+    "bilqis.bamf.mission-control.trainer-observation/v2": {
+      "$id": "bilqis.bamf.mission-control.trainer-observation/v2",
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
+      "additionalProperties": false,
+      "properties": {
+        "b11_atlas_reload_count": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "b11_autodiff_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "b11_preflight_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "b11_provider_draw_count": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "c08_gradient_launches": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "c08_logical_batch_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "c08_materialization_barriers": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "c08_rows_per_gradient_launch": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "c08_scalar_fallback_rows": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "c08_vectorized_microbatches": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate_horizon": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate_optimizer_step": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate_step": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate_step_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "candidate_terminal_step": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "capability_id": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "not": {
+                "pattern": "\\n"
+              },
+              "pattern": "\\S",
+              "type": "string",
+              "x-bilqis-unicode-domain": "scalar-values"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "compiled_positions": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "connection_state": {
+          "minLength": 1,
+          "not": {
+            "pattern": "\\n"
+          },
+          "pattern": "\\S",
+          "type": "string",
+          "x-bilqis-unicode-domain": "scalar-values"
+        },
+        "cpu_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currentness_binding_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "disk_free_bytes": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "elapsed_ms": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "evidence_capture_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "evidence_finalization_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "logical_rows": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "meta": {
+          "additionalProperties": false,
+          "properties": {
+            "as_of": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "authority": {
+              "enum": [
+                "SOURCE_AUTHORITATIVE",
+                "MEASURED",
+                "DERIVED",
+                "INFERRED"
+              ],
+              "type": "string"
+            },
+            "coverage": {
+              "enum": [
+                "COMPLETE",
+                "PARTIAL",
+                "UNKNOWN",
+                "NOT_APPLICABLE"
+              ],
+              "type": "string"
+            },
+            "evidence_refs": {
+              "items": {
+                "minLength": 1,
+                "not": {
+                  "pattern": "\\n"
+                },
+                "pattern": "\\S",
+                "type": "string",
+                "x-bilqis-unicode-domain": "scalar-values"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "materialized_at": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "observed_at": {
+              "anyOf": [
+                {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "receipt_refs": {
+              "items": {
+                "minLength": 1,
+                "not": {
+                  "pattern": "\\n"
+                },
+                "pattern": "\\S",
+                "type": "string",
+                "x-bilqis-unicode-domain": "scalar-values"
+              },
+              "type": "array",
+              "uniqueItems": true
+            },
+            "record_id": {
+              "minLength": 1,
+              "not": {
+                "pattern": "\\n"
+              },
+              "pattern": "\\S",
+              "type": "string",
+              "x-bilqis-unicode-domain": "scalar-values"
+            },
+            "run": {
+              "additionalProperties": false,
+              "properties": {
+                "candidate_identity_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "factory_release_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "generation": {
+                  "maximum": 9007199254740991,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "generation_manifest_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "run_id": {
+                  "minLength": 1,
+                  "not": {
+                    "pattern": "\\n"
+                  },
+                  "pattern": "\\S",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "run_identity_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "semantic_release_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "topology_sha256": {
+                  "pattern": "^[0-9a-f]{64}$",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                }
+              },
+              "required": [
+                "run_id",
+                "run_identity_sha256",
+                "generation",
+                "generation_manifest_sha256",
+                "candidate_identity_sha256",
+                "factory_release_sha256",
+                "semantic_release_sha256",
+                "topology_sha256"
+              ],
+              "type": "object"
+            },
+            "source_refs": {
+              "items": {
+                "minLength": 1,
+                "not": {
+                  "pattern": "\\n"
+                },
+                "pattern": "\\S",
+                "type": "string",
+                "x-bilqis-unicode-domain": "scalar-values"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "record_id",
+            "run",
+            "materialized_at",
+            "observed_at",
+            "as_of",
+            "coverage",
+            "authority",
+            "source_refs",
+            "evidence_refs",
+            "receipt_refs"
+          ],
+          "type": "object"
+        },
+        "motif_staging_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "observation_id": {
+          "minLength": 1,
+          "not": {
+            "pattern": "\\n"
+          },
+          "pattern": "\\S",
+          "type": "string",
+          "x-bilqis-unicode-domain": "scalar-values"
+        },
+        "optimizer_admission_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "minLength": 1,
+          "not": {
+            "pattern": "\\n"
+          },
+          "pattern": "\\S",
+          "type": "string",
+          "x-bilqis-unicode-domain": "scalar-values"
+        },
+        "peak_rss_bytes": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "phase": {
+          "minLength": 1,
+          "not": {
+            "pattern": "\\n"
+          },
+          "pattern": "\\S",
+          "type": "string",
+          "x-bilqis-unicode-domain": "scalar-values"
+        },
+        "posture": {
+          "minLength": 1,
+          "not": {
+            "pattern": "\\n"
+          },
+          "pattern": "\\S",
+          "type": "string",
+          "x-bilqis-unicode-domain": "scalar-values"
+        },
+        "pre_neural_source_compile_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "process_id": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "publishing_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_completed": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_role": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "not": {
+                "pattern": "\\n"
+              },
+              "pattern": "\\S",
+              "type": "string",
+              "x-bilqis-unicode-domain": "scalar-values"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_subject": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "not": {
+                "pattern": "\\n"
+              },
+              "pattern": "\\S",
+              "type": "string",
+              "x-bilqis-unicode-domain": "scalar-values"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_total": {
+          "anyOf": [
+            {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "retention_wall_seconds": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "revision": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "schema_version": {
+          "const": "bilqis.bamf.mission-control.trainer-observation/v2",
+          "type": "string"
+        },
+        "visit_index": {
+          "maximum": 9007199254740991,
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "schema_version",
+        "meta",
+        "observation_id",
+        "revision",
+        "process_id",
+        "visit_index",
+        "posture",
+        "phase",
+        "outcome",
+        "connection_state",
+        "capability_id",
+        "elapsed_ms",
+        "candidate_optimizer_step",
+        "candidate_step",
+        "candidate_horizon",
+        "retention_completed",
+        "retention_total",
+        "retention_subject",
+        "retention_role",
+        "cpu_seconds",
+        "peak_rss_bytes",
+        "disk_free_bytes",
+        "candidate_step_wall_seconds",
+        "pre_neural_source_compile_wall_seconds",
+        "currentness_binding_wall_seconds",
+        "b11_preflight_wall_seconds",
+        "b11_autodiff_wall_seconds",
+        "optimizer_admission_wall_seconds",
+        "motif_staging_wall_seconds",
+        "evidence_capture_wall_seconds",
+        "candidate_terminal_step",
+        "c08_gradient_launches",
+        "c08_vectorized_microbatches",
+        "c08_materialization_barriers",
+        "c08_scalar_fallback_rows",
+        "c08_logical_batch_wall_seconds",
+        "c08_rows_per_gradient_launch",
+        "b11_provider_draw_count",
+        "b11_atlas_reload_count",
+        "logical_rows",
+        "compiled_positions",
+        "retention_wall_seconds",
+        "evidence_finalization_wall_seconds",
+        "publishing_wall_seconds"
+      ],
+      "title": "TrainerObservationV2",
+      "type": "object",
+      "x-bilqis-runtime-validator": "bilqis_mlx.mission_control.codec.decode_record"
+    },
     "bilqis.bamf.mission-control.unavailable-envelope/v1": {
       "$id": "bilqis.bamf.mission-control.unavailable-envelope/v1",
       "$schema": "https://json-schema.org/draft/2020-12/schema",

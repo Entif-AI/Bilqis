@@ -7,6 +7,7 @@ from typing import Callable, Mapping
 
 import mlx.core as mx
 
+from bilqis_mlx.b11_observation import attach_performance_observation
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.atlas_model import (
     BamfGradientExecution, BamfMicrobatchGradientExecution,
@@ -94,6 +95,84 @@ def _scale_tree(gradients, scale: float):
             for name, value in gradients.items()}
 
 
+def _add_b11_observation(total: dict, execution) -> None:
+    observed = getattr(execution, "_performance_observation", None)
+    if not isinstance(observed, dict):
+        return
+    for name in ("b11_preflight_wall_seconds", "b11_autodiff_wall_seconds"):
+        total[name] += float(observed.get(name, 0.0))
+    for name in ("b11_provider_draw_count", "b11_atlas_reload_count"):
+        total[name] += int(observed.get(name, 0))
+
+
+def _vectorized_group(
+        group, microbatch, plan, total_rows, aggregate, weighted_loss,
+        losses, b11_observation):
+    if type(microbatch) is not BamfMicrobatchGradientExecution:
+        _invalid("C08_LOGICAL_BATCH_MICROBATCH_EXECUTION_REQUIRED")
+    microbatch.__post_init__()
+    _add_b11_observation(b11_observation, microbatch)
+    if (len(microbatch.executions) != len(group)
+            or any(execution.output.generation_binding != plan.generation_binding
+                   for execution in microbatch.executions)):
+        _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
+    aggregate = _sum_tree(
+        aggregate, _scale_tree(microbatch.gradients, len(group) / total_rows))
+    weighted_loss = weighted_loss + (
+        microbatch.mean_loss * (len(group) / total_rows))
+    losses.extend(microbatch.executions)
+    return aggregate, weighted_loss
+
+
+def _scalar_group(
+        group, plan, total_rows, execute_row, aggregate, weighted_loss,
+        losses, b11_observation):
+    group_sum = None
+    group_loss = mx.array(0.0, dtype=mx.float32)
+    for index in group:
+        execution = execute_row(index)
+        if type(execution) is not BamfGradientExecution:
+            _invalid("C08_LOGICAL_BATCH_B11_EXECUTION_REQUIRED")
+        execution.__post_init__()
+        _add_b11_observation(b11_observation, execution)
+        if execution.execution.output.generation_binding != plan.generation_binding:
+            _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
+        group_sum = _sum_tree(group_sum, execution.gradients)
+        group_loss = group_loss + execution.loss_total
+        losses.append(execution.execution)
+    group_mean = _scale_tree(group_sum, 1.0 / len(group))
+    aggregate = _sum_tree(
+        aggregate, _scale_tree(group_mean, len(group) / total_rows))
+    weighted_loss = weighted_loss + (
+        group_loss / len(group)) * (len(group) / total_rows)
+    return aggregate, weighted_loss, len(group)
+
+
+def _logical_batch_result(
+        plan, aggregate, weighted_loss, losses, gradient_launches,
+        vectorized_microbatches, scalar_fallback_rows, wall_seconds,
+        b11_observation):
+    result = object.__new__(LogicalBatchGradientExecution)
+    for name, value in (
+        ("loss_executions", tuple(losses)),
+        ("gradients", aggregate),
+        ("weighted_mean_loss", weighted_loss),
+        ("source_digest", plan.source_digest),
+        ("generation_binding", plan.generation_binding),
+        ("plan_digest", plan.digest),
+        ("gradient_launches", gradient_launches),
+        ("vectorized_microbatches", vectorized_microbatches),
+        ("materialization_barriers", 1),
+        ("scalar_fallback_rows", scalar_fallback_rows),
+        ("wall_seconds", wall_seconds),
+        ("_issuance", _ISSUER),
+    ):
+        object.__setattr__(result, name, value)
+    attach_performance_observation(result, b11_observation)
+    result.__post_init__()
+    return result
+
+
 def accumulate_logical_batch_gradients(
         plan: BatchPlan,
         execute_row: Callable[[int], BamfGradientExecution],
@@ -114,68 +193,35 @@ def accumulate_logical_batch_gradients(
     gradient_launches = 0
     vectorized_microbatches = 0
     scalar_fallback_rows = 0
+    b11_observation = {
+        "b11_preflight_wall_seconds": 0.0,
+        "b11_autodiff_wall_seconds": 0.0,
+        "b11_provider_draw_count": 0,
+        "b11_atlas_reload_count": 0,
+    }
     for group in plan.groups:
         microbatch = execute_group(group) if execute_group is not None and len(group) > 1 else None
         if microbatch is not None:
-            if type(microbatch) is not BamfMicrobatchGradientExecution:
-                _invalid("C08_LOGICAL_BATCH_MICROBATCH_EXECUTION_REQUIRED")
-            microbatch.__post_init__()
-            if (len(microbatch.executions) != len(group)
-                    or any(execution.output.generation_binding != plan.generation_binding
-                           for execution in microbatch.executions)):
-                _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
-            aggregate = _sum_tree(
-                aggregate,
-                _scale_tree(microbatch.gradients, len(group) / total_rows))
-            weighted_loss = weighted_loss + (
-                microbatch.mean_loss * (len(group) / total_rows))
-            losses.extend(microbatch.executions)
+            aggregate, weighted_loss = _vectorized_group(
+                group, microbatch, plan, total_rows, aggregate, weighted_loss,
+                losses, b11_observation)
             gradient_launches += 1
             vectorized_microbatches += 1
             continue
         if len(group) > 1 and execute_group is not None:
             scalar_fallback_rows += len(group)
-        group_sum = None
-        group_loss = mx.array(0.0, dtype=mx.float32)
-        for index in group:
-            execution = execute_row(index)
-            if type(execution) is not BamfGradientExecution:
-                _invalid("C08_LOGICAL_BATCH_B11_EXECUTION_REQUIRED")
-            execution.__post_init__()
-            if execution.execution.output.generation_binding != plan.generation_binding:
-                _invalid("C08_LOGICAL_BATCH_GENERATION_DRIFT")
-            group_sum = _sum_tree(group_sum, execution.gradients)
-            group_loss = group_loss + execution.loss_total
-            losses.append(execution.execution)
-            gradient_launches += 1
-        group_mean = _scale_tree(group_sum, 1.0 / len(group))
-        aggregate = _sum_tree(
-            aggregate,
-            _scale_tree(group_mean, len(group) / total_rows))
-        weighted_loss = weighted_loss + (
-            group_loss / len(group)) * (len(group) / total_rows)
+        aggregate, weighted_loss, scalar_launches = _scalar_group(
+            group, plan, total_rows, execute_row, aggregate, weighted_loss,
+            losses, b11_observation)
+        gradient_launches += scalar_launches
     if len(losses) != total_rows or aggregate is None:
         _invalid("C08_LOGICAL_BATCH_EXECUTION_COVERAGE_DRIFT")
     mx.eval(aggregate, weighted_loss)
     wall_seconds = float(time.perf_counter() - started)
-    result = object.__new__(LogicalBatchGradientExecution)
-    for name, value in (
-        ("loss_executions", tuple(losses)),
-        ("gradients", aggregate),
-        ("weighted_mean_loss", weighted_loss),
-        ("source_digest", plan.source_digest),
-        ("generation_binding", plan.generation_binding),
-        ("plan_digest", plan.digest),
-        ("gradient_launches", gradient_launches),
-        ("vectorized_microbatches", vectorized_microbatches),
-        ("materialization_barriers", 1),
-        ("scalar_fallback_rows", scalar_fallback_rows),
-        ("wall_seconds", wall_seconds),
-        ("_issuance", _ISSUER),
-    ):
-        object.__setattr__(result, name, value)
-    result.__post_init__()
-    return result
+    return _logical_batch_result(
+        plan, aggregate, weighted_loss, losses, gradient_launches,
+        vectorized_microbatches, scalar_fallback_rows, wall_seconds,
+        b11_observation)
 
 
 __all__ = (
