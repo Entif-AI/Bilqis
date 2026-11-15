@@ -15,6 +15,7 @@ from bilqis_mlx.runtime.source_prefetch import (
     SCHEMA,
     SOURCE_WORKER_COUNTS,
     freeze_source_packet,
+    thaw_source_packet,
 )
 from bilqis_mlx.source_adapters.school import live_source_registry
 from bilqis_mlx.factory.live_answers import live_answer_registry
@@ -23,7 +24,6 @@ from bilqis_mlx.semantics.domains import contract_digest
 
 REQUEST_SCHEMA = "bilqis.bamf.native-source-prefetch-request/v1"
 SERIAL_SOURCE_WORKERS = 0
-FROZEN_MAPPING_ENTRY_WIDTH = 2
 NATIVE_SOURCE_WORKER_COUNTS = (SERIAL_SOURCE_WORKERS, *SOURCE_WORKER_COUNTS)
 
 
@@ -124,18 +124,6 @@ def prepare_priority_source_packet(request: dict) -> ImmutableSourcePacket:
     })
 
 
-def _thaw(value):
-    if value is None or type(value) in (str, bool, int, float):
-        return value
-    if not isinstance(value, tuple):
-        _invalid("BAMF_SOURCE_PREFETCH_PACKET_INVALID")
-    if value and all(
-            isinstance(item, tuple) and len(item) == FROZEN_MAPPING_ENTRY_WIDTH
-            and isinstance(item[0], str) for item in value):
-        return {key: _thaw(item) for key, item in value}
-    return [_thaw(item) for item in value]
-
-
 @dataclass
 class SourcePrefetchMetrics:
     submitted_steps: int = 0
@@ -196,7 +184,7 @@ class CandidateSourceLane:
         if (type(packet) is not ImmutableSourcePacket
                 or packet.identity != request["identity"]):
             _invalid("BAMF_SOURCE_PREFETCH_PACKET_IDENTITY_DRIFT")
-        payload = _thaw(packet.payload)
+        payload = thaw_source_packet(packet)
         if (not isinstance(payload, dict) or payload.get("schema") != SCHEMA
                 or payload.get("identity") != request["identity"]
                 or payload.get("prior") != []

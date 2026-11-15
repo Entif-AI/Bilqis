@@ -3,7 +3,9 @@ import hashlib
 import json
 import unittest
 from bilqis_mlx.errors import BilqisError
-from bilqis_mlx.runtime.source_prefetch import ImmutableSourcePacket, SCHEMA, freeze_source_packet
+from bilqis_mlx.runtime.source_prefetch import (
+    ImmutableSourcePacket, SCHEMA, freeze_source_packet, thaw_source_packet,
+)
 
 
 def record(payload):
@@ -29,3 +31,10 @@ class SourcePacketBoundaryTests(unittest.TestCase):
         fresh[0]['value'].append(3)
         self.assertEqual(record(frozen.payload), frozen)
         self.assertNotEqual(freeze_source_packet(packet), frozen)
+
+    def test_roundtrip_preserves_empty_mappings_sequences_and_pair_sequences(self):
+        packet = dict(schema=SCHEMA, identity='a' * 64, fresh=[{
+            'empty_mapping': {}, 'empty_sequence': [],
+            'pair_sequence': [['A', 'B']], 'tuple_value': ('A', 'B'),
+        }], prior=[], preservation=[], retention_support=[], teaching_enrichment_rows=[])
+        self.assertEqual(thaw_source_packet(freeze_source_packet(packet)), packet)

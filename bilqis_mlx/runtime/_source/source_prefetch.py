@@ -21,6 +21,7 @@ from bilqis_mlx.source_adapters.school import live_source_registry
 from bilqis_mlx.live_curriculum import draw_course_rows
 from bilqis_mlx.factory.teaching import optional_teaching_rows
 from .source_execution import SourceExecutionContext
+from .source_packet_codec import freeze_payload, thaw_payload, validate_payload
 from . import state as _runtime_state
 
 
@@ -31,7 +32,7 @@ FORBIDDEN_AUTHORITY_KEYS = frozenset({
     "model_state", "weights", "tensors", "gradient", "network_client",
 })
 FORBIDDEN_NESTED_AUTHORITY_KEYS = FORBIDDEN_AUTHORITY_KEYS - {"receipt"}
-IMMUTABLE_PACKET_SCHEMA = "bilqis.mlx.source-prefetch-immutable/v1"
+IMMUTABLE_PACKET_SCHEMA = "bilqis.mlx.source-prefetch-immutable/v2"
 MAX_SOURCE_WORKERS = 2
 SOURCE_WORKER_COUNTS = (1, MAX_SOURCE_WORKERS)
 SHA256_HEX_LENGTH = hashlib.sha256().digest_size * 2
@@ -39,36 +40,6 @@ SHA256_HEX_LENGTH = hashlib.sha256().digest_size * 2
 
 def _packet_invalid(reason: str) -> None:
     ErrorBus.raise_(SCHOOL.BAMF_RESOURCES.INVALID, reason=reason)
-
-
-def _freeze_source_value(value):
-    if value is None or type(value) in (str, bool, int, float):
-        return value
-    if isinstance(value, dict) and all(isinstance(key, str) for key in value):
-        # A source row may legitimately carry its *source* receipt. The
-        # top-level run receipt remains forbidden in the worker request.
-        if FORBIDDEN_NESTED_AUTHORITY_KEYS & set(value):
-            _packet_invalid("SOURCE_PREFETCH_FORBIDDEN_AUTHORITY")
-        return tuple((key, _freeze_source_value(value[key])) for key in sorted(value))
-    if isinstance(value, (tuple, list)):
-        return tuple(_freeze_source_value(item) for item in value)
-    _packet_invalid("SOURCE_PREFETCH_UNFREEZABLE_VALUE")
-
-
-def _validate_frozen_source_value(value):
-    if value is None or type(value) in (str, bool, int, float):
-        return
-    if not isinstance(value, tuple):
-        _packet_invalid("SOURCE_PREFETCH_IMMUTABLE_PACKET_INVALID")
-    if value and all(isinstance(item, tuple) and len(item) == 2
-                     and isinstance(item[0], str) for item in value):
-        keys = tuple(item[0] for item in value)
-        if len(set(keys)) != len(keys) or tuple(sorted(keys)) != keys:
-            _packet_invalid("SOURCE_PREFETCH_IMMUTABLE_PACKET_INVALID")
-        if FORBIDDEN_NESTED_AUTHORITY_KEYS & set(keys):
-            _packet_invalid("SOURCE_PREFETCH_FORBIDDEN_AUTHORITY")
-    for item in value:
-        _validate_frozen_source_value(item)
 
 
 @dataclass(frozen=True)
@@ -79,8 +50,9 @@ class ImmutableSourcePacket:
     schema_version: str = IMMUTABLE_PACKET_SCHEMA
 
     def __post_init__(self):
-        _validate_frozen_source_value(self.payload)
         try:
+            validate_payload(
+                self.payload, forbidden_mapping_keys=FORBIDDEN_NESTED_AUTHORITY_KEYS)
             fields = dict(self.payload)
             if set(fields) != {"schema", "identity", "fresh", "prior", "preservation",
                                "retention_support", "teaching_enrichment_rows"}:
@@ -114,13 +86,27 @@ def freeze_source_packet(packet: dict) -> ImmutableSourcePacket:
     if (not isinstance(packet, dict) or set(packet) != expected
             or packet.get("schema") != SCHEMA):
         _packet_invalid("SOURCE_PREFETCH_PACKET_SCHEMA_DRIFT")
-    payload = _freeze_source_value(packet)
+    try:
+        payload = freeze_payload(
+            packet, forbidden_mapping_keys=FORBIDDEN_NESTED_AUTHORITY_KEYS)
+    except ValueError as error:
+        _packet_invalid(
+            "SOURCE_PREFETCH_FORBIDDEN_AUTHORITY"
+            if str(error) == "SOURCE_PACKET_FORBIDDEN_AUTHORITY"
+            else "SOURCE_PREFETCH_UNFREEZABLE_VALUE")
     encoded = json.dumps(
         payload, ensure_ascii=False, sort_keys=True,
         separators=(",", ":"), allow_nan=False).encode("utf-8")
     return ImmutableSourcePacket(
         identity=packet["identity"], payload=payload,
         digest=hashlib.sha256(encoded).hexdigest())
+
+
+def thaw_source_packet(packet: ImmutableSourcePacket) -> dict:
+    """Restore the exact JSON-like source packet shape after worker transport."""
+    if type(packet) is not ImmutableSourcePacket:
+        _packet_invalid("SOURCE_PREFETCH_IMMUTABLE_PACKET_INVALID")
+    return thaw_payload(packet.payload)
 
 
 def prepare_immutable_step_sources(request: dict) -> ImmutableSourcePacket:
