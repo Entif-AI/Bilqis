@@ -181,12 +181,12 @@ export function createHomeController(api, {
     queue = Promise.resolve(); pending = new Map();
     renderTarget = host; inspectTarget = onInspect; navigateTarget = onNavigate;
     historical = nextHistorical;
-    activationKey = nextKey;
     context = { ...nextContext, mode: historical ? "HISTORICAL" : nextContext?.mode }; pages = {}; disconnected = false; needsSnapshot = false;
     model = referenceProjection && nextContext?.fixture === true && !historical ? referenceProjection() : null;
     render({ resetDetails: true });
     if (typeof stop === "function") await stop();
     if (current !== epoch) return;
+    activationKey = nextKey;
     await enqueue(current, async () => {
       await subscribe(current);
       if (current !== epoch) return;

@@ -258,3 +258,37 @@ test("main logs only operation and sanitized cause code for rejected IPC request
   assert.equal(serialized.includes("super-secret"), false);
   assert.equal(serialized.includes("/Users/operator/private-run"), false);
 });
+
+test("main never treats an arbitrary BAMF-looking adapter code as a safe diagnostic", async () => {
+  const ipcMain = ipcMainFixture();
+  const adapter = adapterFixture();
+  adapter.status = async () => {
+    const error = new Error("private details");
+    error.code = "BAMF_GUI20_TOKEN_TOPSECRETVALUE123";
+    throw error;
+  };
+  const bridge = new ControlPlaneBridge(adapter, FIXTURE_VALIDATORS);
+  const sender = senderFixture();
+  const diagnostics = [];
+  registerMissionControlIpc({
+    ipcMain,
+    bridge,
+    trustedWebContents: sender.sender,
+    onRequestFailure: (diagnostic) => diagnostics.push(diagnostic),
+  });
+  await ipcMain.handlers.get(CHANNELS.connect)(sender.event);
+
+  await assert.rejects(
+    ipcMain.handlers.get(CHANNELS.status)(sender.event),
+    (error) => {
+      assert.equal(error.code, "BAMF_GUI20_CONTROL_PLANE_REQUEST_FAILED");
+      assert.equal(error.message, "BAMF_GUI20_CONTROL_PLANE_REQUEST_FAILED");
+      return true;
+    },
+  );
+  assert.deepEqual(diagnostics, [{
+    operation: "status",
+    causeCode: "BAMF_GUI20_UNCLASSIFIED_FAILURE",
+  }]);
+  assert.equal(JSON.stringify(diagnostics).includes("TOPSECRETVALUE123"), false);
+});
