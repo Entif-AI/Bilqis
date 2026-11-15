@@ -63,6 +63,7 @@ class RejectionProjection:
     consecutive_interference: dict[str, int] = field(default_factory=dict)
     last_positions: dict[str, int] = field(default_factory=dict)
     global_order_started: bool = False
+    legacy_capability: str | None = None
     lock: Lock = field(default_factory=Lock, repr=False)
 
     def refresh(
@@ -160,7 +161,8 @@ class RejectionProjection:
         capability = row[0]
         count = self.capability_counts.get(capability, 0)
         expected_global = len(self.rows) + 1
-        self._require_order(journal_ordinal, ordinal, expected_global, count, invalid)
+        self._require_order(
+            capability, journal_ordinal, ordinal, expected_global, count, invalid)
         self.seen_receipts.add(receipt_sha256)
         self.capability_counts[capability] = count + 1
         reason = row[2]
@@ -173,12 +175,20 @@ class RejectionProjection:
         self.last_positions[capability] = expected_global
         self.rows.append(row)
 
-    def _require_order(self, journal_ordinal, ordinal, expected_global, count, invalid):
+    def _require_order(
+            self, capability, journal_ordinal, ordinal, expected_global, count, invalid):
         if journal_ordinal is not None:
             if journal_ordinal != expected_global:
                 invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
             self.global_order_started = True
         elif self.global_order_started:
+            invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
+        elif expected_global == 1:
+            self.legacy_capability = capability
+        elif capability != self.legacy_capability or ordinal is None:
+            # Legacy v2 rows authenticate only per-capability attempt order. A
+            # multi-capability prefix has no authenticated total order and cannot
+            # safely drive C03 recency after cold resume.
             invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
         if ordinal is not None and ordinal != count + 1:
             invalid("BAMF_PRIORITY_REJECTION_ORDER_INVALID")
@@ -210,6 +220,7 @@ class RejectionProjection:
         self.consecutive_interference.clear()
         self.last_positions.clear()
         self.global_order_started = False
+        self.legacy_capability = None
 
 
 __all__ = ("RejectionProjection", "RejectionRows")

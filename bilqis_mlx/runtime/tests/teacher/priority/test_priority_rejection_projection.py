@@ -144,15 +144,16 @@ def test_authenticated_rejection_ordinals_fail_closed_when_reordered(monkeypatch
     assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_ORDER_INVALID"
 
 
-def test_cross_capability_authenticated_order_is_global(monkeypatch, tmp_path):
+@pytest.mark.parametrize("global_ordinals", [False, True])
+def test_cross_capability_authenticated_order_is_global(monkeypatch, tmp_path, global_ordinals):
     plane = CountingPlane()
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
-    first = _rejection(
-        plane, 1, capability="capability:alpha", journal_ordinal=1)
-    second = _rejection(
-        plane, 1, capability="capability:beta", journal_ordinal=2)
+    first = _rejection(plane, 1, capability="capability:alpha",
+        journal_ordinal=1 if global_ordinals else None)
+    second = _rejection(plane, 1, capability="capability:beta",
+        journal_ordinal=2 if global_ordinals else None)
     _append(journal, second)
     _append(journal, first)
 
