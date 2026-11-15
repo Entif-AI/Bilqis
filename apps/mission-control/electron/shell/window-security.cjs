@@ -5,6 +5,11 @@ const {
   normalizedRendererDocument,
   rendererEntryUrl,
 } = require("./renderer-location.cjs");
+const {
+  LAUNCH_MODE_PRODUCTION,
+  normalizeLaunchMode,
+  preloadModeArgument,
+} = require("./launch-mode.cjs");
 
 const SECURITY_PREFERENCES = Object.freeze({
   contextIsolation: true,
@@ -17,7 +22,11 @@ const SECURITY_PREFERENCES = Object.freeze({
   allowRunningInsecureContent: false,
 });
 
-function createSecureWindowOptions(preloadPath, callerOptions = {}) {
+function createSecureWindowOptions(
+  preloadPath,
+  callerOptions = {},
+  launchMode = LAUNCH_MODE_PRODUCTION,
+) {
   if (typeof preloadPath !== "string" || preloadPath.length === 0) {
     throw new TypeError("BAMF_GUI20_PRELOAD_PATH_REQUIRED");
   }
@@ -28,6 +37,7 @@ function createSecureWindowOptions(preloadPath, callerOptions = {}) {
       ...callerPreferences,
       preload: preloadPath,
       ...SECURITY_PREFERENCES,
+      additionalArguments: [preloadModeArgument(normalizeLaunchMode(launchMode))],
     },
   };
 }
@@ -70,11 +80,12 @@ function createMissionControlWindow({
   BrowserWindow,
   preloadPath,
   browserWindowOptions = {},
+  launchMode = LAUNCH_MODE_PRODUCTION,
 }) {
   if (typeof BrowserWindow !== "function") {
     throw new TypeError("BAMF_GUI20_BROWSER_WINDOW_REQUIRED");
   }
-  const options = createSecureWindowOptions(preloadPath, browserWindowOptions);
+  const options = createSecureWindowOptions(preloadPath, browserWindowOptions, launchMode);
   const diagnostic = securityDiagnostic(options);
   if (!diagnostic.passed) {
     throw new Error("BAMF_GUI20_SECURITY_DIAGNOSTIC_FAILED");

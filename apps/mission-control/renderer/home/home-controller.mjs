@@ -3,7 +3,6 @@ import {
   familyForEvent,
   projectionFromPages,
   queryRequest,
-  referenceHomeProjection,
 } from "./home-model.mjs";
 import { bindHomeInteractions, renderHomeMarkup } from "./home-view.mjs";
 
@@ -14,6 +13,7 @@ function acceptedIdentity(page) {
 }
 
 export function createHomeController(api, {
+  referenceProjection = null,
   schedule = (callback, delay) => { const timer = setTimeout(callback, delay); timer.unref?.(); return timer; },
   cancel = (timer) => clearTimeout(timer),
 } = {}) {
@@ -30,9 +30,9 @@ export function createHomeController(api, {
   }
   function project(fixtureFallback = true) {
     model = projectionFromPages(pages, context);
-    if (fixtureFallback && context?.runId === "fixture-run" && context?.mode !== "HISTORICAL" &&
+    if (fixtureFallback && referenceProjection && context?.fixture === true && context?.mode !== "HISTORICAL" &&
         HOME_FAMILIES.every((family) => pages[family]?.accepted !== true || pages[family]?.state === "EMPTY")) {
-      const fixture = referenceHomeProjection();
+      const fixture = referenceProjection();
       model = { ...fixture, runtime: { ...fixture.runtime, running: context?.operatorActive ?? fixture.runtime.running } };
     }
     render();
@@ -152,7 +152,7 @@ export function createHomeController(api, {
     renderTarget = host; inspectTarget = onInspect; navigateTarget = onNavigate;
     historical = Boolean(defense?.historical || nextContext?.mode === "HISTORICAL");
     context = { ...nextContext, mode: historical ? "HISTORICAL" : nextContext?.mode }; pages = {}; disconnected = false; needsSnapshot = false;
-    model = nextContext?.runId === "fixture-run" && !historical ? referenceHomeProjection() : null;
+    model = referenceProjection && nextContext?.fixture === true && !historical ? referenceProjection() : null;
     render();
     if (typeof stop === "function") await stop();
     if (current !== epoch) return;

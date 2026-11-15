@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { referenceResourceState } from '../../renderer/resources/resource-model.mjs';
+import { referenceResourceState } from '../../renderer/resources/resource-fixture-state.mjs';
 import { renderResourceMarkup, bindResourceInteractions } from '../../renderer/resources/resource-view.mjs';
 import { RESOURCE_MESSAGES } from '../../renderer/resources/resource-messages.mjs';
 

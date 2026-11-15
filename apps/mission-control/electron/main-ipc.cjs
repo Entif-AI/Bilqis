@@ -1,7 +1,7 @@
 "use strict";
 
 const { CHANNELS, HANDLER_CHANNELS } = require("./channels.cjs");
-const { createTrustedSender, requireTrustedSender } = require("./sender-trust.cjs");
+const { createTrustedSender, requireTrustedSender } = require("./shell/sender-trust.cjs");
 
 function safeBoundaryError(_error) {
   const safe = new Error("BAMF_GUI20_CONTROL_PLANE_REQUEST_FAILED");

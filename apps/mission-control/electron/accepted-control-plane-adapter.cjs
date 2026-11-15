@@ -1,7 +1,6 @@
 "use strict";
 
 const { Cp01PythonBroker } = require("./cp01-python-broker.cjs");
-const { frameFixturePage } = require("./frame-fixtures.cjs");
 
 const OPERATOR_VIEW_SCHEMA = "bilqis.bamf.mission-control.operator-view/v1";
 const SNAPSHOT_QUERY_SCHEMA = "bamf.gui20.operator-view-query/v1";
@@ -87,7 +86,9 @@ class AcceptedControlPlaneAdapter {
       if (accepted !== true) throw new Error("BAMF_GUI05_QUERY_UNAVAILABLE");
       return page;
     }
-    if (request?.schemaVersion === "bamf.gui08.frame-query/v1") return frameFixturePage(request);
+    if (request?.schemaVersion === "bamf.gui08.frame-query/v1") {
+      throw operatorViewUnavailable("FRAME_INSPECTION_NOT_EXPOSED");
+    }
     if (request?.schemaVersion === SNAPSHOT_QUERY_SCHEMA && request?.schema === OPERATOR_VIEW_SCHEMA) {
       const page = await this.broker.query(runQuery());
       if (page?.accepted !== true || !Array.isArray(page.records)) {

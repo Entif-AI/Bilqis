@@ -7,8 +7,8 @@ import {
   homeStatus,
   projectionFromPages,
   queryRequest,
-  referenceHomeProjection,
 } from "../../renderer/home/home-model.mjs";
+import { referenceHomeProjection } from "../../renderer/home/home-fixture.mjs";
 import { createHomeController } from "../../renderer/home/home-controller.mjs";
 import { renderHomeMarkup } from "../../renderer/home/home-view.mjs";
 import { collectTestIds } from "../../renderer/foundation/test-hooks.mjs";

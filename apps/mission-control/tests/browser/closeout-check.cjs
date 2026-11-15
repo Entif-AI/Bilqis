@@ -8,6 +8,11 @@ const axePath = process.env.BILQIS_AXE_MODULE ||
   "/Users/emilie/Code/mission-control/node_modules/axe-core/axe.min.js";
 const chrome = process.env.BILQIS_CHROME_PATH ||
   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const {
+  accessibilityTreeProof,
+  expansionProof,
+  shellUsabilityProof,
+} = require("./shell-usability-journey.cjs");
 const operator = JSON.parse(fs.readFileSync(path.join(repo,
   "apps/mission-control/fixtures/operator-view-v1.json"), "utf8"));
 const views = [
@@ -110,6 +115,21 @@ async function audit(page, view, label, screenshot) {
       documentOverflow: document.documentElement.scrollWidth > innerWidth + 1,
       scrollWidth: document.documentElement.scrollWidth,
       viewport: innerWidth,
+      contextControlDistinct: (() => {
+        const trigger = document.querySelector('[data-test-id="shell-system-context-trigger"]');
+        if (!trigger) return false;
+        return getComputedStyle(trigger).backgroundColor !== getComputedStyle(document.body).backgroundColor;
+      })(),
+      contextControlCentered: (() => {
+        const trigger = document.querySelector('[data-test-id="shell-system-context-trigger"]');
+        return Boolean(trigger && getComputedStyle(trigger).alignItems === "center");
+      })(),
+      navControlDistinct: (() => {
+        const button = document.querySelector('[data-test-id^="nav-destination-"]:not(:disabled)');
+        const rail = document.querySelector('[data-test-id="shell-rail"]');
+        if (!button || !rail) return false;
+        return getComputedStyle(button).backgroundColor !== getComputedStyle(rail).backgroundColor;
+      })(),
     };
   }, { hookSelector });
   const axe = await page.evaluate(async () => axe.run(document, {
@@ -121,6 +141,9 @@ async function audit(page, view, label, screenshot) {
   check(metrics.duplicateTestIds.length === 0, `${view} duplicate test ids: ${metrics.duplicateTestIds}`);
   check(!metrics.documentOverflow,
     `${view} document overflow at ${metrics.viewport}px; offscreen=${metrics.offscreenHookIds.join(",")}`);
+  check(metrics.contextControlDistinct, `${view} context trigger merges into canvas surface`);
+  check(metrics.contextControlCentered, `${view} context trigger is not vertically centered`);
+  check(metrics.navControlDistinct, `${view} navigation control merges into rail surface`);
   check(violations.length === 0, `${view} WCAG violations: ${violations.map(v => v.id)}`);
   let file = null;
   if (screenshot) {
@@ -135,6 +158,8 @@ async function keyboardProof(page) {
   await capability.click();
   await page.locator('[data-test-id="investigation-inspector"]').waitFor();
   await page.keyboard.press("Escape");
+  await page.waitForFunction(() =>
+    document.activeElement?.dataset?.testId === "school-matrix-capability-b-and");
   check(await capability.evaluate(node => node === document.activeElement), "inspector focus did not return");
   await page.keyboard.press("Control+K");
   const palette = page.locator('[data-test-id="shell-command-palette"]');
@@ -147,46 +172,6 @@ async function keyboardProof(page) {
   await skip.focus(); await skip.press("Enter");
   check(await page.locator('[data-test-id="shell-main-content"]').evaluate(node => node === document.activeElement),
     "skip link did not move focus to main content");
-  return true;
-}
-async function accessibilityTreeProof(page) {
-  await navigate(page, "school");
-  const session = await page.context().newCDPSession(page);
-  await session.send("Accessibility.enable");
-  const tree = await session.send("Accessibility.getFullAXTree");
-  const roles = tree.nodes.map(node => node.role?.value).filter(Boolean);
-  const names = tree.nodes.map(node => node.name?.value).filter(Boolean);
-  for (const role of ["main", "navigation", "heading"]) {
-    check(roles.includes(role), `accessibility tree missing ${role}`);
-  }
-  check(names.includes("School"), "accessibility tree missing School destination name");
-  return {
-    nodeCount: tree.nodes.length,
-    roles: [...new Set(roles)].sort(),
-    schoolNamePresent: true,
-  };
-}
-async function expansionProof(page) {
-  await navigate(page, "school");
-  await page.evaluate(() => {
-    const roots = [
-      document.querySelector('[data-test-id="shell-rail"]'),
-      document.querySelector('[data-test-id="shell-view-host"]'),
-    ].filter(Boolean);
-    for (const root of roots) {
-      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-      const texts = []; while (walker.nextNode()) texts.push(walker.currentNode);
-      for (const node of texts) {
-        const tag = node.parentElement?.tagName;
-        if (!node.nodeValue.trim() || ["CODE", "PRE", "KBD"].includes(tag)) continue;
-        node.nodeValue = `${node.nodeValue.trim()} · ${node.nodeValue.trim()}`;
-      }
-    }
-    document.documentElement.dir = "rtl";
-  });
-  const overflow = await page.locator('[data-test-id="shell-main-content"]').evaluate(() =>
-    document.documentElement.scrollWidth > innerWidth + 1);
-  check(!overflow, "expanded RTL copy creates document-level overflow");
   return true;
 }
 (async () => {
@@ -211,7 +196,10 @@ async function expansionProof(page) {
       }
     }
     result.representative.keyboard = await keyboardProof(page);
-    result.representative.accessibilityTree = await accessibilityTreeProof(page);
+    result.representative.shellUsability = await shellUsabilityProof(
+      page, { check, setDisplay, navigate, reconnect });
+    result.representative.accessibilityTree = await accessibilityTreeProof(
+      page, { check, navigate });
     await page.setViewportSize({ width: 390, height: 844 });
     await setDisplay(page, "light", "compact");
     await page.addScriptTag({ url: `http://127.0.0.1:${port}/axe.min.js` });
@@ -221,7 +209,7 @@ async function expansionProof(page) {
       result.variants["light-compact-responsive"].push(await audit(page, view,
         "light-compact-responsive", true));
     }
-    result.representative.expandedRtl = await expansionProof(page);
+    result.representative.expandedRtl = await expansionProof(page, { check, navigate });
     await page.reload({ waitUntil: "domcontentloaded" }); await reconnect(page);
     await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" });
     await navigate(page, "school");

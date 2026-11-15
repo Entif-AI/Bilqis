@@ -57,7 +57,10 @@ test("static shell exposes named landmarks, skip navigation, dedicated announcem
   assert.match(html, /id="inspector-forensics"[^>]*>\s*<summary data-i18n="shell\.inspector\.forensics"/s);
   assert.match(html, /id="copy-deep-link"[^>]*data-test-id="investigation-inspector-copy-deep-link"/);
   assert.match(html, /<dialog id="command-palette"[^>]*aria-labelledby="palette-title"/);
-  assert.match(html, /aria-keyshortcuts="Control\+K"/);
+  assert.match(html, /id="primary-nav"[^>]*aria-keyshortcuts="Control\+K Meta\+K"/);
+  assert.match(html, /data-test-id="shell-command-shortcut-hint"/);
+  assert.match(html, /data-test-id="shell-rail-toggle"/);
+  assert.doesNotMatch(html, /data-test-id="shell-command-trigger"/);
 });
 
 test("renderer entrypoint remains syntactically loadable after shell composition changes", async () => {
@@ -124,6 +127,6 @@ test("startup reports service learner telemetry and trainer stages without live 
   assert.match(bootstrap, /telemetry-pending/);
   assert.match(ui, /foundation\.bootstrap\.telemetryPending\.label/);
   assert.match(i18n, /Learner ready · telemetry starting/);
-  assert.match(i18n, /fixture data is never substituted for live state/);
+  assert.match(i18n, /reference fixtures use the explicit fixture launch mode/);
   assert.doesNotMatch(html, /fixture:prometheus-disposable/);
 });
