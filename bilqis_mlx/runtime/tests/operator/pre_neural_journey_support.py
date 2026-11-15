@@ -21,8 +21,13 @@ from bilqis_mlx.compatibility.live_releases import (
 from bilqis_mlx.factory.adapters import SourceAdapterRegistry
 from bilqis_mlx.factory.executable_release import compile_executable_factory_release
 from bilqis_mlx.factory.live_answers import live_answer_registry
+from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
 from bilqis_mlx.grade_a_release import accepted_grade_a
 from bilqis_mlx.live_grade_c import REGISTRY_COUNTING_TARGET, registry_graph
+from bilqis_mlx.runtime.accepted_priority_visit import accepted_priority_school
+from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
+from bilqis_mlx.runtime.bamf_operator.session import _execution_context
+from bilqis_mlx.runtime.foundation_teacher_owner import select_foundation_priority_visit
 from bilqis_mlx.runtime.atlas_source_authority import (
     SourceAuthorityKey, SourceAuthorityRegistry, SourceAuthorityScope,
 )
@@ -229,6 +234,26 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
             side_effect=lambda registry: HostSourceAuthoritySigner(
                 "owner:c06", "44" * 32, registry)))
         return stack
+
+    def exercise_journey(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            pointer = self.publish_matching_genesis(snapshot, schema, features)
+            before = load_accepted_generation(self.run)
+            pointer_bytes = (self.run / "bamf-state.json").read_bytes()
+            event_bytes = (self.run / "events.jsonl").read_bytes()
+            with self.journey_mounts(
+                    snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                selected = select_foundation_priority_visit(
+                    self.run, context, atlas_path, program=program, school=school)
+                rows = selected.offer.rows()
+            after = load_accepted_generation(self.run)
+        return pointer, before, after, context, selected, rows, pointer_bytes, event_bytes
 
 
 def journey_source(snapshot):
