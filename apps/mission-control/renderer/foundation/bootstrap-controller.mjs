@@ -20,13 +20,27 @@ const SNAPSHOT_REQUEST = Object.freeze({
 });
 
 export function constrainRouteToLaunchMode(route, launchMode = "production") {
-  if (!route?.context) return route;
+  if (!route) return route;
+  const fixtureMode = launchMode === "fixtures";
+  const selectedLooksFixture = typeof route.selected?.id === "string" &&
+    /(^|:)fixture(:|$)/.test(route.selected.id);
+  const originLooksFixture = typeof route.evidenceOrigin?.selected?.id === "string" &&
+    /(^|:)fixture(:|$)/.test(route.evidenceOrigin.selected.id);
+  const requestedFixture = route.context?.fixture === true;
   return {
     ...route,
-    context: Object.freeze({
-      ...route.context,
-      fixture: launchMode === "fixtures",
-    }),
+    ...(route.context ? {
+      context: Object.freeze({
+        ...route.context,
+        fixture: fixtureMode,
+      }),
+    } : {}),
+    selected: !fixtureMode && (requestedFixture || selectedLooksFixture)
+      ? null
+      : route.selected ?? null,
+    ...(!fixtureMode && (requestedFixture || originLooksFixture)
+      ? { evidenceOrigin: null }
+      : {}),
   };
 }
 

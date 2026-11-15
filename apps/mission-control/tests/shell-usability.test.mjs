@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   applyShellPreferences,
+  constrainInspectorWidth,
+  INSPECTOR_MIN_WIDTH,
+  inspectorWidthForDestination,
   loadShellPreferences,
   saveShellPreferences,
   toggleRailPreference,
+  withInspectorWidthPreference,
 } from "../renderer/shell-preferences.mjs";
 import {
   contextHelpMarkup,
@@ -34,15 +38,38 @@ function fakeStorage(initial = {}) {
 test("rail collapse is one persistent shell preference independent of route state", () => {
   const storage = fakeStorage();
   const expanded = loadShellPreferences(storage);
-  assert.deepEqual(expanded, { rail: "expanded" });
+  assert.deepEqual(expanded, { rail: "expanded", inspectorWidths: {} });
   const collapsed = toggleRailPreference(expanded);
-  assert.deepEqual(collapsed, { rail: "collapsed" });
+  assert.deepEqual(collapsed, { rail: "collapsed", inspectorWidths: {} });
   saveShellPreferences(storage, collapsed);
-  assert.deepEqual(storage.snapshot(), { "bilqis.mc.rail": "collapsed" });
+  assert.deepEqual(storage.snapshot(), {
+    "bilqis.mc.rail": "collapsed",
+    "bilqis.mc.inspectorWidths": "{}",
+  });
   assert.deepEqual(loadShellPreferences(storage), collapsed);
   const root = { dataset: {} };
   applyShellPreferences(root, collapsed);
   assert.equal(root.dataset.rail, "collapsed");
+});
+
+test("inspector widths are destination-local and constrained by usable primary width", () => {
+  const storage = fakeStorage();
+  let preferences = loadShellPreferences(storage);
+  preferences = withInspectorWidthPreference(preferences, "learning", 448);
+  preferences = withInspectorWidthPreference(preferences, "school", 224);
+  saveShellPreferences(storage, preferences);
+  const restored = loadShellPreferences(storage);
+  assert.equal(inspectorWidthForDestination(restored, "learning"), 448);
+  assert.equal(inspectorWidthForDestination(restored, "school"), 224);
+  assert.notEqual(
+    inspectorWidthForDestination(restored, "learning"),
+    inspectorWidthForDestination(restored, "school"),
+  );
+  assert.equal(constrainInspectorWidth(120), INSPECTOR_MIN_WIDTH);
+  assert.equal(constrainInspectorWidth(999, {
+    viewportWidth: 1200,
+    railWidth: 180,
+  }), 532);
 });
 
 test("context help is one keyboard-reachable described control with a future docs slot", () => {
@@ -133,6 +160,37 @@ test("fixture provenance is launch-owned and cannot be promoted by a deep-link f
   assert.match(bootstrap, /mutationAvailable: fixtureMode \? false/);
 });
 
+test("production launch strips fixture object selections and evidence origins before routing", () => {
+  const route = {
+    view: "learning",
+    context: {
+      runId: "fixture:gui05", generation: 9, mode: "LIVE", fixture: true,
+    },
+    selected: { kind: "candidate", id: "candidate:fixture:leak" },
+    evidenceOrigin: {
+      selected: { kind: "episode", id: "episode-record:fixture:leak" },
+    },
+  };
+  const production = constrainRouteToLaunchMode(route, "production");
+  assert.equal(production.context.fixture, false);
+  assert.equal(production.selected, null);
+  assert.equal(production.evidenceOrigin, null);
+
+  const fixture = constrainRouteToLaunchMode(route, "fixtures");
+  assert.deepEqual(fixture.selected, route.selected);
+  assert.deepEqual(fixture.evidenceOrigin, route.evidenceOrigin);
+});
+
+test("production launch strips fixture-looking selection even without a context payload", () => {
+  assert.deepEqual(
+    constrainRouteToLaunchMode({
+      view: "learning",
+      selected: { kind: "episode", id: "episode-record:fixture:retained-44239" },
+    }, "production"),
+    { view: "learning", selected: null },
+  );
+});
+
 test("shell interactions make context popovers exclusive and reset only changed primary destinations", () => {
   const interactions = source("foundation/static-interactions.mjs");
   const renderer = source("renderer.mjs");
@@ -174,9 +232,29 @@ test("shared CSS gives rail, help, temporal, and context controls explicit acces
   assert.match(shell, /\.nav-group \+ \.nav-group/);
   assert.match(shell, /\.context-disclosure > summary[^}]*align-items:\s*center/s);
   assert.match(shell, /\.context-disclosure > summary[^}]*background:\s*var\(--surface-2\)/s);
+  assert.match(shell, /\.shell\[data-inspector="open"\][^{]*\{[^}]*grid-template-columns:[^}]*var\(--inspector-width/s);
+  assert.match(shell, /@media \(max-width:\s*980px\)[\s\S]*\.shell\[data-inspector="open"\][^{]*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)/);
+  assert.match(shell, /@media \(max-width:\s*980px\)[\s\S]*\.shell\[data-inspector="open"\] \.inspector\s*\{[^}]*grid-column:\s*auto[^}]*position:\s*fixed[^}]*\}[\s\S]*\.inspector\s*\{[^}]*width:\s*min\(92vw, 480px\)/s);
   assert.match(components, /\.ui-context-help__trigger/);
   assert.match(components, /\.ui-context-help__content:popover-open/);
   assert.match(components, /\.ui-temporal__detail:popover-open/);
   assert.match(components, /@media \(forced-colors:\s*active\)/);
 }
 );
+
+test("inspector splitter has pointer and keyboard resize paths with persistent destination width", () => {
+  const html = source("index.html");
+  const interactions = source("foundation/static-interactions.mjs");
+  const renderer = source("renderer.mjs");
+  assert.match(html, /id="inspector-splitter"[^>]*role="separator"[^>]*aria-orientation="vertical"/);
+  assert.match(html, /aria-valuemin="160"/);
+  assert.match(interactions, /pointerdown/);
+  assert.match(interactions, /pointermove/);
+  assert.match(interactions, /ArrowLeft/);
+  assert.match(interactions, /ArrowRight/);
+  assert.match(interactions, /Home/);
+  assert.match(interactions, /End/);
+  assert.match(renderer, /inspectorWidthForDestination/);
+  assert.match(renderer, /withInspectorWidthPreference/);
+  assert.match(renderer, /saveShellPreferences\(window\.localStorage, shellPreferences\)/);
+});

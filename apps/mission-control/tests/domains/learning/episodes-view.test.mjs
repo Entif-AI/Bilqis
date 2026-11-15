@@ -148,6 +148,10 @@ test("episode deep link is origin-neutral and capability explorers can resolve t
   assert.equal(capabilityEpisodes.some((episode) => episode.recordId === retained.recordId), true);
   assert.equal(episodeById(retained.candidateId).episodeId, retained.episodeId);
   assert.equal(episodeById(retained.recordId).episodeId, retained.episodeId);
+  assert.throws(
+    () => episodeById("episode-record:fixture:missing"),
+    /LEARNING_EPISODE_UNKNOWN:episode-record:fixture:missing/,
+  );
   const catalog = fs.readFileSync(
     path.join(repoRoot, "bilqis_mlx/mission_control/query_catalog.py"),
     "utf8",

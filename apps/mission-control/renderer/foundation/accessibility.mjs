@@ -2,6 +2,7 @@ export const MANUAL_KEYBOARD_SCENARIO = Object.freeze([
   "Tab to Skip to main content and activate it.",
   "Shift+Tab back to Primary navigation, then use ArrowDown to reach School and Enter to open it.",
   "Tab into the capability matrix, activate one capability, and confirm the Global inspector receives focus.",
+  "Tab to the inspector separator, resize with ArrowLeft or ArrowRight, then use Home and End to reach its declared bounds.",
   "Press Escape to close the inspector and confirm focus returns to the invoking control.",
   "Use the dependency graph with ArrowRight or ArrowDown, activate a node with Space, then inspect the equivalent dependency table.",
   "Press Control+K or Command+K, choose a destination from the command palette, and close the palette with Escape.",

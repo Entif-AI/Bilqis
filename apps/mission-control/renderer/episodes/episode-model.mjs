@@ -1,9 +1,11 @@
 import { EPISODE_FIXTURES, EPISODE_STAGES } from "./episode-fixture.mjs";
 
 export function episodeById(id) {
-  return EPISODE_FIXTURES.find((episode) =>
-    episode.recordId === id || episode.episodeId === id || episode.candidateId === id,
-  ) ?? EPISODE_FIXTURES[0];
+  const episode = EPISODE_FIXTURES.find((item) =>
+    item.recordId === id || item.episodeId === id || item.candidateId === id,
+  );
+  if (!episode) throw new RangeError("LEARNING_EPISODE_UNKNOWN:" + id);
+  return episode;
 }
 
 export function episodeDeepLink(recordId) {

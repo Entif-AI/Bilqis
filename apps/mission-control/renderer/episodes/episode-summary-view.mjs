@@ -3,6 +3,7 @@ import { episodeDeepLink } from "./episode-model.mjs";
 import { objectDomAttributes } from "../interactions/dom-ref.mjs";
 import {
   esc,
+  learningHelpMarkup,
   retentionReasonLabel,
   stateBadge,
   stateLabel,
@@ -57,7 +58,10 @@ export function transactionSummary(episode) {
       <span class="eyebrow">${esc(t("learning.summary.eyebrow"))}</span>
       <h3><span class="episode-summary-capability" ${testIdAttribute("learning", "target", "capability")}>${esc(episode.capabilityId)}</span></h3>
       <p ${testIdAttribute("learning", "transaction", "narrative")}>${esc(transactionNarrative(episode))}</p>
-    </div>${stateBadge(episode.terminalState, "learning-terminal-state")}</header>
+    </div><div class="episode-heading-tools">
+      ${learningHelpMarkup("transaction", "learning-help-transaction")}
+      ${stateBadge(episode.terminalState, "learning-terminal-state")}
+    </div></header>
     <div class="episode-summary-grid">
       <dl class="episode-summary-primary">
         <div><dt>${esc(t("learning.summary.parentLabel"))}</dt><dd ${testIdAttribute("learning", "parent", "generation")}>${esc(episode.parentGeneration)}</dd></div>
@@ -72,7 +76,10 @@ export function transactionSummary(episode) {
         <div><dt>${esc(t("learning.summary.sourceLabel"))}</dt><dd class="machine-value">${esc(episode.sourceFamily)}</dd></div>
         <div><dt>${esc(t("learning.summary.lessonLabel"))}</dt><dd class="machine-value">${esc(episode.lessonFamily)}</dd></div>
       </dl>
-      <div class="episode-resource-posture"><span class="episode-subheading">${esc(t("learning.summary.resourcesLabel"))}</span><dl>
+      <div class="episode-resource-posture"><div class="episode-subheading-row">
+        <span class="episode-subheading">${esc(t("learning.summary.resourcesLabel"))}</span>
+        ${learningHelpMarkup("resources", "learning-help-resources")}
+      </div><dl>
         <div><dt>${esc(t("learning.summary.durationLabel"))}</dt><dd>${esc(durationText(episode.durationMs))}</dd></div>
         <div><dt>${esc(t("learning.summary.peakMemoryLabel"))}</dt><dd>${esc(valueOrUnavailable(episode.resourceCost.peakMemoryBytes))}</dd></div>
         <div><dt>${esc(t("learning.summary.stepRateLabel"))}</dt><dd>${esc(valueOrUnavailable(episode.resourceCost.stepRatePerMinute))}</dd></div>
@@ -95,7 +102,9 @@ export function transactionSummary(episode) {
 
 export function picker(episode) {
   return `<div class="episode-picker" ${testIdAttribute("learning", "episode", "picker")}><label for="learning-episode-selector">
-    <span>${esc(t("learning.selector.label"))}</span><small>${esc(t("learning.selector.help"))}</small>
+    <span class="episode-picker-label-row"><span>${esc(t("learning.selector.label"))}</span>
+      ${learningHelpMarkup("selector", "learning-help-selector")}</span>
+    <small>${esc(t("learning.selector.help"))}</small>
   </label><select id="learning-episode-selector" data-episode-selector ${testIdAttribute("learning", "episode", "selector")}>
     ${EPISODE_FIXTURES.map((item) => `<option value="${esc(item.recordId)}" ${item.recordId === episode.recordId ? "selected" : ""}>
       ${esc(item.capabilityId)} · ${esc(stateLabel(item.terminalState))} · ${esc(retentionReasonLabel(item.retentionReason))}

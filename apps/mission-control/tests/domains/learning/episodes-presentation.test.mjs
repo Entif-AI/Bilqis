@@ -4,21 +4,30 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { EPISODE_FIXTURES, EPISODE_STAGES } from "../../../renderer/episodes/episode-fixture.mjs";
-import { episodeMarkupForTest } from "../../../renderer/episodes/episode-view.mjs";
+import {
+  episodeMarkupForTest,
+  LEARNING_TABS,
+} from "../../../renderer/episodes/episode-view.mjs";
+import { replayPanel } from "../../../renderer/episodes/episode-replay-view.mjs";
+import { t as fixtureT } from "../../../renderer/episodes/episode-view-shared.mjs";
 import { assertUniqueTestIds, collectTestIds } from "../../../renderer/foundation/test-hooks.mjs";
 import { t } from "../../../renderer/foundation/i18n.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const rendererRoot = path.resolve(here, "../../../renderer");
 
-test("learning episode UI is read-only evidence replay and contains no hidden-activation narrative labels", () => {
+test("learning episode UI uses affirmative evidence copy and contains no hidden-activation narrative labels", () => {
   const source = [
     "episodes/episode-view.mjs", "episodes/episode-model.mjs", "episodes/episode-fixture.mjs",
   ].map((name) => fs.readFileSync(path.join(rendererRoot, name), "utf8")).join("\n").toLowerCase();
   for (const forbidden of [
     "thought replay", "hidden reasoning", "natural-language reasoning", "operatoractionrequest",
   ]) assert.equal(source.includes(forbidden), false, forbidden);
-  assert.equal(episodeMarkupForTest().toLowerCase().includes("read-only"), true);
+  const markup = episodeMarkupForTest().toLowerCase();
+  for (const phrase of [
+    "read-only", "does not prove", "not proof", "no durable outcome is claimed",
+    "no commit or rollback claim",
+  ]) assert.equal(markup.includes(phrase), false, phrase);
 });
 
 test("learning transaction markup follows target narrative hierarchy with stable unique hooks", () => {
@@ -30,17 +39,33 @@ test("learning transaction markup follows target narrative hierarchy with stable
     "learning-target-capability", "learning-parent-generation", "learning-lifecycle",
     "learning-stage-target", "learning-stage-detail", "learning-stage-evidence",
     "learning-comparison-table", "learning-outcome-proof", "learning-forensics",
-    "learning-candidate-inspect",
+    "learning-candidate-inspect", "learning-tabs", "learning-tab-transaction",
+    "learning-tab-lifecycle", "learning-tab-comparison", "learning-tab-outcome",
   ]) assert.equal(hooks.has(id), true, id);
 
-  const summaryAt = markup.indexOf('data-test-id="learning-transaction-summary"');
-  const lifecycleAt = markup.indexOf('data-test-id="learning-lifecycle"');
-  const comparisonAt = markup.indexOf('data-test-id="learning-comparison"');
-  const outcomeAt = markup.indexOf('data-test-id="learning-outcome-proof"');
-  assert.equal(summaryAt < lifecycleAt && lifecycleAt < comparisonAt && comparisonAt < outcomeAt, true);
+  assert.equal((markup.match(/role="tablist"/g) ?? []).length, 1);
+  assert.equal((markup.match(/role="tab"/g) ?? []).length, 4);
+  assert.deepEqual(LEARNING_TABS.map((tab) => tab.id), [
+    "transaction", "lifecycle", "comparison", "outcome",
+  ]);
+  assert.match(markup, /data-learning-tab="transaction"[^>]*aria-selected="true"/);
+  assert.match(markup, /data-learning-panel="transaction"[^>]*data-test-id="learning-panel-transaction"/);
+  assert.match(markup, /data-learning-panel="lifecycle"[^>]*hidden/);
   assert.doesNotMatch(markup, /type="range"/);
   assert.match(markup, /aria-current="step"/);
   assert.equal((markup.match(/aria-current="step"/g) ?? []).length, 1);
+});
+
+test("switching Learning tabs preserves the selected transaction identity", () => {
+  const markup = episodeMarkupForTest(
+    "episode-record:fixture:interference-reject",
+    4,
+    "comparison",
+  );
+  assert.match(markup, /data-learning-tab="comparison"[^>]*aria-selected="true"/);
+  assert.match(markup, /data-learning-panel="comparison"[^>]*data-test-id="learning-panel-comparison"/);
+  assert.match(markup, /<option value="episode-record:fixture:interference-reject" selected/);
+  assert.equal((markup.match(/role="tablist"/g) ?? []).length, 1);
 });
 
 test("learning replay uses a bounded selector and progressively disclosed stage evidence", () => {
@@ -74,14 +99,55 @@ test("learning fixture narrative copy is localized by stable message keys", () =
   for (const episode of EPISODE_FIXTURES) {
     for (const stage of episode.stages) {
       assert.match(stage.detailKey, /^learning\./);
-      assert.ok(t(stage.detailKey));
+      assert.ok(fixtureT(stage.detailKey));
       assert.equal(Object.hasOwn(stage, "detail"), false);
     }
   }
   for (const key of [
     "learning.view.title", "learning.selector.label", "learning.summary.eyebrow",
     "learning.lifecycle.title", "learning.comparison.title", "learning.outcome.eyebrow",
+    "learning.tab.transaction", "learning.tab.lifecycle", "learning.tab.comparison",
+    "learning.tab.outcome",
   ]) assert.ok(t(key));
+});
+
+test("Learning contextual help covers selector, provenance, transaction, lifecycle, comparison, resources and retention", () => {
+  const markup = episodeMarkupForTest();
+  for (const id of [
+    "learning-help-selector", "learning-help-provenance", "learning-help-transaction",
+    "learning-help-lifecycle", "learning-help-comparison", "learning-help-resources",
+    "learning-help-retention",
+  ]) assert.match(markup, new RegExp('data-test-id="' + id + '"'));
+});
+
+test("Learning renders shared temporal context only when an authoritative stage time exists", () => {
+  const base = EPISODE_FIXTURES[0];
+  const timed = {
+    ...base,
+    stages: base.stages.map((stage, index) => (
+      index === 0 ? { ...stage, observedAt: 1794725520 } : stage
+    )),
+  };
+  const timedMarkup = replayPanel(timed, 0);
+  assert.match(timedMarkup, /<time[^>]*data-source-unix-seconds="1794725520"/);
+  assert.doesNotMatch(replayPanel(base, 0), /<time\b/);
+});
+
+test("Learning fixtures remain launch-owned and production does not import episode fixtures", () => {
+  const renderer = fs.readFileSync(path.join(rendererRoot, "renderer.mjs"), "utf8");
+  const fixtureSupport = fs.readFileSync(path.join(rendererRoot, "fixture-support.mjs"), "utf8");
+  const current = fs.readFileSync(path.join(rendererRoot, "foundation/current-view.mjs"), "utf8");
+  const learningMessages = fs.readFileSync(
+    path.join(rendererRoot, "foundation/messages/learning.mjs"), "utf8",
+  );
+  assert.match(renderer, /launchMode === "fixtures"\s*\? await import\("\.\/fixture-support\.mjs"\)\s*:\s*null/);
+  assert.match(renderer, /createProductionLearningController/);
+  assert.match(fixtureSupport, /renderEpisodesView/);
+  assert.match(current, /state\.context\.fixture !== true/);
+  assert.match(current, /domain\.innerHTML = ""/);
+  assert.doesNotMatch(renderer, /episode-fixture\.mjs/);
+  assert.doesNotMatch(learningMessages, /learning\.fixture\./);
+  assert.doesNotMatch(learningMessages, /44238|44239|REFERENCE FIXTURES/);
 });
 
 test("learning CSS modules preserve canvas separation, responsive recomposition, and diagnostic restraint", () => {

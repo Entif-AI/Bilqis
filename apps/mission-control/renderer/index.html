@@ -104,10 +104,15 @@
         </section>
       </main>
 
+      <div id="inspector-splitter" class="inspector-splitter" role="separator" tabindex="-1"
+           aria-orientation="vertical" aria-controls="main-content inspector"
+           aria-valuemin="160" aria-valuemax="720" aria-valuenow="360"
+           data-i18n-aria-label="shell.inspector.resize" data-test-id="investigation-inspector-splitter"></div>
       <aside id="inspector" class="inspector" role="dialog" aria-labelledby="inspector-title" aria-hidden="true" inert
              data-test-id="investigation-inspector">
         <div class="inspector-heading">
           <div><span class="eyebrow" data-i18n="shell.inspector.eyebrow"></span><h2 id="inspector-title" data-test-id="investigation-inspector-title"></h2></div>
+          <span id="inspector-help-host" class="inspector-help-host"></span>
           <button id="inspector-close" type="button" data-i18n-aria-label="shell.inspector.close"
                   data-test-id="investigation-inspector-close">×</button>
         </div>

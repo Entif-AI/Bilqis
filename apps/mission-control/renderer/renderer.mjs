@@ -16,7 +16,12 @@ import {
 } from "./settings.mjs";
 import {
   applyShellPreferences,
+  constrainInspectorWidth,
+  INSPECTOR_MIN_WIDTH,
+  inspectorWidthForDestination,
   loadShellPreferences,
+  saveShellPreferences,
+  withInspectorWidthPreference,
 } from "./shell-preferences.mjs";
 import { defensiveState } from "./foundation/defensive-state.mjs";
 import {
@@ -37,9 +42,13 @@ import { createOperateController } from "./operate/operate-controller.mjs";
 import { createCapabilityExplorer } from "./capability/app.mjs";
 import { activateDomainViews } from "./foundation/domain-controller.mjs";
 import { createInteractionController } from "./interactions/controller.mjs";
+import { createProductionLearningController } from "./learning/controller.mjs";
 import { routeForObjectRef } from "./interactions/app-uri.mjs";
 import { withHistoricalLens } from "./interactions/model.mjs";
-import { createBootstrapController } from "./foundation/bootstrap-controller.mjs";
+import {
+  constrainRouteToLaunchMode,
+  createBootstrapController,
+} from "./foundation/bootstrap-controller.mjs";
 import { bindStaticInteractions } from "./foundation/static-interactions.mjs";
 import { t } from "./foundation/i18n.mjs";
 
@@ -47,15 +56,7 @@ const launchMode = window.bamfMissionControl.launchMode === "fixtures" ? "fixtur
 const fixtureSupport = launchMode === "fixtures"
   ? await import("./fixture-support.mjs")
   : null;
-const routeForLaunchMode = (route) => route?.context
-  ? {
-      ...route,
-      context: Object.freeze({
-        ...route.context,
-        fixture: launchMode === "fixtures",
-      }),
-    }
-  : route;
+const routeForLaunchMode = (route) => constrainRouteToLaunchMode(route, launchMode);
 
 let state = null;
 let verifiedLiveContext = null;
@@ -71,6 +72,7 @@ const resourceController = createResourceController(window.bamfMissionControl, f
 const teacherController = createTeacherController(window.bamfMissionControl, {
   fixtureSupport: fixtureSupport?.teacher ?? null,
 });
+const learningController = createProductionLearningController(window.bamfMissionControl);
 const interactionController = createInteractionController({
   document,
   storage: window.localStorage,
@@ -200,13 +202,14 @@ function render() {
     onNavigate: navigateTo,
     onInspect: openInspector,
   }, bootstrapState);
+  syncInspectorWidth();
   frameShell.afterRender();
   setHash();
   activateDomainViews({
-    state, getState: () => state, defense, api: window.bamfMissionControl,
-    homeController, resourceController, operateController,
-    teacherController, capabilityExplorer, onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
-    schoolDomainSupport: fixtureSupport?.school ?? null,
+    state, getState: () => state, defense, api: window.bamfMissionControl, homeController,
+    resourceController, operateController, teacherController, capabilityExplorer,
+    onInspect: openInspector, onNavigate: navigateTo, onAnnounce: announce,
+    learningController, schoolDomainSupport: fixtureSupport?.school ?? null,
   });
   if (primaryDestinationChanged) resetPrimaryScroll();
   lastRenderedView = nextView;
@@ -246,6 +249,7 @@ function openInspector(selected) {
   if (!state) return;
   focusReturnToken = focusToken(document.activeElement);
   state = inspect(state, selected);
+  syncInspectorWidth();
   renderInspector(state, defense);
   interactionController.render();
   setHash();
@@ -261,6 +265,49 @@ function closeInspector() {
   setHash();
   window.queueMicrotask(() => restoreFocus(document, focusReturnToken));
   announce(t("shell.announce.inspectorClosed"));
+}
+
+function inspectorMetrics() {
+  return {
+    viewportWidth: document.documentElement.clientWidth || window.innerWidth,
+    railWidth: document.querySelector(".rail")?.getBoundingClientRect?.().width ?? 0,
+  };
+}
+
+function syncInspectorWidth(requestedWidth = null, { persist = false } = {}) {
+  if (!shellPreferences) return null;
+  const destination = state?.view ?? "mission-control";
+  const preferred = requestedWidth ?? inspectorWidthForDestination(shellPreferences, destination);
+  const width = constrainInspectorWidth(preferred, inspectorMetrics());
+  document.documentElement.style.setProperty("--inspector-width", `${width}px`);
+  const splitter = document.querySelector("#inspector-splitter");
+  if (splitter) {
+    const maximum = constrainInspectorWidth(Number.MAX_SAFE_INTEGER, inspectorMetrics());
+    splitter.setAttribute("aria-valuemin", String(INSPECTOR_MIN_WIDTH));
+    splitter.setAttribute("aria-valuemax", String(maximum));
+    splitter.setAttribute("aria-valuenow", String(width));
+  }
+  if (requestedWidth !== null) {
+    shellPreferences = withInspectorWidthPreference(shellPreferences, destination, width);
+    if (persist) saveShellPreferences(window.localStorage, shellPreferences);
+  }
+  const open = Boolean(state?.inspectorOpen);
+  const narrowOverlay = open && window.matchMedia?.("(max-width: 980px)")?.matches === true;
+  const panel = document.querySelector("#inspector");
+  if (narrowOverlay) panel?.setAttribute("aria-modal", "true");
+  else panel?.removeAttribute("aria-modal");
+  for (const background of [
+    document.querySelector(".skip-link"),
+    document.querySelector(".rail"),
+    document.querySelector("#main-content"),
+  ]) {
+    if (background) background.inert = narrowOverlay;
+  }
+  if (splitter) {
+    splitter.setAttribute("aria-hidden", String(!open || narrowOverlay));
+    splitter.tabIndex = open && !narrowOverlay ? 0 : -1;
+  }
+  return width;
 }
 
 function openPalette() {
@@ -287,6 +334,7 @@ async function bootstrap() {
     setShellPreferences: (next) => { shellPreferences = next; },
     render,
     closeInspector,
+    resizeInspector: syncInspectorWidth,
     openPalette,
     interactionController,
   });
