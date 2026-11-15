@@ -1,6 +1,8 @@
 import { escapeText as esc } from "../frames/frame-model.mjs";
-import { t } from "../foundation/i18n.mjs";
+import { formatMessage, t as baseT } from "../foundation/i18n.mjs";
+import { contextHelpMarkup } from "../foundation/primitives.mjs";
 import { testIdAttribute } from "../foundation/test-hooks.mjs";
+import { EPISODE_FIXTURE_MESSAGES } from "./episode-fixture-messages.mjs";
 
 const STATE_MARKERS = Object.freeze({
   PRESENT: "✓",
@@ -53,4 +55,19 @@ export function displayComparisonValue(value) {
   return String(value);
 }
 
-export { esc, t, testIdAttribute };
+export function learningHelpMarkup(key, testId) {
+  return contextHelpMarkup({
+    label: t(`learning.help.${key}.label`),
+    description: t(`learning.help.${key}.description`),
+    testId,
+  });
+}
+
+export function t(key, parameters = {}) {
+  const fixtureTemplate = EPISODE_FIXTURE_MESSAGES[key];
+  return fixtureTemplate === undefined
+    ? baseT(key, parameters)
+    : formatMessage(fixtureTemplate, parameters);
+}
+
+export { esc, testIdAttribute };

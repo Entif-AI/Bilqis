@@ -192,12 +192,32 @@ export function renderNavigation(state, onNavigate) {
 
 export function renderInspector(state, defense) {
   const panel = document.querySelector("#inspector");
+  const splitter = document.querySelector("#inspector-splitter");
   const selected = state?.selected ?? null;
   const open = Boolean(state?.inspectorOpen);
+  const narrowOverlay = open && globalThis.matchMedia?.("(max-width: 980px)")?.matches === true;
   document.querySelector("#shell").dataset.inspector = open ? "open" : "closed";
   panel.setAttribute("aria-hidden", String(!open));
   panel.inert = !open;
+  if (narrowOverlay) panel.setAttribute("aria-modal", "true");
+  else panel.removeAttribute("aria-modal");
+  for (const background of [
+    document.querySelector(".skip-link"),
+    document.querySelector(".rail"),
+    document.querySelector("#main-content"),
+  ]) {
+    if (background) background.inert = narrowOverlay;
+  }
+  splitter.setAttribute("aria-hidden", String(!open || narrowOverlay));
+  splitter.tabIndex = open && !narrowOverlay ? 0 : -1;
   document.querySelector("#inspector-title").textContent = selected?.label ?? selected?.id ?? t("shell.inspector.noSelection");
+  document.querySelector("#inspector-help-host").innerHTML = (
+    open && state?.view === "learning"
+  ) ? contextHelpMarkup({
+      label: t("shell.inspector.learningHelp.label"),
+      description: t("shell.inspector.learningHelp.description"),
+      testId: "learning-inspector-help",
+    }) : "";
   const fixtureCorrection = isFixtureCorrectionSelection(state);
   const evidencePosture = t(inspectorEvidenceLabelKey(state, defense, fixtureCorrection));
   const summary = document.querySelector("#inspector-summary");

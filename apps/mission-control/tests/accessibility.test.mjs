@@ -54,6 +54,8 @@ test("static shell exposes named landmarks, skip navigation, dedicated announcem
   assert.match(html, /id="defensive-banner"[^>]*aria-live="polite"[^>]*aria-atomic="true"/);
   assert.match(html, /id="announcer"[^>]*aria-live="polite"/);
   assert.match(html, /id="inspector"[^>]*role="dialog"[^>]*aria-labelledby="inspector-title"[^>]*inert/);
+  assert.match(html, /id="inspector-splitter"[^>]*role="separator"[^>]*tabindex="-1"/);
+  assert.match(html, /id="inspector-splitter"[^>]*aria-valuemin="160"[^>]*aria-valuemax="720"[^>]*aria-valuenow="360"/);
   assert.match(html, /id="inspector-forensics"[^>]*>\s*<summary data-i18n="shell\.inspector\.forensics"/s);
   assert.match(html, /id="copy-deep-link"[^>]*data-test-id="investigation-inspector-copy-deep-link"/);
   assert.match(html, /<dialog id="command-palette"[^>]*aria-labelledby="palette-title"/);
@@ -70,11 +72,13 @@ test("renderer entrypoint remains syntactically loadable after shell composition
   );
 });
 
-test("global investigation surface reserves inspector space while the inspector is open", () => {
+test("global inspector recomposes desktop shell instead of reserving investigation-strip margin", () => {
   const ui = source("foundation/renderer-ui.mjs");
-  const css = source("interactions/interactions.css");
+  const shell = source("shell.css");
+  const interactions = source("interactions/interactions.css");
   assert.match(ui, /dataset\.inspector = open \? "open" : "closed"/);
-  assert.match(css, /\.shell\[data-inspector="open"\] \.investigation-strip/);
+  assert.match(shell, /\.shell\[data-inspector="open"\][^{]*\{[^}]*grid-template-columns:/s);
+  assert.doesNotMatch(interactions, /\.shell\[data-inspector="open"\] \.investigation-strip/);
 });
 
 test("focus is visibly retained and reduced-motion plus forced-colors modes are explicit", () => {

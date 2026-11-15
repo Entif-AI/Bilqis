@@ -70,6 +70,10 @@
     grid-template-columns: 1fr;
   }
 
+  .episode-tabs {
+    scrollbar-gutter: stable;
+  }
+
   .episode-resource-posture {
     grid-column: auto;
   }

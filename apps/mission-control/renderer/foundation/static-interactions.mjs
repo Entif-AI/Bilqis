@@ -110,6 +110,7 @@ export function bindStaticInteractions({
   setShellPreferences,
   render,
   closeInspector,
+  resizeInspector,
   openPalette,
   interactionController,
 }) {
@@ -154,6 +155,44 @@ export function bindStaticInteractions({
   skipMain.addEventListener("keydown", (event) => {
     if (event.key === "Enter") focusMain(event);
   });
+  const inspectorSplitter = document.querySelector("#inspector-splitter");
+  let inspectorDrag = null;
+  inspectorSplitter.addEventListener("pointerdown", (event) => {
+    if (event.button !== 0) return;
+    inspectorDrag = {
+      startX: event.clientX,
+      startWidth: Number(inspectorSplitter.getAttribute("aria-valuenow")) || 0,
+    };
+    inspectorSplitter.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+  });
+  inspectorSplitter.addEventListener("pointermove", (event) => {
+    if (!inspectorDrag) return;
+    resizeInspector(inspectorDrag.startWidth + inspectorDrag.startX - event.clientX);
+  });
+  const finishInspectorDrag = (event) => {
+    if (!inspectorDrag) return;
+    const next = inspectorDrag.startWidth + inspectorDrag.startX - event.clientX;
+    inspectorDrag = null;
+    resizeInspector(next, { persist: true });
+    inspectorSplitter.releasePointerCapture?.(event.pointerId);
+  };
+  inspectorSplitter.addEventListener("pointerup", finishInspectorDrag);
+  inspectorSplitter.addEventListener("pointercancel", finishInspectorDrag);
+  inspectorSplitter.addEventListener("keydown", (event) => {
+    const current = Number(inspectorSplitter.getAttribute("aria-valuenow")) || 0;
+    const minimum = Number(inspectorSplitter.getAttribute("aria-valuemin")) || 160;
+    const maximum = Number(inspectorSplitter.getAttribute("aria-valuemax")) || current;
+    const next = event.key === "ArrowLeft" ? current + 16
+      : event.key === "ArrowRight" ? current - 16
+      : event.key === "Home" ? minimum
+      : event.key === "End" ? maximum
+      : null;
+    if (next === null) return;
+    event.preventDefault();
+    resizeInspector(next, { persist: true });
+  });
+  window.addEventListener("resize", () => resizeInspector());
   document.querySelector("#inspector-close").addEventListener("click", closeInspector);
   document.querySelector("#open-owner").addEventListener("click", () => {
     const state = getState();
