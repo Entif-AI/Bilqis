@@ -19,6 +19,39 @@ from .pre_neural_journey_support import (
 
 
 class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
+    def test_priority_planning_reports_operator_visible_substages(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        messages = []
+
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                selected = select_foundation_priority_visit(
+                    self.run, context, atlas_path, program=program, school=school,
+                    progress=messages.append)
+
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+        self.assertEqual(messages, [
+            "planner: resolving accepted atlas selection",
+            "planner: rebuilding source candidate frontier",
+            "planner: staging source-valid candidate realizations",
+            "planner: reconciling accepted planning state",
+            "planner: building bounded executable snapshot",
+            "planner: resolving frontier closure",
+            "planner: ranking next bounded target",
+            "planner: candidate frontier ready",
+            "teacher: binding accepted planning generation",
+            "teacher: preparing source-backed offers for 21 capabilities",
+            "teacher: ranking priority options",
+            "teacher: selecting current priority visit",
+            "teacher: priority selection complete (TEACHER_SELECTED)",
+        ])
+
     def test_candidate_preflight_rejects_pointer_drift_before_neural_boundary(self):
         self.current, self.parent_graph = historical_school_release()
         snapshot = portable_atlas_snapshot()

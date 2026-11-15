@@ -157,11 +157,15 @@ def prepare_bamf_visit(run_dir: Path, *, progress=None) -> BamfPreparedVisit:
     school = accepted_priority_school(parent, program)
     _emit_progress(progress, "planning current candidate frontier and teacher priority")
     selection = select_foundation_priority_visit(
-        run_dir, context, atlas_path, program=program, school=school)
+        run_dir, context, atlas_path, program=program, school=school,
+        progress=progress)
     if selection.status != "TEACHER_SELECTED":
         status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
         return BamfPreparedVisit(status, parent, selection=selection)
     rows = selection.offer.rows()
+    _emit_progress(
+        progress,
+        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
     observation = FactoryDeliveryObservation(
         _Capture(run_dir, selection), parent.retained_state.optimizer_step + 1,
         rows, selection.offer.source_seed)
