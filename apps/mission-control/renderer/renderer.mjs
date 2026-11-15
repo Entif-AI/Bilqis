@@ -2,6 +2,7 @@ import { createFrameShell } from "./frames/frame-shell.mjs";
 import {
   inspect,
   navigate,
+  openEvidence as openEvidenceView,
   openSelectionOwner,
   returnFromEvidence,
   selectObject,
@@ -115,6 +116,11 @@ const capabilityExplorer = createCapabilityExplorer({
   openObject: (selected) => {
     if (!state) return;
     state = { ...openSelectionOwner(inspect(state, selected)), inspectorOpen: false };
+    render();
+  },
+  openEvidence: (selected) => {
+    if (!state) return;
+    state = openEvidenceView(inspect(state, selected));
     render();
   },
   resolvePins: (meta) => {

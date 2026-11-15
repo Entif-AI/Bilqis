@@ -1,37 +1,59 @@
-async (page) => {
+export async function capabilityJourney(page) {
   const check = (condition, message) => { if (!condition) throw new Error(message); };
-  await page.getByRole('heading', {name:'Conjunction', exact:true}).waitFor();
-  check(await page.locator('.dossier-section').count() === 5, 'five sections');
-  check(await page.locator('[data-kind="regression"]').count() === 1, 'regression preserved');
-  check(await page.locator('[data-kind="recovery"]').count() === 1, 'recovery preserved');
-  check(await page.locator('[data-kind="retained"]').count() === 1, 'retained distinct');
-  check(await page.locator('[data-kind="rejected"]').count() === 1, 'rejected distinct');
-  check(await page.locator('[data-kind="no-gain"]').count() === 1, 'no gain distinct');
-  check(await page.locator('[data-kind="interference"]').count() === 1, 'interference distinct');
-  await page.locator('[data-kind="fresh"] summary').click();
-  await page.locator('[data-evidence="evidence:B.AND:fresh:3"]').click();
-  await page.locator('#evidence-detail [data-record]').first().click();
-  await page.getByText('"score_correct":', {exact:false}).last().waitFor();
-  check((await page.locator('#evidence-detail').innerText()).includes('evidence:B.AND:fresh:3'), 'exact evidence');
-  await page.locator('[data-test-id="investigation-time-toggle"]').click();
-  await page.locator('[data-test-id="investigation-time-generation"]').fill('1');
-  await page.locator('[data-test-id="investigation-time-apply"]').click();
-  await page.getByRole('heading', {name:'Conjunction', exact:true}).waitFor();
-  check(await page.locator('[data-kind="regression"]').count() === 0, 'no future regression at G1');
-  check(await page.locator('[data-kind="recovery"]').count() === 0, 'no future recovery at G1');
-  await page.locator('[data-kind="prerequisite"] summary').click();
-  await page.getByRole('button', {name:'Open capability · B.NOT'}).click();
-  await page.getByRole('heading', {name:'Negation', exact:true}).waitFor();
-  check(page.url().includes('id=B.NOT') && page.url().includes('generation=1'), 'exact dependent lens');
-  await page.locator('[data-test-id="shell-theme-trigger"]').click();
-  await page.locator('[data-test-id="shell-density-trigger"]').click();
-  await page.setViewportSize({width:800,height:900});
-  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'narrow viewport no overflow');
-  await page.locator('[data-section="sources"]').focus();
-  await page.keyboard.press('Enter');
-  check(await page.evaluate(() => document.activeElement.id === 'dossier-sources'), 'keyboard section focus');
-  await page.locator('#dossier-source').selectOption('service');
-  await page.getByRole('heading', {name:'UNAVAILABLE', exact:true}).waitFor();
-  check(await page.locator('.dossier-entry').count() === 0, 'no fixture fallback on service error');
-  return 'GUI05_BROWSER_JOURNEY_PASS';
+  const hook = (id) => page.locator(`[data-test-id="${id}"]`);
+
+  await hook("capability-name").waitFor();
+  check((await hook("capability-name").innerText()) === "Conjunction", "exact capability identity");
+  check(await page.locator('[data-test-id^="capability-section-"]').filter({ has: page.locator("h2") }).count() >= 5, "dossier sections");
+  check(await hook("capability-entry-history-1").count() === 1, "regression preserved");
+  check(await hook("capability-entry-history-2").count() === 1, "recovery preserved");
+  check(await hook("capability-entry-performance-2").count() === 1, "retained distinct");
+  check(await hook("capability-entry-performance-3").count() === 1, "rejected distinct");
+  check(await hook("capability-entry-teaching-1").count() === 1, "no gain distinct");
+  check(await hook("capability-entry-teaching-2").count() === 1, "interference distinct");
+  check((await hook("capability-metric-now").innerText()).includes("10/12"), "NOW keeps denominator");
+  check((await hook("capability-heading").innerText()).includes("does not infer causes"), "causal boundary visible");
+
+  await hook("capability-entry-performance-0-evidence").locator("summary").click();
+  await hook("capability-evidence-ref-performance-0-0").click();
+  await hook("capability-evidence-inspect-0").click();
+  await hook("capability-evidence-record-0").waitFor();
+  check((await hook("capability-evidence-detail").innerText()).includes("evidence:B.AND:fresh:3"), "exact evidence");
+  await hook("capability-evidence-open").click();
+  check(await page.evaluate(() => window.__openedEvidence?.id === "evidence:B.AND:fresh:3"), "full Evidence route preserves exact record");
+
+  await hook("capability-lens-generation").fill("1");
+  await hook("capability-lens-submit").click();
+  await hook("capability-name").waitFor();
+  check((await hook("capability-name").innerText()) === "Conjunction", "identity survives time lens");
+  check(await hook("capability-entry-history-1").count() === 1, "G1 second history entry remains literal");
+  check((await hook("capability-entry-history-1").innerText()).includes("No-gain"), "no future regression at G1");
+
+  await hook("capability-entry-dependencies-0-evidence").locator("summary").click();
+  await hook("capability-related-dependencies-0").click();
+  await hook("capability-name").waitFor();
+  check((await hook("capability-name").innerText()) === "Negation", "related capability opens exact owner");
+  check(
+    await hook("capability-lens-capability").inputValue() === "B.NOT" &&
+      await hook("capability-lens-generation").inputValue() === "1",
+    "exact dependent lens",
+  );
+
+  await page.evaluate(() => {
+    document.documentElement.dataset.theme = "light";
+    document.documentElement.dataset.density = "compact";
+  });
+  await page.setViewportSize({ width: 800, height: 900 });
+  check(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), "narrow viewport no overflow");
+  await hook("capability-section-nav-sources").focus();
+  await page.keyboard.press("Enter");
+  check(await page.evaluate(() => document.activeElement?.dataset?.testId === "capability-section-sources"), "keyboard section focus");
+
+  await hook("capability-source-select").selectOption("service");
+  await hook("capability-empty-status").waitFor();
+  check((await hook("capability-empty-status").innerText()) === "UNAVAILABLE", "service failure is literal");
+  check(await page.locator('[data-test-id^="capability-entry-"]').count() === 0, "no fixture fallback on service error");
+  return "CAPABILITY_BROWSER_JOURNEY_PASS";
 }
+
+export default capabilityJourney;
