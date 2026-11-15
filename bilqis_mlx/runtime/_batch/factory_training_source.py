@@ -162,7 +162,7 @@ def _bind_b11_rows(source_context, candidate, authenticated, training, source_ro
             source_context.release.curriculum, profile)
         source_execution_authority = bind_b11_source_execution_authority(
             compiled.compiled.rows[0], compiled.compiler_configs[0],
-            source, adapter, authenticated.snapshot)
+            source, adapter, authenticated.snapshot, compiled.features)
         batch = bind_compiled_training_batch(
             training, compiled, (source,), authenticated.schema,
             active_semantic_rows=active_semantic_rows, row_index=index,
