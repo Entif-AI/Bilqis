@@ -1,7 +1,10 @@
 .lineage-view { display: grid; gap: var(--space-6); min-width: 0; }
 .lineage-heading { display: grid; gap: var(--space-2); padding-block-end: var(--space-4); border-bottom: 1px solid var(--border); }
+.lineage-heading { grid-template-columns: minmax(0, 1fr) max-content; align-items: start; }
 .lineage-heading h2 { margin: 4px 0 0; font-size: var(--type-section); }
 .lineage-heading p { max-width: 780px; margin: 0; color: var(--text-muted); text-wrap: pretty; }
+.lineage-heading-tools, .lineage-heading-help { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; justify-content: end; }
+.lineage-heading-tools > strong { color: var(--text-muted); font-size: var(--type-label); }
 .lineage-fixture-notice { display: grid; gap: 4px; padding-inline-start: var(--space-3); border-inline-start: 2px solid var(--border-strong); }
 .lineage-fixture-notice strong { font-size: var(--type-label); letter-spacing: .04em; }
 .lineage-fixture-notice p { max-width: 900px; margin: 0; color: var(--text-muted); }
@@ -16,6 +19,9 @@
 .lineage-state[data-lineage-state="recovery-fork"], .lineage-state[data-lineage-state="sibling-branches"], .lineage-state[data-lineage-state="non-adjacent-lineage"] { border-style: dashed; }
 .lineage-context-note, .lineage-doctrine, .lineage-scroll-hint { max-width: 860px; margin: 0; color: var(--text-muted); }
 .lineage-scroll-hint { font-size: var(--type-label); }
+.lineage-tabs { display: flex; gap: var(--space-1); min-width: 0; overflow-x: auto; border-bottom: 1px solid var(--border); }
+.lineage-tabs .ui-control { flex: 0 0 auto; }
+[data-lineage-panel][hidden], [data-lineage-production-panel][hidden] { display: none; }
 
 .lineage-graph-scroll, .lineage-table-wrap { min-width: 0; max-width: 100%; overflow: auto; scrollbar-gutter: stable; background: var(--surface-1); }
 .lineage-graph-scroll { padding: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-md); }
@@ -31,6 +37,7 @@
 .lineage-node-parent { font-size: var(--type-label); }
 .lineage-node-id { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: var(--space-2); color: var(--text-muted); font-size: var(--type-label); }
 .lineage-node-id code { overflow-wrap: anywhere; color: var(--text); }
+.production-lineage-tree .lineage-tree-item { grid-template-columns: 220px; }
 
 .lineage-table-wrap { border-block: 1px solid var(--border); }
 .lineage-table { min-width: 860px; background: var(--surface-1); font-variant-numeric: tabular-nums lining-nums; }
@@ -51,6 +58,15 @@
 .lineage-manifest-detail .lineage-table { min-width: 980px; }
 .lineage-dossier-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .lineage-query { display: block; margin-top: var(--space-2); overflow-wrap: anywhere; }
+.lineage-production-identities dl { display: grid; gap: 0; margin: 0; }
+.lineage-production-identities dl > div { display: grid; grid-template-columns: minmax(150px, .35fr) minmax(0, 1fr); gap: var(--space-3); padding-block: var(--space-2); border-bottom: 1px solid var(--border); }
+.lineage-production-identities dl > div:last-child { border-bottom: 0; }
+.lineage-production-identities dt { color: var(--text-muted); }
+.lineage-production-identities dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
+.lineage-production-state { display: grid; gap: var(--space-1); max-width: 760px; padding-block: var(--space-4); color: var(--text-muted); }
+.lineage-production-state strong { color: var(--text); }
+.lineage-production-rejected-list { display: grid; gap: var(--space-2); margin: 0; padding: 0; list-style: none; }
+.lineage-production-rejected-list li { display: grid; grid-template-columns: minmax(180px, 1fr) minmax(120px, .7fr) minmax(160px, 1fr) auto; gap: var(--space-3); align-items: baseline; padding-block: var(--space-2); border-bottom: 1px solid var(--border); }
 
 .lineage-compare-controls { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: var(--space-4); max-width: 880px; }
 .lineage-compare-controls label { display: grid; gap: 6px; color: var(--text-muted); }
@@ -80,7 +96,8 @@
 :root[data-density="compact"] .lineage-dossier-facts > div { padding-block: var(--space-2); }
 
 @media (max-width: 980px) {
-  .lineage-section-heading, .lineage-boundary header { grid-template-columns: 1fr; }
+  .lineage-heading, .lineage-section-heading, .lineage-boundary header { grid-template-columns: 1fr; }
+  .lineage-heading-tools, .lineage-heading-help { justify-content: start; }
   .lineage-section-heading .lineage-state, .lineage-boundary header .lineage-state { justify-self: start; }
   .lineage-dossier-facts { grid-template-columns: 1fr; }
   .lineage-dossier-facts > div, .lineage-dossier-facts > div:nth-child(odd), .lineage-dossier-facts > div:nth-child(even) { padding-inline: 0; border-inline-start: 0; border-bottom: 1px solid var(--border); }
@@ -97,6 +114,7 @@
   .lineage-node { width: 190px; }
   .lineage-compare-controls { grid-template-columns: 1fr; }
   .lineage-dossier-facts > div, .lineage-boundary dl, .lineage-rejected dl > div { grid-template-columns: 1fr; gap: 4px; }
+  .lineage-production-identities dl > div, .lineage-production-rejected-list li { grid-template-columns: 1fr; gap: 4px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
