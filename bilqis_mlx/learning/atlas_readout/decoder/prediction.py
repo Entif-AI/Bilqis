@@ -7,6 +7,7 @@ from enum import Enum
 from weakref import WeakValueDictionary, finalize
 import mlx.core as mx
 from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 from ..control import ControlAction
 from ..decisions import (
     DecisionOutput, DecodeStatus, start_decoding, ready_decisions,
@@ -56,8 +57,30 @@ class _IssuanceRegistry:
                 and len(output.decisions) == len(records)
                 and all(record is issued and record.logits is logits
                         and (fingerprint is None
-                             or _logit_fingerprint(record.logits) == fingerprint)
+                             and not host_tensor_validation_enabled()
+                             or fingerprint is not None
+                             and _logit_fingerprint(record.logits) == fingerprint)
                         for record, (issued, logits, fingerprint) in zip(output.decisions, records)))
+
+    def attest(self, output, meaning):
+        if not host_tensor_validation_enabled():
+            return False
+        key = id(output)
+        if self.outputs.get(key) is not output or key not in self.records:
+            return False
+        records, frozen_meaning = self.records[key]
+        if meaning != frozen_meaning or len(output.decisions) != len(records):
+            return False
+        if any(record is not issued or record.logits is not logits
+               for record, (issued, logits, _fingerprint) in zip(output.decisions, records)):
+            return False
+        output.__post_init__()
+        attested = tuple(
+            (record, logits, _logit_fingerprint(logits))
+            for record, (_issued, logits, _fingerprint) in zip(output.decisions, records)
+        )
+        self.records[key] = (attested, frozen_meaning)
+        return True
 
 
 _ISSUANCE = _IssuanceRegistry()
@@ -78,6 +101,11 @@ def _issue_output(output, *, fingerprint=True):
     return _ISSUANCE.issue(output, _meaning(output), fingerprint=fingerprint)
 
 
+def attest_issued_output(output):
+    """Complete deferred decoder evidence after tensors leave autodiff."""
+    return _ISSUANCE.attest(output, _meaning(output))
+
+
 class ExecutionMode(str,Enum):
     INFERENCE='INFERENCE'
     TEACHER_FORCED='TEACHER_FORCED'
@@ -95,7 +123,9 @@ class DecisionLogits:
                 or type(self.kind) is not DecisionKind or type(self.candidates) is not tuple
                 or not self.candidates or len(set(self.candidates))!=len(self.candidates)
                 or not isinstance(self.logits,mx.array) or self.logits.dtype!=mx.float32
-                or self.logits.shape!=(len(self.candidates),)):
+                or self.logits.shape!=(len(self.candidates),)
+                or (host_tensor_validation_enabled()
+                    and not bool(mx.all(mx.isfinite(self.logits))))):
             invalid()
 
 
