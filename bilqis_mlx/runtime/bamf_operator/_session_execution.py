@@ -23,7 +23,11 @@ def execute_horizon(
     try:
         from bilqis_mlx.learning.teacher_lineage import instruction_history
         from bilqis_mlx.runtime.priority_rejection_replay import rejection_recency
-        history_state, seen = instruction_history(parent.teacher_state)
+        projected_teacher = getattr(
+            getattr(getattr(selection, "visit", None), "projection", None),
+            "teacher_state", None)
+        history_state, seen = instruction_history(
+            projected_teacher if projected_teacher is not None else parent.teacher_state)
         _, rejected = rejection_recency(run_dir, parent, cache)
         capability = selection.offer.capability_id
         introductory = (

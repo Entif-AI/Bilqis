@@ -17365,6 +17365,36 @@
           "anyOf": [
             {
               "additionalProperties": false,
+              "allOf": [
+                {
+                  "else": {
+                    "properties": {
+                      "distance_to_mastery": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    }
+                  },
+                  "if": {
+                    "properties": {
+                      "distance_to_mastery_state": {
+                        "const": "NOT_MEASURED"
+                      }
+                    },
+                    "required": [
+                      "distance_to_mastery_state"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "distance_to_mastery": {
+                        "type": "null"
+                      }
+                    }
+                  }
+                }
+              ],
               "properties": {
                 "best": {
                   "anyOf": [
@@ -17378,7 +17408,7 @@
                         },
                         "total": {
                           "maximum": 9007199254740991,
-                          "minimum": 0,
+                          "minimum": 1,
                           "type": "integer"
                         }
                       },
@@ -17403,16 +17433,15 @@
                   "x-bilqis-unicode-domain": "scalar-values"
                 },
                 "certified_surface_regression_state": {
-                  "minLength": 1,
-                  "not": {
-                    "pattern": "\\n"
-                  },
-                  "pattern": "\\S",
-                  "type": "string",
-                  "x-bilqis-unicode-domain": "scalar-values"
+                  "enum": [
+                    "NOT_MEASURED",
+                    "NOT_OBSERVED",
+                    "OBSERVED_REGRESSION"
+                  ],
+                  "type": "string"
                 },
                 "comparable_points": {
-                  "maximum": 9007199254740991,
+                  "maximum": 64,
                   "minimum": 0,
                   "type": "integer"
                 },
@@ -17429,13 +17458,11 @@
                   ]
                 },
                 "distance_to_mastery_state": {
-                  "minLength": 1,
-                  "not": {
-                    "pattern": "\\n"
-                  },
-                  "pattern": "\\S",
-                  "type": "string",
-                  "x-bilqis-unicode-domain": "scalar-values"
+                  "enum": [
+                    "MEASURED",
+                    "NOT_MEASURED"
+                  ],
+                  "type": "string"
                 },
                 "epoch_sha256": {
                   "pattern": "^[0-9a-f]{64}$",
@@ -17454,7 +17481,7 @@
                         },
                         "total": {
                           "maximum": 9007199254740991,
-                          "minimum": 0,
+                          "minimum": 1,
                           "type": "integer"
                         }
                       },
@@ -17551,13 +17578,13 @@
                   ]
                 },
                 "history_state": {
-                  "minLength": 1,
-                  "not": {
-                    "pattern": "\\n"
-                  },
-                  "pattern": "\\S",
-                  "type": "string",
-                  "x-bilqis-unicode-domain": "scalar-values"
+                  "enum": [
+                    "VALID",
+                    "PARTIAL",
+                    "INVALID",
+                    "NOT_MEASURED"
+                  ],
+                  "type": "string"
                 },
                 "latest": {
                   "anyOf": [
@@ -17571,7 +17598,7 @@
                         },
                         "total": {
                           "maximum": 9007199254740991,
-                          "minimum": 0,
+                          "minimum": 1,
                           "type": "integer"
                         }
                       },
@@ -17600,22 +17627,16 @@
                   "uniqueItems": true
                 },
                 "protected_regression_state": {
-                  "minLength": 1,
-                  "not": {
-                    "pattern": "\\n"
-                  },
-                  "pattern": "\\S",
-                  "type": "string",
-                  "x-bilqis-unicode-domain": "scalar-values"
+                  "enum": [
+                    "NOT_MEASURED",
+                    "NOT_OBSERVED",
+                    "OBSERVED_REGRESSION"
+                  ],
+                  "type": "string"
                 },
                 "qualification_state": {
-                  "minLength": 1,
-                  "not": {
-                    "pattern": "\\n"
-                  },
-                  "pattern": "\\S",
-                  "type": "string",
-                  "x-bilqis-unicode-domain": "scalar-values"
+                  "const": "NOT_MEASURED",
+                  "type": "string"
                 },
                 "recent_checkpoints": {
                   "items": {
@@ -17638,7 +17659,7 @@
                       },
                       "total": {
                         "maximum": 9007199254740991,
-                        "minimum": 0,
+                        "minimum": 1,
                         "type": "integer"
                       }
                     },
@@ -17650,6 +17671,7 @@
                     ],
                     "type": "object"
                   },
+                  "maxItems": 3,
                   "type": "array",
                   "uniqueItems": true
                 },
@@ -17670,13 +17692,11 @@
                   "uniqueItems": true
                 },
                 "state": {
-                  "minLength": 1,
-                  "not": {
-                    "pattern": "\\n"
-                  },
-                  "pattern": "\\S",
-                  "type": "string",
-                  "x-bilqis-unicode-domain": "scalar-values"
+                  "enum": [
+                    "MEASURED",
+                    "NOT_MEASURED"
+                  ],
+                  "type": "string"
                 },
                 "warnings": {
                   "items": {
@@ -17723,6 +17743,8 @@
                     ],
                     "type": "object"
                   },
+                  "maxItems": 5,
+                  "minItems": 5,
                   "type": "array",
                   "uniqueItems": true
                 }
