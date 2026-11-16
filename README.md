@@ -3,13 +3,13 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png">
-    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Admin Main Frame Dashboard, displaying an active neurosymbolic training run.">
+    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Model Forensics Dashboard, displaying an active neurosymbolic training run.">
   </picture>
 </p>
 
 <p>Read the research paper behind this work here: <br /><a href="https://entif.ai/tags/research/2026/09/11/prepaying-semantics/" target="_blank">Prepaying Semantics is Cheaper</a></p>
 
-Bilqis MLX is an Apple Silicon-native cognitive learner and training system built around MLX. It combines a source-grounded semantic substrate, a generative curriculum Factory, a continually extensible neural learner, retention-aware training, durable checkpoint custody, a local control plane, and the Admin Main Frame desktop interface.
+Bilqis MLX is an Apple Silicon-native cognitive learner and training system built around MLX. It combines a source-grounded semantic substrate, a generative curriculum Factory, a continually extensible neural learner, retention-aware training, durable checkpoint custody, a local control plane, and the Model Forensics desktop interface.
 
 The current system is the **BAMF-0.2 owner-operated alpha**. It is designed to learn source-qualified capabilities while preserving accepted knowledge and exact optimizer lineage. The repository is public; model weights, optimizer state, source-authority material, and live run data are not stored in Git.
 
@@ -24,7 +24,7 @@ The repository contains the model and the local learning system around it:
 - **Teacher and retention system:** candidate teaching, whole-student retention checks, rollback, capability evidence, and checkpoint publication.
 - **Durable custody:** immutable generation manifests, matching model and AdamW state, accepted pointers, source identities, and recovery evidence.
 - **Control plane:** a local service that exposes bounded status, query, event, and operator-command surfaces without giving the GUI filesystem or process privileges.
-- **Admin Main Frame:** an Electron desktop cockpit for inspection and owner-authorized trainer operations.
+- **Model Forensics:** an Electron desktop cockpit for inspection and owner-authorized trainer operations.
 - **Historical compatibility:** frozen predecessor code and source-oracle material under vendor/legacy-v16. New development belongs in bilqis_mlx.
 
 The architectural contract is [BAMF-0.2](docs/architecture/BAMF_0_2.md), including `ADR-BAMF02-004` for the functional recursive Factory. Numbered specifications under [docs/specifications](docs/specifications/) own normative behavior.
@@ -39,10 +39,10 @@ BAMF-0.2 currently supports:
 - source/admission validation and retained candidate publication;
 - read-only dashboard and diagnostic inspection;
 - a local control plane with bounded command execution;
-- Admin Main Frame views for live state, evidence, resources, curriculum, lineage, and operator actions;
+- Model Forensics views for live state, evidence, resources, curriculum, lineage, and operator actions;
 - owner-authorized launch/resume, safe Stop, checkpoint verification, bounded command logs, and recovery through the accepted checkpoint path.
 
-Actual neural optimizer updates are deliberately human-initiated. The CLI requires --human-run for mutating operation. Admin Main Frame requires a reviewed authorization phrase before it submits a mutating command.
+Actual neural optimizer updates are deliberately human-initiated. The CLI requires --human-run for mutating operation. Model Forensics requires a reviewed authorization phrase before it submits a mutating command.
 
 The native training baseline is a single Apple Silicon Mac. Portable tests and many read-only tools run elsewhere, but MLX training is not a Linux or x86 runtime target.
 
@@ -94,7 +94,7 @@ For a **new** target, use an absolute path such as:
 export RUN_DIR="$HOME/Code/bilqis-mlx-runs/aspirant"
 ~~~
 
-Do not use `--resume`, start CP01, or launch Admin Main Frame yet. A fresh-lineage `--dry-run` is only a neural-inert preflight and intentionally does not create `RUN_DIR`. Follow [Creating a new BAMF lineage](docs/operations/OPERATOR_GUIDE.md#creating-a-new-bamf-lineage), then continue here only after `RUN_DIR/bamf-state.json` exists.
+Do not use `--resume`, start CP01, or launch Model Forensics yet. A fresh-lineage `--dry-run` is only a neural-inert preflight and intentionally does not create `RUN_DIR`. Follow [Creating a new BAMF lineage](docs/operations/OPERATOR_GUIDE.md#creating-a-new-bamf-lineage), then continue here only after `RUN_DIR/bamf-state.json` exists.
 
 For an **existing accepted** BAMF run, use the exact run directory. A dry-run resume is neural-inert:
 
@@ -108,24 +108,24 @@ npm run dashboard -- --run-dir "$RUN_DIR" --once --atlas-details
 
 Do not hand-edit checkpoint state to bypass a failed preflight. The accepted generation, model, AdamW state, source identities, and receipts are one custody chain.
 
-## Launch Bilqis Admin Main Frame (BAMF)
+## Launch Bilqis Model Forensics (BAMF)
 
-Admin Main Frame talks to the local Python control plane over a Unix socket. These commands assume `RUN_DIR/bamf-state.json` already exists. A pointerless fresh target reports `learner-unavailable`; create generation zero first.
+Model Forensics talks to the local Python control plane over a Unix socket. These commands assume `RUN_DIR/bamf-state.json` already exists. A pointerless fresh target reports `learner-unavailable`; create generation zero first.
 
-Admin Main Frame automatically discovers an active human BAMF trainer and owns
+Model Forensics automatically discovers an active human BAMF trainer and owns
 the local CP01 service for that run. For the common case, start or resume the
-trainer and launch Admin Main Frame from the same checkout:
+trainer and launch Model Forensics from the same checkout:
 
 ~~~bash
 npm run bamf
 ~~~
 
-If Bilqis Admin Main Frame is already open when a trainer starts, it retries discovery
+If Bilqis Model Forensics is already open when a trainer starts, it retries discovery
 and reattaches automatically. `RUN_DIR` remains useful when opening BAMF for a
 specific inactive run; `BILQIS_CONTROL_PLANE_SOCKET` is an advanced explicit
 override rather than a routine startup requirement.
 
-Bilqis Admin Main Frame can inspect the run without neural updates.
+Bilqis Model Forensics can inspect the run without neural updates.
 Mutating actions remain behind preview and explicit human authorization.
 The [operator guide](docs/operations/OPERATOR_GUIDE.md) walks through Resume,
 Owner Launch, Stop, checkpoint verification, logs, and recovery.
@@ -141,11 +141,11 @@ npm run train -- --human-run --resume --run-dir "$RUN_DIR" \
 
 The current CLI requires `--human-run` as an explicit operator confirmation before mutating training. It is not authentication or a security boundary. `--max-visits 1` is a useful first-session bound, not a permanent training policy. Do not lower the 100 GiB reserve simply to keep a run alive.
 
-A terminal-launched run stops through its normal interrupt path with Ctrl-C. A run launched through Admin Main Frame should use **Stop** in Operate so the control plane can bind the interrupt to the exact accepted operation.
+A terminal-launched run stops through its normal interrupt path with Ctrl-C. A run launched through Model Forensics should use **Stop** in Operate so the control plane can bind the interrupt to the exact accepted operation.
 
 ## A clean clone is not a production authority bootstrap
 
-A clean clone is sufficient for development, portable verification, read-only tools, Admin Main Frame, and operation of an accepted run whose custody is already present.
+A clean clone is sufficient for development, portable verification, read-only tools, Model Forensics, and operation of an accepted run whose custody is already present.
 
 It is **not** sufficient to mint a new production BAMF lineage from empty disk. Fresh generation-zero creation consumes:
 
@@ -168,7 +168,7 @@ By default, mutable run data lives under runs/ and is ignored by Git.
 | bilqis_mlx/ | Active implementation |
 | configs/ | Versioned runtime configuration, including the BAMF topology |
 | lib/ithkuil/ | Imported New Ithkuil semantic source corpus and tooling |
-| apps/mission-control/ | Electron Admin Main Frame application |
+| apps/mission-control/ | Electron Model Forensics application |
 | runs/ | Local model, AdamW, generation, event, teacher, and run state |
 | vendor/legacy-v16/ | Frozen predecessor implementation and source-oracle compatibility material |
 | docs/ | Specifications, architecture, operations, evidence, provenance, tasks, and history |

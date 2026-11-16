@@ -259,6 +259,32 @@ test("main logs only operation and sanitized cause code for rejected IPC request
   assert.equal(serialized.includes("/Users/operator/private-run"), false);
 });
 
+test("accepted-contract diagnostics preserve only a bounded public reason", async () => {
+  const ipcMain = ipcMainFixture();
+  const adapter = adapterFixture();
+  adapter.status = async () => {
+    const error = new Error("BAMF_GUI20_ACCEPTED_CONTRACT_INVALID:QUERY_RESPONSE");
+    error.code = "BAMF_GUI20_ACCEPTED_CONTRACT_INVALID";
+    throw error;
+  };
+  const bridge = new ControlPlaneBridge(adapter, FIXTURE_VALIDATORS);
+  const sender = senderFixture();
+  const diagnostics = [];
+  registerMissionControlIpc({
+    ipcMain,
+    bridge,
+    trustedWebContents: sender.sender,
+    onRequestFailure: (diagnostic) => diagnostics.push(diagnostic),
+  });
+  await ipcMain.handlers.get(CHANNELS.connect)(sender.event);
+
+  await assert.rejects(ipcMain.handlers.get(CHANNELS.status)(sender.event));
+  assert.deepEqual(diagnostics, [{
+    operation: "status",
+    causeCode: "BAMF_GUI20_ACCEPTED_CONTRACT_INVALID:QUERY_RESPONSE",
+  }]);
+});
+
 test("main never treats an arbitrary BAMF-looking adapter code as a safe diagnostic", async () => {
   const ipcMain = ipcMainFixture();
   const adapter = adapterFixture();

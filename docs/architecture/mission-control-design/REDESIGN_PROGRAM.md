@@ -1,4 +1,4 @@
-# Admin Main Frame surgical redesign program
+# Model Forensics surgical redesign program
 
 Parent: [#1124](https://github.com/Entif-AI/Bilqis-MLX/issues/1124)
 
@@ -41,7 +41,7 @@ Why early: these cross-view planes are reused by every domain leaf and carry exa
 
 These may proceed in parallel after the relevant Tier 1 shared contracts are stable.
 
-- #1129 · Admin Main Frame overview
+- #1129 · Model Forensics overview
 - #1130 · School capability matrix, dependency graph and curriculum atlas
 - #1131 · Capability Explorer dossier and chronology
 - #1132 · Learning candidate transaction and retention replay

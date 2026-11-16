@@ -2,7 +2,7 @@
 
 ## Intent
 
-This pass repairs the owner-facing BAMF-0.2 Admin Main Frame layout before trainer evaluation. It does not expand into the generalized BAMF-0.3 production-polish scope tracked by #1114.
+This pass repairs the owner-facing BAMF-0.2 Model Forensics layout before trainer evaluation. It does not expand into the generalized BAMF-0.3 production-polish scope tracked by #1114.
 
 The visual review used both the checked-in browser preview harness and the native Electron window. The browser harness was used to navigate every primary destination under one fixed viewport and measure shell geometry; the Electron application was then launched at its real 1440 × 920 default window for visual confirmation.
 
@@ -27,7 +27,7 @@ The Home dashboard also allowed short state values such as `UNAVAILABLE` to brea
 
 ## Root causes found during screenshot-driven review
 
-1. `home/home.css` changed shared shell geometry only on Admin Main Frame, including a 176 px rail.
+1. `home/home.css` changed shared shell geometry only on Model Forensics, including a 176 px rail.
 2. `capability/dossier.css` and `frame-explorer.css` contained unscoped `.context-bar` / `.context-actions` rules even though those stylesheets are loaded globally.
 3. Shared `.view-host` padding and title scale were tuned like a sparse landing page rather than a dense operator console.
 4. School had an internal matrix scroller, but its ancestors could still grow to the matrix's max-content width.
@@ -41,7 +41,7 @@ After the patch, the same 1673 × 837 browser pass produced:
 
 | View | Rail | Header | H1 | Inline gutter | Page X overflow |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Admin Main Frame | 184 px | 84 px | 42 px | 30 px | 0 px |
+| Model Forensics | 184 px | 84 px | 42 px | 30 px | 0 px |
 | School | 184 px | 84 px | 48 px | 48 px | 0 px |
 | Capability Explorer | 184 px | 84 px | 48 px | 48 px | 0 px |
 | Learning | 184 px | 84 px | 48 px | 48 px | 0 px |
@@ -59,7 +59,7 @@ The rail measured exactly the viewport height on every destination, and the Comm
 
 ## Native 1440 × 920 review
 
-The Electron app was launched from this worktree at its default 1440 × 920 window size. Admin Main Frame, School, and Teacher were manually inspected after the browser matrix pass.
+The Electron app was launched from this worktree at its default 1440 × 920 window size. Model Forensics, School, and Teacher were manually inspected after the browser matrix pass.
 
 Observed:
 - navigation width remains stable between views;
@@ -129,7 +129,7 @@ The third pass replaced the compatibility-heavy scale with four actual rendered 
 | section | 18 px | local section headings |
 | display | 28 px | destination headings and primary numeric emphasis |
 
-All Admin Main Frame domain CSS now resolves through these roles. A regression test recursively scans every renderer stylesheet and rejects new literal rendered text sizes. The only literal sizes left in `shell.css` are non-content exceptions: 28 px close icons, the responsive `font-size: 0` nav-hiding technique, and its 14 px first-letter fallback.
+All Model Forensics domain CSS now resolves through these roles. A regression test recursively scans every renderer stylesheet and rejects new literal rendered text sizes. The only literal sizes left in `shell.css` are non-content exceptions: 28 px close icons, the responsive `font-size: 0` nav-hiding technique, and its 14 px first-letter fallback.
 
 The context header now has separate verified and empty-state geometry. In the empty state, the unused facts surface is hidden and the header becomes a single 72 px row. At 1266 px:
 

@@ -97,7 +97,7 @@ limits. Product checks are unchanged. Its required aggregate result is recorded
 separately when complete; these failures are not reported as passing evidence.
 
 The canonical-package, single-process leaf Python gate completed: 529 passed,
-25 skipped, 362 subtests passed (101.40s). Admin Main Frame's ordinary Node suite
+25 skipped, 362 subtests passed (101.40s). Model Forensics's ordinary Node suite
 passed in that invocation; its security stage initially lacked the declared Ajv
 installation. Lockfile-only `npm ci --ignore-scripts` restored the development
 dependency. The final optional-runtime regression passes (11 framing tests), and

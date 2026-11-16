@@ -94,14 +94,16 @@ def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObserv
             return ()
         payload = json.loads(raw)
         if (not isinstance(payload, dict) or payload.get('schema') not in _SCHEMAS
-                or not isinstance(payload.get('visits'), list)
-                or len(payload['visits']) > MAX_VISITS):
+                or not isinstance(payload.get('visits'), list)):
             return ()
     except (OSError, ValueError, UnicodeError, RecursionError):
         return ()
     parents = {(run.run_id, run.generation_manifest_sha256): run for run in runs}
     records = {}
-    for row in payload['visits']:
+    # Older or interrupted producers may leave more history than the current
+    # reader budget.  Currentness is in the tail, so bound the projection rather
+    # than discarding every observation from an otherwise valid snapshot.
+    for row in payload['visits'][-MAX_VISITS:]:
         try:
             record = _record(row, parents, now_ms)
             if record is not None:

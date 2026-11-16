@@ -8,7 +8,7 @@ The acceptance baseline is the exact unified integration head consumed by the fi
 
 ## Acceptance setup
 
-The exact baseline and candidate were served through the repository's existing Admin Main Frame preview bridge and captured through one reusable headless Chrome DevTools session. Separate localhost origins prevented browser module/style caching from mixing baseline and candidate state. The candidate was also exercised interactively through the connected desktop browser for Inspector, pin, note, compare, and deep-link behavior.
+The exact baseline and candidate were served through the repository's existing Model Forensics preview bridge and captured through one reusable headless Chrome DevTools session. Separate localhost origins prevented browser module/style caching from mixing baseline and candidate state. The candidate was also exercised interactively through the connected desktop browser for Inspector, pin, note, compare, and deep-link behavior.
 
 The exercised deep link selected exact object context:
 

@@ -1,4 +1,4 @@
-"""Shared contracts for authenticated BAMF -> Admin Main Frame projection."""
+"""Shared contracts for authenticated BAMF -> Model Forensics projection."""
 from __future__ import annotations
 
 from dataclasses import dataclass

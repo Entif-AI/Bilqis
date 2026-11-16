@@ -28,9 +28,9 @@ salience only at the authorization boundary.
 ## Local proof before final unified reconciliation
 
 - Focused Operate/controller/boundary/renderer-protocol: 24/24 pass.
-- Admin Main Frame: 336/336 pass.
+- Model Forensics: 336/336 pass.
 - Electron security after locked dependency install: 53/53 pass.
-- Python Admin Main Frame bridge: 6/6 pass.
+- Python Model Forensics bridge: 6/6 pass.
 - Development structure: pass, zero violations.
 - Governance integrity: pass, zero violations.
 - Changed-file code-smell delta: zero new findings.
@@ -46,7 +46,7 @@ vulnerabilities); the exact same security command then passed in full.
 
 ## Comparative rendered evidence
 
-Rendered with the checked-in Admin Main Frame renderer through local preview servers.
+Rendered with the checked-in Model Forensics renderer through local preview servers.
 Port 8760 was already owned by the active #1128 worktree and was left untouched;
 GUI1142 used isolated ports 8771 (exact baseline) and 8772 (redesign).
 
