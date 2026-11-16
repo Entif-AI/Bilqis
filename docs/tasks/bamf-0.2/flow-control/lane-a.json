@@ -1,18 +1,18 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
-  "updated_at": "2026-11-16T19:53:54Z",
+  "observed_unified": "0891128bb330af2de44ef8c0aa0893cb4a16f6e7",
+  "updated_at": "2026-11-16T20:55:31Z",
   "exception": null,
   "items": [
     {
       "issue": 1314,
-      "pr": null,
-      "state": "ACTIVE",
-      "head_sha": "d3d0f2b0a5999cbb94f3128244e5bbcb251ee838",
-      "head_sha_role": "stacked activation base: exact #1320 TURNED_IN head supplying accepted GeneratedGradeDefinition authority before #1314 source mutation",
-      "summary": "#1314 activates and freezes one #1320 GeneratedGradeDefinition as the learner's outer teaching surface. The active developmental road is temporal lineage of generated definitions, not a global grade-order table or grade-letter state machine. Exactly one accepted definition may govern a learner epoch; ordinary READY/HELD/COMPLETE changes do not mutate membership; later admitted semantics remain planning-visible but non-teachable until an authorized successor definition is activated. A09 remains prerequisite/frontier authority and C07/B13 remains accepted executable-release/custody authority.",
-      "resume_trigger": "Implement accepted active-grade custody and bind lawful teaching frontier membership to the exact frozen definition; prove cold resume, membership stability, correction lineage, and grade-neutral successor activation.",
+      "pr": 1349,
+      "state": "TURNED_IN",
+      "head_sha": "46357e175239ee303bfbf03d61534db385b34434",
+      "head_sha_role": "exact semantic/test proof head; this TURNED_IN transition is docs/flow-only",
+      "summary": "#1314 freezes one accepted #1320 GeneratedGradeDefinition as the learner's exact outer teaching surface with cold-resumable custody, exact capability+semantic membership projection, typed incomplete/held/complete/global-fixed-point states, correction successor lineage, and an explicit future #1334 certification handoff. C07 adoption alone cannot replace the active grade, ordinary learning cannot churn membership, and no global order table or grade-letter switch participates. Focused acceptance 16/16, adjacent #1320/C07 28/28, changed owner tests 35/35, and full verify:leaf including Mission Control 464/464 plus security 67/67 Node + 9/9 Python pass at semantic head 46357e17. Human merge remains external authority.",
+      "resume_trigger": null,
       "preserved_branch": "codex/1314-active-generated-grade-20261116"
     },
     {
