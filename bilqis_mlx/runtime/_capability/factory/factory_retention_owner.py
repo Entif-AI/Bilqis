@@ -207,14 +207,14 @@ def evaluate_factory_retention_candidate(
         run_dir, candidate)
     plan, target_plan, cached_rows = require_current_retention_source_rows(
         cache, release, target_capability)
-    instruments = _local_retention_instruments(
-        source_context, candidate_bundle, artifact_path, cached_rows, target_plan)
 
     if CURRENT_EVIDENCE_STAGE is EvidenceStage.FOUNDATION_ACQUISITION:
         return _foundation_retention_evaluation(
-            source_context, parent, candidate_bundle, artifact_path,
-            release, plan, target_plan, training, instruments, cache,
+            source_context, parent, candidate_bundle, candidate_state, artifact_path,
+            release, plan, target_plan, training, cached_rows, cache,
             **({"observer": observer} if observer is not None else {}))
+    instruments = _local_retention_instruments(
+        source_context, candidate_bundle, artifact_path, cached_rows, target_plan)
     groups = target_plan.evaluated_capability_groups
     target_group = target_plan.target_grade_id
     lesson_capabilities = tuple(
