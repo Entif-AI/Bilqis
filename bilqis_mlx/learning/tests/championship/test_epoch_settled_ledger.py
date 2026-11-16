@@ -1,5 +1,5 @@
 """Epoch championship settled ledger behavior."""
-from bilqis_mlx.learning.tests.test_epoch_championships import (
+from bilqis_mlx.learning.tests.championship.epoch_fixtures import (
     EpochChampionshipTests, GRADES, _battery_answers, _epoch,
     _match, _panel, advance_epoch, build_school_identity,
     deepcopy, enforce_school_identity, needed_incumbents,

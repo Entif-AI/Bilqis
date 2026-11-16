@@ -1,5 +1,5 @@
 """Epoch championship authority behavior."""
-from bilqis_mlx.learning.tests.test_epoch_championships import (
+from bilqis_mlx.learning.tests.championship.epoch_fixtures import (
     EpochChampionshipTests, GRADES, _battery_answers, _epoch,
     _match, _multi_panel, _panel, advance_epoch,
     needed_incumbents,

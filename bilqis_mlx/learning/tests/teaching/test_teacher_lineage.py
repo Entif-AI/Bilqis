@@ -12,7 +12,7 @@ from bilqis_mlx.learning.teacher_visit_identity import (
     TeacherVisitIdentity, derive_teacher_visit_identity,
     record_teacher_visit_identity, teacher_visit_receipt_record,
 )
-from bilqis_mlx.learning.tests.teacher_strategy_test_support import teacher_fixture
+from bilqis_mlx.learning.tests.teacher_strategy.support import teacher_fixture
 
 
 def _authority_record():

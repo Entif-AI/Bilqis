@@ -7,7 +7,7 @@ from bilqis_mlx.learning.teacher_strategy_population import (
     record_checkpoint_policy_outcome,
     sibling_cooldown_penalty,
 )
-from bilqis_mlx.learning.tests.teacher_strategy_test_support import teacher_fixture
+from bilqis_mlx.learning.tests.teacher_strategy.support import teacher_fixture
 
 
 class TeacherStrategyCooldownTests(unittest.TestCase):
