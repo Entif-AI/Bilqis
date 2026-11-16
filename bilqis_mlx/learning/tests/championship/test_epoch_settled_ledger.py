@@ -10,14 +10,14 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
     def test_settled_pair_never_rematches_or_mutates_role_again(self):
         first = _panel("a", 11, "B.XOR", 12)
         epoch, _, _ = advance_epoch(
-            _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
+            _epoch(), capability_groups=GRADES, challenger_exam=first, incumbent_exams={})
         role = epoch["active_roles"]["B.XOR"]
         challenger = _panel("c", 12, "B.XOR", 12, cohort="6")
         incumbent = _panel("a", 11, "B.XOR", 12, cohort="6")
         incumbent_battery = _battery_answers(role, drop=0)
         challenger_battery = _battery_answers(role, drop=1)
         defended, _, _ = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams={"a" * 64: incumbent},
             title_matches={"B.XOR": _match(
                 role, _panel("a", 11, "B.XOR", 11, cohort="6"),
@@ -30,11 +30,11 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
         rematch = _panel("c", 12, "B.XOR", 12, cohort="7")
         rematch_incumbent = _panel("a", 11, "B.XOR", 8, cohort="7")
         result, changes, decisions = advance_epoch(
-            defended, grades=GRADES, challenger_exam=rematch,
+            defended, capability_groups=GRADES, challenger_exam=rematch,
             incumbent_exams={"a" * 64: rematch_incumbent})
         self.assertEqual(changes, ())
         self.assertEqual(
-            needed_incumbents(defended, grades=GRADES, challenger_exam=rematch), {})
+            needed_incumbents(defended, capability_groups=GRADES, challenger_exam=rematch), {})
         self.assertTrue(any(d.get("decision") == "TITLE_MATCH_ALREADY_SETTLED"
                             for d in decisions))
         self.assertFalse(any(d.get("decision") in (
@@ -45,11 +45,11 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
     def test_settled_pair_remains_permanent_after_nonsemantic_identity_reset(self):
         first = _panel("a", 11, "B.XOR", 12)
         epoch, _, _ = advance_epoch(
-            _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
+            _epoch(), capability_groups=GRADES, challenger_exam=first, incumbent_exams={})
         role = epoch["active_roles"]["B.XOR"]
         challenger = _panel("c", 12, "B.XOR", 12, cohort="6")
         defended, _, _ = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams={
                 "a" * 64: _panel("a", 11, "B.XOR", 12, cohort="6")},
             title_matches={"B.XOR": _match(
@@ -75,17 +75,17 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
         self.assertEqual(reset["settled_matchups"], settled)
 
         reearned, changes, _ = advance_epoch(
-            reset, grades=GRADES,
+            reset, capability_groups=GRADES,
             challenger_exam=_panel("a", 13, "B.XOR", 12, cohort="7"),
             incumbent_exams={})
         self.assertEqual(changes, ("B.XOR",))
         rematch = _panel("c", 14, "B.XOR", 12, cohort="8")
         result, changes, decisions = advance_epoch(
-            reearned, grades=GRADES, challenger_exam=rematch,
+            reearned, capability_groups=GRADES, challenger_exam=rematch,
             incumbent_exams={})
         self.assertEqual(changes, ())
         self.assertEqual(needed_incumbents(
-            reearned, grades=GRADES, challenger_exam=rematch), {})
+            reearned, capability_groups=GRADES, challenger_exam=rematch), {})
         self.assertTrue(any(
             decision.get("decision") == "TITLE_MATCH_ALREADY_SETTLED"
             for decision in decisions))
@@ -96,11 +96,11 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
     def test_settled_pair_key_is_direction_independent_after_title_transfer(self):
         first = _panel("a", 11, "B.XOR", 12)
         epoch, _, _ = advance_epoch(
-            _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
+            _epoch(), capability_groups=GRADES, challenger_exam=first, incumbent_exams={})
         role = epoch["active_roles"]["B.XOR"]
         challenger = _panel("c", 12, "B.XOR", 12, cohort="6")
         won, _, _ = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams={"a" * 64: _panel("a", 11, "B.XOR", 12, cohort="6")},
             title_matches={"B.XOR": _match(
                 role, _panel("a", 11, "B.XOR", 10, cohort="6"),
@@ -109,7 +109,7 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
                 challenger_battery=_battery_answers(role, drop=0))})
         reverse = _panel("a", 14, "B.XOR", 12, cohort="7")
         result, changes, decisions = advance_epoch(
-            won, grades=GRADES, challenger_exam=reverse, incumbent_exams={})
+            won, capability_groups=GRADES, challenger_exam=reverse, incumbent_exams={})
         self.assertEqual(changes, ())
         self.assertEqual(result["active_roles"]["B.XOR"]["checkpoint"]["sha256"],
                          "c" * 64)

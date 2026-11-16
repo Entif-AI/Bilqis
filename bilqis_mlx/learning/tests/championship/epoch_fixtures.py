@@ -11,7 +11,37 @@ from bilqis_mlx.learning.epoch_championships import (
 )
 from bilqis_mlx.learning.grade_soup import grade_soup_recipe
 from bilqis_mlx.learning.mentor_epoch import EARNED_ONLY_POLICY
-from bilqis_mlx.learning.tests.test_championship_policy import GRADE_B, SCHOOL, _exam
+
+
+GRADE_B = tuple("B." + cap for cap in
+                ("AND", "IFF", "IMPLIES", "NOT", "OR", "XOR"))
+SCHOOL = tuple("A." + str(i) for i in range(6)) + GRADE_B + tuple(
+    "C." + str(i) for i in range(6))
+
+
+def _exam(seed, school_correct):
+    scores = {cap: {"correct": 12, "total": 12} for cap in SCHOOL}
+    remaining = 216 - school_correct
+    for cap in SCHOOL[-6:]:
+        reduction = min(remaining, 12)
+        scores[cap]["correct"] -= reduction
+        remaining -= reduction
+    if remaining != 0:
+        raise ValueError("CHAMPIONSHIP_TEST_SCORE_INVALID")
+    return {
+        "checkpoint": {
+            "filename": "bundles/" + seed,
+            "sha256": seed * 64,
+            "optimizer_step": 10,
+            "model_and_native_adamw": True,
+        },
+        "cohort_sha256": "1" * 64,
+        "rubric_sha256": "2" * 64,
+        "assessment_scope_sha256": "3" * 64,
+        "source_graph_sha256": "4" * 64,
+        "source_oracle_sha256": "5" * 64,
+        "scores": scores,
+    }
 
 
 GRADES = MappingProxyType({
@@ -44,24 +74,24 @@ def _with_question_evidence(exam):
     return result
 
 
-def _panel(seed, step, capability, correct, *, cohort="1", grade=None, total=12):
+def _panel(seed, step, capability, correct, *, cohort="1", group=None, total=12):
     exam = _exam(seed, 208)
     exam["checkpoint"]["optimizer_step"] = step
     exam["cohort_sha256"] = cohort * 64
     exam["scores"] = {capability: {"correct": correct, "total": total}}
-    exam["challenge_grade"] = grade or capability.split(".", 1)[0]
-    exam["checkpoint_origin_grade"] = exam["challenge_grade"]
+    exam["challenge_group"] = group or capability.split(".", 1)[0]
+    exam["checkpoint_origin_group"] = exam["challenge_group"]
     return _with_question_evidence(exam)
 
 
-def _multi_panel(seed, step, scores, *, cohort="1", grade="B"):
+def _multi_panel(seed, step, scores, *, cohort="1", group="B"):
     exam = _exam(seed, 208)
     exam["checkpoint"]["optimizer_step"] = step
     exam["cohort_sha256"] = cohort * 64
     exam["scores"] = {cap: {"correct": correct, "total": 12}
                       for cap, correct in scores.items()}
-    exam["challenge_grade"] = grade
-    exam["checkpoint_origin_grade"] = grade
+    exam["challenge_group"] = group
+    exam["checkpoint_origin_group"] = group
     return _with_question_evidence(exam)
 
 
@@ -91,12 +121,12 @@ class EpochChampionshipTests(TestCase):
     def _fanout_fixture(self):
         first = _panel("a", 11, "B.AND", 11)
         epoch, _, _ = advance_epoch(
-            _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
+            _epoch(), capability_groups=GRADES, challenger_exam=first, incumbent_exams={})
         second = _panel("b", 12, "B.XOR", 11, cohort="2")
         epoch, _, _ = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=second, incumbent_exams={})
+            epoch, capability_groups=GRADES, challenger_exam=second, incumbent_exams={})
         challenger = _multi_panel(
-            "c", 13, {"B.AND": 12, "B.XOR": 11}, cohort="6", grade="B")
+            "c", 13, {"B.AND": 12, "B.XOR": 11}, cohort="6", group="B")
         incumbents = {
             "a" * 64: _panel("a", 11, "B.AND", 11, cohort="6"),
             "b" * 64: _panel("b", 12, "B.XOR", 11, cohort="6"),

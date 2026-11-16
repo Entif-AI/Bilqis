@@ -1,18 +1,23 @@
 """Qualification and comparable-score helpers for championship epochs."""
 from __future__ import annotations
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning.championship_witnesses import championship_threshold_met
 from bilqis_mlx.learning.mentor_epoch import _pointer
 
 from .receipts import _same_current_context
-from .state import _grade_caps, _settled_match
+from .state import _group_caps, _role_group, _settled_match
 
 
-def _challenge_grade(epoch: dict, grades: dict, challenger_exam: dict) -> str:
-    grade = challenger_exam.get("challenge_grade", epoch.get("introduced_grade"))
-    if grade not in grades:
-        raise ValueError("CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID")
-    return grade
+def _invalid(reason):
+    ErrorBus.raise_(SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID, reason=reason)
+
+
+def _challenge_group(capability_groups: dict, challenger_exam: dict) -> str:
+    group = challenger_exam.get("challenge_group")
+    if group not in capability_groups:
+        _invalid("CHAMPIONSHIP_EPOCH_CHALLENGE_GROUP_INVALID")
+    return group
 
 
 def _exam_matches_capability(challenger: dict, incumbent: dict,
@@ -30,21 +35,21 @@ def _exam_matches_capability(challenger: dict, incumbent: dict,
         raise ValueError("CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED")
 
 
-def needed_incumbents(epoch: dict, *, grades: dict,
+def needed_incumbents(epoch: dict, *, capability_groups: dict,
                       challenger_exam: dict) -> dict:
-    """Load only title-grade owners needed for primary and one-hop fan-out screens."""
+    """Load only current-group owners needed for primary and one-hop fan-out screens."""
     roles = epoch.get("active_roles", {})
     scores = challenger_exam["scores"]
     challenger = _pointer(challenger_exam["checkpoint"])
-    grade = _challenge_grade(epoch, grades, challenger_exam)
+    group = _challenge_group(capability_groups, challenger_exam)
     needed = {}
-    for cap in _grade_caps(grades, grade):
+    for cap in _group_caps(capability_groups, group):
         if cap not in scores:
             continue
         prior = roles.get(cap)
         if prior is None:
             continue
-        if prior.get("origin_grade") != grade:
+        if _role_group(prior) != group:
             continue
         pointer = _pointer(prior["checkpoint"])
         if pointer["sha256"] == challenger["sha256"]:

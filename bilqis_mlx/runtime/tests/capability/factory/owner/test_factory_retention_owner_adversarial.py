@@ -67,7 +67,9 @@ def _foundation_owner_fixture():
 
 
 def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
-                               policy_factory, decision):
+                               policy_factory, decision, *,
+                               championship_cohort=None,
+                               championship_assessment=None):
     release_sha = source.release.release_sha256
     with patch(
             "bilqis_mlx.runtime.bamf_bundle.genesis.records."
@@ -102,10 +104,12 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
             ), patch.multiple(
                 owner_screen,
                 case_census_digest=Mock(return_value="e" * 64),
-                _cohort=Mock(return_value=SimpleNamespace(
-                    rubric_sha256="1" * 64, scope_sha256="2" * 64,
-                    policy_sha256="3" * 64, source_sha256="4" * 64,
-                    evidence_stage=owner.CURRENT_EVIDENCE_STAGE)),
+                _cohort=Mock(return_value=(
+                    championship_cohort if championship_cohort is not None else
+                    SimpleNamespace(
+                        rubric_sha256="1" * 64, scope_sha256="2" * 64,
+                        policy_sha256="3" * 64, source_sha256="4" * 64,
+                        evidence_stage=owner.CURRENT_EVIDENCE_STAGE))),
                 FoundationRetentionPolicy=policy_factory,
                 factory_complete_solver=Mock(side_effect=(
                     (object(), "b" * 64), (object(), "c" * 64))),
@@ -119,7 +123,8 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 use_parent_assessment=Mock(return_value=(
                     object(),
                     ParentAssessmentCacheReceipt("1" * 64, "2" * 64, "3" * 64, False))),
-                evaluate_foundation_fixed_school_candidate=Mock(return_value=decision),
+                evaluate_foundation_fixed_school_candidate_with_evidence=Mock(
+                    return_value=(decision, championship_assessment)),
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
                 candidate_identity_binding_for_state=Mock(return_value=None)):
         return evaluate_factory_retention_candidate(

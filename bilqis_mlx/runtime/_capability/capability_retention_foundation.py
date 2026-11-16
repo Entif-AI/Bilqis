@@ -259,7 +259,7 @@ def _final_fixed_school_decision(
 def _evaluate_fixed_school(
         parent_solver, candidate_solver, target_capability, policy, fixed,
         parent_generation, candidate_generation, evidence_digest,
-        parent_assessment=None, *, observer=None):
+        parent_assessment=None, *, observer=None, return_candidate_assessment=False):
     target_group, references, capability_order = _fixed_capability_order(
         target_capability, policy, fixed)
     groups = dict(fixed.capability_groups)
@@ -298,11 +298,18 @@ def _evaluate_fixed_school(
             candidate_results[case.case_id] = result
             candidate_contracts[case.case_id] = contract
 
-    return final_fixed_school_decision(
+    decision = final_fixed_school_decision(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
         candidate_results, candidate_contracts, observer=observer)
+    if not return_candidate_assessment:
+        return decision
+    candidate_assessment = Assessment(
+        fixed, candidate_generation,
+        tuple(candidate_results[case.case_id] for case in fixed.cases),
+        tuple(candidate_contracts[case.case_id] for case in fixed.cases))
+    return decision, candidate_assessment
 
 
 def evaluate_foundation_retention_candidate(
@@ -336,7 +343,25 @@ def evaluate_foundation_fixed_school_candidate(
         parent_assessment=parent_assessment, **({"observer": observer} if observer is not None else {}))
 
 
+def evaluate_foundation_fixed_school_candidate_with_evidence(
+        parent_solver, candidate_solver, target_capability: str,
+        policy: FoundationRetentionPolicy, fixed: EvaluationCohort,
+        parent_generation: str, candidate_generation: str, *,
+        parent_assessment: Assessment | None = None, observer=None):
+    """Factory-owner seam returning the already-computed fixed-school candidate evidence."""
+    _fixed_cohort_contract(target_capability, policy, fixed)
+    return _evaluate_fixed_school(
+        parent_solver, candidate_solver, target_capability, policy, fixed,
+        parent_generation, candidate_generation,
+        lambda pair_digests, blocking: _fixed_evidence_digest(
+            target_capability, policy, fixed, pair_digests,
+            blocking_capability=blocking),
+        parent_assessment=parent_assessment, return_candidate_assessment=True,
+        **({"observer": observer} if observer is not None else {}))
+
+
 __all__ = (
     "FoundationRetentionPolicy", "evaluate_foundation_fixed_school_candidate",
+    "evaluate_foundation_fixed_school_candidate_with_evidence",
     "evaluate_foundation_retention_candidate",
 )

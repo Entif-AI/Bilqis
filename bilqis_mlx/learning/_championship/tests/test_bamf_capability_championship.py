@@ -88,7 +88,7 @@ class CapabilityChampionshipTests(unittest.TestCase):
             _solver(contexts, {case.case_id for case in cohort.cases}), cohort, PARENT, "1", 1)
         with self.assertRaises(ValueError):
             advance_epoch({"introduced_grade": "opaque-title-group"},
-                          grades={"opaque-title-group": ("misleading.prefix",),
+                          capability_groups={"opaque-title-group": ("misleading.prefix",),
                                   "other": ("misleading.prefix",)},
                           challenger_exam=assessment_exam(assessment, replay,
                                                            challenge_group="opaque-title-group"),
@@ -122,7 +122,7 @@ class CapabilityChampionshipTests(unittest.TestCase):
         challenger, _ = _replay(full, cohort, CANDIDATE, "2", 2)
         exam = assessment_exam(initial, incumbent, challenge_group="opaque-title-group")
         epoch, _, _ = advance_epoch({"introduced_grade": "opaque-title-group"},
-                                    grades={"opaque-title-group": ("misleading.prefix",)},
+                                    capability_groups={"opaque-title-group": ("misleading.prefix",)},
                                     challenger_exam=exam, incumbent_exams={})
         role = epoch["active_roles"]["misleading.prefix"]
         def match(offered_role=role, offered_incumbent=incumbent, resolver=lambda key: cohort):
@@ -166,7 +166,7 @@ class CapabilityChampionshipTests(unittest.TestCase):
         self.assertEqual(witness["sha256"],
                          "267cd174426265bdd03b2e19d1ab61d88fc328742f793c905a250e93aa2fd089")
         epoch, _, _ = advance_epoch({"introduced_grade": "opaque-title-group"},
-                                    grades={"opaque-title-group": ("misleading.prefix",)},
+                                    capability_groups={"opaque-title-group": ("misleading.prefix",)},
                                     challenger_exam=exam, incumbent_exams={})
         role = epoch["active_roles"]["misleading.prefix"]
         history = deepcopy(role["qualification_witnesses"])
@@ -195,9 +195,9 @@ class CapabilityChampionshipTests(unittest.TestCase):
         current_ids = {case.case_id for case in current.cases}
         incumbent, initial = _replay(_solver(contexts, old_ids), old_cohort, PARENT, "1", 1)
         challenger, candidate = _replay(_solver(contexts, current_ids), current, CANDIDATE, "2", 2)
-        grades = {"opaque-title-group": ("misleading.prefix",)}
+        groups = {"opaque-title-group": ("misleading.prefix",)}
         initial_exam = assessment_exam(initial, incumbent, challenge_group="opaque-title-group")
-        epoch, _, _ = advance_epoch({"introduced_grade": "opaque-title-group"}, grades=grades,
+        epoch, _, _ = advance_epoch({"introduced_grade": "opaque-title-group"}, capability_groups=groups,
                                     challenger_exam=initial_exam, incumbent_exams={})
         role = epoch["active_roles"]["misleading.prefix"]
         match = fresh_title_match(role, incumbent, challenger, current,
@@ -208,7 +208,7 @@ class CapabilityChampionshipTests(unittest.TestCase):
         incumbent_current = match["incumbent_current_exam"]
         candidate_exam = assessment_exam(candidate, challenger, challenge_group="opaque-title-group")
         defended, _, decisions = advance_epoch(
-            epoch, grades=grades, challenger_exam=candidate_exam,
+            epoch, capability_groups=groups, challenger_exam=candidate_exam,
             incumbent_exams={incumbent.checkpoint.sha256: incumbent_current},
             title_matches={"misleading.prefix": match})
         self.assertEqual(decisions[0]["decision"], "TITLE_DEFENDED")
@@ -220,7 +220,7 @@ class CapabilityChampionshipTests(unittest.TestCase):
                                   settled_matchups=defended["settled_matchups"],
                                   challenge_group="opaque-title-group")
         won, _, decisions = advance_epoch(
-            defended, grades=grades,
+            defended, capability_groups=groups,
             challenger_exam=assessment_exam(improved, better, challenge_group="opaque-title-group"),
             incumbent_exams={incumbent.checkpoint.sha256: match["incumbent_current_exam"]},
             title_matches={"misleading.prefix": match})
@@ -259,10 +259,10 @@ class CapabilityChampionshipTests(unittest.TestCase):
         exam = assessment_exam(assessment, replay, challenge_group="opaque-title-group")
         epoch, changes, _ = advance_epoch(
             {"introduced_grade": "opaque-title-group"},
-            grades={"opaque-title-group": ("misleading.prefix",)},
+            capability_groups={"opaque-title-group": ("misleading.prefix",)},
             challenger_exam=exam, incumbent_exams={})
         self.assertEqual(changes, ("misleading.prefix",))
-        self.assertEqual(epoch["active_roles"]["misleading.prefix"]["origin_grade"],
+        self.assertEqual(epoch["active_roles"]["misleading.prefix"]["capability_group"],
                          "opaque-title-group")
         self.assertEqual(epoch["active_roles"]["misleading.prefix"]
                          ["complete_solver_provenance"]["generation_digest"], PARENT)
@@ -272,10 +272,10 @@ class CapabilityChampionshipTests(unittest.TestCase):
         full = _solver(contexts, {case.case_id for case in cohort.cases})
         incumbent, initial = _replay(full, cohort, PARENT, "1", 1)
         challenger, candidate = _replay(full, cohort, CANDIDATE, "2", 2)
-        grades = {"opaque-title-group": ("misleading.prefix",)}
+        groups = {"opaque-title-group": ("misleading.prefix",)}
         initial_exam = assessment_exam(initial, incumbent, challenge_group="opaque-title-group")
         epoch, _, _ = advance_epoch({"introduced_grade": "opaque-title-group"},
-                                    grades=grades, challenger_exam=initial_exam, incumbent_exams={})
+                                    capability_groups=groups, challenger_exam=initial_exam, incumbent_exams={})
         role = epoch["active_roles"]["misleading.prefix"]
         before = repr(role)
         match = fresh_title_match(
@@ -284,7 +284,7 @@ class CapabilityChampionshipTests(unittest.TestCase):
             challenge_group="opaque-title-group")
         candidate_exam = assessment_exam(candidate, challenger, challenge_group="opaque-title-group")
         updated, changes, decisions = advance_epoch(
-            epoch, grades=grades, challenger_exam=candidate_exam,
+            epoch, capability_groups=groups, challenger_exam=candidate_exam,
             incumbent_exams={incumbent.checkpoint.sha256: initial_exam},
             title_matches={"misleading.prefix": match})
         self.assertEqual(changes, ("misleading.prefix",))

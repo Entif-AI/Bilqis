@@ -176,7 +176,8 @@ def retention_result(
         "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
     })
     successor, learning_health = _accepted_successor(
-        decision, run_dir, parent, selection, capability, cache, retained,
+        decision, run_dir, parent, context, atlas_path, selection, capability,
+        cache, retained,
         rejection_journal_ordinal, resource, candidate_evidence, capture,
         derive_successor, bind_baseline_successor, evaluation)
     return prepared_visit_type(
@@ -211,7 +212,8 @@ def _instruction_event(run_dir, parent, cache, capability):
 
 
 def _accepted_successor(
-        decision, run_dir, parent, selection, capability, cache, retained,
+        decision, run_dir, parent, context, atlas_path, selection, capability,
+        cache, retained,
         rejection_journal_ordinal, resource, candidate_evidence, capture,
         derive_successor, bind_baseline_successor, evaluation):
     if not decision.accepted:
@@ -238,10 +240,15 @@ def _accepted_successor(
     }, instruction_event)
     successor = derive_successor(
         run_dir, retained, selection.visit, delivery_events=events)
+    successor = bind_baseline_successor(evaluation, successor)
     if health_state is not None:
         from dataclasses import replace
         successor = replace(successor, learning_health_state=health_state)
-    return bind_baseline_successor(evaluation, successor), learning_health
+    from .championship import bind_accepted_championship_successor
+    successor = bind_accepted_championship_successor(
+        run_dir, parent, cache, successor, context, atlas_path,
+        capability, evaluation)
+    return successor, learning_health
 
 
 def operate(

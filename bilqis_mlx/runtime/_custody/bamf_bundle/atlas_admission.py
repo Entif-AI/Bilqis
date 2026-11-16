@@ -192,6 +192,7 @@ def _issue_atlas_admission_binding(
             or candidate.run_id != parent.run_id
             or candidate.generation != parent.generation + 1
             or candidate.retained_state.optimizer_step != parent.retained_state.optimizer_step
+            or candidate.championship_state is not None
             or transition != {
                 "schema": "bilqis.mlx.bamf-generation-transition/v1",
                 "kind": "PARAMETER_EXTENSION",
@@ -254,5 +255,7 @@ def require_atlas_admission_binding(
             != candidate_identity_digest(candidate.retained_state)
             or binding.feature_sha256 != candidate.extents.factor_map_digest
             or binding.optimizer_step != candidate.retained_state.optimizer_step):
+        invalid("BAMF_ATLAS_ADMISSION_BINDING_DRIFT")
+    if candidate.championship_state is not None:
         invalid("BAMF_ATLAS_ADMISSION_BINDING_DRIFT")
     return binding

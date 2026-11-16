@@ -8,7 +8,8 @@ from bilqis_mlx.runtime.capability_retention import (
 
 from bilqis_mlx.runtime.capability_evaluation import _invalid
 from bilqis_mlx.runtime.capability_retention_foundation import (
-    FoundationRetentionPolicy, evaluate_foundation_fixed_school_candidate,
+    FoundationRetentionPolicy,
+    evaluate_foundation_fixed_school_candidate_with_evidence,
 )
 from bilqis_mlx.runtime._factory_parent_assessment_cache import (
     factory_parent_assessment_identity, use_parent_assessment,
@@ -101,11 +102,16 @@ def foundation_retention_screen(
     comparison = epoch.identity(target_capability)
     candidate_solver, candidate_generation = factory_complete_solver(
         source_context, candidate_bundle, artifact_path, fixed_instruments)
-    decision = evaluate_foundation_fixed_school_candidate(
+    decision, championship_assessment = (
+        evaluate_foundation_fixed_school_candidate_with_evidence(
         parent_solver, candidate_solver, target_capability, policy, fixed_cohort,
         parent_generation, candidate_generation, parent_assessment=parent_assessment,
-        **({"observer": observer} if observer is not None else {}))
-    return decision, parent, candidate_bundle, parent_assessment_cache, comparison
+        **({"observer": observer} if observer is not None else {})))
+    return (
+        decision, parent, candidate_bundle, parent_assessment_cache, comparison,
+        fixed_cohort if championship_assessment is not None else None,
+        championship_assessment,
+    )
 
 
 def adaptive_retention_screen(
@@ -145,7 +151,10 @@ def adaptive_retention_screen(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
         parent_generation, candidate_generation,
         **({"observer": observer} if observer is not None else {}))
-    return decision, parent, candidate_bundle, cache, epoch.identity(target_capability)
+    return (
+        decision, parent, candidate_bundle, cache, epoch.identity(target_capability),
+        None, None,
+    )
 
 
 def bind_factory_evaluation_issuer(raw_issue, evidence_stage):
@@ -157,7 +166,8 @@ def bind_factory_evaluation_issuer(raw_issue, evidence_stage):
         from bilqis_mlx.runtime.bamf_bundle.motif.transition import (
             is_motif_allocation_transition,
         )
-        decision, parent, candidate, cache, comparison = result
+        (decision, parent, candidate, cache, comparison,
+         championship_cohort, championship_assessment) = result
         generation_authority = (
             successor_candidate_identity_digest(candidate)
             if is_motif_allocation_transition(getattr(candidate, "transition", {})) else None)
@@ -179,7 +189,9 @@ def bind_factory_evaluation_issuer(raw_issue, evidence_stage):
             candidate_state=candidate.retained_state,
             parent_binding=candidate_identity_binding_for_state(parent.retained_state),
             candidate_binding=candidate_identity_binding_for_state(candidate.retained_state),
-            baseline_transition=baseline_transition, baseline_ledger=baseline)
+            baseline_transition=baseline_transition, baseline_ledger=baseline,
+            championship_cohort=championship_cohort,
+            championship_assessment=championship_assessment)
 
     def foundation(*args, **kwargs):
         return issue(foundation_retention_screen(

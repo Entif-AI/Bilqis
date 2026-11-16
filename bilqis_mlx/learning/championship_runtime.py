@@ -24,7 +24,7 @@ from ._championship_runtime.migration import (
     _bind_checkpoint_origin, _migrate_championship_governance,
 )
 from ._championship_runtime.orchestration import (
-    _advance_exam_championship_grade, _advance_exam_championships,
+    _advance_exam_championship_group, _advance_exam_championships,
 )
 from ._championship_runtime.witnesses import (
     _championship_correct_questions, _championship_questions,
