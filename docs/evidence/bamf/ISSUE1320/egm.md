@@ -76,3 +76,49 @@ Both reviews are bound to exact pushed SHA `e7fffed2616c6caf637b23fb96e7ba8a5d56
 - #1320 owns learner-relative next-grade/cohort policy and its receipts.
 - Generated-grade policy consumes A09 facts and accepted learner evidence without minting shadow ontology, admission, scheduler, prerequisite, or derived-graph authority.
 - No neural optimizer update, self-merge, or merge authorization occurred.
+
+## Post-turn-in hosted integration repair
+
+The semantic EGM verdict above remains historically bound to exact semantic/test
+proof head `e7fffed2616c6caf637b23fb96e7ba8a5d5605c1`. The hosted repairs did
+not replace or retroactively widen that review.
+
+### Structural conformance repair at `9e15cb94`
+
+- Exact repair head:
+  `9e15cb9437dee2cf540b90c9cb33f314d240fca2`.
+- Independent frozen-head review: **PASS — 0 Blockers / 0 Majors / 0 Nits**.
+- Publication logic was relocated without semantic change. The historical public
+  `publish_capability_only_factory_successor` owner/module identity remains
+  `bilqis_mlx.runtime.atlas_capability_adoption_v2`.
+- All five historical owner monkey-patch seams remain late-bound through that
+  owner module.
+- Autonomy/test moves preserve discovery and behavior while satisfying the
+  hosted direct-file and module-size limits.
+
+### Hosted hygiene repair at `d10293ed`
+
+- Exact repair head:
+  `d10293ed476b2106f00700d1f7c5ff4fe60ed33b`.
+- Independent exact-head review: **PASS — 0 Blockers / 0 Majors / 0 Nits**.
+- Parent/head differential probes are byte-identical for generated-grade fixture
+  identity, candidate evidence, input/proposal digests, selected members,
+  decision dispositions/reasons, and A09 frontier proposal output.
+- The capability retry/adoption/publication focused suite passes identically on
+  parent and repair head. Existing public surfaces and authority-bearing
+  contracts are unchanged; newly introduced functions are private extraction
+  helpers.
+- The changed production modules retain the same 28 unique error codes. Two
+  duplicate literal raise sites were centralized and the generated error-control
+  documentation was regenerated from the repository generator.
+- Invalidated local proof: 82/82 affected
+  autonomy/generated-grade/capability tests PASS; code-smell audit reports 0
+  findings; `quality:structure` passes development structure and governance
+  integrity; Factory architecture, BAMF contracts/flow, docs, error-control
+  (new debt 0), and diff hygiene all pass.
+- Hosted `semantic-abi-integrity`, `portable-core`, and
+  `bamf-readiness` all pass on this exact source repair head. The readiness
+  job completed its launch-critical no-skips journey successfully on macOS 15.
+
+The hosted-repair review result is **PASS**. No repair finding reopens the
+semantic EGM verdict or transfers authority away from A09, C07/B13, or #1320.

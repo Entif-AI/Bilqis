@@ -35,3 +35,28 @@ No drift detected.
 ## Drift verdict
 
 **PASS / `NO_DRIFT`.** The final reviewed semantic implementation at `e7fffed2616c6caf637b23fb96e7ba8a5d5605c1` realizes the live #1320 contract without introducing a parallel ontology, admission layer, scheduler, prerequisite owner, or derived-graph authority. Final independent Codebase and Comprehension Goldfish each report 0 Blockers / 0 Majors / 0 Nits on this exact pushed head.
+
+## Post-turn-in hosted repair drift addendum
+
+The post-turn-in hosted repair sequence was reviewed separately from the
+historical semantic proof:
+
+- `9e15cb9437dee2cf540b90c9cb33f314d240fca2` relocates production/test
+  code to satisfy hosted structural conformance while preserving the historical
+  publication owner identity, patch seams, and behavior. Independent exact-head
+  review: PASS, 0 Blockers / 0 Majors / 0 Nits.
+- `d10293ed476b2106f00700d1f7c5ff4fe60ed33b` extracts private helpers,
+  centralizes duplicate error sites, splits fixture construction, and regenerates
+  error-control documentation to satisfy hosted hygiene. Independent exact-head
+  review: PASS, 0 Blockers / 0 Majors / 0 Nits.
+- Differential execution at `d10293ed` preserves generated-grade fixture,
+  candidate-evidence, input/proposal, member-selection, decision-reason, and A09
+  frontier outputs byte-for-byte. Parent/head focused behavior is 67/67 on each
+  exact tree.
+- The unique error-code set, public authority surfaces, selection policy, retry
+  classification, and accepted-custody semantics are unchanged.
+
+**Addendum verdict: PASS / `NO_DRIFT`.** The hosted repairs are
+conformance/compatibility refactors and do not alter #1320's semantic contract or
+authority model. Hosted `semantic-abi-integrity`, `portable-core`, and
+`bamf-readiness` all pass on exact source repair head `d10293ed`.
