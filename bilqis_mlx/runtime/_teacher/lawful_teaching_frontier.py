@@ -171,23 +171,12 @@ def _validate_epoch(epoch, planning_generation, source_context, parent):
     return source
 
 
-def issue_lawful_teaching_frontier(
-        run_dir, source_context, parent, atlas_artifact_path, *,
-        planning_generation=None, progress=None):
-    """Issue a sealed frontier from current accepted learner/source/A09 owners."""
-    from bilqis_mlx.runtime.priority_source_offer import (
-        _require_planning_generation,
-        bind_priority_planning_generation,
-    )
-    if planning_generation is None:
-        planning_generation = bind_priority_planning_generation(
-            source_context, parent, atlas_artifact_path)
-    _require_planning_generation(planning_generation, source_context, parent)
-    from bilqis_mlx.runtime.priority_planning_owner import (
-        build_priority_planning_epoch,
-    )
-    epoch = build_priority_planning_epoch(
-        run_dir, source_context, atlas_artifact_path, progress)
+def _issue_lawful_teaching_frontier_from_epoch(
+        epoch, source_context, parent, planning_generation):
+    """Seal one already-derived accepted A09 epoch for an internal consumer."""
+    from bilqis_mlx.runtime.priority_planning_owner import PriorityPlanningEpoch
+    if type(epoch) is not PriorityPlanningEpoch:
+        _invalid("BAMF_LEARNER_FRONTIER_EPOCH_INVALID")
     source = _validate_epoch(
         epoch, planning_generation, source_context, parent)
     mastered = evidence_complete_capabilities(
@@ -231,9 +220,30 @@ def issue_lawful_teaching_frontier(
     )
 
 
-def require_current_lawful_teaching_frontier(
-        frontier, source_context, parent):
-    """Fail closed if any accepted learner/source/policy/evidence owner moved."""
+def issue_lawful_teaching_frontier(
+        run_dir, source_context, parent, atlas_artifact_path, *,
+        planning_generation=None, progress=None):
+    """Issue a sealed frontier from current accepted learner/source/A09 owners."""
+    from bilqis_mlx.runtime.priority_source_offer import (
+        _require_planning_generation,
+        bind_priority_planning_generation,
+    )
+    if planning_generation is None:
+        planning_generation = bind_priority_planning_generation(
+            source_context, parent, atlas_artifact_path)
+    _require_planning_generation(planning_generation, source_context, parent)
+    from bilqis_mlx.runtime.priority_planning_owner import (
+        build_priority_planning_epoch,
+    )
+    epoch = build_priority_planning_epoch(
+        run_dir, source_context, atlas_artifact_path, progress)
+    return _issue_lawful_teaching_frontier_from_epoch(
+        epoch, source_context, parent, planning_generation)
+
+
+def _require_lawful_teaching_frontier(
+        frontier, source_context, parent, *, refresh_accepted):
+    """Validate frontier derivation; optionally refresh mutable B13 custody."""
     if (
         not _is_issued(frontier)
         or frontier._source_context is not source_context
@@ -241,11 +251,12 @@ def require_current_lawful_teaching_frontier(
     ):
         _invalid("BAMF_LEARNER_FRONTIER_INVALID")
     planning_generation = frontier._planning_generation
-    from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
-        refresh_accepted_currentness,
-    )
-    refresh_accepted_currentness(
-        planning_generation._accepted_currentness, parent)
+    if refresh_accepted:
+        from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+            refresh_accepted_currentness,
+        )
+        refresh_accepted_currentness(
+            planning_generation._accepted_currentness, parent)
     from bilqis_mlx.runtime.priority_source_offer import (
         _require_planning_generation,
     )
@@ -282,11 +293,26 @@ def require_current_lawful_teaching_frontier(
     return frontier
 
 
+def require_bound_lawful_teaching_frontier(
+        frontier, source_context, parent):
+    """Revalidate non-neural frontier owners without a full B13 refresh."""
+    return _require_lawful_teaching_frontier(
+        frontier, source_context, parent, refresh_accepted=False)
+
+
+def require_current_lawful_teaching_frontier(
+        frontier, source_context, parent):
+    """Fail closed if any accepted learner/source/policy/evidence owner moved."""
+    return _require_lawful_teaching_frontier(
+        frontier, source_context, parent, refresh_accepted=True)
+
+
 __all__ = (
     "LawfulTeachingCapability",
     "LawfulTeachingDisposition",
     "LawfulTeachingFrontier",
     "LawfulTeachingHold",
     "issue_lawful_teaching_frontier",
+    "require_bound_lawful_teaching_frontier",
     "require_current_lawful_teaching_frontier",
 )

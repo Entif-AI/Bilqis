@@ -1,7 +1,7 @@
 """Production C06 authority for ordinary grade-neutral BAMF teaching priority."""
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 import hashlib
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
@@ -22,7 +22,11 @@ from bilqis_mlx.runtime.priority_source_offer import (
 from bilqis_mlx.semantic_sampling import DEFAULT_BINARY_BALANCE
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, DependencyRef
 from bilqis_mlx.semantics.domains import contract_digest
-from .priority_planning_owner import priority_planning as _priority_planning
+from .priority_planning_owner import (
+    build_priority_planning_epoch as _build_priority_planning_epoch,
+    priority_planning as _priority_planning,
+    priority_planning_from_epoch as _priority_planning_from_epoch,
+)
 from .priority_rejection_replay import (
     ordered_rejections as _ordered_rejections,
     rejection_recency as _rejection_recency,
@@ -39,9 +43,11 @@ def _invalid(reason):
 
 @dataclass(frozen=True)
 class AcceptedPriorityAuthority:
-    frontier: AttentionFrontier
-    history: SalienceHistory
+    frontier: AttentionFrontier | None
+    history: SalienceHistory | None
     planning: object
+    lawful_frontier: object = field(compare=False, repr=False)
+    lawful_frontier_sha256: str
     offers: tuple
     now: int
     planning_generation: object
@@ -126,8 +132,15 @@ def _planning_unlocks(capability_id, planning):
 
 
 def _priority_offers(source_context, parent, atlas_artifact_path, next_seed,
-                     planning_generation):
-    capabilities = source_context.release.execution_plan.capabilities
+                     planning_generation, lawful_frontier):
+    by_id = {
+        capability.capability_id: capability
+        for capability in source_context.release.execution_plan.capabilities
+    }
+    ready = tuple(lawful_frontier.ready_capability_ids)
+    if any(capability_id not in by_id for capability_id in ready):
+        _invalid("BAMF_PRIORITY_LAWFUL_FRONTIER_RELEASE_DRIFT")
+    capabilities = tuple(by_id[capability_id] for capability_id in ready)
     return capabilities, tuple((capability.capability_id, prepare_priority_source_offer(
         source_context, parent, atlas_artifact_path,
         capability=capability.capability_id,
@@ -171,44 +184,28 @@ def _priority_options(parent, release_sha256, offers, teacher_epoch, counter,
     return now, policy, snapshot, tuple(options), tuple(evidence_rows)
 
 
-def issue_foundation_priority_authority(
-        run_dir, source_context, parent, teacher_epoch, atlas_artifact_path, *,
-        teacher_state, progress=None):
-    """Issue only signed UNKNOWN salience; C06 ranking owns the resulting order."""
-    from bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer import (
-        read_host_system_source_authority_signer,
-    )
-    next_seed = teacher_state.get("next_seed")
-    if type(next_seed) is not int or next_seed < 0:
-        _invalid("BAMF_PRIORITY_TEACHER_SEED_INVALID")
-    counter, last_selected = priority_rotation_state(teacher_state)
-    planning = _priority_planning(
-        run_dir, source_context, atlas_artifact_path, progress=progress)
+def _bind_lawful_priority_epoch(
+        run_dir, source_context, parent, atlas_artifact_path, progress):
     if progress is not None:
         progress("teacher: binding accepted planning generation")
     planning_generation = bind_priority_planning_generation(
         source_context, parent, atlas_artifact_path)
     cache, _authenticated = _require_planning_generation(
         planning_generation, source_context, parent)
-    registry = cache._correction_registry
-    signer = read_host_system_source_authority_signer(registry)
-    capabilities = source_context.release.execution_plan.capabilities
-    if progress is not None:
-        progress(f"teacher: preparing source-backed offers for {len(capabilities)} capabilities")
-    capabilities, offers = _priority_offers(
-        source_context, parent, atlas_artifact_path, next_seed,
-        planning_generation)
-    if progress is not None:
-        progress("teacher: ranking priority options")
-    rejections = _ordered_rejections(run_dir, parent, cache)
-    rejection_count, rejection_positions = _rejection_recency(run_dir, parent, cache)
-    option_ids = {capability for capability, _ in offers}
-    if not set(rejection_positions).issubset(option_ids):
-        _invalid("BAMF_PRIORITY_REJECTION_OPTION_DRIFT")
-    now, policy, snapshot, options, evidence_rows = _priority_options(
-        parent, source_context.release.release_sha256, offers, teacher_epoch,
-        counter, last_selected, rejection_count, rejection_positions,
-        registry, signer, planning)
+    from bilqis_mlx.runtime.lawful_teaching_frontier import (
+        _issue_lawful_teaching_frontier_from_epoch,
+    )
+    planning_epoch = _build_priority_planning_epoch(
+        run_dir, source_context, atlas_artifact_path, progress)
+    planning = _priority_planning_from_epoch(
+        planning_epoch, progress=progress)
+    lawful_frontier = _issue_lawful_teaching_frontier_from_epoch(
+        planning_epoch, source_context, parent, planning_generation)
+    return planning_generation, cache, planning, lawful_frontier
+
+
+def _priority_history(
+        source_context, cache, signer, policy, evidence_rows, rejections, now):
     window = WindowPolicy(
         "bamf-foundation-window", "v1", policy.digest(),
         source_context.release.release_sha256, 2, now,
@@ -217,9 +214,6 @@ def issue_foundation_priority_authority(
                      "salience-policy:" + window.policy_id)
     evidence_by_id = dict(evidence_rows)
     history_events = []
-    # Rejection observations have no defect/action transition and therefore cannot
-    # nominate a procedure. Materialize only the active C06 window here; the full
-    # authenticated sequence remains authoritative in the rejection projection.
     for stable_id, visit_id, reason, receipt_sha256 in rejections[-window.window_size:]:
         raw = SalienceEvent(
             "bamf-rejection:" + receipt_sha256, EventKind.OBSERVATION,
@@ -233,9 +227,60 @@ def issue_foundation_priority_authority(
         history_events.append(_signed(
             raw, signer, DependencyKind.ARTIFACT,
             "salience-event:" + raw.event_id))
+    return SalienceHistory(window, tuple(history_events))
+
+
+def issue_foundation_priority_authority(
+        run_dir, source_context, parent, teacher_epoch, atlas_artifact_path, *,
+        teacher_state, progress=None):
+    """Issue only signed UNKNOWN salience; C06 ranking owns the resulting order."""
+    from bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer import (
+        read_host_system_source_authority_signer,
+    )
+    next_seed = teacher_state.get("next_seed")
+    if type(next_seed) is not int or next_seed < 0:
+        _invalid("BAMF_PRIORITY_TEACHER_SEED_INVALID")
+    counter, last_selected = priority_rotation_state(teacher_state)
+    planning_generation, cache, planning, lawful_frontier = (
+        _bind_lawful_priority_epoch(
+            run_dir, source_context, parent, atlas_artifact_path, progress))
+    ready_capabilities = lawful_frontier.ready_capability_ids
+    if not ready_capabilities:
+        return AcceptedPriorityAuthority(
+            None, None, planning, lawful_frontier,
+            lawful_frontier.frontier_sha256, (), counter, planning_generation)
+    registry = cache._correction_registry
+    signer = read_host_system_source_authority_signer(registry)
+    capabilities = ready_capabilities
+    if progress is not None:
+        progress(
+            "teacher: preparing source-backed offers for "
+            f"{len(capabilities)} lawful capabilities")
+    capabilities, offers = _priority_offers(
+        source_context, parent, atlas_artifact_path, next_seed,
+        planning_generation, lawful_frontier)
+    if progress is not None:
+        progress("teacher: ranking priority options")
+    rejections = _ordered_rejections(run_dir, parent, cache)
+    rejection_count, rejection_positions = _rejection_recency(run_dir, parent, cache)
+    option_ids = {capability for capability, _ in offers}
+    rejection_positions = {
+        capability: position
+        for capability, position in rejection_positions.items()
+        if capability in option_ids
+    }
+    rejections = tuple(
+        item for item in rejections if item[0] in option_ids)
+    now, policy, snapshot, options, evidence_rows = _priority_options(
+        parent, source_context.release.release_sha256, offers, teacher_epoch,
+        counter, last_selected, rejection_count, rejection_positions,
+        registry, signer, planning)
+    history = _priority_history(
+        source_context, cache, signer, policy, evidence_rows, rejections, now)
     return AcceptedPriorityAuthority(
         AttentionFrontier(options, evidence_rows, snapshot),
-        SalienceHistory(window, tuple(history_events)), planning, offers, now,
+        history, planning,
+        lawful_frontier, lawful_frontier.frontier_sha256, offers, now,
         planning_generation)
 
 

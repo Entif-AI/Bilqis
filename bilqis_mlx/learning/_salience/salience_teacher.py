@@ -125,7 +125,7 @@ def choose_priority_teaching(frontier, history, teacher_epoch, engine, school, r
                                         None, None, None, teacher_epoch)
     membership = tuple(grade.id for grade in program.grades
                        if any(capability.id == option.context.capability_id for capability in grade.capabilities))
-    if len(membership) != 1 or membership[0] not in school.active_grades:
+    if len(membership) != 1:
         _invalid("BAMF_SALIENCE_TEACHER_CAPABILITY_NOT_ADMITTED")
     lesson_grade = membership[0]
     key, policy, metadata = select_visit_policy(

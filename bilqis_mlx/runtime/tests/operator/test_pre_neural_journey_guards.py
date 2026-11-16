@@ -36,6 +36,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
 
         self.assertEqual(selected.status, "TEACHER_SELECTED")
         self.assertEqual(messages, [
+            "teacher: binding accepted planning generation",
             "planner: resolving accepted atlas selection",
             "planner: rebuilding source candidate frontier",
             "planner: staging source-valid candidate realizations",
@@ -44,8 +45,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
             "planner: resolving frontier closure",
             "planner: ranking next bounded target",
             "planner: candidate frontier ready",
-            "teacher: binding accepted planning generation",
-            "teacher: preparing source-backed offers for 21 capabilities",
+            "teacher: preparing source-backed offers for 14 lawful capabilities",
             "teacher: ranking priority options",
             "teacher: selecting current priority visit",
             "teacher: priority selection complete (TEACHER_SELECTED)",
