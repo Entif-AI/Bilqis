@@ -162,7 +162,7 @@ test("episode deep link is origin-neutral and capability explorers can resolve t
 
 test("fixture reason codes and rollback claims match executable retention contracts", () => {
   const policy = fs.readFileSync(
-    path.join(repoRoot, "bilqis_mlx/learning/_retention/retention_policy.py"),
+    path.join(repoRoot, "bilqis_mlx/learning/_retention/retention_policy/__init__.py"),
     "utf8",
   );
   const visit = fs.readFileSync(
