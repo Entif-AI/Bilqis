@@ -150,6 +150,9 @@ class CandidateEvidenceCapture:
         self._source_objects = {}
         self._steps = []
         self._finalized = None
+        self._learning_course = None
+        self._learning_steps = []
+        self._learning_missing = False
 
     def _object_ref(self, row):
         value = _plain(row)
@@ -188,6 +191,21 @@ class CandidateEvidenceCapture:
             self._row_refs(group)
         source_ids = role_ids["selected_option"]
         delivered = [row for row in rows if row["id"] in source_ids]
+        try:
+            from bilqis_mlx.diagnostics.teaching import inspect_lesson_step
+            course = release.curriculum
+            offered = evidence.get("option_rows", ())
+            if (not offered or not delivered or
+                    self._learning_course is not None
+                    and self._learning_course is not course):
+                self._learning_missing = True
+            elif not self._learning_missing:
+                self._learning_course = course
+                self._learning_steps.append(inspect_lesson_step(
+                    course, capability, list(offered), delivered))
+        except (ValueError, TypeError, AttributeError, KeyError, ImportError):
+            # Unsupported source structure is unmeasured, never a training veto.
+            self._learning_missing = True
         execution = release.execution_plan.capability_map.get(capability)
         teaching_options = getattr(execution, "teaching_option_ids", ())
         if not isinstance(teaching_options, tuple) or not teaching_options:
@@ -220,6 +238,36 @@ class CandidateEvidenceCapture:
             "controls": _plain(controls),
             "mentors": _plain(evidence.get("mentors")),
         })
+
+    def learning_methodology(self) -> tuple[dict, ...]:
+        """Advisory only; never included in the C16.3 hashed custody payload."""
+        from bilqis_mlx.diagnostics.signals import DiagnosticStatus, LearningSignal
+        status = DiagnosticStatus.NOT_MEASURED
+        result = []
+        signals = (
+            LearningSignal.DISCONNECTED_PREREQUISITES,
+            LearningSignal.EXCESSIVE_INTRODUCTORY_COMPLEXITY,
+        )
+        try:
+            if (not self._learning_missing and self._learning_steps and
+                    self._learning_course is not None):
+                from bilqis_mlx.diagnostics.teaching import diagnose_teaching_visit
+                findings = diagnose_teaching_visit(
+                    self._learning_course, self.proposal["capability"],
+                    tuple(self._learning_steps), introductory=None)
+                return tuple({
+                    "signal": item.signal.value, "status": item.status.value,
+                    "note": item.note, "evidence_count": item.evidence_count,
+                } for item in findings)
+        except (ValueError, TypeError, AttributeError, KeyError):
+            pass
+        for signal in signals:
+            result.append({
+                "signal": signal.value, "status": status.value,
+                "note": "Source-backed lesson structure unavailable",
+                "evidence_count": 0,
+            })
+        return tuple(result)
 
     def finalize(self, *, accepted: bool, decision: dict):
         if type(accepted) is not bool or not isinstance(decision, dict) or not decision:

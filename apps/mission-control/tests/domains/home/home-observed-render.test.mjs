@@ -19,6 +19,40 @@ test("generation zero shows observed retention and separates accepted coordinate
   assert.equal(model.runtime.retainedCandidates, 0);
 });
 
+test("v4 observation is visible and v5 learning health renders warning evidence", () => {
+  const legacy = observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v4",
+  });
+  const v4 = projectionFromPages({ run: runPage(legacy) }, context);
+  assert.equal(v4.observed.current.schema_version, legacy.schema_version);
+  const health = {
+    grade_id: "future:grade", capability_id: "novel.successor",
+    state: "MEASURED", latest: { correct: 4, total: 5 },
+    best: { correct: 5, total: 5 },
+    gain_from_first: 2, fixed_screen_errors: 1,
+    qualification_state: "NOT_MEASURED",
+    certified_surface_regression_state: "NOT_MEASURED",
+    warnings: [
+      { signal: "REPETITIVE_ANSWERS", status: "NOT_OBSERVED", note: "Varied" },
+      { signal: "CHANCE_LEVEL_OR_LAGGING", status: "NOT_OBSERVED", note: "Above baseline" },
+      { signal: "LACK_OF_DURABLE_GAIN", status: "NOT_OBSERVED", note: "Retained" },
+      { signal: "DISCONNECTED_PREREQUISITES", status: "NOT_MEASURED", note: "No structural evidence" },
+      { signal: "EXCESSIVE_INTRODUCTORY_COMPLEXITY", status: "NOT_MEASURED", note: "No first-lesson evidence" },
+    ],
+  };
+  const row = observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v5",
+    learning_health: health,
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /data-test-id="home-observed-learning-health"/);
+  assert.match(html, /future:grade/);
+  assert.match(html, /Latest fixed-screen score/);
+  assert.match(html, /EXCESSIVE_INTRODUCTORY_COMPLEXITY: NOT_MEASURED/);
+  assert.equal(model.learningStatus, "IMPROVING");
+});
+
 test("v2 observation exposes completed-step stage timing and hidden B11 multiplicity", () => {
   const row = observation({
     schema_version: "bilqis.bamf.mission-control.trainer-observation/v2",

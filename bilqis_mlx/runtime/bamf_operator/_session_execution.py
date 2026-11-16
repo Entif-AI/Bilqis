@@ -132,6 +132,9 @@ def retention_result(
             accepted=decision.accepted, decision=decision.to_record())
     if observer is not None:
         try:
+            methodology = getattr(capture, "learning_methodology", None)
+            if callable(methodology):
+                observer.update(learning_methodology=methodology())
             from .evidence_projection import complete_visit_evidence
             record = getattr(observer, "record", {})
             current_visit = (record.get("visit_evidence")

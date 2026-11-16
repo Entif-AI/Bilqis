@@ -14,12 +14,14 @@ import uuid
 
 from .performance import PERFORMANCE_FIELDS, VISIT_PERFORMANCE_FIELDS
 
-SCHEMA = 'bilqis.bamf.trainer-observed/v4'
+SCHEMA = 'bilqis.bamf.trainer-observed/v5'
+LEGACY_SCHEMA_V4 = 'bilqis.bamf.trainer-observed/v4'
 LEGACY_SCHEMA = 'bilqis.bamf.trainer-observed/v1'
 LEGACY_SCHEMA_V2 = 'bilqis.bamf.trainer-observed/v2'
 LEGACY_SCHEMA_V3 = 'bilqis.bamf.trainer-observed/v3'
 MAX_SNAPSHOT_BYTES = 64 * 1024
 STEP_HISTORY_LIMIT = 64
+LEARNING_HISTORY_LIMIT = 48
 MAX_ERROR_TEXT = 256
 
 
@@ -66,16 +68,34 @@ class TrainerObservation:
             peak_rss_bytes=None, disk_free_bytes=None, error_code=None,
             error_detail=None, candidate_steps=[], visit_evidence=None,
             generated_grade_evidence=None, retention_stage_timings=[],
+            learning_health=None,
             **{name: None for name in PERFORMANCE_FIELDS})
         self.visits = []
+        self.learning_health_by_capability = {}
         try:
             with self.path.open('rb') as stream:
                 raw = stream.read(MAX_SNAPSHOT_BYTES + 1)
             data = json.loads(raw) if len(raw) <= MAX_SNAPSHOT_BYTES else {}
-            if (data.get('schema') in {LEGACY_SCHEMA, LEGACY_SCHEMA_V2, LEGACY_SCHEMA_V3, SCHEMA}
+            if (data.get('schema') in {LEGACY_SCHEMA, LEGACY_SCHEMA_V2,
+                                       LEGACY_SCHEMA_V3, LEGACY_SCHEMA_V4, SCHEMA}
                     and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
+                if (data.get('learning_health_run_id') == run_id
+                        and run_id is not None
+                        and isinstance(data.get('learning_health_by_capability'), dict)):
+                    from bilqis_mlx.diagnostics.learning_health import SCHEMA as HEALTH_SCHEMA
+                    self.learning_health_by_capability = {
+                        key: value for key, value in
+                        list(data['learning_health_by_capability'].items())[-LEARNING_HISTORY_LIMIT:]
+                        if isinstance(key, str) and isinstance(value, dict)
+                        and value.get('schema') == HEALTH_SCHEMA
+                        and value.get('capability_id') == key
+                    }
+                if self.visits and self.visits[-1].get('run_id') != run_id:
+                    # Reused filesystem does not grant another run's trajectory.
+                    self.visits = []
+                    self.learning_health_by_capability = {}
         except (OSError, ValueError, AttributeError):
             pass
         self.thread = threading.Thread(target=self._heartbeat, daemon=True)
@@ -125,6 +145,15 @@ class TrainerObservation:
                              and subject == target else 'protected_retention_wall_seconds')
                     self.record[field] = float(self.record.get(field) or 0.0) + float(seconds)
             self.record.update(fields)
+            health = fields.get('learning_health')
+            if isinstance(health, dict) and health.get('state') == 'MEASURED':
+                capability = health.get('capability_id')
+                if isinstance(capability, str) and capability:
+                    self.learning_health_by_capability.pop(capability, None)
+                    self.learning_health_by_capability[capability] = health
+                    while len(self.learning_health_by_capability) > LEARNING_HISTORY_LIMIT:
+                        self.learning_health_by_capability.pop(
+                            next(iter(self.learning_health_by_capability)))
             if (self.step_started is not None
                     and self.record.get('phase') == 'TRAINING'):
                 self.record['candidate_step_wall_seconds'] = max(
@@ -142,50 +171,81 @@ class TrainerObservation:
                 self.record['disk_free_bytes'] = shutil.disk_usage(self.run_dir).free
             except OSError:
                 pass
-            temporary = None
-            try:
-                payload = json.dumps({'schema': SCHEMA, 'visits': [*self.visits, self.record]},
+            self._persist_snapshot()
+
+    def _persist_snapshot(self):
+        temporary = None
+        try:
+            payload = json.dumps({'schema': SCHEMA,
+                                  'learning_health_run_id': self.record['run_id'],
+                                  'visits': [*self.visits, self.record],
+                                  'learning_health_by_capability': self.learning_health_by_capability},
+                                 allow_nan=False).encode()
+            # Preserve the established recent-visit window before
+            # expendable per-capability summary history.
+            while len(payload) > MAX_SNAPSHOT_BYTES and self.learning_health_by_capability:
+                self.learning_health_by_capability.pop(
+                    next(iter(self.learning_health_by_capability)))
+                payload = json.dumps({'schema': SCHEMA,
+                                      'learning_health_run_id': self.record['run_id'],
+                                      'visits': [*self.visits, self.record],
+                                      'learning_health_by_capability': self.learning_health_by_capability},
                                      allow_nan=False).encode()
-                while len(payload) > MAX_SNAPSHOT_BYTES and self.visits:
-                    self.visits.pop(0)
-                    payload = json.dumps({'schema': SCHEMA, 'visits': [*self.visits, self.record]},
-                                         allow_nan=False).encode()
-                # Live telemetry must degrade in detail before it disappears entirely.
-                # A fully populated candidate-step history can approach the snapshot
-                # byte ceiling.  Preserve the newest completed steps and the active
-                # visit itself instead of permanently disabling observation when the
-                # current record alone no longer fits beside older detail.
-                steps = self.record.get('candidate_steps')
-                while (len(payload) > MAX_SNAPSHOT_BYTES
-                       and isinstance(steps, list) and len(steps) > 1):
-                    steps.pop(0)
-                    payload = json.dumps(
-                        {'schema': SCHEMA, 'visits': [*self.visits, self.record]},
-                        allow_nan=False).encode()
-                if len(payload) > MAX_SNAPSHOT_BYTES:
-                    # Do not permanently blind Mission Control.  A later phase
-                    # update may reduce optional detail enough to fit, and the
-                    # next heartbeat should be allowed to retry.
-                    return
-                fd, temporary = tempfile.mkstemp(prefix='.trainer-observed-', dir=self.run_dir)
-                with os.fdopen(fd, 'wb') as stream:
-                    stream.write(payload)
-                os.replace(temporary, self.path)
-            except OSError:
-                # Filesystem failures can be transient.  Observation is
-                # explicitly best-effort, so retry on the next heartbeat rather
-                # than turning one failed write into a visit-long blackout.
-                pass
-            except (ValueError, TypeError):
-                # Deterministic serialization failures cannot heal without a
-                # producer-side field change; avoid a tight retry loop.
-                self.enabled = False
-            finally:
-                if temporary and os.path.exists(temporary):
-                    try:
-                        os.unlink(temporary)
-                    except OSError:
-                        pass
+            while len(payload) > MAX_SNAPSHOT_BYTES and self.visits:
+                self.visits.pop(0)
+                payload = json.dumps({'schema': SCHEMA,
+                                      'learning_health_run_id': self.record['run_id'],
+                                      'visits': [*self.visits, self.record],
+                                      'learning_health_by_capability': self.learning_health_by_capability},
+                                     allow_nan=False).encode()
+            # Live telemetry must degrade in detail before it disappears entirely.
+            # A fully populated candidate-step history can approach the snapshot
+            # byte ceiling.  Preserve the newest completed steps and the active
+            # visit itself instead of permanently disabling observation when the
+            # current record alone no longer fits beside older detail.
+            steps = self.record.get('candidate_steps')
+            while (len(payload) > MAX_SNAPSHOT_BYTES
+                   and isinstance(steps, list) and len(steps) > 1):
+                steps.pop(0)
+                payload = json.dumps(
+                    {'schema': SCHEMA,
+                     'learning_health_run_id': self.record['run_id'],
+                     'visits': [*self.visits, self.record],
+                     'learning_health_by_capability': self.learning_health_by_capability},
+                    allow_nan=False).encode()
+            while len(payload) > MAX_SNAPSHOT_BYTES and self.learning_health_by_capability:
+                self.learning_health_by_capability.pop(
+                    next(iter(self.learning_health_by_capability)))
+                payload = json.dumps(
+                    {'schema': SCHEMA,
+                     'learning_health_run_id': self.record['run_id'],
+                     'visits': [*self.visits, self.record],
+                     'learning_health_by_capability': self.learning_health_by_capability},
+                    allow_nan=False).encode()
+            if len(payload) > MAX_SNAPSHOT_BYTES:
+                # Do not permanently blind Mission Control.  A later phase
+                # update may reduce optional detail enough to fit, and the
+                # next heartbeat should be allowed to retry.
+                return
+            fd, temporary = tempfile.mkstemp(prefix='.trainer-observed-', dir=self.run_dir)
+            with os.fdopen(fd, 'wb') as stream:
+                stream.write(payload)
+            os.replace(temporary, self.path)
+        except OSError:
+            # Filesystem failures can be transient.  Observation is
+            # explicitly best-effort, so retry on the next heartbeat rather
+            # than turning one failed write into a visit-long blackout.
+            pass
+        except (ValueError, TypeError):
+            # Deterministic serialization failures cannot heal without a
+            # producer-side field change; avoid a tight retry loop.
+            self.enabled = False
+        finally:
+            if temporary and os.path.exists(temporary):
+                try:
+                    os.unlink(temporary)
+                except OSError:
+                    pass
 
     def stage(self, **fields):
         """Update best-effort fields without forcing another synchronous write."""

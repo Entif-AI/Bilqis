@@ -63,8 +63,8 @@ function ratio(numerator, denominator) {
 }
 
 export function classifyLearning({ retained = 0, freshRetainedImprovements = 0, regressions = 0 } = {}) {
-  if (freshRetainedImprovements > 0) return "IMPROVING";
   if (regressions > 0) return "REGRESSION";
+  if (freshRetainedImprovements > 0) return "IMPROVING";
   if (retained > 0) return "THROUGHPUT_ONLY";
   return "NO_FRESH_GAIN";
 }
@@ -129,13 +129,21 @@ export function projectionFromPages(pages, context) {
       running: typeof context?.operatorActive === "boolean" ? context.operatorActive : null,
     })
     : null;
+  const health = observed.current?.learning_health;
+  const healthRegressions = Array.isArray(health?.regressed_protected_capabilities)
+    ? health.regressed_protected_capabilities.length +
+      (health.regressed_from_first === true ? 1 : 0) : 0;
+  const acceptedGain = Number.isInteger(health?.gain_from_first) &&
+    health.gain_from_first > 0 ? 1 : 0;
 
   return Object.freeze({
     provenance: "LIVE_QUERY",
     observed,
     startup,
     state: Object.freeze(Object.fromEntries(HOME_FAMILIES.map((family) => [family, pageState(pages, family)]))),
-    learningStatus: classifyLearning({ retained, freshRetainedImprovements: 0, regressions: 0 }),
+    learningStatus: classifyLearning({
+      retained, freshRetainedImprovements: acceptedGain, regressions: healthRegressions,
+    }),
     learning: Object.freeze({
       latestSchoolScore: ratio(currentCorrect, currentTotal),
       bestSchoolScore: null,

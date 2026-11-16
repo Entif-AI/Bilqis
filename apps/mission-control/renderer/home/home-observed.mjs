@@ -6,6 +6,8 @@ const SCHEMAS = new Set([
   "bilqis.bamf.mission-control.trainer-observation/v1",
   "bilqis.bamf.mission-control.trainer-observation/v2",
   "bilqis.bamf.mission-control.trainer-observation/v3",
+  "bilqis.bamf.mission-control.trainer-observation/v4",
+  "bilqis.bamf.mission-control.trainer-observation/v5",
 ]);
 
 export function observedHomeState(records, context, run) {
@@ -120,6 +122,27 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
   const activeStep = row.phase === "TRAINING" && row.candidate_step > 0 && !activeCompleted
     ? { ...row } : null;
   const stepRows = [...completedSteps, ...(activeStep ? [activeStep] : [])];
+  const health = row.learning_health;
+  const score = (item) => item && Number.isInteger(item.correct) &&
+    Number.isInteger(item.total) ? `${item.correct} / ${item.total}` : unknown;
+  const healthFields = health ? [
+    ["home.observed.healthStatus", health.state],
+    ["home.observed.healthScore", score(health.latest)],
+    ["home.observed.healthBest", score(health.best)],
+    ["home.observed.healthGain", health.gain_from_first],
+    ["home.observed.healthErrors", health.fixed_screen_errors],
+    ["home.observed.healthQualification", health.qualification_state],
+    ["home.observed.healthProtected",
+      (health.regressed_protected_capabilities ?? []).join(", ") || "None observed"],
+  ] : [];
+  const healthMarkup = health ? `<details data-test-id="home-observed-learning-health">
+    <summary>${esc(t("home.observed.learningHealth"))}</summary>
+    <p>${esc(health.grade_id ?? unknown)} · ${esc(health.capability_id ?? unknown)}</p>
+    <dl>${healthFields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
+    <h5>${esc(t("home.observed.healthWarnings"))}</h5>
+    <ul>${(health.warnings ?? []).map((warning) =>
+      `<li>${esc(warning.signal)}: ${esc(warning.status)} · ${esc(warning.note)}</li>`).join("")}</ul>
+  </details>` : "";
   const stepsMarkup = stepRows.map((step) => {
     const running = activeStep === step;
     const duration = stageDuration(step.candidate_step_wall_seconds) ?? unknown;
@@ -133,6 +156,7 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     <div class="home-observed-head"><strong class="home-observed-badge">${esc(posture)}</strong>${observedTime}</div>
     <p class="home-observed-accepted">${esc(t("home.observed.acceptedGeneration"))}: ${esc(observed.acceptedGeneration ?? unknown)} · ${esc(t("home.observed.acceptedStep"))}: ${esc(observed.acceptedOptimizerStep ?? unknown)}</p>
     <dl>${fields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
+    ${healthMarkup}
     ${stepRows.length ? `<section data-test-id="home-observed-steps"><h4>${esc(t("home.observed.steps"))}</h4>${stepsMarkup}</section>` : `<details ${testIdAttribute("home", "observed", "performance")}><summary>${esc(t("home.observed.performance"))}</summary><dl>${performance.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl></details>`}
 
     <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(historyLine(item))}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>

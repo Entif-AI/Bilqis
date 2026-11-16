@@ -139,6 +139,118 @@ class ObservedSourceTests(unittest.TestCase):
         self.assertEqual(projected.generated_grade_evidence.state, 'UNKNOWN')
         self.assertEqual(projected.retention_stage_timings[0].subject, 'Z.NOVEL')
 
+    def test_v5_learning_health_survives_cold_read_without_grade_letter_assumptions(self):
+        from bilqis_mlx.diagnostics.learning_health import project_learning_health
+        visit_evidence = {
+            'capability_id': 'novel.successor', 'grade_id': 'future:grade',
+            'grade_definition_id': 'definition:9',
+            'grade_definition_version': 'v9',
+            'retention_policy_sha256': 'a' * 64,
+            'fixed_cohort_sha256': 'b' * 64, 'rubric_sha256': 'c' * 64,
+            'source_sha256': 'd' * 64,
+            'target': {'state': 'MEASURED', 'before': 2, 'after': 4, 'total': 5},
+            'protected': [],
+        }
+        health = project_learning_health(visit_evidence, accepted=True)
+        row = visit(**performance(), candidate_steps=[], planning_wall_seconds=None,
+                    source_materialization_wall_seconds=None,
+                    target_evaluation_wall_seconds=None,
+                    protected_retention_wall_seconds=None,
+                    broad_certification_wall_seconds=None,
+                    visit_evidence=None, generated_grade_evidence=None,
+                    retention_stage_timings=[], learning_health=health)
+        self.write(row, schema='bilqis.bamf.trainer-observed/v5')
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(observed.schema_version,
+                         'bilqis.bamf.mission-control.trainer-observation/v5')
+        self.assertEqual(observed.learning_health.grade_id, 'future:grade')
+        self.assertEqual(observed.learning_health.latest.correct, 4)
+        self.assertEqual(observed.learning_health.qualification_state,
+                         'NOT_MEASURED')
+
+    def test_v5_current_visit_reads_last_accepted_summary_from_bounded_run_map(self):
+        from bilqis_mlx.diagnostics.learning_health import project_learning_health
+        health = project_learning_health({
+            'capability_id': 'A.IDENTITY', 'grade_id': 'Z:future',
+            'retention_policy_sha256': 'a' * 64,
+            'fixed_cohort_sha256': 'b' * 64,
+            'rubric_sha256': 'c' * 64, 'source_sha256': 'd' * 64,
+            'target': {'state': 'MEASURED', 'before': 2, 'after': 4, 'total': 5},
+        }, accepted=True)
+        row = visit(
+            **performance(), candidate_steps=[], planning_wall_seconds=None,
+            source_materialization_wall_seconds=None,
+            target_evaluation_wall_seconds=None,
+            protected_retention_wall_seconds=None,
+            broad_certification_wall_seconds=None,
+            visit_evidence=None, generated_grade_evidence=None,
+            retention_stage_timings=[], learning_health=None)
+        (self.root / 'trainer-observed.json').write_text(json.dumps({
+            'schema': 'bilqis.bamf.trainer-observed/v5',
+            'learning_health_run_id': RUN.run_id,
+            'learning_health_by_capability': {'A.IDENTITY': health},
+            'visits': [row],
+        }))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(observed.learning_health.latest.correct, 4)
+
+    def test_malformed_optional_health_never_hides_valid_current_observation(self):
+        row = visit(**performance(), candidate_steps=[],
+                    planning_wall_seconds=None,
+                    source_materialization_wall_seconds=None,
+                    target_evaluation_wall_seconds=None,
+                    protected_retention_wall_seconds=None,
+                    broad_certification_wall_seconds=None,
+                    visit_evidence=None, generated_grade_evidence=None,
+                    retention_stage_timings=[], learning_health=None)
+        (self.root / 'trainer-observed.json').write_text(json.dumps({
+            'schema': 'bilqis.bamf.trainer-observed/v5',
+            'learning_health_run_id': RUN.run_id,
+            'learning_health_by_capability': {'A.IDENTITY': {'schema': 'invalid'}},
+            'visits': [row],
+        }))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)
+        self.assertEqual(len(observed), 1)
+        self.assertIsNone(observed[0].learning_health)
+
+    def test_prior_visits_do_not_inherit_current_run_health(self):
+        from bilqis_mlx.diagnostics.learning_health import project_learning_health
+        health = project_learning_health({
+            'capability_id': 'A.IDENTITY', 'grade_id': 'Z:future',
+            'retention_policy_sha256': 'a' * 64,
+            'fixed_cohort_sha256': 'b' * 64,
+            'rubric_sha256': 'c' * 64, 'source_sha256': 'd' * 64,
+            'target': {'state': 'MEASURED', 'before': 2, 'after': 4, 'total': 5},
+        }, accepted=True)
+        fields = dict(**performance(), candidate_steps=[],
+                      planning_wall_seconds=None,
+                      source_materialization_wall_seconds=None,
+                      target_evaluation_wall_seconds=None,
+                      protected_retention_wall_seconds=None,
+                      broad_certification_wall_seconds=None,
+                      visit_evidence=None, generated_grade_evidence=None,
+                      retention_stage_timings=[], learning_health=None)
+        old = visit(**fields, observation_id='older', revision=1)
+        new = visit(**fields, observation_id='current', revision=2)
+        (self.root / 'trainer-observed.json').write_text(json.dumps({
+            'schema': 'bilqis.bamf.trainer-observed/v5',
+            'learning_health_run_id': RUN.run_id,
+            'learning_health_by_capability': {'A.IDENTITY': health},
+            'visits': [old, new],
+        }))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)
+        self.assertEqual(len(observed), 2)
+        self.assertIsNone(observed[0].learning_health)
+        self.assertEqual(observed[1].learning_health.latest.correct, 4)
+
     def test_millisecond_heartbeat_projects_unix_seconds_without_changing_liveness_age(self):
         heartbeat_ms = 1_763_218_800_123
         self.write(visit(observed_at=heartbeat_ms))

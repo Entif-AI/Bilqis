@@ -245,6 +245,22 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
                     "publication_" + key: value
                     for key, value in metrics.to_record().items()}))
                 if observer is not None else None))
+    if observer is not None:
+        try:
+            from bilqis_mlx.diagnostics.learning_health import project_learning_health
+            visit = observer.record.get("visit_evidence")
+            if isinstance(visit, dict) and visit.get("capability_id"):
+                visit = {
+                    **visit, "learning_methodology": observer.record.get(
+                        "learning_methodology", ()),
+                }
+                previous = getattr(observer, "learning_health_by_capability", {}).get(
+                    visit["capability_id"])
+                observer.update(learning_health=project_learning_health(
+                    visit, accepted=True, previous=previous))
+        except Exception:
+            # A diagnostic must never roll back or authorize published custody.
+            pass
     return "ACCEPTED"
 
 
