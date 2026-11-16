@@ -6,6 +6,92 @@ from unittest.mock import patch
 from bilqis_mlx.runtime.bamf_operator.session import _visit
 
 
+def _first_baseline_operator_case():
+    from bilqis_mlx.runtime.tests.capability.factory.owner.test_factory_retention_owner_adversarial import (
+        _evaluate_foundation_owner,
+        _foundation_owner_fixture,
+    )
+    from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
+        accepted_state,
+        candidate,
+        parent_state,
+    )
+
+    evaluation = _evaluate_foundation_owner(*_foundation_owner_fixture())
+    identity = evaluation.baseline_transition.measurement.comparison
+    fixture_parent_state = parent_state()
+    fixture_candidate_state = accepted_state(fixture_parent_state)
+    object.__setattr__(evaluation, "parent_state", fixture_parent_state)
+    object.__setattr__(evaluation, "candidate_state", fixture_candidate_state)
+    successor = candidate(
+        fixture_candidate_state,
+        generation=1,
+        parent="0" * 64,
+    )
+    parent = NS(
+        generation=0,
+        retained_state=NS(optimizer_step=0),
+        optimizer_hyperparameters=None,
+    )
+    selection = NS(
+        option_id="fixture-option",
+        visit=NS(identity=NS(visit_id="fixture-visit", policy_key="fixture-policy")),
+    )
+    step = NS(transaction=NS(training_authorities=()))
+    capture = NS(finalize=lambda **_kwargs: {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": 0,
+            "file_fsyncs": 0,
+            "directory_fsyncs": 0,
+            "evidence_objects": 0,
+            "persistence_seconds": 0.0,
+        },
+    })
+    cache = NS(generation=0, accepted_manifest_sha256="0" * 64)
+    return evaluation, identity, successor, parent, selection, step, capture, cache
+
+
+def _operate_first_baseline_case(case):
+    from contextlib import ExitStack
+    from tempfile import TemporaryDirectory
+    from bilqis_mlx.runtime.bamf_operator.session import _retention_result, operate_bamf
+
+    evaluation, identity, successor, parent, selection, step, capture, cache = case
+    published = []
+
+    def prepare(run_dir, *, observer=None, **_kwargs):
+        if observer is not None:
+            observer.bind_parent(parent)
+        return _retention_result(
+            run_dir, parent, NS(), "artifact", selection, identity.capability_id,
+            cache, (step,), capture, 1, 1, {}, None, observer)
+
+    def publish(_run_dir, bound_successor, *_args, **_kwargs):
+        published.append(bound_successor)
+
+    prefix = "bilqis_mlx.runtime.bamf_operator.session."
+    patches = (
+        (prefix + "prepare_bamf_visit", {"side_effect": prepare}),
+        (prefix + "evaluate_factory_retention_candidate", {"return_value": evaluation}),
+        (prefix + "derive_accepted_teacher_successor", {"return_value": successor}),
+        (prefix + "_resource_observation", {"return_value": {}}),
+        (prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
+        ("bilqis_mlx.runtime.retention.screen.candidate_identity_for_canonical_consumer",
+         {"return_value": "d" * 64}),
+        (prefix + "accept_and_publish", {"side_effect": publish}),
+        (prefix + "load_accepted_generation", {"return_value": NS(
+            generation=1, retained_state=NS(optimizer_step=1))}),
+    )
+    with TemporaryDirectory() as tmp, ExitStack() as stack:
+        for target, kwargs in patches:
+            stack.enter_context(patch(target, **kwargs))
+        result = operate_bamf(
+            Path(tmp), minutes=1, max_visits=1, reserve_gib=0,
+            source_prefetch_workers=0)
+    return result, published
+
+
 class SessionObservationTests(unittest.TestCase):
     def test_publication_before_accepted_and_failure_propagates(self):
         events = []
@@ -115,130 +201,19 @@ class SessionObservationTests(unittest.TestCase):
             self.assertEqual(final['publication_fsync_bytes'], 5)
 
     def test_operate_bamf_carries_first_accepted_baseline_to_publication(self):
-        from contextlib import ExitStack
-        from tempfile import TemporaryDirectory
         from bilqis_mlx.runtime.baseline.lifecycle import (
             BaselineLedger,
             BaselineLifecycleState,
         )
-        from bilqis_mlx.runtime.tests.capability.factory.owner.test_factory_retention_owner_adversarial import (
-            _evaluate_foundation_owner,
-            _foundation_owner_fixture,
-        )
-        from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
-            accepted_state,
-            candidate,
-            parent_state,
-        )
-        from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
 
-        evaluation = _evaluate_foundation_owner(*_foundation_owner_fixture())
+        case = _first_baseline_operator_case()
+        evaluation, identity = case[:2]
         identity = evaluation.baseline_transition.measurement.comparison
         self.assertIs(
             evaluation.baseline_ledger.state_for(identity),
             BaselineLifecycleState.BASELINE_ESTABLISHED,
         )
-        fixture_parent_state = parent_state()
-        fixture_candidate_state = accepted_state(fixture_parent_state)
-        object.__setattr__(evaluation, "parent_state", fixture_parent_state)
-        object.__setattr__(evaluation, "candidate_state", fixture_candidate_state)
-        successor = candidate(
-            fixture_candidate_state,
-            generation=1,
-            parent="0" * 64,
-        )
-        selection = NS(
-            option_id="fixture-option",
-            visit=NS(identity=NS(visit_id="fixture-visit", policy_key="fixture-policy")),
-        )
-        step = NS(transaction=NS(training_authorities=()))
-        capture = NS(finalize=lambda **_kwargs: {
-            "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
-            "persistence": {
-                "bytes_written": 0,
-                "file_fsyncs": 0,
-                "directory_fsyncs": 0,
-                "evidence_objects": 0,
-                "persistence_seconds": 0.0,
-            },
-        })
-        parent = NS(
-            generation=0,
-            retained_state=NS(optimizer_step=0),
-            optimizer_hyperparameters=None,
-        )
-        cache = NS(generation=0, accepted_manifest_sha256="0" * 64)
-        published = []
-
-        def prepare(run_dir, *, observer=None, **_kwargs):
-            if observer is not None:
-                observer.bind_parent(parent)
-            from bilqis_mlx.runtime.bamf_operator.session import _retention_result
-            return _retention_result(
-                run_dir,
-                parent,
-                NS(),
-                "artifact",
-                selection,
-                identity.capability_id,
-                cache,
-                (step,),
-                capture,
-                1,
-                1,
-                {},
-                None,
-                observer,
-            )
-
-        def publish(_run_dir, bound_successor, *_args, **_kwargs):
-            published.append(bound_successor)
-
-        prefix = "bilqis_mlx.runtime.bamf_operator.session."
-        with TemporaryDirectory() as tmp, ExitStack() as stack:
-            stack.enter_context(patch(
-                prefix + "prepare_bamf_visit",
-                side_effect=prepare,
-            ))
-            stack.enter_context(patch(
-                prefix + "evaluate_factory_retention_candidate",
-                return_value=evaluation,
-            ))
-            stack.enter_context(patch(
-                prefix + "derive_accepted_teacher_successor",
-                return_value=successor,
-            ))
-            stack.enter_context(patch(
-                prefix + "_resource_observation",
-                return_value={},
-            ))
-            stack.enter_context(patch(
-                prefix + "candidate_identity_metrics_delta",
-                return_value={},
-            ))
-            stack.enter_context(patch(
-                "bilqis_mlx.runtime.retention.screen."
-                "candidate_identity_for_canonical_consumer",
-                return_value="d" * 64,
-            ))
-            stack.enter_context(patch(
-                prefix + "accept_and_publish",
-                side_effect=publish,
-            ))
-            stack.enter_context(patch(
-                prefix + "load_accepted_generation",
-                return_value=NS(
-                    generation=1,
-                    retained_state=NS(optimizer_step=1),
-                ),
-            ))
-            result = operate_bamf(
-                Path(tmp),
-                minutes=1,
-                max_visits=1,
-                reserve_gib=0,
-                source_prefetch_workers=0,
-            )
+        result, published = _operate_first_baseline_case(case)
 
         self.assertEqual((result.accepted, result.rejected), (1, 0))
         self.assertEqual(len(published), 1)
