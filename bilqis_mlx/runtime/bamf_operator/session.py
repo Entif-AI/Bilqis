@@ -68,6 +68,8 @@ class BamfOperatorResult:
     source_prefetch_overlap_seconds: float = 0.0
     source_prefetch_prepared_steps: int = 0
     source_prefetch_serial_steps: int = 0
+    admission_status: str | None = None
+    admission_advances: int = 0
 def _emit_progress(progress, message: str) -> None:
     if progress is not None:
         progress(message)
@@ -225,11 +227,55 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
                 if observer is not None else None))
     return "ACCEPTED"
 
+
+def _accepted_admission_reentry(
+        run_dir: Path, parent_graph: dict, reserve_gib: float, progress=None):
+    """Re-enter C07 after retained learning before another cold neural visit."""
+    from bilqis_mlx.errors import BilqisError
+    from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
+    from bilqis_mlx.runtime.atlas_flywheel import AdmissionFlywheelStatus
+    from bilqis_mlx.runtime.atlas_flywheel_runtime import run_accepted_atlas_flywheel
+
+    if not isinstance(parent_graph, dict):
+        _invalid("BAMF_OPERATOR_ADMISSION_PARENT_GRAPH_INVALID")
+    before = read_accepted_atlas_factory_release(run_dir)
+    _emit_progress(progress, "re-entering accepted C07 admission flywheel")
+    try:
+        result = run_accepted_atlas_flywheel(
+            run_dir, parent_graph, reserve_gib=reserve_gib)
+    except BilqisError as error:
+        reason = error.context.get("reason")
+        lease_boundary = (
+            error.spec is SCHOOL.BAMF_ATLAS_ADMISSION.ACCEPTED_LEASE_REQUIRED
+            or (error.spec is SCHOOL.BAMF_ATLAS_ADMISSION.INVALID
+                and isinstance(reason, str) and "LEASE" in reason)
+        )
+        if not lease_boundary:
+            raise
+        return AdmissionFlywheelStatus.LEASE_REQUIRED.value, 0, "ADMISSION_LEASE_REQUIRED"
+    after = read_accepted_atlas_factory_release(run_dir)
+    if after.release_sha256 != result.final_state.epoch.current_release.release_sha256:
+        _invalid("BAMF_OPERATOR_ADMISSION_REFRESH_DRIFT")
+    if after.release_sha256 != before.release_sha256:
+        _emit_progress(
+            progress,
+            "C07 adopted a successor; next visit must cold-refresh accepted custody")
+    _emit_progress(
+        progress,
+        f"admission flywheel outcome: {result.status.value} "
+        f"after {result.advances} advance(s)")
+    stop_status = {
+        AdmissionFlywheelStatus.HELD: "ADMISSION_HOLD",
+        AdmissionFlywheelStatus.LEASE_REQUIRED: "ADMISSION_LEASE_REQUIRED",
+    }.get(result.status)
+    return result.status.value, result.advances, stop_status
+
 def operate_bamf(
     run_dir: Path, *, minutes: int = 90,
     max_visits: int = 0, steps_per_visit: int = 16,
     reserve_gib: float = 100.0,
     source_prefetch_workers: int = 2,
+    parent_graph: dict | None = None,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
@@ -244,4 +290,10 @@ def operate_bamf(
         null_context=nullcontext, operator_lock=bamf_operator_lock,
         visit_fn=_visit, observer_type=TrainerObservation,
         emit_progress=_emit_progress, monotonic=time.monotonic,
-        load_generation=load_accepted_generation, result_type=BamfOperatorResult)
+        load_generation=load_accepted_generation, result_type=BamfOperatorResult,
+        accepted_reentry=(
+            None if parent_graph is None else
+            lambda current_run_dir, current_reserve_gib, current_progress:
+            _accepted_admission_reentry(
+                current_run_dir, parent_graph, current_reserve_gib,
+                current_progress)))

@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "d280a3e8d47efdba34e1262ffa59018d93f7c443",
-  "updated_at": "2026-11-15T09:19:59+00:00",
+  "observed_unified": "20f5836e17cdbc2c1f50b29590d8abcd9f0f615d",
+  "updated_at": "2026-11-16T05:47:33+00:00",
   "exception": null,
   "items": [
     {
@@ -450,6 +450,16 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1197-rejection-continue-20261115",
       "head_sha_role": "exact #1197 semantic implementation, review repairs, repeated-rejection replay proof and CP07 compatibility head before this flow-control receipt commit"
+    },
+    {
+      "issue": 1293,
+      "pr": 1309,
+      "state": "TURNED_IN",
+      "head_sha": "ddfef26f950e6e12853018083ecd548099448366",
+      "summary": "Issue #1293 is turned in after synchronizing with reviewed unified 20f5836e, preserving #1294 exact B11 row-owner authority and #1295 truthful operator/admission classification. The persistent BAMF operator re-enters the accepted C07 flywheel after accepted retained learning, uses the lineage-bound foundation graph and persisted lease, preserves typed admission outcomes, and cold-reconstructs accepted custody on the next visit before further neural execution. Current-unified proof is green for CLI provenance/status/labels, the real disposable C07 causal witness, and the complete operator/observed scope. A readily repairable unified B11 error-classification defect discovered during reconciliation is included: execution-authority invalidation now emits its dedicated BAMF_B11 error instead of MODEL_TOPOLOGY. No background admission loop, duplicate planner, grade-specific progression or live human learner mutation.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1293-c07-flywheel-reentry-20261115",
+      "head_sha_role": "exact reviewed-unified semantic head including the bounded B11 error-classification repair discovered during reconciliation; later drift/flow turn-in evidence is metadata only"
     },
     {
       "issue": 1295,

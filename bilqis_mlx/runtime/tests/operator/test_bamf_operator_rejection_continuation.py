@@ -2,15 +2,17 @@
 from contextlib import nullcontext
 from dataclasses import replace
 import json
+from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from bilqis_mlx.errors import BilqisError, SCHOOL
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation
 from bilqis_mlx.runtime.bamf_operator.session import (
-    BamfPreparedVisit, operate_bamf,
+    BamfPreparedVisit, _accepted_admission_reentry, operate_bamf,
 )
 from bilqis_mlx.runtime.priority_rejection_replay import (
     candidate_step_horizon, current_rejections,
@@ -131,6 +133,120 @@ class BamfOperatorRejectionContinuationTests(unittest.TestCase):
         self.assertEqual(result.generation, 1)
         self.assertEqual(result.optimizer_step, 4)
         self.assertEqual(visit.call_count, 3)
+
+    def test_accepted_visit_reenters_admission_before_next_neural_visit(self):
+        current = SimpleNamespace(
+            generation=2,
+            retained_state=SimpleNamespace(optimizer_step=8),
+        )
+        parent_graph = {"tokens": ["fixture"]}
+        progress = []
+        with TemporaryDirectory() as temporary, patch(
+                "bilqis_mlx.runtime.bamf_operator.session._visit",
+                side_effect=("ACCEPTED", "HELD")) as visit, patch(
+                "bilqis_mlx.runtime.bamf_operator.session._accepted_admission_reentry",
+                return_value=("WAITING_FOR_EVIDENCE", 1, None)) as reentry, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
+                return_value=current):
+            result = operate_bamf(
+                temporary, minutes=1, max_visits=0, reserve_gib=0.0,
+                source_prefetch_workers=0, parent_graph=parent_graph,
+                progress=progress.append)
+
+        self.assertEqual(result.status, "PRIORITY_HOLD")
+        self.assertEqual((result.visits, result.accepted, result.rejected), (1, 1, 0))
+        self.assertEqual(result.admission_status, "WAITING_FOR_EVIDENCE")
+        self.assertEqual(result.admission_advances, 1)
+        reentry.assert_called_once_with(
+            Path(temporary).resolve(), parent_graph, 0.0, progress.append)
+        self.assertEqual(visit.call_count, 2)
+
+    def test_admission_hold_stops_before_another_neural_visit(self):
+        current = self._current()
+        parent_graph = {"tokens": ["fixture"]}
+        with TemporaryDirectory() as temporary, patch(
+                "bilqis_mlx.runtime.bamf_operator.session._visit",
+                return_value="ACCEPTED") as visit, patch(
+                "bilqis_mlx.runtime.bamf_operator.session._accepted_admission_reentry",
+                return_value=("HELD", 0, "ADMISSION_HOLD")), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
+                return_value=current):
+            result = operate_bamf(
+                temporary, minutes=1, max_visits=0, reserve_gib=0.0,
+                source_prefetch_workers=0, parent_graph=parent_graph)
+
+        self.assertEqual(result.status, "ADMISSION_HOLD")
+        self.assertEqual((result.visits, result.accepted, result.rejected), (1, 1, 0))
+        self.assertEqual(result.admission_status, "HELD")
+        visit.assert_called_once()
+
+    def test_missing_accepted_lease_returns_typed_admission_stop(self):
+        before = SimpleNamespace(release_sha256="a" * 64)
+        missing = BilqisError(
+            SCHOOL.BAMF_ATLAS_ADMISSION.ACCEPTED_LEASE_REQUIRED, {})
+        with patch(
+                "bilqis_mlx.runtime.atlas_admission.read_accepted_atlas_factory_release",
+                return_value=before), patch(
+                "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
+                side_effect=missing), patch(
+                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
+                side_effect=AssertionError("missing lease must not refresh custody")):
+            actual = _accepted_admission_reentry(
+                Path("/run"), {"tokens": []}, 100.0)
+
+        self.assertEqual(actual, ("LEASE_REQUIRED", 0, "ADMISSION_LEASE_REQUIRED"))
+
+    def test_invalid_accepted_lease_returns_typed_admission_stop(self):
+        before = SimpleNamespace(release_sha256="a" * 64)
+        invalid_lease = BilqisError(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            {"reason": "BAMF_ATLAS_LEASE_V2_REFERENCE_DRIFT"})
+        with patch(
+                "bilqis_mlx.runtime.atlas_admission.read_accepted_atlas_factory_release",
+                return_value=before), patch(
+                "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
+                side_effect=invalid_lease):
+            actual = _accepted_admission_reentry(
+                Path("/run"), {"tokens": []}, 100.0)
+
+        self.assertEqual(actual, ("LEASE_REQUIRED", 0, "ADMISSION_LEASE_REQUIRED"))
+
+    def test_source_rights_error_is_not_reclassified_as_lease_hold(self):
+        before = SimpleNamespace(release_sha256="a" * 64)
+        source_hold = BilqisError(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            {"reason": "BAMF_ATLAS_SOURCE_OR_RIGHTS_HELD"})
+        with patch(
+                "bilqis_mlx.runtime.atlas_admission.read_accepted_atlas_factory_release",
+                return_value=before), patch(
+                "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
+                side_effect=source_hold):
+            with self.assertRaises(BilqisError) as raised:
+                _accepted_admission_reentry(
+                    Path("/run"), {"tokens": []}, 100.0)
+
+        self.assertIs(raised.exception, source_hold)
+
+    def test_fixed_point_does_not_fake_adoption_or_cold_refresh(self):
+        from bilqis_mlx.runtime.atlas_flywheel import AdmissionFlywheelStatus
+
+        current = SimpleNamespace(release_sha256="b" * 64)
+        result = SimpleNamespace(
+            status=AdmissionFlywheelStatus.FIXED_POINT,
+            advances=0,
+            final_state=SimpleNamespace(
+                epoch=SimpleNamespace(current_release=current)))
+        with patch(
+                "bilqis_mlx.runtime.atlas_admission.read_accepted_atlas_factory_release",
+                side_effect=(current, current)), patch(
+                "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
+                return_value=result), patch(
+                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
+                side_effect=AssertionError("fixed point must not fake a refresh")):
+            actual = _accepted_admission_reentry(
+                Path("/run"), {"tokens": []}, 100.0)
+
+        self.assertEqual(actual, ("FIXED_POINT", 0, None))
 
 
 def _rejected_resource_fixture():

@@ -46,7 +46,7 @@ class AdmissionStatusLabelsTests(unittest.TestCase):
                                 ("_validate_resume_overrides", student.run_identity),
                                 ("_validate_resume_atlas_override", None),
                                 ("_saved_policy", "atlas-release"),
-                                ("source_foundation", (None, None, {}))):
+                                ("_validated_resume_parent_graph", (None, None, {}))):
                 stack.enter_context(patch.object(lifecycle, name, return_value=value))
             stack.enter_context(patch.object(lifecycle, "_report", side_effect=lambda **kw: kw))
             flywheel = stack.enter_context(patch(

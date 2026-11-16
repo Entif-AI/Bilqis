@@ -12,6 +12,7 @@ from bilqis_mlx.cli import main
 from bilqis_mlx.factory.autonomy import EvidenceReceipt, obligations_for_capability, record_evidence
 from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
 from bilqis_mlx.runtime.atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
+from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
 from bilqis_mlx.runtime.autonomy_state import persist_autonomy_state
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
 from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import accepted_binding_for_manifest, accepted_generation
@@ -126,7 +127,7 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
 
         def cold_operator_probe(
                 run_dir, *, minutes, max_visits, steps_per_visit, reserve_gib,
-                source_prefetch_workers, progress=None):
+                source_prefetch_workers, parent_graph=None, progress=None):
             from bilqis_mlx.runtime.bamf_operator import BamfOperatorResult
             from bilqis_mlx.runtime.bamf_operator.session import _execution_context
 
@@ -134,12 +135,13 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
                 Path(run_dir).resolve())
             accepted_release = read_accepted_atlas_factory_release(Path(run_dir).resolve())
             self.assertEqual(context.release.release_sha256, accepted_release.release_sha256)
+            self.assertIs(parent_graph, self.parent_graph)
             return BamfOperatorResult(
                 "VISIT_LIMIT", 0, 0, 0,
                 parent.generation, parent.retained_state.optimizer_step)
 
         with patch(
-                "bilqis_mlx.presentation.operator_cli.bamf_lifecycle.source_foundation",
+                "bilqis_mlx.presentation.operator_cli.bamf_lifecycle._validated_resume_parent_graph",
                 return_value=(None, None, self.parent_graph)), patch(
                     "bilqis_mlx.presentation.operator_cli.command._invoke_learner",
                     side_effect=AssertionError(
@@ -153,7 +155,7 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
         self.assertEqual((code, errors.getvalue()), (0, ""))
         operate.assert_called_once_with(
             self.run, minutes=90, max_visits=1, steps_per_visit=16, reserve_gib=100.0,
-            source_prefetch_workers=2, progress=ANY)
+            source_prefetch_workers=2, parent_graph=self.parent_graph, progress=ANY)
         return self._json_records(output.getvalue())[-1]
 
     def test_human_resume_runs_real_parameter_flywheel_from_accepted_custody(self):
@@ -191,3 +193,51 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
                 read_accepted_atlas_factory_release(self.run).release_sha256,
                 parent_release)
             self.assertEqual(binding.lease_sha256, fixture.lease.digest())
+
+    def test_persistent_operator_reenters_real_flywheel_and_cold_refreshes(self):
+        with patch(
+                "bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers.DECLARED",
+                _COMPACT_DECLARED), patch(
+                    "bilqis_mlx.runtime.topology_v2.serialization.expected_bamf_shapes",
+                    return_value=_COMPACT_DECLARED), shape_patch():
+            fixture = self._production_parameter_fixture()
+            supervisor = AcceptedAtlasFlywheelSupervisor(
+                self.run, self.parent_graph, reserve_gib=100.)
+            with self._production_parameter_context(fixture):
+                parent, _manifest = load_bamf_generation_authority(
+                    self.run / "bamf-state.json")
+                parent_release = read_accepted_atlas_factory_release(
+                    self.run).release_sha256
+                seen_releases = []
+
+                def fake_visit(run_dir, _reserve_gib, **_kwargs):
+                    from bilqis_mlx.runtime.bamf_operator.session import _execution_context
+                    _student, context, _atlas, _features = _execution_context(run_dir)
+                    seen_releases.append(context.release.release_sha256)
+                    if len(seen_releases) == 1:
+                        self._credit_identity_prerequisites(supervisor)
+                        return "ACCEPTED"
+                    return "HELD"
+
+                with patch(
+                        "bilqis_mlx.runtime.bamf_operator.session._visit",
+                        side_effect=fake_visit):
+                    result = operate_bamf(
+                        self.run, minutes=1, max_visits=0, reserve_gib=100.,
+                        source_prefetch_workers=0, parent_graph=self.parent_graph)
+
+                accepted, _accepted_manifest = load_bamf_generation_authority(
+                    self.run / "bamf-state.json")
+                successor_release = read_accepted_atlas_factory_release(
+                    self.run).release_sha256
+
+            self.assertEqual(result.status, "PRIORITY_HOLD")
+            self.assertEqual((result.visits, result.accepted, result.rejected), (1, 1, 0))
+            self.assertGreater(result.admission_advances, 0)
+            self.assertIsNotNone(result.admission_status)
+            self.assertEqual(seen_releases[0], parent_release)
+            self.assertEqual(seen_releases[1], successor_release)
+            self.assertNotEqual(successor_release, parent_release)
+            self.assertEqual(
+                accepted.retained_state.optimizer_step,
+                parent.retained_state.optimizer_step)
