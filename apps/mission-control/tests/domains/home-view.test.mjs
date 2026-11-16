@@ -157,10 +157,10 @@ test("Home consumes shared contextual-help and temporal primitives without colla
   assert.doesNotMatch(markup, /data-source-unix-seconds="1799000305"/);
 });
 
-test("Home does not repeat the shell-owned Admin Main Frame destination heading", () => {
+test("Home does not repeat the shell-owned Model Forensics destination heading", () => {
   const markup = renderHomeMarkup(referenceHomeProjection());
   assert.doesNotMatch(markup, /<h1\b/i);
-  assert.doesNotMatch(markup, />\s*Admin Main Frame\s*</i);
+  assert.doesNotMatch(markup, />\s*Model Forensics\s*</i);
 });
 
 test("attention queue contains actionable conditions rather than ordinary healthy telemetry", () => {

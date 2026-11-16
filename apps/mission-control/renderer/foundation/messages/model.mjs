@@ -35,7 +35,7 @@ export const MODEL_MESSAGES = Object.freeze({
   "model.neural.topologyEyebrow": "Topology / runtime",
   "model.neural.topologyTitle": "Exact topology and runtime posture",
   "model.neural.topologyManifest": "Topology manifest",
-  "model.neural.runtimeProjection": "Admin Main Frame projection",
+  "model.neural.runtimeProjection": "Model Forensics projection",
   "model.neural.architecture": "Architecture",
   "model.neural.layers": "Layers",
   "model.neural.width": "Width",

@@ -1,8 +1,8 @@
-# Admin Main Frame issue #1187 — Model usability evidence
+# Model Forensics issue #1187 — Model usability evidence
 
 ## Authority
 
-- Issue: `#1187 Admin Main Frame UX implementation | Model`
+- Issue: `#1187 Model Forensics UX implementation | Model`
 - Branch: `codex/1187-mc-model-20261115`
 - Initial reviewed-unified base: `12ff747f92c2b60cd6066174c6eb025f863e003c`
 - Required shared dependencies #1181 and #1182 were confirmed merged and ancestral to the base before implementation.
@@ -36,4 +36,4 @@ The bounded owner/regression ring is intentionally limited to the affected Model
 - Reconciliation with reviewed unified produced content conflicts only in `foundation/domain-controller.mjs` and `renderer.mjs`; both were resolved by preserving the incoming Atlas/Salience/Lineage wiring together with the Model Neural controller contract.
 - The repository structure gate then required the now-shared `renderer.mjs` to be decomposed below its touched-file threshold. Capability-explorer setup and inspector geometry/state were moved into focused foundation controllers; the package allowlist and source-shape tests were updated to the new ownership. A browser-only initialization-order regression exposed during this split was repaired before final verification.
 
-No aggregate repository suite was run because the changed dependency surface is bounded to Admin Main Frame Model/shell/protocol behavior.
+No aggregate repository suite was run because the changed dependency surface is bounded to Model Forensics Model/shell/protocol behavior.

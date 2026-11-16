@@ -1,12 +1,12 @@
-# BAMF Admin Main Frame Resources (GUI15)
+# BAMF Model Forensics Resources (GUI15)
 
 Issue: #1070
 Parent: #1047
-Surface: read-only Electron renderer over accepted Admin Main Frame CP03/CP04 contracts
+Surface: read-only Electron renderer over accepted Model Forensics CP03/CP04 contracts
 
 ## Operator contract
 
-The Resources view answers a narrower question than the Admin Main Frame home: **where is the measured resource budget going, how did it change, and what exact evidence is available for a spike?** It is not a performance-policy engine and it is not evidence of learning quality.
+The Resources view answers a narrower question than the Model Forensics home: **where is the measured resource budget going, how did it change, and what exact evidence is available for a spike?** It is not a performance-policy engine and it is not evidence of learning quality.
 
 The view keeps four semantic classes visually and structurally distinct:
 
@@ -15,7 +15,7 @@ The view keeps four semantic classes visually and structurally distinct:
 3. **Derived values** are deterministic transforms of accepted values, such as steps/minute multiplied by 60.
 4. **Forecasts/estimates** are explicitly labeled estimates and never promoted into measured evidence.
 
-Missing values remain `UNAVAILABLE`. A category is never rendered as zero merely because the current Admin Main Frame contract does not expose it.
+Missing values remain `UNAVAILABLE`. A category is never rendered as zero merely because the current Model Forensics contract does not expose it.
 
 ## Accepted live projection boundary
 

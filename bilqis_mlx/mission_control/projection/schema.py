@@ -1,4 +1,4 @@
-"""SQLite schema for the disposable CP06 Admin Main Frame projection."""
+"""SQLite schema for the disposable CP06 Model Forensics projection."""
 from .contracts import PROJECTION_SCHEMA, PROJECTION_SCHEMA_VERSION
 
 

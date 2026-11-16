@@ -81,12 +81,57 @@ class TrainerObservationTests(unittest.TestCase):
                 self.assertEqual(final['candidate_steps'][0]['candidate_step_wall_seconds'], 0.5)
                 self.assertEqual(final['candidate_step'], 2)
 
+    def test_snapshot_trims_old_step_detail_before_disabling_live_observation(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'bamf-state.json').write_text(json.dumps({
+                'run_id': 'run', 'manifest_sha256': 'a' * 64,
+            }))
+            with TrainerObservation(root, 1, heartbeat_seconds=60) as obs:
+                obs.update(phase='TRAINING', capability_id='A.MAPS',
+                           candidate_step=64, candidate_horizon=64)
+                oversized_integer = int('9' * 256)
+                template = {
+                    'candidate_step_wall_seconds': 12345.6789012345,
+                    'pre_neural_source_compile_wall_seconds': 12345.6789012345,
+                    'currentness_binding_wall_seconds': 12345.6789012345,
+                    'b11_preflight_wall_seconds': 12345.6789012345,
+                    'b11_autodiff_wall_seconds': 12345.6789012345,
+                    'optimizer_admission_wall_seconds': 12345.6789012345,
+                    'motif_staging_wall_seconds': 12345.6789012345,
+                    'evidence_capture_wall_seconds': 12345.6789012345,
+                    'candidate_terminal_step': False,
+                    'c08_gradient_launches': oversized_integer,
+                    'c08_vectorized_microbatches': oversized_integer,
+                    'c08_materialization_barriers': oversized_integer,
+                    'c08_scalar_fallback_rows': oversized_integer,
+                    'c08_logical_batch_wall_seconds': 12345.6789012345,
+                    'c08_rows_per_gradient_launch': 12345.6789012345,
+                    'b11_provider_draw_count': oversized_integer,
+                    'b11_atlas_reload_count': oversized_integer,
+                    'logical_rows': oversized_integer,
+                    'compiled_positions': oversized_integer,
+                }
+                obs.record['candidate_steps'] = [
+                    {'candidate_step': step, 'candidate_optimizer_step': step, **template}
+                    for step in range(1, 65)
+                ]
+                obs.update()
+                self.assertTrue(obs.enabled)
+                snapshot = json.loads((root / 'trainer-observed.json').read_text())
+                current = snapshot['visits'][-1]
+                self.assertLessEqual(
+                    len((root / 'trainer-observed.json').read_bytes()), 64 * 1024)
+                self.assertLess(len(current['candidate_steps']), 64)
+                self.assertEqual(current['candidate_steps'][-1]['candidate_step'], 64)
+
     def test_write_failure_does_not_escape(self):
         with TemporaryDirectory() as tmp:
             root = Path(tmp)
             (root / 'trainer-observed.json').mkdir()
             with TrainerObservation(root, 1) as obs:
                 obs.update(phase='SELECTING')
+                self.assertTrue(obs.enabled)
                 obs.finish('HELD')
 
     def test_heartbeat_interleaved_with_phase_changes_keeps_complete_snapshots(self):

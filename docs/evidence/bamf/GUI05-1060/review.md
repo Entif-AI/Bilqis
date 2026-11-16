@@ -78,7 +78,7 @@ renderer reached 400 lines during intake; its sibling domain rendering now lives
 in domain-views.mjs, leaving renderer.mjs at 235 lines. Both retain the same views,
 callback behavior and exact asset allowlist.
 
-Post-intake evidence: 62 Admin Main Frame and 55 control-plane Python tests PASS;
+Post-intake evidence: 62 Model Forensics and 55 control-plane Python tests PASS;
 103 Node tests PASS; the GUI05 browser journey PASS. Full premerge collection
 preflight imports 908 test files / 4,512 cases with zero import failures after
 installing the historical Torch test dependency. This is collection evidence only.

@@ -27,8 +27,27 @@ const SAFE_DIAGNOSTIC_CAUSE_CODES = new Set([
   "BAMF_GUI20_SESSION_INVALID",
 ]);
 
+const SAFE_ACCEPTED_CONTRACT_REASONS = new Set([
+  "CP01_STATUS",
+  "EVENT_ENVELOPE",
+  "FRAME_REQUEST_MISMATCH",
+  "QUERY_HISTORICAL_IDENTITY",
+  "QUERY_LINKS",
+  "QUERY_REFERENCE",
+  "QUERY_REQUEST",
+  "QUERY_RESPONSE",
+  "QUERY_SNAPSHOT_RESPONSE",
+  "SNAPSHOT_REQUEST",
+]);
+
 function safeCauseCode(error) {
   const code = typeof error?.code === "string" ? error.code : "";
+  if (code === "BAMF_GUI20_ACCEPTED_CONTRACT_INVALID") {
+    const prefix = `${code}:`;
+    const message = typeof error?.message === "string" ? error.message : "";
+    const reason = message.startsWith(prefix) ? message.slice(prefix.length) : "";
+    if (SAFE_ACCEPTED_CONTRACT_REASONS.has(reason)) return `${code}:${reason}`;
+  }
   return SAFE_DIAGNOSTIC_CAUSE_CODES.has(code)
     ? code
     : "BAMF_GUI20_UNCLASSIFIED_FAILURE";

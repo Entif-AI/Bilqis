@@ -1,4 +1,4 @@
-# Admin Main Frame Capability Explorer rendered acceptance evidence
+# Model Forensics Capability Explorer rendered acceptance evidence
 
 Issue #1131 redesigns `VIEW-D-003`. Development began from unified baseline
 `df57fe448af9c79db8f9a6a2704564baec7e4c84`; final integration and rendered

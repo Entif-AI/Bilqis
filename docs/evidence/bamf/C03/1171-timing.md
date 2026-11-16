@@ -106,7 +106,7 @@ Disposition: **PASS** for #1171 acceptance item 6.
 
 The final turn-in branch subsequently consumed reviewed unified
 `d280a3e8d47efdba34e1262ffa59018d93f7c443`. The intervening unified range from
-`4d743ecf` to `d280a3e8` changes Admin Main Frame JavaScript/CSS/tests plus
+`4d743ecf` to `d280a3e8` changes Model Forensics JavaScript/CSS/tests plus
 `package.json`; it does not change the Python planner, candidate-frontier, B13/C09
 currentness, accepted-correction, source-offer, qualification, or pre-neural journey
 owners measured above.
