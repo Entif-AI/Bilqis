@@ -2,17 +2,17 @@
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
   "observed_unified": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
-  "updated_at": "2026-11-16T19:00:38Z",
+  "updated_at": "2026-11-16T19:03:23Z",
   "exception": null,
   "items": [
     {
       "issue": 1320,
-      "pr": null,
-      "state": "TURNED_IN",
+      "pr": 1345,
+      "state": "ACTIVE",
       "head_sha": "e7fffed2616c6caf637b23fb96e7ba8a5d5605c1",
-      "head_sha_role": "exact independently reviewed semantic/test proof head; subsequent EGM/drift and TURNED_IN bookkeeping are docs/flow-only",
-      "summary": "#1320 learner-relative dynamic next-grade synthesis is turned in after exact-head Codebase and Comprehension Goldfish PASS (0 Blockers / 0 Majors / 0 Nits each) at e7fffed2 and Stage-6 PASS / NO_DRIFT. Widened generated-grade/autonomy/admission/custody/cold-resume proof is 76/76; Factory architecture, error-control (new debt 0), BAMF contracts, docs/governance, diff hygiene and structural limits pass. Broad local premerge was not run; hosted PR checks remain the final integration gate. Human merge remains external authority.",
-      "resume_trigger": null,
+      "head_sha_role": "reviewed semantic/test proof head; hosted structural-conformance repair reopened before source mutation",
+      "summary": "#1320 reopened from TURNED_IN only for hosted PR #1345 structural-conformance repair. Final semantic/test proof e7fffed2 remains Codebase+Comprehension EGM-clean (0B/0M/0N) with Stage-6 NO_DRIFT and 76/76 invalidated proof. Hosted semantic-ABI passes; portable-core fails only check_module_size on four touched oversized files plus factory/tests direct-file count. Repair is structural-only unless evidence proves otherwise.",
+      "resume_trigger": "PR #1345 hosted portable-core FILE_REFACTOR_REQUIRED / DIRECTORY_REFACTOR_REQUIRED",
       "preserved_branch": "codex/1320-dynamic-grade-synthesis-20261116"
     },
     {
