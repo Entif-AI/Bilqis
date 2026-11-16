@@ -2042,7 +2042,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2094** raw raises across **293** files. The baseline gate permits only reduction.
+Current production scan: **2092** raw raises across **293** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2071,11 +2071,11 @@ Current production scan: **2094** raw raises across **293** files. The baseline 
 | `AUTONOMY_ACTION_KIND_INVALID` | 1 | `bilqis_mlx/factory/_autonomy/scheduling.py` |
 | `AUTONOMY_ACTION_UNHANDLED` | 1 | `bilqis_mlx/runtime/_admission/autonomy_loop.py` |
 | `AUTONOMY_COMPOSITION_REPORT_BINDING_INVALID` | 1 | `bilqis_mlx/factory/_autonomy/planning.py` |
-| `AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID` | 2 | `bilqis_mlx/factory/_autonomy/planning.py` |
+| `AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID` | 1 | `bilqis_mlx/factory/_autonomy/planning.py` |
 | `AUTONOMY_COMPOSITION_REPORT_SCOPE_INVALID` | 1 | `bilqis_mlx/factory/_autonomy/planning.py` |
 | `AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID` | 1 | `bilqis_mlx/factory/_autonomy/planning.py` |
 | `AUTONOMY_CURRENT_CHECKPOINT_CONTEXT_INVALID` | 1 | `bilqis_mlx/factory/_autonomy/obligations.py` |
-| `AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION` | 2 | `bilqis_mlx/factory/_autonomy/obligations.py` |
+| `AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION` | 1 | `bilqis_mlx/factory/_autonomy/obligations.py` |
 | `AUTONOMY_DUPLICATE_EVIDENCE_RECEIPT` | 1 | `bilqis_mlx/factory/_autonomy/recording.py` |
 | `AUTONOMY_DUPLICATE_TEACHING_RECEIPT` | 1 | `bilqis_mlx/factory/_autonomy/recording.py` |
 | `AUTONOMY_EVIDENCE_CURRENT_CHECKPOINT_MISMATCH` | 1 | `bilqis_mlx/factory/_autonomy/recording.py` |

@@ -12,6 +12,10 @@ def _require_known_obligation(obligations, obligation_id):
         raise ValueError("AUTONOMY_UNKNOWN_EVIDENCE_OBLIGATION")
     return obligation
 
+
+def _duplicate_evidence_obligation():
+    raise ValueError("AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION")
+
 def _capability_definitions(release: FactoryRelease):
     return {item.capability_id: item for item in release_capabilities(release)}
 
@@ -112,7 +116,7 @@ def obligations_for_capability(
 
     identities = tuple(item.obligation_id for item in obligations)
     if len(set(identities)) != len(identities):
-        raise ValueError("AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION")
+        _duplicate_evidence_obligation()
     return tuple(obligations)
 
 
@@ -127,7 +131,7 @@ def _obligation_map(
     )
     mapping = {item.obligation_id: item for item in obligations}
     if len(mapping) != len(obligations):
-        raise ValueError("AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION")
+        _duplicate_evidence_obligation()
     return mapping
 
 

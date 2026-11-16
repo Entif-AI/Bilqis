@@ -14,6 +14,61 @@ from .contracts import (
     GeneratedGradePolicy,
     GeneratedGradeProposal,
 )
+
+
+def _select_members(decisions, ranked, snapshot, policy):
+    capacity = min(
+        policy.max_members, snapshot.budget.max_candidates,
+        snapshot.budget.max_identity_rows)
+    selected_targets: list[str] = []
+    members: set[str] = set()
+    compute = 0
+    deferred_reasons: dict[str, str] = {}
+    seen_neighborhoods: set[str] = set()
+    for representative_only in (True, False):
+        for item in ranked:
+            if item.semantic_id in selected_targets:
+                continue
+            if representative_only and item.neighborhood_id in seen_neighborhoods:
+                continue
+            new_members = set(item.required_semantic_ids) - members
+            next_compute = compute + sum(
+                decisions[member].planning_compute_units for member in new_members)
+            if len(members | new_members) > capacity:
+                deferred_reasons[item.semantic_id] = "MEMBER_CAPACITY_BOUND"
+                continue
+            if next_compute > snapshot.budget.max_compute_units:
+                deferred_reasons[item.semantic_id] = "PLANNING_COMPUTE_BOUND"
+                continue
+            selected_targets.append(item.semantic_id)
+            members |= new_members
+            compute = next_compute
+            seen_neighborhoods.add(item.neighborhood_id)
+    return selected_targets, members, deferred_reasons
+
+
+def _finalize_decisions(decisions, selected_targets, members, deferred_reasons):
+    selected_set = set(selected_targets)
+    for identity, item in tuple(decisions.items()):
+        if identity in selected_set:
+            decisions[identity] = replace(
+                item, disposition="SELECTED_TARGET",
+                reason_codes=("PARETO_A09_POLICY_SELECTED",))
+        elif identity in members:
+            decisions[identity] = replace(
+                item, disposition="SELECTED_BRIDGE",
+                reason_codes=("REQUIRED_CONSTITUENT_BRIDGE",))
+        elif item.disposition == "ELIGIBLE":
+            reason = deferred_reasons.get(identity)
+            if reason is None:
+                reason = ("NEIGHBORHOOD_REDUNDANT" if any(
+                    decisions[selected].neighborhood_id == item.neighborhood_id
+                    for selected in selected_targets) else "COMPARATOR_LOWER_PRIORITY")
+            decisions[identity] = replace(
+                item, disposition="DEFERRED_NEAR_FRONTIER",
+                reason_codes=(reason,))
+
+
 def synthesize_generated_grade(
     snapshot: CurriculumSnapshot,
     closure: FrontierClosure,
@@ -38,53 +93,12 @@ def synthesize_generated_grade(
         identity: _decision(identity, rows, graph, order, evidence, policy)
         for identity in sorted(evidence)
     }
-    capacity = min(policy.max_members, snapshot.budget.max_candidates,
-                   snapshot.budget.max_identity_rows)
-    selected_targets: list[str] = []
-    members: set[str] = set()
-    compute = 0
-    deferred_reasons: dict[str, str] = {}
     eligible = [item for item in decisions.values()
                 if item.disposition == "ELIGIBLE"]
     ranked = _pareto_ranked(eligible, policy)
-    seen_neighborhoods: set[str] = set()
-    for representative_only in (True, False):
-        for item in ranked:
-            if item.semantic_id in selected_targets:
-                continue
-            if representative_only and item.neighborhood_id in seen_neighborhoods:
-                continue
-            new_members = set(item.required_semantic_ids) - members
-            next_compute = compute + sum(
-                decisions[member].planning_compute_units for member in new_members)
-            if len(members | new_members) > capacity:
-                deferred_reasons[item.semantic_id] = "MEMBER_CAPACITY_BOUND"
-                continue
-            if next_compute > snapshot.budget.max_compute_units:
-                deferred_reasons[item.semantic_id] = "PLANNING_COMPUTE_BOUND"
-                continue
-            selected_targets.append(item.semantic_id)
-            members |= new_members
-            compute = next_compute
-            seen_neighborhoods.add(item.neighborhood_id)
-    selected_set = set(selected_targets)
-    for identity, item in tuple(decisions.items()):
-        if identity in selected_set:
-            decisions[identity] = replace(
-                item, disposition="SELECTED_TARGET",
-                reason_codes=("PARETO_A09_POLICY_SELECTED",))
-        elif identity in members:
-            decisions[identity] = replace(
-                item, disposition="SELECTED_BRIDGE", reason_codes=("REQUIRED_CONSTITUENT_BRIDGE",))
-        elif item.disposition == "ELIGIBLE":
-            reason = deferred_reasons.get(identity)
-            if reason is None:
-                reason = ("NEIGHBORHOOD_REDUNDANT" if any(
-                    decisions[selected].neighborhood_id == item.neighborhood_id
-                    for selected in selected_targets) else "COMPARATOR_LOWER_PRIORITY")
-            decisions[identity] = replace(
-                item, disposition="DEFERRED_NEAR_FRONTIER",
-                reason_codes=(reason,))
+    selected_targets, members, deferred_reasons = _select_members(
+        decisions, ranked, snapshot, policy)
+    _finalize_decisions(decisions, selected_targets, members, deferred_reasons)
     member_ids = tuple(identity for identity in closure.constituent_order if identity in members)
     provisional = GeneratedGradeProposal(
         snapshot.snapshot_sha256,

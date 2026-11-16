@@ -1,6 +1,6 @@
 {
   "legacy_raw_file_count": 293,
-  "legacy_raw_raise_count": 2094,
+  "legacy_raw_raise_count": 2092,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -4687,7 +4687,7 @@
     },
     {
       "code_hint": "AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION",
-      "count": 2,
+      "count": 1,
       "exception": "ValueError",
       "expression": "'AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION'",
       "path": "bilqis_mlx/factory/_autonomy/obligations.py"
@@ -4736,7 +4736,7 @@
     },
     {
       "code_hint": "AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID",
-      "count": 2,
+      "count": 1,
       "exception": "ValueError",
       "expression": "'AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID'",
       "path": "bilqis_mlx/factory/_autonomy/planning.py"

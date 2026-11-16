@@ -46,6 +46,87 @@ def _inputs(learner, evidence, policy, *, status="PROPOSAL"):
     digest = hashlib.sha256(_bytes(values)).hexdigest()
     return _issue_inputs(**values, input_sha256=digest)
 
+
+def _fixture_candidates():
+    waiting = ClosureReason(
+        "PREREQUISITE_WAITING_FOR_EVIDENCE", "factory:prerequisite", "skos:bridge")
+    steep_waiting = (
+        waiting,
+        ClosureReason(
+            "PREREQUISITE_WAITING_FOR_EVIDENCE", "factory:prerequisite", "skos:distinct"),
+    )
+    return (
+        CandidateClosure("skos:bridge", "positive_identity", row("skos:bridge").source_evidence_sha256,
+                         ClosureStatus.READY, (), ()),
+        CandidateClosure("skos:cluster-a", "positive_identity", row("skos:cluster-a").source_evidence_sha256,
+                         ClosureStatus.READY, (), ()),
+        CandidateClosure("skos:cluster-b", "positive_identity", row("skos:cluster-b").source_evidence_sha256,
+                         ClosureStatus.READY, (), ()),
+        CandidateClosure("skos:descendant", "positive_identity", row("skos:descendant").source_evidence_sha256,
+                         ClosureStatus.WAITING_FOR_EVIDENCE, ("skos:bridge",), (waiting,)),
+        CandidateClosure("skos:distinct", "positive_identity", row("skos:distinct").source_evidence_sha256,
+                         ClosureStatus.READY, (), ()),
+        CandidateClosure("skos:new-z", "positive_identity", row("skos:new-z").source_evidence_sha256,
+                         ClosureStatus.READY, (), ()),
+        CandidateClosure("skos:steep", "positive_identity", row("skos:steep").source_evidence_sha256,
+                         ClosureStatus.WAITING_FOR_EVIDENCE,
+                         ("skos:bridge", "skos:distinct"), steep_waiting),
+        CandidateClosure("skos:unknown", "positive_identity", row("skos:unknown").source_evidence_sha256,
+                         ClosureStatus.READY, (), ()),
+    )
+
+
+def _fixture_evidence(candidates):
+    rows = (
+        ("skos:bridge", "bridge", "relation", CostEvidenceKind.MEASURED, 2, (), 3, 0, 0, 0, 4, 4, 3, 2, 2, 6, 1),
+        ("skos:cluster-a", "cluster", "identity", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 1, 1, 1, 1, 2, 8, 1),
+        ("skos:cluster-b", "cluster", "identity", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 1, 1, 1, 1, 1, 7, 1),
+        ("skos:descendant", "desc", "composition", CostEvidenceKind.MEASURED, 9,
+         (("skos:bridge", 7),), 3, 0, 1, 0, 5, 5, 4, 3, 4, 5, 2),
+        ("skos:distinct", "distinct", "quantity", CostEvidenceKind.BOOTSTRAPPED, 2, (), 3, 0, 0, 0, 3, 2, 5, 3, 3, 6, 1),
+        ("skos:new-z", "new-z", "new-factor", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 4, 3, 6, 4, 4, 5, 1),
+        ("skos:steep", "steep", "mega-unlock", CostEvidenceKind.MEASURED, 1, (), 3, 0, 3, 2, 9, 99, 9, 9, 5, 10, 4),
+        ("skos:unknown", "cluster", "identity", CostEvidenceKind.UNKNOWN, None, None, 3, 0, 0, 0, 1, 1, 1, 1, 1, 4, 1),
+    )
+    return tuple(
+        CandidateDevelopmentEvidence(
+            semantic_id=identity,
+            compiled_capability_ids=("factory:" + identity,),
+            source_anchor_ids=("source:" + identity,),
+            neighborhood_id=neighborhood,
+            coverage_factors=(coverage,),
+            acquisition_cost=AcquisitionCostEvidence(
+                status=cost_kind, measure="optimizer-steps-to-criterion",
+                units=cost, transfer_savings=transfer),
+            grounding_quality=grounding,
+            answer_modality_burden=modality,
+            ast_burden=ast,
+            entanglement=entanglement,
+            reusable_constituent_value=reuse,
+            downstream_unlocks=unlocks,
+            minimal_contrast_value=contrast,
+            transfer_breadth=breadth,
+            learning_progress=progress,
+            fairness_age=age,
+            a09_prerequisite_slope=ast,
+            a09_cursor_distance=max(0, 10 - age),
+            a09_statuses=tuple(sorted({
+                item.status.value for item in candidates
+                if item.semantic_id == identity})),
+            a09_reason_receipts=tuple(sorted(
+                (item.family_id, item.status.value, reason.code, reason.owner,
+                 reason.dependency_id)
+                for item in candidates if item.semantic_id == identity
+                for reason in item.reasons)),
+            planning_compute_units=compute,
+            evidence_sha256=_sha("dev:" + identity),
+        )
+        for identity, neighborhood, coverage, cost_kind, cost, transfer, grounding,
+            modality, ast, entanglement, reuse, unlocks, contrast, breadth,
+            progress, age, compute in rows
+    )
+
+
 def _fixture():
     release = _release()
     ids = (
@@ -73,32 +154,7 @@ def _fixture():
             "IMPLEMENTATION_UNCOVERED", False, "SOURCE_RIGHTS_HELD",
             "rights not admitted", "source:rights"),),
     )
-    waiting = ClosureReason(
-        "PREREQUISITE_WAITING_FOR_EVIDENCE", "factory:prerequisite", "skos:bridge")
-    steep_waiting = (
-        waiting,
-        ClosureReason(
-            "PREREQUISITE_WAITING_FOR_EVIDENCE", "factory:prerequisite", "skos:distinct"),
-    )
-    candidates = (
-        CandidateClosure("skos:bridge", "positive_identity", row("skos:bridge").source_evidence_sha256,
-                         ClosureStatus.READY, (), ()),
-        CandidateClosure("skos:cluster-a", "positive_identity", row("skos:cluster-a").source_evidence_sha256,
-                         ClosureStatus.READY, (), ()),
-        CandidateClosure("skos:cluster-b", "positive_identity", row("skos:cluster-b").source_evidence_sha256,
-                         ClosureStatus.READY, (), ()),
-        CandidateClosure("skos:descendant", "positive_identity", row("skos:descendant").source_evidence_sha256,
-                         ClosureStatus.WAITING_FOR_EVIDENCE, ("skos:bridge",), (waiting,)),
-        CandidateClosure("skos:distinct", "positive_identity", row("skos:distinct").source_evidence_sha256,
-                         ClosureStatus.READY, (), ()),
-        CandidateClosure("skos:new-z", "positive_identity", row("skos:new-z").source_evidence_sha256,
-                         ClosureStatus.READY, (), ()),
-        CandidateClosure("skos:steep", "positive_identity", row("skos:steep").source_evidence_sha256,
-                         ClosureStatus.WAITING_FOR_EVIDENCE,
-                         ("skos:bridge", "skos:distinct"), steep_waiting),
-        CandidateClosure("skos:unknown", "positive_identity", row("skos:unknown").source_evidence_sha256,
-                         ClosureStatus.READY, (), ()),
-    )
+    candidates = _fixture_candidates()
     provisional = FrontierClosure(
         snapshot.snapshot_sha256,
         _sha("prerequisite-evidence"),
@@ -109,58 +165,7 @@ def _fixture():
         "0" * 64,
     )
     closure = replace(provisional, closure_sha256=provisional.expected_digest())
-    evidence = tuple(
-        CandidateDevelopmentEvidence(
-            semantic_id=identity,
-            compiled_capability_ids=("factory:" + identity,),
-            source_anchor_ids=("source:" + identity,),
-            neighborhood_id=neighborhood,
-            coverage_factors=(coverage,),
-            acquisition_cost=AcquisitionCostEvidence(
-                status=cost_kind,
-                measure="optimizer-steps-to-criterion",
-                units=cost,
-                transfer_savings=transfer,
-            ),
-            grounding_quality=grounding,
-            answer_modality_burden=modality,
-            ast_burden=ast,
-            entanglement=entanglement,
-            reusable_constituent_value=reuse,
-            downstream_unlocks=unlocks,
-            minimal_contrast_value=contrast,
-            transfer_breadth=breadth,
-            learning_progress=progress,
-            fairness_age=age,
-            a09_prerequisite_slope=ast,
-            a09_cursor_distance=max(0, 10 - age),
-            a09_statuses=tuple(sorted({
-                item.status.value for item in candidates
-                if item.semantic_id == identity
-            })),
-            a09_reason_receipts=tuple(sorted(
-                (item.family_id, item.status.value, reason.code, reason.owner,
-                 reason.dependency_id)
-                for item in candidates if item.semantic_id == identity
-                for reason in item.reasons
-            )),
-            planning_compute_units=compute,
-            evidence_sha256=_sha("dev:" + identity),
-        )
-        for identity, neighborhood, coverage, cost_kind, cost, transfer, grounding,
-            modality, ast, entanglement, reuse, unlocks, contrast, breadth,
-            progress, age, compute in (
-            ("skos:bridge", "bridge", "relation", CostEvidenceKind.MEASURED, 2, (), 3, 0, 0, 0, 4, 4, 3, 2, 2, 6, 1),
-            ("skos:cluster-a", "cluster", "identity", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 1, 1, 1, 1, 2, 8, 1),
-            ("skos:cluster-b", "cluster", "identity", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 1, 1, 1, 1, 1, 7, 1),
-            ("skos:descendant", "desc", "composition", CostEvidenceKind.MEASURED, 9,
-             (("skos:bridge", 7),), 3, 0, 1, 0, 5, 5, 4, 3, 4, 5, 2),
-            ("skos:distinct", "distinct", "quantity", CostEvidenceKind.BOOTSTRAPPED, 2, (), 3, 0, 0, 0, 3, 2, 5, 3, 3, 6, 1),
-            ("skos:new-z", "new-z", "new-factor", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 4, 3, 6, 4, 4, 5, 1),
-            ("skos:steep", "steep", "mega-unlock", CostEvidenceKind.MEASURED, 1, (), 3, 0, 3, 2, 9, 99, 9, 9, 5, 10, 4),
-            ("skos:unknown", "cluster", "identity", CostEvidenceKind.UNKNOWN, None, None, 3, 0, 0, 0, 1, 1, 1, 1, 1, 4, 1),
-        )
-    )
+    evidence = _fixture_evidence(candidates)
     policy = GeneratedGradePolicy(
         policy_id="learner-relative-grade/v1",
         max_members=4,

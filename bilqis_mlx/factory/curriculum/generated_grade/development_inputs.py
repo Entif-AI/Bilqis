@@ -45,7 +45,7 @@ def _minimal_contrast_value(
     return len(families[semantic_id].intersection(mastered_families))
 
 
-def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopmentEvidence, ...]:
+def _development_context(epoch, foot):
     graph = {identity: set() for identity in epoch.closure.constituent_order}
     families = {identity: set() for identity in graph}
     for row in epoch.closure.candidates:
@@ -70,71 +70,76 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
         capability_definitions.update({
             item.capability_id: item for item in release_capabilities(successor)})
         semantic_specs.update(successor.curriculum.capability_map)
-    results = []
-    for semantic_id in epoch.closure.constituent_order:
-        if semantic_id in mastered_semantics:
-            continue
-        rows = tuple(item for item in epoch.closure.candidates
-                     if item.semantic_id == semantic_id)
-        capability_ids, anchors = _realization(epoch, semantic_id, rows)
-        prerequisite_count = len(graph[semantic_id])
-        family_ids = tuple(sorted(families[semantic_id]))
-        neighborhood_id = hashlib.sha256(_bytes((
-            "a09-family-prerequisite-neighborhood/v2",
-            family_ids,
-            tuple(sorted(graph[semantic_id])),
-        ))).hexdigest()
-        metric = metrics[semantic_id]
-        unmet = {
-            reason.dependency_id
-            for row in rows for reason in row.reasons
-            if reason.code.startswith("PREREQUISITE_") and reason.dependency_id
-        }
-        prerequisite_capabilities = tuple(
-            (prerequisite, _realization(
-                epoch, prerequisite,
-                tuple(item for item in epoch.closure.candidates
-                      if item.semantic_id == prerequisite))[0])
-            for prerequisite in sorted(graph[semantic_id]))
-        measured_cost, learning_progress = _measured_cost_profile(
-            epoch, learner, plan, foot, capability_ids, family_ids,
-            prerequisite_capabilities)
-        cost = measured_cost or AcquisitionCostEvidence(
-            CostEvidenceKind.BOOTSTRAPPED,
-            "a09-unmet-prerequisite-slope/v1",
-            1 + len(unmet),
-            None,
-        )
-        compute_units = max(1, 1 + len(unmet))
-        modality_complete = bool(capability_ids) and all(
-            capability_id in capability_definitions
-            for capability_id in capability_ids)
-        answer_kinds = (
-            {
-                kind
-                for capability_id in capability_ids
-                for kind in capability_definitions[capability_id].answer_kinds
-            }
-            if modality_complete else set()
-        )
-        ast_complete = bool(capability_ids) and all(
-            capability_id in semantic_specs for capability_id in capability_ids)
-        ast_burden = (
-            sum(
-                len(semantic_specs[capability_id].taught_roots)
-                + len(semantic_specs[capability_id].prerequisites)
-                + len(semantic_specs[capability_id].composed_of)
-                for capability_id in capability_ids
-            )
-            if ast_complete else None
-        )
-        transfer = cost.transfer_savings
-        transfer_breadth = None if transfer is None else len(transfer)
-        reusable_constituent_value = _reusable_constituent_value(
-            semantic_id, graph)
-        minimal_contrast_value = _minimal_contrast_value(
-            semantic_id, families, mastered_semantics)
-        results.append(CandidateDevelopmentEvidence(
+    return (
+        graph, families, metrics, mastered_semantics, mastered_family_ids,
+        capability_definitions, semantic_specs)
+
+
+def _candidate_measurements(
+    epoch, foot, learner, plan, semantic_id, graph, family_ids,
+    capability_ids, capability_definitions, semantic_specs, rows,
+):
+    unmet = {
+        reason.dependency_id
+        for row in rows for reason in row.reasons
+        if reason.code.startswith("PREREQUISITE_") and reason.dependency_id
+    }
+    prerequisite_capabilities = tuple(
+        (prerequisite, _realization(
+            epoch, prerequisite,
+            tuple(item for item in epoch.closure.candidates
+                  if item.semantic_id == prerequisite))[0])
+        for prerequisite in sorted(graph[semantic_id]))
+    measured_cost, learning_progress = _measured_cost_profile(
+        epoch, learner, plan, foot, capability_ids, family_ids,
+        prerequisite_capabilities)
+    cost = measured_cost or AcquisitionCostEvidence(
+        CostEvidenceKind.BOOTSTRAPPED,
+        "a09-unmet-prerequisite-slope/v1",
+        1 + len(unmet),
+        None,
+    )
+    modality_complete = bool(capability_ids) and all(
+        capability_id in capability_definitions for capability_id in capability_ids)
+    answer_kinds = ({
+        kind for capability_id in capability_ids
+        for kind in capability_definitions[capability_id].answer_kinds
+    } if modality_complete else set())
+    ast_complete = bool(capability_ids) and all(
+        capability_id in semantic_specs for capability_id in capability_ids)
+    ast_burden = (sum(
+        len(semantic_specs[capability_id].taught_roots)
+        + len(semantic_specs[capability_id].prerequisites)
+        + len(semantic_specs[capability_id].composed_of)
+        for capability_id in capability_ids
+    ) if ast_complete else None)
+    return unmet, cost, learning_progress, modality_complete, answer_kinds, ast_burden
+
+
+def _candidate_development_evidence(
+    epoch, foot, learner, plan, semantic_id, context,
+):
+    (graph, families, metrics, mastered_semantics, mastered_family_ids,
+     capability_definitions, semantic_specs) = context
+    rows = tuple(item for item in epoch.closure.candidates
+                 if item.semantic_id == semantic_id)
+    capability_ids, anchors = _realization(epoch, semantic_id, rows)
+    family_ids = tuple(sorted(families[semantic_id]))
+    neighborhood_id = hashlib.sha256(_bytes((
+        "a09-family-prerequisite-neighborhood/v2",
+        family_ids,
+        tuple(sorted(graph[semantic_id])),
+    ))).hexdigest()
+    metric = metrics[semantic_id]
+    (unmet, cost, learning_progress, modality_complete,
+     answer_kinds, ast_burden) = _candidate_measurements(
+        epoch, foot, learner, plan, semantic_id, graph, family_ids,
+        capability_ids, capability_definitions, semantic_specs, rows)
+    transfer = cost.transfer_savings
+    reusable_constituent_value = _reusable_constituent_value(semantic_id, graph)
+    minimal_contrast_value = _minimal_contrast_value(
+        semantic_id, families, mastered_semantics)
+    return CandidateDevelopmentEvidence(
             semantic_id=semantic_id,
             compiled_capability_ids=capability_ids,
             source_anchor_ids=anchors,
@@ -152,14 +157,14 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
             reusable_constituent_value=reusable_constituent_value,
             downstream_unlocks=metric.downstream_unlocks,
             minimal_contrast_value=minimal_contrast_value,
-            transfer_breadth=transfer_breadth,
+            transfer_breadth=None if transfer is None else len(transfer),
             learning_progress=learning_progress,
             fairness_age=None,
             a09_prerequisite_slope=metric.prerequisite_slope,
             a09_cursor_distance=metric.cursor_distance,
             a09_statuses=metric.statuses,
             a09_reason_receipts=metric.reason_receipts,
-            planning_compute_units=compute_units,
+            planning_compute_units=max(1, 1 + len(unmet)),
             evidence_sha256=hashlib.sha256(_bytes({
                 "semantic_id": semantic_id, "families": family_ids,
                 "prerequisites": tuple(sorted(graph[semantic_id])),
@@ -170,5 +175,16 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
                 "minimal_contrast_value": minimal_contrast_value,
                 "learner": foot.evidence_sha256,
             })).hexdigest(),
-        ))
+        )
+
+
+def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopmentEvidence, ...]:
+    context = _development_context(epoch, foot)
+    mastered_semantics = context[3]
+    results = [
+        _candidate_development_evidence(
+            epoch, foot, learner, plan, semantic_id, context)
+        for semantic_id in epoch.closure.constituent_order
+        if semantic_id not in mastered_semantics
+    ]
     return tuple(sorted(results, key=lambda item: item.semantic_id))
