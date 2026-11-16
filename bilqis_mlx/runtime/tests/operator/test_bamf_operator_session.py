@@ -46,6 +46,15 @@ def _candidate_executor(transactions, case):
 
 
 class BamfOperatorRoutingTests(unittest.TestCase):
+    def setUp(self):
+        for name, behavior in (
+                ('build_outcome', {'return_value': {'schema': 'routing-fixture'}}),
+                ('credited_visit', {'side_effect': lambda visit, outcome: visit}),
+                ('carry_credit_to_successor', {'side_effect': lambda visit, successor, parent: successor})):
+            patched = patch('bilqis_mlx.runtime.outcomes.issuance.' + name, **behavior)
+            patched.start()
+            self.addCleanup(patched.stop)
+
     def test_candidate_horizon_buffers_step_evidence_until_one_boundary_write(self):
         from bilqis_mlx.factory.teaching import content_digest
         from bilqis_mlx.runtime.bamf_operator.evidence import (

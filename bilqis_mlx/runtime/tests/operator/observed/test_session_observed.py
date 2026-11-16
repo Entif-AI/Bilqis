@@ -7,6 +7,11 @@ from bilqis_mlx.runtime.bamf_operator.session import _visit
 
 
 class SessionObservationTests(unittest.TestCase):
+    def setUp(self):
+        patched = patch('bilqis_mlx.runtime.outcomes.issuance.build_outcome', return_value={})
+        patched.start()
+        self.addCleanup(patched.stop)
+
     def test_publication_before_accepted_and_failure_propagates(self):
         events = []
         observer = NS(update=lambda **v: events.append(v))
@@ -64,7 +69,7 @@ class SessionObservationTests(unittest.TestCase):
                 'bundle_tree_scans': 2,
             },
             'issue_factory_retention_decision': NS(
-                accepted=False, to_record=lambda: {'decision': 'REJECTED'}),
+                accepted=False, reason='NO_MEASURABLE_TARGET_GAIN', to_record=lambda: {'decision': 'REJECTED'}),
         }
         from contextlib import ExitStack
         with ExitStack() as stack:

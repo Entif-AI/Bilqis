@@ -470,6 +470,15 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1295-operator-error-semantics-20261116",
       "head_sha_role": "Code/test head before documentation and turn-in metadata; pinned EGM design and independent scoped implementation/drift review reconciled."
+    },
+    {
+      "issue": 1332,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
+      "summary": "R10 authenticated exactly-once HOW outcome feedback; issue-scoped writer.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1332-how-policy-outcomes-20261116"
     }
   ]
 }

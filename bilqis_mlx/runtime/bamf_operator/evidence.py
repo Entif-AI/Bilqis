@@ -146,6 +146,12 @@ class CandidateEvidenceCapture:
             "source_seed": source_seed,
             "policy": _plain(getattr(selection, "policy", None)),
         }
+        metadata = getattr(selection, 'metadata', None)
+        if isinstance(metadata, dict) and 'how_context' in metadata:
+            from bilqis_mlx.learning.teacher_lineage import restore_teacher_lineage
+            self.proposal['how_context'] = _plain(metadata['how_context'])
+            self.proposal['selected_teacher'] = _plain(restore_teacher_lineage(
+                selection.visit.projection.teacher_state).teacher())
         self.proposal_id = state._fingerprint(self.proposal)
         self._source_objects = {}
         self._steps = []

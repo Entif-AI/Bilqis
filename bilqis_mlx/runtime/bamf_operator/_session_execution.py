@@ -141,10 +141,13 @@ def retention_result(
         "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
         "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
     })
+    from bilqis_mlx.runtime.outcomes.issuance import build_outcome, credited_visit, carry_credit_to_successor
+    how_outcome = build_outcome(run_dir, selection, evaluation, decision, candidate_evidence)
     successor = None
     if decision.accepted:
+        learned_visit = credited_visit(selection.visit, how_outcome)
         successor = derive_successor(
-            run_dir, retained, selection.visit,
+            run_dir, retained, learned_visit,
             delivery_events=({
                 "event": "BAMF_C16_3_ACCEPTED",
                 "optimizer_step": retained.optimizer_step,
@@ -157,14 +160,16 @@ def retention_result(
                 "selected_option_id": selection.option_id,
                 "resource": resource,
                 "candidate_evidence": candidate_evidence,
+                "how_outcome": how_outcome,
             },))
+        successor = carry_credit_to_successor(learned_visit, successor, parent)
         successor = bind_baseline_successor(evaluation, successor)
     return prepared_visit_type(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
         retained=retained, capability=capability, successor=successor,
         identity_metrics=identity_metrics, resource=resource,
-        candidate_evidence=candidate_evidence,
+        candidate_evidence=candidate_evidence, how_outcome=how_outcome,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)
 

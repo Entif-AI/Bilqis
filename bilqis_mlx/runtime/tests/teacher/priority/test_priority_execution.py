@@ -75,6 +75,9 @@ def priority():
             require_bound_lawful_teaching_frontier=lambda frontier, context, parent: frontier,
             require_current_lawful_teaching_frontier=lambda frontier, context, parent: frontier),
         'bilqis_mlx.runtime.teacher_policy_selection': module(select_visit_policy=None),
+        'bilqis_mlx.runtime.outcomes.replay': module(
+            replay_rejected_outcomes=lambda run, parent, cache, teacher: teacher),
+        'bilqis_mlx.runtime.outcomes.issuance': module(context_for_selection=lambda *args: {}),
         'bilqis_mlx.semantics.domains': module(contract_digest=None),
         'bilqis_mlx.runtime.accepted_teacher_custody': module(_accepted_parent=None, _c03_projection=None,
             _issue_bound_visit=None, _require_current_visit=None, _selection_projection=None),
@@ -228,19 +231,19 @@ def test_preselection_hold_never_calls_policy(priority):
         context=SimpleNamespace(capability_id='cap', scope='scope'))
     frontier = SimpleNamespace(evidence=(('o', 'evidence'),))
     parent = SimpleNamespace(retained_state='student')
-    school = SimpleNamespace(current_student=SimpleNamespace(sha256='student-id'))
+    school = SimpleNamespace(stage='MAIN', current_student=SimpleNamespace(sha256='student-id'))
     qualified = SimpleNamespace(ranked=SimpleNamespace(ordered=(option,)),
                                 offers=(('o', Stale()),), holds=())
     with patch.object(priority, '_accepted_parent', return_value=(parent, object())), \
          patch.object(priority, '_c03_projection', return_value=SimpleNamespace(teacher_state={})), \
          patch.object(priority, 'restore_teacher_lineage', return_value='epoch'), \
          patch.object(priority, 'candidate_identity_digest', return_value='student-id'), \
-         patch.object(priority, '_teacher', return_value={}), \
+         patch.object(priority, '_teacher', return_value={'causal_experiment': {'diagnostic_contexts': {'selected': {'salience': 'verified'}}}}), \
          patch.object(priority, 'contract_digest', return_value='epoch-digest'), \
          patch.object(priority, 'salience_priority_features'), \
          patch.object(priority, 'requalify_priority', return_value=qualified), \
          patch.object(priority, 'select_visit_policy') as policy:
-        result = priority.select_accepted_priority_visit('/run', None, frontier, None, None,
+        result = priority.select_accepted_priority_visit('/run', SimpleNamespace(release=None), frontier, None, None,
             (('o', qualified.offers[0][1]),),
             None, school, None, None, program=None, now=1,
             lawful_frontier=lawful())
@@ -258,7 +261,7 @@ def test_accepted_selection_calls_policy_once(priority):
     frontier = SimpleNamespace(evidence=(('o', 'evidence'),))
     parent = SimpleNamespace(retained_state='student', run_identity=SimpleNamespace(digest='run', run_seed=5), generation=4)
     cache = SimpleNamespace(accepted_manifest_sha256='manifest')
-    school = SimpleNamespace(current_student=SimpleNamespace(sha256='student-id'))
+    school = SimpleNamespace(stage='MAIN', current_student=SimpleNamespace(sha256='student-id'))
     qualified = SimpleNamespace(ranked=SimpleNamespace(ordered=(option,)),
                                 offers=(('o', Offer()),), holds=())
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
@@ -266,17 +269,17 @@ def test_accepted_selection_calls_policy_once(priority):
          patch.object(priority, '_c03_projection', return_value=SimpleNamespace(teacher_state={})), \
          patch.object(priority, 'restore_teacher_lineage', return_value=epoch), \
          patch.object(priority, 'candidate_identity_digest', return_value='student-id'), \
-         patch.object(priority, '_teacher', return_value={}), \
+         patch.object(priority, '_teacher', return_value={'causal_experiment': {'diagnostic_contexts': {'selected': {'salience': 'verified'}}}}), \
          patch.object(priority, 'contract_digest', return_value='epoch-digest'), \
          patch.object(priority, 'salience_priority_features'), \
          patch.object(priority, 'requalify_priority', return_value=qualified), \
          patch.object(priority, '_grade', return_value='g'), \
-         patch.object(priority, 'select_visit_policy', return_value=('k', {'lr': 0.5}, {})) as policy, \
+         patch.object(priority, 'select_visit_policy', return_value=('k', {'lr': 0.5}, {'diagnostic_context_key': 'selected'})) as policy, \
          patch.object(priority, '_selection_projection', return_value=SimpleNamespace(teacher_state={})), \
          patch.object(priority, 'derive_teacher_visit_identity', return_value=identity), \
          patch.object(priority, 'record_teacher_visit_identity', return_value='recorded'), \
          patch.object(priority, '_issue_bound_visit', return_value=Visit(identity)):
-        result = priority.select_accepted_priority_visit('/run', None, frontier, None, None,
+        result = priority.select_accepted_priority_visit('/run', SimpleNamespace(release=None), frontier, None, None,
             (('o', qualified.offers[0][1]),),
             None, school, None, None, program=None, now=1,
             lawful_frontier=lawful())
@@ -332,7 +335,7 @@ def test_empty_lawful_frontier_returns_no_admissible_without_teacher_policy(prio
     planning = SimpleNamespace(parent_candidate_identity_sha256='student-id')
     empty = SimpleNamespace(
         ready_capability_ids=(), _planning_generation=planning)
-    school = SimpleNamespace(current_student=SimpleNamespace(sha256='student-id'))
+    school = SimpleNamespace(stage='MAIN', current_student=SimpleNamespace(sha256='student-id'))
     parent = SimpleNamespace(retained_state='student')
     with patch.object(
             priority, '_accepted_parent', return_value=(parent, object())), patch.object(

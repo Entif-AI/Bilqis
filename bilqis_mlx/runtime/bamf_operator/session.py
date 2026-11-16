@@ -208,6 +208,7 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
             "decision": decision.to_record(),
             "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
+            "how_outcome": prepared.how_outcome,
         })
         return "REJECTED"
     successor = prepared.successor

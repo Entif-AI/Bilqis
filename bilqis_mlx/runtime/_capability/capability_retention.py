@@ -159,6 +159,7 @@ class Decision:
     blocking_scope: str | None = None
     baseline_coverage: BaselineCoverage | None = None
     schema_version: str = "bilqis.c05.retention-decision/v2"
+    outcome_scores: tuple[tuple[str, int, int, int], ...] = ()
 
     def __post_init__(self):
         if (not isinstance(self.status, DecisionStatus)

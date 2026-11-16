@@ -30,6 +30,8 @@ from .accepted_teacher_custody import (
     _selection_projection,
 )
 from .priority_qualification import _grade, requalify_priority
+from bilqis_mlx.runtime.outcomes.replay import replay_rejected_outcomes
+from bilqis_mlx.runtime.outcomes.issuance import context_for_selection
 
 def _invalid(reason):
     ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
@@ -183,10 +185,13 @@ def select_accepted_priority_visit(
             continue
         capability = option.context.capability_id
         grade = _grade(program, school, capability)
+        teacher = replay_rejected_outcomes(run_dir, parent, cache, teacher)
         key, policy, metadata = select_visit_policy(
             engine, teacher, capability, school, rng, learning_settings, option.context.scope,
             {'salience_evidence': evidence[option.stable_id], 'teacher_epoch_digest': contract_digest(epoch)},
             grade, total_capabilities=total_capabilities, plasticity_escape=plasticity_escape)
+        metadata = {**metadata, 'how_context': context_for_selection(
+            source_context.release, program, grade, school, option, teacher, metadata)}
         selected_epoch = replace(epoch, current_json=json.dumps(teacher, sort_keys=True, allow_nan=False))
         selected = _selection_projection(projection, selected_epoch)
         identity = derive_teacher_visit_identity(selected.teacher_state,

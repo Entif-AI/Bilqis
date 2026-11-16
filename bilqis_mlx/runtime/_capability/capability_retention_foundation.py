@@ -270,6 +270,7 @@ def _evaluate_fixed_school(
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
+    outcome_scores = []
     for capability in capability_order:
         cases = tuple(case for case in fixed.cases if case.capability_id == capability)
         cohort = replace(
@@ -287,6 +288,9 @@ def _evaluate_fixed_school(
         completed += 1
         pair = AssessmentPair(parent_subset, candidate_assessment)
         pair_digests.append((parent_subset.digest(), candidate_assessment.digest()))
+        before, score_total = parent_subset.score(capability)
+        after, _ = candidate_assessment.score(capability)
+        outcome_scores.append((capability, before, after, score_total))
         for case, result, contract in zip(
                 cases, parent_subset.results, parent_subset.solver_contracts):
             parent_results[case.case_id] = result
@@ -296,11 +300,12 @@ def _evaluate_fixed_school(
             candidate_results[case.case_id] = result
             candidate_contracts[case.case_id] = contract
 
-    return _final_fixed_school_decision(
+    decision = _final_fixed_school_decision(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
         candidate_results, candidate_contracts)
+    return replace(decision, outcome_scores=tuple(outcome_scores))
 
 
 def evaluate_foundation_retention_candidate(
