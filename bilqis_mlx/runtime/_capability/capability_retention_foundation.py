@@ -10,6 +10,7 @@ from .capability_evaluation import (
     Assessment, EvidenceKind, EvidenceStage, EvaluationCohort, _invalid, _names, _sha,
     case_census_digest, evaluate_capabilities,
 )
+from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
 from .capability_retention import (
     AssessmentPair, Decision, DecisionStatus, RetentionPolicy,
 )
@@ -27,7 +28,8 @@ class FoundationRetentionPolicy:
     protected_reference_losses: tuple[tuple[str, int], ...]
     probe_each: int
     fixed_census_digest: str
-    schema_version: str = "bilqis.c05.foundation-retention-policy/v1"
+    baseline_coverage: BaselineCoverage | None = None
+    schema_version: str = "bilqis.c05.foundation-retention-policy/v2"
 
     def __post_init__(self):
         if (not isinstance(self.capability_groups, tuple) or not self.capability_groups
@@ -47,7 +49,12 @@ class FoundationRetentionPolicy:
                 or len(dict(self.protected_reference_losses))
                 != len(self.protected_reference_losses)
                 or not _sha(self.fixed_census_digest)
-                or self.schema_version != "bilqis.c05.foundation-retention-policy/v1"):
+                or (self.baseline_coverage is not None
+                    and (type(self.baseline_coverage) is not BaselineCoverage
+                         or set(self.baseline_coverage.measured_capabilities)
+                         | set(self.baseline_coverage.unmeasured_capabilities)
+                         != set(dict(self.capability_groups))))
+                or self.schema_version != "bilqis.c05.foundation-retention-policy/v2"):
             _invalid("BAMF_FOUNDATION_RETENTION_POLICY_INVALID")
 
     def digest(self):
@@ -80,9 +87,12 @@ def _cohort_contract(target_capability, policy, cohorts):
 def _fixed_cohort_contract(target_capability, policy, fixed):
     target_group = dict(policy.capability_groups).get(target_capability)
     protected = set(dict(policy.protected_reference_losses))
+    measured = (set(policy.baseline_coverage.measured_capabilities)
+                if policy.baseline_coverage is not None
+                else set(dict(policy.capability_groups)))
     if (target_group is None
             or target_group not in policy.protected_groups
-            or not protected <= set(dict(policy.capability_groups)) - {target_capability}
+            or not protected <= measured - {target_capability}
             or type(fixed) is not EvaluationCohort
             or fixed.kind is not EvidenceKind.FIXED_SCHOOL
             or fixed.evidence_stage is not EvidenceStage.FOUNDATION_ACQUISITION
@@ -177,6 +187,10 @@ def _final_fixed_school_decision(
         tuple(candidate_contracts[case.case_id] for case in fixed.cases))
     fixed_pair = AssessmentPair(parent_assessment, candidate_assessment)
     census = dict(policy.capability_groups)
+    coverage = policy.baseline_coverage
+    measured = (tuple(coverage.measured_capabilities) if coverage is not None
+                else tuple(census))
+    measured_set = set(measured)
 
     def net(capabilities):
         return sum(fixed_pair.delta(capability) for capability in capabilities)
@@ -189,7 +203,15 @@ def _final_fixed_school_decision(
             _invalid("BAMF_FOUNDATION_FIXED_SCHOOL_SCORE_TOTAL_DRIFT")
         scores[capability] = {"before": before, "after": after, "total": total}
 
-    if fixed_pair.delta(target_capability) <= 0:
+    target_delta = fixed_pair.delta(target_capability)
+    if target_delta < 0 and target_capability in measured_set:
+        return Decision(
+            DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",
+            parent_generation, candidate_generation,
+            evidence_digest(pair_digests, target_capability), policy.digest(),
+            blocking_capability=target_capability,
+            baseline_coverage=coverage)
+    if target_delta <= 0:
         reason = "NO_MEASURABLE_TARGET_GAIN"
     else:
         protected = tuple(references)
@@ -202,29 +224,36 @@ def _final_fixed_school_decision(
                 DecisionStatus.REJECT, "PROTECTED_CAPABILITY_REGRESSION",
                 parent_generation, candidate_generation,
                 evidence_digest(pair_digests, losses[0]), policy.digest(),
-                blocking_capability=losses[0])
+                blocking_capability=losses[0], baseline_coverage=coverage)
 
         lesson = tuple(
-            capability for capability in authoritative
+            capability for capability in measured
             if census[capability] == target_group)
         if net(lesson) < 0 and _mastery_debt_utility(scores, lesson)[0] <= 0:
             reason = "FIXED_LESSON_GRADE_REGRESSION"
+            blocking_scope = "fixed_group:" + target_group
         else:
+            blocking_scope = None
             for group in policy.protected_groups:
-                grade = tuple(capability for capability in authoritative
+                grade = tuple(capability for capability in measured
                               if census[capability] == group)
                 if grade and net(grade) < 0 and _mastery_debt_utility(scores, grade)[0] <= 0:
                     reason = "ACTIVE_SCHOOL_GRADE_REGRESSION"
+                    blocking_scope = "fixed_group:" + group
                     break
             if (reason == "PAIRED_SCREEN_WITHIN_BUDGET"
-                    and net(authoritative) < 0
-                    and _mastery_debt_utility(scores, authoritative)[0] <= 0):
+                    and measured
+                    and net(measured) < 0
+                    and _mastery_debt_utility(scores, measured)[0] <= 0):
                 reason = "WHOLE_SCHOOL_NET_REGRESSION"
+                blocking_scope = "fixed_school"
     return Decision(
         DecisionStatus.ELIGIBLE if reason == "PAIRED_SCREEN_WITHIN_BUDGET"
         else DecisionStatus.REJECT,
         reason, parent_generation, candidate_generation,
-        evidence_digest(pair_digests, None), policy.digest())
+        evidence_digest(pair_digests, None), policy.digest(),
+        blocking_scope=(blocking_scope if target_delta > 0 else None),
+        baseline_coverage=coverage)
 
 
 def _evaluate_fixed_school(

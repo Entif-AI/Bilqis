@@ -35,9 +35,15 @@ def _foundation_owner_fixture():
     )
     release = SimpleNamespace(
         release_sha256=release_sha,
+        semantic_catalog_sha256="b" * 64,
         execution_plan=SimpleNamespace(
             capabilities=capabilities,
             capability_map={item.capability_id: item for item in capabilities},
+            grades=(SimpleNamespace(
+                grade_id="B", assessment_blueprint_sha256="c" * 64),),
+            curriculum_sha256="d" * 64,
+            profile_id="factory-c05-adversarial",
+            projection_digests=SimpleNamespace(source="e" * 64),
         ),
     )
     source = SimpleNamespace(
@@ -73,7 +79,8 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 _candidate_from_live_parent=Mock(return_value=(
                     SimpleNamespace(
                         retained_state=object(), run_identity=None,
-                        run_id="fixture-run", generation=0, baseline_evidence=None),
+                        run_id="fixture-run", generation=0, baseline_evidence=None,
+                        correction_frontier={}, evaluation_contract={}),
                     SimpleNamespace(
                         retained_state=object(),
                         parent_manifest_sha256="0" * 64,
@@ -81,7 +88,9 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                             "schema": "bilqis.mlx.bamf-generation-transition/v3",
                             "kind": "MOTIF_ALLOCATION",
                         }),
-                    object(), SimpleNamespace(accepted_manifest_sha256="0" * 64))),
+                    object(), SimpleNamespace(
+                        accepted_manifest_sha256="0" * 64,
+                        source_authority_registry_sha256=None))),
                 candidate_identity_digest=Mock(return_value="d" * 64),
                 _owner_seed=Mock(return_value=11),
                 read_current=Mock(return_value={"factory_release_sha256": release_sha}),

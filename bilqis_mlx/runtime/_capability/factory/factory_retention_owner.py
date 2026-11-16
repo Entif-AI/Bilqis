@@ -44,7 +44,7 @@ from ._factory_retention_support import (
     C05_FRESH_LESSON_SEED_OFFSET, C05_FRESH_TARGET_SEED_OFFSET,
     C05_MAX_FRESH_DRAWS, C05_PROBE_EACH, C05_PROTECTED_REFERENCE_LOSS,
     _candidate_from_live_parent, _cohort, _fresh_rows, _instruments,
-    _owner_seed, _package_import_from_live_parent, _policy_and_cohorts,
+    _owner_seed, _package_import_from_live_parent,
     _training_exclusions,
 )
 
