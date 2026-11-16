@@ -67,6 +67,7 @@ class _FactoryMotifPlanningInput:
 @dataclass(frozen=True)
 class _FactorySourceRow:
     row: dict
+    source_adapter: object
     source_id: str
     frames: tuple
     ast: object
@@ -78,15 +79,17 @@ class _FactorySourceRow:
     policy: ContextPolicy
 
 
-def _prepare_source_row(source_context, authenticated, adapter, manifest,
+def _prepare_source_row(source_context, authenticated, manifest,
                         profile, row, *, capability, source_seed, source_each):
     if row.get("capability") != capability:
         _invalid("FACTORY_TRAINING_CAPABILITY_MISMATCH")
+    source_adapter = source_context.source_registry.resolve_owner(
+        row.get("generator"), row.get("oracle"))
     source_graph = canonical_graph_for(row.get("generator"), source_context.source_root)
     task, frontier, policy = public_training_context(
         authenticated.features.semantic_release, capability, len(row.get("tokens", ())))
     projection, frame_frontier = public_formal_context(
-        adapter, row, authenticated.snapshot,
+        source_adapter, row, authenticated.snapshot,
         source_root=source_context.source_root, graph=source_graph,
         task_scope=task, source_frontier=frontier, policy=policy,
         source_seed=source_seed, source_each=source_each,
@@ -120,7 +123,8 @@ def _prepare_source_row(source_context, authenticated, adapter, manifest,
             source_profile_parameters=profile)
         ast, approved, config, current = atom_ast, None, atom_config, atom_config.frontier
     return _FactorySourceRow(
-        row, source_id, frames, ast, approved, source_graph, config, task, current, policy)
+        row, source_adapter, source_id, frames, ast, approved, source_graph,
+        config, task, current, policy)
 
 
 def _motif_planning_input(source_context, authenticated, adapter, profile, item, *,
@@ -135,7 +139,7 @@ def _motif_planning_input(source_context, authenticated, adapter, profile, item,
 
 
 def _bind_b11_rows(source_context, candidate, authenticated, training, source_rows,
-                   adapter, profile, *, source_seed, source_each):
+                   profile, *, source_seed, source_each):
     compiled_rows = []
     active_semantic_rows = bind_candidate_active_semantic_rows(candidate, authenticated)
     for index, item in enumerate(source_rows):
@@ -162,7 +166,7 @@ def _bind_b11_rows(source_context, candidate, authenticated, training, source_ro
             source_context.release.curriculum, profile)
         source_execution_authority = bind_b11_source_execution_authority(
             compiled.compiled.rows[0], compiled.compiler_configs[0],
-            source, adapter, authenticated.snapshot, compiled.features)
+            source, item.source_adapter, authenticated.snapshot, compiled.features)
         batch = bind_compiled_training_batch(
             training, compiled, (source,), authenticated.schema,
             active_semantic_rows=active_semantic_rows, row_index=index,
@@ -185,7 +189,7 @@ def _prepare_factory_source_rows(source_context, authenticated, rows, *, capabil
     profile = (dict(execution.provider_parameters)
                if execution.provider_parameters else None)
     source_rows = tuple(_prepare_source_row(
-        source_context, authenticated, adapter, manifest, profile, row,
+        source_context, authenticated, manifest, profile, row,
         capability=capability, source_seed=source_seed, source_each=source_each)
         for row in rows)
     return adapter, manifest, profile, source_rows

@@ -10,15 +10,12 @@ from bilqis_mlx.semantics.frame_schema import FrameInstance, FrameTree
 def _source_frame_inventory_materialized(
         source_context, row, atlas_selection, snapshot, manifest):
     """Derive source inventory from already-authenticated semantic material."""
-    from bilqis_mlx.factory.generation import runtime_adapter_for_release
     from bilqis_mlx.semantics.frame_adapters import bind_registered_source_row
     from bilqis_mlx.semantics.frame_schema import SourceSpan
     from bilqis_mlx.source_adapters.atoms.authority import canonical_graph_for
 
-    execution = source_context.release.execution_plan.capability_map[row['capability']]
-    adapter = runtime_adapter_for_release(
-        source_context.source_root, source_context.graph, source_context.release,
-        source_context.source_registry, execution)
+    adapter = source_context.source_registry.resolve_owner(
+        row.get("generator"), row.get("oracle"))
     graph = canonical_graph_for(row.get('generator'), source_context.source_root)
     end = len(row['tokens'])
     if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
@@ -78,15 +75,12 @@ def _source_frame_inventory_from_context(
 
 def source_frame_inventory(source_context, row, atlas_selection):
     """Cold source-owner replay when no authenticated semantic context is bound."""
-    from bilqis_mlx.factory.generation import runtime_adapter_for_release
     from bilqis_mlx.semantics.atlas.snapshot import load_pinned_atlas_snapshot
     from bilqis_mlx.semantics.atlas_features.formal import source_family_for_adapter
     from bilqis_mlx.semantics.released_frame_schemas import _load_pinned_released_frame_schemas
 
-    execution = source_context.release.execution_plan.capability_map[row['capability']]
-    adapter = runtime_adapter_for_release(
-        source_context.source_root, source_context.graph, source_context.release,
-        source_context.source_registry, execution)
+    adapter = source_context.source_registry.resolve_owner(
+        row.get("generator"), row.get("oracle"))
     manifest = _load_pinned_released_frame_schemas(
         source_family_for_adapter(adapter.descriptor.adapter_id), atlas_selection).manifest
     snapshot = load_pinned_atlas_snapshot(atlas_selection)
