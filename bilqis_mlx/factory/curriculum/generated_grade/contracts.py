@@ -299,7 +299,7 @@ class GeneratedGradeProposal:
                 source_holds=tuple(tuple(item) for item in payload["source_holds"]),
             )
         except (KeyError, TypeError, ValueError) as exc:
-            raise ValueError("BAMF_GENERATED_GRADE_MANIFEST_INVALID") from exc
+            _fail("BAMF_GENERATED_GRADE_MANIFEST_INVALID")
         result.verify()
         return result
 

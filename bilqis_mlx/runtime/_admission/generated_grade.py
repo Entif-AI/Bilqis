@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.generated_grade import GeneratedGradeProposal, synthesize_generated_grade
 from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
 from bilqis_mlx.factory.generated_grade.inputs import _compile_generated_grade_inputs
@@ -14,7 +15,10 @@ def propose_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
     """Recompute one proposal from a custody-reloaded A09/C07 flywheel state."""
     from .atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
     if type(supervisor) is not AcceptedAtlasFlywheelSupervisor:
-        raise TypeError("BAMF_GENERATED_GRADE_ACCEPTED_SUPERVISOR_REQUIRED")
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_ACCEPTED_SUPERVISOR_REQUIRED",
+        )
     state = supervisor.load_state()
     inputs = _compile_generated_grade_inputs(
         state.epoch, state.learner_evidence, state.plan)
@@ -34,7 +38,10 @@ def _accepted_release_lineage(
     while reverse[-1].release_sha256 != proposal.current_release_sha256:
         predecessor = reverse[-1].predecessor_release_sha256
         if predecessor is None or predecessor in seen:
-            raise ValueError("BAMF_GENERATED_GRADE_ACCEPTED_LINEAGE_MISSING")
+            ErrorBus.raise_(
+                SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+                reason="BAMF_GENERATED_GRADE_ACCEPTED_LINEAGE_MISSING",
+            )
         seen.add(predecessor)
         reverse.append(_read_executable_factory_release_artifact(Path(run_dir), {
             "factory_release_sha256": predecessor,
@@ -51,7 +58,10 @@ def seal_accepted_generated_grade(
 ):
     """Seal only against the Factory release currently adopted by accepted B13 custody."""
     if not isinstance(run_dir, Path) or type(proposal) is not GeneratedGradeProposal:
-        raise TypeError("BAMF_GENERATED_GRADE_ACCEPTED_SEAL_INPUT_INVALID")
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_ACCEPTED_SEAL_INPUT_INVALID",
+        )
     proposal.verify()
     lineage = _accepted_release_lineage(run_dir, proposal)
     return _seal_generated_grade(

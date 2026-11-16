@@ -128,20 +128,6 @@ def _require_plan_release(factory_release_sha256: str, plan: AutonomyPlan) -> No
         raise ValueError("AUTONOMY_PLAN_RELEASE_MISMATCH")
 
 
-def _require_known_obligation(
-        obligations: dict[str, EvidenceObligation], obligation_id: str,
-) -> EvidenceObligation:
-    obligation = obligations.get(obligation_id)
-    if obligation is None:
-        raise ValueError("AUTONOMY_UNKNOWN_EVIDENCE_OBLIGATION")
-    return obligation
-
-
-def _require_teaching_provenance(condition: bool) -> None:
-    if not condition:
-        raise ValueError("AUTONOMY_TEACHING_RECEIPT_PROVENANCE_INVALID")
-
-
 def _resolve_plan(release: FactoryRelease, plan: AutonomyPlan | None) -> AutonomyPlan:
     resolved = compile_autonomy_plan(release) if plan is None else plan
     if not isinstance(resolved, AutonomyPlan):
