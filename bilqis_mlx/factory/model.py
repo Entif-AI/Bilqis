@@ -3,13 +3,13 @@
 This module preserves the historical public import surface while cohesive
 contracts live in focused implementation modules.
 """
-from .model_assessment import (
+from ._model.assessment import (
     AdmissionReceipt,
     AssessmentPlan,
     LearningEvidence,
     assessment_plans,
 )
-from .model_contracts import (
+from ._model.contracts import (
     AssessmentClass,
     CapabilityDefinition,
     ConstructionProgram,
@@ -19,7 +19,7 @@ from .model_contracts import (
     SourceAdapter,
     TeachingOption,
 )
-from .model_release import FactoryRelease
+from ._model.release import FactoryRelease
 
 __all__ = (
     "AdmissionReceipt",

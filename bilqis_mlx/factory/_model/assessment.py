@@ -4,10 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from .model_contracts import AssessmentClass, _sha256
+from .contracts import AssessmentClass, _sha256
 
 if TYPE_CHECKING:
-    from .model_release import FactoryRelease
+    from .release import FactoryRelease
 
 
 @dataclass(frozen=True)
@@ -21,7 +21,7 @@ class AssessmentPlan:
 
 
 def assessment_plans(grade_ids) -> tuple[AssessmentPlan, ...]:
-    from ..generated_assessment import (
+    from ...generated_assessment import (
         GENERALIZATION_LIFECYCLE, PROMOTION_ATTEMPT_LIFECYCLE,
         ROUTINE_EVAL_LIFECYCLE,
     )

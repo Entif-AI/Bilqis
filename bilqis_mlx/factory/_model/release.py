@@ -3,9 +3,9 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 
-from ..curriculum import AnswerFamily, Capability, Course, Grade
-from .model_assessment import AssessmentPlan, assessment_plans
-from .model_contracts import (
+from ...curriculum import AnswerFamily, Capability, Course, Grade
+from .assessment import AssessmentPlan, assessment_plans
+from .contracts import (
     AssessmentClass,
     CapabilityDefinition,
     ConstructionProgram,
@@ -129,7 +129,7 @@ class FactoryRelease:
 
     def verify_contract(self) -> None:
         """Verify semantic/source structure independently of serializer identity."""
-        from ..curriculum_compiler import compile_ast
+        from ...curriculum_compiler import compile_ast
 
         if not self.course.executable:
             raise ValueError("FACTORY_RELEASE_COURSE_NOT_EXECUTABLE")
