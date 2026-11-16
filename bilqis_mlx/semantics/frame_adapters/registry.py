@@ -103,62 +103,6 @@ def _numeric_graph(_row=None):
     return _legacy_root(), registry_graph()
 
 
-def _event_graph(row=None):
-    from ...live_grade_c import registry_graph
-    from ...source_adapters import event_frames
-
-    capability = row.get("capability") if isinstance(row, dict) else None
-    if capability not in event_frames.SOURCE_SPECS:
-        _adapter_fail("FRAME_EVENT_CAPABILITY_REQUIRED",
-                      event_frames.ADAPTER_ID, SourceSpan(0, 0), "<source-row>")
-    closure = []
-    seen = set()
-
-    def include(item):
-        if item in seen:
-            return
-        spec = event_frames.SOURCE_SPECS.get(item)
-        if spec is None:
-            return
-        for prerequisite in spec.prerequisites:
-            include(prerequisite)
-        seen.add(item)
-        closure.append(item)
-
-    include(capability)
-    return _legacy_root(), event_frames.projected_graph(
-        registry_graph(), tuple(closure))
-
-
-def _event_atlas_semantic(row: dict) -> str:
-    from ...source_adapters import event_frames
-
-    capability = row.get("capability") if isinstance(row, dict) else None
-    if capability not in event_frames.SOURCE_SPECS:
-        _adapter_fail("FRAME_EVENT_CAPABILITY_REQUIRED",
-                      event_frames.ADAPTER_ID, SourceSpan(0, 0), "<source-row>")
-    return event_frames.atlas_semantic_id(capability)
-
-
-def _bind_event_row(
-    row: dict, snapshot: FrozenAtlasSnapshot, graph: dict, *,
-    adapter_id: str, span: SourceSpan, causal_prefix_end: int,
-) -> FrameTree:
-    del snapshot, graph
-    from ...source_adapters import event_frames
-
-    record = row.get("record")
-    if (not isinstance(record, dict)
-            or record.get("task") != event_frames.DIALECT
-            or record.get("capability") not in event_frames.SOURCE_SPECS):
-        _adapter_fail("FRAME_EVENT_RECORD_INVALID",
-                      adapter_id, span, "<source-row>")
-    atomic = atomic_fallback(
-        record, source_instance_id=_source_id(row, adapter_id, span),
-        structural_path=(), source_span=span, parent_occurrence_id=None,
-        causal_prefix_end=causal_prefix_end)
-    return validate_frame_tree(FrameTree(atomic))
-
 @dataclass(frozen=True)
 class ReleasedFrameAdapter:
     source_adapter_id: str
@@ -168,12 +112,7 @@ class ReleasedFrameAdapter:
     atlas_semantic_resolver: AtlasSemanticResolver | None = None
 
 
-def _event_adapter_id() -> str:
-    from ...source_adapters import event_frames
-    return event_frames.ADAPTER_ID
-
-
-_STRATEGIES: Mapping[str, ReleasedFrameAdapter] = MappingProxyType({
+_STRATEGY_TABLE: dict[str, ReleasedFrameAdapter] = {
     MICRO_PREDICATE_ADAPTER: ReleasedFrameAdapter(
         MICRO_PREDICATE_ADAPTER, _bind_source_row, "micro", _micro_graph),
     BOOLEAN_CONNECTIVE_ADAPTER: ReleasedFrameAdapter(
@@ -187,14 +126,33 @@ _STRATEGIES: Mapping[str, ReleasedFrameAdapter] = MappingProxyType({
         FINITE_NUMERIC_ADAPTER, _bind_numeric_row, "numeric", _numeric_graph),
     C13_EPISODE_ADAPTER: ReleasedFrameAdapter(
         C13_EPISODE_ADAPTER, _bind_c13_episode_row, "numeric", _numeric_graph),
-    _event_adapter_id(): ReleasedFrameAdapter(
-        _event_adapter_id(), _bind_event_row, None, _event_graph,
-        _event_atlas_semantic),
-})
+}
+_STRATEGIES: Mapping[str, ReleasedFrameAdapter] = MappingProxyType(_STRATEGY_TABLE)
 
-_ROW_BINDERS: Mapping[str, RowBinder] = MappingProxyType({
+_ROW_BINDER_TABLE: dict[str, RowBinder] = {
     adapter_id: strategy.binder for adapter_id, strategy in _STRATEGIES.items()
-})
+}
+_ROW_BINDERS: Mapping[str, RowBinder] = MappingProxyType(_ROW_BINDER_TABLE)
+
+
+def register_source_frame_strategy(
+    strategy: ReleasedFrameAdapter,
+) -> ReleasedFrameAdapter:
+    """Register one provider-owned strategy without reversing semantic boundaries."""
+    if not isinstance(strategy, ReleasedFrameAdapter) or not strategy.source_adapter_id:
+        _adapter_fail(
+            "FRAME_SOURCE_STRATEGY_INVALID", "<unknown>",
+            SourceSpan(0, 0), "<adapter>")
+    existing = _STRATEGY_TABLE.get(strategy.source_adapter_id)
+    if existing is not None:
+        if existing != strategy:
+            _adapter_fail(
+                "FRAME_SOURCE_ADAPTER_REGISTRATION_DRIFT",
+                strategy.source_adapter_id, SourceSpan(0, 0), "<adapter>")
+        return existing
+    _STRATEGY_TABLE[strategy.source_adapter_id] = strategy
+    _ROW_BINDER_TABLE[strategy.source_adapter_id] = strategy.binder
+    return strategy
 
 def released_frame_adapter_ids() -> tuple[str, ...]:
     return tuple(sorted(_STRATEGIES))
