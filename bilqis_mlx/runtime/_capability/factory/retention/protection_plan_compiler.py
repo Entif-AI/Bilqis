@@ -14,13 +14,17 @@ from .protection_plan import (
 
 
 def policy_epoch_sha256(evidence_stage) -> str:
-    from bilqis_mlx.learning.retention_policy import MASTERY_DEBT_POWER
+    from bilqis_mlx.learning.retention_policy import (
+        MASTERY_DEBT_POWER, decision_law_for_stage, stage_retention_policy,
+    )
     from .._factory_retention_support import (
         C05_PROBE_EACH, C05_PROTECTED_REFERENCE_LOSS,
     )
     return contract_digest({
-        "schema": "bilqis.mlx.c05-retention-policy-epoch/v1",
+        "schema": "bilqis.mlx.c05-retention-policy-epoch/v2",
         "evidence_stage": evidence_stage.value,
+        "stage_policy_schema": stage_retention_policy().schema_version,
+        "decision_law": decision_law_for_stage(evidence_stage).value,
         "foundation_policy_schema": "bilqis.c05.foundation-retention-policy/v2",
         "strict_policy_schema": "bilqis.c05.retention-policy/v2",
         "probe_each": C05_PROBE_EACH,

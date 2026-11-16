@@ -1,9 +1,51 @@
-"""Shared pure retention precedence and normalized mastery-debt arithmetic."""
+"""Shared pure retention precedence and stage-authoritative decision policy."""
+from dataclasses import dataclass
+from enum import Enum
 from fractions import Fraction
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 
 MASTERY_DEBT_POWER = 2
+
+
+class RetentionDecisionLaw(str, Enum):
+    FOUNDATION_MASTERY_DEBT = "FOUNDATION_MASTERY_DEBT"
+    STRICT_PROPORTIONAL = "STRICT_PROPORTIONAL"
+
+
+@dataclass(frozen=True)
+class RetentionStagePolicy:
+    """Versioned mapping from declared evidence stage to retention economics."""
+
+    stage_laws: tuple[tuple[str, RetentionDecisionLaw], ...] = (
+        ("FOUNDATION_ACQUISITION", RetentionDecisionLaw.FOUNDATION_MASTERY_DEBT),
+        ("STRICT_GENERALIZATION", RetentionDecisionLaw.STRICT_PROPORTIONAL),
+    )
+    schema_version: str = "bilqis.c05.stage-retention-policy/v1"
+
+    def __post_init__(self):
+        if (self.schema_version != "bilqis.c05.stage-retention-policy/v1"
+                or len(self.stage_laws) != len(dict(self.stage_laws))
+                or any(not isinstance(stage, str) or not stage
+                       or not isinstance(law, RetentionDecisionLaw)
+                       for stage, law in self.stage_laws)):
+            _invalid("retention stage policy invalid")
+
+    def law_for(self, evidence_stage) -> RetentionDecisionLaw:
+        stage = getattr(evidence_stage, "value", evidence_stage)
+        law = dict(self.stage_laws).get(stage)
+        if law is None:
+            _invalid("retention evidence stage unsupported")
+        return law
+
+
+def stage_retention_policy() -> RetentionStagePolicy:
+    """Return the immutable current C05 evidence-stage decision contract."""
+    return RetentionStagePolicy()
+
+
+def decision_law_for_stage(evidence_stage) -> RetentionDecisionLaw:
+    return stage_retention_policy().law_for(evidence_stage)
 
 
 def _invalid(reason: str) -> None:

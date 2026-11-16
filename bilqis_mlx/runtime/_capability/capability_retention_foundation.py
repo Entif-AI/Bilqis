@@ -9,7 +9,9 @@ from .capability_evaluation import (
     case_census_digest, evaluate_capabilities,
 )
 from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
-from .capability_retention import AssessmentPair, Decision, RetentionPolicy
+from .capability_retention import (
+    AssessmentPair, Decision, PairedRetentionEvidence, RetentionPolicy,
+)
 from .capability_retention_foundation_runtime import (
     final_fixed_school_decision, observed_assessment, parent_case_index,
 )
@@ -241,7 +243,56 @@ def evaluate_foundation_fixed_school_candidate(
         parent_assessment=parent_assessment, **({"observer": observer} if observer is not None else {}))
 
 
+def retain_foundation_candidate(parent, candidate, evidence) -> Decision:
+    """Apply ADR-142 economics to already paired foundation evidence."""
+    if (not isinstance(evidence, PairedRetentionEvidence)
+            or parent != evidence.target.parent.generation_digest
+            or candidate != evidence.target.candidate.generation_digest):
+        _invalid("BAMF_RETENTION_GENERATION_DRIFT")
+    from ..learning.retention_policy import (
+        RetentionDecisionLaw, decision_law_for_stage,
+    )
+    stage = evidence.target.parent.cohort.evidence_stage
+    if decision_law_for_stage(stage) is not RetentionDecisionLaw.FOUNDATION_MASTERY_DEBT:
+        _invalid("BAMF_RETENTION_DECISION_LAW_DRIFT")
+    fixed_pair = evidence.fixed_school
+    fixed = fixed_pair.parent.cohort
+    policy = evidence.policy
+    groups = dict(policy.capability_groups)
+    target = evidence.target_capability
+    parent_results = {
+        case.case_id: result
+        for case, result in zip(fixed.cases, fixed_pair.parent.results)
+    }
+    parent_contracts = {
+        case.case_id: contract
+        for case, contract in zip(fixed.cases, fixed_pair.parent.solver_contracts)
+    }
+    candidate_results = {
+        case.case_id: result
+        for case, result in zip(fixed.cases, fixed_pair.candidate.results)
+    }
+    candidate_contracts = {
+        case.case_id: contract
+        for case, contract in zip(fixed.cases, fixed_pair.candidate.solver_contracts)
+    }
+    evaluated = tuple(capability for capability, _group in policy.capability_groups)
+    decision = final_fixed_school_decision(
+        target, groups[target], dict(policy.protected_reference_losses), policy, fixed,
+        parent, candidate, lambda _pairs, _blocking: evidence.digest(),
+        ((fixed_pair.parent.digest(), fixed_pair.candidate.digest()),),
+        parent_results, parent_contracts, candidate_results, candidate_contracts,
+        ordinary=True, evaluated_capability_ids=evaluated,
+    )
+    scores = tuple(
+        (capability, *fixed_pair.parent.score(capability)[:1],
+         *fixed_pair.candidate.score(capability))
+        for capability in evaluated
+    )
+    return replace(decision, outcome_scores=scores)
+
+
 __all__ = (
     "FoundationRetentionPolicy", "evaluate_foundation_fixed_school_candidate",
-    "evaluate_foundation_retention_candidate",
+    "evaluate_foundation_retention_candidate", "retain_foundation_candidate",
 )

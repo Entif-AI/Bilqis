@@ -16,7 +16,8 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 LEGACY_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v1"
 PREVIOUS_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
 PREVIOUS_BASELINE_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v3"
-DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v4"
+PREVIOUS_SCOPE_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v4"
+DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v5"
 ACCEPTED_DECISION = "PROVISIONAL"
 REJECTED_DECISION = "REJECT"
 ACCEPTING_REASON = "PAIRED_SCREEN_WITHIN_BUDGET"
@@ -29,10 +30,13 @@ _V3_DECISION_FIELDS = (
     "evidence_sha256", "policy_sha256", "blocking_capability",
     "blocking_scope", "baseline_coverage", "schema_version",
 )
-_DECISION_FIELDS = (
+_V4_DECISION_FIELDS = (
     *_V3_DECISION_FIELDS[:-1],
     "evaluated_capability_ids", "retention_protection_plan_sha256",
     "broad_certification_trigger", "schema_version",
+)
+_DECISION_FIELDS = (
+    *_V4_DECISION_FIELDS[:-1], "blocking_score_budget", "schema_version",
 )
 
 
@@ -92,6 +96,18 @@ def _digest(value: object) -> bool:
             and all(c in "0123456789abcdef" for c in value))
 
 
+def _valid_blocking_score_budget(value) -> bool:
+    if value is None:
+        return True
+    if not isinstance(value, (list, tuple)) or len(value) != 5:
+        return False
+    capability, before, after, total, allowed = value
+    return (isinstance(capability, str) and bool(capability)
+            and all(type(number) is int for number in (before, after, total, allowed))
+            and 0 <= before <= total and 0 <= after <= total
+            and 0 <= allowed <= total)
+
+
 @dataclass(frozen=True)
 class CandidateRetentionDecision:
     """Live token issued only after C05 runs its stage-authoritative evaluation."""
@@ -108,6 +124,7 @@ class CandidateRetentionDecision:
     evaluated_capability_ids: tuple[str, ...] = ()
     retention_protection_plan_sha256: str | None = None
     broad_certification_trigger: str | None = None
+    blocking_score_budget: tuple[str, int, int, int, int] | None = None
     schema_version: str = DECISION_SCHEMA
 
     def __post_init__(self) -> None:
@@ -139,6 +156,7 @@ class CandidateRetentionDecision:
                          or not self.broad_certification_trigger))
                 or (self.retention_protection_plan_sha256 is not None
                     and self.broad_certification_trigger is not None)
+                or not _valid_blocking_score_budget(self.blocking_score_budget)
                 or self.schema_version != DECISION_SCHEMA):
             _invalid()
 
@@ -166,6 +184,8 @@ class CandidateRetentionDecision:
                  else _V2_DECISION_FIELDS if schema == PREVIOUS_DECISION_SCHEMA
                  else _V3_DECISION_FIELDS
                  if schema == PREVIOUS_BASELINE_DECISION_SCHEMA
+                 else _V4_DECISION_FIELDS
+                 if schema == PREVIOUS_SCOPE_DECISION_SCHEMA
                  else _DECISION_FIELDS if schema == DECISION_SCHEMA else ())
         if not names or set(record) != set(names) | {"decision_sha256"}:
             _invalid()
@@ -192,7 +212,7 @@ class CandidateRetentionDecision:
                      or (record["baseline_coverage"] is not None
                          and not _valid_baseline_coverage(record["baseline_coverage"])))):
             _invalid()
-        if names == _DECISION_FIELDS:
+        if names in {_V4_DECISION_FIELDS, _DECISION_FIELDS}:
             evaluated = record["evaluated_capability_ids"]
             if (not isinstance(evaluated, (list, tuple))
                     or any(not isinstance(item, str) or not item for item in evaluated)
@@ -205,6 +225,9 @@ class CandidateRetentionDecision:
                     or (record["retention_protection_plan_sha256"] is not None
                         and record["broad_certification_trigger"] is not None)):
                 _invalid()
+        if names == _DECISION_FIELDS and not _valid_blocking_score_budget(
+                record["blocking_score_budget"]):
+            _invalid()
         payload = {name: record[name] for name in names}
         if record["decision_sha256"] != hashlib.sha256(_canonical(payload)).hexdigest():
             _invalid()
@@ -299,6 +322,7 @@ def _make_factory_retention_issuer(raw_issue):
             ("retention_protection_plan_sha256",
              result.retention_protection_plan_sha256),
             ("broad_certification_trigger", result.broad_certification_trigger),
+            ("blocking_score_budget", result.blocking_score_budget),
             ("schema_version", DECISION_SCHEMA),
         ), generation_authority_sha256=(
             owner_evaluation.candidate_generation_authority_sha256),
