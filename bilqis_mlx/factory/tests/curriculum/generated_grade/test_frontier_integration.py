@@ -42,7 +42,7 @@ class GeneratedGradeFrontierIntegrationTests(AtlasDeltaAdapterFixture):
         self.assertIsNotNone(decision.ast_burden)
         self.assertIsNotNone(decision.entanglement)
         self.assertIsNotNone(decision.reusable_constituent_value)
-        self.assertIsNone(decision.minimal_contrast_value)
+        self.assertIsNotNone(decision.minimal_contrast_value)
         self.assertNotIn("Z", proposal.member_semantic_ids)
 
     def test_reloading_same_a09_epoch_recomputes_identical_proposal(self):
