@@ -39,16 +39,9 @@ from ._autonomy.work_contracts import (
     TeachingWorkItem,
 )
 
-_PUBLIC_RECORDS = (
-    AutonomyAction, AutonomyActionKind, AutonomyPlan, CurriculumWorkItem,
-    EvidenceKind, EvidenceLedger, EvidenceObligation, EvidenceReceipt,
-    ProjectionEvidenceSpec, RejectedTeachingAttemptReceipt,
-    SourceCompositionEdge, SupplementalEvidenceSpec, TeachingReceipt,
-    TeachingWorkItem,
-)
-for _record in _PUBLIC_RECORDS:
-    _record.__module__ = __name__
-
 __all__ = tuple(
     name for name in globals()
     if not name.startswith("_") and name not in {"annotations"})
+
+for _name in __all__:
+    globals()[_name].__module__ = __name__

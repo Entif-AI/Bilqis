@@ -36,3 +36,6 @@ __all__ = (
     "TeachingOption",
     "assessment_plans",
 )
+
+for _name in __all__:
+    globals()[_name].__module__ = __name__

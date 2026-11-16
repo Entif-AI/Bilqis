@@ -67,7 +67,7 @@ class AutonomyPlanRebindTests(AutonomyFixture):
             next_work(self.release, rebound, plan=covered).capability_id,
             "A.OTHER")
 
-    def test_plan_rebind_preserves_existing_receipts_and_adds_new_obligation(self):
+    def test_plan_rebind_rejects_receipts_for_changed_obligation_contract(self):
         old = compile_autonomy_plan(self.release)
         ledger = initial_evidence_ledger(self.release, plan=old)
         ledger = self.close_current_capability(ledger)
