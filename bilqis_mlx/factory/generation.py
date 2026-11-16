@@ -1,6 +1,8 @@
 """Grade-neutral specimen generation from a verified FactoryRelease."""
 from __future__ import annotations
 
+from bilqis_mlx.b11_observation import note_provider_check
+
 from .adapters import SourceAdapterRegistry, validate_instructional_constituents
 from .model import FactoryRelease
 from .execution import ExecutionPlan
@@ -153,6 +155,7 @@ def draw_execution_rows(
                 raise ValueError(
                     "FACTORY_EXECUTION_GENERATION_ANSWER_DRIFT:"
                     + execution.capability_id)
+            note_provider_check()
             if adapter.check(
                     row, source_root=source_root, graph=graph,
                     course=adapter_context) is not True:

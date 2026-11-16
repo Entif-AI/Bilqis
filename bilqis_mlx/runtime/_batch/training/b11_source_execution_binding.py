@@ -3,7 +3,7 @@ from dataclasses import asdict, replace
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning._engram.atlas_engram_source_context import (
-    qualify_source_motif_context,
+    qualify_prepared_source_motif_context, qualify_source_motif_context,
 )
 from bilqis_mlx.learning.atlas_engram_reads.source import (
     _schema_grant_live, schema_source_handle,
@@ -15,7 +15,7 @@ from bilqis_mlx.semantics.context_eligibility import (
 from bilqis_mlx.semantics.frame_compiler import PositionKind
 from bilqis_mlx.semantics.frame_schema import FrameInstance
 from bilqis_mlx.source_adapters.atom_binding import (
-    _build_source_atom_handoff_from_snapshot,
+    _build_source_atom_handoff_from_snapshot, _build_source_atom_handoff_from_witness,
 )
 
 
@@ -27,6 +27,16 @@ def bind_source_handoff(compiled_row, config, source, snapshot):
     handoff = _build_source_atom_handoff_from_snapshot(
         compiled_row, config, source.selection, snapshot, source.source_row,
         source.graph, **source.replay_arguments())
+    if not handoff.embedding_ready:
+        _invalid("B11_SOURCE_EXECUTION_HANDOFF_HELD")
+    return handoff
+
+
+def bind_prepared_source_handoff(compiled_row, config, source, snapshot, witness):
+    """Consume one already-qualified source-row witness without provider replay."""
+    handoff = _build_source_atom_handoff_from_witness(
+        compiled_row, config, source.selection, snapshot, source.source_row,
+        source.graph, witness, source_root=source.source_root)
     if not handoff.embedding_ready:
         _invalid("B11_SOURCE_EXECUTION_HANDOFF_HELD")
     return handoff
@@ -45,6 +55,18 @@ def bind_motif_context(compiled_row, config, source, source_adapter, snapshot):
         _invalid("B11_SOURCE_EXECUTION_MOTIF_CONTEXT_HELD")
     projection, motifs, frontier = replayed
     return task_scope, projection, motifs, frontier
+
+
+def bind_prepared_motif_context(
+        compiled_row, config, source, source_adapter, snapshot, projection,
+        prepared_frontier):
+    """Rebind one owner-issued motif projection without source reproduction."""
+    task_scope = replace(config.task, causal_prefix_end=compiled_row.visible_end)
+    replayed, motifs, frontier = qualify_prepared_source_motif_context(
+        source_adapter, projection, prepared_frontier, source.selection,
+        source_root=source.source_root, graph=source.graph, task_scope=task_scope,
+        source_frontier=config.frontier, policy=config.policy, snapshot=snapshot)
+    return task_scope, replayed, motifs, frontier
 
 
 def motif_schema_map(motifs):

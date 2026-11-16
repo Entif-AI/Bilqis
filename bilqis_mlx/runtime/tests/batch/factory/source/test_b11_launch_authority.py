@@ -9,7 +9,7 @@ from bilqis_mlx.runtime.b11_source_execution_authority import (
 )
 import bilqis_mlx.runtime.b11_source_execution_authority as b11_authority_impl
 
-from .factory_training_bridge_support import FactoryTrainingBridgeFixture
+from ..factory_training_bridge_support import FactoryTrainingBridgeFixture
 
 
 class B11LaunchAuthorityTests(FactoryTrainingBridgeFixture):

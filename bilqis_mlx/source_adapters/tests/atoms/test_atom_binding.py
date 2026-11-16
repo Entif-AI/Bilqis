@@ -12,9 +12,15 @@ from bilqis_mlx.semantics.frame_compiler import atom_evidence_digest, compile_pr
 from bilqis_mlx.semantics.source_atom_binding import AtomBindingDisposition
 from bilqis_mlx.semantics.tests.source_atom_binding.helpers import ROOT, case
 from bilqis_mlx.source_adapters.atom_binding import (
-    build_source_atom_handoff, require_pinned_embedding_ready,
-    revalidate_source_atom_handoff, verify_source_row,
+    _build_source_atom_handoff_from_witness, _verified_source_row_witness,
+    build_source_atom_handoff,
+    require_pinned_embedding_ready, revalidate_source_atom_handoff,
+    verify_source_row,
 )
+from bilqis_mlx.source_adapters.atoms.admission import (
+    _public_formal_atom_context_from_witness,
+)
+from bilqis_mlx.source_adapters.tests.atoms.helpers import source_case
 from bilqis_mlx.source_adapters.copular import CAPABILITY, SYMBOL
 from bilqis_mlx.source_adapters.copular_curriculum import proposed_graph
 from bilqis_mlx.source_adapters.school import live_source_registry
@@ -91,13 +97,61 @@ class SourceAtomAdapterTests(TestCase):
         self.assertIsNone(witness)
         self.assertEqual(reason, "SOURCE_ATOM_SOURCE_ROW_UNVERIFIED")
 
+    def test_prequalified_row_mints_same_witness_without_provider_replay(self):
+        source_root = ROOT / "vendor" / "legacy-v16"
+        _, _, graph, _, _ = read_sources(source_root)
+        owner = live_source_registry().require(
+            "bilqis_mlx.grade_a_probe.make_record",
+            "bilqis.mlx.grade-a-record-oracle/v2")
+        row = owner.draw(
+            source_root=source_root, graph=graph, course=None,
+            capability="A.IDENTITY", seed=31, each=2)[0]
+        expected, reason = verify_source_row(
+            row, graph, source_root=source_root, source_seed=31,
+            source_each=2, course=None, source_profile_parameters=None)
+        self.assertIsNone(reason)
+        with source_replay_observation() as observed:
+            actual, reason = _verified_source_row_witness(
+                row, expected_adapter_id=owner.descriptor.adapter_id)
+        self.assertIsNone(reason)
+        self.assertEqual(actual, expected)
+        self.assertEqual(observed, {
+            "provider_draws": 0, "provider_checks": 0, "atlas_reloads": 0})
+
+    @skipUnless(REAL_BUNDLE, "real pinned A01 artifact not mounted")
+    def test_prepared_atom_context_and_handoff_match_cold_without_replay(self):
+        from bilqis_mlx.semantics.atlas.snapshot import load_pinned_atlas_snapshot
+
+        ast, config, compiled, handoff, selection, row, graph, args = source_case(
+            visible_end=2)
+        snapshot = load_pinned_atlas_snapshot(selection)
+        witness, reason = verify_source_row(
+            row, graph, source_root=args["source_root"],
+            source_seed=args["source_seed"], source_each=args["source_each"],
+            course=None, source_profile_parameters=None)
+        self.assertIsNone(reason)
+        with source_replay_observation() as observed:
+            prepared_ast, prepared_config = _public_formal_atom_context_from_witness(
+                selection, snapshot, row, graph, witness,
+                source_root=args["source_root"], task=config.task,
+                frontier=config.frontier, policy=config.policy)
+            prepared_handoff = _build_source_atom_handoff_from_witness(
+                compiled, config, selection, snapshot, row, graph, witness,
+                source_root=args["source_root"])
+        self.assertEqual(prepared_ast, ast)
+        self.assertEqual(prepared_config, config)
+        self.assertEqual(prepared_handoff, handoff)
+        self.assertEqual(observed, {
+            "provider_draws": 0, "provider_checks": 0, "atlas_reloads": 0})
+
     def test_replay_observation_counts_only_inside_active_scope(self):
         note_provider_draw()
         note_atlas_reload()
         with source_replay_observation() as observed:
             note_provider_draw()
             note_atlas_reload()
-        self.assertEqual(observed, {"provider_draws": 1, "atlas_reloads": 1})
+        self.assertEqual(observed, {
+            "provider_draws": 1, "provider_checks": 0, "atlas_reloads": 1})
 
     def test_unsupported_or_unreproducible_source_row_has_no_witness(self):
         row = {"generator": "missing.generator", "oracle": "missing.oracle",

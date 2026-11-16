@@ -16,30 +16,19 @@ from ...semantics.source_atom_binding.common import invalid
 from .authority import project_verified_row, require_canonical_graph
 
 
-def _public_formal_atom_context_from_snapshot(
-    selection, snapshot, source_row, graph, *, source_root, source_seed, source_each,
+def _public_formal_atom_context_from_witness(
+    selection, snapshot, source_row, graph, witness, *, source_root,
     task: TaskScope, frontier: SourceFrontier, policy: ContextPolicy,
-    course=None, source_profile_parameters=None,
 ):
-    """Return raw-atom authority from an already authenticated Atlas snapshot.
-
-    Only atoms visible at the requested prefix receive grants. Existing
-    conflicting or revoked grants are never replaced. This neither admits a
-    lesson nor changes policy, model parameters or the source's ABI.
-    """
-    from ..atom_binding import verify_source_row
+    """Issue raw-atom grants from one already-qualified source-row witness."""
+    from ..atom_binding import _require_witness_matches_row
 
     if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
           != (selection.release_sha256, selection.bundle_id,
               selection.source_bundle_id)):
         invalid("SOURCE_ATOM_PUBLIC_FORMAL_SOURCE_DRIFT")
     canonical_graph = require_canonical_graph(source_row, graph, source_root)
-    witness, reason = verify_source_row(
-        source_row, canonical_graph, source_root=source_root,
-        source_seed=source_seed, source_each=source_each, course=course,
-        source_profile_parameters=source_profile_parameters)
-    if witness is None:
-        invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_HELD:" + str(reason))
+    _require_witness_matches_row(witness, source_row)
     if (type(task) is not TaskScope or type(frontier) is not SourceFrontier
             or type(policy) is not ContextPolicy
             or task.semantic_release != snapshot.release_sha256
@@ -71,6 +60,35 @@ def _public_formal_atom_context_from_snapshot(
         (), SchemaTagMap.from_schemas(task.semantic_release, ()),
         None, task, current, policy)
     return source.ast, config
+
+
+def _public_formal_atom_context_from_snapshot(
+    selection, snapshot, source_row, graph, *, source_root, source_seed, source_each,
+    task: TaskScope, frontier: SourceFrontier, policy: ContextPolicy,
+    course=None, source_profile_parameters=None,
+):
+    """Return raw-atom authority from an already authenticated Atlas snapshot.
+
+    Only atoms visible at the requested prefix receive grants. Existing
+    conflicting or revoked grants are never replaced. This neither admits a
+    lesson nor changes policy, model parameters or the source's ABI.
+    """
+    from ..atom_binding import verify_source_row
+
+    if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+          != (selection.release_sha256, selection.bundle_id,
+              selection.source_bundle_id)):
+        invalid("SOURCE_ATOM_PUBLIC_FORMAL_SOURCE_DRIFT")
+    canonical_graph = require_canonical_graph(source_row, graph, source_root)
+    witness, reason = verify_source_row(
+        source_row, canonical_graph, source_root=source_root,
+        source_seed=source_seed, source_each=source_each, course=course,
+        source_profile_parameters=source_profile_parameters)
+    if witness is None:
+        invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_HELD:" + str(reason))
+    return _public_formal_atom_context_from_witness(
+        selection, snapshot, source_row, canonical_graph, witness,
+        source_root=source_root, task=task, frontier=frontier, policy=policy)
 
 
 def public_formal_atom_context(

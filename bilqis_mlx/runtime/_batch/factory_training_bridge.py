@@ -17,7 +17,7 @@ from .atlas_training_contracts import BamfTrainingBatch, BamfVisitProvenance, _i
 from .factory_training_context import training_answer_plan
 from .factory_training_source import (
     _FactoryMotifPlanningInput, _bind_b11_rows, _motif_planning_input,
-    _prepare_factory_source_rows,
+    _prepare_b11_source_binding, _prepare_factory_source_rows,
 )
 
 
@@ -76,13 +76,21 @@ def _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows, *, capability,
         source_seed, source_each):
     if prepared_source is None:
+        source_authority = source_context.bind_rows(
+            rows, seed=source_seed, capability=capability, each=source_each)
         adapter, manifest, profile, source_rows = _prepare_factory_source_rows(
             source_context, authenticated, rows, capability=capability,
-            source_seed=source_seed, source_each=source_each)
+            source_seed=source_seed, source_each=source_each,
+            source_authority=source_authority)
+        from bilqis_mlx.runtime.priority_source_materialization import (
+            _prepare_model_sources,
+        )
+        prepared_model_sources, _configs = _prepare_model_sources(
+            source_context, authenticated, manifest, source_rows)
         return (
-            source_context.bind_rows(
-                rows, seed=source_seed, capability=capability, each=source_each),
-            adapter, manifest, profile, source_rows, None, None,
+            source_authority,
+            adapter, manifest, profile, source_rows, prepared_model_sources,
+            None, None,
         )
     from bilqis_mlx.runtime.priority_source_materialization import (
         PreparedPrioritySourceMaterialization,
@@ -105,7 +113,44 @@ def _prepared_source_inputs(
         prepared_source.source_rows,
         prepared_source.model_sources,
         prepared_source.motif_inputs,
+        prepared_source.b11_sources,
     )
+
+
+def _compile_factory_training(
+        rows, source_context, candidate, delivery, capability, teacher_strategy,
+        requested_count, optimizer_step_seed, visit_provenance, source_authority,
+        rehearsal_by_id, source_rows, feature_artifact_path, generation_binding,
+        authenticated, manifest, prepared_model_sources):
+    by_tokens = {tuple(item.row["tokens"]): item.ast for item in source_rows}
+    if len(by_tokens) != len(rows):
+        _invalid("FACTORY_TRAINING_AMBIGUOUS_SOURCE_PREFIX")
+    by_ast = {id(item.ast): item.projection for item in source_rows}
+    return compile_training_batch(
+        rows, source_context, candidate.topology, delivery=delivery,
+        delivery_capability=capability,
+        delivery_release_sha256=source_context.release.release_sha256,
+        teacher_strategy=teacher_strategy,
+        requested_count=requested_count, optimizer_step_seed=optimizer_step_seed,
+        visit_provenance=visit_provenance,
+        source_authority=source_authority,
+        rehearsal_by_id=(rehearsal_by_id or {}),
+        visible_ends={row["id"]: len(row["tokens"]) for row in rows},
+        source_ast_for=lambda tokens: by_tokens[tuple(tokens)],
+        compiler_config=tuple(item.config for item in source_rows),
+        feature_artifact_path=feature_artifact_path,
+        answer_plan_for=lambda prefix, release, cap, kind: training_answer_plan(
+            prefix, release, kind, generation_binding),
+        frames_for_ast=lambda ast: (() if by_ast[id(ast)] is None
+                                    else by_ast[id(ast)].envelopes),
+        task_scope=tuple(item.task for item in source_rows),
+        source_frontier=tuple(item.frontier for item in source_rows),
+        eligibility_policy=tuple(item.policy for item in source_rows),
+        semantic_context=authenticated,
+        released_manifest=manifest,
+        generation_binding=generation_binding,
+        atlas_selection=authenticated.selection,
+        prepared_model_sources=prepared_model_sources)
 
 
 def prepare_factory_training_batch(
@@ -147,41 +192,19 @@ def prepare_factory_training_batch(
         _invalid("FACTORY_TRAINING_SEMANTIC_CONTEXT_INVALID")
     authenticated.__post_init__()
     (source_authority, adapter, manifest, profile, source_rows,
-     prepared_model_sources, prepared_motif_inputs) = _prepared_source_inputs(
+     prepared_model_sources, prepared_motif_inputs,
+     prepared_b11_sources) = _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows,
         capability=capability, source_seed=source_seed, source_each=source_each)
-    by_tokens = {tuple(item.row["tokens"]): item.ast for item in source_rows}
-    if len(by_tokens) != len(rows):
-        _invalid("FACTORY_TRAINING_AMBIGUOUS_SOURCE_PREFIX")
-    by_ast = {id(item.ast): item.projection for item in source_rows}
-    training = compile_training_batch(
-        rows, source_context, candidate.topology, delivery=delivery,
-        delivery_capability=capability,
-        delivery_release_sha256=source_context.release.release_sha256,
-        teacher_strategy=teacher_strategy,
-        requested_count=requested_count, optimizer_step_seed=optimizer_step_seed,
-        visit_provenance=visit_provenance,
-        source_authority=source_authority,
-        rehearsal_by_id=(rehearsal_by_id or {}),
-        visible_ends={row["id"]: len(row["tokens"]) for row in rows},
-        source_ast_for=lambda tokens: by_tokens[tuple(tokens)],
-        compiler_config=tuple(item.config for item in source_rows),
-        feature_artifact_path=feature_artifact_path,
-        answer_plan_for=lambda prefix, release, cap, kind: training_answer_plan(
-            prefix, release, kind, generation_binding),
-        frames_for_ast=lambda ast: (() if by_ast[id(ast)] is None
-                                    else by_ast[id(ast)].envelopes),
-        task_scope=tuple(item.task for item in source_rows),
-        source_frontier=tuple(item.frontier for item in source_rows),
-        eligibility_policy=tuple(item.policy for item in source_rows),
-        semantic_context=authenticated,
-        released_manifest=manifest,
-        generation_binding=generation_binding,
-        atlas_selection=authenticated.selection,
-        prepared_model_sources=prepared_model_sources)
+    training = _compile_factory_training(
+        rows, source_context, candidate, delivery, capability, teacher_strategy,
+        requested_count, optimizer_step_seed, visit_provenance, source_authority,
+        rehearsal_by_id, source_rows, feature_artifact_path, generation_binding,
+        authenticated, manifest, prepared_model_sources)
     compiled_rows = _bind_b11_rows(
         source_context, candidate, authenticated, training, source_rows,
-        adapter, profile, source_seed=source_seed, source_each=source_each)
+        adapter, profile, source_seed=source_seed, source_each=source_each,
+        prepared_b11=prepared_b11_sources)
     motif_inputs = (
         prepared_motif_inputs if prepared_motif_inputs is not None else
         tuple(_motif_planning_input(
