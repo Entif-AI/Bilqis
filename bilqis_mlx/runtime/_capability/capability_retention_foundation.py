@@ -1,6 +1,8 @@
 """Foundation-acquisition C05 screen: fixed-school authority, fresh cohorts telemetry only."""
 from __future__ import annotations
 
+import time
+
 from dataclasses import dataclass, replace
 
 from ..learning.retention_policy import _mastery_debt_utility
@@ -151,9 +153,13 @@ def _fixed_capability_order(target_capability, policy, fixed):
 def _observed_assessment(solver, cohort, generation, observer, completed, total, subject, role):
     emit(observer, retention_completed=completed, retention_total=total,
          retention_subject=subject, retention_role=role)
+    started = time.perf_counter()
     result = evaluate_capabilities(solver, cohort, generation)
+    elapsed = max(0.0, time.perf_counter() - started)
     emit(observer, retention_completed=completed + 1, retention_total=total,
-         retention_subject=subject, retention_role=role)
+         retention_subject=subject, retention_role=role,
+         retention_stage_timing={
+             "subject": subject, "role": role, "wall_seconds": elapsed})
     return result
 
 
@@ -176,7 +182,7 @@ def _final_fixed_school_decision(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts):
+        candidate_results, candidate_contracts, observer=None):
     parent_assessment = Assessment(
         fixed, parent_generation,
         tuple(parent_results[case.case_id] for case in fixed.cases),
@@ -204,6 +210,32 @@ def _final_fixed_school_decision(
         scores[capability] = {"before": before, "after": after, "total": total}
 
     target_delta = fixed_pair.delta(target_capability)
+    emit(observer, retention_scorecard={
+        "schema": "bilqis.bamf.retention-scorecard/v1",
+        "evidence_stage": fixed.evidence_stage.value,
+        "target_capability": target_capability,
+        "target": {
+            "capability_id": target_capability,
+            "state": ("MEASURED" if target_capability in measured_set else "NOT_MEASURED"),
+            "baseline": scores[target_capability]["before"],
+            **scores[target_capability],
+            "delta": target_delta,
+        },
+        "protected": [
+            {
+                "capability_id": capability,
+                "state": ("MEASURED" if capability in measured_set else "NOT_MEASURED"),
+                "baseline": scores[capability]["before"],
+                **scores[capability],
+                "delta": fixed_pair.delta(capability),
+                "loss_allowance": references.get(capability),
+            }
+            for capability in references
+        ],
+        "policy_sha256": policy.digest(),
+        "probe_each": policy.probe_each,
+        "baseline_coverage": (coverage.to_record() if coverage is not None else None),
+    })
     if target_delta < 0 and target_capability in measured_set:
         return Decision(
             DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",
@@ -300,7 +332,7 @@ def _evaluate_fixed_school(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts)
+        candidate_results, candidate_contracts, observer=observer)
 
 
 def evaluate_foundation_retention_candidate(

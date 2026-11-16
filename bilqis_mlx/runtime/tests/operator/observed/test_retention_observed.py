@@ -23,8 +23,8 @@ class RetentionObservationTests(unittest.TestCase):
         parent, candidate, target, policy, cohorts = _screen_inputs(protected_loss=0)
         events = []
         evaluate_retention_candidate(parent, candidate, target, policy, cohorts, PARENT, CANDIDATE, observer=events.append)
-        self.assertEqual([e['retention_completed'] for e in events], [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6])
-        self.assertTrue(all(e['retention_total'] == 6 for e in events))
+        self.assertEqual([e['retention_completed'] for e in events if 'retention_completed' in e], [0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6])
+        self.assertTrue(all(e['retention_total'] == 6 for e in events if 'retention_total' in e))
 
     def test_cached_parent_is_not_reported_as_solver_execution(self):
         from bilqis_mlx.runtime.capability_retention import evaluate_capabilities
