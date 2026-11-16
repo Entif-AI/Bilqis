@@ -15,7 +15,7 @@ from bilqis_mlx.learning.learning_experiment import (
 )
 from bilqis_mlx.learning.teacher_observations import student_region
 from bilqis_mlx.learning.teacher_strategy_population import BAMF_SUCCESSOR_SELECTION
-from bilqis_mlx.learning.tests.teacher_strategy_test_support import teacher_fixture
+from bilqis_mlx.learning.tests.teacher_strategy.support import teacher_fixture
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext
 from bilqis_mlx.runtime.teacher_policy_selection import select_visit_policy
 from bilqis_mlx.runtime.tests.batch.test_atlas_training_adapter import (

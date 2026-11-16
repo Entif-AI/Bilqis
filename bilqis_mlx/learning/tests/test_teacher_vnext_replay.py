@@ -4,7 +4,7 @@ from types import SimpleNamespace
 from unittest import mock
 
 from bilqis_mlx.learning.teacher_strategy_population import effective_strategy_inventory
-from bilqis_mlx.learning.tests.teacher_strategy_test_support import teacher_fixture
+from bilqis_mlx.learning.tests.teacher_strategy.support import teacher_fixture
 
 _teacher = teacher_fixture
 

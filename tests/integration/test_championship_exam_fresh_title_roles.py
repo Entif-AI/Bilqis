@@ -215,7 +215,11 @@ class ChampionshipExamFreshTitleRolesTests(TestCase):
                 root=root, graph=graph, patches=patches,
                 rubric_sha256=cohort_rubric)
         self.assertEqual(completed["last_exam"]["exam_plane"], "ROUTINE")
-        self.assertEqual(set(completed["mentor_epoch"]["active_roles"]), set(caps))
+        self.assertEqual(
+            set(completed["mentor_epoch"]["active_roles"]),
+            {caps[0]},
+            "sub-90% measurements must not mint championship roles",
+        )
         self.assertEqual(completed["school"]["champions"], {})
         epoch = completed["mentor_epoch"]
         votes = perfect_role_roster(active_frontier(epoch), epoch["active_grade_soups"])

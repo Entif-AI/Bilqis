@@ -1,5 +1,5 @@
 """Epoch championship reset behavior."""
-from bilqis_mlx.learning.tests.test_epoch_championships import (
+from bilqis_mlx.learning.tests.championship.epoch_fixtures import (
     EARNED_ONLY_POLICY, EpochChampionshipTests, GRADES, _epoch,
     _exam, _panel, active_frontier, advance_epoch,
     deepcopy, grade_soup_recipe, rebase_active_championships, reset_active_championships,
