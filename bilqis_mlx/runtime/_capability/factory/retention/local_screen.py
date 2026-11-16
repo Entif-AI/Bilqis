@@ -231,7 +231,7 @@ def foundation_local_retention_screen(
         source_context, parent, candidate_bundle, candidate_state, artifact_path,
         release, plan, target_plan, training, cached_rows, cache)
     if decision is not None:
-        return decision, parent, candidate_bundle, None, comparison
+        return decision, parent, candidate_bundle, None, comparison, None, None
 
     protected_pair, parent_cache, protected_instruments, coverage = _protected_stage(
         source_context, parent, candidate_bundle, artifact_path,

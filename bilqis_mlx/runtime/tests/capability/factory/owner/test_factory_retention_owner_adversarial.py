@@ -96,7 +96,8 @@ def _foundation_retention_plan(target):
 def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                                policy_factory, decision, *,
                                championship_cohort=None,
-                               championship_assessment=None):
+                               championship_assessment=None,
+                               target_gate_decision=None):
     release_sha = source.release.release_sha256
     plan, target_plan, instrument = _foundation_retention_plan(target)
     with patch(
@@ -146,7 +147,7 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                     (object(), "b" * 64), (object(), "c" * 64))),
                 evaluate_capabilities=Mock(return_value=object()),
                 AssessmentPair=Mock(return_value=object()),
-                evaluate_target_gate=Mock(return_value=None),
+                evaluate_target_gate=Mock(return_value=target_gate_decision),
                 finalize_target_first_local_candidate=Mock(return_value=decision),
                 capability_championship_evidence=Mock(return_value=(
                     championship_cohort, championship_assessment)),
@@ -223,6 +224,24 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
             result.baseline_ledger.digest)
         fresh.assert_called_once()
         self.assertEqual(fresh.call_args.args[1], (target,))
+
+    def test_target_first_rejection_issues_c05_authority_without_championship_evidence(self):
+        fixture = _foundation_owner_fixture()
+        rejection = Decision(
+            DecisionStatus.REJECT, "NO_MEASURABLE_TARGET_GAIN",
+            "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+            evaluated_capability_ids=(fixture[2],),
+            retention_protection_plan_sha256="3" * 64)
+        result = _evaluate_foundation_owner(
+            *fixture, target_gate_decision=rejection)
+
+        self.assertIsInstance(result, FactoryRetentionEvaluation)
+        result.__post_init__()
+        issued = issue_factory_retention_decision(result)
+        self.assertFalse(issued.accepted)
+        self.assertEqual(issued.reason, "NO_MEASURABLE_TARGET_GAIN")
+        self.assertIsNone(result.championship_cohort)
+        self.assertIsNone(result.championship_assessment)
 
     def test_caller_cannot_construct_evaluation_authority(self):
         with self.assertRaises(Exception):
