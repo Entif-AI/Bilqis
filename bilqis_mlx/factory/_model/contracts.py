@@ -1,17 +1,11 @@
-"""Core neural-inert Factory release contracts."""
+"""Core typed contracts for the legacy FactoryRelease facade.
+
+These types remain implementation-neutral and carry no runtime learner authority.
+"""
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-import hashlib
-import json
-
-
-def _digest(value) -> str:
-    return hashlib.sha256(json.dumps(
-        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
-        allow_nan=False).encode()).hexdigest()
-
 
 def _sha256(value: str, code: str) -> str:
     if (not isinstance(value, str) or len(value) != 64 or
@@ -157,15 +151,24 @@ class SourceAdapter:
                     + self.adapter_id + ":" + name)
 
 
-__all__ = (
-    "AssessmentClass",
-    "CapabilityDefinition",
-    "ConstructionProgram",
-    "CoveragePlan",
-    "GradeDefinition",
-    "SemanticRelease",
-    "SourceAdapter",
-    "TeachingOption",
-    "_digest",
-    "_sha256",
-)
+@dataclass(frozen=True)
+class AssessmentPlan:
+    grade_id: str
+    assessment_class: AssessmentClass
+    lifecycle: str
+    fresh_on_decision: bool
+    reusable_after_failure: bool
+    burn_after_failure: bool
+
+
+def assessment_plans(grade_ids) -> tuple[AssessmentPlan, ...]:
+    from ...generated_assessment import (
+        GENERALIZATION_LIFECYCLE, PROMOTION_ATTEMPT_LIFECYCLE, ROUTINE_EVAL_LIFECYCLE,
+    )
+    return tuple(
+        AssessmentPlan(grade, kind, lifecycle, fresh, reusable, burn)
+        for grade in grade_ids
+        for kind, lifecycle, fresh, reusable, burn in (
+            (AssessmentClass.ROUTINE, ROUTINE_EVAL_LIFECYCLE, True, False, False),
+            (AssessmentClass.PROMOTION, PROMOTION_ATTEMPT_LIFECYCLE, False, True, False),
+            (AssessmentClass.GENERALIZATION, GENERALIZATION_LIFECYCLE, True, False, True)))

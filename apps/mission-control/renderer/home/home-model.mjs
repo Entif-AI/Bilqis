@@ -63,8 +63,8 @@ function ratio(numerator, denominator) {
 }
 
 export function classifyLearning({ retained = 0, freshRetainedImprovements = 0, regressions = 0 } = {}) {
-  if (freshRetainedImprovements > 0) return "IMPROVING";
   if (regressions > 0) return "REGRESSION";
+  if (freshRetainedImprovements > 0) return "IMPROVING";
   if (retained > 0) return "THROUGHPUT_ONLY";
   return "NO_FRESH_GAIN";
 }
@@ -129,13 +129,33 @@ export function projectionFromPages(pages, context) {
       running: typeof context?.operatorActive === "boolean" ? context.operatorActive : null,
     })
     : null;
+  const health = observed.current?.learning_health;
+  const checkpoints = Array.isArray(health?.recent_checkpoints)
+    ? health.recent_checkpoints : [];
+  const latestCheckpoint = checkpoints.at(-1);
+  const previousCheckpoint = checkpoints.at(-2);
+  const acceptedCurrent = observed.current?.outcome === "ACCEPTED";
+  const freshGain = acceptedCurrent && latestCheckpoint && previousCheckpoint &&
+    latestCheckpoint.total === previousCheckpoint.total &&
+    latestCheckpoint.correct > previousCheckpoint.correct ? 1 : 0;
+  const freshRegression = acceptedCurrent && latestCheckpoint && previousCheckpoint &&
+    latestCheckpoint.total === previousCheckpoint.total &&
+    latestCheckpoint.correct < previousCheckpoint.correct ? 1 : 0;
+  const healthRegressions = Array.isArray(health?.regressed_protected_capabilities)
+    ? health.regressed_protected_capabilities.length +
+      (health.regressed_from_first === true ? 1 : 0) +
+      freshRegression +
+      (health.certified_surface_regression_state === "OBSERVED_REGRESSION" ? 1 : 0)
+    : 0;
 
   return Object.freeze({
     provenance: "LIVE_QUERY",
     observed,
     startup,
     state: Object.freeze(Object.fromEntries(HOME_FAMILIES.map((family) => [family, pageState(pages, family)]))),
-    learningStatus: classifyLearning({ retained, freshRetainedImprovements: 0, regressions: 0 }),
+    learningStatus: classifyLearning({
+      retained, freshRetainedImprovements: freshGain, regressions: healthRegressions,
+    }),
     learning: Object.freeze({
       latestSchoolScore: ratio(currentCorrect, currentTotal),
       bestSchoolScore: null,

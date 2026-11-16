@@ -1,22 +1,21 @@
-"""FactoryRelease serialization and contract validation."""
+"""Immutable v1 FactoryRelease manifest and contract verification."""
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+import hashlib
+import json
 
 from ...curriculum import AnswerFamily, Capability, Course, Grade
-from .assessment import AssessmentPlan, assessment_plans
 from .contracts import (
-    AssessmentClass,
-    CapabilityDefinition,
-    ConstructionProgram,
-    CoveragePlan,
-    GradeDefinition,
-    SemanticRelease,
-    SourceAdapter,
-    TeachingOption,
-    _digest,
-    _sha256,
+    AssessmentClass, AssessmentPlan, CapabilityDefinition, ConstructionProgram,
+    CoveragePlan, GradeDefinition, SemanticRelease, SourceAdapter, TeachingOption,
+    _sha256, assessment_plans,
 )
+
+def _digest(value) -> str:
+    return hashlib.sha256(json.dumps(
+        value, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
+        allow_nan=False).encode()).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -166,6 +165,7 @@ class FactoryRelease:
             raise ValueError("FACTORY_RELEASE_CONTENT_DRIFT")
         self.verify_contract()
 
+
     def _verify_source_contracts(self, expected_caps):
         teaching_by_capability = {
             capability: tuple(item for item in self.teaching_options
@@ -214,6 +214,3 @@ class FactoryRelease:
                                *adapter.teaching_option_ids))
             if teaching_by_capability[cap.capability_id] != expected_options:
                 raise ValueError("FACTORY_RELEASE_TEACHING_CONTRACT_DRIFT")
-
-
-__all__ = ("FactoryRelease",)

@@ -98,6 +98,56 @@ class ParameterAdoptionV2Tests(PolicyV2Support):
         self.assertEqual(result.accepted_manifest_sha256, "f" * 64)
         self.assertTrue(result.requires_cold_resume)
 
+    def test_parameter_extension_v2_forwards_generated_grade_authority(self):
+        from bilqis_mlx.runtime.generated_grade import (
+            _mint_generated_grade_authority,
+        )
+        _capability, semantic_id, handoff, plan, ledger, checkpoint = self._event_handoff()
+        approval, lease = self._authority(handoff)
+        native = self._a02_staged(semantic_id)
+        pure = self._context(handoff, plan, ledger, checkpoint, approval)
+        runtime = _PreparedSuccessorRuntime(
+            None, pure.run_dir, {}, None, None, {}, object(), object(), 0.)
+        legacy = replace(
+            pure.legacy, runtime=runtime, native_staged=native,
+            source_authority=object())
+        current = AtlasAdmissionContextV2(legacy, pure.run_dir)
+        staged_result = AdmissionResult(
+            AdmissionStatus.STAGED, handoff.proposal.proposal_sha256,
+            lease.digest(),
+            handoff.receipt.predecessor_release.release_sha256,
+            handoff.staged_candidate.successor.release_sha256,
+            "V2_DELTA_AUTHORITY_VERIFIED", "handoff")
+        pointer = {"generation": 1, "manifest_sha256": "f" * 64}
+        digest = "a" * 64
+        authority = _mint_generated_grade_authority(type(
+            "Proposal", (), {
+                "proposal_sha256": digest,
+                "current_release_sha256":
+                    handoff.receipt.predecessor_release.release_sha256,
+                "a09_proposal_sha256": handoff.proposal.proposal_sha256,
+            })())
+        with patch(
+                "bilqis_mlx.runtime.atlas_parameter_adoption_v2."
+                "accepted_parameter_extension_retry_v2",
+                return_value=None), patch(
+                    "bilqis_mlx.runtime.atlas_adoption_v2.advance_atlas_frontier_v2",
+                    return_value=staged_result), patch(
+                    "bilqis_mlx.runtime.atlas_adoption_v2."
+                    "replay_atlas_delta_scope_handoff_v2",
+                    return_value=handoff.staged_candidate), patch(
+                    "bilqis_mlx.runtime.atlas_adoption_v2.verify_current_implementations"
+                ), patch(
+                    "bilqis_mlx.runtime.atlas_parameter_adoption_v2."
+                    "publish_native_staged_candidate_v2",
+                    return_value=pointer) as publish:
+            adopt_parameter_extension_atlas_successor_v2(
+                current, AtlasDeltaEnvelopeV2(handoff, native), lease,
+                generated_grade_authority=authority)
+        self.assertEqual(
+            publish.call_args.kwargs["generated_grade_authority"],
+            authority)
+
     def test_parameter_extension_v2_exact_retry_does_zero_live_publication(self):
         _capability, semantic_id, handoff, plan, ledger, checkpoint = self._event_handoff()
         approval, lease = self._authority(handoff)

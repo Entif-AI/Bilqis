@@ -1,16 +1,15 @@
-"""Evidence and teaching receipt contracts for autonomous planning."""
+"""Typed evidence, teaching, ledger, and work-item contracts."""
 from __future__ import annotations
-
 from dataclasses import dataclass
 from enum import Enum
-
 
 def _require_teaching_provenance(condition: bool) -> None:
     if not condition:
         raise ValueError("AUTONOMY_TEACHING_RECEIPT_PROVENANCE_INVALID")
 
-
 class EvidenceKind(str, Enum):
+    """Learner-facing proof families, distinct from source-generation hygiene."""
+
     DIRECT = "DIRECT"
     PREREQUISITE = "PREREQUISITE"
     COMPOSITION = "COMPOSITION"
@@ -39,12 +38,15 @@ class EvidenceObligation:
                 any(not isinstance(item, str) or not item
                     for item in self.requires_capabilities) or
                 len(set(self.proof_axes)) != len(self.proof_axes) or
-                any(not isinstance(item, str) or not item for item in self.proof_axes)):
+                any(not isinstance(item, str) or not item
+                    for item in self.proof_axes)):
             raise ValueError("AUTONOMY_EVIDENCE_OBLIGATION_INVALID")
 
 
 @dataclass(frozen=True)
 class EvidenceReceipt:
+    """One observed result for one obligation on one exact student/cohort."""
+
     obligation_id: str
     evidence_id: str
     checkpoint_sha256: str
@@ -70,6 +72,8 @@ class EvidenceReceipt:
 
 @dataclass(frozen=True)
 class TeachingReceipt:
+    """One bounded teaching intervention after one failed evidence receipt."""
+
     obligation_id: str
     intervention_id: str
     teaching_option_id: str
@@ -77,6 +81,9 @@ class TeachingReceipt:
     parent_optimizer_step: int
     checkpoint_sha256: str
     optimizer_step: int
+    # These fields are optional only so historical snapshots remain readable.
+    # New interventions are rejected by record_teaching_intervention unless all
+    # provenance is present and bound to the released construction boundary.
     selected_provider_id: str | None = None
     provider_implementation_sha256: str | None = None
     specimen_ids: tuple[str, ...] = ()
@@ -85,25 +92,31 @@ class TeachingReceipt:
     optimizer_step_delta: int | None = None
 
     def __post_init__(self) -> None:
+        # JSON state decoding yields lists; normalize them back to the durable
+        # tuple form before validating or comparing the released contract.
         _require_teaching_provenance(
             isinstance(self.specimen_ids, (tuple, list)) and
             isinstance(self.variation_axes, (tuple, list)))
         object.__setattr__(self, "specimen_ids", tuple(self.specimen_ids))
         object.__setattr__(self, "variation_axes", tuple(self.variation_axes))
-        if not self.obligation_id or not self.intervention_id or not self.teaching_option_id:
+        if (not self.obligation_id or not self.intervention_id or
+                not self.teaching_option_id):
             raise ValueError("AUTONOMY_TEACHING_RECEIPT_IDENTITY_INVALID")
         for value in (self.parent_checkpoint_sha256, self.checkpoint_sha256):
             if (not isinstance(value, str) or len(value) != 64 or
                     any(char not in "0123456789abcdef" for char in value)):
                 raise ValueError("AUTONOMY_TEACHING_RECEIPT_CHECKPOINT_INVALID")
         if (type(self.parent_optimizer_step) is not int or
-                type(self.optimizer_step) is not int or self.parent_optimizer_step < 0 or
+                type(self.optimizer_step) is not int or
+                self.parent_optimizer_step < 0 or
                 self.optimizer_step <= self.parent_optimizer_step or
                 self.checkpoint_sha256 == self.parent_checkpoint_sha256):
             raise ValueError("AUTONOMY_TEACHING_RECEIPT_NO_CHECKPOINT_PROGRESS")
         if self.optimizer_step_delta is not None and (
-                type(self.optimizer_step_delta) is not int or self.optimizer_step_delta < 1 or
-                self.optimizer_step_delta != self.optimizer_step - self.parent_optimizer_step):
+                type(self.optimizer_step_delta) is not int or
+                self.optimizer_step_delta < 1 or
+                self.optimizer_step_delta !=
+                self.optimizer_step - self.parent_optimizer_step):
             raise ValueError("AUTONOMY_TEACHING_RECEIPT_STEP_DELTA_INVALID")
         _require_teaching_provenance(
             not (self.selected_provider_id is not None and
@@ -127,6 +140,8 @@ class TeachingReceipt:
 
 @dataclass(frozen=True)
 class RejectedTeachingAttemptReceipt:
+    """One source-grounded teaching attempt that did not advance custody."""
+
     obligation_id: str
     parent_evidence_id: str
     attempt_id: str
@@ -161,6 +176,8 @@ class RejectedTeachingAttemptReceipt:
 
 @dataclass(frozen=True)
 class EvidenceLedger:
+    """Append-only evidence history bound to one release and autonomy plan."""
+
     factory_release_sha256: str
     autonomy_plan_sha256: str
     receipts: tuple[EvidenceReceipt, ...] = ()
@@ -186,3 +203,33 @@ class EvidenceLedger:
                 len({item.attempt_id for item in self.rejected_attempts}) !=
                 len(self.rejected_attempts)):
             raise ValueError("AUTONOMY_EVIDENCE_LEDGER_INVALID")
+
+
+@dataclass(frozen=True)
+class CurriculumWorkItem:
+    capability_id: str
+    obligation: EvidenceObligation
+    teaching_option_ids: tuple[str, ...]
+    evidence_complete_prerequisites: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if (not self.capability_id or self.obligation.capability_id != self.capability_id or
+                not self.teaching_option_ids or
+                len(set(self.teaching_option_ids)) != len(self.teaching_option_ids)):
+            raise ValueError("AUTONOMY_WORK_ITEM_INVALID")
+
+
+@dataclass(frozen=True)
+class TeachingWorkItem:
+    capability_id: str
+    obligation: EvidenceObligation
+    teaching_option_ids: tuple[str, ...]
+    failed_evidence: EvidenceReceipt
+
+    def __post_init__(self) -> None:
+        if (not self.capability_id or
+                self.obligation.capability_id != self.capability_id or
+                self.failed_evidence.obligation_id != self.obligation.obligation_id or
+                not self.teaching_option_ids or
+                len(set(self.teaching_option_ids)) != len(self.teaching_option_ids)):
+            raise ValueError("AUTONOMY_TEACHING_WORK_ITEM_INVALID")

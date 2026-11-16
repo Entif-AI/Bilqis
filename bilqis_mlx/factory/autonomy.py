@@ -1,47 +1,39 @@
-"""Public autonomy API backed by focused implementation modules."""
-from ._autonomy.evidence_contracts import (
-    EvidenceKind,
-    EvidenceLedger,
-    EvidenceObligation,
-    EvidenceReceipt,
-    RejectedTeachingAttemptReceipt,
-    TeachingReceipt,
-)
-from ._autonomy.ledger import (
-    closed_obligations,
-    evidence_complete_capabilities,
-    initial_evidence_ledger,
-)
-from ._autonomy.obligations import obligations_for_capability
-from ._autonomy.plan_contracts import (
-    AutonomyPlan,
-    ProjectionEvidenceSpec,
-    SourceCompositionEdge,
-    SupplementalEvidenceSpec,
-)
-from ._autonomy.planning import (
-    compile_autonomy_plan,
-    is_factory_release,
-    next_source_coverage_debt,
-    release_capabilities,
-)
-from ._autonomy.rebind import rebind_evidence_ledger, reconcile_successor_evidence
-from ._autonomy.recording import (
-    record_evidence,
-    record_rejected_teaching_attempt,
-    record_teaching_intervention,
-)
-from ._autonomy.routing import next_action, next_work
-from ._autonomy.work_contracts import (
-    AutonomyAction,
-    AutonomyActionKind,
-    CurriculumWorkItem,
+"""Stable public facade for deterministic, neural-inert autonomy planning."""
+from ._autonomy.contracts import (AutonomyPlan, ProjectionEvidenceSpec, SourceCompositionEdge,
+                                  SupplementalEvidenceSpec, is_factory_release,
+                                  release_capabilities)
+from ._autonomy.planning import compile_autonomy_plan, next_source_coverage_debt
+from ._autonomy.evidence_contracts import (CurriculumWorkItem, EvidenceKind, EvidenceLedger,
+                                           EvidenceObligation, EvidenceReceipt,
+                                           RejectedTeachingAttemptReceipt, TeachingReceipt,
+                                           TeachingWorkItem)
+from ._autonomy.obligations import (closed_obligations, evidence_complete_capabilities,
+                                    initial_evidence_ledger, obligations_for_capability)
+from ._autonomy.recording import (record_evidence, record_rejected_teaching_attempt,
+                                  record_teaching_intervention)
+from ._autonomy.scheduling import (AutonomyAction, AutonomyActionKind, next_action, next_work)
+from ._autonomy.lineage import rebind_evidence_ledger, reconcile_successor_evidence
+
+# Preserve the historical public identities for pickle/debug/introspection
+# compatibility after the internal compartment split.
+for _record in (
+    AutonomyAction, AutonomyActionKind, AutonomyPlan, CurriculumWorkItem,
+    EvidenceKind, EvidenceLedger, EvidenceObligation, EvidenceReceipt,
+    ProjectionEvidenceSpec, RejectedTeachingAttemptReceipt,
+    SourceCompositionEdge, SupplementalEvidenceSpec, TeachingReceipt,
     TeachingWorkItem,
-)
+):
+    _record.__module__ = __name__
 
-__all__ = tuple(
-    name for name in globals()
-    if not name.startswith("_") and name not in {"annotations"})
+for _function in (
+    closed_obligations, compile_autonomy_plan, evidence_complete_capabilities,
+    initial_evidence_ledger, next_action, next_source_coverage_debt, next_work,
+    obligations_for_capability, record_evidence, record_rejected_teaching_attempt,
+    record_teaching_intervention, rebind_evidence_ledger,
+    reconcile_successor_evidence,
+):
+    _function.__module__ = __name__
 
-for _name in __all__:
-    globals()[_name].__module__ = __name__
+del _function, _record
+
+__all__ = tuple(name for name in globals() if not name.startswith("_"))

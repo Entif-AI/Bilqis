@@ -19,6 +19,7 @@ import numpy as np
 import bilqis_mlx.runtime.bamf_bundle.codec as codec
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.errors import BilqisError, ErrorBus
+from bilqis_mlx.diagnostics.learning_health import STATE_SCHEMA, project_learning_health
 from bilqis_mlx.learning.atlas_engram import MotifKey, MotifManifest, MotifSlot
 from bilqis_mlx.learning.atlas_engram_transaction import MotifAllocationSnapshot
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_bundle, save_bamf_bundle
@@ -124,6 +125,32 @@ class BamfBundleCodecTests(unittest.TestCase):
         self.assertEqual(restored.digest, ledger.digest)
         self.assertIs(
             restored.state_for(identity), BaselineLifecycleState.BASELINE_ESTABLISHED)
+
+    def test_learning_health_state_round_trips_exactly_through_cold_custody(self):
+        health = project_learning_health({
+            "capability_id": "future:capability", "grade_id": "future:grade",
+            "retention_policy_sha256": "1" * 64,
+            "fixed_cohort_sha256": "2" * 64,
+            "rubric_sha256": "3" * 64, "source_sha256": "4" * 64,
+            "target": {"state": "MEASURED", "before": 2, "after": 4, "total": 5},
+        }, accepted=True)
+        state = {
+            "schema": STATE_SCHEMA, "coverage_state": "PARTIAL",
+            "by_capability": {"future:capability": health},
+            "certified_surfaces": [],
+        }
+        source = replace(
+            candidate(parent_state(), generation=1, parent="a" * 64),
+            learning_health_state=state)
+        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            manifest = save_bamf_bundle(
+                source, self.root / "health-bundle", reserve_gib=0.)
+            loaded = load_bamf_bundle(
+                self.root / "health-bundle",
+                expected_manifest_sha256=manifest["manifest_sha256"])
+        self.assertEqual(
+            loaded.learning_health_state,
+            json.loads(json.dumps(state, sort_keys=True)))
 
     def test_authenticated_non_genesis_motif_state_round_trips_and_resumes(self):
         parent = parent_state()

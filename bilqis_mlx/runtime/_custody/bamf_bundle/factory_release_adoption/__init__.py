@@ -204,4 +204,5 @@ def derive_factory_release_adoption_candidate(
         (event,),
         parent.run_identity,
         parent.baseline_evidence,
+        parent.learning_health_state,
     )

@@ -1,41 +1,35 @@
 """Typed, neural-inert contracts for the mandatory curriculum factory.
 
-This module preserves the historical public import surface while cohesive
-contracts live in focused implementation modules.
+This compatibility facade preserves the established public import path while the
+cohesive contracts, release verification, and evidence records live in dedicated
+internal modules.
 """
-from ._model.assessment import (
-    AdmissionReceipt,
-    AssessmentPlan,
-    LearningEvidence,
+from __future__ import annotations
+
+from ._model import (
+    AdmissionReceipt, AssessmentClass, AssessmentPlan, CapabilityDefinition,
+    ConstructionProgram, CoveragePlan, FactoryRelease, GradeDefinition,
+    LearningEvidence, SemanticRelease, SourceAdapter, TeachingOption,
     assessment_plans,
 )
-from ._model.contracts import (
-    AssessmentClass,
-    CapabilityDefinition,
-    ConstructionProgram,
-    CoveragePlan,
-    GradeDefinition,
-    SemanticRelease,
-    SourceAdapter,
-    TeachingOption,
-)
-from ._model.release import FactoryRelease
 
-__all__ = (
-    "AdmissionReceipt",
-    "AssessmentClass",
-    "AssessmentPlan",
-    "CapabilityDefinition",
-    "ConstructionProgram",
-    "CoveragePlan",
-    "FactoryRelease",
-    "GradeDefinition",
-    "LearningEvidence",
-    "SemanticRelease",
-    "SourceAdapter",
-    "TeachingOption",
+# Preserve the historical public type identity for pickle/debug/introspection
+# compatibility even though implementation now lives in cohesive submodules.
+for _record in (
+    AdmissionReceipt, AssessmentClass, AssessmentPlan, CapabilityDefinition,
+    ConstructionProgram, CoveragePlan, FactoryRelease, GradeDefinition,
+    LearningEvidence, SemanticRelease, SourceAdapter, TeachingOption,
+):
+    _record.__module__ = __name__
+
+assessment_plans.__module__ = __name__
+
+del _record
+
+__all__ = [
+    "AdmissionReceipt", "AssessmentClass", "AssessmentPlan",
+    "CapabilityDefinition", "ConstructionProgram", "CoveragePlan",
+    "FactoryRelease", "GradeDefinition", "LearningEvidence",
+    "SemanticRelease", "SourceAdapter", "TeachingOption",
     "assessment_plans",
-)
-
-for _name in __all__:
-    globals()[_name].__module__ = __name__
+]

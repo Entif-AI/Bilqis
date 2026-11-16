@@ -1,29 +1,79 @@
-"""Compile and validate immutable autonomy plans."""
+"""Autonomy-plan compilation and validation."""
 from __future__ import annotations
-
-from ..model import CapabilityDefinition, FactoryRelease
-from .plan_contracts import (
-    AutonomyPlan,
-    ProjectionEvidenceSpec,
-    SourceCompositionEdge,
-    SupplementalEvidenceSpec,
-)
+from ..model import FactoryRelease
+from .contracts import (AutonomyPlan, ProjectionEvidenceSpec, SupplementalEvidenceSpec,
+                        SourceCompositionEdge, release_capabilities)
 
 
-def is_factory_release(release) -> bool:
-    from ..executable_release import ExecutableFactoryRelease
-    return isinstance(release, (FactoryRelease, ExecutableFactoryRelease))
+def _invalid_composition_edge():
+    raise ValueError("AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID")
 
 
-def release_capabilities(release):
-    """Project autonomy facts from the admitted executable plan or historical v1."""
-    if isinstance(release, FactoryRelease):
-        return release.capabilities
-    return tuple(CapabilityDefinition(
-        item.capability_id, item.grade_id, item.prerequisites,
-        item.provider_id, item.oracle_id,
-        tuple(family.kind for family in item.answer_families))
-        for item in release.execution_plan.capabilities)
+def _validate_plan_inputs(
+    capability_ids,
+    projection_evidence,
+    projection_coverage_debt,
+    supplemental_evidence,
+    remediation_failure_limit,
+):
+    if (type(remediation_failure_limit) is not int or
+            remediation_failure_limit < 1 or
+            any(not isinstance(item, ProjectionEvidenceSpec)
+                for item in projection_evidence) or
+            len({(item.capability_id, item.projection_id)
+                 for item in projection_evidence}) != len(projection_evidence) or
+            any(item.capability_id not in capability_ids
+                for item in projection_evidence) or
+            len(set(projection_coverage_debt)) != len(projection_coverage_debt) or
+            any(not isinstance(item, str) or not item
+                for item in projection_coverage_debt)):
+        raise ValueError("AUTONOMY_PROJECTION_EVIDENCE_SCOPE_INVALID")
+    if (any(not isinstance(item, SupplementalEvidenceSpec)
+            for item in supplemental_evidence) or
+            len({(item.capability_id, item.kind, item.key)
+                 for item in supplemental_evidence}) !=
+            len(supplemental_evidence) or
+            any(item.capability_id not in capability_ids or
+                not set(item.requires_capabilities) <= set(capability_ids)
+                for item in supplemental_evidence)):
+        raise ValueError("AUTONOMY_SUPPLEMENTAL_EVIDENCE_SCOPE_INVALID")
+
+
+def _compile_composition_report(composition_report, capability_ids, projection_blocked):
+    source_cohort = composition_report.get("source_witness_cohort_sha256")
+    edges = []
+    debt = []
+    blocked = set(projection_blocked)
+    deferred = []
+    for unresolved in composition_report.get("unresolved", ()):
+        capability = unresolved.get("capability") if isinstance(unresolved, dict) else None
+        failure = unresolved.get("failure") if isinstance(unresolved, dict) else None
+        if not capability or capability not in capability_ids or not failure:
+            raise ValueError("AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID")
+        deferred.append(f"{capability}:UNRESOLVED:{failure}")
+
+    for raw in composition_report.get("obligations", ()):
+        if not isinstance(raw, dict):
+            _invalid_composition_edge()
+        consumer, producer = raw.get("consumer"), raw.get("producer")
+        slot, status = raw.get("operand_slot"), raw.get("status")
+        if (consumer not in capability_ids or producer not in capability_ids or
+                type(slot) is not int or slot < 0 or not status):
+            _invalid_composition_edge()
+        covered = status == "SOURCE_CONTRAST_COVERED" and not raw.get("coverage_debt", True)
+        if covered:
+            edges.append(SourceCompositionEdge(
+                consumer=consumer, producer=producer, operand_slot=slot,
+                witness_ids=tuple(raw.get("witness_ids", ())),
+                source_cohort_sha256=source_cohort,
+            ))
+        elif not raw.get("declared_prerequisite", False):
+            deferred.append(f"{consumer}:{producer}:{slot}:{status}")
+        else:
+            debt.append(f"{consumer}:{producer}:{slot}:{status}")
+            blocked.add(consumer)
+    edges = sorted(edges, key=lambda item: (item.consumer, item.producer, item.operand_slot))
+    return edges, debt, blocked, list(dict.fromkeys(deferred))
 
 
 def compile_autonomy_plan(
@@ -33,26 +83,17 @@ def compile_autonomy_plan(
     supplemental_evidence: tuple[SupplementalEvidenceSpec, ...] = (),
     remediation_failure_limit: int = 3,
 ) -> AutonomyPlan:
-    """Bind learner planning to verified typed composition coverage when present."""
+    """Bind learner planning to verified typed composition coverage when present.
+
+    Type-compatible edges are not learner work until a source adapter has
+    discharged the semantic-coverage debt.  Unresolved or partially witnessed
+    consumers remain explicitly blocked instead of being silently omitted.
+    """
     release.verify()
     capability_ids = tuple(item.capability_id for item in release_capabilities(release))
-    if (type(remediation_failure_limit) is not int or remediation_failure_limit < 1 or
-            any(not isinstance(item, ProjectionEvidenceSpec)
-                for item in projection_evidence) or
-            len({(item.capability_id, item.projection_id)
-                 for item in projection_evidence}) != len(projection_evidence) or
-            any(item.capability_id not in capability_ids for item in projection_evidence) or
-            len(set(projection_coverage_debt)) != len(projection_coverage_debt) or
-            any(not isinstance(item, str) or not item for item in projection_coverage_debt)):
-        raise ValueError("AUTONOMY_PROJECTION_EVIDENCE_SCOPE_INVALID")
-    if (any(not isinstance(item, SupplementalEvidenceSpec)
-            for item in supplemental_evidence) or
-            len({(item.capability_id, item.kind, item.key)
-                 for item in supplemental_evidence}) != len(supplemental_evidence) or
-            any(item.capability_id not in capability_ids or
-                not set(item.requires_capabilities) <= set(capability_ids)
-                for item in supplemental_evidence)):
-        raise ValueError("AUTONOMY_SUPPLEMENTAL_EVIDENCE_SCOPE_INVALID")
+    _validate_plan_inputs(
+        capability_ids, projection_evidence, projection_coverage_debt,
+        supplemental_evidence, remediation_failure_limit)
     projection_blocked = set()
     for item in projection_coverage_debt:
         capability = item.split(":", 1)[0]
@@ -61,7 +102,8 @@ def compile_autonomy_plan(
         projection_blocked.add(capability)
     if composition_report is None:
         return AutonomyPlan(
-            release.release_sha256, False,
+            release.release_sha256,
+            False,
             coverage_debt=projection_coverage_debt,
             blocked_capabilities=tuple(
                 item for item in capability_ids if item in projection_blocked),
@@ -78,45 +120,17 @@ def compile_autonomy_plan(
     if set(composition_report.get("capabilities", ())) != set(capability_ids):
         raise ValueError("AUTONOMY_COMPOSITION_REPORT_SCOPE_INVALID")
 
-    source_cohort = composition_report.get("source_witness_cohort_sha256")
-    edges = []
-    debt = list(projection_coverage_debt)
-    blocked = set(projection_blocked)
-    deferred = []
-    for unresolved in composition_report.get("unresolved", ()):
-        capability = unresolved.get("capability") if isinstance(unresolved, dict) else None
-        failure = unresolved.get("failure") if isinstance(unresolved, dict) else None
-        if not capability or capability not in capability_ids or not failure:
-            raise ValueError("AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID")
-        deferred.append(f"{capability}:UNRESOLVED:{failure}")
-
-    for raw in composition_report.get("obligations", ()):
-        if not isinstance(raw, dict):
-            raise ValueError("AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID")
-        consumer, producer = raw.get("consumer"), raw.get("producer")
-        slot, status = raw.get("operand_slot"), raw.get("status")
-        if (consumer not in capability_ids or producer not in capability_ids or
-                type(slot) is not int or slot < 0 or not status):
-            raise ValueError("AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID")
-        covered = status == "SOURCE_CONTRAST_COVERED" and not raw.get("coverage_debt", True)
-        if covered:
-            edges.append(SourceCompositionEdge(
-                consumer=consumer, producer=producer, operand_slot=slot,
-                witness_ids=tuple(raw.get("witness_ids", ())),
-                source_cohort_sha256=source_cohort,
-            ))
-        elif not raw.get("declared_prerequisite", False):
-            deferred.append(f"{consumer}:{producer}:{slot}:{status}")
-        else:
-            debt.append(f"{consumer}:{producer}:{slot}:{status}")
-            blocked.add(consumer)
-    edges = sorted(edges, key=lambda item: (item.consumer, item.producer, item.operand_slot))
-    deferred = list(dict.fromkeys(deferred))
+    edges, report_debt, blocked, deferred = _compile_composition_report(
+        composition_report, capability_ids, projection_blocked)
+    debt = [*projection_coverage_debt, *report_debt]
     return AutonomyPlan(
         release.release_sha256, True, tuple(edges), tuple(debt),
         tuple(item for item in capability_ids if item in blocked),
-        tuple(deferred), projection_evidence, supplemental_evidence,
-        remediation_failure_limit)
+        tuple(deferred),
+        projection_evidence,
+        supplemental_evidence,
+        remediation_failure_limit,
+    )
 
 
 def next_source_coverage_debt(plan: AutonomyPlan) -> str | None:
@@ -131,7 +145,13 @@ def _require_plan_release(factory_release_sha256: str, plan: AutonomyPlan) -> No
 
 
 def _resolve_plan(release: FactoryRelease, plan: AutonomyPlan | None) -> AutonomyPlan:
-    resolved = compile_autonomy_plan(release) if plan is None else plan
+    if plan is None:
+        # Resolve through the historical public facade so callers that patch the
+        # supported seam keep the same behavior after the implementation split.
+        from .. import autonomy as public_autonomy
+        resolved = public_autonomy.compile_autonomy_plan(release)
+    else:
+        resolved = plan
     if not isinstance(resolved, AutonomyPlan):
         raise TypeError("AUTONOMY_INVALID_PLAN")
     _require_plan_release(release.release_sha256, resolved)
