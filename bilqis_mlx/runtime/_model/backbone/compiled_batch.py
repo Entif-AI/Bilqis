@@ -63,12 +63,16 @@ def _validate_bound_source_authority(batch):
     from bilqis_mlx.runtime.b11_source_execution_authority import (
         require_b11_source_execution_authority,
     )
-    require_b11_source_execution_authority(
-        batch.source_execution_authority,
-        batch.compiled.compiled.rows[0],
-        batch.compiled.compiler_configs[0],
-        batch.sources[0],
+    from bilqis_mlx.runtime.b11_source_execution_authority import (
+        b11_source_authority_launch_trusted,
     )
+    row = batch.compiled.compiled.rows[0]
+    config = batch.compiled.compiler_configs[0]
+    source = batch.sources[0]
+    if not b11_source_authority_launch_trusted(
+            batch.source_execution_authority, row, config, source):
+        require_b11_source_execution_authority(
+            batch.source_execution_authority, row, config, source)
 
 
 def _validate_task_authority(batch):

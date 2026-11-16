@@ -105,30 +105,36 @@ def _gated_residual(state, feature, slot_id, parameters, projections):
 
 def _read_row(
     row_index, row, hidden, features, task, frontier, policy,
-    manifest, parameters, projections,
+    manifest, parameters, projections, qualified_context=None,
 ):
     unchanged = tuple(
         hidden[row_index, index] for index in range(hidden.shape[1]))
     envelopes = tuple(item.envelope for item in row if item is not None)
     if not envelopes:
         return unchanged, ("MISS",) * hidden.shape[1], None, ()
-    projection = project_context(envelopes, task, frontier, policy)
-    if isinstance(projection, ContextHold):
-        status = tuple("HELD" if item is not None else "MISS" for item in row)
-        return unchanged, status, None, ()
-    if type(projection) is not ApprovedContextProjection:
-        _invalid()
-    schema_rights = _schema_rights_dependency(row, frontier)
-    context_digest = (
-        projection.cache_key("B08_SCHEMA_RIGHTS_V1", schema_rights)
-        if schema_rights else projection.digest)
-    live_schema_handles = {}
-    for item in row:
-        if item is None or type(item.envelope.frame) is AtomicFrame:
-            continue
-        handle = schema_source_handle(item.schema)
-        live_schema_handles[handle] = _schema_grant_live(
-            item.schema, item.envelope, task, frontier)
+    if qualified_context is None:
+        projection = project_context(envelopes, task, frontier, policy)
+        if isinstance(projection, ContextHold):
+            status = tuple("HELD" if item is not None else "MISS" for item in row)
+            return unchanged, status, None, ()
+        if type(projection) is not ApprovedContextProjection:
+            _invalid()
+        schema_rights = _schema_rights_dependency(row, frontier)
+        context_digest = (
+            projection.cache_key("B08_SCHEMA_RIGHTS_V1", schema_rights)
+            if schema_rights else projection.digest)
+        live_schema_handles = {}
+        for item in row:
+            if item is None or type(item.envelope.frame) is AtomicFrame:
+                continue
+            handle = schema_source_handle(item.schema)
+            live_schema_handles[handle] = _schema_grant_live(
+                item.schema, item.envelope, task, frontier)
+    else:
+        projection, context_digest, liveness = qualified_context
+        if type(projection) is not ApprovedContextProjection:
+            _invalid()
+        live_schema_handles = dict(liveness)
     row_schema_live = all(live_schema_handles.values())
     output, status, participating = [], [], set()
     for index, item in enumerate(row):
@@ -171,6 +177,7 @@ def _read_motif_unqualified_candidate(
     policies: tuple[ContextPolicy, ...],
     manifest: MotifManifest,
     parameters: MotifParameterView,
+    qualified_contexts=None,
 ) -> MotifReadResult:
     """Experimental helper; set eligibility precedes every row's slot gather.
 
@@ -180,6 +187,11 @@ def _read_motif_unqualified_candidate(
     _validate_candidate_inputs(
         site_index, hidden, features, positions, tasks, frontiers, policies,
         manifest, parameters)
+    if qualified_contexts is None:
+        qualified_contexts = (None,) * len(positions)
+    if (type(qualified_contexts) is not tuple
+            or len(qualified_contexts) != len(positions)):
+        _invalid()
     projections = {name: parameters[name] for name in (
         "projection", "norm", "gate_hidden", "gate_feature", "bias")}
     output_rows = []
@@ -191,7 +203,7 @@ def _read_motif_unqualified_candidate(
         task, frontier, policy = tasks[row_index], frontiers[row_index], policies[row_index]
         output, status, digest, row_slots = _read_row(
             row_index, row, hidden, features, task, frontier, policy,
-            manifest, parameters, projections)
+            manifest, parameters, projections, qualified_contexts[row_index])
         output_rows.append(output)
         dispositions.append(status)
         context_digests.append(digest)

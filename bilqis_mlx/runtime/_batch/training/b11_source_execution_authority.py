@@ -4,31 +4,40 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from bilqis_mlx.learning._engram.atlas_engram_source_context import (
-    qualify_source_motif_context,
-)
 from bilqis_mlx.learning._engram.atlas_engram_identity import MotifFrameInput
-from bilqis_mlx.learning.frame_embeddings.requests import FeatureRequest
 from bilqis_mlx.learning.source_atoms.inputs import SourceAtomRow
 from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
 from bilqis_mlx.semantics.atlas_features import AtlasFeatures
-from bilqis_mlx.semantics.atlas_features.formal import source_qualified_feature_row
 from bilqis_mlx.semantics.atlas_features.records import FeatureRow
 from bilqis_mlx.semantics.context_eligibility import (
-    ApprovedContextProjection, ContextHold, SourceFrontier, TaskScope,
+    ApprovedContextProjection, SourceFrontier, TaskScope,
 )
 from bilqis_mlx.semantics.domains import contract_digest
 from bilqis_mlx.semantics.frame_compiler import CompiledFrameBatch, FrameCompilerConfig
-from bilqis_mlx.semantics.frame_schema import FrameInstance
 from bilqis_mlx.semantics.source_atom_binding import SourceAtomHandoff
-from bilqis_mlx.source_adapters.atom_binding import (
-    _build_source_atom_handoff_from_snapshot,
+
+from .b11_source_execution_binding import (
+    bind_motif_context as _bind_motif_context,
+    bind_motif_execution_projection as _bind_motif_execution_projection,
+    bind_motif_feature_rows as _bind_motif_feature_rows,
+    bind_motif_read_context as _bind_motif_read_context,
+    bind_source_handoff as _bind_source_handoff,
+)
+from .b11_source_feature_authority import (
+    require_source_feature_row as require_b11_source_feature_row,
+)
+from .b11_source_launch_trust import (
+    _LAUNCH_TRUST,
+    compiled_input_launch_trusted as b11_compiled_input_launch_trusted,
+    source_authority_launch_epoch as b11_source_authority_launch_epoch,
+    source_authority_launch_trusted as b11_source_authority_launch_trusted,
 )
 
 
 _ISSUER = object()
 _MOTIF_FEATURE_ROW_WIDTH = 3
 _MOTIF_FEATURE_VALUE_INDEX = 2
+_MOTIF_SCHEMA_LIVENESS_ROW_WIDTH = 2
 
 
 def _invalid(reason: str) -> None:
@@ -48,10 +57,13 @@ class B11SourceExecutionAuthority:
     source_adapter: object
     source_handoff: SourceAtomHandoff
     motif_projection: ApprovedContextProjection
+    motif_execution_projection: ApprovedContextProjection
     motif_inputs: tuple[MotifFrameInput, ...]
     motif_feature_rows: tuple[tuple[str, str, FeatureRow], ...]
     motif_frontier: SourceFrontier
     task_scope: TaskScope
+    motif_context_digest: str
+    motif_schema_liveness: tuple[tuple[str, bool], ...]
     source_digest: str
     _compiled_row: CompiledFrameBatch = field(repr=False, compare=False)
     _config: FrameCompilerConfig = field(repr=False, compare=False)
@@ -70,6 +82,8 @@ class B11SourceExecutionAuthority:
             or type(self.snapshot) is not FrozenAtlasSnapshot
             or type(self.source_handoff) is not SourceAtomHandoff
             or type(self.motif_projection) is not ApprovedContextProjection
+            or type(self.motif_execution_projection) is not ApprovedContextProjection
+            or self.motif_execution_projection.digest != self._compiled_row.context_digest
             or type(self.motif_inputs) is not tuple
             or any(type(item) is not MotifFrameInput for item in self.motif_inputs)
             or type(self.motif_feature_rows) is not tuple
@@ -83,6 +97,14 @@ class B11SourceExecutionAuthority:
             != len(self.motif_feature_rows)
             or type(self.motif_frontier) is not SourceFrontier
             or type(self.task_scope) is not TaskScope
+            or not isinstance(self.motif_context_digest, str)
+            or not self.motif_context_digest
+            or type(self.motif_schema_liveness) is not tuple
+            or any(type(item) is not tuple
+                   or len(item) != _MOTIF_SCHEMA_LIVENESS_ROW_WIDTH
+                   or not isinstance(item[0], str) or not item[0]
+                   or type(item[1]) is not bool
+                   for item in self.motif_schema_liveness)
             or type(self._compiled_row) is not CompiledFrameBatch
             or type(self._config) is not FrameCompilerConfig
             or type(self._source) is not SourceAtomRow
@@ -120,91 +142,10 @@ class B11SourceExecutionAuthority:
         self.source_handoff.__post_init__()
 
 
-def _bind_source_handoff(compiled_row, config, source, snapshot):
-    handoff = _build_source_atom_handoff_from_snapshot(
-        compiled_row,
-        config,
-        source.selection,
-        snapshot,
-        source.source_row,
-        source.graph,
-        **source.replay_arguments(),
-    )
-    if not handoff.embedding_ready:
-        _invalid("B11_SOURCE_EXECUTION_HANDOFF_HELD")
-    return handoff
-
-
-def _bind_motif_context(
-    compiled_row, config, source, source_adapter, snapshot,
-):
-    task_scope = replace(config.task, causal_prefix_end=compiled_row.visible_end)
-    replayed = qualify_source_motif_context(
-        source_adapter,
-        source.source_row,
-        source.selection,
-        source_root=source.source_root,
-        graph=source.graph,
-        task_scope=task_scope,
-        source_frontier=config.frontier,
-        policy=config.policy,
-        source_seed=source.source_seed,
-        source_each=source.source_each,
-        source_profile_parameters=source.source_profile_parameters,
-        course=source.course,
-        snapshot=snapshot,
-    )
-    if isinstance(replayed, ContextHold):
-        _invalid("B11_SOURCE_EXECUTION_MOTIF_CONTEXT_HELD")
-    projection, motifs, frontier = replayed
-    return task_scope, projection, motifs, frontier
-
-
-def _motif_schema_map(motifs):
-    schemas = {}
-
-    def collect(item):
-        previous = schemas.get(item.frame.occurrence_id)
-        if previous is not None and previous != item.schema:
-            _invalid("B11_SOURCE_EXECUTION_MOTIF_SCHEMA_DRIFT")
-        schemas[item.frame.occurrence_id] = item.schema
-        for child in item.children:
-            collect(child)
-
-    for motif in motifs:
-        collect(motif)
-    return schemas
-
-
-def _bind_motif_feature_rows(projection, motifs, features, source):
-    schemas = _motif_schema_map(motifs)
-    rows = []
-    for envelope in projection.envelopes:
-        if type(envelope.frame) is not FrameInstance:
-            continue
-        if schemas.get(envelope.frame.occurrence_id) is None:
-            _invalid("B11_SOURCE_EXECUTION_MOTIF_SCHEMA_MISSING")
-        for binding in envelope.frame.bindings:
-            if binding.concept is None:
-                continue
-            member = next((
-                item for item in envelope.members if item.key == binding.key
-            ), None)
-            if member is None:
-                _invalid("B11_SOURCE_EXECUTION_MOTIF_MEMBER_MISSING")
-            feature_row = source_qualified_feature_row(
-                features, binding.concept, binding.role_id, envelope.frame,
-                envelope.scope, source.selection,
-                invalid=lambda: _invalid(
-                    "B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID"))
-            rows.append(
-                (envelope.frame_handle, member.source_handle, feature_row))
-    return tuple(rows)
-
-
 def _issue_b11_source_execution_authority(
     compiled_row, config, source, source_adapter, snapshot, handoff,
-    task_scope, projection, motifs, feature_rows, frontier,
+    task_scope, projection, execution_projection, motifs, feature_rows, frontier,
+    context_digest, schema_liveness,
 ):
     authority = object.__new__(B11SourceExecutionAuthority)
     for name, value in (
@@ -212,10 +153,13 @@ def _issue_b11_source_execution_authority(
         ("source_adapter", source_adapter),
         ("source_handoff", handoff),
         ("motif_projection", projection),
+        ("motif_execution_projection", execution_projection),
         ("motif_inputs", motifs),
         ("motif_feature_rows", feature_rows),
         ("motif_frontier", frontier),
         ("task_scope", task_scope),
+        ("motif_context_digest", context_digest),
+        ("motif_schema_liveness", schema_liveness),
         ("source_digest", _source_digest(source)),
         ("_compiled_row", compiled_row),
         ("_config", config),
@@ -250,42 +194,14 @@ def bind_b11_source_execution_authority(
         compiled_row, config, source, source_adapter, snapshot)
     feature_rows = _bind_motif_feature_rows(
         projection, motifs, features, source)
+    execution_projection = _bind_motif_execution_projection(
+        compiled_row, config, projection, frontier, task_scope)
+    context_digest, schema_liveness = _bind_motif_read_context(
+        execution_projection, motifs, frontier, task_scope)
     return _issue_b11_source_execution_authority(
         compiled_row, config, source, source_adapter, snapshot, handoff,
-        task_scope, projection, motifs, feature_rows, frontier)
-
-def require_b11_source_feature_row(
-    authority,
-    request: FeatureRequest,
-) -> FeatureRow:
-    """Return one bind-time qualified A06 row only from an issued authority."""
-    if (
-        type(authority) is not B11SourceExecutionAuthority
-        or authority._issuance is not _ISSUER
-        or type(request) is not FeatureRequest
-    ):
-        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
-    request.__post_init__()
-    if request.projection.digest != authority.motif_projection.digest:
-        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
-    matches = tuple(
-        row for frame_handle, member_handle, row in authority.motif_feature_rows
-        if (frame_handle, member_handle)
-        == (request.frame_handle, request.member_handle)
-    )
-    if len(matches) != 1:
-        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
-    row = matches[0]
-    if (
-        row.semantic_id != request.concept.semantic_id
-        or row.abi_index != request.concept.abi_index
-        or row.role_id != request.role_id
-        or row.schema_id != request.schema_id
-        or row.scope != request.scope
-    ):
-        _invalid("B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
-    return row
-
+        task_scope, projection, execution_projection, motifs, feature_rows, frontier,
+        context_digest, schema_liveness)
 
 def require_b11_source_execution_authority(
     authority,
@@ -309,6 +225,9 @@ def require_b11_source_execution_authority(
 __all__ = (
     "B11SourceExecutionAuthority",
     "bind_b11_source_execution_authority",
+    "b11_compiled_input_launch_trusted",
+    "b11_source_authority_launch_epoch",
+    "b11_source_authority_launch_trusted",
     "require_b11_source_execution_authority",
     "require_b11_source_feature_row",
 )

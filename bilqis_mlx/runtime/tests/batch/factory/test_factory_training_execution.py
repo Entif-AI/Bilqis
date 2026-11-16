@@ -20,6 +20,7 @@ from bilqis_mlx.learning.tests.test_frame_encoder import FrameEncoderTests
 from bilqis_mlx.learning.student_ops import train_bamf_factory_step
 from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
 from bilqis_mlx.runtime.atlas_model import bamf_value_and_grad
+import bilqis_mlx.runtime.b11_source_execution_authority as b11_authority_impl
 from bilqis_mlx.runtime.atlas_resources import (
     MemoryBudget, ResourceRow, estimate_row_activation_bytes,
 )
@@ -130,6 +131,29 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
         self.assertTrue(all(bool(mx.all(mx.isfinite(value))) for value in updated.values()))
         self.assertTrue(any(
             not bool(mx.array_equal(updated[name], parameters[name])) for name in parameters))
+
+    def test_scalar_gradient_never_rehashes_source_inside_launch_trust(self):
+        _rows, prepared = self.prepare("A.IDENTITY", 37128, 2)
+        compiled = prepared.compiled_rows[0]
+        _authority, plan = self.route_context(compiled)
+        route = task_goal_route_decisions(_authority.goal)
+        targets = tuple(
+            DecisionOutput(item.decision_id, item.legal_values[0]) for item in route)
+        mask = {item.decision_id: True for item in route}
+        original_source_digest = b11_authority_impl._source_digest
+
+        def source_digest_outside_launch(source):
+            if b11_authority_impl._LAUNCH_TRUST.get():
+                self.fail("B11 rehashed source inside trusted scalar launch")
+            return original_source_digest(source)
+
+        with patch.object(
+                b11_authority_impl, "_source_digest",
+                side_effect=source_digest_outside_launch):
+            result = bamf_value_and_grad(
+                dict(self.candidate.retained_state.optimizer.parameters),
+                compiled, plan, targets, mask, None)
+        self.assertTrue(bool(mx.isfinite(result.loss_total)))
 
     def test_real_rows_pack_to_actual_maximum_without_identity_loss(self):
         rows, prepared = self.prepare("A.IDENTITY", 37101, 2)

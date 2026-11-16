@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 import bilqis_mlx.runtime.atlas_model_microbatch as microbatch_impl
+import bilqis_mlx.runtime.b11_source_execution_authority as b11_authority_impl
 import bilqis_mlx.learning._engram.atlas_engram_source_context as motif_context_impl
 import bilqis_mlx.learning.atlas_engram_reads.source_owner as motif_read_impl
 import bilqis_mlx.learning.source_atoms.embedding as source_embedding_impl
@@ -25,7 +26,17 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
             prepared.compiled_rows[0].source_execution_authority.snapshot,
             prepared.semantic_context.snapshot,
         )
+        original_source_digest = b11_authority_impl._source_digest
+
+        def source_digest_outside_launch(source):
+            if b11_authority_impl._LAUNCH_TRUST.get():
+                self.fail("B11 rehashed source inside trusted gradient launch")
+            return original_source_digest(source)
+
         with patch.object(
+                b11_authority_impl, "_source_digest",
+                side_effect=source_digest_outside_launch) as source_digest, \
+                patch.object(
                 motif_context_impl, "load_pinned_atlas_snapshot",
                 side_effect=AssertionError("B11 reopened Atlas")) as atlas_reload, \
                 patch.object(
@@ -75,6 +86,7 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
         self.assertEqual(formal_graph.call_count, 0)
         self.assertEqual(atom_redraw.call_count, 0)
         self.assertEqual(atom_recheck.call_count, 0)
+        self.assertGreaterEqual(source_digest.call_count, 4)
         self.assertEqual(row_decode.call_count, 0)
         self.assertEqual(row_loss.call_count, 0)
         self.assertEqual(len(gradient.loss_executions), 4)
