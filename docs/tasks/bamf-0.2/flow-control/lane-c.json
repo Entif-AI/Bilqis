@@ -474,11 +474,12 @@
     {
       "issue": 1332,
       "pr": null,
-      "state": "ACTIVE",
-      "head_sha": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
-      "summary": "R10 authenticated exactly-once HOW outcome feedback; issue-scoped writer.",
+      "state": "READY",
+      "head_sha": "59c06edac522e6fa0a18106bcc5bd076e556bf46",
+      "summary": "R10 native HOW outcome feedback and required breeding split are implemented; exact-once, cold replay, custody, diagnostic context and cooldown proof are green. Ready for human review; no operator learner updates.",
       "resume_trigger": null,
-      "preserved_branch": "codex/1332-how-policy-outcomes-20261116"
+      "preserved_branch": "codex/1332-how-policy-outcomes-20261116",
+      "head_sha_role": "Reviewed executable implementation head; later receipt metadata does not change behavior."
     }
   ]
 }
