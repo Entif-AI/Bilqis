@@ -83,6 +83,24 @@ class MissionControlSchemaTests(unittest.TestCase):
         request = bundle["bilqis.bamf.mission-control.operator-action-request/v1"]
         self.assertEqual(request["properties"]["parameters"]["x-bilqis-unique-by"], "key")
 
+    def test_learning_health_schema_preserves_public_contract_invariants(self):
+        trainer = schema_bundle()["records"][
+            "bilqis.bamf.mission-control.trainer-observation/v5"
+        ]
+        health = trainer["properties"]["learning_health"]["anyOf"][0]
+        props = health["properties"]
+        self.assertEqual(props["recent_checkpoints"]["maxItems"], 3)
+        self.assertEqual(props["warnings"]["minItems"], 5)
+        self.assertEqual(props["warnings"]["maxItems"], 5)
+        self.assertEqual(props["qualification_state"]["const"], "NOT_MEASURED")
+        self.assertEqual(
+            props["distance_to_mastery_state"]["enum"],
+            ["MEASURED", "NOT_MEASURED"],
+        )
+        self.assertEqual(health["allOf"][0]["then"]["properties"][
+            "distance_to_mastery"
+        ]["type"], "null")
+
 
 if __name__ == "__main__":
     unittest.main()

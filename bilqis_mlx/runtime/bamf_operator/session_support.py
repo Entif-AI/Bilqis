@@ -38,8 +38,26 @@ class BamfPreparedVisit:
     resource: dict | None = None
     candidate_evidence: dict | None = None
     how_outcome: dict | None = None
+    learning_health: dict | None = None
     rejection_journal_ordinal: int | None = None
     rejection_attempt_ordinal: int | None = None
+
+
+@dataclass(frozen=True)
+class BamfOperatorResult:
+    status: str
+    visits: int
+    accepted: int
+    rejected: int
+    generation: int
+    optimizer_step: int
+    source_prefetch_workers: int = 0
+    source_prefetch_wait_seconds: float = 0.0
+    source_prefetch_overlap_seconds: float = 0.0
+    source_prefetch_prepared_steps: int = 0
+    source_prefetch_serial_steps: int = 0
+    admission_status: str | None = None
+    admission_advances: int = 0
 
 
 def _execution_context(run_dir: Path, *, currentness_metrics=None):

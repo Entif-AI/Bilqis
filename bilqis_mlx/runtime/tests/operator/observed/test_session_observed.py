@@ -255,6 +255,39 @@ class SessionObservationTests(unittest.TestCase):
         self.assertEqual(events, [{'candidate_step': 1, 'candidate_optimizer_step': 8},
                                   {'candidate_step': 2, 'candidate_optimizer_step': 9}])
 
+    def test_horizon_uses_selected_teacher_projection_for_first_instruction(self):
+        from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon
+        observer = NS(update=lambda **fields: None)
+        parent = NS(
+            teacher_state={"schema": "raw-genesis"},
+            retained_state=NS(optimizer_step=0),
+            optimizer_hyperparameters='hp',
+        )
+        selection = NS(
+            offer=NS(source_seed=1, capability_id='cap:first'),
+            visit=NS(
+                identity=NS(visit_id='v'),
+                projection=NS(teacher_state={"schema": "projected-c03"}),
+            ),
+        )
+        cache = NS(generation=0, accepted_manifest_sha256='a' * 64)
+        transaction = NS(parent=NS(optimizer_step=0), update_steps=1)
+        step = NS(transaction=transaction, realized_cost={})
+        prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
+        with patch(prefix + 'prepare_candidate_evidence_root'), patch(
+                prefix + '_Capture') as capture, patch(
+                prefix + 'FactoryDeliveryObservation'), patch(
+                prefix + 'execute_accepted_priority_candidate', return_value=step), patch(
+                'bilqis_mlx.learning.teacher_lineage.instruction_history',
+                return_value=('COMPLETE', ())) as history, patch(
+                'bilqis_mlx.runtime.priority_rejection_replay.rejection_recency',
+                return_value=(None, ())):
+            _execute_horizon(
+                Path('/tmp'), selection, NS(), parent, 'atlas', 'feature',
+                ({'id': 'row'},), 1, cache, 1, None, 0, None, None, observer)
+        history.assert_called_once_with(selection.visit.projection.teacher_state)
+        self.assertTrue(capture.call_args.kwargs['introductory'])
+
     def test_completed_step_projects_every_performance_field_without_authority_change(self):
         from bilqis_mlx.runtime.bamf_operator.performance import STEP_COST_FIELDS
         from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon

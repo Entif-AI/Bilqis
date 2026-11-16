@@ -14182,6 +14182,20 @@
       "title": "Divergent duplicate teacher observation"
     },
     {
+      "code": "SCHOOL.BAMF_LEARNING_HEALTH.INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_learning_health.invalid.message",
+      "message_template": "Learning-health evidence is invalid: {reason}",
+      "next_action": "Preserve accepted custody and inspect the reported evidence identity; do not infer a replacement measurement.",
+      "operator_steps": [],
+      "owner": "diagnostics.learning_health",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_learning_health.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "BAMF learning-health evidence invalid"
+    },
+    {
       "code": "SCHOOL.MODEL_TOPOLOGY.INVALID",
       "disposition": "CORRECT_INPUT_OR_STATE",
       "legacy_codes": [
