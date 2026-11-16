@@ -15,6 +15,7 @@ from .admission_binding import (
     FACTORY_RELEASE_ADMISSION_SCHEMA,
     FACTORY_RELEASE_ADMISSION_SCHEMA_V1,
     FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+    FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
     FACTORY_RELEASE_ADMISSION_SCHEMAS,
     FactoryReleaseAdmissionBinding,
     ParsedFactoryReleaseAdmissionBinding,
@@ -96,7 +97,9 @@ def _owner_event(candidate) -> dict:
 
 def _issue_factory_release_admission_binding(
         candidate: BamfBundleCandidate, parent: CompleteStudent, *, transition,
-        accepted_obligation_keys: tuple[tuple[str, str], ...] = ()) -> FactoryReleaseAdmissionBinding:
+        accepted_obligation_keys: tuple[tuple[str, str], ...] = (),
+        generated_grade_proposal_sha256: str | None = None,
+) -> FactoryReleaseAdmissionBinding:
     transition = require_issued_factory_release_adoption_transition(transition)
     event = _owner_event(candidate)
     if (type(candidate) is not BamfBundleCandidate
@@ -115,6 +118,13 @@ def _issue_factory_release_admission_binding(
     obligation_keys = tuple(sorted(set(accepted_obligation_keys)))
     if obligation_keys and not _valid_obligation_keys(obligation_keys):
         _invalid()
+    schema_version = (
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+        if generated_grade_proposal_sha256 is not None
+        else FACTORY_RELEASE_ADMISSION_SCHEMA_V2
+        if obligation_keys
+        else FACTORY_RELEASE_ADMISSION_SCHEMA_V1
+    )
     return _mint_binding(
         run_id=candidate.run_id, generation=candidate.generation,
         candidate_identity_sha256=candidate_identity_digest(candidate.retained_state),
@@ -131,8 +141,8 @@ def _issue_factory_release_admission_binding(
         transition_sha256=transition.digest,
         adoption_event_sha256=sha(canonical(event)),
         accepted_obligation_keys=obligation_keys,
-        schema_version=(FACTORY_RELEASE_ADMISSION_SCHEMA_V2
-                        if obligation_keys else FACTORY_RELEASE_ADMISSION_SCHEMA_V1),
+        generated_grade_proposal_sha256=generated_grade_proposal_sha256,
+        schema_version=schema_version,
     )
 
 
@@ -216,6 +226,7 @@ __all__ = (
     "FACTORY_RELEASE_ADMISSION_SCHEMA",
     "FACTORY_RELEASE_ADMISSION_SCHEMA_V1",
     "FACTORY_RELEASE_ADMISSION_SCHEMA_V2",
+    "FACTORY_RELEASE_ADMISSION_SCHEMA_V3",
     "FACTORY_RELEASE_ADMISSION_SCHEMAS",
     "FactoryReleaseAdmissionBinding",
     "ParsedFactoryReleaseAdmissionBinding",

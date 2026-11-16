@@ -1,10 +1,20 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "2c572202978df9542e379cfb975007cdea3f05ad",
-  "updated_at": "2026-11-10T17:24:27Z",
+  "observed_unified": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
+  "updated_at": "2026-11-16T19:34:20Z",
   "exception": null,
   "items": [
+    {
+      "issue": 1320,
+      "pr": 1345,
+      "state": "TURNED_IN",
+      "head_sha": "e7fffed2616c6caf637b23fb96e7ba8a5d5605c1",
+      "head_sha_role": "exact semantic/test proof head; post-turn-in hosted structural and hygiene repair heads 9e15cb94 and d10293ed are independently reviewed compatibility/conformance repairs; this TURNED_IN bookkeeping is docs/flow-only",
+      "summary": "#1320 learner-relative dynamic next-grade synthesis restored to TURNED_IN after semantic proof e7fffed2 remained Codebase+Comprehension EGM-clean (0B/0M/0N) with Stage-6 NO_DRIFT and 76/76 invalidated proof. Post-turn-in hosted repair heads 9e15cb94 (structural) and d10293ed (hygiene) each received independent exact-head PASS 0B/0M/0N; d10293ed preserves generated-grade and retry behavior under exact differential proof. Hosted semantic-abi-integrity, portable-core, and bamf-readiness pass on d10293ed. Broad local premerge was not run; human merge remains external authority.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1320-dynamic-grade-synthesis-20261116"
+    },
     {
       "issue": 429,
       "pr": 952,
