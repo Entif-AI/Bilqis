@@ -9,7 +9,8 @@ from bilqis_mlx.semantics.domains import contract_digest
 from ..capability_evaluation import _invalid, _sha
 
 
-COMPARISON_SCHEMA = "bilqis.mlx.c05-baseline-comparison/v1"
+LEGACY_COMPARISON_SCHEMA = "bilqis.mlx.c05-baseline-comparison/v1"
+COMPARISON_SCHEMA = "bilqis.mlx.c05-baseline-comparison/v2"
 MEASUREMENT_SCHEMA = "bilqis.mlx.c05-baseline-measurement/v1"
 LEDGER_SCHEMA = "bilqis.mlx.c05-baseline-ledger/v1"
 
@@ -48,7 +49,7 @@ class BaselineComparisonIdentity:
                 or (self.source_authority_registry_sha256 is not None
                     and not _sha(self.source_authority_registry_sha256))
                 or not isinstance(self.evidence_stage, str) or not self.evidence_stage
-                or self.schema != COMPARISON_SCHEMA):
+                or self.schema not in {LEGACY_COMPARISON_SCHEMA, COMPARISON_SCHEMA}):
             _invalid("BAMF_C05_BASELINE_COMPARISON_IDENTITY_INVALID")
 
     @property

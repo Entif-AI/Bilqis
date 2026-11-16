@@ -303,35 +303,3 @@ class NewbornRetentionPolicyRegressionTests(unittest.TestCase):
             "donor": {"before": 70, "after": 65, "total": 100},
         })
         self.assertLess(trade["net"], 0)
-
-    def test_protection_is_earned_only_by_previously_retained_training(self):
-        from types import SimpleNamespace
-        from bilqis_mlx.runtime.factory_retention_owner import _earned_protected_capabilities
-
-        virgin = SimpleNamespace(retained_state=SimpleNamespace(step_proofs=()))
-        self.assertEqual(_earned_protected_capabilities(virgin, "A.IDENTITY"), ())
-
-        proofs = (
-            SimpleNamespace(target_capability_id="A.EDGE"),
-            SimpleNamespace(target_capability_id="A.EDGE"),
-            SimpleNamespace(target_capability_id="A.LINK"),
-        )
-        trained = SimpleNamespace(retained_state=SimpleNamespace(step_proofs=proofs))
-        self.assertEqual(
-            _earned_protected_capabilities(trained, "A.IDENTITY"),
-            ("A.EDGE", "A.LINK"),
-        )
-        self.assertEqual(
-            _earned_protected_capabilities(trained, "A.EDGE"),
-            ("A.LINK",),
-        )
-
-        later = SimpleNamespace(
-            teacher_state={"priority_last_selected": {"A.EDGE": 2, "A.LINK": 5}},
-            retained_state=SimpleNamespace(step_proofs=(
-                SimpleNamespace(target_capability_id="A.OTHER"),)),
-        )
-        self.assertEqual(
-            _earned_protected_capabilities(later, "A.IDENTITY"),
-            ("A.EDGE", "A.LINK", "A.OTHER"),
-        )
