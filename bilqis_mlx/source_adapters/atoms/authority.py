@@ -69,40 +69,59 @@ def project_verified_row(row, graph, snapshot, witness) -> SourceAtomOwnerProjec
         invalid("SOURCE_ATOM_NATIVE_REGISTRY_DRIFT")
     records = native["rows"][1:]
     atoms, signatures, mappings = [], [], []
+    semantic_ids, abi_indices = [], []
     for position, token_index in enumerate(witness.token_indices):
-        entry = snapshot.abi(token_index)
         node = graph["nodes"][token_index]
         token = graph["tokens"][token_index]
         row_contract = graph["row_contract_sha256"].get(token)
         if token_index < len(records):
             record = records[token_index]
             if (int(record[0]) != token_index or record[1] != token
-                    or record[2] != entry.semantic_id or entry.symbol != token
+                    or node.get("id") != token
                     or record[4] != node.get("signature")
                     or record[13] != row_contract
-                    or not record[4] or not entry.active):
+                    or not record[4]):
                 invalid("SOURCE_ATOM_NATIVE_ABI_CONTRACT_DRIFT")
             signature = record[4]
+            semantic_id = record[2]
+            abi_index = token_index
             mapping_authority = tuple(record)
         else:
+            from ...semantics.frame_adapters.registry import source_frame_strategy
+            resolver = source_frame_strategy(
+                witness.source_adapter_id).atlas_semantic_resolver
+            if resolver is None:
+                invalid("SOURCE_ATOM_GRAPH_EXTENSION_AUTHORITY_DRIFT")
+            try:
+                atlas_semantic_id = resolver(row)
+                entry = snapshot.abi_for_semantic(atlas_semantic_id)
+            except (BilqisError, TypeError, ValueError):
+                invalid("SOURCE_ATOM_GRAPH_EXTENSION_AUTHORITY_DRIFT")
             signature = node.get("signature")
-            if (entry.index != token_index or entry.symbol != token
-                    or node.get("id") != token
-                    or node.get("semantic_id") != entry.semantic_id
+            if (node.get("id") != token
+                    or not isinstance(node.get("semantic_id"), str)
+                    or not node.get("semantic_id")
                     or not isinstance(signature, str) or not signature
-                    or not isinstance(row_contract, str) or not row_contract
-                    or not entry.active):
+                    or not isinstance(row_contract, str) or not row_contract):
                 invalid("SOURCE_ATOM_GRAPH_EXTENSION_AUTHORITY_DRIFT")
             mapping_authority = (
-                GRAPH_EXTENSION_SCHEMA, entry.semantic_id, signature, row_contract)
+                GRAPH_EXTENSION_SCHEMA, token_index, token,
+                node["semantic_id"], entry.index, entry.symbol,
+                entry.semantic_id,
+                signature, row_contract)
+            semantic_id = entry.semantic_id
+            abi_index = entry.index
         reference = "source-atom:" + contract_digest((
             REFERENCE_SCHEMA, witness.source_adapter_id, source_id, position))
         atoms.append(SourceAtom(position, token, reference))
         signatures.append(signature)
+        semantic_ids.append(semantic_id)
+        abi_indices.append(abi_index)
         mappings.append(contract_digest((
             PROJECTION_SCHEMA, snapshot.prior_abi_sha256,
             witness.mapping_digest(position, token_index, token),
             source_id, reference, mapping_authority)))
     return SourceAtomOwnerProjection(
         StreamingAST(source_id, tuple(atoms), ()),
-        tuple(signatures), tuple(mappings))
+        tuple(signatures), tuple(mappings),
+        tuple(semantic_ids), tuple(abi_indices))

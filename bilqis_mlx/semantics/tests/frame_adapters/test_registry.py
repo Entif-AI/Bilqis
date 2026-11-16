@@ -93,6 +93,10 @@ class RegistryTests(FrameAdapterTestCase):
     def test_event_strategy_is_atomic_and_successor_specific(self):
         strategy = source_frame_strategy(event_frames.ADAPTER_ID)
         self.assertIsNone(strategy.source_family)
+        self.assertEqual(
+            strategy.atlas_semantic_resolver({"capability": "D.EVENT_OCCURRENCE"}),
+            event_frames.atlas_semantic_id("D.EVENT_OCCURRENCE"),
+        )
         expected = {
             "D.EVENT_OCCURRENCE": (
                 event_frames.SYMBOLS["D.EVENT_OCCURRENCE"],),

@@ -85,6 +85,7 @@ def _bind_c13_episode_row(
 
 RowBinder = Callable[..., FrameTree]
 GraphResolver = Callable[[dict | None], tuple[Path, dict]]
+AtlasSemanticResolver = Callable[[dict], str]
 
 
 def _legacy_root() -> Path:
@@ -129,6 +130,16 @@ def _event_graph(row=None):
         registry_graph(), tuple(closure))
 
 
+def _event_atlas_semantic(row: dict) -> str:
+    from ...source_adapters import event_frames
+
+    capability = row.get("capability") if isinstance(row, dict) else None
+    if capability not in event_frames.SOURCE_SPECS:
+        _adapter_fail("FRAME_EVENT_CAPABILITY_REQUIRED",
+                      event_frames.ADAPTER_ID, SourceSpan(0, 0), "<source-row>")
+    return event_frames.atlas_semantic_id(capability)
+
+
 def _bind_event_row(
     row: dict, snapshot: FrozenAtlasSnapshot, graph: dict, *,
     adapter_id: str, span: SourceSpan, causal_prefix_end: int,
@@ -154,6 +165,7 @@ class ReleasedFrameAdapter:
     binder: RowBinder
     source_family: str | None
     graph_resolver: GraphResolver
+    atlas_semantic_resolver: AtlasSemanticResolver | None = None
 
 
 def _event_adapter_id() -> str:
@@ -176,7 +188,8 @@ _STRATEGIES: Mapping[str, ReleasedFrameAdapter] = MappingProxyType({
     C13_EPISODE_ADAPTER: ReleasedFrameAdapter(
         C13_EPISODE_ADAPTER, _bind_c13_episode_row, "numeric", _numeric_graph),
     _event_adapter_id(): ReleasedFrameAdapter(
-        _event_adapter_id(), _bind_event_row, None, _event_graph),
+        _event_adapter_id(), _bind_event_row, None, _event_graph,
+        _event_atlas_semantic),
 })
 
 _ROW_BINDERS: Mapping[str, RowBinder] = MappingProxyType({

@@ -38,9 +38,9 @@ class EventSourceMaterializationTests(unittest.TestCase):
         snapshot = _snapshot()
         event_index = graph["tokens"].index(
             event_frames.SYMBOLS["D.EVENT_OCCURRENCE"])
-        node = graph["nodes"][event_index]
+        atlas_semantic_id = event_frames.atlas_semantic_id("D.EVENT_OCCURRENCE")
         event_entry = AbiEntry(
-            event_index, 0, event_index, node["semantic_id"], node["id"],
+            event_index, 0, event_index, atlas_semantic_id, atlas_semantic_id,
             "EVENT_TEST_EXTENSION", True, True, "EVENT_TEST_EXTENSION")
         snapshot = replace(
             snapshot,

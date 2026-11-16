@@ -58,17 +58,18 @@ class SourceAtomAdapterTests(TestCase):
         event_index = graph["tokens"].index(
             event_frames.SYMBOLS["D.EVENT_OCCURRENCE"])
         self.assertEqual(event_index, len(snapshot.abi_entries))
-        node = graph["nodes"][event_index]
+        atlas_semantic_id = event_frames.atlas_semantic_id("D.EVENT_OCCURRENCE")
         event_entry = AbiEntry(
-            event_index, 0, event_index, node["semantic_id"], node["id"],
+            2, 0, 2, atlas_semantic_id, atlas_semantic_id,
             "EVENT_TEST_EXTENSION", True, True, "EVENT_TEST_EXTENSION")
         snapshot = replace(
             snapshot,
             prior_abi_sha256=hashlib.sha256(registry_path.read_bytes()).hexdigest(),
-            abi_entries=(*snapshot.abi_entries, event_entry),
+            abi_entries=(*snapshot.abi_entries[:2], event_entry),
             semantic_lookup=tuple(sorted((
-                *snapshot.semantic_lookup,
-                (event_entry.semantic_id, event_entry.index),
+                *((entry.semantic_id, entry.index)
+                  for entry in snapshot.abi_entries[:2]),
+                (event_entry.semantic_id, 2),
             ))),
         )
 
@@ -76,6 +77,9 @@ class SourceAtomAdapterTests(TestCase):
         position = row["tokens"].index(event_index)
         self.assertEqual(
             projection.formal_signatures[position], "Boolean*Boolean->Boolean")
+        self.assertEqual(projection.semantic_ids[position], atlas_semantic_id)
+        self.assertEqual(projection.abi_indices[position], event_entry.index)
+        self.assertNotEqual(event_index, event_entry.index)
 
         forged = {**graph, "nodes": list(graph["nodes"])}
         forged["nodes"][event_index] = {
