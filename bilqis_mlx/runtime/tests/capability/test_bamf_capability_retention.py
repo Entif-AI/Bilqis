@@ -39,7 +39,7 @@ from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import (
 
 
 class CapabilityRetentionTests(unittest.TestCase):
-    def test_foundation_authorizing_screen_skips_measure_only_fresh_cohorts(self):
+    def test_foundation_authorizing_screen_uses_fixed_school_mastery_debt(self):
         parent_solver, candidate_solver, target, policy, cohorts = _screen_inputs(
             protected_loss=3)
         cohorts = tuple(replace(
@@ -57,9 +57,9 @@ class CapabilityRetentionTests(unittest.TestCase):
                 parent_solver, candidate_solver, target, policy, cohorts,
                 PARENT, CANDIDATE)
 
-        self.assertEqual(decision.reason, "PROTECTED_CAPABILITY_REGRESSION")
-        self.assertEqual(observed, [EvidenceKind.FIXED_SCHOOL, EvidenceKind.FIXED_SCHOOL])
-        self.assertEqual(decision.blocking_capability, "protected")
+        self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
+        self.assertEqual(observed, [EvidenceKind.FIXED_SCHOOL] * 6)
+        self.assertIsNone(decision.blocking_capability)
 
     def test_foundation_acceptance_uses_fixed_school_only(self):
         parent_solver, candidate_solver, target, policy, cohorts = _screen_inputs(
@@ -277,3 +277,57 @@ class CapabilityRetentionTests(unittest.TestCase):
         self.assertEqual(candidate_work_disposition(assessment, "target"),
                          "REHEARSE_OR_ADVANCE")
         self.assertTrue(all(result.neural_calls == 0 for result in assessment.results))
+
+class NewbornRetentionPolicyRegressionTests(unittest.TestCase):
+    def test_quadratic_mastery_debt_values_weak_gain_over_near_mastery_loss(self):
+        from bilqis_mlx.learning.retention_policy import mastery_debt_utility
+
+        trade = mastery_debt_utility({
+            "weak": {"before": 57, "after": 60, "total": 100},
+            "near_mastery": {"before": 98, "after": 93, "total": 100},
+        })
+        self.assertGreater(trade["net"], 0)
+        self.assertAlmostEqual(trade["capabilities"]["weak"]["utility_delta"], 0.0249)
+        self.assertAlmostEqual(
+            trade["capabilities"]["near_mastery"]["utility_delta"], -0.0045)
+
+    def test_quadratic_mastery_debt_rejects_same_raw_trade_against_weak_donor(self):
+        from bilqis_mlx.learning.retention_policy import mastery_debt_utility
+
+        trade = mastery_debt_utility({
+            "weak": {"before": 57, "after": 60, "total": 100},
+            "donor": {"before": 70, "after": 65, "total": 100},
+        })
+        self.assertLess(trade["net"], 0)
+
+    def test_protection_is_earned_only_by_previously_retained_training(self):
+        from types import SimpleNamespace
+        from bilqis_mlx.runtime.factory_retention_owner import _earned_protected_capabilities
+
+        virgin = SimpleNamespace(retained_state=SimpleNamespace(step_proofs=()))
+        self.assertEqual(_earned_protected_capabilities(virgin, "A.IDENTITY"), ())
+
+        proofs = (
+            SimpleNamespace(target_capability_id="A.EDGE"),
+            SimpleNamespace(target_capability_id="A.EDGE"),
+            SimpleNamespace(target_capability_id="A.LINK"),
+        )
+        trained = SimpleNamespace(retained_state=SimpleNamespace(step_proofs=proofs))
+        self.assertEqual(
+            _earned_protected_capabilities(trained, "A.IDENTITY"),
+            ("A.EDGE", "A.LINK"),
+        )
+        self.assertEqual(
+            _earned_protected_capabilities(trained, "A.EDGE"),
+            ("A.LINK",),
+        )
+
+        later = SimpleNamespace(
+            teacher_state={"priority_last_selected": {"A.EDGE": 2, "A.LINK": 5}},
+            retained_state=SimpleNamespace(step_proofs=(
+                SimpleNamespace(target_capability_id="A.OTHER"),)),
+        )
+        self.assertEqual(
+            _earned_protected_capabilities(later, "A.IDENTITY"),
+            ("A.EDGE", "A.LINK", "A.OTHER"),
+        )

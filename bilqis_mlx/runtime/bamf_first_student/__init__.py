@@ -22,12 +22,12 @@ from bilqis_mlx.runtime.bamf_bundle.records import (
 from bilqis_mlx.runtime.model_topology_v2 import GenerationProvenance
 from bilqis_mlx.semantics.atlas.snapshot import resolve_atlas_artifact_selection
 
-from ._bamf_first_student_contracts import (
+from .._bamf_first_student_contracts import (
     BAMF_DASHBOARD_METRICS_SCHEMA, BAMF_FOUNDATION_CONFIG_SCHEMA,
     BAMF_LAUNCH_RECEIPT_SCHEMA, BamfFoundationConfig,
     BamfFoundationDashboardProjection, DashboardMetrics, LaunchReceipt, _invalid,
 )
-from ._bamf_first_student_support import (
+from .._bamf_first_student_support import (
     _canonical_disjoint_run_paths, _canonical_run_dir_shape,
     _dashboard_metrics_from_projection,
     _fresh_run_dir, _model_authority, _resolved_run_path,

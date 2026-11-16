@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 265,
-  "legacy_raw_raise_count": 2093,
+  "legacy_raw_file_count": 267,
+  "legacy_raw_raise_count": 2092,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -8039,13 +8039,6 @@
       "path": "bilqis_mlx/learning/epoch_championships.py"
     },
     {
-      "code_hint": "CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
       "code_hint": "CHAMPIONSHIP_REBASE_INVALID_GENERATION",
       "count": 1,
       "exception": "ValueError",
@@ -10545,6 +10538,55 @@
       "path": "bilqis_mlx/runtime/_operator/admission.py"
     },
     {
+      "code_hint": "DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH'",
+      "path": "bilqis_mlx/runtime/_release_adoption/core.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING'",
+      "path": "bilqis_mlx/runtime/_release_adoption/core.py"
+    },
+    {
+      "code_hint": "FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED'",
+      "path": "bilqis_mlx/runtime/_release_adoption/prepared.py"
+    },
+    {
       "code_hint": "AUTONOMY_SOURCE_BUILDER_CHANGED_DURING_EXTRACTION",
       "count": 1,
       "exception": "ValueError",
@@ -11194,55 +11236,6 @@
       "exception": "ValueError",
       "expression": "'AUTONOMY_TEACHING_DURABLE_RECEIPT_MISSING'",
       "path": "bilqis_mlx/runtime/operator_session/operator_visit.py"
-    },
-    {
-      "code_hint": "DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
     },
     {
       "code_hint": "disposable interruption before pointer publication",

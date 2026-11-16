@@ -37,8 +37,8 @@ class EpochFanoutTests(EpochChampionshipTests):
     def test_primary_takeover_defers_unmeasured_sibling_fanout(self):
         epoch, _, _ = self._fanout_fixture()
         and_role = epoch["active_roles"]["B.AND"]
-        challenger = _panel("c", 13, "B.AND", 10, cohort="6", grade="B")
-        incumbent = _panel("a", 11, "B.AND", 8, cohort="6", grade="B")
+        challenger = _panel("c", 13, "B.AND", 12, cohort="6", grade="B")
+        incumbent = _panel("a", 11, "B.AND", 11, cohort="6", grade="B")
         primary = _match(
             and_role,
             _panel("a", 11, "B.AND", 7, cohort="6", grade="B"),
@@ -123,8 +123,8 @@ class EpochFanoutTests(EpochChampionshipTests):
             fanout_screen={"B.XOR": {
                 "incumbent_checkpoint_sha256": "b" * 64,
                 "challenger_checkpoint_sha256": "c" * 64,
-                "incumbent_exam": _panel("b", 12, "B.XOR", 8, cohort="6"),
-                "challenger_exam": _panel("c", 13, "B.XOR", 8, cohort="6"),
+                "incumbent_exam": _panel("b", 12, "B.XOR", 11, cohort="6"),
+                "challenger_exam": _panel("c", 13, "B.XOR", 11, cohort="6"),
             }})
         self.assertTrue({"B.AND", "B.XOR"} <= set(changes))
         self.assertFalse(any(d["decision"] in (
@@ -134,5 +134,5 @@ class EpochFanoutTests(EpochChampionshipTests):
         current_ids = {q["id"] for segment in xor_battery
                        for q in segment["questions"]
                        if q["id"].startswith("6" * 64 + "B.XOR")}
-        self.assertEqual(len(current_ids), 8,
-                         "the fresh fan-out gate's eighth correct answer must survive")
+        self.assertEqual(len(current_ids), 11,
+                         "the threshold-qualified fan-out gate must survive")

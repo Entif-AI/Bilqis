@@ -8,8 +8,10 @@ from __future__ import annotations
 
 from copy import deepcopy
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning.championship_witnesses import (
-    battery_from_exam, earning_witness, maxed_role, refresh_battery,
+    battery_from_exam, championship_role_qualified, championship_threshold_met,
+    earning_witness, maxed_role, refresh_battery,
     verified_battery)
 from bilqis_mlx.learning.mentor_epoch import EARNED_ONLY_POLICY, _pointer
 
@@ -56,6 +58,12 @@ def _sanitize_role_origins(updated: dict, grades: dict) -> None:
         if title_grade not in grades or capability not in _grade_caps(grades, title_grade):
             raise ValueError("CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN")
         origin = role.get("origin_grade") if isinstance(role, dict) else None
+        if not championship_role_qualified(role):
+            _archive_invalid_role(
+                updated, capability, role, "CHAMPIONSHIP_THRESHOLD_NOT_MET")
+            del roles[capability]
+            invalid.append(capability)
+            continue
         if origin != title_grade:
             reason = ("TITLE_ORIGIN_PROVENANCE_MISSING" if origin is None else
                       "CROSS_GRADE_TITLE_OWNER")
@@ -208,7 +216,8 @@ def active_frontier(epoch: dict) -> dict:
     if any(not isinstance(item, dict) or item.get("capability") != cap
            for cap, item in roles.items()):
         raise ValueError("CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT")
-    return {item["rubric"] + ":" + cap: item for cap, item in roles.items()}
+    return {item["rubric"] + ":" + cap: item for cap, item in roles.items()
+            if championship_role_qualified(item)}
 
 
 def _grade_caps(course_grades, grade):
@@ -286,12 +295,8 @@ def _primary_qualification(candidate: dict, incumbent: dict) -> str | None:
 
 
 def _initial_title_threshold_met(score: dict) -> bool:
-    """Require at least 66% proficiency before an empty title can be claimed."""
-    if (not isinstance(score, dict) or type(score.get("correct")) is not int or
-            type(score.get("total")) is not int or score["total"] < 1 or
-            not 0 <= score["correct"] <= score["total"]):
-        raise ValueError("CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID")
-    return score["correct"] * 100 >= score["total"] * 66
+    """Require capability-local proficiency strictly above 90%."""
+    return championship_threshold_met(score)
 
 
 def _fanout_scores(capability: str, prior: dict, challenger: dict,
@@ -327,7 +332,7 @@ def _role_receipt(challenger_exam: dict, capability: str,
                   mastered: tuple[str, ...], *, prior=None, scope=None,
                   surviving_battery=None, owner_maxed=None,
                   archive_exams=(), origin_grade=None,
-                  checkpoint_origin_grade=None) -> dict:
+                  checkpoint_origin_grade=None, qualification_score=None) -> dict:
     pointer = challenger_exam["checkpoint"]
     score = challenger_exam["scores"][capability]
     scope = tuple(scope or (capability,))
@@ -352,6 +357,20 @@ def _role_receipt(challenger_exam: dict, capability: str,
             surviving_battery = battery_from_exam(challenger_exam, scope)
     if owner_maxed is None:
         owner_maxed = score["correct"] == score["total"]
+    if qualification_score is None:
+        if prior is not None and championship_role_qualified(prior):
+            qualification_score = {
+                "correct": prior.get(
+                    "championship_qualification_correct", prior["correct"]),
+                "total": prior.get(
+                    "championship_qualification_total", prior["total"]),
+            }
+        else:
+            qualification_score = score
+    if not championship_threshold_met(qualification_score):
+        ErrorBus.Raise(
+            SCHOOL.MODEL_TOPOLOGY.INVALID,
+            reason="championship role qualification threshold not met")
     return {
         **({"complete_solver_provenance": deepcopy(challenger_exam["complete_solver_provenance"])}
            if "complete_solver_provenance" in challenger_exam else {}),
@@ -364,6 +383,8 @@ def _role_receipt(challenger_exam: dict, capability: str,
         "source_graph_sha256": challenger_exam["source_graph_sha256"],
         "source_oracle_sha256": challenger_exam["source_oracle_sha256"],
         "correct": score["correct"], "total": score["total"],
+        "championship_qualification_correct": qualification_score["correct"],
+        "championship_qualification_total": qualification_score["total"],
         "breadth": len(mastered), "perfect_capabilities": list(mastered),
         "maxed": bool(owner_maxed),
         # `origin_grade` remains the stable title-jurisdiction field used by
@@ -469,7 +490,14 @@ def _resolve_title_match(*, capability: str, prior: dict, challenger_exam: dict,
         checkpoint_origin_grade=(
             challenger_exam.get("checkpoint_origin_grade")
             if challenger_wins else
-            prior.get("checkpoint_origin_grade", prior.get("origin_grade"))))
+            prior.get("checkpoint_origin_grade", prior.get("origin_grade"))),
+        qualification_score=(
+            challenger_exam["scores"][capability] if challenger_wins else {
+                "correct": prior.get(
+                    "championship_qualification_correct", prior["correct"]),
+                "total": prior.get(
+                    "championship_qualification_total", prior["total"]),
+            }))
     return receipt, challenger_wins, {
         "capability": capability,
         "decision": "TITLE_WON" if challenger_wins else "TITLE_DEFENDED",
@@ -524,7 +552,7 @@ def advance_epoch(epoch: dict, *, grades: dict, challenger_exam: dict,
                     "decision": "INITIAL_TITLE_THRESHOLD_NOT_MET",
                     "correct": scores[cap]["correct"],
                     "total": scores[cap]["total"],
-                    "minimum_percent": 66,
+                    "minimum_percent_exclusive": 90,
                     "challenger_sha256": pointer["sha256"],
                 })
                 continue
@@ -535,6 +563,16 @@ def advance_epoch(epoch: dict, *, grades: dict, challenger_exam: dict,
             changes.append(cap)
             continue
         prior_pointer = _pointer(prior["checkpoint"])
+        if not championship_threshold_met(scores[cap]):
+            decisions.append({
+                "grade": grade, "capability": cap,
+                "decision": "TITLE_THRESHOLD_NOT_MET",
+                "correct": scores[cap]["correct"],
+                "total": scores[cap]["total"],
+                "minimum_percent_exclusive": 90,
+                "challenger_sha256": pointer["sha256"],
+            })
+            continue
         if prior_pointer["sha256"] == pointer["sha256"]:
             if scores[cap]["correct"] > prior.get("correct", -1):
                 roles[cap] = _role_receipt(

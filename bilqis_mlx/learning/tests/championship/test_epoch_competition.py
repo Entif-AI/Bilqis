@@ -21,18 +21,18 @@ class EpochCompetitionTests(EpochChampionshipTests):
                             for d in decisions))
 
     def test_strict_gain_below_max_opens_title_fight_but_below_max_tie_does_not(self):
-        first = _panel("a", 11, "B.XOR", 8)
+        first = _panel("a", 11, "B.XOR", 28, total=30)
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
-        challenger = _panel("c", 12, "B.XOR", 9, cohort="6")
-        incumbent = _panel("a", 11, "B.XOR", 8, cohort="6")
+        challenger = _panel("c", 12, "B.XOR", 29, cohort="6", total=30)
+        incumbent = _panel("a", 11, "B.XOR", 28, cohort="6", total=30)
         _, _, decisions = advance_epoch(
             epoch, grades=GRADES, challenger_exam=challenger,
             incumbent_exams={"a" * 64: incumbent})
         self.assertTrue(any(d["qualification"] == "STRICT_GAIN" for d in decisions))
 
-        tied = _panel("d", 13, "B.XOR", 8, cohort="7")
-        incumbent_tie = _panel("a", 11, "B.XOR", 8, cohort="7")
+        tied = _panel("d", 13, "B.XOR", 28, cohort="7", total=30)
+        incumbent_tie = _panel("a", 11, "B.XOR", 28, cohort="7", total=30)
         _, _, decisions = advance_epoch(
             epoch, grades=GRADES, challenger_exam=tied,
             incumbent_exams={"a" * 64: incumbent_tie})
