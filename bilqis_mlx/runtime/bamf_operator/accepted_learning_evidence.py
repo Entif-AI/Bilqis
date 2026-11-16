@@ -14,7 +14,7 @@ from bilqis_mlx.runtime.atlas_flywheel_runtime import _accepted_checkpoint
 from bilqis_mlx.runtime.autonomy_live import LiveAutonomySession
 from bilqis_mlx.runtime.factory_complete_solver import (
     factory_complete_solver,
-    factory_evaluation_instruments,
+    factory_evaluation_instrument,
 )
 from bilqis_mlx.semantics.cognitive_operators import TypedValue, ValueState
 
@@ -54,6 +54,7 @@ def _accepted_predictions(
     parent,
     atlas_artifact_path: Path,
     rows,
+    source_draws,
     *,
     seed: int,
 ) -> dict[str, str]:
@@ -61,13 +62,20 @@ def _accepted_predictions(
     rows = tuple(rows)
     if not rows:
         _invalid("BAMF_OPERATOR_ACCEPTED_EVIDENCE_ROWS_REQUIRED")
-    instruments = factory_evaluation_instruments(
-        source_context,
-        parent,
-        str(atlas_artifact_path),
-        rows,
-        seed=seed,
-        each=len(rows),
+    source_by_id = {item.row_id: item for item in source_draws}
+    if (len(source_by_id) != len(rows)
+            or set(source_by_id) != {row["id"] for row in rows}):
+        _invalid("BAMF_OPERATOR_ACCEPTED_EVIDENCE_SOURCE_DRAW_DRIFT")
+    instruments = tuple(
+        factory_evaluation_instrument(
+            source_context,
+            parent,
+            str(atlas_artifact_path),
+            row,
+            source_seed=source_by_id[row["id"]].source_seed,
+            source_each=source_by_id[row["id"]].source_each,
+        )
+        for row in rows
     )
     solver, generation = factory_complete_solver(
         source_context, parent, str(atlas_artifact_path), instruments)
@@ -158,13 +166,15 @@ def refresh_accepted_learning_evidence(
                 "model_and_native_adamw": True,
             },
             seed=seed,
-            predictor=lambda rows, _seed=seed: _accepted_predictions(
+            source_bound_predictor=(
+                lambda rows, source_draws, _seed=seed: _accepted_predictions(
                 source_context,
                 parent,
                 atlas_artifact_path,
                 rows,
+                source_draws,
                 seed=_seed,
-            ),
+            )),
         )
         measured += 1
         passed += int(evidence.passed)

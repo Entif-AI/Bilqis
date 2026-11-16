@@ -1,12 +1,23 @@
 from pathlib import Path
 from types import SimpleNamespace
+import unittest
 from unittest.mock import Mock, patch
 
 import pytest
 
 from bilqis_mlx.errors import BilqisError
-from bilqis_mlx.factory.autonomy import AutonomyActionKind
+from bilqis_mlx.factory import candidate_realizations
+from bilqis_mlx.factory.autonomy import (
+    AutonomyActionKind, EvidenceKind, compile_autonomy_plan,
+    obligations_for_capability,
+)
+from bilqis_mlx.factory.evidence import measure_evidence
+from bilqis_mlx.factory.tests.events.support import (
+    EventCandidateRealizationFixture, LEGACY,
+)
 from bilqis_mlx.semantics.cognitive_operators import TypedValue, ValueState
+from bilqis_mlx.source_adapters import event_frames
+from bilqis_mlx.source_adapters.atom_binding import verify_source_row
 
 
 def _work(capability, obligation):
@@ -129,3 +140,68 @@ def test_factory_answer_text_preserves_assessment_modalities(answer, expected):
     )
 
     assert _answer_text(answer) == expected
+
+
+class AcceptedEvidenceSourceDrawTests(
+        EventCandidateRealizationFixture, unittest.TestCase):
+    def test_event_prerequisite_keeps_exact_source_draw_through_measurement(self):
+        staged = candidate_realizations.prepare_realized_candidate(
+            self.frontier,
+            self.current,
+            self.parent_graph,
+            event_frames.atlas_semantic_id("D.EVENT_OCCURRENCE"),
+            source_root=LEGACY,
+            source_registry=self.source_registry,
+            answer_registry=self.answer_registry,
+        )
+        release = staged.successor
+        graph = candidate_realizations.admitted_candidate_graph(
+            staged, self.parent_graph)
+        plan = compile_autonomy_plan(release)
+        obligation = next(
+            item for item in obligations_for_capability(
+                release, "D.EVENT_OCCURRENCE", plan=plan)
+            if (item.kind is EvidenceKind.PREREQUISITE
+                and item.key == "A.IDENTITY")
+        )
+        self.assertEqual(obligation.minimum_specimens, 1)
+        observed = []
+
+        def source_bound_predictor(rows, source_draws):
+            execution = release.execution_plan.capability_map[
+                "D.EVENT_OCCURRENCE"]
+            profile = (
+                dict(execution.provider_parameters)
+                if execution.provider_parameters else None)
+            for row, draw in zip(rows, source_draws, strict=True):
+                verify_source_row(
+                    row,
+                    graph,
+                    source_root=LEGACY,
+                    source_seed=draw.source_seed,
+                    source_each=draw.source_each,
+                    course=release.curriculum,
+                    source_profile_parameters=profile,
+                )
+                observed.append(draw)
+            return {row["id"]: row["gold"] for row in rows}
+
+        receipt = measure_evidence(
+            LEGACY,
+            graph,
+            release,
+            self.source_registry,
+            obligation,
+            checkpoint={
+                "sha256": "c" * 64,
+                "optimizer_step": 7,
+                "model_and_native_adamw": True,
+            },
+            seed=23,
+            predictor=None,
+            source_bound_predictor=source_bound_predictor,
+        )
+
+        self.assertTrue(receipt.passed)
+        self.assertEqual(len(observed), 1)
+        self.assertEqual(observed[0].source_each, 8)
