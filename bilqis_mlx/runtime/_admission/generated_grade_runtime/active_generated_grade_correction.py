@@ -98,6 +98,11 @@ class CorrectionGradeTransitionAuthority:
 
 
 def _issue(**values) -> CorrectionGradeTransitionAuthority:
+    expected_fields = set(CorrectionGradeTransitionAuthority.__dataclass_fields__) - {
+        "_issuance"
+    }
+    if set(values) != expected_fields:
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_CORRECTION_AUTHORITY_INVALID")
     authority = object.__new__(CorrectionGradeTransitionAuthority)
     for name, value in (*values.items(), ("_issuance", _ISSUER)):
         object.__setattr__(authority, name, value)

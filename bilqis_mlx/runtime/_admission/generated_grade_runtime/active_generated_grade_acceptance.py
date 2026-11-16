@@ -9,7 +9,11 @@ from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
 from bilqis_mlx.runtime.state import _fingerprint
 
 from .active_generated_grade_contracts import ActiveGeneratedGrade
-from .generated_grade import _accepted_release_lineage, _read_issued_proposal
+from .generated_grade_acceptance import (
+    _accepted_release_lineage,
+    _proposal_bound_at_or_before_accepted_generation,
+    _read_issued_proposal,
+)
 
 
 ACCEPTANCE_SCHEMA = "bilqis.bamf.generated-grade-proposal-acceptance/v1"
@@ -53,6 +57,9 @@ class ProposalAcceptanceReceipt:
 
 
 def _issue(**values) -> ProposalAcceptanceReceipt:
+    expected_fields = set(ProposalAcceptanceReceipt.__dataclass_fields__) - {"_issuance"}
+    if set(values) != expected_fields:
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_PROPOSAL_ACCEPTANCE_INVALID")
     receipt = object.__new__(ProposalAcceptanceReceipt)
     for name, value in (*values.items(), ("_issuance", _ISSUER)):
         object.__setattr__(receipt, name, value)
@@ -128,6 +135,14 @@ def _reconcile_accepted_generated_grade(
     receipt = _require_proposal_acceptance(run_dir, active, proposal)
     if (_read_issued_proposal(run_dir, receipt.proposal_sha256) != proposal
             or receipt.definition_sha256 != active.definition.definition_sha256):
+        _fail("BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH")
+    if not _proposal_bound_at_or_before_accepted_generation(
+            run_dir,
+            proposal,
+            run_id=receipt.run_id,
+            generation=receipt.generation,
+            manifest_sha256=receipt.manifest_sha256,
+            acceptance_sha256=receipt.acceptance_sha256):
         _fail("BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH")
     lineage = _accepted_release_lineage(run_dir, proposal)
     digests = tuple(item.release_sha256 for item in lineage)

@@ -10,9 +10,11 @@ from bilqis_mlx.factory.tests.curriculum.generated_grade.test_definition import 
     _single_member_fixture,
 )
 from bilqis_mlx.runtime.active_generated_grade_acceptance import (
+    _issue as _issue_acceptance,
     _persist_proposal_acceptance,
     _reconcile_accepted_generated_grade,
     _require_proposal_acceptance,
+    _values as _acceptance_values,
 )
 from bilqis_mlx.runtime.active_generated_grade_contracts import (
     issue_active_generated_grade,
@@ -49,6 +51,17 @@ def _fixture():
 
 
 class ProposalAcceptanceReceiptTests(unittest.TestCase):
+    def test_acceptance_receipt_rejects_canonical_extra_fields(self):
+        _release, proposal, _definition, active = _fixture()
+        record = _acceptance_values(active, proposal)
+        record["unexpected"] = "canonical-but-unauthorized"
+        with self.assertRaises(BilqisError) as raised:
+            _issue_acceptance(**record)
+        self.assertEqual(
+            raised.exception.context.get("reason"),
+            "BAMF_ACTIVE_GENERATED_GRADE_PROPOSAL_ACCEPTANCE_INVALID",
+        )
+
     def test_persisted_receipt_binds_exact_activation_and_proposal(self):
         _release, proposal, _definition, active = _fixture()
         with TemporaryDirectory() as directory, patch(
@@ -87,6 +100,9 @@ class ProposalAcceptanceReceiptTests(unittest.TestCase):
                 "_read_issued_proposal", return_value=proposal,
             ), patch(
                 "bilqis_mlx.runtime.active_generated_grade_acceptance."
+                "_proposal_bound_at_or_before_accepted_generation", return_value=True,
+            ) as historical_binding, patch(
+                "bilqis_mlx.runtime.active_generated_grade_acceptance."
                 "_accepted_release_lineage", return_value=(release, successor),
             ), patch(
                 "bilqis_mlx.runtime.active_generated_grade_custody."
@@ -95,6 +111,47 @@ class ProposalAcceptanceReceiptTests(unittest.TestCase):
                 _reconcile_accepted_generated_grade(root, active, proposal)
 
         self.assertEqual(active.definition, definition)
+        historical_binding.assert_called_once_with(
+            root,
+            proposal,
+            run_id=active.run_id,
+            generation=active.activation_generation,
+            manifest_sha256=active.activation_manifest_sha256,
+            acceptance_sha256=active.activation_acceptance_sha256,
+        )
+
+    def test_historical_replay_rejects_proposal_not_bound_at_activation(self):
+        release, proposal, _definition, active = _fixture()
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch(
+                "bilqis_mlx.runtime.active_generated_grade_custody."
+                "_activation_is_accepted_ancestor", return_value=True,
+            ):
+                _persist_proposal_acceptance(root, active, proposal)
+            with patch(
+                "bilqis_mlx.runtime.active_generated_grade_acceptance."
+                "_read_issued_proposal", return_value=proposal,
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade_acceptance."
+                "_proposal_bound_at_or_before_accepted_generation", return_value=False,
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade_acceptance."
+                "_seal_generated_grade",
+            ) as seal, patch(
+                "bilqis_mlx.runtime.active_generated_grade_acceptance."
+                "_accepted_release_lineage", return_value=(release,),
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade_custody."
+                "_activation_is_accepted_ancestor", return_value=True,
+            ), self.assertRaises(BilqisError) as raised:
+                _reconcile_accepted_generated_grade(root, active, proposal)
+
+        self.assertEqual(
+            raised.exception.context.get("reason"),
+            "BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH",
+        )
+        seal.assert_not_called()
 
     def test_missing_acceptance_receipt_fails_closed(self):
         _release, proposal, _definition, active = _fixture()

@@ -11,6 +11,7 @@ from bilqis_mlx.factory.tests.curriculum.generated_grade.test_definition import 
     _single_member_fixture,
 )
 from bilqis_mlx.runtime.active_generated_grade_correction import (
+    _issue as _issue_correction,
     _issue_correction_transition_authority,
     require_correction_transition_authority,
 )
@@ -67,6 +68,28 @@ def _correction(dependency_key: str):
 
 
 class CorrectionGradeTransitionAuthorityTests(unittest.TestCase):
+    def test_transition_authority_rejects_canonical_extra_fields(self):
+        predecessor, proposal, definition = _fixtures()
+        correction_id = "e" * 64
+        correction = _correction(proposal.member_semantic_ids[0])
+        with TemporaryDirectory() as directory, patch(
+            "bilqis_mlx.runtime.accepted_corrections.accepted_corrections",
+            return_value=((correction_id, correction),),
+        ):
+            authority = _issue_correction_transition_authority(
+                Path(directory), accepted_manifest_sha256="f" * 64,
+                correction_record_sha256=correction_id,
+                predecessor=predecessor, proposal=proposal, definition=definition,
+            )
+        record = authority.to_record()
+        record["unexpected"] = "canonical-but-unauthorized"
+        with self.assertRaises(BilqisError) as raised:
+            _issue_correction(**record)
+        self.assertEqual(
+            raised.exception.context.get("reason"),
+            "BAMF_ACTIVE_GENERATED_GRADE_CORRECTION_AUTHORITY_INVALID",
+        )
+
     def test_latest_accepted_related_correction_binds_exact_successor(self):
         predecessor, proposal, definition = _fixtures()
         correction_id = "e" * 64

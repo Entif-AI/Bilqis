@@ -2,7 +2,7 @@
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 import unittest
 
 from bilqis_mlx.errors import BilqisError
@@ -141,10 +141,11 @@ class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
             root = Path(directory)
             patches = self._patches(proposal, definition)
             original = custody._durable_json
+            crash = Mock(side_effect=RuntimeError("simulated pointer-write crash"))
 
             def crash_before_pointer(path, payload, **kwargs):
                 if Path(path).name == "current.json":
-                    raise RuntimeError("simulated pointer-write crash")
+                    crash()
                 return original(path, payload, **kwargs)
 
             with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
