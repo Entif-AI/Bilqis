@@ -473,10 +473,10 @@
     },
     {
       "issue": 1332,
-      "pr": null,
-      "state": "READY",
+      "pr": 1348,
+      "state": "TURNED_IN",
       "head_sha": "0b72a38b50a286a7a35a0b4c3339e36aec5c577a",
-      "summary": "R10 native HOW outcome feedback and required breeding split are implemented; exact-once, cold replay, custody, diagnostic context and cooldown proof are green. Ready for human review; no operator learner updates.",
+      "summary": "R10 turned in as PR #1348 against unified; local scoped proof and independent review green. Hosted checks and human review/merge remain. No actual learner updates.",
       "resume_trigger": null,
       "preserved_branch": "codex/1332-how-policy-outcomes-20261116",
       "head_sha_role": "Executable integration head consuming unified0891128; subsequent receipt metadata only."
