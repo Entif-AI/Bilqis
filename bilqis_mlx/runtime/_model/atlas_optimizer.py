@@ -21,7 +21,9 @@ from bilqis_mlx.runtime.optimizer_step import (
 )
 
 
+DENSE_COUNT_RANK = 0
 ROW_COUNT_RANK = 1
+ROW_SELECTION_PARTS = 2
 ADAM_MOMENT_COUNT = 2
 UINT64_MAX = int(np.iinfo(np.uint64).max)
 STATE_SCHEMA = "bilqis.mlx.adamw-count-state/provisional-v1"
@@ -165,13 +167,48 @@ def _validate_step_inputs(parent, gradients, participation):
     return checks
 
 
-def _preflight(parent, gradients, participation, hyperparameters, decay, loss_bearing):
+def _participation_authority_checks(parent, participation, authority):
+    """Validate owner-issued row selections and bind them to device masks."""
+    if authority is None:
+        return []
+    if not isinstance(authority, Mapping) or set(authority) != set(parent.parameters):
+        _invalid()
+    checks = []
+    for name, count in parent.update_counts.items():
+        selection = authority[name]
+        if type(selection) is not tuple or len(selection) != ROW_SELECTION_PARTS:
+            _invalid()
+        whole, rows = selection
+        if (type(whole) is not bool or type(rows) is not tuple
+                or any(type(row) is not int or row < 0 for row in rows)
+                or rows != tuple(sorted(set(rows)))
+                or (whole and rows)):
+            _invalid()
+        mask = participation[name]
+        if count.ndim == DENSE_COUNT_RANK:
+            if rows:
+                _invalid()
+            expected = mx.array(whole, dtype=mx.bool_)
+        else:
+            if any(row >= count.shape[0] for row in rows):
+                _invalid()
+            expected = mx.ones_like(mask) if whole else mx.zeros_like(mask)
+            if rows:
+                expected[mx.array(rows, dtype=mx.uint32)] = True
+        checks.append(mx.all(mask == expected))
+    return checks
+
+
+def _preflight(parent, gradients, participation, hyperparameters, decay, loss_bearing,
+               participation_authority=None):
     checks = _validate_step_inputs(parent, gradients, participation)
     if (type(hyperparameters) is not AdamWHyperparameters or type(loss_bearing) is not bool or
             not isinstance(decay, Mapping) or set(decay) != set(parent.parameters) or
             any(type(value) is not bool for value in decay.values())):
         _invalid()
     hyperparameters.__post_init__()
+    checks.extend(_participation_authority_checks(
+        parent, participation, participation_authority))
     if loss_bearing:
         maximum = mx.array(np.array(UINT64_MAX, dtype=np.uint64))
         checks.extend(
@@ -228,7 +265,8 @@ def _adamw_update(parent: AdamWStateTree, gradients: Mapping[str, mx.array],
         _invalid()
     parent.validate()
     any_participation = _preflight(
-        parent, gradients, participation, hyperparameters, decay, loss_bearing)
+        parent, gradients, participation, hyperparameters, decay, loss_bearing,
+        participation_authority)
     if max_norm is not None and (not _finite_number(max_norm) or max_norm <= 0):
         _invalid()
     if not loss_bearing or not any_participation:
