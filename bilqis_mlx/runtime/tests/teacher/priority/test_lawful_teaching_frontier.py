@@ -28,6 +28,39 @@ from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
 from bilqis_mlx.semantics.domains import contract_digest
 
 
+def _historical_active_grade_reader():
+    active_cache = {}
+
+    def active_grade(run_dir):
+        if "grade" not in active_cache:
+            from bilqis_mlx.runtime.atlas_admission import (
+                read_accepted_atlas_factory_release,
+            )
+            release = read_accepted_atlas_factory_release(run_dir)
+            members = []
+            for capability_id in sorted(release.execution_plan.capability_map):
+                capability = release.curriculum.capability_map[capability_id]
+                semantic_ids = tuple(dict.fromkeys((
+                    *capability.taught_roots, *capability.examined_roots,
+                )))
+                members.append(SimpleNamespace(
+                    capability_id=capability_id,
+                    semantic_id=semantic_ids[0],
+                    source_anchor=(release.source_bindings.by_capability[
+                        capability_id].source_anchor),
+                ))
+            active_cache["grade"] = SimpleNamespace(
+                activation_sha256="e" * 64,
+                definition=SimpleNamespace(
+                    definition_sha256="d" * 64,
+                    members=tuple(members),
+                ),
+            )
+        return active_cache["grade"]
+
+    return active_grade
+
+
 class LawfulTeachingFrontierRuntimeTests(MixedWitnessSupport, unittest.TestCase):
     def _runtime_patches(self, snapshot, schema, features, candidate):
         from contextlib import ExitStack
@@ -44,36 +77,7 @@ class LawfulTeachingFrontierRuntimeTests(MixedWitnessSupport, unittest.TestCase)
             "/artifact", snapshot.bundle_id, snapshot.release_sha256,
             snapshot.source_bundle_id)
         combined = self.combined_source_registry()
-        active_cache = {}
-
-        def active_grade(run_dir):
-            if "grade" not in active_cache:
-                from bilqis_mlx.runtime.atlas_admission import (
-                    read_accepted_atlas_factory_release,
-                )
-                release = read_accepted_atlas_factory_release(run_dir)
-                members = []
-                for capability_id in sorted(release.execution_plan.capability_map):
-                    capability = release.curriculum.capability_map[capability_id]
-                    semantic_ids = tuple(dict.fromkeys((
-                        *capability.taught_roots, *capability.examined_roots,
-                    )))
-                    members.append(SimpleNamespace(
-                        capability_id=capability_id,
-                        semantic_id=semantic_ids[0],
-                        source_anchor=(
-                            release.source_bindings.by_capability[
-                                capability_id].source_anchor),
-                    ))
-                active_cache["grade"] = SimpleNamespace(
-                    activation_sha256="e" * 64,
-                    definition=SimpleNamespace(
-                        definition_sha256="d" * 64,
-                        members=tuple(members),
-                    ),
-                )
-            return active_cache["grade"]
-
+        active_grade = _historical_active_grade_reader()
         stack = ExitStack()
         stack.enter_context(self.source_replay(snapshot, schema, features))
         stack.enter_context(self.host_registry())

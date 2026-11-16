@@ -8,11 +8,11 @@
     {
       "issue": 1314,
       "pr": 1349,
-      "state": "TURNED_IN",
+      "state": "ACTIVE",
       "head_sha": "46357e175239ee303bfbf03d61534db385b34434",
-      "head_sha_role": "exact semantic/test proof head; this TURNED_IN transition is docs/flow-only",
-      "summary": "#1314 freezes one accepted #1320 GeneratedGradeDefinition as the learner's exact outer teaching surface with cold-resumable custody, exact capability+semantic membership projection, typed incomplete/held/complete/global-fixed-point states, correction successor lineage, and an explicit future #1334 certification handoff. C07 adoption alone cannot replace the active grade, ordinary learning cannot churn membership, and no global order table or grade-letter switch participates. Focused acceptance 16/16, adjacent #1320/C07 28/28, changed owner tests 35/35, and full verify:leaf including Mission Control 464/464 plus security 67/67 Node + 9/9 Python pass at semantic head 46357e17. Human merge remains external authority.",
-      "resume_trigger": null,
+      "head_sha_role": "exact semantic/test proof head; hosted hygiene repair reopened after code-smell CI found one long-function defect",
+      "summary": "#1314 semantic implementation remains proven at 46357e17, but hosted portable-core found one structural hygiene defect: test_lawful_teaching_frontier._runtime_patches is 86 lines and violates the changed-file long-function rule. Lane A is reopened only for that bounded code-hygiene repair; no design or runtime-behavior change is authorized by this reopening.",
+      "resume_trigger": "Split the test-only _runtime_patches helper below the code-smell threshold without behavior change; rerun focused owner tests, code-smell audit, and hosted portable-core before returning to TURNED_IN.",
       "preserved_branch": "codex/1314-active-generated-grade-20261116"
     },
     {
