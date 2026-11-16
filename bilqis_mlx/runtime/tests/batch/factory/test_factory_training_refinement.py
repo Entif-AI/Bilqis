@@ -38,7 +38,7 @@ class FactoryTrainingRefinementTests(FactoryTrainingBridgeFixture):
         compiled = prepared.compiled_rows[0]
         authority = factory_task_authority(self.context, compiled)
         plan = task_goal_route_plan(
-            authority.goal, compiled, self.feature_context.snapshot,
+            authority.goal, compiled, self.b11_snapshot(compiled),
             self.generation)
         return bind_factory_task_compiled_batch(compiled, authority), authority, plan
 
@@ -68,7 +68,7 @@ class FactoryTrainingRefinementTests(FactoryTrainingBridgeFixture):
         compiled = prepared.compiled_rows[0]
         authority = factory_task_authority(self.context, compiled)
         plan = task_goal_route_plan(
-            authority.goal, compiled, self.feature_context.snapshot,
+            authority.goal, compiled, self.b11_snapshot(compiled),
             self.generation)
         forged = replace(
             plan,

@@ -1,0 +1,191 @@
+import {
+  ensureAtlasOverview,
+  ensureAtlasSelection,
+  invalidateAtlasRequests,
+  renderAtlasDomain,
+} from "../atlas/atlas-controller.mjs";
+import { deactivateEvidenceView } from "../evidence/evidence-view.mjs";
+import { createCorrectionsController } from "../corrections/corrections-controller.mjs";
+import { createProductionLineageController } from "../lineage/production-controller.mjs";
+import { createProductionMemoryController } from "../memory/production-controller.mjs";
+import {
+  activateSchoolDomain,
+  invalidateSchoolDomainRequests,
+} from "../school/school-domain-controller.mjs";
+
+let productionLineageApi = null;
+let productionLineageController = null;
+let productionMemoryApi = null;
+let productionMemoryController = null;
+let correctionsApi = null;
+let correctionsSupport = null;
+let correctionsController = null;
+
+function lineageControllerFor(api) {
+  if (!api) return null;
+  if (productionLineageApi !== api) {
+    productionLineageController?.deactivate();
+    productionLineageApi = api;
+    productionLineageController = createProductionLineageController(api);
+  }
+  return productionLineageController;
+}
+
+function memoryControllerFor(api) {
+  if (!api) return null;
+  if (productionMemoryApi !== api) {
+    productionMemoryController?.deactivate();
+    productionMemoryApi = api;
+    productionMemoryController = createProductionMemoryController(api);
+  }
+  return productionMemoryController;
+}
+
+function correctionsControllerFor(api, fixtureSupport) {
+  if (!api) return null;
+  if (correctionsApi !== api || correctionsSupport !== fixtureSupport) {
+    correctionsController?.deactivate();
+    correctionsApi = api;
+    correctionsSupport = fixtureSupport;
+    correctionsController = createCorrectionsController(api, { fixtureSupport });
+  }
+  return correctionsController;
+}
+
+export function activateDomainViews({
+  state, getState, defense, api, homeController, resourceController, operateController,
+  teacherController, salienceController, neuralController, capabilityExplorer, learningController,
+  onInspect, onSelectionChange, onNavigate, onAnnounce,
+  schoolDomainSupport = null, atlasDomainSupport = null, correctionsDomainSupport = null,
+}) {
+  if (state?.view !== "evidence") deactivateEvidenceView();
+  if (state?.view === "atlas") {
+    const context = state.context;
+    const atlasApi = context?.fixture === true ? atlasDomainSupport?.api : api;
+    const isActive = () => getState()?.view === "atlas" && getState().context === context;
+    if (atlasApi) {
+      renderAtlasDomain(atlasApi, context, isActive, onInspect, onSelectionChange);
+      if (state.selected?.kind === "semantic" && state.selected.id) {
+        void ensureAtlasSelection(atlasApi, context, state.selected.id, isActive, onInspect, onSelectionChange);
+      } else {
+        void ensureAtlasOverview(atlasApi, context, isActive, onInspect, onSelectionChange);
+      }
+    }
+  }
+  if (state?.view !== "atlas") invalidateAtlasRequests();
+  if (state?.view === "school") {
+    const context = state.context;
+    const fixture = state.context?.fixture === true;
+    const support = fixture ? schoolDomainSupport : { activateSchoolDomain };
+    if (!support?.activateSchoolDomain) return;
+    void support.activateSchoolDomain({
+      state,
+      api,
+      onInspect,
+      launchMode: fixture ? "fixtures" : "production",
+      isActive: () =>
+        getState()?.view === "school" && getState().context === context,
+    });
+  } else {
+    invalidateSchoolDomainRequests();
+    schoolDomainSupport?.invalidateSchoolDomainRequests?.();
+  }
+  if (state?.view === "mission-control") {
+    void homeController.activate(state.context, {
+      host: document.querySelector("#domain-view"),
+      onInspect,
+      onNavigate,
+      defense,
+    });
+  } else {
+    void homeController.deactivate();
+  }
+  if (state?.view === "resources") {
+    void resourceController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      defense,
+    });
+  } else {
+    void resourceController?.deactivate();
+  }
+  if (state?.view === "corrections") {
+    void correctionsControllerFor(api, correctionsDomainSupport)?.activate(state.context, {
+      target: document.querySelector("#domain-view"), onInspect, selection: state.selected,
+    });
+  } else {
+    void correctionsController?.deactivate();
+  }
+  if (state?.view === "teacher") {
+    void teacherController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void teacherController?.deactivate();
+  }
+  if (state?.view === "model" && state.modelSection !== "frames" && state.context?.fixture !== true) {
+    void neuralController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+    });
+  } else {
+    void neuralController?.deactivate();
+  }
+  if (state?.view === "salience") {
+    void salienceController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selected: state.selected,
+      mode: state.context?.fixture === true ? "fixtures" : "production",
+      defense,
+    });
+  } else {
+    void salienceController?.deactivate();
+  }
+  if (state?.view === "learning" && state.context?.fixture !== true) {
+    void learningController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      selection: state.selected,
+    });
+  } else {
+    void learningController?.deactivate();
+  }
+  if (state?.view === "lineage" && state.context?.fixture !== true) {
+    void lineageControllerFor(api)?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+    });
+  } else {
+    void productionLineageController?.deactivate();
+  }
+  if (state?.view === "memory" && state.context?.fixture !== true) {
+    void memoryControllerFor(api)?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      defense,
+    });
+  } else {
+    void productionMemoryController?.deactivate();
+  }
+  if (state?.view === "operate") {
+    const operateDefense = Object.freeze({
+      ...defense,
+      mutationAllowed: defense?.mutationAllowed === true && state?.mutationAvailable === true,
+    });
+    void operateController?.activate(state.context, {
+      target: document.querySelector("#domain-view"),
+      onInspect,
+      onAnnounce,
+      defense: operateDefense,
+    });
+  } else {
+    void operateController?.deactivate();
+  }
+  if (state?.view === "capability") capabilityExplorer?.update(state);
+  else capabilityExplorer?.hide();
+}

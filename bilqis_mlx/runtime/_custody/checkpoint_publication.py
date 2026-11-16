@@ -22,8 +22,12 @@ def publish_boundary(run_dir, record, pending, roles, *, exam_event,
     else:
         for event in boundary_events(record, pending, roles, exam_event):
             record_event(run_dir, event)
+    epoch = record.get("mentor_epoch")
+    capability_best = (record.get("capability_best", {}) if epoch is None else {})
+    graduation_perfect = (record.get("graduation_perfect", {}) if epoch is None else {})
+    grade_champions = school["champions"] if epoch is None else {}
     retained = _learning_capability_frontier.pinned(
-        record.get("capability_best", {}), school["current_student"], school["champions"])
+        capability_best, school["current_student"], grade_champions)
     if record.get("curriculum_parent"):
         retained |= _learning_capability_frontier.pinned({}, record["curriculum_parent"], {})
     for peak in record.get("whole_student_peaks", ()):
@@ -31,16 +35,14 @@ def publish_boundary(run_dir, record, pending, roles, *, exam_event,
     for source in mentor_refs(record):
         retained |= _learning_capability_frontier.pinned({}, source, {})
     retained |= _learning_capability_frontier.pinned(
-        record.get("graduation_perfect", {}), school["current_student"], school["champions"])
+        graduation_perfect, school["current_student"], grade_champions)
     abandoned = regression_ref(record)
     if abandoned is not None:
         retained |= _learning_capability_frontier.pinned({}, abandoned, {})
-    for item in record.get("historical_grade_champions", {}).values():
-        retained |= _learning_capability_frontier.pinned({}, item, {})
-    if record.get("legacy_frontier_pending_replay"):
+    if epoch is None and record.get("legacy_frontier_pending_replay"):
         retained |= _learning_capability_frontier.pinned(
             record.get("historical_capability_best", {}), school["current_student"],
-            school["champions"])
+            grade_champions)
     quarantine(run_dir, retained, school["current_student"]["optimizer_step"])
     removed = _learning_capability_frontier.retire_bundles(run_dir, retained)
     if removed:

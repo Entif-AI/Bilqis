@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 265,
-  "legacy_raw_raise_count": 2093,
+  "legacy_raw_file_count": 285,
+  "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -3587,6 +3587,13 @@
       "path": "bilqis_mlx/compatibility/schedule_program.py"
     },
     {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN:' + registered.descriptor.adapter_id",
+      "path": "bilqis_mlx/compatibility/source_adapter_resume.py"
+    },
+    {
       "code_hint": "ANSWER_FAMILY_AUTHORITY_INVALID",
       "count": 1,
       "exception": "ValueError",
@@ -6037,13 +6044,6 @@
       "path": "bilqis_mlx/factory/generation.py"
     },
     {
-      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
-      "path": "bilqis_mlx/factory/generation.py"
-    },
-    {
       "code_hint": "FACTORY_EXECUTABLE_GENERATION_UNKNOWN_CAPABILITY",
       "count": 1,
       "exception": "ValueError",
@@ -6121,67 +6121,74 @@
       "path": "bilqis_mlx/factory/generation.py"
     },
     {
+      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
+      "path": "bilqis_mlx/factory/generation_compat.py"
+    },
+    {
       "code_hint": "FACTORY_GENERATION_ADAPTER_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ADAPTER_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_EMPTY_SCOPE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_EMPTY_SCOPE'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_INVALID_COUNT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_INVALID_COUNT'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_UNKNOWN_CAPABILITY",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_UNKNOWN_CAPABILITY'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "",
       "count": 1,
       "exception": "ValueError",
       "expression": "drift_code + ':' + execution.capability_id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_ANSWER_HEAD_COMPILATION_INVALID_INPUT",
@@ -7437,6 +7444,594 @@
       "path": "bilqis_mlx/learning/_championship/mentor_epoch.py"
     },
     {
+      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/governance.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_BATTERY_QUESTION_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_BATTERY_QUESTION_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT",
+      "count": 2,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/migration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/migration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/migration.py"
+    },
+    {
+      "code_hint": "unreachable",
+      "count": 1,
+      "exception": "AssertionError",
+      "expression": "'unreachable'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_RECURSION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_RECURSION'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RECURSION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RECURSION'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EARNING_GRAPH_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EARNING_GRAPH_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EARNING_SCORE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EARNING_SCORE_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/competition.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/competition.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING'",
+      "path": "bilqis_mlx/learning/_epoch_championships/competition.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING'",
+      "path": "bilqis_mlx/learning/_epoch_championships/fanout.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INVALID_GRADE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INVALID_GRADE'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_REBASE_INVALID_GENERATION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_REBASE_INVALID_GENERATION'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_ADAMW_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_ADAMW_DRIFT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON'",
+      "path": "bilqis_mlx/learning/_learning_experiment_lessons.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_OLD_POLICY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_OLD_POLICY'",
+      "path": "bilqis_mlx/learning/_learning_experiment_lessons.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_DUPLICATE_ROW",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_DUPLICATE_ROW'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_SETTINGS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_SETTINGS'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
       "code_hint": "HUMAN_TRAINER_INVALID_LESSON_BATCH_SIZE",
       "count": 1,
       "exception": "ValueError",
@@ -7602,35 +8197,35 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_PARAMETER_SET_MISMATCH'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_BLOB_CHANGED",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_BLOB_CHANGED'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "PLASTICITY_MASTERY_DEBT_SCOPE_INVALID",
@@ -7658,21 +8253,21 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_EMPTY_EXAM'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "WHOLE_STUDENT_PEAK_INVALID_SCORE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_INVALID_SCORE'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "CHAMPION_CONFIDENCE_TRAINING_GUIDANCE_INVALID",
@@ -7729,594 +8324,6 @@
       "exception": "ValueError",
       "expression": "'TEACHER_EMPTY_BALLOT'",
       "path": "bilqis_mlx/learning/_teaching/teacher_votes.py"
-    },
-    {
-      "code_hint": "unreachable",
-      "count": 1,
-      "exception": "AssertionError",
-      "expression": "'unreachable'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_BATTERY_QUESTION_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_BATTERY_QUESTION_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EARNING_GRAPH_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EARNING_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EARNING_SCORE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EARNING_SCORE_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_RECURSION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_RECURSION'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RECURSION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RECURSION'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INVALID_GRADE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INVALID_GRADE'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_REBASE_INVALID_GENERATION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_REBASE_INVALID_GENERATION'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_ADAMW_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_ADAMW_DRIFT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_DUPLICATE_ROW",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_DUPLICATE_ROW'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_OLD_POLICY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_OLD_POLICY'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_SETTINGS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_SETTINGS'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
     },
     {
       "code_hint": "CHAMPION_CONFIDENCE_BUNDLE_DRIFT",
@@ -10545,6 +10552,55 @@
       "path": "bilqis_mlx/runtime/_operator/admission.py"
     },
     {
+      "code_hint": "DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH'",
+      "path": "bilqis_mlx/runtime/_release_adoption/core.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING'",
+      "path": "bilqis_mlx/runtime/_release_adoption/core.py"
+    },
+    {
+      "code_hint": "FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED'",
+      "path": "bilqis_mlx/runtime/_release_adoption/prepared.py"
+    },
+    {
       "code_hint": "AUTONOMY_SOURCE_BUILDER_CHANGED_DURING_EXTRACTION",
       "count": 1,
       "exception": "ValueError",
@@ -11014,53 +11070,53 @@
       "path": "bilqis_mlx/runtime/checkpoints.py"
     },
     {
-      "code_hint": "CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
-    },
-    {
       "code_hint": "DIAGNOSTIC_PAIRED_S3_PARENT_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'DIAGNOSTIC_PAIRED_S3_PARENT_DRIFT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/diagnostics.py"
     },
     {
       "code_hint": "DIAGNOSTIC_PAIRED_S3_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'DIAGNOSTIC_PAIRED_S3_SCOPE_DRIFT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/diagnostics.py"
     },
     {
       "code_hint": "DIAGNOSTIC_PAIRED_S3_UNSAFE_PARENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'DIAGNOSTIC_PAIRED_S3_UNSAFE_PARENT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/diagnostics.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED'",
+      "path": "bilqis_mlx/runtime/exam/orchestration_phases.py"
     },
     {
       "code_hint": "FLASH_SCHEDULER_EXAM_REQUIRES_CHECKPOINTED_STUDENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FLASH_SCHEDULER_EXAM_REQUIRES_CHECKPOINTED_STUDENT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/orchestration_phases.py"
     },
     {
       "code_hint": "HUMAN_TRAINER_EXAM_OUTSIDE_SCHEDULED_BOUNDARY",
       "count": 1,
       "exception": "ValueError",
       "expression": "'HUMAN_TRAINER_EXAM_OUTSIDE_SCHEDULED_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/orchestration_phases.py"
     },
     {
       "code_hint": "HUMAN_TRAINER_EXAM_SCORE_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'HUMAN_TRAINER_EXAM_SCORE_SCOPE_DRIFT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/shared.py"
     },
     {
       "code_hint": "AUTONOMY_EVIDENCE_REQUIRES_DURABLE_CHECKPOINT",
@@ -11196,55 +11252,6 @@
       "path": "bilqis_mlx/runtime/operator_session/operator_visit.py"
     },
     {
-      "code_hint": "DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
       "code_hint": "disposable interruption before pointer publication",
       "count": 1,
       "exception": "OSError",
@@ -11312,56 +11319,70 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic Factory release drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic capability is not admitted",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic capability is not admitted'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic cohort unavailable",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic cohort unavailable'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic optimizer census drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic optimizer census drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic protected capability absent",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic protected capability absent'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic training authority drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic training authority drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 lesson diagnostic capability is not admitted",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 lesson diagnostic capability is not admitted'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_lesson_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_lesson_diagnostic.py"
     },
     {
       "code_hint": "C05 lesson diagnostic training authority drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 lesson diagnostic training authority drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_lesson_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_lesson_diagnostic.py"
+    },
+    {
+      "code_hint": "C05 target diagnostic capability is not admitted",
+      "count": 1,
+      "exception": "AssertionError",
+      "expression": "'C05 target diagnostic capability is not admitted'",
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_target_diagnostic.py"
+    },
+    {
+      "code_hint": "C05 target diagnostic training authority drift",
+      "count": 1,
+      "exception": "AssertionError",
+      "expression": "'C05 target diagnostic training authority drift'",
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_target_diagnostic.py"
     },
     {
       "code_hint": "C05 source-owned identity bank unavailable",
@@ -11375,196 +11396,182 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 accepted bundle/CAS mutated'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 accepted pointer mutated",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 accepted pointer mutated'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 cold accepted parent drift or generation-2 publication",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 cold accepted parent drift or generation-2 publication'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 destination arm is not CPU",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 destination arm is not CPU'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 in-memory accepted parent mutated",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 in-memory accepted parent mutated'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric reference already exists",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric reference already exists'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric reference census drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric reference census drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric reference schema drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric reference schema drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric tensor contract drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric tensor contract drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 source arm is not Apple Metal",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 source arm is not Apple Metal'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 structural parity drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 structural parity drift: forward'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 structural parity drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 structural parity drift: step_proof fields=' + ','.join(differing)",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 execution provenance drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "f'B13.2 execution provenance drift: {field}'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric",
       "count": 1,
       "exception": "AssertionError",
       "expression": "f'B13.2 numeric {role} non-finite: {logical}'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 structural parity drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "f'B13.2 structural parity drift: {field}'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 controlled capability selection drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 controlled capability selection drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 execution seal already written",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 execution seal already written'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 sealed execution drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 sealed execution drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 sealed visit drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 sealed visit drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 committed semantic output drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 committed semantic output drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 cross-backend FP32 parity exceeded tolerance",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 cross-backend FP32 parity exceeded tolerance'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 expected exactly one route decision",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 expected exactly one route decision'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 natural Factory next capability drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 natural Factory next capability drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 natural Factory next-selection cold readback drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 natural Factory next-selection cold readback drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 next step did not execute exactly once",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 next step did not execute exactly once'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 witness requires published accepted generation one",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 witness requires published accepted generation one'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
-    },
-    {
-      "code_hint": "C05 target diagnostic capability is not admitted",
-      "count": 1,
-      "exception": "AssertionError",
-      "expression": "'C05 target diagnostic capability is not admitted'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_target_diagnostic.py"
-    },
-    {
-      "code_hint": "C05 target diagnostic training authority drift",
-      "count": 1,
-      "exception": "AssertionError",
-      "expression": "'C05 target diagnostic training authority drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_target_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "C05 source-owned generation-one publication drift",
@@ -11630,11 +11637,25 @@
       "path": "bilqis_mlx/runtime/tests/capability/test_capability_evidence_history.py"
     },
     {
+      "code_hint": "steps must be a positive integer",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'steps must be a positive integer'",
+      "path": "bilqis_mlx/runtime/tests/correction/capability_support_owner_support.py"
+    },
+    {
       "code_hint": "source-owned context was not approved",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'source-owned context was not approved'",
       "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/correction_runtime/temporal_support.py"
+    },
+    {
+      "code_hint": "missing",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'missing'",
+      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/test_planning_currentness.py"
     },
     {
       "code_hint": "COLD_RESUME_CONTINUATION_REJECTED before=",
@@ -11711,7 +11732,7 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'bamf_operator must not inspect Factory capability order'",
-      "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_session.py"
+      "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_routing.py"
     },
     {
       "code_hint": "GRAPH_UNAVAILABLE",
@@ -11795,13 +11816,6 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'HISTORICAL_ABI_FIELDS_INVALID'",
-      "path": "bilqis_mlx/semantics/foundation/abi.py"
-    },
-    {
-      "code_hint": "HISTORICAL_ABI_GRAPH_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HISTORICAL_ABI_GRAPH_INVALID'",
       "path": "bilqis_mlx/semantics/foundation/abi.py"
     },
     {
@@ -13784,6 +13798,20 @@
   "schema": "bilqis.error-catalog/v1",
   "typed_errors": [
     {
+      "code": "FACTORY.SOURCE_ADAPTER.COMPATIBILITY_INVALID",
+      "disposition": "PRESERVE_AND_REPAIR",
+      "legacy_codes": [],
+      "message_key": "errors.factory.source_adapter.compatibility_invalid.message",
+      "message_template": "Factory source-adapter compatibility invalid: {reason}",
+      "next_action": "Preserve the accepted release and repair the exact source-adapter identity or registry boundary before retrying.",
+      "operator_steps": [],
+      "owner": "compatibility.source_adapter_resume",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.source_adapter.compatibility_invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory source-adapter compatibility invalid"
+    },
+    {
       "code": "FACTORY.DEVELOPMENTAL_PROGRAM.INVALID",
       "disposition": "CORRECT_INPUT_OR_STATE",
       "legacy_codes": [],
@@ -13852,6 +13880,20 @@
       "recovery_key": "errors.source.bamf_world.invalid.recovery",
       "self_heal_owner": null,
       "title": "Qualified world source contract invalid"
+    },
+    {
+      "code": "SCHOOL.BAMF_CONTROL_PLANE.INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_control_plane.invalid.message",
+      "message_template": "The BAMF local control-plane boundary is invalid: {reason}",
+      "next_action": "Keep learner and checkpoint custody unchanged; reconcile the local service transport, protocol session, or accepted-generation read boundary before retry.",
+      "operator_steps": [],
+      "owner": "control_plane.service",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_control_plane.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "BAMF local control-plane boundary invalid"
     },
     {
       "code": "SCHOOL.BAMF_ATLAS_ADMISSION.INVALID",
@@ -15826,6 +15868,188 @@
       "recovery_key": "errors.school.bamf_package.invalid.recovery",
       "self_heal_owner": null,
       "title": "BAMF cognitive package invalid"
+    },
+    {
+      "code": "SCHOOL.BAMF_CURRICULUM.INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_curriculum.invalid.message",
+      "message_template": "Curriculum priority authority invalid: {reason}",
+      "next_action": "Reload accepted learner, release and teacher authority; inspect the detailed reason before selecting work.",
+      "operator_steps": [],
+      "owner": "runtime.priority_qualification",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_curriculum.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Curriculum priority authority invalid"
+    },
+    {
+      "code": "SCHOOL.BAMF_CURRICULUM.NOT_ADMITTED",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_curriculum.not_admitted.message",
+      "message_template": "Capability not admitted: {reason}",
+      "next_action": "Use C07 to admit a source-qualified executable capability before teaching it.",
+      "operator_steps": [],
+      "owner": "runtime.priority_qualification",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_curriculum.not_admitted.recovery",
+      "self_heal_owner": null,
+      "title": "Capability not admitted"
+    },
+    {
+      "code": "SCHOOL.BAMF_CURRICULUM.NOT_TEACHABLE",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_curriculum.not_teachable.message",
+      "message_template": "Admitted capability not currently teachable: {reason}",
+      "next_action": "Rebuild the current learner frontier and inspect its eligibility evidence.",
+      "operator_steps": [],
+      "owner": "runtime.priority_qualification",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_curriculum.not_teachable.recovery",
+      "self_heal_owner": null,
+      "title": "Admitted capability not currently teachable"
+    },
+    {
+      "code": "SCHOOL.BAMF_CURRICULUM.PREREQUISITE_HELD",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_curriculum.prerequisite_held.message",
+      "message_template": "Prerequisite or learner evidence required: {reason}",
+      "next_action": "Establish the required prerequisite evidence through lawful teaching and reassess this dependent capability.",
+      "operator_steps": [],
+      "owner": "runtime.priority_qualification",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_curriculum.prerequisite_held.recovery",
+      "self_heal_owner": null,
+      "title": "Prerequisite or learner evidence required"
+    },
+    {
+      "code": "SCHOOL.BAMF_CURRICULUM.SOURCE_HELD",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_curriculum.source_held.message",
+      "message_template": "Source, rights or correction authority held: {reason}",
+      "next_action": "Requalify the exact source binding, rights and correction epoch; preserve unrelated lawful work.",
+      "operator_steps": [],
+      "owner": "runtime.priority_qualification",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_curriculum.source_held.recovery",
+      "self_heal_owner": null,
+      "title": "Source, rights or correction authority held"
+    },
+    {
+      "code": "SCHOOL.BAMF_RETENTION.BASELINE_ABSENT",
+      "disposition": "MEASURE_WITH_CURRENT_AUTHORITY",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_retention.baseline_absent.message",
+      "message_template": "Baseline absent or unmeasured: {reason}",
+      "next_action": "Obtain a lawful baseline under the current evidence identity before comparing regression.",
+      "operator_steps": [],
+      "owner": "runtime.capability_retention",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_retention.baseline_absent.recovery",
+      "self_heal_owner": null,
+      "title": "Baseline absent or unmeasured"
+    },
+    {
+      "code": "SCHOOL.BAMF_RETENTION.COMPARABLE_REGRESSION",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_retention.comparable_regression.message",
+      "message_template": "Comparable retention regression: {reason}",
+      "next_action": "Inspect the producer's blocking capability or scope and comparable evidence; preserve the accepted learner.",
+      "operator_steps": [],
+      "owner": "runtime.capability_retention",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_retention.comparable_regression.recovery",
+      "self_heal_owner": null,
+      "title": "Comparable retention regression"
+    },
+    {
+      "code": "SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_b11.source_execution_authority_invalid.message",
+      "message_template": "B11 exact source execution authority invalid: {reason}",
+      "next_action": "Rebind the exact emitted row to its canonical source owner and current rights/correction authority before execution.",
+      "operator_steps": [],
+      "owner": "runtime.b11_source_execution_authority",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_b11.source_execution_authority_invalid.recovery",
+      "self_heal_owner": null,
+      "title": "B11 exact source execution authority invalid"
+    },
+    {
+      "code": "SCHOOL.BAMF_ADMISSION.LEASE_REQUIRED",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_admission.lease_required.message",
+      "message_template": "C07 admission lease required: {reason}",
+      "next_action": "Use the existing explicit enrollment path for an accepted lease covering this successor.",
+      "operator_steps": [],
+      "owner": "runtime.atlas_flywheel",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_admission.lease_required.recovery",
+      "self_heal_owner": null,
+      "title": "C07 admission lease required"
+    },
+    {
+      "code": "SCHOOL.BAMF_ADMISSION.WAITING_FOR_EVIDENCE",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_admission.waiting_for_evidence.message",
+      "message_template": "C07 waiting for learner evidence: {reason}",
+      "next_action": "Establish the planner's required learner evidence and replan through C07.",
+      "operator_steps": [],
+      "owner": "runtime.atlas_flywheel",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_admission.waiting_for_evidence.recovery",
+      "self_heal_owner": null,
+      "title": "C07 waiting for learner evidence"
+    },
+    {
+      "code": "SCHOOL.BAMF_ADMISSION.HELD",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_admission.held.message",
+      "message_template": "C07 admission held: {reason}",
+      "next_action": "Inspect the exact admission hold and source/custody authority before retrying.",
+      "operator_steps": [],
+      "owner": "runtime.atlas_flywheel",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_admission.held.recovery",
+      "self_heal_owner": null,
+      "title": "C07 admission held"
+    },
+    {
+      "code": "SCHOOL.BAMF_ADMISSION.IMPLEMENTATION_UNCOVERED",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_admission.implementation_uncovered.message",
+      "message_template": "C07 implementation uncovered: {reason}",
+      "next_action": "Implement and independently qualify the missing Factory construction before admission.",
+      "operator_steps": [],
+      "owner": "runtime.atlas_flywheel",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_admission.implementation_uncovered.recovery",
+      "self_heal_owner": null,
+      "title": "C07 implementation uncovered"
+    },
+    {
+      "code": "SCHOOL.BAMF_ADMISSION.FIXED_POINT",
+      "disposition": "NO_READY_DELTA",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_admission.fixed_point.message",
+      "message_template": "C07 no ready delta: {reason}",
+      "next_action": "Inspect current coverage and obligations; replan only after source, evidence or admission state changes.",
+      "operator_steps": [],
+      "owner": "runtime.atlas_flywheel",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_admission.fixed_point.recovery",
+      "self_heal_owner": null,
+      "title": "C07 no ready delta"
     }
   ]
 }

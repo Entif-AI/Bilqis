@@ -1,7 +1,7 @@
 """B13.6 generation-zero custody is distinct from C05 retention acceptance."""
 from __future__ import annotations
 
-from dataclasses import replace
+from dataclasses import asdict, replace
 import json
 import os
 from pathlib import Path
@@ -19,6 +19,7 @@ from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import (
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_bundle import (
     InitialGenerationBinding, PreparedInitialGeneration,
+    issue_initial_factory_foundation_authority,
     load_bamf_generation, load_bamf_generation_authority,
     prepare_initial_generation, publish_bamf_generation, publish_initial_generation,
 )
@@ -131,6 +132,30 @@ class GenerationZeroAuthorityTests(unittest.TestCase):
             failure.exception.context["reason"],
             "BAMF_INITIAL_GENERATION_SOURCE_AUTHORITY_DRIFT")
         self.assertFalse(self.run.exists())
+
+    def test_factory_foundation_accepts_current_descendant_of_admitted_baseline(self):
+        with shape_patch():
+            prepared = genesis_preparation(run_seed=74)
+        source = Path(prepared.factory_authority.source_run_dir)
+        current = read_current(source)
+        descendant = replace(
+            prepared.origin_checkpoint,
+            sha256="8" * 64,
+            optimizer_step=prepared.origin_checkpoint.optimizer_step + 1,
+        )
+        persist(source, {
+            **current,
+            "generation": current["generation"] + 1,
+            "school": {
+                **current["school"],
+                "current_student": asdict(descendant),
+            },
+        })
+
+        authority = issue_initial_factory_foundation_authority(source, prepared.graph)
+
+        self.assertEqual(authority.admission, prepared.admission)
+        self.assertEqual(authority.origin_checkpoint, descendant)
 
     def test_corrupt_run_identity_sidecar_rejects_cold_read(self):
         _, pointer = self.publish_genesis(run_seed=79)

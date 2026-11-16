@@ -159,11 +159,20 @@ def _validate_resume_atlas_override(args, atlas):
             invalid("BAMF_OPERATOR_RESUME_ATLAS_MANIFEST_CONFLICT")
 
 
-def _resume(args, requested_topology):
+def _validated_resume_parent_graph(args, identity):
+    source, release, graph = source_foundation(args.source_run_dir)
+    from bilqis_mlx.runtime.state import _fingerprint
+    if _fingerprint(graph) != identity.semantic_graph_sha256:
+        invalid("BAMF_OPERATOR_RESUME_SOURCE_GRAPH_CONFLICT")
+    return source, release, graph
+
+
+def _resume(args, requested_topology, *, include_parent_graph=False):
     from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
 
     run_dir = Path(args.run_dir).expanduser().resolve()
     request = None
+    flywheel = None
     if args.atlas_admission_scope is not None:
         if not args.admission_policy_explicit or args.admission_policy != "atlas-release":
             invalid("BAMF_ATLAS_SCOPE_REQUIRES_EXPLICIT_POLICY")
@@ -179,6 +188,7 @@ def _resume(args, requested_topology):
     atlas = _accepted_atlas(run_dir, identity)
     identity = _validate_resume_overrides(args, student)
     _validate_resume_atlas_override(args, atlas)
+    parent_graph = None
 
     if request is not None:
         from bilqis_mlx.runtime.atlas_admission import enroll_accepted_atlas_lease_v2
@@ -205,20 +215,31 @@ def _resume(args, requested_topology):
             from bilqis_mlx.runtime.atlas_flywheel_runtime import (
                 run_accepted_atlas_flywheel,
             )
-            _source, _release, graph = source_foundation()
+            _source, _release, parent_graph = _validated_resume_parent_graph(
+                args, identity)
             flywheel = run_accepted_atlas_flywheel(
-                run_dir, graph, reserve_gib=args.reserve_gib)
+                run_dir, parent_graph, reserve_gib=args.reserve_gib)
             result = flywheel.status.value
             student, manifest_sha256 = load_bamf_generation_authority(pointer)
             identity = _validate_resume_overrides(args, student)
             atlas = _accepted_atlas(run_dir, identity)
 
-    return _report(
+    report = _report(
         result=result, run_identity=identity, topology=student.topology, atlas=atlas,
         policy=policy, hp=student.optimizer_hyperparameters,
         source_prefetch_workers=args.source_prefetch_workers,
         manifest_sha256=manifest_sha256,
     )
+    if flywheel is not None:
+        report.update(
+            admission_reason=flywheel.reason,
+            admission_advances=flywheel.advances)
+    return (report, parent_graph) if include_parent_graph else report
+
+
+def _resume_runtime_context(args, requested_topology):
+    """Return the public resume report plus its validated ephemeral parent graph."""
+    return _resume(args, requested_topology, include_parent_graph=True)
 
 
 def _cold_recovery(args, topology, atlas, hp):
@@ -235,6 +256,20 @@ def _cold_recovery(args, topology, atlas, hp):
     )
 
 
+def _fresh_target(args):
+    from bilqis_mlx.runtime._bamf_first_student_support import (
+        _canonical_disjoint_run_paths, _canonical_run_dir_shape,
+    )
+    selected_source = source_run_dir(args.source_run_dir)
+    _source, target = _canonical_disjoint_run_paths(
+        str(selected_source), args.run_dir)
+    target = _canonical_run_dir_shape(target)
+    pointer_path = target / "bamf-state.json"
+    if pointer_path.exists() or pointer_path.is_symlink():
+        invalid("BAMF_OPERATOR_CREATE_USE_RESUME")
+    return selected_source, target, pointer_path
+
+
 def bamf_lifecycle(args, topology):
     """Resolve one BAMF v2 lifecycle request without entering the neural loop."""
     if args.resume:
@@ -247,19 +282,12 @@ def bamf_lifecycle(args, topology):
         if args.human_run is not True:
             invalid("BAMF_OPERATOR_CREATE_EXPLICIT_HUMAN_REQUEST_REQUIRED")
     _validate_fresh_request_compatibility(args, topology, atlas, request)
-    from bilqis_mlx.runtime._bamf_first_student_support import (
-        _canonical_disjoint_run_paths, _canonical_run_dir_shape, _fresh_run_dir,
-    )
-    _source, target = _canonical_disjoint_run_paths(
-        str(source_run_dir()), args.run_dir)
-    target = _canonical_run_dir_shape(target)
-    pointer_path = target / "bamf-state.json"
-    if pointer_path.exists() or pointer_path.is_symlink():
-        invalid("BAMF_OPERATOR_CREATE_USE_RESUME")
+    from bilqis_mlx.runtime._bamf_first_student_support import _fresh_run_dir
+    selected_source, target, pointer_path = _fresh_target(args)
 
     if args.dry_run:
         _fresh_run_dir(target)
-        source, release, graph = source_foundation()
+        source, release, graph = source_foundation(selected_source)
         from bilqis_mlx.runtime.bamf_first_student import (
             BamfFoundationConfig, preview_bamf_foundation_run_identity,
         )
@@ -283,7 +311,7 @@ def bamf_lifecycle(args, topology):
                 recovered = _cold_recovery(args, topology, atlas, hp)
 
     if recovered is None:
-        source, release, graph = source_foundation()
+        source, release, graph = source_foundation(selected_source)
         from bilqis_mlx.runtime.bamf_first_student import (
             BamfFoundationConfig, preflight_bamf_foundation,
         )

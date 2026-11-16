@@ -16,7 +16,7 @@ from bilqis_mlx.learning.teacher_lineage import (
 )
 from bilqis_mlx.learning.teacher_visit_identity import (
     TeacherVisitIdentity, derive_teacher_visit_identity,
-    record_teacher_visit_identity,
+    record_teacher_visit_authority, record_teacher_visit_identity,
 )
 from bilqis_mlx.learning._teaching.teacher_lineage_records import digest, invalid
 from bilqis_mlx.runtime.bamf_bundle import CompleteStudent
@@ -24,7 +24,13 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     bind_accepted_execution_cache, derive_successor_bundle,
     load_accepted_generation,
 )
-from bilqis_mlx.runtime.bamf_bundle.records import BamfBundleCandidate, sidecar_records
+from bilqis_mlx.runtime.bamf_bundle.factory_release_adoption import (
+    is_factory_release_adoption_transition,
+    validate_factory_release_adoption_transition,
+)
+from bilqis_mlx.runtime.bamf_bundle.records import (
+    BamfBundleCandidate, sidecar_records, validate_transition,
+)
 from bilqis_mlx.runtime.bamf_bundle.package_import_transition import (
     is_package_import_transition, validate_package_import_transition,
 )
@@ -114,15 +120,24 @@ def _student_reference(student: CompleteStudent, state: CandidateState | None = 
     }
 
 
-def _package_import_bootstrap_eligible(parent: CompleteStudent, state: Mapping) -> bool:
+def _prebootstrap_transition_eligible(parent: CompleteStudent, state: Mapping) -> bool:
     if (parent.generation <= 0
             or parent.retained_state.optimizer_step != 0
-            or not is_package_import_transition(parent.transition)
             or state.get("teacher_identity") != parent.provenance.teacher_identity
             or state.get("teacher_epoch") != parent.provenance.teacher_epoch):
         return False
-    validate_package_import_transition(parent.transition)
-    return True
+    transition = parent.transition
+    if is_package_import_transition(transition):
+        validate_package_import_transition(transition)
+        return True
+    if is_factory_release_adoption_transition(transition):
+        validate_factory_release_adoption_transition(transition)
+        return True
+    if (isinstance(transition, Mapping)
+            and transition.get("kind") == "PARAMETER_EXTENSION"):
+        validate_transition(parent.generation, transition)
+        return True
+    return False
 
 
 def _require_current_c03_lineage(parent: CompleteStudent, state: Mapping):
@@ -146,7 +161,7 @@ def _c03_projection(parent: CompleteStudent, *, legacy_receipt, adaptation,
         return TeacherCustodyProjection(
             state, state["teacher_identity"], state["teacher_epoch"])
     can_bootstrap = (
-        parent.generation == 0 or _package_import_bootstrap_eligible(parent, state))
+        parent.generation == 0 or _prebootstrap_transition_eligible(parent, state))
     if (not can_bootstrap or not isinstance(legacy_receipt, Mapping)
             or not isinstance(adaptation, Mapping)
             or not isinstance(prior_region, str) or not prior_region):
@@ -230,10 +245,13 @@ def select_accepted_teacher_visit(
         accepted_manifest_sha256=cache.accepted_manifest_sha256,
         capability_id=capability_id, policy_key=key)
     recorded = record_teacher_visit_identity(selected.teacher_state, identity)
+    recorded = record_teacher_visit_authority(recorded, identity)
     return _issue_bound_visit(recorded, identity), policy, metadata
 
 
-def _require_current_visit(parent, cache, visit: BoundTeacherVisit) -> None:
+def _require_current_visit(
+        parent, cache, visit: BoundTeacherVisit, *,
+        candidate_identity_sha256: str | None = None) -> None:
     if type(visit) is not BoundTeacherVisit:
         invalid("TEACHER_VISIT_CUSTODY_REQUIRED")
     visit.__post_init__()
@@ -245,9 +263,10 @@ def _require_current_visit(parent, cache, visit: BoundTeacherVisit) -> None:
         generation=parent.generation,
         accepted_manifest_sha256=cache.accepted_manifest_sha256,
         capability_id=identity.capability_id, policy_key=identity.policy_key)
+    if candidate_identity_sha256 is None:
+        candidate_identity_sha256 = candidate_identity_digest(parent.retained_state)
     if (identity != expected
-            or identity.student_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or identity.student_sha256 != candidate_identity_sha256):
         invalid("TEACHER_VISIT_ACCEPTED_GENERATION_DRIFT")
 
 

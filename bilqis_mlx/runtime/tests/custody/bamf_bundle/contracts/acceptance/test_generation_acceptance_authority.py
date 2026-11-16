@@ -235,7 +235,7 @@ class GenerationAcceptanceAuthorityTests(GenerationAcceptanceFixture, unittest.T
                 load_bamf_generation_authority(pointer_path)
             self.assertEqual(
                 failure.exception.context["reason"],
-                "BAMF_RUN_IDENTITY_DRIFT")
+                "BAMF_GENERATION_ACCEPTANCE_DRIFT")
 
         real_feature_load = feature_acceptance.load_bamf_bundle
 
@@ -263,7 +263,7 @@ class GenerationAcceptanceAuthorityTests(GenerationAcceptanceFixture, unittest.T
                 read_accepted_generation_feature_receipt(pointer_path)
             self.assertEqual(
                 failure.exception.context["reason"],
-                "BAMF_RUN_IDENTITY_DRIFT")
+                "BAMF_GENERATION_ACCEPTANCE_DRIFT")
 
 
 if __name__ == "__main__":

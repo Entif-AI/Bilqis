@@ -1,0 +1,224 @@
+.memory-compare-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  color: var(--text-muted);
+}
+
+.memory-production-compare-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin: 12px 0;
+}
+
+.memory-production-compare-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--text-muted);
+}
+
+.memory-production-compare-form input {
+  min-height: 36px;
+  min-width: min(280px, 100%);
+  padding: 6px 10px;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.memory-delta-table tr[data-delta-kind="created"] {
+  border-inline-start: 3px solid var(--accent);
+}
+
+.memory-delta-table tr[data-delta-kind="removed"] {
+  border-inline-start: 3px dotted var(--border-strong);
+}
+
+.memory-delta-table tr[data-delta-kind="held"] {
+  border-inline-start: 3px dashed var(--border-strong);
+}
+
+.memory-delta-table tr[data-delta-kind="requalified"] {
+  border-inline-start: 4px double var(--healthy);
+}
+
+.memory-delta-table td:last-child {
+  overflow-wrap: anywhere;
+}
+
+.memory-compare-metrics {
+  grid-template-columns: repeat(5, minmax(100px, 1fr));
+}
+
+.memory-rejected {
+  border-style: dashed;
+}
+
+.memory-rejected-proof {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0;
+  margin: 12px 0 0;
+  border-block: 1px solid var(--border);
+}
+
+.memory-rejected-proof > div {
+  min-width: 0;
+  padding: 9px 12px;
+  border-inline-end: 1px solid var(--border);
+}
+
+.memory-rejected-proof > div:nth-child(3n) {
+  border-inline-end: 0;
+}
+
+.memory-rejected-proof dd {
+  margin-top: 4px;
+  font-weight: 700;
+}
+
+.memory-historical-unavailable {
+  border-style: dashed;
+}
+
+.memory-historical-unavailable p {
+  max-width: 760px;
+  color: var(--text-muted);
+}
+
+.memory-view :where(button, select, summary, a):focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}
+
+[data-density="compact"] .memory-view {
+  gap: 16px;
+}
+
+[data-density="compact"] .memory-surface,
+[data-density="compact"] .memory-rejected {
+  padding: 12px;
+}
+
+[data-density="compact"] .memory-slot-table th,
+[data-density="compact"] .memory-slot-table td,
+[data-density="compact"] .memory-delta-table th,
+[data-density="compact"] .memory-delta-table td {
+  padding-block: 6px;
+}
+
+@media (max-width: 980px) {
+  .memory-heading,
+  .memory-section-heading,
+  .memory-fixture-notice {
+    flex-direction: column;
+  }
+
+  .memory-metric-band {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .memory-metric-band > div:nth-child(3n) {
+    border-inline-end: 0;
+  }
+
+  .memory-dossier-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-dossier-grid > section,
+  .memory-dossier-grid > section:first-child,
+  .memory-dossier-grid > section:last-child {
+    padding: 12px 0;
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .memory-dossier-grid > section:last-child {
+    border-bottom: 0;
+  }
+
+  .memory-provenance-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-rejected-proof {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .memory-rejected-proof > div:nth-child(3n) {
+    border-inline-end: 1px solid var(--border);
+  }
+
+  .memory-rejected-proof > div:nth-child(2n) {
+    border-inline-end: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .memory-view {
+    gap: 16px;
+  }
+
+  .memory-metric-band,
+  .memory-compare-metrics,
+  .memory-rejected-proof {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-metric-band > div,
+  .memory-compare-metrics > div,
+  .memory-rejected-proof > div,
+  .memory-rejected-proof > div:nth-child(2n),
+  .memory-rejected-proof > div:nth-child(3n) {
+    border-inline-end: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .memory-metric-band > div:last-child,
+  .memory-compare-metrics > div:last-child,
+  .memory-rejected-proof > div:last-child {
+    border-bottom: 0;
+  }
+
+  .memory-receipt-list > div,
+  .memory-dossier dl > div {
+    grid-template-columns: 1fr;
+  }
+
+  .memory-page-nav {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .memory-page-nav strong {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .memory-tabs,
+  .memory-production-compare-form {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .memory-tabs .ui-control,
+  .memory-production-compare-form .ui-control {
+    width: 100%;
+  }
+}
+
+@media (forced-colors: active) {
+  .memory-slot-table tbody tr[data-selected="true"] > td:first-child,
+  .memory-delta-table tr {
+    border-inline-start-color: CanvasText;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .memory-view * {
+    scroll-behavior: auto !important;
+  }
+}

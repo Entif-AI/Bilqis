@@ -1,203 +1,319 @@
 """C16.3 persistent BAMF operator routing contracts."""
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_operator.session import (
-    _execution_context, _visit, operate_bamf,
+    _execution_context, _visit, operate_bamf, prepare_bamf_visit,
 )
 
 
+def _evidence_receipt(bytes_written, evidence_objects, seconds):
+    return {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": bytes_written, "file_fsyncs": 1,
+            "directory_fsyncs": 1, "evidence_objects": evidence_objects,
+            "persistence_seconds": seconds,
+        },
+    }
+
+
+def _candidate_executor(transactions, case):
+    def execute(*_args, candidate=None, **_kwargs):
+        ordinal = len(transactions) + 1
+        case.assertIsNone(candidate) if ordinal == 1 else case.assertIs(
+            candidate, transactions[-1])
+        transaction = SimpleNamespace(
+            parent=SimpleNamespace(optimizer_step=11), update_steps=ordinal,
+            training_authorities=tuple(
+                f"authority-{step}" for step in range(ordinal)))
+        transactions.append(transaction)
+        return SimpleNamespace(
+            transaction=transaction,
+            realized_cost={
+                "wall_seconds": float(ordinal), "optimizer_steps": 1,
+                "candidate_optimizer_steps": ordinal,
+                "c08_memory_budget_bytes": 64 * 1024 ** 3,
+            })
+    return execute
+
+
 class BamfOperatorRoutingTests(unittest.TestCase):
+    def test_candidate_horizon_buffers_step_evidence_until_one_boundary_write(self):
+        from bilqis_mlx.factory.teaching import content_digest
+        from bilqis_mlx.runtime.bamf_operator.evidence import (
+            CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root,
+        )
+
+        identity = SimpleNamespace(
+            visit_id="visit:evidence", policy_key="policy:evidence",
+            to_record=lambda: {
+                "visit_id": "visit:evidence", "policy_key": "policy:evidence"})
+        selection = SimpleNamespace(
+            option_id="option:evidence",
+            visit=SimpleNamespace(identity=identity),
+            offer=SimpleNamespace(
+                capability_id="capability:evidence", source_seed=17,
+                release_sha256="b" * 64),
+        )
+        execution = SimpleNamespace(
+            provider_id="provider:evidence", provider_implementation_sha256="f" * 64,
+            variation_axes=("seed",), teaching_option_ids=("option:evidence",))
+        release = SimpleNamespace(
+            release_sha256="b" * 64,
+            execution_plan=SimpleNamespace(
+                capability_map={"capability:evidence": execution}))
+        row = {
+            "id": "row:one", "capability": "capability:evidence",
+            "tokens": [1, 2, 3],
+        }
+        rows = (row,)
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            prepare_candidate_evidence_root(root)
+            capture = _Capture(
+                root, selection, generation=3,
+                accepted_manifest_sha256="a" * 64,
+                candidate_attempt_ordinal=1, parent_optimizer_step=10)
+            with patch(
+                    "bilqis_mlx.runtime.state.os.fsync",
+                    wraps=os.fsync) as fsync:
+                for ordinal in range(1, 17):
+                    capture.delivery(
+                        release, "capability:evidence", 10 + ordinal, rows,
+                        option_rows=rows, seed=ordinal,
+                        controls={
+                            "realized_cost": {"wall_seconds": 0.01},
+                            "delivered_content_sha256": content_digest(rows),
+                        },
+                    )
+                self.assertEqual(fsync.call_count, 0)
+
+    def test_prepare_visit_accumulates_horizon_before_one_retention_decision(self):
+        parent = SimpleNamespace(
+            retained_state=SimpleNamespace(optimizer_step=11),
+            optimizer_hyperparameters="hparams",
+        )
+        context = SimpleNamespace(release=object())
+        cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
+        identity = SimpleNamespace(visit_id="visit:horizon", policy_key="policy:horizon")
+        selection = SimpleNamespace(
+            status="TEACHER_SELECTED",
+            option_id="option:horizon",
+            visit=SimpleNamespace(identity=identity),
+            offer=SimpleNamespace(
+                capability_id="capability:horizon", source_seed=17,
+                rows=lambda: ({"id": "row:horizon"},),
+            ),
+        )
+        transactions = []
+        execute = _candidate_executor(transactions, self)
+        decision = SimpleNamespace(
+            accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
+        retained = SimpleNamespace(optimizer_step=15)
+        successor = object()
+        evidence = _evidence_receipt(900, 6, 0.01)
+        capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
+        with patch(
+                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
+                return_value=(parent, context, "atlas", "feature")), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
+                return_value="program"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
+                return_value="school"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
+                return_value=selection), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
+                return_value=cache), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
+                return_value=4) as horizon, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                return_value=(1, 1)), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session._Capture",
+                return_value=capture) as capture_factory, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
+                return_value="observation"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
+                side_effect=execute) as execute_candidate, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
+                return_value=SimpleNamespace(
+                    candidate_state=retained, parent_state=parent.retained_state)) as evaluate, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
+                return_value=decision) as decide, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
+                return_value=successor) as derive, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
+                return_value=successor), patch(
+                "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
+                return_value=SimpleNamespace(used=123)):
+            prepared = prepare_bamf_visit(Path("/run"), steps_per_visit=16)
+
+        self.assertEqual(prepared.status, "ACCEPTED")
+        self.assertEqual(len(prepared.steps), 4)
+        self.assertEqual(prepared.step.transaction.update_steps, 4)
+        self.assertEqual(execute_candidate.call_count, 4)
+        capture_factory.assert_called_once_with(
+            Path("/run"), selection, generation=1,
+            accepted_manifest_sha256="a" * 64,
+            candidate_attempt_ordinal=1, parent_optimizer_step=11)
+        horizon.assert_called_once_with(
+            Path("/run"), parent, cache, "capability:horizon", 16)
+        evaluate.assert_called_once_with(
+            context, transactions[-1], "atlas", "capability:horizon", run_dir=Path("/run"))
+        decide.assert_called_once_with(evaluate.return_value)
+        event = derive.call_args.kwargs["delivery_events"][0]
+        self.assertIs(prepared.resource, event["resource"])
+        self.assertEqual(event["resource"]["optimizer_steps"], 4)
+        self.assertEqual(event["resource"]["wall_seconds"], 10.0)
+        self.assertEqual(event["visit_id"], "visit:horizon")
+        self.assertEqual(event["selected_policy_key"], "policy:horizon")
+        self.assertEqual(event["selected_option_id"], "option:horizon")
+        self.assertEqual(event["parent_generation"], 1)
+        self.assertEqual(event["accepted_manifest_sha256"], "a" * 64)
+        self.assertEqual(event["candidate_attempt_ordinal"], 1)
+        self.assertEqual(event["candidate_evidence"], evidence)
+        self.assertEqual(event["resource"]["evidence_file_fsyncs"], 1)
+
+    def test_resource_observation_reports_semantic_materialization_counts(self):
+        from bilqis_mlx.runtime.bamf_operator.session_support import _resource_observation
+
+        cost = {
+            "wall_seconds": 1.0,
+            "optimizer_steps": 1,
+            "candidate_optimizer_steps": 1,
+            "c08_memory_budget_bytes": 64 * 1024 ** 3,
+            "atlas_reload_count": 0,
+            "feature_manifest_rebuild_count": 0,
+            "visit_atlas_reload_count": 1,
+            "visit_feature_manifest_rebuild_count": 1,
+        }
+        step = SimpleNamespace(
+            transaction=SimpleNamespace(update_steps=1), realized_cost=cost)
+        with patch(
+                "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
+                return_value=SimpleNamespace(used=123)):
+            resource = _resource_observation(Path("/run"), step)
+        self.assertEqual(resource["atlas_reload_count"], 0)
+        self.assertEqual(resource["feature_manifest_rebuild_count"], 0)
+        self.assertEqual(resource["visit_atlas_reload_count"], 1)
+        self.assertEqual(resource["visit_feature_manifest_rebuild_count"], 1)
+
+    def test_accepted_visit_persists_native_resource_observation(self):
+        with TemporaryDirectory() as temporary:
+            parent = SimpleNamespace(
+                retained_state=SimpleNamespace(optimizer_step=11),
+                optimizer_hyperparameters="hparams",
+            )
+            context = SimpleNamespace(release=object())
+            identity = SimpleNamespace(visit_id="visit:resource", policy_key="policy:resource")
+            selection = SimpleNamespace(
+                status="TEACHER_SELECTED",
+                option_id="option:resource",
+                visit=SimpleNamespace(identity=identity),
+                offer=SimpleNamespace(
+                    capability_id="capability:resource", source_seed=17,
+                    rows=lambda: ({"id": "row:resource"},),
+                ),
+            )
+            cache = SimpleNamespace(
+                generation=1, accepted_manifest_sha256="a" * 64)
+            transaction = SimpleNamespace(
+                parent=SimpleNamespace(optimizer_step=11), update_steps=1,
+                training_authorities=("authority",),
+            )
+            step = SimpleNamespace(
+                transaction=transaction,
+                realized_cost={
+                    "wall_seconds": 30.0,
+                    "optimizer_steps": 1,
+                    "c08_memory_budget_bytes": 64 * 1024 ** 3,
+                },
+            )
+            decision = SimpleNamespace(
+                accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
+            retained = SimpleNamespace(optimizer_step=12)
+            successor = object()
+            evidence = _evidence_receipt(300, 4, 0.005)
+            capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
+            with patch(
+                    "bilqis_mlx.runtime.bamf_operator.session._execution_context",
+                    return_value=(parent, context, "atlas", "feature")), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
+                    return_value="program"), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
+                    return_value="school"), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
+                    return_value=selection), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
+                    return_value=cache), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
+                    return_value=1), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                    return_value=(1, 1)), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session._Capture",
+                    return_value=capture), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
+                    return_value="observation"), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
+                    return_value=step), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
+                    return_value=SimpleNamespace(
+                        candidate_state=retained, parent_state=parent.retained_state)), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
+                    return_value=decision), patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
+                    return_value=successor) as derive, patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
+                    return_value=successor):
+                prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
+        self.assertIs(prepared.successor, successor)
+        event = derive.call_args.kwargs["delivery_events"][0]
+        self.assertEqual(event["event"], "BAMF_C16_3_ACCEPTED")
+        resource = event["resource"]
+        self.assertEqual(resource["schema"], "bilqis.bamf.c16.3-resource-observation/v2")
+        self.assertEqual(resource["candidate_identity_full_computations"], 0)
+        self.assertEqual(resource["candidate_identity_numerical_bytes_hashed"], 0)
+        self.assertEqual(resource["memory_budget_bytes"], 64 * 1024 ** 3)
+        self.assertGreater(resource["disk_used_bytes"], 0)
+        self.assertEqual(resource["optimizer_steps"], 1)
+        self.assertEqual(resource["wall_seconds"], 30.0)
+        self.assertEqual(resource["evidence_bytes_written"], 300)
+        self.assertEqual(resource["evidence_file_fsyncs"], 1)
+        self.assertEqual(resource["evidence_directory_fsyncs"], 1)
+        self.assertEqual(resource["evidence_objects"], 4)
+        self.assertEqual(resource["evidence_persistence_seconds"], 0.005)
+        self.assertEqual(event["candidate_evidence"], evidence)
+
     def test_execution_context_uses_accepted_release_without_requiring_c07_lease(self):
         parent = object()
-        context = object()
+        context = SimpleNamespace()
         host = SimpleNamespace(source_context=lambda **_kwargs: context)
-        receipt = SimpleNamespace(
-            source_atlas_bundle_id="atlas",
-            source_release_sha256="release",
-            source_source_bundle_id="source",
-        )
-        accepted = SimpleNamespace(receipt=receipt, construction_predecessor="predecessor")
-        selection = SimpleNamespace(path="/atlas")
-        authenticated = SimpleNamespace(features="features")
+        authenticated = SimpleNamespace(
+            features="features", construction_predecessor="predecessor",
+            selection=SimpleNamespace(path="/atlas"))
         feature = SimpleNamespace(path="/feature")
         with patch(
-                "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
+                "bilqis_mlx.runtime.bamf_operator.session_support.load_accepted_generation",
                 return_value=parent), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.AcceptedRuntimeHost",
+                "bilqis_mlx.runtime.bamf_operator.session_support.AcceptedRuntimeHost",
                 return_value=host), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.read_accepted_generation_feature_context",
-                return_value=accepted), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.AtlasArtifactIdentity",
-                return_value="identity"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.resolve_atlas_artifact_selection",
-                return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.authenticate_bamf_execution_feature_context",
+                "bilqis_mlx.runtime.bamf_operator.session_support.authenticate_bamf_execution_feature_context",
                 return_value=authenticated), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.persist_feature_manifest",
+                "bilqis_mlx.runtime.bamf_operator.session_support.persist_feature_manifest",
                 return_value=feature):
             self.assertEqual(
                 _execution_context(Path("/run")),
                 (parent, context, "/atlas", "/feature"))
+        self.assertIs(context._accepted_feature_context, authenticated)
 
-    def test_priority_hold_never_counts_as_a_neural_visit(self):
-        with TemporaryDirectory() as temporary:
-            current = SimpleNamespace(
-                generation=4, retained_state=SimpleNamespace(optimizer_step=11))
-            with patch(
-                    "bilqis_mlx.runtime.bamf_operator.session._visit",
-                    return_value="HELD") as visit, patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
-                    return_value=current):
-                result = operate_bamf(
-                    temporary, minutes=1, max_visits=3, reserve_gib=0.0)
-        self.assertEqual(result.status, "PRIORITY_HOLD")
-        self.assertEqual(result.visits, 0)
-        self.assertEqual(result.accepted, 0)
-        self.assertEqual(result.rejected, 0)
-        visit.assert_called_once()
-
-    def test_no_admissible_priority_selection_never_executes_candidate(self):
-        parent = SimpleNamespace()
-        context = SimpleNamespace(release=object())
-        held = SimpleNamespace(status="NO_ADMISSIBLE_TEACHING")
-        with patch(
-                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
-                return_value=(parent, context, "atlas", "feature")), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
-                return_value="program"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
-                return_value="school"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
-                return_value=held), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
-                side_effect=AssertionError("optimizer candidate must not run")):
-            self.assertEqual(_visit("/run", 0.0), "HELD")
-
-    def test_rejection_records_priority_replay_fields_without_advancing_parent(self):
-        parent = SimpleNamespace(
-            retained_state=SimpleNamespace(optimizer_step=11),
-            optimizer_hyperparameters="hparams",
-        )
-        context = SimpleNamespace(release=object())
-        identity = SimpleNamespace(visit_id="visit:beta", policy_key="policy:beta")
-        selection = SimpleNamespace(
-            status="TEACHER_SELECTED",
-            option_id="capability:beta",
-            visit=SimpleNamespace(identity=identity),
-            offer=SimpleNamespace(
-                capability_id="capability:beta", source_seed=17,
-                rows=lambda: ({"id": "row:1"},),
-            ),
-        )
-        transaction = SimpleNamespace(
-            parent=SimpleNamespace(optimizer_step=11),
-            update_steps=1,
-            training_authorities=("authority",),
-        )
-        step = SimpleNamespace(transaction=transaction)
-        decision = SimpleNamespace(
-            accepted=False,
-            reason="retention_gate",
-            to_record=lambda: {"decision": "REJECTED"},
-        )
-        with patch(
-                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
-                return_value=(parent, context, "atlas", "feature")), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
-                return_value="program"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
-                return_value="school"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
-                return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value="capture"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
-                return_value="observation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
-                return_value=step), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                return_value="evaluation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
-                return_value=decision), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                return_value=parent.retained_state), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.record_bamf_rejection") as rejection:
-            self.assertEqual(_visit("/run", 0.0), "REJECTED")
-
-        evidence = rejection.call_args.args[2]
-        self.assertEqual(evidence["schema"], "bilqis.bamf.c16.3-rejection/v2")
-        self.assertEqual(evidence["visit_id"], "visit:beta")
-        self.assertEqual(evidence["selected_option_id"], "capability:beta")
-        self.assertEqual(evidence["selected_policy_key"], "policy:beta")
-        self.assertEqual(evidence["candidate_optimizer_step"], 12)
-        self.assertEqual(evidence["retained_optimizer_step"], 11)
-        self.assertEqual(evidence["retention_reason"], "retention_gate")
-        self.assertEqual(parent.retained_state.optimizer_step, 11)
-
-    def test_operator_executes_c03_selection_without_reading_factory_release_order(self):
-        class OrderTrap:
-            @property
-            def capabilities(self):
-                raise AssertionError("bamf_operator must not inspect Factory capability order")
-
-        parent = SimpleNamespace(
-            retained_state=SimpleNamespace(optimizer_step=11),
-            optimizer_hyperparameters="hparams",
-        )
-        context = SimpleNamespace(release=SimpleNamespace(execution_plan=OrderTrap()))
-        identity = SimpleNamespace(visit_id="visit:beta", policy_key="policy:beta")
-        selection = SimpleNamespace(
-            status="TEACHER_SELECTED", option_id="capability:beta",
-            visit=SimpleNamespace(identity=identity),
-            offer=SimpleNamespace(
-                capability_id="capability:beta", source_seed=17,
-                rows=lambda: ({"id": "row:beta"},),
-            ),
-        )
-        transaction = SimpleNamespace(
-            parent=SimpleNamespace(optimizer_step=11), update_steps=1,
-            training_authorities=("authority",),
-        )
-        step = SimpleNamespace(transaction=transaction)
-        decision = SimpleNamespace(
-            accepted=False, reason="retention_gate",
-            to_record=lambda: {"decision": "REJECTED"},
-        )
-
-        def execute(selected, *_args, **_kwargs):
-            self.assertIs(selected, selection)
-            self.assertEqual(selected.offer.capability_id, "capability:beta")
-            return step
-
-        with patch(
-                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
-                return_value=(parent, context, "atlas", "feature")), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
-                return_value="program"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
-                return_value="school"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
-                return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value="capture"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
-                return_value="observation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
-                side_effect=execute), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                return_value="evaluation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
-                return_value=decision), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.resolve_candidate",
-                return_value=parent.retained_state), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.record_bamf_rejection"):
-            self.assertEqual(_visit("/run", 0.0), "REJECTED")
 
 
 if __name__ == "__main__":

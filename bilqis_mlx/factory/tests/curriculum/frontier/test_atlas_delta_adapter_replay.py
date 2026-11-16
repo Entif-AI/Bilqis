@@ -111,7 +111,14 @@ class AtlasDeltaAdapterReplayTests(AtlasDeltaAdapterFixture):
                 corrected, corrected_closure, prior=prior)
             self.assertIs(invalidated.status, FrontierStatus.REPLAN_REQUIRED)
             self.assertIsNone(invalidated.pending_staged_receipt_sha256)
-            self.assertEqual(invalidated.staged_receipts, prior.staged_receipts)
+            self.assertEqual(
+                invalidated.history_head.receipt_index_sha256,
+                prior.history_head.receipt_index_sha256,
+            )
+            self.assertEqual(
+                invalidated.history_head.receipt_count,
+                prior.history_head.receipt_count,
+            )
             epoch = self._epoch(
                 snapshot=corrected, closure=corrected_closure, prior=invalidated)
             self.assertEqual(_credited_requested_keys(epoch), ())

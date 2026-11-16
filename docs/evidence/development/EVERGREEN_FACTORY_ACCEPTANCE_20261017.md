@@ -1,6 +1,6 @@
 # Evergreen factory: verified source-only increment
 
-**Historical verification boundary:** This report covers implementation `3b3fc257` and corrected documentation baseline `a28b5f5`. Subsequent contract scaffolding is **untested and unfinished** by explicit human instruction; it has no live wiring. See [current handoff](../../../HANDOFF.md) and [WIP guide](../../history/architecture/EVERGREEN_CONTRACTS_WIP_20261017.md). None of the results below qualify that later code.
+**Historical verification boundary:** This report covers implementation `3b3fc257` and corrected documentation baseline `a28b5f5`. Subsequent contract scaffolding is **untested and unfinished** by explicit human instruction; it has no live wiring. The then-current root `HANDOFF.md` is preserved in Git history and was retired on 2026-11-14; see the [WIP guide](../../history/architecture/EVERGREEN_CONTRACTS_WIP_20261017.md) for the surviving historical context. None of the results below qualify that later code.
 
 Verified 2026-10-17 on the M3 Ultra. Governing [private issue #336](https://github.com/socr8s/private-ip/issues/336) remains **OPEN**, under IPR-0220 / parent #335. Human source comments `6234271928`, `6233567989` and `6234081376` govern this implementation. The immutable [clean-room contract](https://github.com/Entif-AI/bilqis-mlx/blob/ac69a8d726a1908799dd4f77f40636b191acfb1b/docs/architecture/CLEANROOM_COMPOSITION_CONTRACT_20261016.md) is a scoped draft, not a release authorization.
 

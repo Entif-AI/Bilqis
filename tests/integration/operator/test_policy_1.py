@@ -93,9 +93,10 @@ class PolicyTests(unittest.TestCase):
             self.assertEqual(operate.call_args.kwargs["source_prefetch_workers"], 0)
             with patch('bilqis_mlx.runtime.operating_loop.operate', side_effect=ValueError(
                     no_neural_work)) as operate, \
+                    patch('bilqis_mlx.presentation.operator_cli.command.ROOT', Path(tmp)), \
                     redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["train", "--human-run", "--no-retention",
-                                       "--run-dir", tmp]), 2)
+                                       "--run-dir", str(Path(tmp) / "runs" / "independent")]), 2)
             self.assertFalse(operate.call_args.kwargs["retention_enabled"])
 
     def test_issue_launcher_passes_registered_budget_owner(self):

@@ -15,7 +15,9 @@ from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.learning_experiment import Settings
 from bilqis_mlx.runtime.accepted_teacher_custody import select_accepted_teacher_visit
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
-from bilqis_mlx.runtime.foundation_teacher_owner import accepted_teacher_trajectory
+from bilqis_mlx.runtime.foundation_teacher_owner import (
+    accepted_teacher_trajectory, select_foundation_priority_visit,
+)
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import publish_genesis, shape_patch
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures import (
     adaptation, selection_teacher,
@@ -23,6 +25,50 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
 
 
 class FoundationTeacherOwnerTests(unittest.TestCase):
+    def test_priority_authority_uses_bootstrapped_teacher_state_not_raw_genesis_sidecar(self):
+        owner_module = __import__(
+            select_foundation_priority_visit.__module__, fromlist=["*"])
+        parent = SimpleNamespace(teacher_state={
+            "schema": "bilqis.mlx.bamf-teacher-state/v1",
+            "teacher_identity": "1" * 64,
+            "teacher_epoch": 0,
+            "next_seed": 71,
+            "cursor": "GENESIS",
+        })
+        projected_state = {
+            **parent.teacher_state,
+            "teacher_identity": "2" * 64,
+            "c03_lineage": {"bootstrapped": True},
+        }
+        projection = SimpleNamespace(teacher_state=projected_state)
+        epoch = object()
+        authority = SimpleNamespace(
+            frontier="frontier", history="history", planning="planning",
+            lawful_frontier="lawful-frontier", offers="offers", now=17,
+            planning_generation="planning-generation")
+        selected = object()
+        with patch(
+                "bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation",
+                return_value=parent), patch.object(
+                owner_module, "current_foundation_teacher_projection",
+                return_value=projection), patch.object(
+                owner_module, "restore_teacher_lineage", return_value=epoch), patch.object(
+                owner_module, "foundation_teacher_bootstrap",
+                return_value=SimpleNamespace(
+                    legacy_receipt=None, adaptation=None, prior_region=None)), patch(
+                "bilqis_mlx.runtime.priority_authority.issue_foundation_priority_authority",
+                return_value=authority) as issue, patch(
+                "bilqis_mlx.runtime.accepted_priority_visit.select_accepted_priority_visit",
+                return_value=selected):
+            result = select_foundation_priority_visit(
+                Path("/run"), SimpleNamespace(release=SimpleNamespace(
+                    execution_plan=SimpleNamespace(capabilities=()))), "/atlas",
+                program="program", school="school")
+
+        self.assertIs(result, selected)
+        self.assertIs(issue.call_args.kwargs["teacher_state"], projected_state)
+        self.assertNotIn("c03_lineage", parent.teacher_state)
+
     def test_accepted_visit_owns_next_seed_and_opaque_cursor(self):
         with TemporaryDirectory() as temporary:
             root = Path(temporary)

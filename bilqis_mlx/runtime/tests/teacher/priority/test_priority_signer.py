@@ -19,6 +19,7 @@ from bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer import (
 from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind, DependencyRef
 from bilqis_mlx.learning.atlas_salience import DispatchTier, rank_attention_options
 from bilqis_mlx.learning.salience_contracts import Ordinal
+from bilqis_mlx.semantic_sampling import DEFAULT_BINARY_BALANCE
 from bilqis_mlx.runtime import checkpoint_outbox
 from bilqis_mlx.runtime import priority_rejection_replay as rejection_replay
 from bilqis_mlx.runtime.bamf_bundle.records import canonical
@@ -34,6 +35,14 @@ def _registry(private_hex="44" * 32):
         (DependencyKind.ARTIFACT, "salience-event:"),
     )), key=lambda scope: (scope.kind.value, scope.key_prefix)))
     return SourceAuthorityRegistry((SourceAuthorityKey("owner:c06", public, scopes),))
+
+
+def _lawful_frontier(planning_generation, *ready):
+    return SimpleNamespace(
+        ready_capability_ids=tuple(ready),
+        frontier_sha256="9" * 64,
+        _planning_generation=planning_generation,
+    )
 
 
 def test_host_signer_must_match_registered_owner_key_and_scope():
@@ -59,8 +68,8 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
     release = SimpleNamespace(
         release_sha256="a" * 64,
         execution_plan=SimpleNamespace(capabilities=(
-            SimpleNamespace(id="capability:alpha"),
-            SimpleNamespace(id="capability:beta"),
+            SimpleNamespace(capability_id="capability:alpha"),
+            SimpleNamespace(capability_id="capability:beta"),
         )),
     )
     source_context = SimpleNamespace(release=release)
@@ -71,7 +80,10 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         retained_state=SimpleNamespace(optimizer_step=11),
     )
 
-    def offer(_context, _parent, _path, *, capability, source_seed, source_each):
+    planning_generation = object()
+
+    def offer(_context, _parent, _path, *, capability, source_seed, source_each,
+              planning_generation):
         return SimpleNamespace(
             capability_id=capability,
             source_seed=source_seed,
@@ -84,21 +96,36 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         )
 
     cache = SimpleNamespace(
-        generation=2, accepted_manifest_sha256="f" * 64, run_id="run")
+        generation=2, accepted_manifest_sha256="f" * 64, run_id="run",
+        _correction_registry=registry)
+    lawful = _lawful_frontier(
+        planning_generation, "capability:alpha", "capability:beta")
     with patch(
         "bilqis_mlx.runtime.bamf_bundle.accepted_runtime._accepted_correction_registry",
         return_value=(cache, registry),
     ), patch(
         "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer.read_host_system_source_authority_signer",
         return_value=signer,
+    ), patch.object(
+        authority, "bind_priority_planning_generation",
+        return_value=planning_generation,
+    ), patch.object(
+        authority, "_require_planning_generation",
+        return_value=(cache, None),
     ), patch.object(authority, "prepare_priority_source_offer", side_effect=offer), patch.object(
         authority, "priority_rotation_state",
         return_value=(1, {"capability:alpha": 1}),
     ), patch.object(
-        authority, "_priority_planning", return_value=planning,
+        authority, "_build_priority_planning_epoch", return_value="epoch",
+    ), patch.object(
+        authority, "_priority_planning_from_epoch", return_value=planning,
+    ), patch(
+        "bilqis_mlx.runtime.lawful_teaching_frontier._issue_lawful_teaching_frontier_from_epoch",
+        return_value=lawful,
     ):
         issued = authority.issue_foundation_priority_authority(
-            "/run", source_context, parent, {"epoch": 1}, "/atlas")
+            "/run", source_context, parent, {"epoch": 1}, "/atlas",
+            teacher_state=parent.teacher_state)
 
     evidence = dict(issued.frontier.evidence)
     assert issued.now == 1
@@ -110,15 +137,66 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
     assert tuple(item.stable_id for item in ranked.ordered) == (
         "capability:beta", "capability:alpha")
     assert {tier for _, tier in ranked.tiers} == {DispatchTier.FAIR_ROTATION}
-    assert {offer.source_each for _, offer in issued.offers} == {1}
+    assert {offer.source_each for _, offer in issued.offers} == {
+        DEFAULT_BINARY_BALANCE.minimum_total}
     assert len({offer.source_seed for _, offer in issued.offers}) == 2
     assert issued.planning is planning
+    assert issued.lawful_frontier is lawful
+    assert issued.lawful_frontier_sha256 == lawful.frontier_sha256
+
+
+def test_all_held_frontier_issues_empty_priority_authority_without_source_rows():
+    from bilqis_mlx.runtime import priority_authority as authority
+
+    release = SimpleNamespace(
+        release_sha256="a" * 64,
+        execution_plan=SimpleNamespace(capabilities=(
+            SimpleNamespace(capability_id="capability:alpha"),
+            SimpleNamespace(capability_id="capability:beta"),
+        )),
+    )
+    source_context = SimpleNamespace(release=release)
+    parent = SimpleNamespace(
+        teacher_state={"next_seed": 7},
+        retained_state=SimpleNamespace(optimizer_step=11),
+    )
+    cache = SimpleNamespace(_correction_registry=_registry())
+    planning_generation = object()
+    planning = SimpleNamespace(selection=None)
+    lawful = _lawful_frontier(planning_generation)
+
+    with patch.object(
+            authority, "priority_rotation_state", return_value=(3, {})), patch.object(
+            authority, "bind_priority_planning_generation",
+            return_value=planning_generation), patch.object(
+            authority, "_require_planning_generation",
+            return_value=(cache, None)), patch.object(
+            authority, "_build_priority_planning_epoch", return_value="epoch"), patch.object(
+            authority, "_priority_planning_from_epoch", return_value=planning), patch(
+            "bilqis_mlx.runtime.lawful_teaching_frontier."
+            "_issue_lawful_teaching_frontier_from_epoch",
+            return_value=lawful), patch.object(
+            authority, "prepare_priority_source_offer") as prepare, patch(
+            "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer."
+            "read_host_system_source_authority_signer") as signer:
+        issued = authority.issue_foundation_priority_authority(
+            "/run", source_context, parent, {"epoch": 1}, "/atlas",
+            teacher_state=parent.teacher_state)
+
+    assert issued.frontier is None
+    assert issued.history is None
+    assert issued.offers == ()
+    assert issued.now == 3
+    assert issued.lawful_frontier is lawful
+    prepare.assert_not_called()
+    signer.assert_not_called()
 
 
 def _rejection_custody():
     evidence = {
         "schema": "bilqis.bamf.c16.3-rejection/v2",
         "visit_id": "visit:beta",
+        "capability": "capability:beta",
         "selected_option_id": "capability:beta",
         "selected_policy_key": "policy",
         "candidate_optimizer_step": 12,
@@ -159,8 +237,8 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
     release = SimpleNamespace(
         release_sha256="a" * 64,
         execution_plan=SimpleNamespace(capabilities=(
-            SimpleNamespace(id="capability:alpha"),
-            SimpleNamespace(id="capability:beta"),
+            SimpleNamespace(capability_id="capability:alpha"),
+            SimpleNamespace(capability_id="capability:beta"),
         )),
     )
     source_context = SimpleNamespace(release=release)
@@ -171,9 +249,15 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         retained_state=SimpleNamespace(optimizer_step=11),
     )
     cache = SimpleNamespace(
-        generation=2, accepted_manifest_sha256="f" * 64, run_id="run")
+        generation=2, accepted_manifest_sha256="f" * 64, run_id="run",
+        _correction_registry=registry)
 
-    def offer(_context, _parent, _path, *, capability, source_seed, source_each):
+    planning_generation = object()
+    lawful = _lawful_frontier(
+        planning_generation, "capability:alpha", "capability:beta")
+
+    def offer(_context, _parent, _path, *, capability, source_seed, source_each,
+              planning_generation):
         return SimpleNamespace(
             capability_id=capability, source_seed=source_seed, source_each=source_each,
             source_family_id="family:" + capability,
@@ -194,14 +278,29 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         ), patch(
             "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer.read_host_system_source_authority_signer",
             return_value=signer,
+        ), patch.object(
+            authority, "bind_priority_planning_generation",
+            return_value=planning_generation,
+        ), patch.object(
+            authority, "_require_planning_generation",
+            return_value=(cache, None),
         ), patch.object(authority, "prepare_priority_source_offer", side_effect=offer), patch.object(
             authority, "priority_rotation_state",
             return_value=(1, {"capability:alpha": 1}),
-        ), patch.object(authority, "_priority_planning", return_value=planning):
+        ), patch.object(
+            authority, "_build_priority_planning_epoch", return_value="epoch",
+        ), patch.object(
+            authority, "_priority_planning_from_epoch", return_value=planning,
+        ), patch(
+            "bilqis_mlx.runtime.lawful_teaching_frontier._issue_lawful_teaching_frontier_from_epoch",
+            return_value=lawful,
+        ):
             first = authority.issue_foundation_priority_authority(
-                run_dir, source_context, parent, {"epoch": 1}, "/atlas")
+                run_dir, source_context, parent, {"epoch": 1}, "/atlas",
+                teacher_state=parent.teacher_state)
             cold = authority.issue_foundation_priority_authority(
-                run_dir, source_context, parent, {"epoch": 1}, "/atlas")
+                run_dir, source_context, parent, {"epoch": 1}, "/atlas",
+                teacher_state=parent.teacher_state)
 
     assert first == cold
     assert first.now == 2
@@ -238,7 +337,7 @@ def test_raw_rejection_journal_cannot_change_priority_without_b13_authority():
         }
         (run_dir / "events.jsonl").write_text(json.dumps(forged) + "\n")
         with pytest.raises(BilqisError) as failure:
-            authority._current_rejections(run_dir, parent, cache)
+            rejection_replay.ordered_rejections(run_dir, parent, cache)
         assert failure.value.context["reason"] == "BAMF_PRIORITY_REJECTION_OUTBOX_INVALID"
 
 
@@ -254,5 +353,5 @@ def test_duplicate_raw_journal_rows_cannot_amplify_one_b13_rejection():
         raw = json.dumps(event) + "\n"
         (run_dir / "events.jsonl").write_text(raw + raw)
         with patch.object(rejection_replay, "data_plane", return_value=plane):
-            rows = authority._current_rejections(run_dir, parent, cache)
+            rows = rejection_replay.current_rejections(run_dir, parent, cache)
     assert rows == (("capability:beta", "visit:beta", "retention_gate", receipt_sha256),)

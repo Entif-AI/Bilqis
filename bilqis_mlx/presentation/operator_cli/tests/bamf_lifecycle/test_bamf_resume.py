@@ -135,8 +135,12 @@ class BamfResumeTests(BamfFirstStudentCase):
         report = json.loads(output)
         self.assertEqual(report["status"], "VISIT_LIMIT")
         self.assertEqual(report["generation"], 1)
-        operate.assert_called_once_with(
-            target, minutes=90, max_visits=1, reserve_gib=100.0)
+        call = operate.call_args
+        self.assertEqual(call.args, (target,))
+        self.assertEqual(call.kwargs["minutes"], 90)
+        self.assertEqual(call.kwargs["max_visits"], 1)
+        self.assertEqual(call.kwargs["reserve_gib"], 100.0)
+        self.assertTrue(callable(call.kwargs["progress"]))
         self.assertEqual(_tree_snapshot(target), before)
 
     def test_human_resume_with_saved_atlas_lease_replans_then_continues_learning(self):
@@ -151,6 +155,7 @@ class BamfResumeTests(BamfFirstStudentCase):
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
                 return_value=SimpleNamespace(
                     status=AdmissionFlywheelStatus.WAITING_FOR_EVIDENCE,
+                    reason="LEARNER_EVIDENCE_REQUIRED", advances=2,
                 )) as flywheel, patch(
                 "bilqis_mlx.presentation.operator_cli.command._invoke_learner",
                 side_effect=AssertionError("BAMF v2 must not re-enter the legacy learner")), patch(
@@ -165,10 +170,17 @@ class BamfResumeTests(BamfFirstStudentCase):
         report = json.loads(output)
         self.assertEqual(report["status"], "VISIT_LIMIT")
         self.assertEqual(report["admission_status"], "WAITING_FOR_EVIDENCE")
+        self.assertEqual(report["admission_reason"], "LEARNER_EVIDENCE_REQUIRED")
+        self.assertEqual(report["admission_advances"], 2)
+        self.assertEqual(report["admission_label"], "C07 waiting for learner evidence")
         flywheel.assert_called_once()
         self.assertEqual(Path(flywheel.call_args.args[0]), target.resolve())
-        operate.assert_called_once_with(
-            target, minutes=90, max_visits=1, reserve_gib=100.0)
+        call = operate.call_args
+        self.assertEqual(call.args, (target,))
+        self.assertEqual(call.kwargs["minutes"], 90)
+        self.assertEqual(call.kwargs["max_visits"], 1)
+        self.assertEqual(call.kwargs["reserve_gib"], 100.0)
+        self.assertTrue(callable(call.kwargs["progress"]))
 
     def test_human_resume_with_ambiguous_flywheel_hold_does_not_start_learning(self):
         target = self.root / "accepted-bamf"
@@ -181,6 +193,7 @@ class BamfResumeTests(BamfFirstStudentCase):
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
                 return_value=SimpleNamespace(
                     status=AdmissionFlywheelStatus.HELD,
+                    reason="EXACT_HOLD", advances=3,
                 )), patch(
                 "bilqis_mlx.runtime.bamf_operator.operate_bamf",
                 side_effect=AssertionError("ambiguous admission hold must stop learning")):
@@ -190,6 +203,8 @@ class BamfResumeTests(BamfFirstStudentCase):
         self.assertEqual((code, errors), (0, ""))
         report = json.loads(output)
         self.assertEqual(report["result"], "HELD")
+        self.assertEqual(report["admission_reason"], "EXACT_HOLD")
+        self.assertEqual(report["admission_advances"], 3)
         self.assertEqual(report["admission_policy"], "atlas-release")
         self.assertEqual(report["neural_updates"], 0)
 

@@ -14,7 +14,9 @@ from bilqis_mlx.factory.atlas_frontier_closure import resolve_frontier_closure
 from bilqis_mlx.factory.atlas_frontier_events import FactoryAdmissionEvent, reconcile
 from bilqis_mlx.factory.atlas_frontier_progress import plan_frontier_progress
 from bilqis_mlx.factory.atlas_frontier_progress_contracts import FrontierStatus
-from bilqis_mlx.factory.atlas_frontier_progress_validation import requested_keys
+from bilqis_mlx.factory.atlas_frontier_progress_validation import (
+    credited_obligation_keys, current_obligations,
+)
 from bilqis_mlx.factory.atlas_delta_adapter import _issue_accepted_obligation_credit
 from bilqis_mlx.factory.atlas_delta_scope import AtlasDeltaScopeHandoff
 from bilqis_mlx.factory.atlas_frontier_selection import select_frontier_delta_for_projection
@@ -116,13 +118,15 @@ class EventCandidateAtlasIntegrationTests(EventCandidateRealizationFixture, unit
                          for capability in handoff.receipt.selection.introduced_capability_ids)),
         )
         rows = tuple(item for item in closure.candidates if item.semantic_id == semantic_id)
-        requested = tuple(sorted(requested_keys(
-            prior.staged_receipts if prior is not None else ())))
+        requested = (() if prior is None else tuple(sorted(
+            credited_obligation_keys(
+                snapshot, closure, prior, current_obligations(closure)))))
         projection = candidate_realizations.project_authoritative_target(
             semantic_id, current, rows)
         selection = select_frontier_delta_for_projection(
             snapshot, closure, current, projection, requested)
         receipt = staged_selection_receipt(epoch, selection, projection, staged)
+        self._last_staged_selection_receipt = receipt
         pending = plan_frontier_progress(
             snapshot, closure, selection, current_release=current,
             selected_projection=projection, prior=prior, staged_receipt=receipt,
@@ -220,7 +224,7 @@ class EventCandidateAtlasIntegrationTests(EventCandidateRealizationFixture, unit
         accepted_credit = _issue_accepted_obligation_credit(
             current.release_sha256,
             "a" * 64,
-            tuple(sorted(requested_keys(prior.staged_receipts))),
+            prior.all_requested_obligation_keys(),
         )
 
         semantic_id = event_frames.atlas_semantic_id("D.COMMENCEMENT")
@@ -257,7 +261,7 @@ class EventCandidateAtlasIntegrationTests(EventCandidateRealizationFixture, unit
         accepted_credit = _issue_accepted_obligation_credit(
             current.release_sha256,
             "a" * 64,
-            tuple(sorted(requested_keys(prior.staged_receipts))),
+            prior.all_requested_obligation_keys(),
         )
 
         semantic_id = event_frames.atlas_semantic_id("D.COMMENCEMENT")
@@ -299,7 +303,7 @@ class EventCandidateAtlasIntegrationTests(EventCandidateRealizationFixture, unit
         state = (self.current, self.parent_graph, {"A.IDENTITY"}, None, None)
         _current, _graph, _mastered, prior, _snapshot = self._stage_capability(
             candidate, source_frontier, policy, state, "D.EVENT_OCCURRENCE")
-        receipt = prior.staged_receipts[0]
+        receipt = self._last_staged_selection_receipt
         selected = receipt.selection.selected_obligations
         forged_rows = (
             replace(selected[0], source_evidence_sha256="c" * 64),

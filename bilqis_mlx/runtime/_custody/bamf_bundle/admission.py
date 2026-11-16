@@ -23,7 +23,8 @@ from bilqis_mlx.learning.atlas_retention_decision import (
     CandidateRetentionDecision,
 )
 from bilqis_mlx.learning.atlas_candidate import (
-    CandidateState, CandidateTransaction, begin_candidate, resolve_candidate,
+    CandidateState, CandidateTransaction, _begin_candidate_with_parent_identity,
+    resolve_candidate,
 )
 from bilqis_mlx.learning.atlas_plasticity import group_eligibility, next_update_mode
 from bilqis_mlx.learning.atlas_participation import ActiveAdmittedRows
@@ -38,11 +39,12 @@ from .accepted_runtime import (
 )
 from .codec import load_bamf_bundle
 from .publication import (
-    _pointer_lock, _require_published_acceptance, publish_bamf_generation,
+    _pointer_lock, _read_pointer, _require_published_acceptance,
+    publish_bamf_generation,
 )
 from .publication.authority import authenticate_current_successor_retry
 from .records import (
-    BamfBundleCandidate, CompleteStudent, invalid,
+    BamfBundleCandidate, CompleteStudent, canonical, invalid, sha,
 )
 from .motif.transition import derive_motif_allocation_transition
 
@@ -75,11 +77,11 @@ def derive_successor_bundle(parent: CompleteStudent, retained_state: CandidateSt
         dict(parent.semantic_abi), dict(parent.compiler_features),
         dict(parent.correction_frontier), dict(parent.teacher_state),
         dict(parent.evaluation_contract), transition, tuple(delivery_events),
-        parent.run_identity)
+        parent.run_identity, parent.baseline_evidence)
 
 
 def derive_motif_successor_bundle(
-        parent: CompleteStudent, transaction: CandidateTransaction, *,
+        parent: CompleteStudent, transaction: CandidateTransaction, *, retained_state=None,
         parent_manifest_sha256: str, delivery_events: tuple) -> BamfBundleCandidate:
     """Build the exact successor C05 must screen for a staged B07 transition."""
     from bilqis_mlx.learning._atlas_candidate.motif_transition import (
@@ -97,9 +99,18 @@ def derive_motif_successor_bundle(
         invalid("BAMF_MOTIF_ALLOCATION_TRANSITION_INVALID")
     b12 = transaction.motif_transition
     _require_candidate_motif_allocation_transition(b12)
-    retained_state = resolve_candidate(transaction, accepted=True)
+    retained_state = (
+        resolve_candidate(transaction, accepted=True)
+        if retained_state is None else retained_state)
+    if type(retained_state) is not CandidateState:
+        invalid("BAMF_MOTIF_ALLOCATION_TRANSITION_INVALID")
     extents = b12.candidate_extents
     reconcile_b01_optimizer_manifest(retained_state.optimizer, parent.topology, extents)
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+        bind_candidate_identity_or_fallback,
+    )
+    bind_candidate_identity_or_fallback(
+        retained_state, parent.topology.digest, extents.digest)
     transition = derive_motif_allocation_transition(b12, retained_state)
     return BamfBundleCandidate(
         parent.run_id, parent.generation + 1, parent_manifest_sha256,
@@ -108,7 +119,7 @@ def derive_motif_successor_bundle(
         dict(parent.semantic_abi), dict(parent.compiler_features),
         dict(parent.correction_frontier), dict(parent.teacher_state),
         dict(parent.evaluation_contract), transition, tuple(delivery_events),
-        parent.run_identity)
+        parent.run_identity, parent.baseline_evidence)
 
 
 def _parameter_census(parent: CompleteStudent) -> ParameterCensus:
@@ -143,7 +154,8 @@ def _admit_loaded_candidate_step(
         parent: CompleteStudent, identity: AcceptedGenerationIdentity, gradients=None, *,
         loss_bearing_target, gradient_execution=None, logical_batch_execution=None,
         training_batch=None, logical_batch_plan=None, teacher_hparams,
-        max_norm: float) -> CandidateTransaction:
+        max_norm: float, candidate: CandidateTransaction | None = None,
+        execution_cache=None) -> CandidateTransaction:
     """Pass custody-verified state plus B11 execution truth to B09/B12.
 
     Raw gradients remain usable only for the no-loss no-op path. A loss-bearing
@@ -157,13 +169,19 @@ def _admit_loaded_candidate_step(
             or identity.generation != parent.generation
             or identity.topology_digest != parent.topology.digest
             or identity.extents_digest != parent.extents.digest
-            or identity.optimizer_step != parent.retained_state.optimizer_step
-            or identity.candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or identity.optimizer_step != parent.retained_state.optimizer_step):
         invalid("BAMF_GENERATION_POINTER_DRIFT")
+    if candidate is None:
+        candidate = _begin_candidate_with_parent_identity(
+            parent.retained_state, identity.candidate_identity_sha256)
+    elif (type(candidate) is not CandidateTransaction
+            or candidate.parent is not parent.retained_state
+            or candidate._parent_identity_sha256 != identity.candidate_identity_sha256):
+        invalid("BAMF_CANDIDATE_CONTINUATION_PARENT_DRIFT")
+    candidate.__post_init__()
     eligibility, _active_admitted = derive_participation_inputs(parent)
     return production_candidate_step(
-        begin_candidate(parent.retained_state), gradients,
+        candidate, gradients,
         loss_bearing_target=loss_bearing_target,
         gradient_execution=gradient_execution,
         logical_batch_execution=logical_batch_execution,
@@ -176,17 +194,23 @@ def _admit_loaded_candidate_step(
         parent_candidate_identity_sha256=identity.candidate_identity_sha256,
         parent_optimizer_step=identity.optimizer_step,
         topology_digest=identity.topology_digest,
-        candidate_step_ordinal=1,
-        teacher_hparams=teacher_hparams, max_norm=max_norm)
+        candidate_step_ordinal=candidate.update_steps + 1,
+        teacher_hparams=teacher_hparams, max_norm=max_norm,
+        execution_cache=execution_cache)
 
 
 def admit_uninterrupted_candidate_step(
         run_dir: Path, parent: CompleteStudent, gradients=None, *,
         loss_bearing_target, gradient_execution=None, logical_batch_execution=None,
         training_batch=None, logical_batch_plan=None, teacher_hparams,
-        max_norm: float) -> CandidateTransaction:
+        max_norm: float, candidate: CandidateTransaction | None = None,
+        execution_cache=None, currentness_transaction=None) -> CandidateTransaction:
     """Continue held state only after full current B13 custody authentication."""
-    identity = _published_in_memory_identity(run_dir, parent)
+    if currentness_transaction is None:
+        identity = _published_in_memory_identity(run_dir, parent)
+    else:
+        from .currentness_transaction import accepted_currentness_identity
+        identity = accepted_currentness_identity(currentness_transaction, parent)
     return _admit_loaded_candidate_step(
         parent, identity, gradients,
         loss_bearing_target=loss_bearing_target,
@@ -194,7 +218,8 @@ def admit_uninterrupted_candidate_step(
         logical_batch_execution=logical_batch_execution,
         training_batch=training_batch,
         logical_batch_plan=logical_batch_plan,
-        teacher_hparams=teacher_hparams, max_norm=max_norm)
+        teacher_hparams=teacher_hparams, max_norm=max_norm, candidate=candidate,
+        execution_cache=execution_cache)
 
 
 def admit_candidate_step(run_dir: Path, gradients=None, *,
@@ -216,7 +241,7 @@ def admit_candidate_step(run_dir: Path, gradients=None, *,
 
 
 def _require_source_authority_for_acceptance(
-        run_dir: Path, candidate: BamfBundleCandidate):
+        run_dir: Path, candidate: BamfBundleCandidate, *, parent_witness=None):
     """Authenticate current custody and derive the ordinary successor C09 root."""
     from .source_authority_custody import (
         require_source_authority_successor_inheritance,
@@ -224,8 +249,18 @@ def _require_source_authority_for_acceptance(
 
     run_dir = Path(run_dir)
     with _pointer_lock(run_dir):
-        current, current_child = _read_accepted_locked(run_dir)
-        if current_child.generation == candidate.generation - 1:
+        current = _read_pointer(run_dir / "bamf-state.json")
+        if current is None:
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+        if current["generation"] == candidate.generation - 1:
+            if parent_witness is not None:
+                from .accepted_execution_cache import (
+                    _require_accepted_publication_parent_locked,
+                )
+                current_child = _require_accepted_publication_parent_locked(
+                    run_dir, current, parent_witness).student
+            else:
+                current, current_child = _read_accepted_locked(run_dir)
             if (candidate.run_id != current_child.run_id
                     or candidate.generation != current_child.generation + 1
                     or candidate.parent_manifest_sha256
@@ -239,7 +274,8 @@ def _require_source_authority_for_acceptance(
                 allow_historical_anchor=(
                     candidate.transition.get("kind") == "RETAINED_CANDIDATE"),
             )
-        if current_child.generation == candidate.generation:
+        if current["generation"] == candidate.generation:
+            current, current_child = _read_accepted_locked(run_dir)
             parent, persisted = authenticate_current_successor_retry(
                 run_dir, current, candidate, current_child,
                 load_bundle=load_bamf_bundle,
@@ -261,12 +297,32 @@ def _require_source_authority_for_acceptance(
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
 
 
+def _publication_parent_witness(
+        run_dir: Path, candidate: BamfBundleCandidate):
+    if candidate.generation == 0:
+        return None
+    from .accepted_execution_cache import _bind_accepted_publication_parent_locked
+
+    run_dir = Path(run_dir)
+    with _pointer_lock(run_dir):
+        current = _read_pointer(run_dir / "bamf-state.json")
+        if current is None:
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+        if current["generation"] == candidate.generation:
+            return None
+        if (current["generation"] != candidate.generation - 1
+                or current["manifest_sha256"] != candidate.parent_manifest_sha256):
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+        return _bind_accepted_publication_parent_locked(run_dir, current)
+
+
 def accept_and_publish(run_dir: Path, bundle: BamfBundleCandidate,
                        retained_state: CandidateState, *,
                        decision: CandidateRetentionDecision,
                        feature_sha256: str,
                        reserve_gib: float = 100.0,
-                       training_authorities=None) -> dict:
+                       training_authorities=None,
+                       publication_observer=None) -> dict:
     """Publish a candidate that the retention decision owner has accepted.
 
     Publication does not decide that the candidate was accepted. The retention
@@ -275,26 +331,28 @@ def accept_and_publish(run_dir: Path, bundle: BamfBundleCandidate,
     when the binding matches the candidate it publishes.
     """
     from .genesis.records import successor_candidate_identity_digest
-    from .motif.transition import is_motif_allocation_transition
     from bilqis_mlx.learning.atlas_retention_decision import (
         _issued_decision_generation_authority,
         _require_issued_decision_generation_authority,
     )
 
-    trusted_registry = _require_source_authority_for_acceptance(run_dir, bundle)
-    exact_generation_authority = successor_candidate_identity_digest(bundle)
-    if _issued_decision_generation_authority(decision) is not None:
-        _require_issued_decision_generation_authority(
-            decision, exact_generation_authority)
-    generation_authority_sha256 = (
-        exact_generation_authority
-        if is_motif_allocation_transition(bundle.transition) else None)
-    binding = mint_acceptance_binding(
-        decision, retained_state, run_id=bundle.run_id,
-        generation=bundle.generation, feature_sha256=feature_sha256,
-        training_authorities=training_authorities,
-        source_authority_registry_sha256=(
-            trusted_registry.digest if trusted_registry is not None else None),
-        generation_authority_sha256=generation_authority_sha256)
-    return publish_bamf_generation(
-        run_dir, bundle, acceptance=binding, reserve_gib=reserve_gib)
+    from .publication.instrumentation import publication_measurement
+    with publication_measurement(publication_observer):
+        parent_witness = _publication_parent_witness(run_dir, bundle)
+        trusted_registry = _require_source_authority_for_acceptance(
+            run_dir, bundle, parent_witness=parent_witness)
+        exact_generation_authority = successor_candidate_identity_digest(bundle)
+        if _issued_decision_generation_authority(decision) is not None:
+            _require_issued_decision_generation_authority(
+                decision, exact_generation_authority)
+        binding = mint_acceptance_binding(
+            decision, retained_state, run_id=bundle.run_id,
+            generation=bundle.generation, feature_sha256=feature_sha256,
+            training_authorities=training_authorities,
+            source_authority_registry_sha256=(
+                trusted_registry.digest if trusted_registry is not None else None),
+            teacher_state_sha256=sha(canonical(dict(bundle.teacher_state))),
+            generation_authority_sha256=exact_generation_authority)
+        return publish_bamf_generation(
+            run_dir, bundle, acceptance=binding, reserve_gib=reserve_gib,
+            parent_witness=parent_witness)

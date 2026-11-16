@@ -46,6 +46,29 @@ class ExecutableAutonomyTests(TestCase):
             persist_autonomy_state(Path(directory), self.release, plan=self.plan, ledger=ledger)
             self.assertEqual(read_autonomy_state(Path(directory), self.release), (self.plan, ledger))
 
+    def test_v2_evidence_can_bind_predictor_to_exact_source_draw(self):
+        ledger = initial_evidence_ledger(self.release, plan=self.plan)
+        action = next_action(
+            self.release, ledger, plan=self.plan,
+            current_checkpoint_sha256="a" * 64, current_optimizer_step=10)
+        observed = []
+
+        def source_bound_predictor(rows, source_draws):
+            observed.extend(source_draws)
+            return {row["id"]: row["gold"] for row in rows}
+
+        proof = measure_evidence(
+            None, self.graph, self.release, self.registry,
+            action.evidence_work.obligation, checkpoint=self.student, seed=11,
+            predictor=None, source_bound_predictor=source_bound_predictor)
+
+        self.assertTrue(proof.passed)
+        self.assertEqual(len(observed), proof.specimen_count)
+        self.assertEqual(
+            {item.row_id for item in observed},
+            {item.row_id for item in observed if item.source_each >= 1})
+        self.assertTrue(all(item.source_seed >= 11 for item in observed))
+
     def test_championship_identity_uses_admitted_curriculum_projection(self):
         from types import SimpleNamespace
         from bilqis_mlx import trainer

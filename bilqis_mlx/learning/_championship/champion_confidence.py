@@ -2,14 +2,14 @@
 
 Votes affect the causal student's supervised gradient, not independent exams,
 oracle golds, optimizer lineage, or student checkpoint selection. Live adviser
-inference is deduplicated by checkpoint, but each active maxed capability role
+inference is deduplicated by checkpoint, but each active threshold-qualified capability role
 contributes one direct vote; a shared checkpoint is counted once per role.
 """
 from __future__ import annotations
 
 from enum import Enum
 import numpy as np
-from .championship_witnesses import maxed_role
+from .championship_witnesses import championship_role_qualified, maxed_role
 
 
 POLICY = "bilqis.mlx.champion-confidence/v1"
@@ -84,7 +84,7 @@ def champion_roster(frontier: dict, grade: str, *, snapshot=None) -> tuple[dict,
 
 
 def perfect_role_roster(frontier: dict, grade_soups: dict) -> tuple[dict, ...]:
-    """Inventory active maxed roles; the trainer scopes direct votes to the lesson grade.
+    """Inventory active >90% roles; the trainer scopes direct votes to the lesson grade.
 
     Several capability roles may share one intact checkpoint. Inference may be
     deduplicated by checkpoint, but voting weight remains the number of active
@@ -102,10 +102,10 @@ def perfect_role_roster(frontier: dict, grade_soups: dict) -> tuple[dict, ...]:
             if (type(correct) is not int or type(total) is not int or total < 1 or
                     not 0 <= correct <= total):
                 raise ValueError("CHAMPION_CONFIDENCE_ACTIVE_ROLE_SCORE_DRIFT")
-            entitled = maxed_role(item)
-            if role.get("maxed", correct == total) != entitled:
+            maxed = maxed_role(item)
+            if role.get("maxed", correct == total) != maxed:
                 raise ValueError("CHAMPION_CONFIDENCE_ACTIVE_ROLE_ENTITLEMENT_DRIFT")
-            if not entitled:
+            if not championship_role_qualified(item):
                 continue
             if not item.get("checkpoint", {}).get("model_and_native_adamw"):
                 raise ValueError("CHAMPION_CONFIDENCE_PERFECT_ROLE_DRIFT")

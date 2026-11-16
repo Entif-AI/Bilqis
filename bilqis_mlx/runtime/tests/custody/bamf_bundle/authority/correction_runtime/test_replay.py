@@ -49,13 +49,13 @@ class AcceptedCorrectionReplayTests(unittest.TestCase):
     def publish(self, source):
         provision_source_authority_registry(self.run, AUTHORITY)
         source = with_source_authority_registry(source, AUTHORITY)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
             pointer = publish_candidate(self.run, source)
             return pointer
 
     def _motif_fixture(self):
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
         fixture = FrameEncoderTests()
         fixture.setUp()
@@ -67,20 +67,20 @@ class AcceptedCorrectionReplayTests(unittest.TestCase):
                 motif_key_map_digest=cache.motif_manifest.digest,
             ),
         )
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             owner = bind_motif_artifact_owner(cache, compiled)
         return cache, compiled, owner
 
     def test_unresolved_correction_survives_unrelated_successor_and_cold_restart(self):
         cache, compiled, owner = self._motif_fixture()
         correction = _event(owner.source_dependencies[0])
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(correction)
         with self.assertRaises(BilqisError) as held:
             owner.require(cache, compiled)
         self.assertEqual(held.exception.context["reason"], "BAMF_C09_ARTIFACT_HELD")
 
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             parent = load_accepted_generation(self.run)
         retained = next_accepted_step(parent.retained_state, parent.extents)
         successor = derive_successor_bundle(
@@ -93,7 +93,7 @@ class AcceptedCorrectionReplayTests(unittest.TestCase):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
 
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
         cold_compiled = replace(
             compiled,
@@ -102,7 +102,7 @@ class AcceptedCorrectionReplayTests(unittest.TestCase):
                 motif_key_map_digest=cold_cache.motif_manifest.digest,
             ),
         )
-        with shape_patch(), self.assertRaises(BilqisError) as cold_held:
+        with shape_patch(AUTHORITY), self.assertRaises(BilqisError) as cold_held:
             bind_motif_artifact_owner(cold_cache, cold_compiled)
         self.assertEqual(
             cold_held.exception.context["reason"],
@@ -111,7 +111,7 @@ class AcceptedCorrectionReplayTests(unittest.TestCase):
 
     def test_live_reader_observes_correction_committed_by_another_process(self):
         cache, compiled, owner = self._motif_fixture()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             self.assertIs(
                 bind_accepted_execution_cache(self.run),
                 cache,
@@ -153,19 +153,19 @@ class AcceptedCorrectionReplayTests(unittest.TestCase):
         second = _sign_event(replace(
             first, event_id="correction:synthetic:2",
             source_receipt_sha256="e" * 64, new_evidence_sha256="d" * 64))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(first)
             AcceptedRuntimeHost(self.run).record_correction(second)
         self.assertEqual(owner.queue.event.event_id, first.event_id)
         with self.assertRaises(BilqisError):
             owner.require(cache, compiled)
         first_node = owner.index.node(owner.queue.held_artifact_ids[0])
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_revalidation(_result(
                     first_node, digest=first_node.content_digest, correction=first))
         self.assertEqual(owner.queue.event.event_id, second.event_id)
         second_node = owner.index.node(owner.queue.held_artifact_ids[0])
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_revalidation(_result(
                     second_node, digest=second_node.content_digest, correction=second))
         self.assertEqual(owner.queue.held_artifact_ids, ())

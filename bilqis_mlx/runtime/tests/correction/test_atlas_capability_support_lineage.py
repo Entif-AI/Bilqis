@@ -48,8 +48,9 @@ class CapabilitySupportLineageTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def publish_support(self):
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
-            pointer = publish_genesis(self.run)
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
+            pointer = publish_genesis(
+                self.run, source_authority_registry=AUTHORITY)
             accepted_parent = load_accepted_generation(self.run)
             parent, transaction, retained, authority = source_qualified_state(
                 accepted_parent.retained_state,
@@ -72,7 +73,7 @@ class CapabilitySupportLineageTests(unittest.TestCase):
         return published, authority
 
     def load_support(self, authority_registry=None):
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             if authority_registry is not None:
                 from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
                 cache = bind_accepted_execution_cache(self.run)
@@ -83,7 +84,7 @@ class CapabilitySupportLineageTests(unittest.TestCase):
         published, _authority = self.publish_support()
         live = self.load_support(AUTHORITY)
         first = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             accepted_id = AcceptedRuntimeHost(self.run).record_correction(first)
         self.assertEqual(live.queue.event.event_id, first.event_id)
         manifest = published["manifest_sha256"]
@@ -109,7 +110,7 @@ class CapabilitySupportLineageTests(unittest.TestCase):
             new_evidence_sha256="d" * 64,
             supersedes_event_ids=(first.event_id,),
         ))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(second)
         self.assertIsNotNone(reloaded.queue)
         self.assertEqual(reloaded.queue.event.event_id, second.event_id)

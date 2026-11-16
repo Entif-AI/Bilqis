@@ -1,5 +1,11 @@
 # C01 dependency requalification — 12 November 2026
 
+Provenance clarification (13 November, #1063, PM-2026-11-07-002): the
+legacy-trainer authority check named in this historical receipt refers to
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/runs/microspenics-349-replay`.
+This pointer correction does not constitute a fresh live audit or change the
+qualification evidence below.
+
 Issue: #347 (`BAMF-0.2 C01`)
 
 Reviewed-unified base: `c672c62113108695a2a60cd0eb0d7f19d085f838`

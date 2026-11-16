@@ -82,10 +82,11 @@ class LiveAutonomySession:
             current_optimizer_step=checkpoint.optimizer_step)
 
     def measure(self, graph, work: CurriculumWorkItem, *, checkpoint: dict,
-                seed: int, predictor):
+                seed: int, predictor=None, source_bound_predictor=None):
         evidence = measure_live_evidence(
             self.source_root, graph, self.release, work,
-            checkpoint=checkpoint, seed=seed, predictor=predictor)
+            checkpoint=checkpoint, seed=seed, predictor=predictor,
+            source_bound_predictor=source_bound_predictor)
         self.ledger = record_evidence(
             self.release, self.ledger, evidence, plan=self.plan,
             current_checkpoint_sha256=checkpoint["sha256"],

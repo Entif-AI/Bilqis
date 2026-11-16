@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-import hashlib
+import os
 from pathlib import Path
+import subprocess
+import sys
 
 from ..factory import candidate_realizations
 from ..factory.atlas_frontier import (
@@ -13,8 +15,12 @@ from ..factory.atlas_frontier import (
 )
 from ..factory.atlas_frontier_closure import resolve_frontier_closure
 from ..factory.atlas_runtime_snapshot import build_accepted_executable_snapshot
-from ..factory.candidate_frontier import load_candidate_frontier
+from ..factory.candidate_frontier import (
+    candidate_frontier_source_identity,
+    load_candidate_frontier,
+)
 from ..factory.live_answers import live_answer_registry
+from ..compatibility.source_adapter_resume import predecessor_compatible_source_registry
 from ..factory.skos_curriculum import (
     LearnedFrontier,
     SOURCE_FAMILY_ADAPTERS,
@@ -62,14 +68,49 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[3]
 
 
-def _candidate_frontier():
+def _frontier_progress(progress, message):
+    if progress is not None:
+        progress(message)
+
+
+def _candidate_frontier(
+        run_dir: Path, factory_release_sha256: str, *, progress=None):
     root = _repo_root()
     builder = root / "lib/ithkuil/src/build_curriculum_frontier.py"
-    return load_candidate_frontier(
-        root / "lib/ithkuil/_private/curriculum_frontier",
-        root / "lib/ithkuil/_data/csv",
-        expected_builder_sha256=hashlib.sha256(builder.read_bytes()).hexdigest(),
+    source_dir = root / "lib/ithkuil/_data/csv"
+    output = Path(run_dir) / "candidate-frontier"
+    builder_sha256, input_digest = candidate_frontier_source_identity(source_dir, builder)
+    from .planner_frontier_trust import (
+        load_planner_frontier_trust,
+        planner_frontier_trust_matches,
+        publish_planner_frontier_trust,
     )
+    trust = load_planner_frontier_trust(
+        builder_sha256, input_digest, factory_release_sha256)
+    if trust is not None:
+        try:
+            release = load_candidate_frontier(
+                output, source_dir, expected_builder_sha256=builder_sha256)
+        except ValueError as error:
+            if not str(error).startswith("CANDIDATE_FRONTIER_"):
+                raise
+        else:
+            if planner_frontier_trust_matches(trust, release):
+                _frontier_progress(progress, "planner: reusing source candidate frontier")
+                return release
+    _frontier_progress(progress, "planner: rebuilding source candidate frontier")
+    subprocess.run(
+        [sys.executable, str(builder)], check=True, capture_output=True, text=True,
+        env={**os.environ, "BILQIS_CURRICULUM_FRONTIER_OUT": str(output)},
+    )
+    release = load_candidate_frontier(
+        output, source_dir, expected_builder_sha256=builder_sha256)
+    if trust is None:
+        trust = publish_planner_frontier_trust(release, factory_release_sha256)
+    if not planner_frontier_trust_matches(trust, release):
+        from .planner_frontier_trust import _invalid as _invalid_frontier_trust
+        _invalid_frontier_trust("BAMF_PLANNER_FRONTIER_TRUST_CONFLICT")
+    return release
 
 
 def _accepted_selection(run_dir: Path):
@@ -102,7 +143,12 @@ def _replay_current_graph(current, parent_graph: dict) -> dict:
         item.capability_id for item in current.execution_plan.capabilities
         if item.capability_id in event_frames.SOURCE_SPECS)
     if events:
-        graph = event_frames.projected_graph(parent_graph, events)
+        # C07 admits source-defined event semantics one successor at a time.
+        # Replay that same append sequence so accepted semantic-catalog identity
+        # is independent of whether several successors are reconstructed cold.
+        graph = parent_graph
+        for capability in events:
+            graph = event_frames.projected_graph(graph, (capability,))
     elif copular_curriculum.PROJECTION_ADMISSION_TOKEN in current.semantic_catalog:
         graph = copular_curriculum.expanded_graph(parent_graph)
     else:
@@ -114,6 +160,7 @@ def _replay_current_graph(current, parent_graph: dict) -> dict:
 def _persist_ready_realizations(
         run_dir: Path, current, candidate, frontier, graph: dict) -> tuple:
     sources, answers = live_source_registry(), live_answer_registry()
+    staging_sources = predecessor_compatible_source_registry(current, sources)
     staged = load_staged_candidates(
         run_dir, frontier, current,
         source_registry=sources, answer_registry=answers)
@@ -130,7 +177,7 @@ def _persist_ready_realizations(
         realized = candidate_realizations.prepare_realized_candidate(
             frontier, current, graph, semantic_id,
             source_root=LEGACY_SOURCE,
-            source_registry=sources,
+            source_registry=staging_sources,
             answer_registry=answers,
         )
         if realized.candidate_id not in known:
@@ -173,7 +220,7 @@ class AcceptedAtlasFlywheelSupervisor:
             selection, SOURCE_FAMILY_ADAPTERS,
             LearnedFrontier(selection.release_sha256))
         source = issue_source_context_transition_authority(selection)
-        frontier = _candidate_frontier()
+        frontier = _candidate_frontier(self.run_dir, current.release_sha256)
         graph = _replay_current_graph(current, self.parent_graph)
         staged = _persist_ready_realizations(
             self.run_dir, current, candidate, frontier, graph)
@@ -218,7 +265,7 @@ class AcceptedAtlasFlywheelSupervisor:
         checkpoint = _accepted_checkpoint(self.run_dir)
         plan = build_live_autonomy_plan(current, LEGACY_SOURCE)
         ledger = reconcile_live_autonomy_state(self.run_dir, current, plan)
-        frontier = _candidate_frontier()
+        frontier = _candidate_frontier(self.run_dir, current.release_sha256)
         source_authority, lease, registry = self._authority()
         runtime = AcceptedAtlasAdmissionRuntime(
             self.run_dir, checkpoint, graph, self.reserve_gib)

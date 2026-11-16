@@ -69,12 +69,12 @@ def _publish_retained_candidate(
         successor = derive_successor_bundle(
             parent, retained, parent_manifest_sha256=cache.accepted_manifest_sha256,
             delivery_events=events)
-        expected_schema = 'bilqis.mlx.accepted-candidate-binding/v7'
+        expected_schema = 'bilqis.mlx.accepted-candidate-binding/v10'
     else:
         successor = derive_motif_successor_bundle(
             parent, transaction, parent_manifest_sha256=cache.accepted_manifest_sha256,
             delivery_events=events)
-        expected_schema = 'bilqis.mlx.accepted-candidate-binding/v8'
+        expected_schema = 'bilqis.mlx.accepted-candidate-binding/v12'
     published = accept_and_publish(
         run_dir, successor, retained, decision=decision,
         feature_sha256=successor.extents.factor_map_digest,

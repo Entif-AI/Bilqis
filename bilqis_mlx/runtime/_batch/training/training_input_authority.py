@@ -13,8 +13,28 @@ from .atlas_training_contracts import _invalid
 from .factory_training_context import source_frame_inventory
 
 
-def require_source_inventory(ast, source_context, row, atlas_selection) -> None:
-    source_id, frames = source_frame_inventory(source_context, row, atlas_selection)
+SOURCE_INVENTORY_PARTS = 2
+SOURCE_INVENTORY_ID_INDEX = 0
+SOURCE_INVENTORY_FRAMES_INDEX = 1
+
+
+def require_source_inventory(
+        ast, source_context, row, atlas_selection, semantic_context=None,
+        released_manifest=None, *, prepared_inventory=None) -> None:
+    if prepared_inventory is not None:
+        if (type(prepared_inventory) is not tuple
+                or len(prepared_inventory) != SOURCE_INVENTORY_PARTS
+                or not isinstance(prepared_inventory[SOURCE_INVENTORY_ID_INDEX], str)
+                or not prepared_inventory[SOURCE_INVENTORY_ID_INDEX]
+                or type(prepared_inventory[SOURCE_INVENTORY_FRAMES_INDEX]) is not tuple):
+            _invalid("CONTEXT_SOURCE_LINEAGE_MISMATCH")
+        source_id, frames = prepared_inventory
+    elif semantic_context is None:
+        source_id, frames = source_frame_inventory(source_context, row, atlas_selection)
+    else:
+        from .factory_training_context import _source_frame_inventory_from_context
+        source_id, frames = _source_frame_inventory_from_context(
+            source_context, row, semantic_context, released_manifest)
     if (type(ast) is not StreamingAST or ast.source_instance_id != source_id
             or ast.frames != frames):
         _invalid("CONTEXT_SOURCE_LINEAGE_MISMATCH")
@@ -57,15 +77,33 @@ def require_semantic_authority(
         compiler_config: FrameCompilerConfig, task_scope: TaskScope,
         source_frontier: SourceFrontier,
         eligibility_policy: ContextPolicy, atlas_selection,
-        feature_artifact_path, rederive_training_authority) -> AtlasFeatures:
+        feature_artifact_path, rederive_training_authority,
+        semantic_context=None, released_manifest=None) -> AtlasFeatures:
     if (type(compiler_config) is not FrameCompilerConfig
             or compiler_config.approved is not None
             or compiler_config.task != task_scope
             or compiler_config.frontier != source_frontier
             or compiler_config.policy != eligibility_policy):
         _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
-    atlas_features = rederive_training_authority(
-        compiler_config, atlas_selection, feature_artifact_path)
+    if semantic_context is None:
+        atlas_features = rederive_training_authority(
+            compiler_config, atlas_selection, feature_artifact_path)
+    else:
+        from .factory_training_context import _require_materialized_manifest
+        manifest = _require_materialized_manifest(
+            semantic_context, released_manifest)
+        if semantic_context.selection != atlas_selection:
+            _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
+        atlas_features = semantic_context.features
+        schemas, roles = dict(atlas_features.schema_map), dict(atlas_features.role_map)
+        canonical = tuple(body.parse() for body in manifest.bodies)
+        if (compiler_config.schema_map != manifest.schema_map
+                or compiler_config.schemas != canonical
+                or any(schema.schema_id not in schemas
+                       for schema in compiler_config.schemas)
+                or any(role.role_id not in roles
+                       for schema in compiler_config.schemas for role in schema.roles)):
+            _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
     if (type(atlas_features) is not AtlasFeatures
             or atlas_features.semantic_release != task_scope.semantic_release):
         _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")

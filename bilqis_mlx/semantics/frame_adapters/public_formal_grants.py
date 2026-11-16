@@ -11,6 +11,7 @@ from ..context_eligibility import (
 from ..frame_schema import FrameInstance, SourceSpan
 from .common import PUBLIC_FORMAL_TIMELESS_EPOCH, _adapter_fail
 from .public_formal_schema_rights import (
+    _current_source_schema_grant_from_snapshot,
     current_source_schema_grant, issue_source_schema_rights_authority,
     schema_evidence_digest, schema_source_handle, source_schema_rights_frontier,
 )
@@ -44,7 +45,7 @@ def _envelope(frame, prefix, task, frontier, policy):
         causal_prefix_end=frame.causal_prefix_end)
 
 
-def issue_source_schema_grants(
+def _issue_source_schema_grants(
     projection: ApprovedContextProjection,
     *,
     source_adapter_id: str,
@@ -52,6 +53,7 @@ def issue_source_schema_grants(
     task_scope: TaskScope,
     source_frontier: SourceFrontier,
     policy: ContextPolicy,
+    snapshot=None,
 ) -> SourceFrontier:
     """Issue motif-schema rights only from the source-owned A01/A03 boundary."""
     span = SourceSpan(0, 0)
@@ -90,8 +92,12 @@ def issue_source_schema_grants(
         if type(frame) is not FrameInstance:
             continue
         span = frame.source_span
-        grant = current_source_schema_grant(
-            authority, source_adapter_id, projection, frame)
+        grant = (
+            current_source_schema_grant(
+                authority, source_adapter_id, projection, frame)
+            if snapshot is None else
+            _current_source_schema_grant_from_snapshot(
+                authority, source_adapter_id, projection, frame, snapshot))
         prior = grants.get(grant.source_handle)
         if prior is not None and prior != grant:
             _adapter_fail(
@@ -102,6 +108,39 @@ def issue_source_schema_grants(
         source_frontier,
         grants=tuple(sorted(
             grants.values(), key=lambda item: item.source_handle)))
+
+
+def issue_source_schema_grants(
+    projection: ApprovedContextProjection,
+    *,
+    source_adapter_id: str,
+    atlas_selection: AtlasArtifactSelection,
+    task_scope: TaskScope,
+    source_frontier: SourceFrontier,
+    policy: ContextPolicy,
+) -> SourceFrontier:
+    """Cold public path: re-enter A01/A03 while issuing schema grants."""
+    return _issue_source_schema_grants(
+        projection, source_adapter_id=source_adapter_id,
+        atlas_selection=atlas_selection, task_scope=task_scope,
+        source_frontier=source_frontier, policy=policy)
+
+
+def _issue_source_schema_grants_from_snapshot(
+    projection: ApprovedContextProjection,
+    *,
+    source_adapter_id: str,
+    atlas_selection: AtlasArtifactSelection,
+    task_scope: TaskScope,
+    source_frontier: SourceFrontier,
+    policy: ContextPolicy,
+    snapshot,
+) -> SourceFrontier:
+    """Hot owner path from one already-authenticated immutable A01 snapshot."""
+    return _issue_source_schema_grants(
+        projection, source_adapter_id=source_adapter_id,
+        atlas_selection=atlas_selection, task_scope=task_scope,
+        source_frontier=source_frontier, policy=policy, snapshot=snapshot)
 
 
 def admit_tree(tree, row, source_adapter_id, task, source_frontier, policy, source_span):

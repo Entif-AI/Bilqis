@@ -20,6 +20,32 @@ def run(d, s):
                 s.mx, s.params, s.optimizer, training_rows, s.receipt["config"],
                 s.receipt["answer_ids"], champion_guidance=training_guidance)
         rung = step + 1
+        s.attempted_candidate_steps = rung
+        canary_rung = (
+            d._learning_retention_canary.decision_rung(
+                d._learning_retention_canary.DEFAULT_POLICY, s.candidate_steps)
+            if s.learning_settings is not None else None)
+        if canary_rung is not None and rung == canary_rung:
+            target_rows = [
+                row for row in s.probe_rows if row["capability"] == s.cap]
+            with d._runtime_timing_trace.trace_span(
+                    "RETENTION_CANARY_TARGET", capability=s.cap, visit_step=rung,
+                    row_count=len(target_rows)):
+                candidate_predictions = d._learning_student_ops._predictions(
+                    s.mx, s.params, target_rows, s.receipt["config"],
+                    s.receipt["answer_ids"])
+            s.retention_canary_probe = d._learning_retention_canary.probe(
+                d._learning_retention_canary.DEFAULT_POLICY,
+                rung=rung, full_budget_steps=s.candidate_steps, rows=target_rows,
+                parent_predictions=s.parent_predictions,
+                candidate_predictions=candidate_predictions,
+                activation_state=s.retention_canary_activation)
+            if s.retention_canary_probe["stop"]:
+                s.retention_canary_stop = True
+                d._runtime_timing_trace.trace_mark(
+                    "RETENTION_CANARY_STOP", capability=s.cap, visit_step=rung,
+                    target_correct_delta=s.retention_canary_probe["target_correct_delta"])
+                break
         if s.shadow_rungs and rung in s.shadow_rungs and rung < s.candidate_steps:
             with d._runtime_timing_trace.trace_span(
                     "TEACHER_SHADOW_RUNG", capability=s.cap, visit_step=rung):

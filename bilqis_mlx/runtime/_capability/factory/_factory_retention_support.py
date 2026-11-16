@@ -4,8 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction, resolve_candidate
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    bind_candidate_identity_or_fallback, candidate_identity_for_canonical_consumer,
+)
 from bilqis_mlx.learning.atlas_package_import import PackageImportTransaction
 from bilqis_mlx.runtime.atlas_training_authority import (
     BamfLogicalBatchTrainingAuthority, BamfTrainingAuthority,
@@ -15,13 +17,15 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     derive_successor_bundle, load_accepted_generation,
 )
 from bilqis_mlx.runtime.capability_retention import (
-    EvidenceKind, EvidenceStage, EvaluationCohort, RetentionPolicy, case_census_digest,
+    EvidenceStage, EvaluationCohort, case_census_digest,
 )
 from bilqis_mlx.runtime.source_execution import _source_family
 from bilqis_mlx.semantics.domains import contract_digest
+from bilqis_mlx.factory.assessment import assessment_scope_contract
 
 from .capability_evaluation import _invalid
-from .factory_complete_solver import _factory_evaluation_instrument, _generation
+from .factory_compiled_cohort import compiled_source_cohort_digest
+from .factory_complete_solver import factory_evaluation_instruments
 
 C05_PROBE_EACH = 6
 C05_PROTECTED_REFERENCE_LOSS = 1
@@ -78,8 +82,8 @@ def _candidate_from_live_parent(run_dir: Path, transaction: CandidateTransaction
     cache = bind_accepted_execution_cache(run_dir)
     custody = transaction.parent.custody
     if (transaction.update_steps < 1 or custody is None
-            or candidate_identity_digest(transaction.parent)
-            != candidate_identity_digest(parent.retained_state)
+            or candidate_identity_for_canonical_consumer(transaction.parent)
+            != candidate_identity_for_canonical_consumer(parent.retained_state)
             or custody.run_id != cache.run_id
             or custody.generation != cache.generation
             or custody.manifest_sha256 != cache.accepted_manifest_sha256
@@ -88,13 +92,15 @@ def _candidate_from_live_parent(run_dir: Path, transaction: CandidateTransaction
         _invalid("BAMF_C05_CANDIDATE_PARENT_CUSTODY_MISMATCH")
     preview = resolve_candidate(transaction, accepted=True)
     if transaction.motif_transition is None:
+        bind_candidate_identity_or_fallback(
+            preview, parent.topology.digest, parent.extents.digest)
         successor = derive_successor_bundle(
             parent, preview,
             parent_manifest_sha256=cache.accepted_manifest_sha256,
             delivery_events=())
     else:
         successor = derive_motif_successor_bundle(
-            parent, transaction,
+            parent, transaction, retained_state=preview,
             parent_manifest_sha256=cache.accepted_manifest_sha256,
             delivery_events=())
     return parent, successor, preview, cache
@@ -109,8 +115,8 @@ def _package_import_from_live_parent(
     cache = bind_accepted_execution_cache(run_dir)
     custody = transaction.parent.custody
     if (custody is None
-            or candidate_identity_digest(transaction.parent)
-            != candidate_identity_digest(parent.retained_state)
+            or candidate_identity_for_canonical_consumer(transaction.parent)
+            != candidate_identity_for_canonical_consumer(parent.retained_state)
             or custody.run_id != cache.run_id
             or custody.generation != cache.generation
             or custody.manifest_sha256 != cache.accepted_manifest_sha256
@@ -125,18 +131,17 @@ def _package_import_from_live_parent(
 
 
 def _instruments(source_context, candidate, artifact_path, rows, *, seed, each=None):
-    generation = _generation(candidate)
-    counts = {}
+    source_cohort_sha256 = None
     if each is None:
-        for row in rows:
-            capability = row.get("capability")
-            counts[capability] = counts.get(capability, 0) + 1
-    return tuple(_factory_evaluation_instrument(
-        source_context, candidate, artifact_path, row,
-        source_seed=seed,
-        source_each=(each if each is not None else counts[row.get("capability")]),
-        generation=generation,
-    ) for row in rows)
+        capabilities = tuple(
+            item.capability_id for item in source_context.release.execution_plan.capabilities)
+        contract = assessment_scope_contract(source_context.release, capabilities)
+        source_cohort_sha256 = compiled_source_cohort_digest(
+            rows, generator_version=contract.generator_version,
+            rubric_sha256=contract.rubric_sha256, seed=seed)
+    return factory_evaluation_instruments(
+        source_context, candidate, artifact_path, rows, seed=seed, each=each,
+        source_cohort_sha256=source_cohort_sha256)
 
 
 @dataclass(frozen=True)
@@ -204,35 +209,3 @@ def _cohort(
         kind, cases, tuple(groups), rubric, scope, source, policy.digest(),
         training[0], training[1], case_census_digest(cases),
         evidence_stage=evidence_stage)
-
-
-def _policy_and_cohorts(
-    release, groups, target_capability, target_group, training,
-    target_instruments, lesson_instruments, fixed_instruments, *,
-    evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION,
-):
-    required = (
-        (EvidenceKind.FRESH_TARGET,
-         case_census_digest(tuple(item.case for item in target_instruments))),
-        (EvidenceKind.FRESH_LESSON,
-         case_census_digest(tuple(item.case for item in lesson_instruments))),
-        (EvidenceKind.FIXED_SCHOOL,
-         case_census_digest(tuple(item.case for item in fixed_instruments))),
-    )
-    policy = RetentionPolicy(
-        groups, tuple(dict.fromkeys(group for _, group in groups)),
-        tuple((capability, C05_PROTECTED_REFERENCE_LOSS)
-              for capability, _ in groups if capability != target_capability),
-        C05_PROBE_EACH, required)
-    target_cohort = _cohort(
-        EvidenceKind.FRESH_TARGET, target_instruments,
-        ((target_capability, target_group),), release, policy, training,
-        evidence_stage=evidence_stage)
-    lesson_groups = tuple(pair for pair in groups if pair[1] == target_group)
-    lesson_cohort = _cohort(
-        EvidenceKind.FRESH_LESSON, lesson_instruments,
-        lesson_groups, release, policy, training, evidence_stage=evidence_stage)
-    fixed_cohort = _cohort(
-        EvidenceKind.FIXED_SCHOOL, fixed_instruments,
-        groups, release, policy, training, evidence_stage=evidence_stage)
-    return policy, (target_cohort, lesson_cohort, fixed_cohort)

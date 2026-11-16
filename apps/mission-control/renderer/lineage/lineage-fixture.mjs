@@ -1,0 +1,180 @@
+const digest = (character) => character.repeat(64);
+
+function deepFreeze(value) {
+  if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+  Object.values(value).forEach(deepFreeze);
+  return Object.freeze(value);
+}
+
+const manifestField = (key, value, sourceRef) => ({
+  key, value, sourceRef,
+});
+
+const generation = ({
+  generation, manifest, parent, checkpoint, receipt, transitionClass,
+  manifestTransition,
+  topologyVersion, topologyDigest, implementationDigest, semanticRelease, factoryRelease,
+  bankCount, activeSetDigest, frameCompiler, correctionFrontier, optimizerStep,
+  motifAllocation, teacherEpoch, evaluationContract, projectionFrontier, capabilities,
+  debt, retention, memory, resources,
+}) => ({
+  id: manifest,
+  recordId: `generation:${generation}`,
+  runId: "fixture-lineage-run",
+  generation,
+  manifestSha256: manifest,
+  parentManifestSha256: parent,
+  checkpointSha256: checkpoint,
+  receiptId: receipt,
+  transitionClass,
+  manifestFields: [
+    manifestField("topology",
+      `${topologyDigest} · ${topologyVersion}`, `manifest:${manifest}#topology`),
+    manifestField("implementation",
+      implementationDigest, `manifest:${manifest}#implementation_sha256`),
+    manifestField("transition",
+      manifestTransition, `manifest:${manifest}#transition.kind`),
+    manifestField("releases",
+      `${semanticRelease} / ${factoryRelease}`, `${receipt}#semantic_release+factory_release`),
+    manifestField("abi",
+      `${bankCount} banks · set ${activeSetDigest}`, `manifest:${manifest}#sidecars.semantic_abi`),
+    manifestField("compiler",
+      frameCompiler, `${receipt}#compiler_sha256`),
+    manifestField("correction",
+      correctionFrontier, `manifest:${manifest}#sidecars.correction_frontier`),
+    manifestField("optimizer",
+      String(optimizerStep), `manifest:${manifest}#optimizer.step`),
+    manifestField("motif",
+      motifAllocation, `manifest:${manifest}#sidecars.motif_allocation`),
+    manifestField("teacher",
+      String(teacherEpoch), `manifest:${manifest}#sidecars.teacher_state`),
+    manifestField("evaluation",
+      evaluationContract, `manifest:${manifest}#sidecars.evaluation_contract`),
+    manifestField("projection",
+      projectionFrontier, `manifest:${manifest}#sidecars.outbox`),
+    manifestField("checkpoint",
+      `checkpoint:${checkpoint} · ${receipt}`, `generation:${generation}#meta.receipt_refs`),
+  ],
+  compare: {
+    topologyVersion,
+    topologyDigest,
+    implementationDigest,
+    semanticRelease,
+    factoryRelease,
+    bankCount,
+    activeSetDigest,
+    correctionFrontier,
+    optimizerStep,
+    motifAllocation,
+    teacherEpoch,
+    evaluationContract,
+    projectionFrontier,
+    capabilities,
+    debt,
+    retention,
+    memory,
+    resources,
+  },
+});
+
+const M37 = digest("1");
+const M38 = digest("2");
+const M39 = digest("3");
+const M40 = digest("4");
+const M41 = digest("5");
+
+export const LINEAGE_FIXTURE_CONTRACT = deepFreeze({
+  cp03Schema: "bilqis.bamf.mission-control.generation-manifest/v1",
+  bundleSchema: "bilqis.mlx.bamf-generation-bundle/v2",
+  featureReceiptSchema: "bilqis.mlx.bamf-accepted-generation-feature-receipt/v1",
+  projectionSchema: "bilqis.c10.generation-projection/v1",
+  posture: "FIXTURE_RETAINED_CONTRACT_SHAPE",
+});
+
+export const LINEAGE_FIXTURE = deepFreeze({
+  runId: "fixture-lineage-run",
+  currentManifestSha256: M41,
+  nodes: [
+    generation({
+      generation: 44237, manifest: M37, parent: null, checkpoint: digest("a"),
+      receipt: "receipt:acceptance:44237", transitionClass: "INITIAL",
+      manifestTransition: "INITIAL",
+      topologyVersion: "BAMF-V1",
+      topologyDigest: digest("6"), implementationDigest: digest("7"),
+      semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
+      activeSetDigest: digest("b"), frameCompiler: digest("c"),
+      correctionFrontier: "source:r8 · rights:r4 · correction:0", optimizerStep: 88,
+      motifAllocation: digest("d"), teacherEpoch: 12, evaluationContract: digest("e"),
+      projectionFrontier: "outbox:44237:complete · projection:44237",
+      capabilities: { "B.AND": [8, 8], "C.SUCCESSOR": [3, 5] }, debt: 2,
+      retention: "accepted-initial", memory: "18 slots · 0 held",
+      resources: "612 MiB · topology-v1 sampler",
+    }),
+    generation({
+      generation: 44238, manifest: M38, parent: M37, checkpoint: digest("f"),
+      receipt: "receipt:acceptance:44238", transitionClass: "RETAINED_CANDIDATE",
+      manifestTransition: "RETAINED_CANDIDATE",
+      topologyVersion: "BAMF-V1",
+      topologyDigest: digest("6"), implementationDigest: digest("7"),
+      semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
+      activeSetDigest: digest("b"), frameCompiler: digest("c"),
+      correctionFrontier: "source:r8 · rights:r4 · correction:0", optimizerStep: 91,
+      motifAllocation: digest("0"), teacherEpoch: 13, evaluationContract: digest("e"),
+      projectionFrontier: "outbox:44238:complete · projection:44238",
+      capabilities: { "B.AND": [8, 8], "C.SUCCESSOR": [4, 5] }, debt: 1,
+      retention: "target gain retained", memory: "19 slots · 0 held",
+      resources: "618 MiB · topology-v1 sampler",
+    }),
+    generation({
+      generation: 44239, manifest: M39, parent: M38, checkpoint: digest("a"),
+      receipt: "receipt:acceptance:44239", transitionClass: "PARAMETER_EXTENSION",
+      manifestTransition: "PARAMETER_EXTENSION",
+      topologyVersion: "BAMF-V1",
+      topologyDigest: digest("6"), implementationDigest: digest("7"),
+      semanticRelease: digest("1"), factoryRelease: digest("9"), bankCount: 3,
+      activeSetDigest: digest("2"), frameCompiler: digest("c"),
+      correctionFrontier: "source:r8 · rights:r5 · correction:0", optimizerStep: 91,
+      motifAllocation: digest("0"), teacherEpoch: 13, evaluationContract: digest("3"),
+      projectionFrontier: "outbox:44239:complete · projection:44239",
+      capabilities: { "B.AND": [8, 8], "C.SUCCESSOR": [4, 5], "C.ADD": [1, 4] }, debt: 4,
+      retention: "parameter extension; no student update", memory: "19 slots · 0 held",
+      resources: "642 MiB · topology-v1 sampler",
+    }),
+    generation({
+      generation: 44240, manifest: M40, parent: M38, checkpoint: digest("4"),
+      receipt: "receipt:recovery:44240", transitionClass: "RECOVERY_FORK",
+      manifestTransition: "MODEL_SWAP",
+      topologyVersion: "BAMF-V2",
+      topologyDigest: digest("5"), implementationDigest: digest("6"),
+      semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
+      activeSetDigest: digest("b"), frameCompiler: digest("7"),
+      correctionFrontier: "source:r8 · rights:r4 · correction:0", optimizerStep: 91,
+      motifAllocation: digest("0"), teacherEpoch: 14, evaluationContract: digest("8"),
+      projectionFrontier: "outbox:44240:recovered · projection:44240",
+      capabilities: { "B.AND": [8, 8], "C.SUCCESSOR": [4, 5] }, debt: 1,
+      retention: "recovered accepted checkpoint", memory: "19 slots · 0 held",
+      resources: "UNAVAILABLE · resource schema changed with topology-v2",
+    }),
+    generation({
+      generation: 44241, manifest: M41, parent: M40, checkpoint: digest("9"),
+      receipt: "receipt:requalification:44241", transitionClass: "CORRECTION_REQUALIFICATION",
+      manifestTransition: "RETAINED_CANDIDATE",
+      topologyVersion: "BAMF-V2",
+      topologyDigest: digest("5"), implementationDigest: digest("6"),
+      semanticRelease: digest("8"), factoryRelease: digest("9"), bankCount: 2,
+      activeSetDigest: digest("b"), frameCompiler: digest("7"),
+      correctionFrontier: "source:r9 · rights:r4 · correction:1 · requalified", optimizerStep: 91,
+      motifAllocation: digest("0"), teacherEpoch: 14, evaluationContract: digest("8"),
+      projectionFrontier: "outbox:44241:complete · projection:44241",
+      capabilities: { "B.AND": [8, 8], "C.SUCCESSOR": [4, 5] }, debt: 1,
+      retention: "requalified; no new optimizer step", memory: "19 slots · 1 requalified",
+      resources: "655 MiB · topology-v2 sampler",
+    }),
+  ],
+  rejectedCandidates: [{
+    candidateId: "candidate:rejected:44242",
+    parentManifestSha256: M41,
+    reason: "NO_MEASURABLE_TARGET_GAIN",
+    committedGeneration: null,
+  }],
+});

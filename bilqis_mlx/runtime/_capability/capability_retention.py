@@ -1,6 +1,8 @@
 """Evaluator-side complete-solver measurements and advisory paired eligibility."""
 from __future__ import annotations
 
+from bilqis_mlx.runtime.bamf_operator.telemetry import emit
+
 from dataclasses import dataclass, field
 from enum import Enum
 import re
@@ -18,6 +20,7 @@ from .capability_evaluation import (
     _invalid, _sha, _names, EvidenceKind, EvidenceStage, EvaluationCase, case_census_digest,
     EvaluationCohort, CompleteSolver, _answer_identity, Assessment, evaluate_capabilities,
 )
+from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
 
 
 @dataclass(frozen=True)
@@ -45,7 +48,8 @@ class RetentionPolicy:
     protected_reference_losses: tuple[tuple[str, int], ...]
     probe_each: int
     required_census_digests: tuple[tuple[EvidenceKind, str], ...]
-    schema_version: str = "bilqis.c05.retention-policy/v1"
+    baseline_coverage: BaselineCoverage | None = None
+    schema_version: str = "bilqis.c05.retention-policy/v2"
 
     def __post_init__(self):
         if (not isinstance(self.capability_groups, tuple) or not self.capability_groups
@@ -68,7 +72,12 @@ class RetentionPolicy:
                        for pair in self.required_census_digests)
                 or len(self.required_census_digests) != 3
                 or set(dict(self.required_census_digests)) != set(EvidenceKind)
-                or self.schema_version != "bilqis.c05.retention-policy/v1"):
+                or (self.baseline_coverage is not None
+                    and (type(self.baseline_coverage) is not BaselineCoverage
+                         or set(self.baseline_coverage.measured_capabilities)
+                         | set(self.baseline_coverage.unmeasured_capabilities)
+                         != set(dict(self.capability_groups))))
+                or self.schema_version != "bilqis.c05.retention-policy/v2"):
             _invalid("BAMF_RETENTION_POLICY_INVALID")
 
     def digest(self):
@@ -96,9 +105,12 @@ class PairedRetentionEvidence:
             {(self.target_capability, target_group)},
             {item for item in self.policy.capability_groups if item[1] == target_group},
             set(self.policy.capability_groups))
+        measured = (set(self.policy.baseline_coverage.measured_capabilities)
+                    if self.policy.baseline_coverage is not None
+                    else set(dict(self.policy.capability_groups)))
         if (target_group not in self.policy.protected_groups
-                or set(dict(self.policy.protected_reference_losses))
-                != set(dict(self.policy.capability_groups)) - {self.target_capability}
+                or not set(dict(self.policy.protected_reference_losses))
+                <= measured - {self.target_capability}
                 or tuple(cohort.kind for cohort in cohorts) != (
                     EvidenceKind.FRESH_TARGET, EvidenceKind.FRESH_LESSON,
                     EvidenceKind.FIXED_SCHOOL)
@@ -144,7 +156,9 @@ class Decision:
     evidence_sha256: str
     policy_sha256: str
     blocking_capability: str | None = None
-    schema_version: str = "bilqis.c05.retention-decision/v1"
+    blocking_scope: str | None = None
+    baseline_coverage: BaselineCoverage | None = None
+    schema_version: str = "bilqis.c05.retention-decision/v2"
 
     def __post_init__(self):
         if (not isinstance(self.status, DecisionStatus)
@@ -155,7 +169,12 @@ class Decision:
                 or (self.blocking_capability is not None
                     and (not isinstance(self.blocking_capability, str)
                          or not self.blocking_capability))
-                or self.schema_version != "bilqis.c05.retention-decision/v1"):
+                or (self.blocking_scope is not None
+                    and (not isinstance(self.blocking_scope, str)
+                         or not self.blocking_scope))
+                or (self.baseline_coverage is not None
+                    and type(self.baseline_coverage) is not BaselineCoverage)
+                or self.schema_version != "bilqis.c05.retention-decision/v2"):
             _invalid("BAMF_RETENTION_DECISION_INVALID")
 
 
@@ -195,7 +214,7 @@ def retain_candidate(parent, candidate, paired_assessment) -> Decision:
 
 def evaluate_retention_candidate(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
-        parent_generation, candidate_generation) -> Decision:
+        parent_generation, candidate_generation, *, observer=None) -> Decision:
     """Run the authoritative C05 cohorts before deciding candidate retention.
 
     This is the owner-run screen from #744. Accepting a caller-built
@@ -220,12 +239,22 @@ def evaluate_retention_candidate(
         from .capability_retention_foundation import evaluate_foundation_retention_candidate
         return evaluate_foundation_retention_candidate(
             parent_solver, candidate_solver, target_capability, policy, cohorts,
-            parent_generation, candidate_generation)
+            parent_generation, candidate_generation,
+            **({"observer": observer} if observer is not None else {}))
 
-    pairs = tuple(AssessmentPair(
-        evaluate_capabilities(parent_solver, cohort, parent_generation),
-        evaluate_capabilities(candidate_solver, cohort, candidate_generation),
-    ) for cohort in cohorts)
+    pairs = []
+    completed, total = 0, 2 * len(cohorts)
+    for cohort in cohorts:
+        assessments = []
+        for role, solver, generation in (("parent", parent_solver, parent_generation),
+                                         ("candidate", candidate_solver, candidate_generation)):
+            emit(observer, retention_completed=completed, retention_total=total,
+                 retention_subject=cohort.kind.value, retention_role=role)
+            assessments.append(evaluate_capabilities(solver, cohort, generation))
+            completed += 1
+            emit(observer, retention_completed=completed, retention_total=total,
+                 retention_subject=cohort.kind.value, retention_role=role)
+        pairs.append(AssessmentPair(*assessments))
     target_pair, fresh_lesson_pair, fixed_school_pair = pairs
     evidence = PairedRetentionEvidence(
         target_capability, policy,

@@ -96,14 +96,14 @@ def foundation_hyperparameters(args, *, required: bool, materialize: bool = True
         record["eps"], record["weight_decay"])
 
 
-def source_foundation():
+def source_foundation(source_run=None):
     """Load source graph/Factory bytes without allocating or evaluating MLX arrays."""
     from bilqis_mlx.runtime.admission import _read_executable_factory_release_artifact
     from bilqis_mlx.runtime.mlx_checkpoint import _read_catalog
     from bilqis_mlx.runtime.state import _fingerprint
     from bilqis_mlx.state_dag import read_current
 
-    source = active_run_dir().resolve()
+    source = source_run_dir(source_run)
     current = read_current(source)
     release = _read_executable_factory_release_artifact(source, current)
     relative = current.get("model_bundle")
@@ -123,9 +123,11 @@ def source_foundation():
     return source, release, graph
 
 
-def source_run_dir() -> Path:
+def source_run_dir(requested=None) -> Path:
     """Return the current source-run path without reconstructing mutable source state."""
-    return active_run_dir().resolve()
+    if requested is None:
+        return active_run_dir().resolve()
+    return Path(requested).expanduser().resolve()
 
 
 def validate_foundation_authority(source, release, graph, atlas) -> None:

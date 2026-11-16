@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'" />
+    <title data-i18n="shell.documentTitle"></title>
+    <link rel="stylesheet" href="./visual-tokens.css" />
+    <link rel="stylesheet" href="./shell.css" />
+    <link rel="stylesheet" href="./components.css" />
+    <link rel="stylesheet" href="./frame-explorer.css" />
+    <link rel="stylesheet" href="./home/home.css" />
+    <link rel="stylesheet" href="./atlas/semantic-atlas.css" />
+    <link rel="stylesheet" href="./capability/dossier.css" />
+    <link rel="stylesheet" href="./school/school.css" />
+    <link rel="stylesheet" href="./neural/neural.css" />
+    <link rel="stylesheet" href="./episodes/episodes.css" />
+    <link rel="stylesheet" href="./memory/memory.css" />
+    <link rel="stylesheet" href="./teacher/teacher.css" />
+    <link rel="stylesheet" href="./corrections/corrections.css" />
+    <link rel="stylesheet" href="./salience/salience.css" />
+    <link rel="stylesheet" href="./lineage/lineage.css" />
+    <link rel="stylesheet" href="./evidence/evidence.css" />
+    <link rel="stylesheet" href="./resources/resources.css" />
+    <link rel="stylesheet" href="./interactions/interactions.css" />
+    <link rel="stylesheet" href="./operate/operate.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content" data-i18n="shell.skipToMain" data-test-id="shell-skip-main"></a>
+    <div id="shell" class="shell" data-posture="unknown">
+      <aside class="rail" data-test-id="shell-rail">
+        <div class="brand" data-test-id="shell-brand">
+          <strong data-i18n="shell.brand"></strong>
+          <button id="rail-toggle" class="ui-control ui-control--tertiary" type="button"
+                  aria-controls="primary-nav" data-test-id="shell-rail-toggle">
+            <span aria-hidden="true">‹</span>
+          </button>
+        </div>
+        <span id="command-shortcut-hint" class="sr-only" data-i18n="shell.command.keyboardHint"
+              data-test-id="shell-command-shortcut-hint"></span>
+        <nav id="primary-nav" aria-keyshortcuts="Control+K Meta+K"
+             aria-describedby="command-shortcut-hint" data-test-id="shell-navigation"></nav>
+      </aside>
+
+      <main id="main-content" class="workspace" tabindex="-1" data-test-id="shell-main-content">
+        <header class="context-bar" data-test-id="shell-context-bar">
+          <div class="context-primary">
+            <div class="identity" data-test-id="shell-run-identity">
+              <span id="mode-badge" class="mode-badge" data-test-id="shell-mode-badge"></span>
+              <div><strong id="run-id"></strong><small id="generation-id" data-test-id="shell-generation-summary"></small></div>
+            </div>
+            <span id="freshness" class="freshness" data-test-id="shell-freshness"></span>
+            <span id="context-help-host" class="context-help-host"></span>
+          </div>
+          <div class="context-actions">
+            <details id="system-context-disclosure" name="shell-context-disclosure" class="context-disclosure" data-test-id="shell-system-context-disclosure">
+              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.system"
+                       data-test-id="shell-system-context-trigger"></summary>
+              <div class="context-popover ui-surface ui-surface-2 ui-surface--bounded"
+                   data-test-id="shell-system-context-popover">
+                <div id="context-facts" class="context-facts" data-i18n-aria-label="shell.context.systemAria"></div>
+              </div>
+            </details>
+            <details id="view-settings-disclosure" name="shell-context-disclosure" class="context-disclosure" data-test-id="shell-view-settings-disclosure">
+              <summary class="ui-control ui-control--tertiary" data-i18n="shell.context.viewSettings"
+                       data-test-id="shell-view-settings-trigger"></summary>
+              <div class="context-popover context-settings ui-surface ui-surface-2 ui-surface--bounded"
+                   data-i18n-aria-label="shell.context.viewSettingsAria"
+                   data-test-id="shell-view-settings-popover">
+                <button id="theme-trigger" class="ui-control ui-control--mode" type="button"
+                        data-test-id="shell-theme-trigger"></button>
+                <button id="density-trigger" class="ui-control ui-control--mode" type="button"
+                        data-test-id="shell-density-trigger"></button>
+              </div>
+            </details>
+            <span id="context-controls-help-host" class="context-help-host"></span>
+          </div>
+        </header>
+
+        <section id="investigation-strip" class="investigation-strip"
+                 data-i18n-aria-label="investigation.toolbar.label"></section>
+        <section id="defensive-banner" class="defensive-banner" aria-live="polite" aria-atomic="true"
+                 data-test-id="shell-defensive-banner"></section>
+        <div id="announcer" class="sr-only" aria-live="polite" aria-atomic="true"
+             data-test-id="shell-announcer"></div>
+
+        <section id="view-host" class="view-host" aria-labelledby="view-title" data-test-id="shell-view-host">
+          <header class="destination-header" data-test-id="shell-destination-header">
+            <h1 id="view-title" data-test-id="shell-destination-title"></h1>
+            <p id="view-summary" data-test-id="shell-destination-purpose"></p>
+            <span id="view-posture" class="destination-posture" hidden data-test-id="shell-destination-posture"></span>
+          </header>
+          <nav id="model-nav" class="model-nav" hidden data-i18n-aria-label="shell.model.subnav"
+               data-test-id="shell-model-subnav">
+            <button class="ui-control ui-control--peer-tab" type="button" data-model-section="neural"
+                    data-i18n="shell.model.neural" data-test-id="shell-model-neural"></button>
+            <button class="ui-control ui-control--peer-tab" type="button" data-model-section="frames"
+                    data-i18n="shell.model.frames" data-test-id="shell-model-frames"></button>
+          </nav>
+          <section id="frame-explorer" hidden data-i18n-aria-label="shell.model.frames"
+                   data-test-id="model-frame-workspace-host"></section>
+          <section id="domain-view" class="domain-view" data-i18n-aria-label="shell.domainView.aria"
+                   data-test-id="shell-domain-view"></section>
+        </section>
+      </main>
+
+      <div id="inspector-splitter" class="inspector-splitter" role="separator" tabindex="-1"
+           aria-orientation="vertical" aria-controls="main-content inspector"
+           aria-valuemin="160" aria-valuemax="720" aria-valuenow="360"
+           data-i18n-aria-label="shell.inspector.resize" data-test-id="investigation-inspector-splitter"></div>
+      <aside id="inspector" class="inspector" role="dialog" aria-labelledby="inspector-title" aria-hidden="true" inert
+             data-test-id="investigation-inspector">
+        <div class="inspector-heading">
+          <div><span class="eyebrow" data-i18n="shell.inspector.eyebrow"></span><h2 id="inspector-title" data-test-id="investigation-inspector-title"></h2></div>
+          <span id="inspector-help-host" class="inspector-help-host"></span>
+          <button id="inspector-close" type="button" data-i18n-aria-label="shell.inspector.close"
+                  data-test-id="investigation-inspector-close">×</button>
+        </div>
+        <dl id="inspector-summary" class="inspector-summary" data-test-id="investigation-inspector-summary"></dl>
+        <details id="inspector-forensics" class="inspector-forensics" data-test-id="investigation-inspector-forensics">
+          <summary data-i18n="shell.inspector.forensics"></summary>
+          <dl id="inspector-details" data-test-id="investigation-inspector-details"></dl>
+          <div class="inspector-deep-link" data-test-id="investigation-inspector-deep-link">
+            <small data-i18n="shell.inspector.deepLink"></small>
+            <code id="inspector-deep-link-value" data-test-id="investigation-inspector-deep-link-value"></code>
+            <button id="copy-deep-link" type="button" data-i18n="shell.inspector.copyDeepLink"
+                    data-test-id="investigation-inspector-copy-deep-link"></button>
+          </div>
+        </details>
+        <div class="inspector-actions" data-test-id="investigation-inspector-actions">
+          <button id="open-owner" data-test-id="inspector-open-owner" type="button" data-i18n="shell.inspector.openOwner"></button>
+          <button id="open-evidence" data-test-id="inspector-open-evidence" type="button" data-i18n="shell.inspector.openEvidence"></button>
+          <button id="pin-selection" data-test-id="investigation-inspector-pin" type="button" data-i18n="shell.inspector.pin"></button>
+          <button id="compare-left" data-test-id="investigation-inspector-compare-left" type="button" data-i18n="shell.inspector.compareLeft"></button>
+          <button id="compare-right" data-test-id="investigation-inspector-compare-right" type="button" data-i18n="shell.inspector.compareRight"></button>
+          <button id="annotate-selection" data-test-id="investigation-inspector-note" type="button" data-i18n="shell.inspector.addNote"></button>
+        </div>
+      </aside>
+
+      <dialog id="command-palette" class="command-palette" aria-labelledby="palette-title"
+              data-test-id="shell-command-palette">
+        <div class="palette-heading">
+          <div><span class="eyebrow" data-i18n="shell.command.paletteEyebrow"></span><h2 id="palette-title" data-i18n="shell.command.paletteTitle"></h2></div>
+          <button id="palette-close" type="button" data-i18n-aria-label="shell.command.paletteClose"
+                  data-test-id="shell-palette-close">×</button>
+        </div>
+        <p data-i18n="shell.command.paletteDescription"></p>
+        <div id="palette-options" class="palette-options" data-test-id="shell-palette-options"></div>
+      </dialog>
+    </div>
+    <script type="module" src="./renderer.mjs"></script>
+  </body>
+</html>

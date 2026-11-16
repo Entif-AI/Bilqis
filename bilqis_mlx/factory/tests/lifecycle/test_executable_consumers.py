@@ -14,9 +14,8 @@ from bilqis_mlx.factory.execution import (
     CapabilityProfile, CurriculumProfile, GradeProfile,
 )
 from bilqis_mlx.factory.generation import (
-    _is_1324082_rollback_adapter_pair, draw_executable_release_rows,
+    draw_executable_release_rows, runtime_adapter_for_release,
 )
-from bilqis_mlx.factory.model import SourceAdapter
 from bilqis_mlx.factory.tests.test_executable_release import _boolean_answers
 from bilqis_mlx.factory.tests.test_execution_plan import _synthetic_boolean_course
 
@@ -142,45 +141,15 @@ class ExecutableConsumerTests(unittest.TestCase):
                 seed=41,
                 capability="B.IDBOOLOPS")
 
-    def test_known_1324082_grade_a_provider_pair_is_resume_compatible(self):
-        current = SourceAdapter(
-            adapter_id="source.micro.predicates/v1",
-            generator_id="bilqis_mlx.grade_a_probe.make_record",
-            accepted_oracle_ids=("bilqis.mlx.grade-a-record-oracle/v2",),
-            implementation_sha256=(
-                "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9"),
-            cohort_generator_id="bilqis.mlx.grade-a-live-constructor/v1",
-            cohort_releases=((
-                "bilqis.mlx.grade-a-live/20261015",
-                "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9",
-            ),),
-            variation_axes=(
-                "source-valid", "balanced-gold", "fresh-seed",
-                "member-decoy-set-context-v1", "irrelevant-source-context-v2",
-            ),
+    def test_runtime_adapter_consumes_real_capability_execution(self):
+        execution = self.reduced.execution_plan.capability_map["B.IDBOOLOPS"]
+        binding = self.reduced.source_bindings.by_capability[execution.capability_id]
+        registered = self.registry.require(binding.generator_id, binding.oracle_id)
+        self.assertIs(
+            runtime_adapter_for_release(
+                None, self.graph, self.reduced, self.registry, execution),
+            registered,
         )
-        admitted = SourceAdapter(
-            adapter_id="source.micro.predicates/v1",
-            generator_id="bilqis_mlx.grade_a_probe.make_record",
-            accepted_oracle_ids=("bilqis.mlx.grade-a-record-oracle/v2",),
-            implementation_sha256=(
-                "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778"),
-            cohort_generator_id="bilqis.mlx.grade-a-live-constructor/v1",
-            cohort_releases=((
-                "bilqis.mlx.grade-a-live/20261015",
-                "f8e5aec9398538adc633deabe9c41c485e69a96044b9b86a5f1075ce6e201778",
-            ),),
-            variation_axes=(
-                "source-valid", "balanced-gold", "fresh-seed",
-                "member-decoy-set-context-v1", "irrelevant-source-context-v2",
-                "generalization-only-source-context-v3",
-            ),
-        )
-
-        self.assertTrue(_is_1324082_rollback_adapter_pair(admitted, current))
-        self.assertFalse(_is_1324082_rollback_adapter_pair(current, admitted))
-        self.assertFalse(_is_1324082_rollback_adapter_pair(
-            replace(admitted, implementation_sha256="f" * 64), current))
 
 
 if __name__ == "__main__":

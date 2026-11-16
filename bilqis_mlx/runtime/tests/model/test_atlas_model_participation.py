@@ -4,7 +4,7 @@ import unittest
 
 from bilqis_mlx.learning.atlas_readout import DecisionKind, RoleCandidate
 from bilqis_mlx.semantics.frame_schema import ConceptRef
-from bilqis_mlx.runtime.atlas_model_forward import _executed_readout_parameters
+from bilqis_mlx.runtime.atlas_model_participation import _executed_readout_parameters
 from bilqis_mlx.runtime.atlas_model_training import _loss_participation
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 

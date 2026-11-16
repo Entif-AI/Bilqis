@@ -10,9 +10,14 @@ class STATE(StateIdentity, StateAssessment):
 
 
 class SCHOOL:
+    from .school_authority import BAMF_CURRICULUM as BAMF_CURRICULUM
+    from .school_authority import BAMF_RETENTION as BAMF_RETENTION
+    from .school_authority import BAMF_B11 as BAMF_B11
+    from .school_authority import BAMF_ADMISSION as BAMF_ADMISSION
     from .school_custody import CHECKPOINT_CUSTODY as CHECKPOINT_CUSTODY
     from .school_bamf import BAMF_DELIVERY as BAMF_DELIVERY
     from .school_bamf import BAMF_PACKAGE as BAMF_PACKAGE
+    from .school_bamf import BAMF_CONTROL_PLANE as BAMF_CONTROL_PLANE
     from .school_operator import BAMF_OPERATOR as BAMF_OPERATOR
     from .school_bamf import BAMF_FIRST_STUDENT as BAMF_FIRST_STUDENT
     from .school_bamf import BAMF_ATLAS_ADMISSION as BAMF_ATLAS_ADMISSION

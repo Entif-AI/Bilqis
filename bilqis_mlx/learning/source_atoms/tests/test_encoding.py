@@ -1,6 +1,9 @@
 """Source-owned raw atoms remain differentiable through the real B03 entrypoint."""
 from dataclasses import replace
+from pathlib import Path
+from types import SimpleNamespace
 from unittest import TestCase, skipUnless
+from unittest.mock import patch
 
 import mlx.core as mx
 import numpy as np
@@ -9,6 +12,7 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
 from bilqis_mlx.learning.frame_embeddings import semantic_bank_views
 from bilqis_mlx.learning.source_atoms import SourceAtomRow, encode_source_compiled
+from bilqis_mlx.learning.source_atoms.embedding import source_atom_vectors
 from bilqis_mlx.runtime.atlas_artifact_owner import AtlasFeatureArtifactOwner
 from bilqis_mlx.runtime.tests.test_atlas_revalidation import (
     AUTHORITY, _event, _result,
@@ -27,6 +31,42 @@ from bilqis_mlx.semantics.frame_compiler import (
 )
 from bilqis_mlx.semantics.frame_schema import FrameTree, SourceSpan, atomic_fallback
 from bilqis_mlx.source_adapters.tests.atoms.helpers import REAL_BUNDLE, source_case
+
+
+class SourceEmbeddingBoundaryTests(TestCase):
+    def test_generation_drift_precedes_owner_and_source_handoff_work(self):
+        release = "a" * 64
+        selection = SimpleNamespace(
+            release_sha256=release,
+            bundle_id="bundle",
+            source_bundle_id="source-bundle")
+        source = SourceAtomRow(
+            selection, {}, {}, Path("."), 0, 1)
+        snapshot = SimpleNamespace(
+            release_sha256=release,
+            bundle_id="bundle",
+            source_bundle_id="source-bundle")
+        features = SimpleNamespace(
+            semantic_release=release,
+            atlas_bundle_id="bundle",
+            source_bundle_id="source-bundle",
+            digest="d" * 64)
+        extents = SimpleNamespace(factor_map_digest=features.digest)
+        owner = object.__new__(AtlasFeatureArtifactOwner)
+        with patch.object(
+                AtlasFeatureArtifactOwner, "require",
+                side_effect=AssertionError("artifact owner reached")), \
+                patch(
+                    "bilqis_mlx.learning.source_atoms.embedding."
+                    "_build_source_atom_handoff_from_snapshot",
+                    side_effect=AssertionError("source handoff reached")):
+            with self.assertRaises(BilqisError) as caught:
+                source_atom_vectors(
+                    None, None, None, source, features, None, extents, (),
+                    owner, snapshot=snapshot)
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "BAMF_SOURCE_ATOM_GENERATION_DRIFT")
 
 
 @skipUnless(REAL_BUNDLE, "real pinned A01 artifact not mounted")
@@ -182,6 +222,35 @@ class SourceEncodingTests(TestCase):
             self.compiled.extents, active_semantic_digest="9" * 64))
         with self.assertRaises(BilqisError):
             self.encode(compiled=changed)
+
+    def test_generation_drift_rejects_before_owner_or_source_handoff_work(self):
+        banks = semantic_bank_views(
+            self.parameters, self.compiled.extents,
+            self.compiled.features.semantic_release, self.active_indices)
+        drifted_extents = replace(
+            self.compiled.extents, factor_map_digest="c" * 64)
+        with patch.object(
+                AtlasFeatureArtifactOwner, "require",
+                side_effect=AssertionError("artifact owner reached")), \
+                patch(
+                    "bilqis_mlx.learning.source_atoms.embedding."
+                    "_build_source_atom_handoff_from_snapshot",
+                    side_effect=AssertionError("source handoff reached")):
+            with self.assertRaises(BilqisError) as caught:
+                source_atom_vectors(
+                    self.parameters,
+                    self.compiled.compiled.rows[0],
+                    self.compiled.compiler_configs[0],
+                    self.source,
+                    self.compiled.features,
+                    self.schema,
+                    drifted_extents,
+                    banks,
+                    self.artifact_owner,
+                    snapshot=self.snapshot)
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "BAMF_SOURCE_ATOM_GENERATION_DRIFT")
 
     def test_source_correction_holds_real_features_before_next_use(self):
         event = _event(self.artifact_owner.source_dependency)

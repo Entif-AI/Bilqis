@@ -1,6 +1,6 @@
 """Shared deterministic C03 teacher fixtures for custody integration tests."""
 from bilqis_mlx.learning.teacher_lineage import adaptation_authority_ref
-from bilqis_mlx.learning.tests.teacher_strategy_test_support import teacher_fixture
+from bilqis_mlx.learning.tests.teacher_strategy.support import teacher_fixture
 
 
 def adaptation():

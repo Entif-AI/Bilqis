@@ -17,7 +17,7 @@ PRIORITY_OFFER_PAIR_WIDTH = 2
 
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 @dataclass(frozen=True)
@@ -45,12 +45,10 @@ def _planning(planning, release):
         _invalid('BAMF_PRIORITY_PLANNING_INVALID')
     progress.verify()
     closure.verify()
-    snapshots = [s for s in progress.snapshot_history
-                 if s.snapshot_sha256 == progress.input_snapshot_sha256]
-    if (len(snapshots) != 1 or closure.snapshot_sha256 != progress.input_snapshot_sha256
-            or snapshots[0].admitted_factory_release_sha256 != release.release_sha256):
+    snapshot = progress.input_snapshot
+    if (closure.snapshot_sha256 != progress.input_snapshot_sha256
+            or snapshot.admitted_factory_release_sha256 != release.release_sha256):
         _invalid('BAMF_PRIORITY_PLANNING_DRIFT')
-    snapshot = snapshots[0]
     validate_closure_structure(snapshot, closure)
     selection, projection = planning.selection, planning.selected_projection
     if (selection is None) != (projection is None):
@@ -77,35 +75,79 @@ def _planning_hold(option, selection):
 def _grade(program, school, capability):
     grades = tuple(grade.id for grade in program.grades
                    if any(item.id == capability for item in grade.capabilities))
-    return grades[0] if len(grades) == 1 and grades[0] in school.active_grades else None
+    return grades[0] if len(grades) == 1 else None
 
 
-def requalify_priority(run_dir, source_context, parent, frontier, history,
-                       planning, offers, program, school, teacher_epoch, *, now):
-    from bilqis_mlx.runtime.priority_source_offer import PreparedPrioritySourceOffer
+def _verify_planning(planning, release, observer):
+    if observer is None:
+        _planning(planning, release)
+        return
+    from bilqis_mlx.factory.atlas_frontier_progress_metrics import (
+        frontier_verification_measurement,
+    )
+    with frontier_verification_measurement(observer):
+        _planning(planning, release)
 
-    source_context.require_accepted_runtime(run_dir)
-    cache, registry = _accepted_correction_registry(run_dir)
-    if (frontier.snapshot.registry.digest != registry.digest
-            or frontier.snapshot.as_of != now or school.course_digest != program.digest()):
-        _invalid('BAMF_PRIORITY_AUTHORITY_DRIFT')
-    _planning(planning, source_context.release)
+
+def _lawful_priority_context(
+        run_dir, source_context, parent, lawful_frontier,
+        planning_generation):
+    from bilqis_mlx.runtime.lawful_teaching_frontier import (
+        require_bound_lawful_teaching_frontier,
+    )
+    if planning_generation is None:
+        source_context.require_accepted_runtime(run_dir)
+        cache, registry = _accepted_correction_registry(run_dir)
+    else:
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+        cache, _authenticated = _require_planning_generation(
+            planning_generation, source_context, parent)
+        registry = cache._correction_registry
+        if getattr(lawful_frontier, "_planning_generation", None) is not planning_generation:
+            _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
+    require_bound_lawful_teaching_frontier(
+        lawful_frontier, source_context, parent)
+    return cache, registry, set(lawful_frontier.ready_capability_ids)
+
+
+def _verify_frontier_evidence(frontier, history):
     completed_windows(history)
     evidence = dict(frontier.evidence)
-    # Reverify every source fact and policy before applying per-option holds.
     for item in evidence.values():
         basis = item.basis
-        verified = verify_salience_inputs(basis.facts, basis.policy, frontier.snapshot, basis.context)
+        verified = verify_salience_inputs(
+            basis.facts, basis.policy, frontier.snapshot, basis.context)
         if derive_salience(verified) != item:
             _invalid('BAMF_PRIORITY_EVIDENCE_DRIFT')
     rank_attention_options(frontier.options, evidence, frontier.snapshot)
+    return evidence
+
+
+def _validate_priority_offers(offers, frontier, lawful_ids, offer_type):
     if (type(offers) is not tuple
             or any(type(pair) is not tuple
             or len(pair) != PRIORITY_OFFER_PAIR_WIDTH
-            or not isinstance(pair[0], str) or type(pair[1]) is not PreparedPrioritySourceOffer
+            or not isinstance(pair[0], str) or type(pair[1]) is not offer_type
             for pair in offers) or len(dict(offers)) != len(offers)
-            or not set(dict(offers)).issubset({option.stable_id for option in frontier.options})):
+            or not set(dict(offers)).issubset({option.stable_id for option in frontier.options})
+            or any(pair[1].capability_id not in lawful_ids for pair in offers)):
         _invalid('BAMF_PRIORITY_OFFERS_INVALID')
+
+
+def requalify_priority(run_dir, source_context, parent, frontier, history,
+                       planning, offers, program, school, teacher_epoch, *, now,
+                       lawful_frontier, planning_generation=None,
+                       planning_observer=None):
+    from bilqis_mlx.runtime.priority_source_offer import PreparedPrioritySourceOffer
+    cache, registry, lawful_ids = _lawful_priority_context(
+        run_dir, source_context, parent, lawful_frontier, planning_generation)
+    if (frontier.snapshot.registry.digest != registry.digest
+            or frontier.snapshot.as_of != now or school.course_digest != program.digest()):
+        _invalid('BAMF_PRIORITY_AUTHORITY_DRIFT')
+    _verify_planning(planning, source_context.release, planning_observer)
+    evidence = _verify_frontier_evidence(frontier, history)
+    _validate_priority_offers(
+        offers, frontier, lawful_ids, PreparedPrioritySourceOffer)
     by_id = dict(offers)
     eligible, holds = [], []
     release = source_context.release
@@ -114,15 +156,22 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
             eligible.append(option)
             continue
         cap, context = option.context.capability_id, option.context
+        if cap not in lawful_ids:
+            holds.append((option.stable_id, 'LEARNER_FRONTIER_HELD'))
+            continue
+        if (cap not in release.execution_plan.capability_map
+                or cap not in release.curriculum.capability_map):
+            holds.append((option.stable_id, 'CAPABILITY_NOT_ADMITTED'))
+            continue
+        if cap not in release.source_bindings.by_capability:
+            holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
+            continue
+        if _grade(program, school, cap) is None:
+            holds.append((option.stable_id, 'CAPABILITY_NOT_TEACHABLE'))
+            continue
         offer = by_id.get(option.stable_id)
         if offer is None:
             holds.append((option.stable_id, 'SOURCE_OFFER_MISSING'))
-            continue
-        if (cap not in release.execution_plan.capability_map
-                or cap not in release.curriculum.capability_map
-                or cap not in release.source_bindings.by_capability
-                or _grade(program, school, cap) is None):
-            holds.append((option.stable_id, 'CAPABILITY_NOT_ADMITTED'))
             continue
         if (context.semantic_release != release.release_sha256
                 or context.generation_digest != cache.generation_binding
@@ -142,7 +191,7 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
             holds.append((option.stable_id, 'A09_PLANNING_UNAVAILABLE'))
             continue
         try:
-            offer.require_current(source_context, parent)
+            offer.require_qualified_current(source_context, parent)
         except ValueError:
             holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
             continue

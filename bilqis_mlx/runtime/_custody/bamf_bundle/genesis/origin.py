@@ -69,9 +69,7 @@ def issue_initial_factory_foundation_authority(
         origin = Checkpoint(**student)
     except Exception:
         invalid("BAMF_INITIAL_GENERATION_FACTORY_AUTHORITY_INVALID")
-    if (admission.student_sha256 != origin.sha256
-            or admission.optimizer_step != origin.optimizer_step
-            or admission.semantic_graph_sha256 != _fingerprint(graph)
+    if (admission.semantic_graph_sha256 != _fingerprint(graph)
             or admission.semantic_graph_sha256 != current.get("semantic_graph_sha256")):
         invalid("BAMF_INITIAL_GENERATION_FACTORY_AUTHORITY_DRIFT")
     authority = object.__new__(InitialFactoryFoundationAuthority)

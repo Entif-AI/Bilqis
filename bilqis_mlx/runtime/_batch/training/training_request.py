@@ -3,8 +3,6 @@ from __future__ import annotations
 
 from typing import Callable
 
-from bilqis_mlx.factory.adapters import validate_instructional_constituents
-from bilqis_mlx.factory.generation import runtime_adapter_for_release
 from bilqis_mlx.factory.teaching import DeliveredTeaching, describe_delivered_teaching
 from bilqis_mlx.runtime.source_execution import (
     SourceBatchAuthority, SourceExecutionContext, source_content_digest,
@@ -42,7 +40,7 @@ def require_compile_request(
     source_context.release.verify_semantic_catalog(source_context.graph)
     release = source_context.release
     capabilities = release.execution_plan.capability_map
-    source_authority.__post_init__()
+    source_context.require_bound_rows(delivered_rows, source_authority)
     if (delivery_release_sha256 != release.release_sha256
             or not isinstance(delivery, DeliveredTeaching)
             or delivery_capability not in capabilities):
@@ -109,19 +107,6 @@ def row_source_inputs(
           or capabilities[capability].provider_implementation_sha256
           != owner.provider_implementation_sha256):
         _invalid("DELIVERY_CAPABILITY_MISMATCH")
-    adapter = runtime_adapter_for_release(
-        source_context.source_root, source_context.graph,
-        source_context.release, source_context.source_registry,
-        capabilities[capability])
-    if adapter.check(
-            row, source_root=source_context.source_root,
-            graph=source_context.graph,
-            course=source_context.release.curriculum) is not True:
-        _invalid("SOURCE_ORACLE_REJECTED")
-    validate_instructional_constituents(
-        row, curriculum=source_context.release.curriculum,
-        plan=source_context.release.execution_plan,
-        capability=capability, adapter=adapter)
     rehearsal = rehearsal_by_id.get(identity)
     if rehearsal is not None and not isinstance(rehearsal, str):
         _invalid("REHEARSAL_INVALID")

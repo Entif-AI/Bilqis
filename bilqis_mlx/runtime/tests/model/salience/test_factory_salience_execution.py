@@ -177,7 +177,10 @@ class FactorySalienceExecutionTests(unittest.TestCase):
         capture.select_option(selection.visit.identity.capability_id, None)
         with stage('candidate_step'), patch.object(
                 priority_owner, 'execute_factory_candidate_step',
-                wraps=priority_owner.execute_factory_candidate_step) as step_call:
+                wraps=priority_owner.execute_factory_candidate_step) as step_call, patch(
+                    'bilqis_mlx.runtime.lawful_teaching_frontier.'
+                    'require_bound_lawful_teaching_frontier',
+                    return_value=selection._lawful_frontier):
             result = execute_accepted_priority_candidate(
                 selection, context, str(self.artifact), self.feature_receipt.path,
                 teacher_hparams=HP, optimizer_step_seed=379, max_norm=1.0,

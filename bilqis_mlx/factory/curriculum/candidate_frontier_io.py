@@ -27,6 +27,15 @@ def _aggregate(files: dict[str, str]) -> str:
         f"{name}:{digest}\n" for name, digest in sorted(files.items())).encode()).hexdigest()
 
 
+def candidate_frontier_source_identity(
+        source_dir: str | Path, builder_path: str | Path) -> tuple[str, str]:
+    """Return the exact pinned builder + canonical source-input identity."""
+    source_dir, builder_path = Path(source_dir), Path(builder_path)
+    builder_sha256 = _sha256(builder_path)
+    input_files = {name: _sha256(source_dir / name) for name in _INPUT_FILES}
+    return builder_sha256, _aggregate(input_files)
+
+
 def _read_csv(path: Path) -> tuple[dict[str, str], ...]:
     try:
         with path.open(encoding="utf-8", newline="") as handle:

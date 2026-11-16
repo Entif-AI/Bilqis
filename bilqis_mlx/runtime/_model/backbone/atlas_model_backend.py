@@ -29,11 +29,14 @@ class Backend:
         ):
             _invalid("B11_BACKEND_INVALID")
 
-    def forward(self, params, compiled_batch, answer_plan, mode, cache=None):
+    def forward(
+            self, params, compiled_batch, answer_plan, mode, cache=None, *,
+            execution_binding=None):
         from .atlas_model_forward import _forward_bamf_impl
 
         return _forward_bamf_impl(
-            self, params, compiled_batch, answer_plan, mode, cache)
+            self, params, compiled_batch, answer_plan, mode, cache,
+            execution_binding=execution_binding)
 
     def value_and_grad(
             self, params, compiled_batch, answer_plan, targets, mask, cache=None, *,
@@ -42,6 +45,15 @@ class Backend:
 
         return _bamf_value_and_grad_impl(
             self, params, compiled_batch, answer_plan, targets, mask, cache,
+            salience_supervision=salience_supervision)
+
+    def microbatch_value_and_grad(
+            self, params, row_batches, answer_plans, targets, masks, cache=None, *,
+            salience_supervision=None):
+        from .atlas_model_microbatch import _bamf_microbatch_value_and_grad_impl
+
+        return _bamf_microbatch_value_and_grad_impl(
+            self, params, row_batches, answer_plans, targets, masks, cache,
             salience_supervision=salience_supervision)
 
 

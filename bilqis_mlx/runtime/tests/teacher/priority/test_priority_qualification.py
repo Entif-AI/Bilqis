@@ -41,6 +41,7 @@ class Offer:
     def require_current(self, context, parent):
         if self.held:
             raise ValueError('held')
+    require_qualified_current = require_current
 
 @pytest.fixture
 def qualification():
@@ -58,6 +59,9 @@ def qualification():
         'bilqis_mlx.learning.salience_contracts': mod(ActionKind=action),
         'bilqis_mlx.learning.salience_history': mod(completed_windows=lambda h: None),
         'bilqis_mlx.runtime.bamf_bundle.accepted_runtime': mod(_accepted_correction_registry=lambda r: (N(generation_binding='generation', accepted_manifest_sha256='manifest'), N(digest='registry'))),
+        'bilqis_mlx.runtime.lawful_teaching_frontier': mod(
+            require_bound_lawful_teaching_frontier=lambda frontier, context, parent: frontier,
+            require_current_lawful_teaching_frontier=lambda frontier, context, parent: frontier),
         'bilqis_mlx.semantics.domains': mod(contract_digest=lambda v: 'binding' if v == 'source-binding' else 'epoch'),
         'bilqis_mlx.runtime.priority_source_offer': mod(PreparedPrioritySourceOffer=Offer),
     }
@@ -72,7 +76,9 @@ def qualification():
 
 def inputs(q, options, offers):
     snapshot = N(snapshot_sha256='snapshot', admitted_factory_release_sha256='release')
-    progress = Progress(verify=lambda: None, snapshot_history=(snapshot,), input_snapshot_sha256='snapshot', proposal_selection_sha256=None)
+    progress = Progress(
+        verify=lambda: None, input_snapshot=snapshot,
+        input_snapshot_sha256='snapshot', proposal_selection_sha256=None)
     closure = Closure(verify=lambda: None, snapshot_sha256='snapshot')
     planning = q.PriorityPlanningInput(progress, closure, None, None)
     release = N(release_sha256='release', execution_plan=N(capability_map={'cap': 1}),
@@ -96,9 +102,15 @@ def option(name, unlocks=0):
                        teacher_epoch_digest='epoch', source_binding_digest='binding', source_family_id='family'))
 
 
+def lawful(*capabilities):
+    ready = ('cap',) if not capabilities else tuple(capabilities)
+    return N(ready_capability_ids=ready, _planning_generation=None)
+
+
 def test_hold_only_affected_offer_and_retain_lower_priority(qualification):
     args = inputs(qualification, (option('high'), option('low')), (('high', Offer(True)), ('low', Offer())))
-    result = qualification.requalify_priority(*args, now=10)
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=lawful())
     assert [o.stable_id for o in result.ranked.ordered] == ['low']
     assert result.holds == (('high', 'SOURCE_OFFER_HELD'),)
 
@@ -106,13 +118,15 @@ def test_hold_only_affected_offer_and_retain_lower_priority(qualification):
 def test_forged_filtered_option_fails_before_missing_offer_hold(qualification):
     args = inputs(qualification, (option('forged'),), ())
     with pytest.raises(ValueError, match='signature'):
-        qualification.requalify_priority(*args, now=10)
+        qualification.requalify_priority(
+            *args, now=10, lawful_frontier=lawful())
 
 
 def test_nonzero_unlock_without_selection_is_held(qualification):
     args = inputs(qualification, (option('one', 3),), (('one', Offer()),))
     with patch.object(qualification.candidate_realizations, 'realized_atlas_semantic_id', return_value='semantic'):
-        result = qualification.requalify_priority(*args, now=10)
+        result = qualification.requalify_priority(
+            *args, now=10, lawful_frontier=lawful())
     assert result.holds == (('one', 'A09_PLANNING_UNAVAILABLE'),)
 
 
@@ -120,13 +134,16 @@ def test_planner_is_required_even_when_no_option_claims_an_unlock(qualification)
     args = list(inputs(qualification, (option('one'),), (('one', Offer()),)))
     args[5] = None
     with pytest.raises(BilqisError) as failure:
-        qualification.requalify_priority(*args, now=10)
+        qualification.requalify_priority(
+            *args, now=10, lawful_frontier=lawful())
     assert failure.value.context['reason'] == 'BAMF_PRIORITY_PLANNING_INVALID'
+    assert failure.value.code == 'SCHOOL.BAMF_CURRICULUM.INVALID'
 
-def test_grade_renaming_keeps_capability_admission(qualification):
+def test_grade_projection_is_descriptive_not_an_eligibility_gate(qualification):
     program = N(grades=(N(id='renamed', capabilities=(N(id='cap'),)),))
     assert qualification._grade(program, N(active_grades=('renamed',)), 'cap') == 'renamed'
-    assert qualification._grade(program, N(active_grades=('old',)), 'cap') is None
+    assert qualification._grade(program, N(active_grades=('old',)), 'cap') == 'renamed'
+    assert qualification._grade(program, N(active_grades=()), 'cap') == 'renamed'
 
 def test_matching_selection_unlocks_and_unadmitted_capability(qualification):
     selected = Selection(selected_semantic_id='semantic', downstream_unlocks=3,
@@ -136,7 +153,67 @@ def test_matching_selection_unlocks_and_unadmitted_capability(qualification):
     args[5].progress.proposal_selection_sha256 = 'selection'
     args[5] = qualification.PriorityPlanningInput(args[5].progress, args[5].closure, selected, Projection())
     with patch.object(qualification.candidate_realizations, 'realized_atlas_semantic_id', return_value='semantic'):
-        assert qualification.requalify_priority(*args, now=10).ranked.ordered == (item,)
+        assert qualification.requalify_priority(
+            *args, now=10, lawful_frontier=lawful()).ranked.ordered == (item,)
         args[8].active_grades = ()
-        result = qualification.requalify_priority(*args, now=10)
-    assert result.holds == (('one', 'CAPABILITY_NOT_ADMITTED'),)
+        result = qualification.requalify_priority(
+            *args, now=10, lawful_frontier=lawful())
+    assert result.ranked.ordered == (item,)
+    assert result.holds == ()
+
+
+def test_priority_visit_reports_planning_verification_metrics(qualification):
+    args = inputs(qualification, (option('one'),), (('one', Offer()),))
+    observed = []
+    qualification.requalify_priority(
+        *args, now=10, lawful_frontier=lawful(),
+        planning_observer=observed.append)
+    assert len(observed) == 1
+    assert observed[0].snapshots_rehashed == 0
+    assert observed[0].historical_bytes_serialized == 0
+    assert observed[0].receipt_history_lookups == 0
+
+
+@pytest.mark.parametrize(('missing', 'expected'), [
+    ('execution', 'CAPABILITY_NOT_ADMITTED'),
+    ('curriculum', 'CAPABILITY_NOT_ADMITTED'),
+    ('binding', 'SOURCE_OFFER_HELD'),
+    ('grade', 'CAPABILITY_NOT_TEACHABLE'),
+    ('duplicate_grade', 'CAPABILITY_NOT_TEACHABLE'),
+    ('offer', 'SOURCE_OFFER_MISSING'),
+])
+def test_hold_precedence_before_missing_offer(qualification, missing, expected):
+    args = list(inputs(qualification, (option('one'),), ()))
+    release = args[1].release
+    if missing == 'execution':
+        release.execution_plan.capability_map.clear()
+        release.source_bindings.by_capability.clear()
+    elif missing == 'curriculum':
+        release.curriculum.capability_map.clear()
+    elif missing == 'binding':
+        release.source_bindings.by_capability.clear()
+    elif missing == 'grade':
+        args[7].grades = ()
+    elif missing == 'duplicate_grade':
+        args[7].grades = args[7].grades * 2
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=lawful())
+    assert result.holds == (('one', expected),)
+
+
+def test_salience_cannot_revive_option_held_by_lawful_frontier(qualification):
+    args = inputs(qualification, (option('one'),), ())
+    held = N(ready_capability_ids=(), _planning_generation=None)
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=held)
+    assert result.ranked.ordered == ()
+    assert result.holds == (('one', 'LEARNER_FRONTIER_HELD'),)
+
+
+def test_offer_enumeration_outside_lawful_frontier_fails_closed(qualification):
+    args = inputs(qualification, (option('one'),), (('one', Offer()),))
+    held = N(ready_capability_ids=(), _planning_generation=None)
+    with pytest.raises(BilqisError) as failure:
+        qualification.requalify_priority(
+            *args, now=10, lawful_frontier=held)
+    assert failure.value.context['reason'] == 'BAMF_PRIORITY_OFFERS_INVALID'

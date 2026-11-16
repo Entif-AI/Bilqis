@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from bilqis_mlx.cli import main, parse_args
 
 
@@ -57,20 +58,22 @@ class OperatorTests(unittest.TestCase):
         debt = parse_args([
             "train", "--resume", "--admit-next-grade-with-debt"])
         self.assertTrue(debt.admit_next_grade_with_debt)
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, patch(
+                "bilqis_mlx.presentation.operator_cli.command.ROOT", Path(tmp)):
+            run = str(Path(tmp) / "runs" / "aspirant")
             out=io.StringIO()
             with redirect_stdout(out), redirect_stderr(io.StringIO()):
-                self.assertEqual(main(["train", "--dry-run", "--run-dir", tmp]), 0)
+                self.assertEqual(main(["train", "--dry-run", "--run-dir", run]), 0)
             self.assertEqual(json.loads(out.getvalue())["retention_mode"], "DEFAULT_PROTECTED")
             out=io.StringIO()
             with redirect_stdout(out), redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["train", "--dry-run", "--no-retention",
-                                       "--run-dir", tmp]), 0)
+                                       "--run-dir", run]), 0)
             self.assertEqual(json.loads(out.getvalue())["retention_mode"], "EXPLICIT_UNPROTECTED")
             out=io.StringIO()
             with redirect_stdout(out), redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["train", "--dry-run", "--experimental-retention",
-                                       "--run-dir", tmp]), 0)
+                                       "--run-dir", run]), 0)
             self.assertEqual(json.loads(out.getvalue())["retention_mode"], "DEFAULT_PROTECTED")
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 parse_args(["train", "--experimental-retention", "--no-retention"])

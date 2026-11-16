@@ -5,15 +5,18 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 from bilqis_mlx.cli import main, ORIGINAL_CHECKPOINT
 
 
 class OperatorTests(unittest.TestCase):
     def test_explicit_resume_only_and_training_is_hard_blocked(self):
-        with tempfile.TemporaryDirectory() as tmp:
+        with tempfile.TemporaryDirectory() as tmp, patch(
+                "bilqis_mlx.presentation.operator_cli.command.ROOT", Path(tmp)):
+            run = Path(tmp) / "runs" / "aspirant"
             output=io.StringIO()
             with redirect_stdout(output):
-                code=main(["train","--dry-run","--run-dir",tmp])
+                code=main(["train","--dry-run","--run-dir",str(run)])
             self.assertEqual(code,0)
             report = json.loads(output.getvalue())
             self.assertEqual(report["start_behavior"], "GRADE_A_NEW_RUN")
@@ -31,8 +34,8 @@ class OperatorTests(unittest.TestCase):
             self.assertEqual(report["operator_constraint"], "HUMAN_ONLY_NEURAL_OPTIMIZER_UPDATES")
             self.assertNotIn("HUMAN_ONLY_NEURAL_OPTIMIZER_UPDATES", report["blockers"])
             with redirect_stderr(io.StringIO()):
-                self.assertEqual(main(["train","--dry-run","--resume","--run-dir",tmp]),2)
-                self.assertEqual(main(["train","--run-dir",tmp]),2)
+                self.assertEqual(main(["train","--dry-run","--resume","--run-dir",str(run)]),2)
+                self.assertEqual(main(["train","--run-dir",str(run)]),2)
             self.assertEqual(list(Path(tmp).iterdir()),[])
 
     @unittest.skipUnless(ORIGINAL_CHECKPOINT.is_file(), "Pinned whole student not mounted")

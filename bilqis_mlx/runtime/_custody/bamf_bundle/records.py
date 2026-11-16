@@ -37,6 +37,7 @@ SIDECARS = MappingProxyType({
     "correction_frontier": "correction-frontier.json",
     "teacher_state": "teacher-state.json",
     "evaluation_contract": "evaluation-contract.json",
+    "baseline_evidence": "baseline-evidence.json",
     "step_proofs": "step-proofs.json",
     "run_identity": "run-identity.json",
     "outbox": "outbox.json",
@@ -63,11 +64,17 @@ class BamfBundleCandidate:
     transition: Mapping
     outbox: tuple
     run_identity: object | None = None
+    baseline_evidence: Mapping | None = None
 
 
 @dataclass(frozen=True)
 class CompleteStudent(BamfBundleCandidate):
-    """Cold-loaded immutable generation with exact B12 retained custody."""
+    """Complete immutable generation with exact B12 retained custody.
+
+    Instances normally come from a custody-validated cold load. B13 may also
+    materialize the just-serialized child in memory for same-process outbox
+    reconciliation; persisted retry/recovery still performs a full cold load.
+    """
 
 
 @dataclass(frozen=True)
@@ -191,9 +198,10 @@ def validate_transition(generation: int, transition: Mapping) -> None:
 def validate_sidecars(extents, provenance, records: Mapping):
     from bilqis_mlx.learning.atlas_engram import INITIAL_MOTIF_CAPACITY
     from bilqis_mlx.learning.atlas_plasticity import PlasticityPolicy
-    required = set(SIDECARS) - {"run_identity"}
+    optional = {"run_identity", "baseline_evidence"}
+    required = set(SIDECARS) - optional
     if (not isinstance(records, Mapping)
-            or set(records) not in (required, set(SIDECARS))):
+            or not required <= set(records) <= set(SIDECARS)):
         invalid()
     if (any(not isinstance(records[name], Mapping) for name in records
             if name != "outbox") or type(records["outbox"]) not in (list, tuple)):
@@ -205,6 +213,9 @@ def validate_sidecars(extents, provenance, records: Mapping):
             or not isinstance(proofs["proofs"], list)):
         invalid()
     validate_identity_sidecars(extents, provenance, records, invalid)
+    if "baseline_evidence" in records:
+        from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
+        BaselineLedger.from_record(dict(records["baseline_evidence"]))
     try:
         motif = snapshot_from_record(records["motif_allocation"])
         policy = PlasticityPolicy.from_record(records["plasticity_policy"])
@@ -256,6 +267,10 @@ def sidecar_records(candidate: BamfBundleCandidate) -> dict:
         },
         "outbox": outbox,
     }
+    if candidate.baseline_evidence is not None:
+        from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
+        baseline = BaselineLedger.from_record(dict(candidate.baseline_evidence))
+        records["baseline_evidence"] = baseline.to_record()
     if candidate.run_identity is not None:
         from .genesis import BamfRunIdentity
         if type(candidate.run_identity) is not BamfRunIdentity:
@@ -263,3 +278,20 @@ def sidecar_records(candidate: BamfBundleCandidate) -> dict:
         records["run_identity"] = candidate.run_identity.to_record()
     validate_sidecars(candidate.extents, candidate.provenance, records)
     return records
+
+
+def complete_student_from_candidate(candidate: BamfBundleCandidate) -> CompleteStudent:
+    """Materialize the exact in-memory child that deterministic B13 serialization writes."""
+    if type(candidate) is not BamfBundleCandidate:
+        invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+    records = sidecar_records(candidate)
+    return CompleteStudent(
+        candidate.run_id, candidate.generation, candidate.parent_manifest_sha256,
+        candidate.implementation_sha256, candidate.topology, candidate.extents,
+        candidate.retained_state, candidate.optimizer_hyperparameters,
+        candidate.provenance, dict(candidate.semantic_abi),
+        dict(candidate.compiler_features), dict(candidate.correction_frontier),
+        dict(candidate.teacher_state), dict(candidate.evaluation_contract),
+        dict(candidate.transition), tuple(records["outbox"]), candidate.run_identity,
+        (dict(candidate.baseline_evidence)
+         if candidate.baseline_evidence is not None else None))

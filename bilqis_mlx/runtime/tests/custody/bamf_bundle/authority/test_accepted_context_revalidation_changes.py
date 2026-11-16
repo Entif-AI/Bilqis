@@ -31,7 +31,7 @@ class AcceptedContextChangeTests(AcceptedContextFixture):
             direct, invalidation=invalidation,
             accepted_event_id=accepted_event_id,
             dependencies=(new_time,), digest="d" * 64)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(ContextRevalidationFrontier((changed,)))
         for artifact_id in (direct.artifact_id, "motif:context-descendant"):
             with self.assertRaises(BilqisError) as held:
@@ -44,7 +44,7 @@ class AcceptedContextChangeTests(AcceptedContextFixture):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         replacement = ContextOwner((replacement_direct, replacement_descendant))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "TEST_CONTEXT", replacement)
@@ -57,10 +57,10 @@ class AcceptedContextChangeTests(AcceptedContextFixture):
         ignored = signed_context_result(
             descendant, invalidation=invalidation,
             accepted_event_id=accepted_event_id)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
         before = len(read_records(self.run, cache.accepted_manifest_sha256))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(ContextRevalidationFrontier((ignored,)))
         self.assertEqual(
             len(read_records(self.run, cache.accepted_manifest_sha256)), before + 1)
@@ -69,7 +69,7 @@ class AcceptedContextChangeTests(AcceptedContextFixture):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         cold_owner = ContextOwner((replace(direct), replace(descendant)))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cold_cache.accepted_manifest_sha256, "TEST_CONTEXT", cold_owner)
@@ -91,7 +91,7 @@ class AcceptedContextChangeTests(AcceptedContextFixture):
             (direct.reference,), impact=2, exigency=2)
         owner = ContextOwner((direct, child))
         cache = self.publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "TEST_EXPIRY", owner)
             host = AcceptedRuntimeHost(self.run)
@@ -103,7 +103,7 @@ class AcceptedContextChangeTests(AcceptedContextFixture):
             direct, invalidation=invalidation,
             accepted_event_id=accepted_event_id,
             dependencies=(source_ref,), eligible=False)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(ContextRevalidationFrontier((expired,)))
         self.assertTrue(owner.index.node(direct.artifact_id).eligible)
         for artifact_id in (direct.artifact_id, child.artifact_id):

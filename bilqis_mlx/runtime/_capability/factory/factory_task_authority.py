@@ -11,27 +11,22 @@ from bilqis_mlx.runtime.atlas_model_contracts import BamfCompiledBatch
 from bilqis_mlx.runtime.source_execution import (
     SourceExecutionContext, source_content_digest,
 )
+from bilqis_mlx.runtime.b11_source_execution_authority import (
+    require_b11_source_owner_current,
+)
 from bilqis_mlx.semantics.cognitive_dag import TaskGoal
 from bilqis_mlx.semantics.cognitive_operators import OperatorBinding
 from bilqis_mlx.semantics.domains import contract_digest
 
 from .capability_evaluation import _invalid
+from .factory_task_template import (
+    FactoryTaskTemplate, _source_view, factory_task_template,
+    validate_factory_task_template,
+)
 from bilqis_mlx.source_adapters.task_goal_registry import require_task_goal_lowerer
 
 
 _ISSUER = object()
-_LOWERING_RESULT_WIDTH = 2
-_PRIVATE_SOURCE_KEYS = frozenset((
-    "gold", "native_output", "auxiliary_labels", "answer", "label",
-    "expected", "expected_answer", "score", "oracle_result",
-))
-
-
-def _source_view(row: dict) -> dict:
-    if not isinstance(row, dict):
-        _invalid("BAMF_C04_SOURCE_TASK_ROW_INVALID")
-    return {key: value for key, value in row.items()
-            if key not in _PRIVATE_SOURCE_KEYS}
 
 
 def _generation_authority(
@@ -108,6 +103,28 @@ class FactoryTaskAuthority:
         return hashlib.sha256(wire.encode()).hexdigest()
 
 
+def _issue_authority(
+        template: FactoryTaskTemplate, generation: str,
+        training_sha256: str | None, source_row_sha256: str) -> FactoryTaskAuthority:
+    item = object.__new__(FactoryTaskAuthority)
+    for name, value in (
+        ("goal", template.goal), ("binding", template.binding),
+        ("release_sha256", template.release_sha256),
+        ("generation_binding", generation),
+        ("capability_id", template.capability_id),
+        ("source_row_id", template.source_row_id),
+        ("source_row_sha256", source_row_sha256),
+        ("source_binding_sha256", template.source_binding_sha256),
+        ("training_authority_sha256", training_sha256),
+        ("source_family_id", template.source_family_id),
+        ("episode_id", template.episode_id),
+        ("lowerer_sha256", template.lowerer_sha256), ("_issuance", _ISSUER),
+    ):
+        object.__setattr__(item, name, value)
+    item.__post_init__()
+    return item
+
+
 def factory_task_authority(
     source_context: SourceExecutionContext,
     compiled_batch: BamfCompiledBatch,
@@ -120,75 +137,57 @@ def factory_task_authority(
         _invalid("BAMF_C04_FACTORY_TASK_AUTHORITY_REQUIRED")
     source_context.__post_init__()
     compiled_batch.__post_init__()
+    source_execution_authority = compiled_batch.source_execution_authority
+    if source_execution_authority is not None:
+        require_b11_source_owner_current(
+            source_execution_authority,
+            source_context.source_registry,
+            compiled_batch.sources[0],
+        )
+    template = factory_task_template(source_context, compiled_batch)
+    source_row_sha256 = source_content_digest((compiled_batch.sources[0].source_row,))
+    generation_binding, release_sha256, training_sha256 = _generation_authority(
+        source_context, compiled_batch, template.source_row_id,
+        template.capability_id, source_row_sha256,
+        generation_binding)
+    if release_sha256 != template.release_sha256:
+        _invalid("BAMF_C04_FACTORY_TASK_SOURCE_MISMATCH")
+    return _issue_authority(
+        template, generation_binding, training_sha256, source_row_sha256)
+
+
+def rebind_factory_task_authority(
+    source_context: SourceExecutionContext,
+    compiled_batch: BamfCompiledBatch,
+    template: FactoryTaskTemplate,
+    *,
+    generation_binding: str,
+) -> FactoryTaskAuthority:
+    """Bind one already-lowered gold-blind task to a new execution generation."""
+    if (type(source_context) is not SourceExecutionContext
+            or type(compiled_batch) is not BamfCompiledBatch
+            or type(template) is not FactoryTaskTemplate
+            or not isinstance(generation_binding, str) or not generation_binding):
+        _invalid("BAMF_C04_FACTORY_TASK_REBIND_INVALID")
+    source_context.__post_init__()
+    compiled_batch.__post_init__()
+    validate_factory_task_template(source_context, compiled_batch, template)
     source = compiled_batch.sources[0]
     row = source.source_row
     row_id = row.get("id")
     capability_id = row.get("capability")
     row_sha256 = source_content_digest((row,))
-    generation_binding, release_sha256, training_sha256 = _generation_authority(
+    generation, release_sha256, training_sha256 = _generation_authority(
         source_context, compiled_batch, row_id, capability_id, row_sha256,
         generation_binding)
-    execution = source_context.release.execution_plan.capability_map.get(
-        capability_id)
-    if execution is None:
-        _invalid("BAMF_C04_FACTORY_TASK_CAPABILITY_MISSING")
-    adapter = runtime_adapter_for_release(
-        source_context.source_root, source_context.graph,
-        source_context.release, source_context.source_registry, execution,
-        drift_code="BAMF_C04_FACTORY_TASK_ADAPTER_DRIFT",
-    )
-    try:
-        lowerer = require_task_goal_lowerer(
-            execution.provider_id, execution.provider_implementation_sha256)
-    except ValueError:
-        _invalid("BAMF_C04_SOURCE_TASK_LOWERER_REQUIRED")
-    training = compiled_batch.training_authority
-    family = None if training is None else training.source_family_id
-    episode = None if training is None else training.episode_id
-    if family is None:
-        family = row.get("source_family_id")
-    if not isinstance(family, str) or not family:
-        family = contract_digest({
-            "schema": "bilqis.mlx.source-draw-family/v1",
-            "provider": execution.provider_id,
-            "implementation": execution.provider_implementation_sha256,
-            "capability": execution.capability_id,
-        })
-    if episode is None:
-        episode = row.get("episode_id")
-    if not isinstance(episode, str) or not episode:
-        episode = row_id
-    lowered = lowerer.lower(
-        _source_view(row),
-        semantic_release=compiled_batch.compiled.features.semantic_release,
-        source_root=source_context.source_root,
-        graph=source_context.graph,
-        release=source_context.release,
-        capability=execution,
-    )
-    if (not isinstance(lowered, tuple) or len(lowered) != _LOWERING_RESULT_WIDTH
-            or type(lowered[0]) is not TaskGoal
-            or type(lowered[1]) is not OperatorBinding):
-        _invalid("BAMF_C04_SOURCE_TASK_LOWERING_INVALID")
-    goal, binding = lowered
-    item = object.__new__(FactoryTaskAuthority)
-    for name, value in (
-        ("goal", goal), ("binding", binding),
-        ("release_sha256", release_sha256),
-        ("generation_binding", generation_binding),
-        ("capability_id", capability_id),
-        ("source_row_id", row_id),
-        ("source_row_sha256", row_sha256),
-        ("source_binding_sha256", contract_digest(binding)),
-        ("training_authority_sha256", training_sha256),
-        ("source_family_id", family),
-        ("episode_id", episode),
-        ("lowerer_sha256", lowerer.implementation_sha256),
-        ("_issuance", _ISSUER),
-    ):
-        object.__setattr__(item, name, value)
-    item.__post_init__()
-    return item
+    if (template.release_sha256 != release_sha256
+            or template.capability_id != capability_id
+            or template.source_row_id != row_id
+            or template.goal.semantic_release
+            != compiled_batch.compiled.features.semantic_release
+            or template.source_binding_sha256 != contract_digest(template.binding)):
+        _invalid("BAMF_C04_FACTORY_TASK_REBIND_DRIFT")
+    return _issue_authority(template, generation, training_sha256, row_sha256)
 
 
 def factory_task_training_goal(
@@ -208,8 +207,15 @@ def factory_task_training_goal(
     if (execution is None or row.get("id") != authority.source_row_id
             or source_content_digest((row,)) != authority.source_row_sha256):
         _invalid("BAMF_C04_FACTORY_TASK_TRAINING_TARGET_INVALID")
+    adapter = runtime_adapter_for_release(
+        source_context.source_root, source_context.graph,
+        source_context.release, source_context.source_registry, execution,
+        drift_code="BAMF_C04_FACTORY_TASK_ADAPTER_DRIFT",
+    )
     lowerer = require_task_goal_lowerer(
-        execution.provider_id, execution.provider_implementation_sha256)
+        execution.provider_id, adapter.descriptor.implementation_sha256)
+    if lowerer.implementation_sha256 != authority.lowerer_sha256:
+        _invalid("BAMF_C04_FACTORY_TASK_TRAINING_TARGET_INVALID")
     resolved = lowerer.resolve(
         dict(row), semantic_release=compiled_batch.compiled.features.semantic_release,
         source_root=source_context.source_root, graph=source_context.graph,
@@ -233,7 +239,7 @@ def bind_factory_task_compiled_batch(
 
 
 __all__ = (
-    "FactoryTaskAuthority", "factory_task_authority",
+    "FactoryTaskAuthority", "_source_view", "factory_task_authority",
     "factory_task_training_goal",
-    "bind_factory_task_compiled_batch",
+    "bind_factory_task_compiled_batch", "rebind_factory_task_authority",
 )

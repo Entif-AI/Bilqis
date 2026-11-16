@@ -24,9 +24,17 @@ def perfect(cap, sha, breadth=1, *, rubric="a" * 64):
 
 
 class GradeSoupTests(unittest.TestCase):
-    def test_best_below_max_capability_champion_can_contribute_one_vote(self):
+    def test_subthreshold_capability_does_not_enter_soup(self):
         entry = perfect("A.3", "1")
         entry["correct"] = 10
+        entry["breadth"] = 0
+        entry["perfect_capabilities"] = []
+        plan = grade_soup_recipe({"A.3": entry}, "A", ("A.3",))
+        self.assertIsNone(plan)
+
+    def test_above_threshold_subperfect_champion_contributes_one_vote(self):
+        entry = perfect("A.3", "1")
+        entry["correct"] = 11
         entry["breadth"] = 0
         entry["perfect_capabilities"] = []
         plan = grade_soup_recipe({"A.3": entry}, "A", ("A.3",))

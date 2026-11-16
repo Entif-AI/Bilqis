@@ -6,6 +6,8 @@ from pathlib import Path
 import random
 import subprocess
 import sys
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from bilqis_mlx.compatibility import historical_teacher_policy
 from bilqis_mlx.curriculum.scheduler import start_new
@@ -108,7 +110,21 @@ def select(run_dir, source_context, parent, offer, plan, registry):
                    if any(item.id == cap for item in grade.capabilities))
     if len(grades) != 1 or grades[0] not in school.active_grades:
         raise AssertionError('fixture capability is not in one active admitted grade')
-    return select_accepted_priority_visit(run_dir, source_context, frontier, history, plan,
-        ((option.stable_id, offer),), historical_teacher_policy, school, random.Random(379), Settings(),
-        program=program, now=100, legacy_receipt=legacy, adaptation=adaptation_record,
-        prior_region='fixture-legacy-region')
+    lawful_frontier = SimpleNamespace(
+        ready_capability_ids=(cap,),
+        _planning_generation=offer._planning_generation,
+    )
+    with patch(
+            'bilqis_mlx.runtime.lawful_teaching_frontier.'
+            'require_bound_lawful_teaching_frontier',
+            return_value=lawful_frontier), patch(
+            'bilqis_mlx.runtime.lawful_teaching_frontier.'
+            'require_current_lawful_teaching_frontier',
+            return_value=lawful_frontier):
+        return select_accepted_priority_visit(
+            run_dir, source_context, frontier, history, plan,
+            ((option.stable_id, offer),), historical_teacher_policy, school,
+            random.Random(379), Settings(), program=program, now=100,
+            lawful_frontier=lawful_frontier,
+            legacy_receipt=legacy, adaptation=adaptation_record,
+            prior_region='fixture-legacy-region')

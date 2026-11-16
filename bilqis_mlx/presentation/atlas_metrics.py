@@ -10,6 +10,11 @@ import math
 from collections.abc import Mapping
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.mission_control.consumers import (
+    decode_operator_view as decode_mission_control_operator_view,
+    terminal_status as render_mission_control_operator_status,
+)
+from bilqis_mlx.mission_control.snapshots import OperatorView as MissionControlOperatorView
 from .atlas_evidence import OperatorEvidence, compact_debt, parse_evidence, render_evidence
 
 SCHEMA = "bilqis.bamf.operator-status/v1"
@@ -31,7 +36,7 @@ def _count(value):
 
 
 @dataclass(frozen=True)
-class OperatorView:
+class AtlasOperatorView:
     """Detached immutable copy of one source/model/evaluator-bound observation."""
 
     bindings: tuple[tuple[str, str], ...]
@@ -40,8 +45,10 @@ class OperatorView:
     evidence: OperatorEvidence = OperatorEvidence()
 
 
-def bamf_status(receipt: Mapping) -> OperatorView:
+def bamf_status(receipt: Mapping) -> AtlasOperatorView | MissionControlOperatorView:
     """Validate and copy an external observation before replacing any live view."""
+    if isinstance(receipt, Mapping) and "schema_version" in receipt:
+        return decode_mission_control_operator_view(receipt)
     if not isinstance(receipt, Mapping) or receipt.get("schema") != SCHEMA:
         _invalid("schema")
     bindings = []
@@ -75,13 +82,17 @@ def bamf_status(receipt: Mapping) -> OperatorView:
     active = observations.get("active_concepts")
     if active is not None and active > coverage["source_eligible"]:
         _invalid("active concepts outside source census")
-    return OperatorView(tuple(bindings), tuple((key, coverage[key]) for key in _COVERAGE),
-                        tuple((key, observations.get(key)) for key in _OBSERVATIONS),
-                        parse_evidence(receipt.get("evidence")))
+    return AtlasOperatorView(tuple(bindings), tuple((key, coverage[key]) for key in _COVERAGE),
+                             tuple((key, observations.get(key)) for key in _OBSERVATIONS),
+                             parse_evidence(receipt.get("evidence")))
 
 
-def render_panel(view: OperatorView, state: Mapping, *, expanded=False, width=100):
+def render_panel(view: AtlasOperatorView | MissionControlOperatorView, state: Mapping,
+                 *, expanded=False, width=100):
     """Reuse existing telemetry's GREW and retention counters without scoring."""
+    if type(view) is MissionControlOperatorView:
+        lines = render_mission_control_operator_status(view)
+        return tuple(line if width is None else line[:width] for line in lines)
     coverage, observed = dict(view.coverage), dict(view.observations)
     def measured(key):
         value = observed.get(key)

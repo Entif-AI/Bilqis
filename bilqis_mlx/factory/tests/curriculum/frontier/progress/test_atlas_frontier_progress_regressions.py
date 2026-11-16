@@ -7,6 +7,12 @@ from bilqis_mlx.factory.atlas_frontier_closure import ClosureReason, ClosureStat
 from bilqis_mlx.factory.atlas_frontier_contracts import PrerequisiteEdge
 from bilqis_mlx.factory.atlas_frontier_events import SourceReleaseEvent, reconcile
 from bilqis_mlx.factory.atlas_frontier_progress import FrontierStatus, plan_frontier_progress
+from bilqis_mlx.factory.atlas_frontier_progress_audit import (
+    rehydrate_frontier_progress,
+)
+from bilqis_mlx.factory.atlas_frontier_progress_metrics import (
+    frontier_verification_measurement,
+)
 from bilqis_mlx.factory.atlas_frontier_selection import select_frontier_delta
 from bilqis_mlx.factory.skos_curriculum import IMPLEMENTATION_UNCOVERED
 from bilqis_mlx.factory.tests.curriculum.frontier.atlas_frontier_closure_fixtures import rehash
@@ -100,21 +106,15 @@ class AtlasFrontierProgressRegressionTests(ProjectionAuthorityFixture, unittest.
         forged_receipt = _stage(
             forged_selection, forged_projection, release, staged.successor,
             forged_snapshot)
-        forged_prior = replace(
-            advanced,
-            staged_receipts=(forged_receipt,),
-            progress_sha256="0" * 64,
-        )
-        forged_prior = replace(
-            forged_prior, progress_sha256=forged_prior.expected_digest())
-
         with self.assertRaises(BilqisError):
-            plan_frontier_progress(
-                advanced.planning_snapshot,
-                _closure(advanced.planning_snapshot, tuple(
-                    _candidate(advanced.planning_snapshot, identity)
-                    for identity in advanced.planning_snapshot.source_eligible_concept_ids)),
-                prior=forged_prior,
+            rehydrate_frontier_progress(
+                replace(advanced),
+                tuple(dict.fromkeys((
+                    snapshot,
+                    advanced.input_snapshot,
+                    advanced.planning_snapshot,
+                ))),
+                (forged_receipt,),
             )
 
     def test_admission_reconciliation_reports_only_direct_implementation_debt(self):
@@ -278,6 +278,77 @@ class AtlasFrontierProgressRegressionTests(ProjectionAuthorityFixture, unittest.
             resumed.pending_staged_receipt_sha256,
             prior.pending_staged_receipt_sha256,
         )
+        self.assertFalse(hasattr(resumed, "pending_receipt"))
+        self.assertEqual(
+            resumed.pending_staged_successor_sha256,
+            receipt.staged_successor_sha256,
+        )
+        self.assertEqual(resumed.pending_semantic_id, selection.selected_semantic_id)
+        observed = []
+        with frontier_verification_measurement(observed.append):
+            resumed.verify()
+        self.assertEqual(observed[0].historical_bytes_serialized, 0)
+
+    def test_predecessor_scope_allows_never_requested_concept_to_leave_frontier(self):
+        release, snapshot, closure, selection, receipt = _staged_ready()
+        prior = plan_frontier_progress(
+            snapshot, closure, selection,
+            current_release=release, selected_projection=receipt.projection,
+            staged_receipt=receipt)
+        retained = {"z.op.0", "z.op.1"}
+        contracted = rehash(
+            snapshot,
+            source_eligible_concept_ids=tuple(sorted(retained)),
+            coverage_rows=tuple(
+                row for row in snapshot.coverage_rows
+                if row.semantic_id in retained),
+            prerequisite_edges=tuple(
+                edge for edge in snapshot.prerequisite_edges
+                if edge.semantic_id in retained
+                and edge.prerequisite_semantic_id in retained),
+            correction_generation=snapshot.correction_generation + 1,
+            event_generation=snapshot.event_generation + 1,
+            predecessor_sha256=snapshot.snapshot_sha256,
+        )
+        contracted_closure = _closure(contracted, tuple(
+            _candidate(contracted, identity)
+            for identity in contracted.source_eligible_concept_ids))
+
+        resumed = plan_frontier_progress(
+            contracted, contracted_closure, prior=prior)
+
+        self.assertEqual(resumed.status, FrontierStatus.LEASE_REQUIRED)
+        self.assertEqual(
+            resumed.pending_staged_receipt_sha256,
+            prior.pending_staged_receipt_sha256)
+
+    def test_predecessor_scope_rejects_requested_concept_leaving_frontier(self):
+        release, snapshot, closure, selection, receipt = _staged_ready()
+        prior = plan_frontier_progress(
+            snapshot, closure, selection,
+            current_release=release, selected_projection=receipt.projection,
+            staged_receipt=receipt)
+        retained = {"z.op.1", "z.op.2"}
+        contracted = rehash(
+            snapshot,
+            source_eligible_concept_ids=tuple(sorted(retained)),
+            coverage_rows=tuple(
+                row for row in snapshot.coverage_rows
+                if row.semantic_id in retained),
+            prerequisite_edges=(),
+            correction_generation=snapshot.correction_generation + 1,
+            event_generation=snapshot.event_generation + 1,
+            predecessor_sha256=snapshot.snapshot_sha256,
+        )
+        contracted_closure = _closure(contracted, tuple(
+            _candidate(contracted, identity, prerequisites=())
+            for identity in contracted.source_eligible_concept_ids))
+
+        with self.assertRaises(BilqisError) as caught:
+            plan_frontier_progress(contracted, contracted_closure, prior=prior)
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "BAMF_PLANNER_PROGRESS_PREDECESSOR_SCOPE_DRIFT")
 
 
 if __name__ == "__main__":

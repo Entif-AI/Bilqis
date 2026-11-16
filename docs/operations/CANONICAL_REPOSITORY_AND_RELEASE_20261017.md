@@ -1,5 +1,8 @@
 # Bilqis MLX canonical repository and release transition
 
+> **Historical status notice:** This 2026-10-17 migration/release record is retained for provenance. It is not the current setup or operator guide. Use [OPERATOR_GUIDE.md](OPERATOR_GUIDE.md) and the repository root [README](../../README.md) for current human-facing procedures.
+
+
 Status: internal private engineering record, October 17, 2026. This describes independently verified operations, not an agent authorization to train the live student or to delete unique checkpoint history.
 
 ## One operational checkout

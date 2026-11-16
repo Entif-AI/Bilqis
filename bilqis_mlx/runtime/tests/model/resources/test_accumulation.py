@@ -37,7 +37,9 @@ from bilqis_mlx.runtime.source_prefetch import (
 from bilqis_mlx.runtime.c08_gradient_accumulation import (
     accumulate_logical_batch_gradients,
 )
-from bilqis_mlx.runtime.atlas_model import BamfGradientExecution
+from bilqis_mlx.runtime.atlas_model import (
+    BamfGradientExecution, BamfMicrobatchGradientExecution,
+)
 
 
 GENERATION = "fixture:retained-generation"
@@ -80,6 +82,67 @@ class AtlasResourcesTests(AtlasResourcesFixture):
             float(result.weighted_mean_loss.item()), 13.0 / 3.0, places=6)
         self.assertEqual(result.source_digest, plan.source_digest)
         self.assertEqual(result.generation_binding, GENERATION)
+
+    def test_vectorized_group_counts_one_gradient_launch_and_preserves_group_mean(self):
+        rows = _rows(4)
+        plan = plan_microbatches(rows, self.topology, self.budget)
+        self.assertEqual(plan.groups, ((0, 1, 2, 3),))
+        microbatch = object.__new__(BamfMicrobatchGradientExecution)
+        object.__setattr__(microbatch, "executions", tuple(
+            SimpleNamespace(output=SimpleNamespace(generation_binding=GENERATION))
+            for _ in rows))
+        object.__setattr__(microbatch, "gradients", {
+            "weight": mx.array([4.0, 6.0], dtype=mx.float32)})
+        object.__setattr__(microbatch, "mean_loss", mx.array(2.5, dtype=mx.float32))
+        seen = []
+
+        def execute_group(group):
+            seen.append(group)
+            return microbatch
+
+        with patch.object(
+                BamfMicrobatchGradientExecution, "__post_init__", return_value=None), \
+                patch.object(mx, "eval", wraps=mx.eval) as evaluate:
+            result = accumulate_logical_batch_gradients(
+                plan, lambda _index: self.fail("scalar fallback launched"),
+                execute_group=execute_group)
+        self.assertEqual(seen, [(0, 1, 2, 3)])
+        self.assertEqual(result.gradient_launches, 1)
+        self.assertEqual(result.vectorized_microbatches, 1)
+        self.assertEqual(result.materialization_barriers, 1)
+        self.assertEqual(result.scalar_fallback_rows, 0)
+        self.assertGreaterEqual(result.wall_seconds, 0.0)
+        self.assertEqual(evaluate.call_count, 1)
+        self.assertEqual(result.loss_executions, microbatch.executions)
+        self.assertTrue(bool(mx.array_equal(
+            result.gradients["weight"], microbatch.gradients["weight"])))
+        self.assertEqual(float(result.weighted_mean_loss.item()), 2.5)
+
+    def test_incompatible_group_reports_scalar_fallback_without_extra_barriers(self):
+        rows = _rows(4)
+        plan = plan_microbatches(rows, self.topology, self.budget)
+        values = (1.0, 2.0, 3.0, 4.0)
+
+        def execute_row(index):
+            execution = object.__new__(BamfGradientExecution)
+            object.__setattr__(execution, "execution", SimpleNamespace(
+                output=SimpleNamespace(generation_binding=GENERATION)))
+            object.__setattr__(
+                execution, "gradients",
+                {"weight": mx.array([values[index]], dtype=mx.float32)})
+            object.__setattr__(
+                execution, "loss_total", mx.array(values[index], dtype=mx.float32))
+            return execution
+
+        with patch.object(BamfGradientExecution, "__post_init__", return_value=None), \
+                patch.object(mx, "eval", wraps=mx.eval) as evaluate:
+            result = accumulate_logical_batch_gradients(
+                plan, execute_row, execute_group=lambda _group: None)
+        self.assertEqual(result.gradient_launches, 4)
+        self.assertEqual(result.vectorized_microbatches, 0)
+        self.assertEqual(result.scalar_fallback_rows, 4)
+        self.assertEqual(result.materialization_barriers, 1)
+        self.assertEqual(evaluate.call_count, 1)
 
     def test_weighted_split_gradient_matches_unsplit_and_applies_one_step(self):
         rows = _rows(3)

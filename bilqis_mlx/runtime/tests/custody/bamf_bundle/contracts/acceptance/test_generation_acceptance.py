@@ -38,6 +38,60 @@ class GenerationAcceptancePublicationTests(GenerationAcceptanceFixture, unittest
             failure.exception.context["reason"],
             "BAMF_GENERATION_ACCEPTANCE_DRIFT")
 
+    def test_motif_acceptance_with_teacher_anchor_uses_portable_exact_schema(self):
+        source = self.source()
+        decision = retention_decision(
+            parent=self.parent().retained_state,
+            retained=source.retained_state,
+        )
+        generation_authority = "f" * 64
+        teacher_anchor = "e" * 64
+        with patch(
+                "bilqis_mlx.learning.atlas_retention_decision."
+                "_issued_decision_generation_authority",
+                return_value=generation_authority), patch(
+                "bilqis_mlx.learning.atlas_retention_decision."
+                "_require_issued_decision_generation_authority"):
+            binding = mint_acceptance_binding(
+                decision, source.retained_state,
+                run_id=source.run_id, generation=source.generation,
+                feature_sha256=source.extents.factor_map_digest,
+                teacher_state_sha256=teacher_anchor,
+                generation_authority_sha256=generation_authority,
+            )
+        self.assertEqual(binding.schema_version, EXACT_MOTIF_ACCEPTANCE_SCHEMA)
+        self.assertEqual(binding.teacher_state_sha256, teacher_anchor)
+        self.assertEqual(
+            AcceptedCandidateBinding.from_record(binding.to_record()).schema_version,
+            EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+        )
+
+    def test_c09_source_qualified_schema_family_tracks_exact_rollout(self):
+        from bilqis_mlx.learning.atlas_acceptance import (
+            ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA,
+            EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+            EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+        )
+        from bilqis_mlx.runtime.capability_support_loading import (
+            _SOURCE_QUALIFIED_ACCEPTANCE_SCHEMAS,
+        )
+
+        self.assertEqual(
+            _SOURCE_QUALIFIED_ACCEPTANCE_SCHEMAS,
+            (
+                ACCEPTANCE_SCHEMA,
+                CLOSURE_ACCEPTANCE_SCHEMA,
+                MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_ACCEPTANCE_SCHEMA,
+                EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+            ),
+        )
+        self.assertNotIn(
+            EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+            _SOURCE_QUALIFIED_ACCEPTANCE_SCHEMAS,
+        )
+
     def test_publication_refuses_binding_with_foreign_step_proof(self):
         source = self.source()
         forged = self.binding(source)
@@ -80,6 +134,8 @@ class GenerationAcceptancePublicationTests(GenerationAcceptanceFixture, unittest
         record["schema_version"] = PREVIOUS_SOURCE_ACCEPTANCE_SCHEMA
         record["source_anchors"] = []
         record.pop("source_authority_registry_sha256")
+        record.pop("teacher_state_sha256")
+        record.pop("generation_authority_sha256")
         record["binding_sha256"] = hashlib.sha256(canonical({
             key: value for key, value in record.items()
             if key != "binding_sha256"

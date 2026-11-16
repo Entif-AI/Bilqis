@@ -14,13 +14,19 @@ from dataclasses import dataclass
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 LEGACY_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v1"
-DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
+PREVIOUS_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
+DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v3"
 ACCEPTED_DECISION = "PROVISIONAL"
 REJECTED_DECISION = "REJECT"
 ACCEPTING_REASON = "PAIRED_SCREEN_WITHIN_BUDGET"
-_DECISION_FIELDS = (
+_V2_DECISION_FIELDS = (
     "decision", "reason", "parent_generation", "candidate_generation",
     "evidence_sha256", "policy_sha256", "schema_version",
+)
+_DECISION_FIELDS = (
+    "decision", "reason", "parent_generation", "candidate_generation",
+    "evidence_sha256", "policy_sha256", "blocking_capability",
+    "blocking_scope", "baseline_coverage", "schema_version",
 )
 
 
@@ -28,18 +34,21 @@ def _new_decision_owner():
     """Track live C05 decisions by owner-issued object identity, not a token."""
     issued = {}
     generation_authority = {}
+    baseline_ledger_sha256 = {}
 
     def require(value):
         if issued.get(id(value)) is not value:
             _invalid()
         return value
 
-    def issue(values, *, generation_authority_sha256=None):
+    def issue(values, *, generation_authority_sha256=None,
+              expected_baseline_ledger_sha256=None):
         decision = object.__new__(CandidateRetentionDecision)
         for name, value in values:
             object.__setattr__(decision, name, value)
         issued[id(decision)] = decision
         generation_authority[id(decision)] = generation_authority_sha256
+        baseline_ledger_sha256[id(decision)] = expected_baseline_ledger_sha256
         decision.__post_init__()
         return decision
 
@@ -53,7 +62,11 @@ def _new_decision_owner():
     def issued_generation_authority(value):
         return generation_authority.get(id(value))
 
-    return require, require_generation_authority, issued_generation_authority, issue
+    def issued_baseline_ledger_sha256(value):
+        return baseline_ledger_sha256.get(id(value))
+
+    return (require, require_generation_authority, issued_generation_authority,
+            issued_baseline_ledger_sha256, issue)
 _LEGACY_FIELDS = (
     "decision", "reason", "target_gain", "protected_net_gain", "schema_version",
 )
@@ -83,6 +96,9 @@ class CandidateRetentionDecision:
     candidate_generation: str
     evidence_sha256: str
     policy_sha256: str
+    blocking_capability: str | None = None
+    blocking_scope: str | None = None
+    baseline_coverage: dict | None = None
     schema_version: str = DECISION_SCHEMA
 
     def __post_init__(self) -> None:
@@ -94,6 +110,14 @@ class CandidateRetentionDecision:
                 or any(not _digest(value) for value in (
                     self.parent_generation, self.candidate_generation,
                     self.evidence_sha256, self.policy_sha256))
+                or (self.blocking_capability is not None
+                    and (not isinstance(self.blocking_capability, str)
+                         or not self.blocking_capability))
+                or (self.blocking_scope is not None
+                    and (not isinstance(self.blocking_scope, str)
+                         or not self.blocking_scope))
+                or (self.baseline_coverage is not None
+                    and not _valid_baseline_coverage(self.baseline_coverage))
                 or self.schema_version != DECISION_SCHEMA):
             _invalid()
 
@@ -116,9 +140,10 @@ class CandidateRetentionDecision:
         """Parse v1/v2 evidence for inspection without granting issuer authority."""
         if not isinstance(record, dict):
             _invalid()
-        names = (_LEGACY_FIELDS if record.get("schema_version") == LEGACY_DECISION_SCHEMA
-                 else _DECISION_FIELDS if record.get("schema_version") == DECISION_SCHEMA
-                 else ())
+        schema = record.get("schema_version")
+        names = (_LEGACY_FIELDS if schema == LEGACY_DECISION_SCHEMA
+                 else _V2_DECISION_FIELDS if schema == PREVIOUS_DECISION_SCHEMA
+                 else _DECISION_FIELDS if schema == DECISION_SCHEMA else ())
         if not names or set(record) != set(names) | {"decision_sha256"}:
             _invalid()
         if (record["decision"] not in {ACCEPTED_DECISION, REJECTED_DECISION}
@@ -133,6 +158,16 @@ class CandidateRetentionDecision:
         elif any(not _digest(record[name]) for name in (
                 "parent_generation", "candidate_generation",
                 "evidence_sha256", "policy_sha256")):
+            _invalid()
+        if (names == _DECISION_FIELDS
+                and ((record["blocking_capability"] is not None
+                      and (not isinstance(record["blocking_capability"], str)
+                           or not record["blocking_capability"]))
+                     or (record["blocking_scope"] is not None
+                         and (not isinstance(record["blocking_scope"], str)
+                              or not record["blocking_scope"]))
+                     or (record["baseline_coverage"] is not None
+                         and not _valid_baseline_coverage(record["baseline_coverage"])))):
             _invalid()
         payload = {name: record[name] for name in names}
         if record["decision_sha256"] != hashlib.sha256(_canonical(payload)).hexdigest():
@@ -165,6 +200,17 @@ class ParsedCandidateRetentionDecision:
         return {**self.fields, "decision_sha256": self.digest}
 
 
+def _valid_baseline_coverage(record) -> bool:
+    if record is None:
+        return True
+    try:
+        from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
+        BaselineCoverage.from_record(record)
+    except Exception:
+        return False
+    return True
+
+
 def decide_candidate_retention(
         *, parent_solver, candidate_solver, target_capability, policy, cohorts,
         parent_state, candidate_state) -> CandidateRetentionDecision:
@@ -182,7 +228,8 @@ def decide_candidate_retention(
 
 
 (_require_issued_decision, _require_issued_decision_generation_authority,
- _issued_decision_generation_authority, _raw_issue_decision) = _new_decision_owner()
+ _issued_decision_generation_authority, _issued_decision_baseline_ledger_sha256,
+ _raw_issue_decision) = _new_decision_owner()
 
 
 def _make_factory_retention_issuer(raw_issue):
@@ -207,9 +254,15 @@ def _make_factory_retention_issuer(raw_issue):
             ("candidate_generation", owner_evaluation.candidate_candidate_sha256),
             ("evidence_sha256", result.evidence_sha256),
             ("policy_sha256", result.policy_sha256),
+            ("blocking_capability", result.blocking_capability),
+            ("blocking_scope", result.blocking_scope),
+            ("baseline_coverage", (
+                result.baseline_coverage.to_record()
+                if result.baseline_coverage is not None else None)),
             ("schema_version", DECISION_SCHEMA),
         ), generation_authority_sha256=(
-            owner_evaluation.candidate_generation_authority_sha256))
+            owner_evaluation.candidate_generation_authority_sha256),
+            expected_baseline_ledger_sha256=owner_evaluation.baseline_ledger.digest)
 
     return issue_factory_retention_decision
 

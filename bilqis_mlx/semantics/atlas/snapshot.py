@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from ..atlas_projection import FrozenAtlasSnapshot
+from bilqis_mlx.b11_observation import note_atlas_reload
 from .snapshot_contracts import (
     AtlasArtifactIdentity, AtlasArtifactSelection, _require_registered_source_pin,
     resolve_atlas_artifact_selection,
@@ -11,6 +12,7 @@ from .snapshot_materialize import load_atlas_snapshot
 
 def load_pinned_atlas_snapshot(selection: AtlasArtifactSelection) -> FrozenAtlasSnapshot:
     """Reload a source artifact only under an independently governed A01 pin."""
+    note_atlas_reload()
     _require_registered_source_pin(selection)
     return load_atlas_snapshot(
         selection.path,

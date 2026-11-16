@@ -47,29 +47,29 @@ class AcceptedCorrectionCompositionReplayTests(AcceptedCorrectionCompositionCase
     def test_multi_result_frontier_consumes_every_applicable_held_artifact(self):
             self.publish(candidate(parent_state()))
             binding, context, compositions = self._composition_context(2)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
             correction = _event(DependencyRef(
                 DependencyKind.SOURCE, "source:binding:" + contract_digest(binding)))
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction)
             owner = context.operator_composition_artifact_owner
             results = tuple(sorted((
                 _result(owner.node_for(item), digest=owner.node_for(item).content_digest,
                         correction=correction).results[0]
                 for item in compositions), key=lambda item: item.artifact_id))
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_revalidation(RevalidationFrontier(results))
             self.assertEqual(owner.queue.held_artifact_ids, ())
 
     def test_deferred_frontier_remembers_partial_consumption_across_retry(self):
             self.publish(candidate(parent_state()))
             binding, context, _compositions = self._composition_context(3)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
             correction = _event(DependencyRef(
                 DependencyKind.SOURCE, "source:binding:" + contract_digest(binding)))
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction)
             owner = context.operator_composition_artifact_owner
             task_ids = tuple(task.artifact_id for task in owner.queue.pending)
@@ -78,9 +78,9 @@ class AcceptedCorrectionCompositionReplayTests(AcceptedCorrectionCompositionCase
                     item, digest=item.content_digest, correction=correction).results[0]
                 for item in owner.index.nodes
             }
-            with shape_patch():
+            with self._shape_patch():
                 first_event = AcceptedRuntimeHost(self.run).record_revalidation(RevalidationFrontier((by_id[task_ids[0]], by_id[task_ids[2]])))
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_revalidation(RevalidationFrontier((by_id[task_ids[1]],)))
             self.assertEqual(owner.queue.held_artifact_ids, ())
 
@@ -90,7 +90,7 @@ class AcceptedCorrectionCompositionReplayTests(AcceptedCorrectionCompositionCase
             second_context = SolveContext(
                 binding, qualified_compositions=compositions,
                 qualification_verifier=lambda item: True)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, first_context)
                 register_solve_context(self.run, second_context)
             dependency = DependencyRef(
@@ -99,7 +99,7 @@ class AcceptedCorrectionCompositionReplayTests(AcceptedCorrectionCompositionCase
             )
             correction = _event(dependency)
 
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction)
 
             for context in (first_context, second_context):
@@ -112,16 +112,16 @@ class AcceptedCorrectionCompositionReplayTests(AcceptedCorrectionCompositionCase
     def test_late_materialization_rechecks_all_active_concurrent_branches(self):
             self.publish(candidate(parent_state()))
             binding, context, compositions = self._composition_context(1)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
             correction_a, correction_b = self._concurrent_corrections(binding)
             owner = context.operator_composition_artifact_owner
 
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction_a)
             self._record_equal_revalidation(
                 owner, compositions[0], correction_a)
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction_b)
             self._record_equal_revalidation(
                 owner, compositions[0], correction_b)

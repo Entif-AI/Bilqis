@@ -12,8 +12,11 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.atlas_candidate import CandidateCustodyIdentity, CandidateState
 from bilqis_mlx.learning.atlas_plasticity import (
-    ModeTransition, PlasticityPolicy,
+    IdentityRowAge, ModeTransition, PlasticityPolicy,
     TRANSITIONED_POLICY_STATE_SCHEMA, TRANSITIONED_POLICY_VERSION,
+)
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
+    LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME,
 )
 from bilqis_mlx.learning._atlas_candidate.state import _issue_parameter_extension_state
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
@@ -36,6 +39,37 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
 
 
 class A02StagingCapabilityTests(unittest.TestCase):
+    def test_unchanged_legacy_parameter_extension_preserves_legacy_identity(self):
+        parent = replace(parent_state(), identity_scheme=LEGACY_IDENTITY_SCHEME)
+        copied = _issue_parameter_extension_state(
+            parent, parent.optimizer, parent.policy)
+        self.assertEqual(copied.identity_scheme, LEGACY_IDENTITY_SCHEME)
+
+    def test_changed_legacy_parameter_extension_migrates_to_shape_sensitive_identity(self):
+        parent = replace(parent_state(), identity_scheme=LEGACY_IDENTITY_SCHEME)
+
+        def extend(shape):
+            name = "identity.bank.1"
+            values = mx.zeros(shape, dtype=mx.float32)
+            optimizer = AdamWStateTree(
+                {**parent.optimizer.parameters, name: values},
+                {**parent.optimizer.m, name: mx.zeros_like(values)},
+                {**parent.optimizer.v, name: mx.zeros_like(values)},
+                {**parent.optimizer.update_counts,
+                 name: mx.zeros((shape[0],), dtype=mx.uint64)},
+            )
+            policy = replace(
+                parent.policy,
+                row_ages=parent.policy.row_ages + (IdentityRowAge(1, 0, 0),),
+            )
+            return _issue_parameter_extension_state(parent, optimizer, policy)
+
+        flat = extend((1, 2))
+        ranked = extend((1, 1, 2))
+        self.assertEqual(flat.identity_scheme, RAW_IDENTITY_SCHEME)
+        self.assertEqual(ranked.identity_scheme, RAW_IDENTITY_SCHEME)
+        self.assertNotEqual(candidate_identity_digest(flat), candidate_identity_digest(ranked))
+
     def test_parameter_extension_cannot_mutate_existing_optimizer_rows(self):
         state = parent_state()
         name = "identity.bank.0"
