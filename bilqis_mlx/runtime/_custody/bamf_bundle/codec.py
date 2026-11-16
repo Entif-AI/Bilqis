@@ -159,9 +159,8 @@ def validate_bamf_bundle_custody(
     except (ValueError, json.JSONDecodeError, KeyError, TypeError):
         invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
     recorded = set(manifest.get("sidecars", {}))
-    required = set(SIDECARS) - {"run_identity"}
-    if (recorded not in (set(SIDECARS), set(SIDECARS) - {"step_proofs"},
-                         required, required - {"step_proofs"})
+    required = set(SIDECARS) - {"run_identity", "step_proofs", "baseline_evidence"}
+    if (not required <= recorded <= set(SIDECARS)
             or set(manifest["optimizer"]) not in (
                 {"schema", "step", "hyperparameters"},
                 {"schema", "step", "hyperparameters", "identity_scheme"})
@@ -271,7 +270,8 @@ def load_bamf_bundle(root: Path, *, expected_manifest_sha256: str | None = None)
         parts.provenance, parts.records["semantic_abi"], parts.records["compiler_features"],
         parts.records["correction_frontier"], parts.records["teacher_state"],
         parts.records["evaluation_contract"], manifest["transition"],
-        tuple(parts.records["outbox"]), parts.run_identity)
+        tuple(parts.records["outbox"]), parts.run_identity,
+        parts.records.get("baseline_evidence"))
     if student.run_identity is not None and student.generation == 0:
         from bilqis_mlx.learning._atlas_candidate.identity_binding import (
             bind_candidate_identity_or_fallback,

@@ -22,6 +22,10 @@ from bilqis_mlx.errors import BilqisError, ErrorBus
 from bilqis_mlx.learning.atlas_engram import MotifKey, MotifManifest, MotifSlot
 from bilqis_mlx.learning.atlas_engram_transaction import MotifAllocationSnapshot
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_bundle, save_bamf_bundle
+from bilqis_mlx.runtime.baseline.lifecycle import (
+    BaselineComparisonIdentity, BaselineLedger, BaselineLifecycleState,
+    _issue_factory_baseline_transition, apply_factory_baseline_transition,
+)
 
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
     NAME, accepted_state, candidate, next_accepted_step, parent_state,
@@ -93,6 +97,33 @@ class BamfBundleCodecTests(unittest.TestCase):
             [sys.executable, "-c", script, str(self.root / "bundle")],
             check=True, capture_output=True, text=True)
         self.assertEqual(json.loads(completed.stdout), expected)
+
+    def test_c05_baseline_evidence_round_trips_exactly_through_cold_custody(self):
+        identity = BaselineComparisonIdentity(
+            "B.IDBOOLOPS", "1" * 64, "2" * 64, "3" * 64, "4" * 64,
+            "5" * 64, "6" * 64, None, "7" * 64, "8" * 64, "9" * 64,
+            "FOUNDATION_ACQUISITION")
+        empty = BaselineLedger.empty()
+        transition = _issue_factory_baseline_transition(
+            identity, run_id="fixture-run", accepted_generation=1,
+            accepted_parent_manifest_sha256="a" * 64,
+            accepted_candidate_sha256="b" * 64,
+            decision_evidence_sha256="c" * 64,
+            parent_ledger_sha256=empty.digest)
+        ledger = apply_factory_baseline_transition(empty, transition)
+        source = replace(
+            candidate(parent_state(), generation=1, parent="a" * 64),
+            baseline_evidence=ledger.to_record())
+        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            manifest = save_bamf_bundle(
+                source, self.root / "baseline-bundle", reserve_gib=0.)
+            loaded = load_bamf_bundle(
+                self.root / "baseline-bundle",
+                expected_manifest_sha256=manifest["manifest_sha256"])
+        restored = BaselineLedger.from_optional_record(loaded.baseline_evidence)
+        self.assertEqual(restored.digest, ledger.digest)
+        self.assertIs(
+            restored.state_for(identity), BaselineLifecycleState.BASELINE_ESTABLISHED)
 
     def test_authenticated_non_genesis_motif_state_round_trips_and_resumes(self):
         parent = parent_state()

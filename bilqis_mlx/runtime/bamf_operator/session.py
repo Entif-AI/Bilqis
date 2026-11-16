@@ -24,7 +24,9 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     accept_and_publish, bind_accepted_execution_cache, load_accepted_generation,
 )
 from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObservation
-from bilqis_mlx.runtime.factory_retention_owner import evaluate_factory_retention_candidate
+from bilqis_mlx.runtime.factory_retention_owner import (
+    bind_factory_baseline_successor, evaluate_factory_retention_candidate,
+)
 from bilqis_mlx.runtime.foundation_teacher_owner import (
     derive_accepted_teacher_successor, select_foundation_priority_visit,
 )
@@ -114,6 +116,7 @@ def _retention_result(
         identity_delta=candidate_identity_metrics_delta,
         resource_observation=_resource_observation,
         derive_successor=derive_accepted_teacher_successor,
+        bind_baseline_successor=bind_factory_baseline_successor,
         prepared_visit_type=BamfPreparedVisit, emit_progress=_emit_progress,
         measure_observed_phase_fn=measure_observed_phase)
 

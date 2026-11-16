@@ -108,7 +108,7 @@ def _successor(parent, pointer, screened, transaction, clearance):
         transaction.candidate, parent.optimizer_hyperparameters, provenance,
         parent.semantic_abi, parent.compiler_features, parent.correction_frontier,
         teacher_state, parent.evaluation_contract, transition, (event,),
-        parent.run_identity)
+        parent.run_identity, screened.baseline_ledger.to_record())
 
 
 def publish_screened_delta_import(

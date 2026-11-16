@@ -28,18 +28,21 @@ def _new_decision_owner():
     """Track live C05 decisions by owner-issued object identity, not a token."""
     issued = {}
     generation_authority = {}
+    baseline_ledger_sha256 = {}
 
     def require(value):
         if issued.get(id(value)) is not value:
             _invalid()
         return value
 
-    def issue(values, *, generation_authority_sha256=None):
+    def issue(values, *, generation_authority_sha256=None,
+              expected_baseline_ledger_sha256=None):
         decision = object.__new__(CandidateRetentionDecision)
         for name, value in values:
             object.__setattr__(decision, name, value)
         issued[id(decision)] = decision
         generation_authority[id(decision)] = generation_authority_sha256
+        baseline_ledger_sha256[id(decision)] = expected_baseline_ledger_sha256
         decision.__post_init__()
         return decision
 
@@ -53,7 +56,11 @@ def _new_decision_owner():
     def issued_generation_authority(value):
         return generation_authority.get(id(value))
 
-    return require, require_generation_authority, issued_generation_authority, issue
+    def issued_baseline_ledger_sha256(value):
+        return baseline_ledger_sha256.get(id(value))
+
+    return (require, require_generation_authority, issued_generation_authority,
+            issued_baseline_ledger_sha256, issue)
 _LEGACY_FIELDS = (
     "decision", "reason", "target_gain", "protected_net_gain", "schema_version",
 )
@@ -182,7 +189,8 @@ def decide_candidate_retention(
 
 
 (_require_issued_decision, _require_issued_decision_generation_authority,
- _issued_decision_generation_authority, _raw_issue_decision) = _new_decision_owner()
+ _issued_decision_generation_authority, _issued_decision_baseline_ledger_sha256,
+ _raw_issue_decision) = _new_decision_owner()
 
 
 def _make_factory_retention_issuer(raw_issue):
@@ -209,7 +217,8 @@ def _make_factory_retention_issuer(raw_issue):
             ("policy_sha256", result.policy_sha256),
             ("schema_version", DECISION_SCHEMA),
         ), generation_authority_sha256=(
-            owner_evaluation.candidate_generation_authority_sha256))
+            owner_evaluation.candidate_generation_authority_sha256),
+            expected_baseline_ledger_sha256=owner_evaluation.baseline_ledger.digest)
 
     return issue_factory_retention_decision
 

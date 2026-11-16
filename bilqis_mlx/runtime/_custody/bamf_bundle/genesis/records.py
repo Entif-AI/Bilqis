@@ -116,7 +116,7 @@ def _candidate_identity_payload(candidate, *, allow_missing_run_identity: bool) 
             identity_digest = None
         else:
             identity_digest = identity.digest
-        return {
+        payload = {
             "run_id": candidate.run_id,
             "generation": candidate.generation,
             "parent_manifest_sha256": candidate.parent_manifest_sha256,
@@ -139,6 +139,9 @@ def _candidate_identity_payload(candidate, *, allow_missing_run_identity: bool) 
             "step_proofs": [proof.to_record() for proof in state.step_proofs],
             "state_schema_version": state.schema_version,
         }
+        if candidate.baseline_evidence is not None:
+            payload["baseline_evidence"] = dict(candidate.baseline_evidence)
+        return payload
     except (AttributeError, KeyError, TypeError, ValueError):
         invalid("BAMF_INITIAL_GENERATION_BINDING_INVALID")
 

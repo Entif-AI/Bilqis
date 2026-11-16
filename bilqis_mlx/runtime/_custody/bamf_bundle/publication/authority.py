@@ -9,7 +9,7 @@ from bilqis_mlx.learning.atlas_acceptance import (
     MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_ACCEPTANCE_SCHEMA,
     EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
     EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
-    _require_issued_binding,
+    _issued_acceptance_baseline_ledger_sha256, _require_issued_binding,
 )
 from bilqis_mlx.learning._atlas_candidate.identity_binding import (
     candidate_identity_for_canonical_consumer,
@@ -70,6 +70,11 @@ def require_acceptance(
     _require_c03_visit_authority(candidate)
     _require_issued_binding(acceptance)
     acceptance.__post_init__()
+    expected_baseline = _issued_acceptance_baseline_ledger_sha256(acceptance)
+    if expected_baseline is not None:
+        from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
+        if BaselineLedger.from_optional_record(candidate.baseline_evidence).digest != expected_baseline:
+            invalid("BAMF_C05_BASELINE_PUBLICATION_DRIFT")
     motif_transition = is_motif_allocation_transition(candidate.transition)
     expected_schema = ((EXACT_MOTIF_ACCEPTANCE_SCHEMA,
                         EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)

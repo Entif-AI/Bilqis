@@ -105,7 +105,7 @@ def retention_result(
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
         identity_before, progress, observer, *, evaluate_candidate,
         issue_decision, identity_delta, resource_observation,
-        derive_successor, prepared_visit_type, emit_progress,
+        derive_successor, bind_baseline_successor, prepared_visit_type, emit_progress,
         measure_observed_phase_fn):
     step = steps[-1]
     if observer is not None:
@@ -151,6 +151,7 @@ def retention_result(
                 "resource": resource,
                 "candidate_evidence": candidate_evidence,
             },))
+        successor = bind_baseline_successor(evaluation, successor)
     return prepared_visit_type(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,

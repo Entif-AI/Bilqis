@@ -77,7 +77,7 @@ def derive_successor_bundle(parent: CompleteStudent, retained_state: CandidateSt
         dict(parent.semantic_abi), dict(parent.compiler_features),
         dict(parent.correction_frontier), dict(parent.teacher_state),
         dict(parent.evaluation_contract), transition, tuple(delivery_events),
-        parent.run_identity)
+        parent.run_identity, parent.baseline_evidence)
 
 
 def derive_motif_successor_bundle(
@@ -119,7 +119,7 @@ def derive_motif_successor_bundle(
         dict(parent.semantic_abi), dict(parent.compiler_features),
         dict(parent.correction_frontier), dict(parent.teacher_state),
         dict(parent.evaluation_contract), transition, tuple(delivery_events),
-        parent.run_identity)
+        parent.run_identity, parent.baseline_evidence)
 
 
 def _parameter_census(parent: CompleteStudent) -> ParameterCensus:
