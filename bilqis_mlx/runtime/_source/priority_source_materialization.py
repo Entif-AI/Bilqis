@@ -121,7 +121,7 @@ def prepare_priority_source_materialization(
         source_context, authenticated, manifest, source_rows)
     prefixes = tuple(item.prefix for item in model_sources)
     motif_inputs = tuple(_motif_planning_input(
-        source_context, authenticated, adapter, profile, item,
+        source_context, authenticated, item.source_adapter, profile, item,
         source_seed=offer.source_seed, source_each=offer.source_each)
         for item in source_rows)
     source_context._source_preparation_metrics.compiled_source_builds += 1
