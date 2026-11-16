@@ -455,11 +455,11 @@
       "issue": 1293,
       "pr": 1309,
       "state": "TURNED_IN",
-      "head_sha": "bc8c146eeb36531a4a42926ec317c803227d5dfb",
-      "summary": "Issue #1293 is turned in after synchronizing with reviewed unified 20f5836e, preserving #1294 exact B11 row-owner authority and #1295 truthful operator/admission classification. The persistent BAMF operator re-enters the accepted C07 flywheel after accepted retained learning, uses the lineage-bound foundation graph and persisted lease, preserves typed admission outcomes, and cold-reconstructs accepted custody on the next visit before further neural execution. Current-unified proof is green for CLI provenance/status/labels and the real disposable C07 causal witness; two telemetry assertions reproduce identically on clean unified 20f5836e and are baseline debt rather than #1293 regressions. No background admission loop, duplicate planner, grade-specific progression or live human learner mutation.",
+      "head_sha": "ddfef26f950e6e12853018083ecd548099448366",
+      "summary": "Issue #1293 is turned in after synchronizing with reviewed unified 20f5836e, preserving #1294 exact B11 row-owner authority and #1295 truthful operator/admission classification. The persistent BAMF operator re-enters the accepted C07 flywheel after accepted retained learning, uses the lineage-bound foundation graph and persisted lease, preserves typed admission outcomes, and cold-reconstructs accepted custody on the next visit before further neural execution. Current-unified proof is green for CLI provenance/status/labels, the real disposable C07 causal witness, and the complete operator/observed scope. A readily repairable unified B11 error-classification defect discovered during reconciliation is included: execution-authority invalidation now emits its dedicated BAMF_B11 error instead of MODEL_TOPOLOGY. No background admission loop, duplicate planner, grade-specific progression or live human learner mutation.",
       "resume_trigger": null,
       "preserved_branch": "codex/1293-c07-flywheel-reentry-20261115",
-      "head_sha_role": "exact reviewed-unified integration head before this drift/flow turn-in evidence commit"
+      "head_sha_role": "exact reviewed-unified semantic head including the bounded B11 error-classification repair discovered during reconciliation; later drift/flow turn-in evidence is metadata only"
     },
     {
       "issue": 1295,

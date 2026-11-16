@@ -61,8 +61,13 @@ Post-reconciliation focused verification:
 
 - CLI provenance/status/label transport: 9/9 plus 10 subtests;
 - accepted C07 causal witness: 2/2;
-- operator/observed bundle: 23/23 excluding two telemetry assertions that reproduce
-  identically on clean unified `20f5836e` and therefore are not #1293 regressions.
+- operator/observed bundle: 25/25. Two telemetry assertions initially reproduced
+  identically on clean unified `20f5836e`; inspection found one readily repairable
+  upstream defect in the new B11 execution-authority contract, where `_invalid()`
+  incorrectly raised `SCHOOL.MODEL_TOPOLOGY.INVALID` instead of the dedicated
+  `SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID`. The existing tests were
+  already failing-before witnesses; the one-line production correction makes the
+  full telemetry file 6/6 and the adjacent operator bundle 19/19.
 
 The current-unified reconciliation introduces no new #1293 design choice and does not
 alter the **PASS / `NO_DRIFT`** verdict.
