@@ -91,6 +91,12 @@ class FactoryTrainingBridgeFixture(SourceBackboneTestBase):
             visit_provenance=visit_provenance(capability),
             teacher_strategy={"policy": "c02-parent-integration"})
 
+    def b11_snapshot(self, compiled):
+        """Return the exact process-local snapshot that issued this B11 row."""
+        authority = compiled.source_execution_authority
+        self.assertIsNotNone(authority)
+        return authority.snapshot
+
     def production_genesis(self, *, run_seed=37100):
         """Build current B13 generation zero from this live Factory/A01 authority."""
         origin = Checkpoint(

@@ -21,6 +21,10 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
     def test_four_distinct_factory_rows_use_one_vectorized_gradient_launch(self):
         rows, prepared = self.prepare("A.IDENTITY", 37172, 4)
         resource_plan, _ = _resource_plan(prepared, self.candidate, None)
+        self.assertIs(
+            prepared.compiled_rows[0].source_execution_authority.snapshot,
+            prepared.semantic_context.snapshot,
+        )
         with patch.object(
                 motif_context_impl, "load_pinned_atlas_snapshot",
                 side_effect=AssertionError("B11 reopened Atlas")) as atlas_reload, \
@@ -53,7 +57,7 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
                     wraps=microbatch_impl.loss_bearing_bamf) as row_loss:
             gradient, authorities, targets = execute_factory_logical_batch(
                 dict(self.candidate.retained_state.optimizer.parameters),
-                prepared, self.context, self.feature_context.snapshot,
+                prepared, self.context, prepared.semantic_context.snapshot,
                 self.generation, None, resource_plan)
         row_ids = tuple(row["id"] for row in rows)
 

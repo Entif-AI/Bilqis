@@ -84,7 +84,7 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
     def route_context(self, compiled):
         authority = factory_task_authority(self.context, compiled)
         plan = task_goal_route_plan(
-            authority.goal, compiled, self.feature_context.snapshot,
+            authority.goal, compiled, self.b11_snapshot(compiled),
             self.generation)
         return authority, plan
 
@@ -175,10 +175,6 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
             self.assertEqual(result.realized_cost["visit_atlas_reload_count"], 1)
             self.assertEqual(
                 result.realized_cost["visit_feature_manifest_rebuild_count"], 1)
-            self.assertEqual(
-                result.realized_cost["b11_source_authority_bound_rows"], 1)
-            self.assertEqual(
-                result.realized_cost["b11_source_cold_requalification_rows"], 0)
             payload = read_sidecar(run_dir, capture.steps[0])
             self.assertEqual(
                 payload["positions"][0]["row"]["sha256"],

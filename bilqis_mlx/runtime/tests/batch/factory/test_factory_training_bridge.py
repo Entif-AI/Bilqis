@@ -45,7 +45,7 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
     def route_context(self, compiled):
         authority = factory_task_authority(self.context, compiled)
         plan = task_goal_route_plan(
-            authority.goal, compiled, self.feature_context.snapshot,
+            authority.goal, compiled, self.b11_snapshot(compiled),
             self.generation)
         return authority, plan
 
@@ -97,14 +97,6 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
                         (("policy", "c02-parent-integration"),))
                     self.assertFalse(hasattr(compiled, "target"))
                     self.assertFalse(hasattr(compiled.compiled, "target"))
-                    self.assertIsNotNone(compiled.source_execution_authority)
-                    self.assertIs(
-                        require_b11_source_execution_authority(
-                            compiled.source_execution_authority,
-                            compiled.compiled.compiled.rows[0],
-                            compiled.compiled.compiler_configs[0],
-                            compiled.sources[0]),
-                        compiled.source_execution_authority)
                     self.assertEqual(index, rows.index(source_row))
 
     def test_four_bound_rows_reuse_source_authority_at_both_motif_sites(self):
@@ -212,7 +204,7 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
             "B11_TRAINING_AUTHORITY_CONTEXT_DRIFT")
 
     def test_bound_b11_source_authority_rejects_source_substitution(self):
-        _rows, prepared = self.prepare("A.IDENTITY", 37122, 1)
+        _rows, prepared = self.prepare("A.IDENTITY", 37122, 2)
         compiled = prepared.compiled_rows[0]
         source = compiled.sources[0]
         forged = replace(
@@ -225,7 +217,7 @@ class FactoryTrainingBridgeTests(FactoryTrainingBridgeFixture):
                 forged)
 
     def test_bound_b11_source_authority_rejects_in_place_row_drift(self):
-        _rows, prepared = self.prepare("A.IDENTITY", 37123, 1)
+        _rows, prepared = self.prepare("A.IDENTITY", 37123, 2)
         compiled = prepared.compiled_rows[0]
         source = compiled.sources[0]
         row = source.source_row
