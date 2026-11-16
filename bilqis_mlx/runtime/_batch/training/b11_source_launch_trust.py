@@ -45,4 +45,3 @@ def source_authority_launch_epoch(batches):
         yield
     finally:
         _LAUNCH_TRUST.reset(token)
-

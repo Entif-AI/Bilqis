@@ -124,4 +124,3 @@ def bind_motif_read_context(projection, motifs, frontier, task_scope):
     digest = (projection.cache_key("B08_SCHEMA_RIGHTS_V1", schema_rights)
               if schema_rights else projection.digest)
     return digest, tuple(sorted(liveness.items()))
-

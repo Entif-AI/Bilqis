@@ -36,4 +36,3 @@ def require_source_feature_row(authority, request: FeatureRequest):
             or row.scope != request.scope):
         _invalid()
     return row
-
