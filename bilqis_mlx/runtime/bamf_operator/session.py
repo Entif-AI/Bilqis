@@ -33,6 +33,7 @@ from bilqis_mlx.runtime.priority_rejection_replay import (
 )
 from .evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root
 from .locking import bamf_operator_lock
+from .performance import measure_observed_phase, observe_completed_step
 from .telemetry import TrainerObservation
 from .session_support import (
     BamfPreparedVisit, _execution_context, _resource_observation, _step_seed,
@@ -81,7 +82,8 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
         prepare_evidence_root=prepare_candidate_evidence_root, capture_cls=_Capture,
         delivery_observation_cls=FactoryDeliveryObservation,
         execute_candidate=execute_accepted_priority_candidate, step_seed=_step_seed,
-        emit_progress=_emit_progress, invalid=_invalid)
+        emit_progress=_emit_progress, invalid=_invalid,
+        observe_completed_step_fn=observe_completed_step)
 
 
 def _candidate_horizon_execution(
@@ -112,7 +114,8 @@ def _retention_result(
         identity_delta=candidate_identity_metrics_delta,
         resource_observation=_resource_observation,
         derive_successor=derive_accepted_teacher_successor,
-        prepared_visit_type=BamfPreparedVisit, emit_progress=_emit_progress)
+        prepared_visit_type=BamfPreparedVisit, emit_progress=_emit_progress,
+        measure_observed_phase_fn=measure_observed_phase)
 
 
 def prepare_bamf_visit(
@@ -203,16 +206,17 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
     if observer is not None:
         observer.update(phase="PUBLISHING")
     _emit_progress(progress, "publishing accepted successor checkpoint")
-    accept_and_publish(
-        run_dir, successor, retained, decision=decision,
-        feature_sha256=successor.extents.factor_map_digest,
-        reserve_gib=reserve_gib,
-        training_authorities=step.transaction.training_authorities,
-        publication_observer=(
-            (lambda metrics: observer.update(**{
-                "publication_" + key: value
-                for key, value in metrics.to_record().items()}))
-            if observer is not None else None))
+    with measure_observed_phase(observer, "publishing_wall_seconds"):
+        accept_and_publish(
+            run_dir, successor, retained, decision=decision,
+            feature_sha256=successor.extents.factor_map_digest,
+            reserve_gib=reserve_gib,
+            training_authorities=step.transaction.training_authorities,
+            publication_observer=(
+                (lambda metrics: observer.update(**{
+                    "publication_" + key: value
+                    for key, value in metrics.to_record().items()}))
+                if observer is not None else None))
     return "ACCEPTED"
 
 def operate_bamf(

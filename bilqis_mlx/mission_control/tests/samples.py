@@ -67,7 +67,9 @@ SEMANTIC_HELD_META = RecordMeta(
 )
 
 
-from bilqis_mlx.mission_control.contracts.trainer import TrainerObservation
+from bilqis_mlx.mission_control.contracts.trainer import (
+    TrainerObservation, TrainerObservationV2,
+)
 
 SAMPLES = (
     RunContext(meta("run-context"), "READY", 42, "ASSESS_MAIN"),
@@ -189,6 +191,41 @@ SAMPLES += (
         candidate_step=None, candidate_horizon=None, retention_completed=None,
         retention_total=None, retention_subject=None, retention_role=None,
         cpu_seconds=None, peak_rss_bytes=None, disk_free_bytes=None,
+        error_code=None, error_detail=None,
+    ),
+    TrainerObservationV2(
+        meta=RecordMeta('observed:sample-v2', RUN, 120, 118, None,
+                        CoverageState.PARTIAL, AuthorityClass.MEASURED),
+        observation_id='sample-v2', revision=1, process_id=1, visit_index=1,
+        posture='OBSERVED', phase='TRAINING', outcome='RUNNING',
+        connection_state='LIVE', capability_id='A.IDENTITY', elapsed_ms=100,
+        candidate_optimizer_step=8, candidate_step=1, candidate_horizon=2,
+        retention_completed=None, retention_total=None,
+        retention_subject=None, retention_role=None,
+        cpu_seconds=0.1, peak_rss_bytes=4096, disk_free_bytes=100000,
+        error_code=None, error_detail=None,
+        candidate_step_wall_seconds=0.9,
+        pre_neural_source_compile_wall_seconds=0.1,
+        currentness_binding_wall_seconds=0.01,
+        b11_preflight_wall_seconds=0.2,
+        b11_autodiff_wall_seconds=0.4,
+        optimizer_admission_wall_seconds=0.1,
+        motif_staging_wall_seconds=0.0,
+        evidence_capture_wall_seconds=0.01,
+        candidate_terminal_step=False,
+        c08_gradient_launches=1,
+        c08_vectorized_microbatches=1,
+        c08_materialization_barriers=1,
+        c08_scalar_fallback_rows=0,
+        c08_logical_batch_wall_seconds=0.6,
+        c08_rows_per_gradient_launch=4.0,
+        b11_provider_draw_count=16,
+        b11_atlas_reload_count=0,
+        logical_rows=4,
+        compiled_positions=32,
+        retention_wall_seconds=None,
+        evidence_finalization_wall_seconds=None,
+        publishing_wall_seconds=None,
     ),
 
 )

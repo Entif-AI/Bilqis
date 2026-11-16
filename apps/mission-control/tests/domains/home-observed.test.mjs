@@ -12,6 +12,7 @@ function observation(changes = {}) {
     phase: "RETENTION", outcome: "RUNNING", connection_state: "LIVE", capability_id: "A.IDENTITY",
     candidate_step: 1, candidate_horizon: 1, candidate_optimizer_step: 1,
     retention_completed: 1, retention_total: 4, retention_subject: "A.IDENTITY", retention_role: "parent",
+    error_code: null, error_detail: null,
     elapsed_ms: 1500, cpu_seconds: 0.4, peak_rss_bytes: 1048576, disk_free_bytes: 1073741824,
     ...changes };
 }
@@ -63,6 +64,44 @@ test("generation zero shows observed retention and separates accepted coordinate
   assert.equal(model.runtime.retainedCandidates, 0);
 });
 
+test("v2 observation exposes completed-step stage timing and hidden B11 multiplicity", () => {
+  const row = observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v2",
+    candidate_step_wall_seconds: 1.5,
+    pre_neural_source_compile_wall_seconds: 0.2,
+    currentness_binding_wall_seconds: 0.05,
+    b11_preflight_wall_seconds: 0.3,
+    b11_autodiff_wall_seconds: 0.6,
+    optimizer_admission_wall_seconds: 0.2,
+    motif_staging_wall_seconds: 0.0,
+    evidence_capture_wall_seconds: 0.01,
+    candidate_terminal_step: true,
+    c08_gradient_launches: 2,
+    c08_vectorized_microbatches: 1,
+    c08_materialization_barriers: 1,
+    c08_scalar_fallback_rows: 0,
+    c08_logical_batch_wall_seconds: 0.9,
+    c08_rows_per_gradient_launch: 4,
+    b11_provider_draw_count: 32,
+    b11_atlas_reload_count: 8,
+    logical_rows: 8,
+    compiled_positions: 64,
+    retention_wall_seconds: 0.4,
+    evidence_finalization_wall_seconds: 0.02,
+    publishing_wall_seconds: 0.1,
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Latest completed step performance/);
+  assert.match(html, /Step wall time<\/dt><dd>1.5 s/);
+  assert.match(html, /Source \+ compile<\/dt><dd>200 ms/);
+  assert.match(html, /B11 provider draws<\/dt><dd>32/);
+  assert.match(html, /B11 Atlas reloads<\/dt><dd>8/);
+  assert.match(html, /Terminal candidate step<\/dt><dd>Yes/);
+  assert.equal(model.observed.current.schema_version,
+    "bilqis.bamf.mission-control.trainer-observation/v2");
+});
+
 test("epoch-millisecond trainer heartbeat projected to Unix seconds renders near the real observation time", () => {
   const heartbeatMs = Date.UTC(2026, 10, 15, 13, 0, 0, 123);
   const projectedSeconds = Math.floor(heartbeatMs / 1000);
@@ -104,6 +143,21 @@ test("accepted, rejected and held observations never change retained counts", ()
     assert.equal(model.observed.history[0].outcome, outcome);
     assert.match(renderHomeMarkup(model), new RegExp(outcome));
   }
+});
+
+test("interrupted visit history renders the observed failure code and detail", () => {
+  const row = observation({
+    phase: "COMPLETED", outcome: "INTERRUPTED", connection_state: "FINISHED",
+    error_code: "SCHOOL.MODEL_TOPOLOGY.INVALID",
+    error_detail: "B11_EXECUTION_BINDING_MISMATCH",
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Observed · terminated/);
+  assert.match(html, /A\.IDENTITY · INTERRUPTED · candidate 1\/1/);
+  assert.match(html, /SCHOOL\.MODEL_TOPOLOGY\.INVALID/);
+  assert.match(html, /B11_EXECUTION_BINDING_MISMATCH/);
+  assert.doesNotMatch(html, /COMPLETED · INTERRUPTED · FINISHED/);
 });
 
 test("historical and wrong-run observations remain absent", () => {

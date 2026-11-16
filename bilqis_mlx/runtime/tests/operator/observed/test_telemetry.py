@@ -4,6 +4,7 @@ from tempfile import TemporaryDirectory
 import time
 import unittest
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.bamf_operator.telemetry import TrainerObservation
 
 
@@ -19,15 +20,29 @@ class TrainerObservationTests(unittest.TestCase):
                     obs.update(candidate_step=1)
                     obs.finish('HELD')
             data = json.loads((root / 'trainer-observed.json').read_text())
+            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v2')
             self.assertEqual(len(data['visits']), 8)
             self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
             self.assertGreater(data['visits'][-1]['revision'], 3)
             self.assertEqual(data['visits'][-1]['candidate_step'], 1)
             self.assertEqual(data['visits'][-1]['run_id'], 'run')
+            self.assertIsNone(data['visits'][-1]['b11_preflight_wall_seconds'])
             with self.assertRaises(KeyboardInterrupt):
                 with TrainerObservation(root, 10):
                     raise KeyboardInterrupt()
-            self.assertEqual(json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]['outcome'], 'INTERRUPTED')
+            interrupted = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
+            self.assertEqual(interrupted['outcome'], 'INTERRUPTED')
+            self.assertEqual(interrupted['error_code'], 'KeyboardInterrupt')
+
+            with self.assertRaises(ValueError):
+                with TrainerObservation(root, 11):
+                    ErrorBus.Raise(
+                        SCHOOL.MODEL_TOPOLOGY.INVALID,
+                        reason='B11_EXECUTION_BINDING_MISMATCH')
+            failed = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
+            self.assertEqual(failed['outcome'], 'INTERRUPTED')
+            self.assertEqual(failed['error_code'], 'SCHOOL.MODEL_TOPOLOGY.INVALID')
+            self.assertEqual(failed['error_detail'], 'B11_EXECUTION_BINDING_MISMATCH')
 
     def test_write_failure_does_not_escape(self):
         with TemporaryDirectory() as tmp:

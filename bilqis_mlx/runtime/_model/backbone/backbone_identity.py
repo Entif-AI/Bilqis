@@ -21,8 +21,10 @@ from .model_topology_v2 import (
 _EXECUTION_BINDING_ISSUER = object()
 
 
-def _invalid() -> None:
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID)
+def _invalid(reason=None) -> None:
+    if reason is None:
+        ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID)
+    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
 
 
 def tensor_content_digest(value: mx.array) -> str:
@@ -131,7 +133,7 @@ def require_execution_generation_binding(
             or binding.parameter_names != names
             or any(ref() is not parameters[name]
                    for name, ref in zip(names, binding._parameter_refs))):
-        _invalid()
+        _invalid("EXECUTION_GENERATION_BINDING_CURRENTNESS_MISMATCH")
     return binding
 
 

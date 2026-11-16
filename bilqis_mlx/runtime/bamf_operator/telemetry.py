@@ -12,8 +12,30 @@ import threading
 import time
 import uuid
 
-SCHEMA = 'bilqis.bamf.trainer-observed/v1'
+from .performance import PERFORMANCE_FIELDS
+
+SCHEMA = 'bilqis.bamf.trainer-observed/v2'
+LEGACY_SCHEMA = 'bilqis.bamf.trainer-observed/v1'
 MAX_SNAPSHOT_BYTES = 64 * 1024
+MAX_ERROR_TEXT = 256
+
+
+def _bounded_error_text(value):
+    if not isinstance(value, str):
+        value = str(value)
+    value = value.strip().replace('\n', ' ')
+    return value[:MAX_ERROR_TEXT] or None
+
+
+def _exception_fields(exc_type, exc):
+    code = getattr(exc, 'code', None)
+    if not isinstance(code, str) or not code:
+        code = getattr(exc_type, '__name__', None) or 'Exception'
+    context = getattr(exc, 'context', None)
+    detail = context.get('reason') if hasattr(context, 'get') else None
+    if detail is None and exc is not None and str(exc) != code:
+        detail = str(exc)
+    return _bounded_error_text(code), _bounded_error_text(detail) if detail is not None else None
 
 
 class TrainerObservation:
@@ -37,13 +59,16 @@ class TrainerObservation:
             outcome='RUNNING', candidate_optimizer_step=None, candidate_step=None,
             candidate_horizon=None, retention_completed=None, retention_total=None,
             retention_subject=None, retention_role=None, cpu_seconds=None,
-            peak_rss_bytes=None, disk_free_bytes=None)
+            peak_rss_bytes=None, disk_free_bytes=None, error_code=None,
+            error_detail=None,
+            **{name: None for name in PERFORMANCE_FIELDS})
         self.visits = []
         try:
             with self.path.open('rb') as stream:
                 raw = stream.read(MAX_SNAPSHOT_BYTES + 1)
             data = json.loads(raw) if len(raw) <= MAX_SNAPSHOT_BYTES else {}
-            if (data.get('schema') == SCHEMA and isinstance(data.get('visits'), list)
+            if (data.get('schema') in {LEGACY_SCHEMA, SCHEMA}
+                    and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
         except (OSError, ValueError, AttributeError):
@@ -58,7 +83,14 @@ class TrainerObservation:
     def __exit__(self, exc_type, exc, tb):
         self.stop.set()
         self.thread.join()
-        if exc_type is not None or self.record['outcome'] == 'RUNNING':
+        if exc_type is not None:
+            error_code, error_detail = _exception_fields(exc_type, exc)
+            self.update(error_code=error_code, error_detail=error_detail)
+            self.finish('INTERRUPTED')
+        elif self.record['outcome'] == 'RUNNING':
+            self.update(
+                error_code='UNFINISHED_VISIT',
+                error_detail='Visit exited without a terminal operator outcome')
             self.finish('INTERRUPTED')
         return False
 
@@ -107,6 +139,12 @@ class TrainerObservation:
                         os.unlink(temporary)
                     except OSError:
                         pass
+
+    def stage(self, **fields):
+        """Update best-effort fields without forcing another synchronous write."""
+        with self.lock:
+            if self.enabled:
+                self.record.update(fields)
 
     def bind_parent(self, parent):
         try:

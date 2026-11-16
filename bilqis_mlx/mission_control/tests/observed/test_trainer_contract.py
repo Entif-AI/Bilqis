@@ -1,12 +1,14 @@
 """Observed progress stays outside accepted and historical authority."""
-from dataclasses import replace
+from dataclasses import fields, replace
 import unittest
 
 from bilqis_mlx.mission_control import (
     AuthorityClass, CoverageState, MissionControlQueryCatalog, QueryFamily,
     QueryMode, QueryRequest, decode_record, encode_record,
 )
-from bilqis_mlx.mission_control.contracts.trainer import TrainerObservation
+from bilqis_mlx.mission_control.contracts.trainer import (
+    TrainerObservation, TrainerObservationV2,
+)
 from bilqis_mlx.mission_control.tests.samples import meta
 
 
@@ -22,6 +24,36 @@ def observation():
         retention_completed=1, retention_total=4,
         retention_subject='A.IDENTITY', retention_role='parent',
         cpu_seconds=0.4, peak_rss_bytes=4096, disk_free_bytes=100000,
+        error_code=None, error_detail=None,
+    )
+
+
+def observation_v2():
+    base = observation()
+    return TrainerObservationV2(
+        **{field.name: getattr(base, field.name) for field in fields(TrainerObservation)},
+        candidate_step_wall_seconds=1.0,
+        pre_neural_source_compile_wall_seconds=0.1,
+        currentness_binding_wall_seconds=0.1,
+        b11_preflight_wall_seconds=0.2,
+        b11_autodiff_wall_seconds=0.4,
+        optimizer_admission_wall_seconds=0.1,
+        motif_staging_wall_seconds=0.0,
+        evidence_capture_wall_seconds=0.01,
+        candidate_terminal_step=False,
+        c08_gradient_launches=1,
+        c08_vectorized_microbatches=1,
+        c08_materialization_barriers=1,
+        c08_scalar_fallback_rows=0,
+        c08_logical_batch_wall_seconds=0.7,
+        c08_rows_per_gradient_launch=4.0,
+        b11_provider_draw_count=16,
+        b11_atlas_reload_count=4,
+        logical_rows=4,
+        compiled_positions=32,
+        retention_wall_seconds=None,
+        evidence_finalization_wall_seconds=None,
+        publishing_wall_seconds=None,
     )
 
 
@@ -31,6 +63,18 @@ class TrainerContractTests(unittest.TestCase):
         self.assertEqual(decode_record(encode_record(record)), record)
         self.assertEqual(record.meta.receipt_refs, ())
         self.assertNotIn('retained_optimizer_step', encode_record(record))
+
+    def test_v2_roundtrip_adds_only_observational_performance(self):
+        record = observation_v2()
+        self.assertEqual(decode_record(encode_record(record)), record)
+        self.assertEqual(record.schema_version,
+                         'bilqis.bamf.mission-control.trainer-observation/v2')
+        self.assertEqual(record.b11_provider_draw_count, 16)
+        with self.assertRaises(ValueError):
+            replace(record, b11_preflight_wall_seconds=-1.0)
+        page = MissionControlQueryCatalog((record,)).query(
+            QueryRequest(QueryFamily.RUN))
+        self.assertEqual(page.records, (record,))
 
     def test_invalid_progress_and_authority_are_rejected(self):
         for change in ({'retention_completed': 5}, {'candidate_step': 2},

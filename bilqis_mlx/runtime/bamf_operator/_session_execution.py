@@ -1,6 +1,8 @@
 """Private execution helpers for the BAMF operator session coordinator."""
 from __future__ import annotations
 
+import time
+
 
 def execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path,
@@ -9,7 +11,7 @@ def execute_horizon(
         source_prefetch_metrics, observer, *, source_lane_cls,
         source_metrics_cls, prepare_evidence_root, capture_cls,
         delivery_observation_cls, execute_candidate, step_seed,
-        emit_progress, invalid):
+        emit_progress, invalid, observe_completed_step_fn):
     source_lane = None
     if source_prefetch_metrics is not None or source_prefetch_workers:
         metrics = source_prefetch_metrics or source_metrics_cls()
@@ -26,7 +28,10 @@ def execute_horizon(
     )
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
+        candidate_step_started_at = time.perf_counter()
+        source_prepare_started = candidate_step_started_at
         source_rows = rows if source_lane is None else source_lane.rows(ordinal)
+        source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
         observation = delivery_observation_cls(
             capture, parent.retained_state.optimizer_step + ordinal,
             source_rows, selection.offer.source_seed)
@@ -38,16 +43,14 @@ def execute_horizon(
             optimizer_step_seed=step_seed(selection.visit.identity.visit_id, ordinal),
             max_norm=1.0, candidate=candidate,
             finalize_candidate=(ordinal == horizon),
-            prepared_source_rows=(source_rows if source_lane is not None else None))
+            prepared_source_rows=(source_rows if source_lane is not None else None),
+            candidate_step_started_at=candidate_step_started_at,
+            source_prepare_wall_seconds=source_prepare_wall_seconds)
         candidate = step.transaction
         if candidate.update_steps != ordinal:
             invalid("BAMF_C16_3_CANDIDATE_HORIZON_DRIFT")
         steps.append(step)
-        if observer is not None:
-            observer.update(
-                candidate_step=candidate.update_steps,
-                candidate_optimizer_step=(
-                    candidate.parent.optimizer_step + candidate.update_steps))
+        observe_completed_step_fn(observer, step, candidate)
         if getattr(candidate, "motif_transition", None) is not None:
             break
     return steps, capture
@@ -99,21 +102,24 @@ def retention_result(
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
         identity_before, progress, observer, *, evaluate_candidate,
         issue_decision, identity_delta, resource_observation,
-        derive_successor, prepared_visit_type, emit_progress):
+        derive_successor, prepared_visit_type, emit_progress,
+        measure_observed_phase_fn):
     step = steps[-1]
     if observer is not None:
         observer.update(phase="RETENTION")
     emit_progress(progress, "evaluating retention evidence")
-    evaluation = evaluate_candidate(
-        context, step.transaction, atlas_path, capability, run_dir=run_dir,
-        **({"observer": lambda fields: observer.update(**fields)}
-           if observer is not None else {}))
-    decision = issue_decision(evaluation)
-    identity_metrics = identity_delta(identity_before)
-    retained = (
-        evaluation.candidate_state if decision.accepted else evaluation.parent_state)
-    candidate_evidence = capture.finalize(
-        accepted=decision.accepted, decision=decision.to_record())
+    with measure_observed_phase_fn(observer, "retention_wall_seconds"):
+        evaluation = evaluate_candidate(
+            context, step.transaction, atlas_path, capability, run_dir=run_dir,
+            **({"observer": lambda fields: observer.update(**fields)}
+               if observer is not None else {}))
+        decision = issue_decision(evaluation)
+        identity_metrics = identity_delta(identity_before)
+        retained = (
+            evaluation.candidate_state if decision.accepted else evaluation.parent_state)
+    with measure_observed_phase_fn(observer, "evidence_finalization_wall_seconds"):
+        candidate_evidence = capture.finalize(
+            accepted=decision.accepted, decision=decision.to_record())
     resource = resource_observation(
         run_dir, tuple(steps),
         getattr(context, "_source_preparation_metrics", None),

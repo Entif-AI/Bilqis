@@ -23,15 +23,42 @@ def visit(**changes):
     }
 
 
+def performance():
+    return {
+        'candidate_step_wall_seconds': 1.2,
+        'pre_neural_source_compile_wall_seconds': 0.1,
+        'currentness_binding_wall_seconds': 0.2,
+        'b11_preflight_wall_seconds': 0.3,
+        'b11_autodiff_wall_seconds': 0.4,
+        'optimizer_admission_wall_seconds': 0.1,
+        'motif_staging_wall_seconds': 0.0,
+        'evidence_capture_wall_seconds': 0.01,
+        'candidate_terminal_step': False,
+        'c08_gradient_launches': 1,
+        'c08_vectorized_microbatches': 1,
+        'c08_materialization_barriers': 1,
+        'c08_scalar_fallback_rows': 0,
+        'c08_logical_batch_wall_seconds': 0.7,
+        'c08_rows_per_gradient_launch': 4.0,
+        'b11_provider_draw_count': 16,
+        'b11_atlas_reload_count': 4,
+        'logical_rows': 4,
+        'compiled_positions': 32,
+        'retention_wall_seconds': None,
+        'evidence_finalization_wall_seconds': None,
+        'publishing_wall_seconds': None,
+    }
+
+
 class ObservedSourceTests(unittest.TestCase):
     def setUp(self):
         self.temp = TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
 
-    def write(self, *rows):
+    def write(self, *rows, schema='bilqis.bamf.trainer-observed/v1'):
         (self.root / 'trainer-observed.json').write_text(json.dumps({
-            'schema': 'bilqis.bamf.trainer-observed/v1', 'visits': list(rows),
+            'schema': schema, 'visits': list(rows),
         }))
 
     def test_live_snapshot_has_measured_posture_without_accepted_receipts(self):
@@ -44,6 +71,18 @@ class ObservedSourceTests(unittest.TestCase):
         self.assertEqual(row.connection_state, 'LIVE')
         self.assertEqual(row.meta.receipt_refs, ())
         self.assertEqual(row.meta.run, RUN)
+
+    def test_v2_snapshot_projects_stage_metrics_without_changing_v1_reader(self):
+        self.write(
+            visit(**performance()), schema='bilqis.bamf.trainer-observed/v2')
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=True):
+            row = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(
+            row.schema_version,
+            'bilqis.bamf.mission-control.trainer-observation/v2')
+        self.assertEqual(row.b11_provider_draw_count, 16)
+        self.assertEqual(row.c08_gradient_launches, 1)
+        self.assertEqual(row.compiled_positions, 32)
 
     def test_millisecond_heartbeat_projects_unix_seconds_without_changing_liveness_age(self):
         heartbeat_ms = 1_763_218_800_123
