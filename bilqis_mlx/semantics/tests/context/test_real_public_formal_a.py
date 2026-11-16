@@ -6,6 +6,10 @@ from unittest.mock import patch
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.semantics.context_eligibility import PUBLIC_FORMAL, ApprovedContextProjection, C09ContextInvalidation, ContextEligibility, ContextHold, ContextMember, ContextTransition, ContextPolicy, EligibleContext, SourceFrontier, SourceGrant, TaskScope, check_context_eligibility, frame_evidence_digest, member_evidence_digest, project_context, transition_context
 from bilqis_mlx.semantics.frame_adapters import public_formal_context
+from bilqis_mlx.semantics.frame_adapters.public_formal import (
+    _public_formal_context_from_verified_row,
+)
+from bilqis_mlx.b11_observation import source_replay_observation
 from bilqis_mlx.semantics.frame_schema import ConceptRef, FrameSchema, RoleOccurrence, RoleSpec, SourceSpan, make_frame_instance
 from bilqis_mlx.semantics.tests.test_context_eligibility import RELEASE, PRINCIPAL, TENANT, REGION, SCOPE, _frame, _case, ContextEligibilityTests
 
@@ -111,6 +115,22 @@ class ContextEligibilityTests2(ContextEligibilityTests):
                 self.assertEqual(
                     caught.exception.context["reason"],
                     "BAMF_CONTEXT_PUBLIC_FORMAL_ROW_IDENTITY_UNVERIFIED")
+
+    def test_prequalified_public_formal_projection_avoids_provider_replay(self):
+        source_root, snapshot, task, policy, frontier, cases = self._source_cases()
+        adapter, row, graph, seed, each, profile = cases[0]
+        expected = public_formal_context(
+            adapter, row, snapshot, source_root=source_root, graph=graph,
+            task_scope=task, source_frontier=frontier, policy=policy,
+            source_seed=seed, source_each=each,
+            source_profile_parameters=profile)
+        with source_replay_observation() as observed:
+            actual = _public_formal_context_from_verified_row(
+                adapter, row, snapshot, source_root=source_root, graph=graph,
+                task_scope=task, source_frontier=frontier, policy=policy)
+        self.assertEqual(actual, expected)
+        self.assertEqual(observed, {
+            "provider_draws": 0, "provider_checks": 0, "atlas_reloads": 0})
 
     def test_public_formal_forged_source_owner_and_fields_are_rejected(self):
         source_root, snapshot, task, policy, source_frontier, cases = self._source_cases()

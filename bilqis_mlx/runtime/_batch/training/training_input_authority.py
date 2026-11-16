@@ -13,10 +13,23 @@ from .atlas_training_contracts import _invalid
 from .factory_training_context import source_frame_inventory
 
 
+SOURCE_INVENTORY_PARTS = 2
+SOURCE_INVENTORY_ID_INDEX = 0
+SOURCE_INVENTORY_FRAMES_INDEX = 1
+
+
 def require_source_inventory(
         ast, source_context, row, atlas_selection, semantic_context=None,
-        released_manifest=None) -> None:
-    if semantic_context is None:
+        released_manifest=None, *, prepared_inventory=None) -> None:
+    if prepared_inventory is not None:
+        if (type(prepared_inventory) is not tuple
+                or len(prepared_inventory) != SOURCE_INVENTORY_PARTS
+                or not isinstance(prepared_inventory[SOURCE_INVENTORY_ID_INDEX], str)
+                or not prepared_inventory[SOURCE_INVENTORY_ID_INDEX]
+                or type(prepared_inventory[SOURCE_INVENTORY_FRAMES_INDEX]) is not tuple):
+            _invalid("CONTEXT_SOURCE_LINEAGE_MISMATCH")
+        source_id, frames = prepared_inventory
+    elif semantic_context is None:
         source_id, frames = source_frame_inventory(source_context, row, atlas_selection)
     else:
         from .factory_training_context import _source_frame_inventory_from_context

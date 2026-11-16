@@ -9,7 +9,11 @@ from ..context_eligibility import (
     PUBLIC_FORMAL, ApprovedContextProjection, SourceFrontier, SourceGrant,
 )
 from ..frame_schema import FrameInstance, FrameSchema, SourceSpan
-from ..released_frame_schemas import lookup_source_pinned_frame_schema
+from ..atlas_projection import FrozenAtlasSnapshot
+from ..released_frame_schemas import (
+    _load_pinned_released_frame_schemas_from_snapshot,
+    lookup_source_pinned_frame_schema,
+)
 from .common import _adapter_fail
 from .public_formal_sources import _require_public_formal_projection_authority
 from . import public_formal_schema_rights_registry as _registry
@@ -113,13 +117,33 @@ def schema_evidence_digest(schema: FrameSchema) -> str:
     return hashlib.sha256(schema.canonical_bytes()).hexdigest()
 
 
-def _decision(authority, source_adapter_id, frame: FrameInstance):
+def _decision(authority, source_adapter_id, frame: FrameInstance, *, snapshot=None):
     from ..atlas_features.formal import source_family_for_adapter
 
     family = source_family_for_adapter(source_adapter_id)
-    schema, _witness = lookup_source_pinned_frame_schema(
-        frame.frame_schema_id, frame.frame_schema_revision, source_family=family,
-        atlas_selection=authority.atlas_selection)
+    if snapshot is None:
+        schema, _witness = lookup_source_pinned_frame_schema(
+            frame.frame_schema_id, frame.frame_schema_revision, source_family=family,
+            atlas_selection=authority.atlas_selection)
+    else:
+        selection = authority.atlas_selection
+        if (type(snapshot) is not FrozenAtlasSnapshot
+                or (snapshot.release_sha256, snapshot.bundle_id,
+                    snapshot.source_bundle_id) != (
+                        selection.release_sha256, selection.bundle_id,
+                        selection.source_bundle_id)):
+            _fail("BAMF_CONTEXT_SCHEMA_RIGHTS_SOURCE_DRIFT", source_adapter_id)
+        pinned = _load_pinned_released_frame_schemas_from_snapshot(
+            family, selection, snapshot)
+        witness = pinned.lookup(frame.frame_schema_id, frame.frame_schema_revision)
+        body = next((
+            item for item in pinned.manifest.bodies
+            if (item.schema_id, item.revision)
+            == (frame.frame_schema_id, frame.frame_schema_revision)
+        ), None)
+        if body is None:
+            _fail("BAMF_CONTEXT_SCHEMA_RIGHTS_EVIDENCE_DRIFT", source_adapter_id)
+        schema = pinned.require_schema(body.parse(), witness)
     evidence = schema_evidence_digest(schema)
     matches = tuple(
         entry for entry in _registry._load_registry()["entries"]
@@ -131,11 +155,13 @@ def _decision(authority, source_adapter_id, frame: FrameInstance):
     return schema, _registry._effective_revoked(matches[0], authority.rights_epoch)
 
 
-def current_source_schema_grant(
+def _current_source_schema_grant(
     authority: SourceSchemaRightsAuthority,
     source_adapter_id: str,
     projection: ApprovedContextProjection,
     frame: FrameInstance,
+    *,
+    snapshot=None,
 ) -> SourceGrant:
     """Materialize rights only for a frame already present in an approved source projection."""
     if type(authority) is not SourceSchemaRightsAuthority:
@@ -164,7 +190,8 @@ def current_source_schema_grant(
             "public-formal:" + source_adapter_id + ":")
     ):
         _fail("BAMF_CONTEXT_SCHEMA_RIGHTS_SCOPE_INVALID", source_adapter_id)
-    schema, revoked = _decision(authority, source_adapter_id, frame)
+    schema, revoked = _decision(
+        authority, source_adapter_id, frame, snapshot=snapshot)
     return SourceGrant(
         schema_source_handle(schema), envelope.principal_id, envelope.tenant_id,
         envelope.source_regime, envelope.semantic_release, schema_evidence_digest(schema),
@@ -173,6 +200,29 @@ def current_source_schema_grant(
         envelope.observed_at, envelope.effective_from, envelope.effective_until,
         revoked=revoked,
     )
+
+
+def current_source_schema_grant(
+    authority: SourceSchemaRightsAuthority,
+    source_adapter_id: str,
+    projection: ApprovedContextProjection,
+    frame: FrameInstance,
+) -> SourceGrant:
+    """Cold public grant path; re-enters the independently pinned A01 owner."""
+    return _current_source_schema_grant(
+        authority, source_adapter_id, projection, frame)
+
+
+def _current_source_schema_grant_from_snapshot(
+    authority: SourceSchemaRightsAuthority,
+    source_adapter_id: str,
+    projection: ApprovedContextProjection,
+    frame: FrameInstance,
+    snapshot: FrozenAtlasSnapshot,
+) -> SourceGrant:
+    """Hot owner path after the exact immutable A01 snapshot is authenticated."""
+    return _current_source_schema_grant(
+        authority, source_adapter_id, projection, frame, snapshot=snapshot)
 
 
 def source_schema_rights_identity(authority: SourceSchemaRightsAuthority) -> dict:

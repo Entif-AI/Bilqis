@@ -15,7 +15,7 @@ def _source_frame_inventory_materialized(
     from bilqis_mlx.source_adapters.atoms.authority import canonical_graph_for
 
     adapter = source_context.source_registry.resolve_owner(
-        row.get("generator"), row.get("oracle"))
+        row.get("generator"))
     graph = canonical_graph_for(row.get('generator'), source_context.source_root)
     end = len(row['tokens'])
     if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
@@ -28,6 +28,33 @@ def _source_frame_inventory_materialized(
         source_root=source_context.source_root, graph=graph,
         source_span=SourceSpan(0, end), causal_prefix_end=end,
         course=source_context.release.curriculum)
+    if ((manifest.semantic_release, manifest.atlas_bundle_id, manifest.source_bundle_id)
+          != (snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)):
+        from .atlas_training_contracts import _invalid
+        _invalid("CONTEXT_SOURCE_LINEAGE_MISMATCH")
+    schemas = frozenset(body.schema_id for body in manifest.bodies)
+    return tree.root.source_instance_id, ((tree,) if schemas_cover_tree(tree, schemas) else ())
+
+
+def _source_frame_inventory_verified(
+        source_context, row, atlas_selection, snapshot, manifest):
+    """Derive inventory after SourceBatchAuthority already proved provider check."""
+    from bilqis_mlx.semantics.frame_adapters.registry import _bind_verified_source_row
+    from bilqis_mlx.semantics.frame_schema import SourceSpan
+    from bilqis_mlx.source_adapters.atoms.authority import canonical_graph_for
+
+    adapter = source_context.source_registry.resolve_owner(
+        row.get("generator"))
+    graph = canonical_graph_for(row.get('generator'), source_context.source_root)
+    end = len(row['tokens'])
+    if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+          != (atlas_selection.release_sha256, atlas_selection.bundle_id,
+              atlas_selection.source_bundle_id)):
+        from .atlas_training_contracts import _invalid
+        _invalid("CONTEXT_SOURCE_LINEAGE_MISMATCH")
+    tree = _bind_verified_source_row(
+        adapter, row, snapshot, graph=graph, source_span=SourceSpan(0, end),
+        causal_prefix_end=end)
     if ((manifest.semantic_release, manifest.atlas_bundle_id, manifest.source_bundle_id)
           != (snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)):
         from .atlas_training_contracts import _invalid
@@ -73,6 +100,14 @@ def _source_frame_inventory_from_context(
         semantic_context.snapshot, manifest)
 
 
+def _source_frame_inventory_from_verified_context(
+        source_context, row, semantic_context, manifest):
+    manifest = _require_materialized_manifest(semantic_context, manifest)
+    return _source_frame_inventory_verified(
+        source_context, row, semantic_context.selection,
+        semantic_context.snapshot, manifest)
+
+
 def source_frame_inventory(source_context, row, atlas_selection):
     """Cold source-owner replay when no authenticated semantic context is bound."""
     from bilqis_mlx.semantics.atlas.snapshot import load_pinned_atlas_snapshot
@@ -80,7 +115,7 @@ def source_frame_inventory(source_context, row, atlas_selection):
     from bilqis_mlx.semantics.released_frame_schemas import _load_pinned_released_frame_schemas
 
     adapter = source_context.source_registry.resolve_owner(
-        row.get("generator"), row.get("oracle"))
+        row.get("generator"))
     manifest = _load_pinned_released_frame_schemas(
         source_family_for_adapter(adapter.descriptor.adapter_id), atlas_selection).manifest
     snapshot = load_pinned_atlas_snapshot(atlas_selection)

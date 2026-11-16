@@ -3,6 +3,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from bilqis_mlx.learning.student_ops import train_bamf_factory_step
+from bilqis_mlx.b11_observation import source_replay_observation
+from bilqis_mlx.runtime.factory_training_bridge import _prepare_factory_source_rows
 from bilqis_mlx.runtime.b11_source_execution_authority import (
     require_b11_source_execution_authority,
 )
@@ -14,11 +16,31 @@ from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_liv
     HP,
 )
 
-from .factory_training_bridge_support import FactoryTrainingBridgeFixture
-from .factory_training_execution_support import draw, observation, publish
+from ..factory_training_bridge_support import FactoryTrainingBridgeFixture
+from ..factory_training_execution_support import draw, observation, publish
 
 
 class FactoryTrainingSourceReuseTests(FactoryTrainingBridgeFixture):
+    def test_source_batch_authority_is_the_only_provider_check_boundary(self):
+        capability, seed, each = "A.IDENTITY", 37128, 2
+        rows = tuple(self.context.draw_rows(
+            seed=seed, capability=capability, each=each))
+        before = self.context._source_preparation_metrics.provider_draws
+        with source_replay_observation() as owner_observation:
+            source_authority = self.context.bind_rows(
+                rows, seed=seed, capability=capability, each=each)
+        self.assertEqual(
+            self.context._source_preparation_metrics.provider_draws - before, 1)
+        self.assertEqual(owner_observation["provider_checks"], each)
+
+        with source_replay_observation() as prepared_observation:
+            _prepare_factory_source_rows(
+                self.context, self.feature_context, rows,
+                capability=capability, source_seed=seed, source_each=each,
+                source_authority=source_authority)
+        self.assertEqual(prepared_observation["provider_draws"], 0)
+        self.assertEqual(prepared_observation["provider_checks"], 0)
+
     def test_a_identity_rows_carry_owner_issued_source_authority(self):
         _rows, prepared = self.prepare("A.IDENTITY", 37125, 2)
 
