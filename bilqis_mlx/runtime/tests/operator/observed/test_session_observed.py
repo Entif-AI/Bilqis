@@ -160,6 +160,9 @@ class SessionObservationTests(unittest.TestCase):
                 stack.enter_context(patch(prefix + name, return_value=value))
             stack.enter_context(patch(prefix + 'execute_accepted_priority_candidate', side_effect=steps))
             stack.enter_context(patch(prefix + 'evaluate_factory_retention_candidate', side_effect=assess))
+            stack.enter_context(patch(
+                'bilqis_mlx.runtime.bamf_operator.evidence_projection.complete_visit_evidence',
+                side_effect=RuntimeError('observation readback failed')))
             result = prepare_bamf_visit(Path('/tmp'), observer=observer)
         self.assertEqual(result.status, 'REJECTED')
         self.assertEqual([e.get('phase') for e in events if 'phase' in e],
