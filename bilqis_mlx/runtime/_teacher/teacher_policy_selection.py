@@ -31,7 +31,7 @@ def select_visit_policy(engine, teacher, cap, school, rng, learning_settings,
             curriculum_scope=teacher_curriculum_scope,
             diagnostics=previsit_diagnostics, return_metadata=True,
             student_checkpoint_sha256=school.current_student.sha256,
-            total_capabilities=total_capabilities,
+            total_capabilities=total_capabilities, lesson_grade=lesson_grade,
             plasticity_active=bool((plasticity_escape or {}).get("active")))
         legacy_key, legacy_reason = key, metadata.get("selection_reason")
         context_key = cap + "|" + school.stage + "|" + teacher_curriculum_scope

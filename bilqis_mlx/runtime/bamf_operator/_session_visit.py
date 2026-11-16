@@ -33,6 +33,7 @@ def visit(
             "decision": decision.to_record(),
             "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
+            "how_outcome": prepared.how_outcome,
         })
         return "REJECTED"
     successor = prepared.successor

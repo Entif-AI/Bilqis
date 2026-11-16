@@ -37,6 +37,7 @@ class BamfPreparedVisit:
     identity_metrics: dict | None = None
     resource: dict | None = None
     candidate_evidence: dict | None = None
+    how_outcome: dict | None = None
     learning_health: dict | None = None
     rejection_journal_ordinal: int | None = None
     rejection_attempt_ordinal: int | None = None

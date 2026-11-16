@@ -160,6 +160,7 @@ class Decision:
     blocking_capability: str | None = None
     blocking_scope: str | None = None
     baseline_coverage: BaselineCoverage | None = None
+    outcome_scores: tuple[tuple[str, int, int, int], ...] = ()
     evaluated_capability_ids: tuple[str, ...] = ()
     retention_protection_plan_sha256: str | None = None
     broad_certification_trigger: str | None = None

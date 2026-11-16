@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 293,
-  "legacy_raw_raise_count": 2092,
+  "legacy_raw_file_count": 294,
+  "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -11747,6 +11747,20 @@
       "exception": "AssertionError",
       "expression": "'Rosetta owner revision drift requires requalification'",
       "path": "bilqis_mlx/runtime/tests/projection/test_rosetta_observation.py"
+    },
+    {
+      "code_hint": "post-append",
+      "count": 1,
+      "exception": "RuntimeError",
+      "expression": "'post-append'",
+      "path": "bilqis_mlx/runtime/tests/teacher/outcomes/test_outcome_recovery.py"
+    },
+    {
+      "code_hint": "post-pointer",
+      "count": 1,
+      "exception": "RuntimeError",
+      "expression": "'post-pointer'",
+      "path": "bilqis_mlx/runtime/tests/teacher/outcomes/test_outcome_recovery.py"
     },
     {
       "code_hint": "C09 hold",

@@ -252,8 +252,8 @@ def _selection_result(return_metadata, teacher, channel, inventory,
 
 
 def _pick_context(teacher, capability, curriculum_scope, phase, diagnostics,
-                  student_checkpoint_sha256, total_capabilities):
-    grade = capability.partition(".")[0]
+                  student_checkpoint_sha256, total_capabilities, lesson_grade=None):
+    grade = lesson_grade if lesson_grade is not None else capability.partition(".")[0]
     channel = _channel(teacher)
     diagnostic_key, _ = _diagnostic_context(
         channel, capability, curriculum_scope, diagnostics)
@@ -278,12 +278,12 @@ def contextual_pick(engine, teacher: dict, capability: str, phase: str, rng,
                     return_metadata: bool = False,
                     student_checkpoint_sha256: str | None = None,
                     total_capabilities: int | None = None,
-                    plasticity_active: bool = False):
+                    plasticity_active: bool = False, lesson_grade: str | None = None):
     """Preserve the inherited bandit's exploration; prefer proven safe context."""
     (grade, channel, diagnostic_key, context_key, scope, active_effective,
      inventory, retired_effective, rejection_pressure) = _pick_context(
          teacher, capability, curriculum_scope, phase, diagnostics,
-         student_checkpoint_sha256, total_capabilities)
+         student_checkpoint_sha256, total_capabilities, lesson_grade)
     active_set = set(active_effective)
     result = partial(
         _selection_result, return_metadata, teacher, channel, inventory,
