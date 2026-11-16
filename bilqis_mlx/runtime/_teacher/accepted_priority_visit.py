@@ -84,6 +84,11 @@ class PriorityVisitResult:
     def source_materialization_wall_seconds(self):
         return self._source_materialization_wall_seconds
 
+    @property
+    def exclusions(self):
+        return (() if self._lawful_frontier is None
+                else self._lawful_frontier.exclusions)
+
 
 def _issue_result(status, option_id, offer, visit, policy, metadata, grade, holds,
                   run_dir, lawful_frontier=None, ranking_evidence=None,
@@ -222,9 +227,12 @@ def select_accepted_priority_visit(
         if (frontier is not None or history is not None
                 or lawful_frontier.ready_capability_ids):
             _invalid('BAMF_PRIORITY_EMPTY_AUTHORITY_DRIFT')
+        holds = sorted(
+            (item.capability_id, item.code.value)
+            for item in lawful_frontier.exclusions)
         return _issue_result(
             'NO_ADMISSIBLE_TEACHING', None, None, None, None, None, None,
-            (), run_dir, lawful_frontier)
+            holds, run_dir, lawful_frontier)
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
     epoch = restore_teacher_lineage(projection.teacher_state)
@@ -236,7 +244,11 @@ def select_accepted_priority_visit(
                                    lawful_frontier=lawful_frontier,
                                    planning_generation=planning_generation)
     by_id, evidence = dict(qualified.offers), dict(frontier.evidence)
-    holds = list(qualified.holds)
+    holds = [
+        (item.capability_id, item.code.value)
+        for item in lawful_frontier.exclusions
+    ]
+    holds.extend(qualified.holds)
     for option in qualified.ranked.ordered:
         priority_features = salience_priority_features(
             evidence[option.stable_id], option.context.capability_id,

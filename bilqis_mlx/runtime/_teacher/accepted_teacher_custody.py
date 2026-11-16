@@ -220,7 +220,7 @@ def select_accepted_teacher_visit(
         legacy_receipt: Mapping | None = None,
         adaptation: Mapping | None = None,
         prior_region: str | None = None):
-    """Run the real teacher policy selector and bind its exact C03 visit identity."""
+    """Lower-level custody witness; production selection uses lawful priority."""
     parent, cache = _accepted_parent(Path(run_dir))
     projection = _c03_projection(
         parent, legacy_receipt=legacy_receipt,
@@ -315,6 +315,6 @@ def derive_c03_successor_bundle(
 
 
 __all__ = (
-    "BoundTeacherVisit", "select_accepted_teacher_visit",
+    "BoundTeacherVisit",
     "derive_c03_successor_bundle", "rebind_package_import_teacher_custody",
 )

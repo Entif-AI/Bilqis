@@ -14,6 +14,8 @@ from .lawful_teaching_frontier_contracts import (
     ActiveGeneratedGradeState,
     LawfulTeachingCapability,
     LawfulTeachingDisposition,
+    LawfulTeachingExclusion,
+    LawfulTeachingExclusionCode,
     LawfulTeachingHold,
 )
 
@@ -151,6 +153,38 @@ def _capabilities(
             target_evidence_complete=capability_id in set(mastered),
             disposition=disposition,
             holds=holds,
+        ))
+    return tuple(result)
+
+
+def _exclusions(release, capabilities) -> tuple[LawfulTeachingExclusion, ...]:
+    codes = {
+        LawfulTeachingDisposition.EVIDENCE_COMPLETE:
+            LawfulTeachingExclusionCode.ALREADY_COMPLETE,
+        LawfulTeachingDisposition.HELD_PREREQUISITE_EVIDENCE:
+            LawfulTeachingExclusionCode.PREREQUISITE_HELD,
+        LawfulTeachingDisposition.HELD_SOURCE_RIGHTS:
+            LawfulTeachingExclusionCode.SOURCE_HELD,
+        LawfulTeachingDisposition.IMPLEMENTATION_UNCOVERED:
+            LawfulTeachingExclusionCode.IMPLEMENTATION_UNCOVERED,
+    }
+    result = []
+    active_ids = {item.capability_id for item in capabilities}
+    for item in capabilities:
+        if item.disposition is LawfulTeachingDisposition.READY:
+            continue
+        code = codes.get(item.disposition)
+        if code is None:
+            _invalid("BAMF_LEARNER_FRONTIER_EXCLUSION_INVALID")
+        result.append(LawfulTeachingExclusion(
+            item.capability_id, item.semantic_ids, code, item.holds))
+    execution_map = release.execution_plan.capability_map
+    for capability_id in sorted(set(execution_map) - active_ids):
+        result.append(LawfulTeachingExclusion(
+            capability_id,
+            _semantic_ids(release, capability_id),
+            LawfulTeachingExclusionCode.FUTURE_GENERATED_GRADE,
+            (),
         ))
     return tuple(result)
 

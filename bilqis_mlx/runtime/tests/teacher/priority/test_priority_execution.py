@@ -118,6 +118,7 @@ def lawful(*capabilities):
     ready = ('cap',) if not capabilities else tuple(capabilities)
     return SimpleNamespace(
         ready_capability_ids=ready,
+        exclusions=(),
         _planning_generation=Offer._planning_generation,
     )
 
@@ -322,6 +323,7 @@ def test_held_capability_cannot_reach_visit_or_candidate_execution(priority):
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     held = SimpleNamespace(
         ready_capability_ids=(),
+        exclusions=(),
         _planning_generation=Offer._planning_generation,
     )
     selected = priority._issue_result(
@@ -342,8 +344,13 @@ def test_held_capability_cannot_reach_visit_or_candidate_execution(priority):
 
 def test_empty_lawful_frontier_returns_no_admissible_without_teacher_policy(priority):
     planning = SimpleNamespace(parent_candidate_identity_sha256='student-id')
+    exclusion = SimpleNamespace(
+        capability_id='future',
+        code=SimpleNamespace(value='FUTURE_GENERATED_GRADE'),
+    )
     empty = SimpleNamespace(
-        ready_capability_ids=(), _planning_generation=planning)
+        ready_capability_ids=(), exclusions=(exclusion,),
+        _planning_generation=planning)
     school = SimpleNamespace(stage='MAIN', current_student=SimpleNamespace(sha256='student-id'))
     parent = SimpleNamespace(retained_state='student')
     with patch.object(
@@ -355,6 +362,7 @@ def test_empty_lawful_frontier_returns_no_admissible_without_teacher_policy(prio
             '/run', object(), None, None, None, (), None, school, None, None,
             program=None, now=1, lawful_frontier=empty)
     assert result.status == 'NO_ADMISSIBLE_TEACHING'
-    assert result.holds == ()
+    assert result.holds == (('future', 'FUTURE_GENERATED_GRADE'),)
+    assert result.exclusions == (exclusion,)
     projection.assert_not_called()
     policy.assert_not_called()
