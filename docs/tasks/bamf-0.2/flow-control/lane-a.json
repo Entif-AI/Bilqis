@@ -8,11 +8,11 @@
     {
       "issue": 1314,
       "pr": 1349,
-      "state": "ACTIVE",
-      "head_sha": "46357e175239ee303bfbf03d61534db385b34434",
-      "head_sha_role": "exact semantic/test proof head; hosted hygiene repair reopened after code-smell CI found one long-function defect",
-      "summary": "#1314 semantic implementation remains proven at 46357e17, but hosted portable-core found one structural hygiene defect: test_lawful_teaching_frontier._runtime_patches is 86 lines and violates the changed-file long-function rule. Lane A is reopened only for that bounded code-hygiene repair; no design or runtime-behavior change is authorized by this reopening.",
-      "resume_trigger": "Split the test-only _runtime_patches helper below the code-smell threshold without behavior change; rerun focused owner tests, code-smell audit, and hosted portable-core before returning to TURNED_IN.",
+      "state": "READY",
+      "head_sha": "b255c0dc613f1cd9d083597c09696bb0d1b8734c",
+      "head_sha_role": "exact semantic/test/EGM/hosted proof head before final flow-control evidence-only checkpoint",
+      "summary": "#1314 active generated-grade authority is READY for human review at exact semantic head b255c0dc on reviewed unified ca3ad4d0. Cold replay authenticates the issued #1320 proposal through accepted B13/C07 ancestry at or before activation, preserves historical adopted-release reseal, rejects canonical extra fields in durable proposal/correction authority, keeps #1334 as the only success-certification owner, and fails exact semantic widening closed. The mandatory v2.3.2-v2.3.4 structure split and mirrored tests are compliant. Focused affected ring 48/48 PASS; structure/error-control/diff green; fresh pinned Design and Codebase Goldfish 0B/0M/0N; drift NO_DRIFT; hosted semantic-abi-integrity, portable-core, bamf-readiness, and portable PASS on b255c0dc. Human merge remains external authority.",
+      "resume_trigger": "Human review/merge PR #1349 into codex/bamf-unified-base-20261028. Do not self-merge; #1334 remains the downstream certification-success owner.",
       "preserved_branch": "codex/1314-active-generated-grade-20261116"
     },
     {
