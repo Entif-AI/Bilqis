@@ -6,6 +6,7 @@ import subprocess
 import sys
 from dataclasses import asdict
 from pathlib import Path
+from types import MappingProxyType
 from unittest.mock import patch
 
 import numpy as np
@@ -21,6 +22,7 @@ from bilqis_mlx.runtime.bamf_bundle import (
 from bilqis_mlx.runtime.bamf_bundle.codec import save_bamf_bundle
 from bilqis_mlx.runtime.bamf_bundle.records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_POINTER_SCHEMA, canonical,
+    validate_sidecars,
 )
 from bilqis_mlx.runtime.tests.custody.data_plane.base import DataPlaneCase, historical_module
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
@@ -31,6 +33,36 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
 PRE_CAS = "dfc0c7586c23b6477c08d4db486ade3deeb79fae"
 WRITER_SHA256 = "01e66fcbe15802615c3557a2a4b99c0fb75a37d64fe3d61ee30bf56d1301fcdc"
 LEGACY_CAS = "deaa8b9dbd277993f884abeea7413f9cb799d945"
+HISTORICAL_SIDECARS = MappingProxyType({
+    "semantic_abi": "semantic-abi.json",
+    "motif_allocation": "motif-allocation.json",
+    "plasticity_policy": "plasticity-policy.json",
+    "compiler_features": "compiler-features.json",
+    "correction_frontier": "correction-frontier.json",
+    "teacher_state": "teacher-state.json",
+    "evaluation_contract": "evaluation-contract.json",
+    "outbox": "outbox.json",
+})
+
+
+def bind_historical_sidecar_contract(writer):
+    """Freeze codec dependencies that were module globals at the pinned commit."""
+    current_records = writer.sidecar_records
+
+    def historical_records(candidate):
+        records = current_records(candidate)
+        return {name: records[name] for name in HISTORICAL_SIDECARS}
+
+    def historical_validation(extents, provenance, records):
+        modern = dict(records)
+        modern["step_proofs"] = {
+            "schema": "bilqis.mlx.bamf-step-proofs/v1", "proofs": []}
+        return validate_sidecars(extents, provenance, modern)
+
+    writer.SIDECARS = HISTORICAL_SIDECARS
+    writer.sidecar_records = historical_records
+    writer.validate_sidecars = historical_validation
+    return writer
 
 
 
@@ -65,10 +97,10 @@ class PreCasCompatibilityTests(DataPlaneCase):
             self.addCleanup(control.stop)
 
     def test_legacy_published_cas_cold_read_detaches_surviving_descriptor(self):
-        writer = historical_module(
+        writer = bind_historical_sidecar_contract(historical_module(
             self.root, LEGACY_CAS, "bilqis_mlx/runtime/_custody/bamf_bundle/codec.py",
             "bilqis_mlx.runtime.bamf_bundle.legacy_cas_fixture",
-            "d92258e08b398a839ac23f73491abc36c11ee29795021da1e8aba39e040f398b")
+            "d92258e08b398a839ac23f73491abc36c11ee29795021da1e8aba39e040f398b"))
         adopter = historical_module(
             self.root, LEGACY_CAS, "bilqis_mlx/_data_plane/file_objects.py",
             "bilqis_mlx._data_plane.legacy_cas_fixture",
@@ -83,13 +115,11 @@ class PreCasCompatibilityTests(DataPlaneCase):
             return record
 
         try:
+            bundle = run / "historical-bundle"
             with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"), \
-                    patch.object(publication, "save_bamf_bundle", writer.save_bamf_bundle), \
-                    patch.object(publication, "load_bamf_bundle", writer.load_bamf_bundle), \
                     patch.object(DataPlane, "adopt_file_object", adopter.DataPlaneFileObjectMixin.adopt_file_object), \
                     patch.object(mlx_checkpoint, "save_bamf_state_payload", side_effect=retained_descriptor):
-                pointer = publish_candidate(run, source)
-            bundle = run / pointer["bundle"]
+                manifest = writer.save_bamf_bundle(source, bundle, reserve_gib=0.)
             with shape_patch():
                 expected = numerical_observation(writer.load_bamf_bundle(bundle))
             before = {path.name: path.read_bytes() for path in bundle.iterdir()}
@@ -101,17 +131,22 @@ class PreCasCompatibilityTests(DataPlaneCase):
             with shape_patch():
                 with patch.object(codec, "assert_headroom", side_effect=RuntimeError("reserve")):
                     with self.assertRaisesRegex(RuntimeError, "reserve"):
-                        load_bamf_generation(run / "bamf-state.json")
+                        codec.load_bamf_bundle(
+                            bundle, expected_manifest_sha256=manifest["manifest_sha256"])
                 self.assertEqual(target.stat().st_ino, original_inode)
                 self.assertFalse(plane.owns_file_object(digest))
-                loaded = load_bamf_generation(run / "bamf-state.json")
+                loaded = codec.load_bamf_bundle(
+                    bundle, expected_manifest_sha256=manifest["manifest_sha256"])
                 self.assertTrue(plane.owns_file_object(digest))
                 self.assertNotEqual(target.stat().st_ino, original_inode)
                 descriptors[0].seek(0)
                 descriptors[0].write(b"old caller mutation")
                 descriptors[0].flush()
                 self.assertEqual(numerical_observation(loaded), expected)
-                self.assertEqual(numerical_observation(load_bamf_generation(run / "bamf-state.json")), expected)
+                self.assertEqual(
+                    numerical_observation(codec.load_bamf_bundle(
+                        bundle, expected_manifest_sha256=manifest["manifest_sha256"])),
+                    expected)
             self.assertEqual({path.name: path.read_bytes() for path in bundle.iterdir()}, before)
         finally:
             for descriptor in descriptors:
@@ -129,30 +164,33 @@ class PreCasCompatibilityTests(DataPlaneCase):
             "bilqis_mlx.runtime.bamf_bundle.pre_cas_fixture", writer_path)
         writer = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(writer)
-        run = self.root / "run"
+        bind_historical_sidecar_contract(writer)
+        bundle = self.root / "historical-bundle"
         initial = candidate(parent_state())
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"), \
-                patch.object(publication, "save_bamf_bundle", side_effect=writer.save_bamf_bundle):
-            pointer = publish_candidate(run, initial)
-        bundle = run / pointer["bundle"]
+        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            manifest_record = writer.save_bamf_bundle(initial, bundle, reserve_gib=0.)
         with shape_patch():
-            expected = numerical_observation(load_bamf_generation(run / "bamf-state.json"))
+            expected = numerical_observation(codec.load_bamf_bundle(
+                bundle, expected_manifest_sha256=manifest_record["manifest_sha256"]))
         before = {path.name: path.read_bytes() for path in bundle.iterdir()}
         manifest = json.loads(before["manifest.json"])
         self.assertNotIn("object_sha256", manifest["tensors"])
         self.assertIn(manifest["tensors"]["filename"], before)
         with shape_patch():
             self.assertEqual(numerical_observation(writer.load_bamf_bundle(bundle)), expected)
-            self.assertEqual(numerical_observation(load_bamf_generation(run / "bamf-state.json")), expected)
+            self.assertEqual(
+                numerical_observation(codec.load_bamf_bundle(
+                    bundle, expected_manifest_sha256=manifest_record["manifest_sha256"])),
+                expected)
         script = "\n".join((
             "import json,sys",
-            "from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation",
+            "from bilqis_mlx.runtime.bamf_bundle import load_bamf_bundle",
             "from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch",
             "from bilqis_mlx.runtime.tests.custody.bamf_bundle.contracts.test_pre_cas_compatibility import numerical_observation",
-            "with shape_patch(): student=load_bamf_generation(sys.argv[1],publish_missing_outbox=False)",
+            "with shape_patch(): student=load_bamf_bundle(sys.argv[1])",
             "print(json.dumps(numerical_observation(student),sort_keys=True))",
         ))
-        result = subprocess.run([sys.executable, "-c", script, str(run / "bamf-state.json")],
+        result = subprocess.run([sys.executable, "-c", script, str(bundle)],
                                 check=True, capture_output=True, text=True)
         self.assertEqual(json.loads(result.stdout), expected)
         self.assertEqual({path.name: path.read_bytes() for path in bundle.iterdir()}, before)

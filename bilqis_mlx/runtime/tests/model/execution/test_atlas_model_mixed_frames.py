@@ -14,9 +14,8 @@ from bilqis_mlx.runtime.atlas_attention import (
 )
 from bilqis_mlx.runtime.atlas_refinement import refinement_parameter_view
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
-from bilqis_mlx.runtime.backbone_group_numerical import (
-    _norm, run_backbone_group_numerical,
-)
+from bilqis_mlx.runtime.backbone_group_numerical import run_backbone_group_numerical
+from bilqis_mlx.runtime.backbone_group_trace import _norm
 from bilqis_mlx.runtime.backbone_source_bridge import compute_compiled_h0
 from bilqis_mlx.runtime.block_attnres import depth_parameter_view
 from bilqis_mlx.runtime.model_topology_v2 import (

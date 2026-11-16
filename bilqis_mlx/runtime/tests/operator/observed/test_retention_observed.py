@@ -8,6 +8,10 @@ PARENT = 'a' * 64
 CANDIDATE = 'b' * 64
 
 
+def _progress(events):
+    return tuple(event for event in events if 'retention_completed' in event)
+
+
 class RetentionObservationTests(unittest.TestCase):
     def test_foundation_rejection_reports_each_completed_assessment(self):
         parent, candidate, target, policy, cohorts = _screen_inputs(protected_loss=12)
@@ -15,13 +19,14 @@ class RetentionObservationTests(unittest.TestCase):
         events = []
         result = evaluate_retention_candidate(parent, candidate, target, policy, cohorts, PARENT, CANDIDATE, observer=events.append)
         self.assertEqual(result.reason, 'PROTECTED_CAPABILITY_REGRESSION')
-        self.assertEqual([(e['retention_completed'], e['retention_total'], e['retention_role']) for e in events],
+        progress = _progress(events)
+        self.assertEqual([(e['retention_completed'], e['retention_total'], e['retention_role']) for e in progress],
                          [(0, 4, 'parent'), (1, 4, 'parent'),
                           (1, 4, 'candidate'), (2, 4, 'candidate'),
                           (2, 4, 'candidate'), (3, 4, 'candidate'),
                           (3, 4, 'candidate'), (4, 4, 'candidate')])
         self.assertEqual(
-            [e['retention_subject'] for e in events],
+            [e['retention_subject'] for e in progress],
             ['fixed_school', 'fixed_school', 'protected', 'protected',
              'other', 'other', 'target', 'target'])
 
@@ -52,10 +57,11 @@ class RetentionObservationTests(unittest.TestCase):
             parent, candidate, target, policy, fixed, PARENT, CANDIDATE,
             parent_assessment=cached, observer=events.append)
         self.assertEqual(result.reason, 'PROTECTED_CAPABILITY_REGRESSION')
-        self.assertEqual([(e['retention_completed'], e['retention_total'], e['retention_role']) for e in events],
+        progress = _progress(events)
+        self.assertEqual([(e['retention_completed'], e['retention_total'], e['retention_role']) for e in progress],
                          [(0, 3, 'candidate'), (1, 3, 'candidate'),
                           (1, 3, 'candidate'), (2, 3, 'candidate'),
                           (2, 3, 'candidate'), (3, 3, 'candidate')])
         self.assertEqual(
-            [e['retention_subject'] for e in events],
+            [e['retention_subject'] for e in progress],
             ['protected', 'protected', 'other', 'other', 'target', 'target'])

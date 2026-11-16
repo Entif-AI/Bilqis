@@ -15,7 +15,8 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 LEGACY_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v1"
 PREVIOUS_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
-DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v3"
+PREVIOUS_BASELINE_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v3"
+DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v4"
 ACCEPTED_DECISION = "PROVISIONAL"
 REJECTED_DECISION = "REJECT"
 ACCEPTING_REASON = "PAIRED_SCREEN_WITHIN_BUDGET"
@@ -23,10 +24,15 @@ _V2_DECISION_FIELDS = (
     "decision", "reason", "parent_generation", "candidate_generation",
     "evidence_sha256", "policy_sha256", "schema_version",
 )
-_DECISION_FIELDS = (
+_V3_DECISION_FIELDS = (
     "decision", "reason", "parent_generation", "candidate_generation",
     "evidence_sha256", "policy_sha256", "blocking_capability",
     "blocking_scope", "baseline_coverage", "schema_version",
+)
+_DECISION_FIELDS = (
+    *_V3_DECISION_FIELDS[:-1],
+    "evaluated_capability_ids", "retention_protection_plan_sha256",
+    "broad_certification_trigger", "schema_version",
 )
 
 
@@ -99,6 +105,9 @@ class CandidateRetentionDecision:
     blocking_capability: str | None = None
     blocking_scope: str | None = None
     baseline_coverage: dict | None = None
+    evaluated_capability_ids: tuple[str, ...] = ()
+    retention_protection_plan_sha256: str | None = None
+    broad_certification_trigger: str | None = None
     schema_version: str = DECISION_SCHEMA
 
     def __post_init__(self) -> None:
@@ -118,6 +127,18 @@ class CandidateRetentionDecision:
                          or not self.blocking_scope))
                 or (self.baseline_coverage is not None
                     and not _valid_baseline_coverage(self.baseline_coverage))
+                or not isinstance(self.evaluated_capability_ids, tuple)
+                or any(not isinstance(item, str) or not item
+                       for item in self.evaluated_capability_ids)
+                or len(set(self.evaluated_capability_ids))
+                != len(self.evaluated_capability_ids)
+                or (self.retention_protection_plan_sha256 is not None
+                    and not _digest(self.retention_protection_plan_sha256))
+                or (self.broad_certification_trigger is not None
+                    and (not isinstance(self.broad_certification_trigger, str)
+                         or not self.broad_certification_trigger))
+                or (self.retention_protection_plan_sha256 is not None
+                    and self.broad_certification_trigger is not None)
                 or self.schema_version != DECISION_SCHEMA):
             _invalid()
 
@@ -143,6 +164,8 @@ class CandidateRetentionDecision:
         schema = record.get("schema_version")
         names = (_LEGACY_FIELDS if schema == LEGACY_DECISION_SCHEMA
                  else _V2_DECISION_FIELDS if schema == PREVIOUS_DECISION_SCHEMA
+                 else _V3_DECISION_FIELDS
+                 if schema == PREVIOUS_BASELINE_DECISION_SCHEMA
                  else _DECISION_FIELDS if schema == DECISION_SCHEMA else ())
         if not names or set(record) != set(names) | {"decision_sha256"}:
             _invalid()
@@ -159,7 +182,7 @@ class CandidateRetentionDecision:
                 "parent_generation", "candidate_generation",
                 "evidence_sha256", "policy_sha256")):
             _invalid()
-        if (names == _DECISION_FIELDS
+        if (names in {_V3_DECISION_FIELDS, _DECISION_FIELDS}
                 and ((record["blocking_capability"] is not None
                       and (not isinstance(record["blocking_capability"], str)
                            or not record["blocking_capability"]))
@@ -169,6 +192,19 @@ class CandidateRetentionDecision:
                      or (record["baseline_coverage"] is not None
                          and not _valid_baseline_coverage(record["baseline_coverage"])))):
             _invalid()
+        if names == _DECISION_FIELDS:
+            evaluated = record["evaluated_capability_ids"]
+            if (not isinstance(evaluated, (list, tuple))
+                    or any(not isinstance(item, str) or not item for item in evaluated)
+                    or len(set(evaluated)) != len(evaluated)
+                    or (record["retention_protection_plan_sha256"] is not None
+                        and not _digest(record["retention_protection_plan_sha256"]))
+                    or (record["broad_certification_trigger"] is not None
+                        and (not isinstance(record["broad_certification_trigger"], str)
+                             or not record["broad_certification_trigger"]))
+                    or (record["retention_protection_plan_sha256"] is not None
+                        and record["broad_certification_trigger"] is not None)):
+                _invalid()
         payload = {name: record[name] for name in names}
         if record["decision_sha256"] != hashlib.sha256(_canonical(payload)).hexdigest():
             _invalid()
@@ -259,6 +295,10 @@ def _make_factory_retention_issuer(raw_issue):
             ("baseline_coverage", (
                 result.baseline_coverage.to_record()
                 if result.baseline_coverage is not None else None)),
+            ("evaluated_capability_ids", result.evaluated_capability_ids),
+            ("retention_protection_plan_sha256",
+             result.retention_protection_plan_sha256),
+            ("broad_certification_trigger", result.broad_certification_trigger),
             ("schema_version", DECISION_SCHEMA),
         ), generation_authority_sha256=(
             owner_evaluation.candidate_generation_authority_sha256),

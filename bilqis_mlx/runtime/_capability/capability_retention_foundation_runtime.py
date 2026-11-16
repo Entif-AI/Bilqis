@@ -112,11 +112,24 @@ def _fixed_school_score_context(
     return fixed_pair, census, coverage, measured, measured_set, scores, target_delta
 
 
+def _decision_metadata(
+        coverage, evaluated_capability_ids,
+        retention_protection_plan_sha256, broad_certification_trigger):
+    return {
+        "baseline_coverage": coverage,
+        "evaluated_capability_ids": evaluated_capability_ids,
+        "retention_protection_plan_sha256": retention_protection_plan_sha256,
+        "broad_certification_trigger": broad_certification_trigger,
+    }
+
+
 def final_fixed_school_decision(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts, observer=None):
+        candidate_results, candidate_contracts, observer=None, *, ordinary=False,
+        evaluated_capability_ids=(), retention_protection_plan_sha256=None,
+        broad_certification_trigger=None):
     (fixed_pair, census, coverage, measured, measured_set, scores,
      target_delta) = _fixed_school_score_context(
         target_capability, references, policy, fixed,
@@ -124,16 +137,18 @@ def final_fixed_school_decision(
         parent_results, parent_contracts, candidate_results, candidate_contracts,
         observer)
 
-    def net(capabilities):
-        return sum(fixed_pair.delta(capability) for capability in capabilities)
-    if target_delta < 0 and target_capability in measured_set:
+    target_measured = target_capability in measured_set
+    metadata = _decision_metadata(
+        coverage, evaluated_capability_ids,
+        retention_protection_plan_sha256, broad_certification_trigger)
+    if target_delta < 0 and target_measured:
         return Decision(
             DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",
             parent_generation, candidate_generation,
             evidence_digest(pair_digests, target_capability), policy.digest(),
-            blocking_capability=target_capability,
-            baseline_coverage=coverage)
-    if target_delta <= 0:
+            blocking_capability=target_capability, **metadata)
+    blocking_scope = None
+    if target_delta <= 0 and target_measured:
         reason = "NO_MEASURABLE_TARGET_GAIN"
     else:
         protected = tuple(references)
@@ -146,37 +161,40 @@ def final_fixed_school_decision(
                 DecisionStatus.REJECT, "PROTECTED_CAPABILITY_REGRESSION",
                 parent_generation, candidate_generation,
                 evidence_digest(pair_digests, losses[0]), policy.digest(),
-                blocking_capability=losses[0], baseline_coverage=coverage)
+                blocking_capability=losses[0], **metadata)
 
-        lesson = tuple(
-            capability for capability in measured
-            if census[capability] == target_group)
-        if net(lesson) < 0 and _mastery_debt_utility(scores, lesson)[0] <= 0:
-            reason = "FIXED_LESSON_GRADE_REGRESSION"
-            blocking_scope = "fixed_group:" + target_group
-        else:
-            blocking_scope = None
-            for group in policy.protected_groups:
-                grade = tuple(capability for capability in measured
-                              if census[capability] == group)
-                if (grade and net(grade) < 0
-                        and _mastery_debt_utility(scores, grade)[0] <= 0):
-                    reason = "ACTIVE_SCHOOL_GRADE_REGRESSION"
-                    blocking_scope = "fixed_group:" + group
-                    break
-            if (reason == "PAIRED_SCREEN_WITHIN_BUDGET"
-                    and measured
-                    and net(measured) < 0
-                    and _mastery_debt_utility(scores, measured)[0] <= 0):
-                reason = "WHOLE_SCHOOL_NET_REGRESSION"
-                blocking_scope = "fixed_school"
+        if not ordinary:
+            def net(capabilities):
+                return sum(fixed_pair.delta(capability) for capability in capabilities)
+
+            lesson = tuple(
+                capability for capability in measured
+                if census[capability] == target_group)
+            if net(lesson) < 0 and _mastery_debt_utility(scores, lesson)[0] <= 0:
+                reason = "FIXED_LESSON_GRADE_REGRESSION"
+                blocking_scope = "fixed_group:" + target_group
+            else:
+                for group in policy.protected_groups:
+                    grade = tuple(capability for capability in measured
+                                  if census[capability] == group)
+                    if (grade and net(grade) < 0
+                            and _mastery_debt_utility(scores, grade)[0] <= 0):
+                        reason = "ACTIVE_SCHOOL_GRADE_REGRESSION"
+                        blocking_scope = "fixed_group:" + group
+                        break
+                if (reason == "PAIRED_SCREEN_WITHIN_BUDGET"
+                        and measured
+                        and net(measured) < 0
+                        and _mastery_debt_utility(scores, measured)[0] <= 0):
+                    reason = "WHOLE_SCHOOL_NET_REGRESSION"
+                    blocking_scope = "fixed_school"
     return Decision(
         DecisionStatus.ELIGIBLE if reason == "PAIRED_SCREEN_WITHIN_BUDGET"
         else DecisionStatus.REJECT,
         reason, parent_generation, candidate_generation,
         evidence_digest(pair_digests, None), policy.digest(),
-        blocking_scope=(blocking_scope if target_delta > 0 else None),
-        baseline_coverage=coverage)
+        blocking_scope=blocking_scope,
+        **metadata)
 
 
 __all__ = ("final_fixed_school_decision", "observed_assessment", "parent_case_index")

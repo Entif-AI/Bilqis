@@ -1,6 +1,7 @@
 """Generation-zero retries authenticate exact state and recover durable custody."""
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -43,8 +44,16 @@ class GenerationZeroRetryTests(unittest.TestCase):
         prepared = self._prepare(run_seed=307)
         first = self._publish(prepared)
         before = json.loads((self.run / "bamf-state.json").read_text())
-        parameter = next(iter(prepared.candidate.retained_state.optimizer.parameters.values()))
-        parameter[0] += 1
+        state = prepared.candidate.retained_state
+        optimizer = state.optimizer
+        name, parameter = next(iter(optimizer.parameters.items()))
+        parameters = dict(optimizer.parameters)
+        parameters[name] = parameter + 1
+        tampered_state = replace(
+            state, optimizer=replace(optimizer, parameters=parameters))
+        object.__setattr__(
+            prepared, "candidate",
+            replace(prepared.candidate, retained_state=tampered_state))
 
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"), \
                 self.assertRaises(BilqisError) as failure:

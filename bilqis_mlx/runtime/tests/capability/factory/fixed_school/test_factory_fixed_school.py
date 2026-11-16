@@ -158,7 +158,7 @@ class BamfFactoryFixedSchoolTests(BamfFirstStudentCase):
                 expected_parent_manifest_sha256=cache.accepted_manifest_sha256)
         self.assertTrue(recovered.rows)
 
-    def test_public_c05_candidate_route_uses_bamf_native_fixed_school_without_state(self):
+    def test_public_c05_candidate_route_does_not_materialize_broad_fixed_school(self):
         target = self.root / "c05-native-public-candidate"
         self.preflight(target)
         from bilqis_mlx.factory.tests.test_executable_release import _answers
@@ -180,6 +180,10 @@ class BamfFactoryFixedSchoolTests(BamfFirstStudentCase):
                 graph=self.graph, source_root=None)
             parent = load_accepted_generation(target)
             cache = bind_accepted_execution_cache(target)
+            retention_owner.bind_current_retention_protection_plan(
+                context, parent, cache)
+            retention_owner.bind_current_retention_source_rows(
+                context, cache, self.release.execution_plan.capabilities[0].capability_id)
         transaction = begin_candidate(parent.retained_state)
         target_capability = self.release.execution_plan.capabilities[0].capability_id
         sentinel = object()
@@ -189,7 +193,9 @@ class BamfFactoryFixedSchoolTests(BamfFirstStudentCase):
                 return_value=((), ())), patch.object(
                 retention_owner, "_candidate_from_live_parent",
                 return_value=(parent, parent, parent.retained_state, cache)), patch.object(
-                retention_owner, "_instruments",
+                retention_owner, "_fixed_school_instruments",
+                side_effect=AssertionError("ordinary candidate entered broad fixed school")), patch.object(
+                retention_owner, "_local_retention_instruments",
                 return_value=(object(),)), patch.object(
                 retention_owner, "_foundation_retention_evaluation",
                 return_value=sentinel), shape_patch():
@@ -199,7 +205,7 @@ class BamfFactoryFixedSchoolTests(BamfFirstStudentCase):
 
         self.assertIs(result, sentinel)
         self.assertFalse((target / "state.json").exists())
-        self.assertTrue((
+        self.assertFalse((
             target / "c05-fixed-school" / f"{parent.run_identity.digest}.json"
         ).is_file())
 
@@ -238,14 +244,14 @@ class BamfFactoryFixedSchoolTests(BamfFirstStudentCase):
         target_capability = self.release.execution_plan.capabilities[0].capability_id
         sentinel = object()
         captured = {}
-        def foundation(*args):
+        def foundation(*args, **_kwargs):
             captured["training"] = args[7]
             return sentinel
 
         with patch.object(
                 retention_owner, "_instruments",
                 return_value=(object(),)), patch.object(
-                retention_owner, "_foundation_retention_evaluation",
+                retention_owner, "_broad_foundation_retention_evaluation",
                 side_effect=foundation), shape_patch():
             result = retention_owner.evaluate_factory_package_import(
                 context, transaction, "artifact", target_capability,
