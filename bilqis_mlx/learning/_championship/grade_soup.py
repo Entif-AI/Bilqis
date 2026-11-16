@@ -17,7 +17,7 @@ import uuid
 from bilqis_mlx.backup import digest_file
 from bilqis_mlx.data_plane import verify_file_digest
 from bilqis_mlx.runtime.disk import assert_headroom
-from .championship_witnesses import maxed_role
+from .championship_witnesses import championship_role_qualified, maxed_role
 
 
 SCHEMA = "bilqis.mlx.frozen-grade-soup/v1"
@@ -40,6 +40,8 @@ def grade_soup_recipe(frontier: dict, grade: str,
     for entry in frontier.values():
         capability = entry.get("capability")
         if capability not in eligible:
+            continue
+        if not championship_role_qualified(entry):
             continue
         breadth, mastered = entry.get("breadth"), entry.get("perfect_capabilities")
         pointer = entry["checkpoint"]

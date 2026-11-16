@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 274,
-  "legacy_raw_raise_count": 2095,
+  "legacy_raw_file_count": 285,
+  "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -7444,6 +7444,405 @@
       "path": "bilqis_mlx/learning/_championship/mentor_epoch.py"
     },
     {
+      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH'",
+      "path": "bilqis_mlx/learning/_championship_runtime/exams.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/governance.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_BATTERY_QUESTION_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_BATTERY_QUESTION_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/matches.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT",
+      "count": 2,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/migration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/migration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
+      "path": "bilqis_mlx/learning/_championship_runtime/migration.py"
+    },
+    {
+      "code_hint": "unreachable",
+      "count": 1,
+      "exception": "AssertionError",
+      "expression": "'unreachable'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_RECURSION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_RECURSION'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RECURSION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RECURSION'",
+      "path": "bilqis_mlx/learning/_championship_runtime/orchestration.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EARNING_GRAPH_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EARNING_GRAPH_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EARNING_SCORE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EARNING_SCORE_DRIFT'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED'",
+      "path": "bilqis_mlx/learning/_championship_runtime/witnesses.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/competition.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/competition.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING'",
+      "path": "bilqis_mlx/learning/_epoch_championships/competition.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING'",
+      "path": "bilqis_mlx/learning/_epoch_championships/fanout.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/qualification.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/receipts.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_EPOCH_INVALID_GRADE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_EPOCH_INVALID_GRADE'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_REBASE_INVALID_GENERATION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_REBASE_INVALID_GENERATION'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
+      "path": "bilqis_mlx/learning/_epoch_championships/state.py"
+    },
+    {
       "code_hint": "LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT",
       "count": 1,
       "exception": "ValueError",
@@ -7925,405 +8324,6 @@
       "exception": "ValueError",
       "expression": "'TEACHER_EMPTY_BALLOT'",
       "path": "bilqis_mlx/learning/_teaching/teacher_votes.py"
-    },
-    {
-      "code_hint": "unreachable",
-      "count": 1,
-      "exception": "AssertionError",
-      "expression": "'unreachable'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_BATTERY_BATCH_DUPLICATE_QUESTION'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_BATTERY_CHECKPOINT_INCOMPARABLE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_BATTERY_QUESTION_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_BATTERY_QUESTION_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EARNING_GRAPH_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EARNING_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EARNING_SCORE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EARNING_SCORE_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_UNSAFE_INCUMBENT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_INCUMBENT_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_RECURSION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_RECURSION'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_INCOMPARABLE'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_PANEL_UNMEASURED'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RECURSION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RECURSION'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HUMAN_TRAINER_INCUMBENT_CHECKPOINT_DRIFT'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HUMAN_TRAINER_INCUMBENT_UNSAFE_PATH'",
-      "path": "bilqis_mlx/learning/championship_runtime.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_INVALID_GRADE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_INVALID_GRADE'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_REBASE_INVALID_GENERATION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_REBASE_INVALID_GENERATION'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_REBASE_PREDATES_PREVIOUS_GRADUATE'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_RESET_INVALID_STUDENT_OR_GENERATION'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_CURRENT_REPLAY_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_INCUMBENT_GATE_MISSING'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
-    },
-    {
-      "code_hint": "CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT'",
-      "path": "bilqis_mlx/learning/epoch_championships.py"
     },
     {
       "code_hint": "CHAMPION_CONFIDENCE_BUNDLE_DRIFT",
@@ -10552,6 +10552,55 @@
       "path": "bilqis_mlx/runtime/_operator/admission.py"
     },
     {
+      "code_hint": "DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX'",
+      "path": "bilqis_mlx/runtime/_release_adoption/catalog.py"
+    },
+    {
+      "code_hint": "FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH'",
+      "path": "bilqis_mlx/runtime/_release_adoption/core.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING'",
+      "path": "bilqis_mlx/runtime/_release_adoption/core.py"
+    },
+    {
+      "code_hint": "FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED'",
+      "path": "bilqis_mlx/runtime/_release_adoption/prepared.py"
+    },
+    {
       "code_hint": "AUTONOMY_SOURCE_BUILDER_CHANGED_DURING_EXTRACTION",
       "count": 1,
       "exception": "ValueError",
@@ -11201,55 +11250,6 @@
       "exception": "ValueError",
       "expression": "'AUTONOMY_TEACHING_DURABLE_RECEIPT_MISSING'",
       "path": "bilqis_mlx/runtime/operator_session/operator_visit.py"
-    },
-    {
-      "code_hint": "DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING'",
-      "path": "bilqis_mlx/runtime/release_adoption.py"
     },
     {
       "code_hint": "disposable interruption before pointer publication",

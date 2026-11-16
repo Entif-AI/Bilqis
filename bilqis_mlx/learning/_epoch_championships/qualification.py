@@ -1,0 +1,109 @@
+"""Qualification and comparable-score helpers for championship epochs."""
+from __future__ import annotations
+
+from bilqis_mlx.learning.championship_witnesses import championship_threshold_met
+from bilqis_mlx.learning.mentor_epoch import _pointer
+
+from .receipts import _same_current_context
+from .state import _grade_caps, _settled_match
+
+
+def _challenge_grade(epoch: dict, grades: dict, challenger_exam: dict) -> str:
+    grade = challenger_exam.get("challenge_grade", epoch.get("introduced_grade"))
+    if grade not in grades:
+        raise ValueError("CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID")
+    return grade
+
+
+def _exam_matches_capability(challenger: dict, incumbent: dict,
+                             capability: str) -> None:
+    common = ("cohort_sha256", "rubric_sha256", "assessment_scope_sha256",
+              "source_graph_sha256", "source_oracle_sha256")
+    if (not isinstance(incumbent, dict) or
+            any(incumbent.get(field) != challenger.get(field) for field in common) or
+            incumbent.get("cohort_rubric_sha256", incumbent.get("rubric_sha256")) !=
+            challenger.get("cohort_rubric_sha256", challenger.get("rubric_sha256")) or
+            capability not in incumbent.get("scores", {}) or
+            capability not in challenger.get("scores", {}) or
+            incumbent["scores"][capability].get("total") !=
+            challenger["scores"][capability].get("total")):
+        raise ValueError("CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED")
+
+
+def needed_incumbents(epoch: dict, *, grades: dict,
+                      challenger_exam: dict) -> dict:
+    """Load only title-grade owners needed for primary and one-hop fan-out screens."""
+    roles = epoch.get("active_roles", {})
+    scores = challenger_exam["scores"]
+    challenger = _pointer(challenger_exam["checkpoint"])
+    grade = _challenge_grade(epoch, grades, challenger_exam)
+    needed = {}
+    for cap in _grade_caps(grades, grade):
+        if cap not in scores:
+            continue
+        prior = roles.get(cap)
+        if prior is None:
+            continue
+        if prior.get("origin_grade") != grade:
+            continue
+        pointer = _pointer(prior["checkpoint"])
+        if pointer["sha256"] == challenger["sha256"]:
+            continue
+        if _settled_match(epoch, cap, pointer["sha256"], challenger["sha256"]):
+            continue
+        needed[pointer["sha256"]] = pointer
+    return needed
+
+
+def _incumbent_score(capability: str, prior: dict, challenger_exam: dict,
+                     incumbent_exams: dict) -> dict:
+    prior_pointer = _pointer(prior["checkpoint"])
+    incumbent = incumbent_exams.get(prior_pointer["sha256"])
+    if incumbent is None:
+        raise ValueError("CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED")
+    _exam_matches_capability(challenger_exam, incumbent, capability)
+    return incumbent["scores"][capability]
+
+
+def _primary_qualification(candidate: dict, incumbent: dict) -> str | None:
+    if candidate["total"] != incumbent["total"]:
+        raise ValueError("CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT")
+    if candidate["correct"] > incumbent["correct"]:
+        return "STRICT_GAIN"
+    if candidate["correct"] == candidate["total"]:
+        return "CAPABILITY_MAX"
+    return None
+
+
+def _initial_title_threshold_met(score: dict) -> bool:
+    """Require capability-local proficiency strictly above 90%."""
+    return championship_threshold_met(score)
+
+
+def _fanout_scores(capability: str, prior: dict, challenger: dict,
+                   screen: dict) -> tuple[dict, dict]:
+    incumbent = _pointer(prior["checkpoint"])
+    contender = _pointer(challenger["checkpoint"])
+    if (not isinstance(screen, dict) or
+            screen.get("incumbent_checkpoint_sha256") != incumbent["sha256"] or
+            screen.get("challenger_checkpoint_sha256") != contender["sha256"]):
+        raise ValueError("CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT")
+    incumbent_exam = screen.get("incumbent_exam")
+    challenger_exam = screen.get("challenger_exam")
+    _same_current_context(challenger, incumbent_exam, capability)
+    _same_current_context(challenger, challenger_exam, capability)
+    if (_pointer(incumbent_exam["checkpoint"])["sha256"] != incumbent["sha256"] or
+            _pointer(challenger_exam["checkpoint"])["sha256"] != contender["sha256"]):
+        raise ValueError("CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT")
+    before = incumbent_exam["scores"][capability]
+    after = challenger_exam["scores"][capability]
+    if (not isinstance(before, dict) or not isinstance(after, dict) or
+            type(before.get("correct")) is not int or
+            type(before.get("total")) is not int or
+            type(after.get("correct")) is not int or
+            type(after.get("total")) is not int or
+            before["total"] != after["total"] or before["total"] < 1 or
+            not 0 <= before["correct"] <= before["total"] or
+            not 0 <= after["correct"] <= after["total"]):
+        raise ValueError("CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT")
+    return before, after

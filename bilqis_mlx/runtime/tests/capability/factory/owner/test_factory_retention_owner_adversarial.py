@@ -91,6 +91,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         fixed = SimpleNamespace(rows=({"id": "fixed"},), seed=7)
         fresh = Mock(side_effect=AssertionError(
             "foundation acceptance constructed measure-only fresh rows"))
+        policy_factory = Mock(return_value=object())
         decision = Decision(
             DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
             "a" * 64, "b" * 64, "c" * 64, "d" * 64)
@@ -120,7 +121,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
                     _instruments=Mock(return_value=(SimpleNamespace(case=SimpleNamespace()),)),
                     case_census_digest=Mock(return_value="e" * 64),
                     _cohort=Mock(return_value=object()),
-                    FoundationRetentionPolicy=Mock(return_value=object()),
+                    FoundationRetentionPolicy=policy_factory,
                     factory_complete_solver=Mock(side_effect=((object(), "b" * 64),
                                                               (object(), "c" * 64))),
                     factory_parent_assessment_identity=Mock(return_value=object()),
@@ -138,6 +139,9 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(issued.candidate_generation, "d" * 64)
         self.assertEqual(result.parent_assessment_cache.assessment_sha256, "2" * 64)
         self.assertEqual(result.candidate_generation_authority_sha256, "f" * 64)
+        self.assertEqual(
+            policy_factory.call_args.args[2], (),
+            "a virgin accepted parent must not fabricate protected capability baselines")
         retained = SimpleNamespace(optimizer_step=1, step_proofs=())
         with patch.object(acceptance_owner, "candidate_identity_digest",
                           return_value="d" * 64), self.assertRaises(BilqisError):

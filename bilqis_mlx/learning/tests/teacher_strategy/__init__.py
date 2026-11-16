@@ -1,0 +1,1 @@
+"""Teacher strategy test support."""
