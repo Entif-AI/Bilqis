@@ -62,6 +62,102 @@ def _stagnation_feedback(teacher: dict, capability: str, policy_key: str,
     return inherited_exploration, selection_reward
 
 
+def _retention_reward(channel, *, capability, phase, curriculum_scope,
+                      policy_key, decision, local_gain):
+    relative_loss = max(
+        (max(0., -value)
+         for key, value in decision["deltas"].items()
+         if key in decision["protected_capabilities"]),
+        default=0.,
+    )
+    reward = local_gain - relative_loss * (1 if phase == "MAIN" else 2)
+    if decision["decision"] == "REJECT":
+        reward = min(reward, -relative_loss, -0.05)
+    if (decision["decision"] == "REJECT" or
+            decision.get("worst_protected_loss", 0) >= 1):
+        pattern = {
+            "capability": capability, "phase": phase,
+            "curriculum_scope": curriculum_scope, "policy": policy_key,
+            "delta": decision["deltas"],
+            "paired_scores_sha256": decision["paired_scores_sha256"],
+            "source_cohort_sha256": decision["source_cohort_sha256"],
+            "outcome": ("REJECTED_UPDATE"
+                        if decision["decision"] == "REJECT"
+                        else "ACCEPTED_WITH_MEASURED_PROTECTED_LOSS"),
+        }
+        entries = channel["negative_archetypes"]
+        if not any(
+                item["paired_scores_sha256"] == pattern["paired_scores_sha256"] and
+                item.get("source_cohort_sha256") == pattern["source_cohort_sha256"]
+                for item in entries):
+            entries.append(pattern)
+            del entries[:-MAX_FAILURE_ARCHETYPES]
+    return reward
+
+
+def _update_capability_stagnation(capability_stagnation, decision):
+    if decision["decision"] == "REJECT":
+        capability_stagnation["rejection_streak"] += 1
+        capability_stagnation["attempts_since_retained"] += 1
+        capability_stagnation["total_rejections"] += 1
+        reason = decision.get("reason")
+        if not isinstance(reason, str) or not reason:
+            raise ValueError(
+                LearningExperimentError.REJECTION_REASON_INVALID.value)
+        reasons = capability_stagnation["current_rejection_reasons"]
+        reasons[reason] = reasons.get(reason, 0) + 1
+        capability_stagnation["consecutive_interference_rejections"] = (
+            0 if reason == "NO_MEASURABLE_TARGET_GAIN"
+            else capability_stagnation["consecutive_interference_rejections"] + 1)
+    else:
+        capability_stagnation["rejection_streak"] = 0
+        capability_stagnation["consecutive_interference_rejections"] = 0
+        capability_stagnation["attempts_since_retained"] = 0
+        capability_stagnation["total_retained"] += 1
+        capability_stagnation["current_rejection_reasons"] = {}
+
+
+def _record_context_metrics(record, diagnostic_key, decision, reward,
+                            action_record, no_target_gain):
+    record["trials"] += 1
+    record["reward_sum"] += reward
+    record["latest"] = reward
+    record["last_plasticity_active"] = bool(
+        (decision.get("plasticity_escape") or {}).get("active"))
+    diagnostic = record.setdefault("diagnostic_stats", {}).setdefault(
+        diagnostic_key,
+        {"trials": 0, "reward_sum": 0., "unsafe": 0, "retained": 0},
+    )
+    diagnostic["trials"] += 1
+    diagnostic["reward_sum"] += reward
+    diagnostic["unsafe" if decision["decision"] == "REJECT" else "retained"] += 1
+    _record_realized_action_outcome(
+        action_record, rejected=decision["decision"] == "REJECT",
+        no_target_gain=no_target_gain, reward=reward,
+        diagnostic_key=diagnostic_key)
+    strain = decision.get("matrix_strain") or {}
+    if strain.get("status") == "MEASURED":
+        matrices = strain["matrices"]
+        record["latest_matrix_strain"] = {
+            "best_checkpoint_sha256": strain["best_checkpoint_sha256"],
+            "tensor_count": len(matrices),
+            "mean_delta_best": sum(
+                item["delta_best_mean_sq"] for item in matrices.values()) /
+                len(matrices),
+            "mean_delta_start": sum(
+                item["delta_start_mean_sq"] for item in matrices.values()) /
+                len(matrices),
+        }
+    replay = decision.get("fragile_replay") or {}
+    if replay.get("status") == "MEASURED":
+        record["latest_fragile_replay"] = {
+            "cohort_sha256": replay["cohort_sha256"],
+            "rows": replay["rows"],
+            "regressions": len(replay["regressions"]),
+            "repaired": replay["repaired"],
+        }
+
+
 def observe_context(teacher: dict, *, capability: str, phase: str,
                     policy_key: str, decision: dict, local_gain: float,
                     curriculum_scope: str = "",
@@ -92,53 +188,15 @@ def observe_context(teacher: dict, *, capability: str, phase: str,
         channel, capability, curriculum_scope, stagnation_key)
     capability_stagnation = _capability_stagnation_record(
         channel, capability, curriculum_scope)
-    # Normalized worst-case retention cost stops many small wins concealing
-    # a substantial single-capability loss. Provisional experimental metric.
-    relative_loss = max((max(0., -v) for k, v in decision["deltas"].items()
-                         if k in decision["protected_capabilities"]), default=0.)
-    # Recovery is supposed to retain earlier foundations. Penalize measured
-    # interference more heavily there, while introduction can still trade
-    # controlled temporary forgetting for acquisition of something new.
-    reward = local_gain - relative_loss * (1 if phase == "MAIN" else 2)
-    if decision["decision"] == "REJECT":
-        reward = min(reward, -relative_loss, -0.05)
-    if decision["decision"] == "REJECT" or decision.get("worst_protected_loss", 0) >= 1:
-        pattern = {"capability": capability, "phase": phase,
-                   "curriculum_scope": curriculum_scope,
-                   "policy": policy_key, "delta": decision["deltas"],
-                   "paired_scores_sha256": decision["paired_scores_sha256"],
-                   "source_cohort_sha256": decision["source_cohort_sha256"],
-                   "outcome": ("REJECTED_UPDATE" if decision["decision"] == "REJECT"
-                               else "ACCEPTED_WITH_MEASURED_PROTECTED_LOSS")}
-        # A provisional regression is observed interference, not proof of
-        # durable harm. Keep the distinction in each functional signature.
-        entries = channel["negative_archetypes"]
-        if not any(item["paired_scores_sha256"] == pattern["paired_scores_sha256"] and
-                   item.get("source_cohort_sha256") == pattern["source_cohort_sha256"]
-                   for item in entries):
-            entries.append(pattern)
-            del entries[:-MAX_FAILURE_ARCHETYPES]
+    reward = _retention_reward(
+        channel, capability=capability, phase=phase,
+        curriculum_scope=curriculum_scope, policy_key=policy_key,
+        decision=decision, local_gain=local_gain)
     if decision["decision"] == "REJECT":
         record["unsafe"] += 1
-        capability_stagnation["rejection_streak"] += 1
-        capability_stagnation["attempts_since_retained"] += 1
-        capability_stagnation["total_rejections"] += 1
-        reason = decision.get("reason")
-        if not isinstance(reason, str) or not reason:
-            raise ValueError(LearningExperimentError.REJECTION_REASON_INVALID.value)
-        reasons = capability_stagnation["current_rejection_reasons"]
-        reasons[reason] = reasons.get(reason, 0) + 1
-        if reason == "NO_MEASURABLE_TARGET_GAIN":
-            capability_stagnation["consecutive_interference_rejections"] = 0
-        else:
-            capability_stagnation["consecutive_interference_rejections"] += 1
     else:
         record["retained"] += 1
-        capability_stagnation["rejection_streak"] = 0
-        capability_stagnation["consecutive_interference_rejections"] = 0
-        capability_stagnation["attempts_since_retained"] = 0
-        capability_stagnation["total_retained"] += 1
-        capability_stagnation["current_rejection_reasons"] = {}
+    _update_capability_stagnation(capability_stagnation, decision)
     effective_policy = _effective_policy_key(teacher["strategies"][policy_key])
     _record_checkpoint_policy_outcome(
         channel, context_key,
@@ -157,45 +215,8 @@ def observe_context(teacher: dict, *, capability: str, phase: str,
     inherited_exploration, selection_reward = _stagnation_feedback(
         teacher, capability, policy_key, decision, reward, record,
         shared_stagnation)
-    record["trials"] += 1
-    record["reward_sum"] += reward
-    record["latest"] = reward
-    record["last_plasticity_active"] = bool(
-        (decision.get("plasticity_escape") or {}).get("active"))
-    diagnostic_stats = record.setdefault("diagnostic_stats", {})
-    diagnostic = diagnostic_stats.setdefault(diagnostic_key, {
-        "trials": 0, "reward_sum": 0., "unsafe": 0, "retained": 0,
-    })
-    diagnostic["trials"] += 1
-    diagnostic["reward_sum"] += reward
-    if decision["decision"] == "REJECT":
-        diagnostic["unsafe"] += 1
-    else:
-        diagnostic["retained"] += 1
-    _record_realized_action_outcome(
-        action_record, rejected=decision["decision"] == "REJECT",
-        no_target_gain=no_target_gain, reward=reward, diagnostic_key=diagnostic_key)
-    strain = decision.get("matrix_strain") or {}
-    if strain.get("status") == "MEASURED":
-        # A bounded teacher-observable geometric feature; outcome rewards
-        # still come only from actual source-scored capability probes.
-        matrices = strain["matrices"]
-        record["latest_matrix_strain"] = {
-            "best_checkpoint_sha256": strain["best_checkpoint_sha256"],
-            "tensor_count": len(matrices),
-            "mean_delta_best": sum(item["delta_best_mean_sq"]
-                                   for item in matrices.values()) / len(matrices),
-            "mean_delta_start": sum(item["delta_start_mean_sq"]
-                                    for item in matrices.values()) / len(matrices),
-        }
-    replay = decision.get("fragile_replay") or {}
-    if replay.get("status") == "MEASURED":
-        record["latest_fragile_replay"] = {
-            "cohort_sha256": replay["cohort_sha256"],
-            "rows": replay["rows"],
-            "regressions": len(replay["regressions"]),
-            "repaired": replay["repaired"],
-        }
+    _record_context_metrics(
+        record, diagnostic_key, decision, reward, action_record, no_target_gain)
     channel["events"] += 1
     return {"version": VERSION, "teacher_context_reward": reward,
             "no_target_gain_streak": record["no_target_gain_streak"],

@@ -96,6 +96,70 @@ def reserve_weakness_targets(chosen: list[dict],
     return result, tuple(delivered)
 
 
+def _lesson_selection_geometry(current, prior, policy, targets, batch_size,
+                               reserved_support_slots, rng):
+    requested_old = int(policy.get("old", 0))
+    if not 0 <= requested_old <= 32:
+        raise ValueError("LEARNING_EXPERIMENT_INVALID_OLD_POLICY")
+    target_ids = {row["id"] for row in targets}
+    generic_current = [
+        row for row in current if row.get("id") not in target_ids]
+    if not generic_current:
+        raise ErrorBus.legacy_error(SCHOOL.LEARNING.MISSING_FRESH_CURRENT_ROWS)
+    semantic_patterns = sorted({
+        tuple(row["operand_truths"]) for row in generic_current
+        if isinstance(row.get("operand_truths"), list)
+    })
+    structured_binary = bool(semantic_patterns) and all(
+        isinstance(row.get("operand_truths"), list) for row in generic_current)
+    minimum_current = len(semantic_patterns) if structured_binary else 2
+    old_count = (min(batch_size-minimum_current,
+                     round(requested_old*batch_size/32))
+                 if prior else 0)
+    present_count = batch_size-old_count
+    choose_current = (
+        _choose_binary_rows if structured_binary else _choose_typed_rows)
+    fresh_support = (
+        _fresh_support_rows(
+            generic_current, policy, rng,
+            structured_binary=structured_binary,
+            semantic_patterns=semantic_patterns,
+            present_count=present_count,
+            max_rows=max(0, batch_size-reserved_support_slots))
+        if targets else ())
+    return (requested_old, target_ids, generic_current, semantic_patterns,
+            structured_binary, old_count, present_count, choose_current,
+            fresh_support)
+
+
+def _lesson_targets(targets, priority_target_ids, target_exposures,
+                    present_count, fresh_support, batch_size,
+                    reserved_support_slots):
+    target_capacity = min(
+        max(0, present_count - len(fresh_support)),
+        max(0, batch_size - len(fresh_support) - reserved_support_slots),
+    )
+    priority_targets = [
+        row for row in targets if row["id"] in priority_target_ids]
+    ordinary_targets = [
+        row for row in targets if row["id"] not in priority_target_ids]
+    exposures = dict(target_exposures or {})
+    selected_priority = select_weakness_targets(
+        priority_targets,
+        WeaknessTargetRequest(
+            exposures=exposures,
+            capacity=target_capacity,
+        ))
+    selected_ordinary = select_weakness_targets(
+        ordinary_targets,
+        WeaknessTargetRequest(
+            exposures=exposures,
+            capacity=max(0, target_capacity-len(selected_priority)),
+        ))
+    return priority_targets, selected_priority, [
+        *selected_priority, *selected_ordinary]
+
+
 def select_source_lesson(current: list[dict], prior: list[dict], policy: dict,
                          *, seed: int, batch_size: int,
                          targets: list[dict] | tuple[dict, ...] = (),
@@ -116,25 +180,11 @@ def select_source_lesson(current: list[dict], prior: list[dict], policy: dict,
             not 0 <= reserved_support_slots <= batch_size):
         raise ValueError(WeaknessTargetError.LEARNING_EXPERIMENT_SUPPORT_CAPACITY_INVALID.value)
     rng = random.Random(seed)
-    requested_old = int(policy.get("old", 0))
-    if not 0 <= requested_old <= 32:
-        raise ValueError("LEARNING_EXPERIMENT_INVALID_OLD_POLICY")
-    target_ids = {row["id"] for row in targets}
-    generic_current = [
-        row for row in current if row.get("id") not in target_ids]
-    if not generic_current:
-        raise ErrorBus.legacy_error(SCHOOL.LEARNING.MISSING_FRESH_CURRENT_ROWS)
-    semantic_patterns = sorted({
-        tuple(row["operand_truths"]) for row in generic_current
-        if isinstance(row.get("operand_truths"), list)
-    })
-    structured_binary = bool(semantic_patterns) and all(
-        isinstance(row.get("operand_truths"), list) for row in generic_current)
-    minimum_current = len(semantic_patterns) if structured_binary else 2
-    old_count = min(batch_size-minimum_current,
-                    round(requested_old*batch_size/32)) if prior else 0
-    present_count = batch_size-old_count
-    choose_current = _choose_binary_rows if structured_binary else _choose_typed_rows
+    (requested_old, target_ids, generic_current, semantic_patterns,
+     structured_binary, old_count, present_count, choose_current,
+     fresh_support) = _lesson_selection_geometry(
+         current, prior, policy, targets, batch_size, reserved_support_slots,
+         rng)
     current_ids = {row["id"] for row in current}
     if any(row.get("id") not in current_ids for row in targets):
         raise ValueError(WeaknessTargetError.LEARNING_EXPERIMENT_WEAKNESS_TARGET_OUTSIDE_CURRENT.value)
@@ -143,40 +193,9 @@ def select_source_lesson(current: list[dict], prior: list[dict], policy: dict,
             for identity in priority_target_ids) or
             not priority_target_ids <= target_ids):
         raise ValueError(LearningExperimentError.PRIORITY_TARGET_INVALID.value)
-    fresh_support = (
-        _fresh_support_rows(
-            generic_current, policy, rng,
-            structured_binary=structured_binary,
-            semantic_patterns=semantic_patterns,
-            present_count=present_count,
-            max_rows=max(0, batch_size-reserved_support_slots))
-        if targets else ())
-    # Weakness replay replaces current-capability rows, while preservation
-    # support is injected later into the whole batch and may displace old-grade
-    # rows.  Bound replay by both constraints instead of charging every future
-    # support row against the current slice.
-    free_current_slots = max(0, present_count - len(fresh_support))
-    free_batch_slots_after_support = max(
-        0, batch_size - len(fresh_support) - reserved_support_slots)
-    target_capacity = min(
-        free_current_slots, free_batch_slots_after_support)
-    priority_targets = [
-        row for row in targets if row["id"] in priority_target_ids]
-    ordinary_targets = [
-        row for row in targets if row["id"] not in priority_target_ids]
-    selected_priority = select_weakness_targets(
-        priority_targets,
-        WeaknessTargetRequest(
-            exposures=dict(target_exposures or {}),
-            capacity=target_capacity,
-        ))
-    selected_ordinary = select_weakness_targets(
-        ordinary_targets,
-        WeaknessTargetRequest(
-            exposures=dict(target_exposures or {}),
-            capacity=max(0, target_capacity-len(selected_priority)),
-        ))
-    selected_targets = [*selected_priority, *selected_ordinary]
+    priority_targets, selected_priority, selected_targets = _lesson_targets(
+        targets, priority_target_ids, target_exposures, present_count,
+        fresh_support, batch_size, reserved_support_slots)
     current_rows = choose_current(generic_current, present_count, policy, rng)
     current_rows, delivered_support = reserve_weakness_targets(
         current_rows, list(fresh_support))

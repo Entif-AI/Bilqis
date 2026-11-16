@@ -78,6 +78,79 @@ def _validate_source_cohort_sha256(value):
             (len(value) != 64 or
              any(char not in "0123456789abcdef" for char in value))):
         raise ValueError("LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID")
+
+
+def _frontier_retention_state(fixed_frontier_replay, protected_frontier_grade,
+                              fixed, fragile_replay):
+    frontier, whole_school_regression, active_grade_regression, frontier_net = (
+        _fixed_frontier_retention_evidence(
+            fixed_frontier_replay, protected_frontier_grade))
+    frontier_measured = frontier.get("status") == "MEASURED"
+    protected_frontier_delta = None
+    if frontier_measured and protected_frontier_grade is not None:
+        grades = frontier.get("grades")
+        grade = (grades.get(protected_frontier_grade)
+                 if isinstance(grades, dict) else None)
+        if isinstance(grade, dict):
+            protected_frontier_delta = grade["after"] - grade["before"]
+    fixed_grade_regression = (
+        fixed.get("status") == "MEASURED" and
+        fixed["net_correct_delta"] < 0)
+    fragile_losses = bool(
+        fragile_replay and fragile_replay.get("regressions"))
+    if (fragile_replay is not None and
+            fragile_replay.get("status") not in ("MEASURED", "NOT_MEASURED")):
+        raise ValueError("LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY")
+    return (frontier, whole_school_regression, active_grade_regression,
+            frontier_net, frontier_measured, protected_frontier_delta,
+            fixed_grade_regression, fragile_losses)
+
+
+def _decision_record(*, reason, fragile_replay, fixed, frontier, frontier_net,
+                     protected_frontier_grade, protected_frontier_delta, phase,
+                     active_capability, active, protected, allowed, tolerances,
+                     regressions, mature_grades, projected_mature_debt,
+                     plasticity, exceeded, active_gain, same_grade_net_gain,
+                     required, protected_net_gain, fingerprint,
+                     source_cohort_sha256, deltas, negative_prototypes):
+    return {
+        "version": VERSION,
+        "decision": ("REJECT" if reason != "PAIRED_SCREEN_WITHIN_BUDGET"
+                     else "PROVISIONAL"),
+        "reason": reason,
+        "fragile_replay": fragile_replay,
+        "fixed_grade_replay": fixed,
+        "fixed_frontier_replay": frontier,
+        "fixed_whole_school_net_correct_delta": frontier_net,
+        "protected_frontier_grade": protected_frontier_grade,
+        "protected_frontier_grade_net_correct_delta": protected_frontier_delta,
+        "phase": phase, "active_capability": active_capability,
+        "active_probe_before": active["before"],
+        "active_probe_after": active["after"],
+        "active_probe_total": active["total"],
+        "protected_capabilities": sorted(protected),
+        "max_tolerated_wrong_answer_delta": allowed,
+        "protected_tolerances": tolerances,
+        "mature_protected_capabilities": sorted(
+            cap for cap in regressions if cap.partition(".")[0] in mature_grades),
+        "projected_mature_grade_debt": projected_mature_debt,
+        "mature_grade_debt_hard_limit": _mature_debt.HARD_LIMIT,
+        "plasticity_escape": plasticity,
+        "exceeded": exceeded,
+        "worst_protected_loss": max(regressions.values(), default=0),
+        "local_correct_delta": active_gain,
+        "same_grade_net_correct_delta": same_grade_net_gain,
+        "same_grade_probed_capabilities": sorted(required),
+        "protected_net_correct_delta": protected_net_gain,
+        "paired_scores_sha256": hashlib.sha256(fingerprint.encode()).hexdigest(),
+        "source_cohort_sha256": source_cohort_sha256,
+        "deltas": deltas,
+        "discordance_similarity": _prototype_similarity(
+            deltas, negative_prototypes or []),
+        "exact_complete_exam_qualification": False,
+    }
+
+
 def decide(paired: dict, *, active_capability: str, phase: str,
            protected: set[str], settings: Settings,
            mature_grades: frozenset[str] = frozenset(), mature_grade_debt: dict[str, int] | None = None,
@@ -107,19 +180,10 @@ def decide(paired: dict, *, active_capability: str, phase: str,
     # Local lesson training reward is not evidence of improved capability.
     # The same, source-oracled parent/challenger probe must improve strictly.
     no_target_gain = active_gain <= 0
-    frontier, whole_school_regression, active_grade_regression, frontier_net = (
-        _fixed_frontier_retention_evidence(fixed_frontier_replay, protected_frontier_grade))
-    frontier_measured = frontier.get("status") == "MEASURED"
-    protected_frontier_delta = None
-    if frontier_measured and protected_frontier_grade is not None:
-        grades = frontier.get("grades")
-        grade = grades.get(protected_frontier_grade) if isinstance(grades, dict) else None
-        if isinstance(grade, dict):
-            protected_frontier_delta = grade["after"] - grade["before"]
-    fixed_grade_regression = (fixed.get("status") == "MEASURED" and fixed["net_correct_delta"] < 0)
-    fragile_losses = bool(fragile_replay and fragile_replay.get("regressions"))
-    if fragile_replay is not None and fragile_replay.get("status") not in ("MEASURED", "NOT_MEASURED"):
-        raise ValueError("LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY")
+    (frontier, whole_school_regression, active_grade_regression, frontier_net,
+     frontier_measured, protected_frontier_delta, fixed_grade_regression,
+     fragile_losses) = _frontier_retention_state(
+         fixed_frontier_replay, protected_frontier_grade, fixed, fragile_replay)
     fingerprint = json.dumps(paired, sort_keys=True, separators=(",", ":"))
     _validate_source_cohort_sha256(source_cohort_sha256)
     reason = _retention_reason(
@@ -141,40 +205,19 @@ def decide(paired: dict, *, active_capability: str, phase: str,
         whole_school_net_gain=frontier_net if frontier_measured else None,
         fragile_losses=fragile_losses)
     projected_mature_debt, reason = _mature_debt.retention_reason(reason, frontier, mature_grades, mature_grade_debt or {})
-    return {
-        "version": VERSION,
-        "decision": ("REJECT" if reason != "PAIRED_SCREEN_WITHIN_BUDGET"
-                     else "PROVISIONAL"),
-        "reason": reason,
-        "fragile_replay": fragile_replay,
-        "fixed_grade_replay": fixed,
-        "fixed_frontier_replay": frontier,
-        "fixed_whole_school_net_correct_delta": frontier_net,
-        "protected_frontier_grade": protected_frontier_grade,
-        "protected_frontier_grade_net_correct_delta": protected_frontier_delta,
-        "phase": phase, "active_capability": active_capability,
-        "active_probe_before": active["before"],
-        "active_probe_after": active["after"],
-        "active_probe_total": active["total"],
-        "protected_capabilities": sorted(protected),
-        "max_tolerated_wrong_answer_delta": allowed,
-        "protected_tolerances": tolerances,
-        "mature_protected_capabilities": sorted(cap for cap in regressions
-                                                 if cap.partition(".")[0] in mature_grades),
-        "projected_mature_grade_debt": projected_mature_debt, "mature_grade_debt_hard_limit": _mature_debt.HARD_LIMIT,
-        "plasticity_escape": plasticity,
-        "exceeded": exceeded,
-        "worst_protected_loss": max(regressions.values(), default=0),
-        "local_correct_delta": active_gain,
-        "same_grade_net_correct_delta": same_grade_net_gain,
-        "same_grade_probed_capabilities": sorted(required),
-        "protected_net_correct_delta": protected_net_gain,
-        "paired_scores_sha256": hashlib.sha256(fingerprint.encode()).hexdigest(),
-        "source_cohort_sha256": source_cohort_sha256,
-        "deltas": deltas,
-        "discordance_similarity": _prototype_similarity(deltas, negative_prototypes or []),
-        "exact_complete_exam_qualification": False,
-    }
+    return _decision_record(
+        reason=reason, fragile_replay=fragile_replay, fixed=fixed,
+        frontier=frontier, frontier_net=frontier_net,
+        protected_frontier_grade=protected_frontier_grade,
+        protected_frontier_delta=protected_frontier_delta, phase=phase,
+        active_capability=active_capability, active=active, protected=protected,
+        allowed=allowed, tolerances=tolerances, regressions=regressions,
+        mature_grades=mature_grades, projected_mature_debt=projected_mature_debt,
+        plasticity=plasticity, exceeded=exceeded, active_gain=active_gain,
+        same_grade_net_gain=same_grade_net_gain, required=required,
+        protected_net_gain=protected_net_gain, fingerprint=fingerprint,
+        source_cohort_sha256=source_cohort_sha256, deltas=deltas,
+        negative_prototypes=negative_prototypes)
 
 
 def _channel(teacher: dict) -> dict:

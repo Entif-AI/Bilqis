@@ -15,6 +15,7 @@ import hashlib
 import json
 import math
 import random
+from functools import partial
 from typing import Mapping
 
 import numpy as np
@@ -139,6 +140,139 @@ def candidate_step_budget(default_steps: int, teacher: dict, capability: str,
     return default_steps
 
 
+def _plasticity_retry(teacher, scope, active_set):
+    retryable = []
+    for policy_key, record in scope.items():
+        policy = teacher.get("strategies", {}).get(policy_key)
+        if policy is None or not isinstance(record, dict):
+            continue
+        if _effective_policy_key(policy) not in active_set:
+            continue
+        if (int(record.get("unsafe", 0)) < 1 or
+                int(record.get("retained", 0)) > 0 or
+                int(record.get("no_target_gain_streak", 0)) > 0 or
+                bool(record.get("last_plasticity_active", False))):
+            continue
+        trials = int(record.get("trials", 0))
+        if trials < 1:
+            continue
+        retryable.append((
+            float(record.get("latest", float("-inf"))),
+            float(record.get("reward_sum", 0.)) / trials,
+            -int(record.get("unsafe", 0)), policy_key,
+        ))
+    return max(retryable)[3] if retryable else None
+
+
+def _contextual_scope_state(teacher, channel, capability, curriculum_scope,
+                            context_key, scope, active_set, diagnostic_key,
+                            rejection_pressure):
+    effective_scope = {
+        key: record
+        for key, record in _effective_context_scope(teacher, scope).items()
+        if key in active_set
+    }
+    diagnostic_scope = {
+        key: record
+        for key, record in _diagnostic_effective_scope(
+            teacher, scope, diagnostic_key).items()
+        if key in active_set
+    }
+    usable_diagnostic = {
+        key: record for key, record in diagnostic_scope.items()
+        if record.get("retained", 0) > 0
+    }
+    selection_scope = usable_diagnostic or effective_scope
+    diagnostic_consumed = bool(usable_diagnostic)
+    trials = sum(value["trials"] for value in effective_scope.values())
+    learning_rate_priors = (
+        _learning_rate_prior_scope(
+            teacher, channel, capability, curriculum_scope, context_key)
+        if rejection_pressure > 0 else {})
+    scores = {}
+    for key, record in selection_scope.items():
+        mean = record["reward_sum"] / record["trials"]
+        if learning_rate_priors and not diagnostic_consumed:
+            member_lrs = {
+                float(teacher["strategies"][member]["lr"])
+                for member in record["members"]
+            }
+            if len(member_lrs) != 1:
+                raise ValueError(
+                    LearningExperimentError.EFFECTIVE_POLICY_LR_DRIFT.value)
+            prior = learning_rate_priors.get(next(iter(member_lrs)))
+            if prior and prior["trials"]:
+                mean = (
+                    record["reward_sum"] + prior["reward_sum"]
+                ) / (
+                    record["trials"] + prior["trials"]
+                )
+        exploration = (
+            TEACHER_UCB_EXPLORATION_WEIGHT *
+            math.sqrt(math.log(trials+2)/(record["trials"]+1)))
+        stagnation = record["no_target_gain_streak"]
+        scores[key] = (
+            mean + exploration/(1+stagnation+rejection_pressure) -
+            _sibling_cooldown_penalty(
+                channel, capability, curriculum_scope, key))
+    retained_scope = {
+        key: record for key, record in selection_scope.items()
+        if record.get("retained", 0) > 0
+    }
+    best_effective = max(retained_scope or selection_scope, key=scores.get)
+    best_record = selection_scope[best_effective]
+    best = max(
+        best_record["members"],
+        key=lambda key: (
+            scope[key].get("retained", 0),
+            scope[key]["reward_sum"] / scope[key]["trials"],
+            scope[key]["trials"], key))
+    return (effective_scope, diagnostic_consumed, scores, best_effective,
+            best_record, best)
+
+
+def _selection_result(return_metadata, teacher, channel, inventory,
+                      active_effective, retired_effective, total_capabilities,
+                      diagnostic_key, key, policy, *,
+                      diagnostic_context_consumed=False,
+                      selection_reason="INHERITED_FALLBACK",
+                      selection_detail=None):
+    if return_metadata:
+        return key, policy, _teacher_breeding.selection_metadata(
+            teacher, channel=channel, inventory=inventory,
+            active_effective=active_effective,
+            checkpoint_retired=retired_effective,
+            total_capabilities=total_capabilities,
+            diagnostic_context_consumed=diagnostic_context_consumed,
+            diagnostic_context_key=diagnostic_key,
+            selection_reason=selection_reason,
+            selection_policy=TEACHER_SELECTION_POLICY,
+            selection_detail=selection_detail)
+    return key, policy
+
+
+def _pick_context(teacher, capability, curriculum_scope, phase, diagnostics,
+                  student_checkpoint_sha256, total_capabilities):
+    grade = capability.partition(".")[0]
+    channel = _channel(teacher)
+    diagnostic_key, _ = _diagnostic_context(
+        channel, capability, curriculum_scope, diagnostics)
+    context_key = capability+"|"+phase+"|"+curriculum_scope
+    scope = channel["contexts"].get(context_key, {})
+    active_effective, inventory, retired_effective = (
+        _teacher_breeding.selection_population(
+            teacher, grade=grade, capability=capability,
+            curriculum_scope=curriculum_scope, scope=scope, channel=channel,
+            context_key=context_key,
+            student_checkpoint_sha256=student_checkpoint_sha256,
+            total_capabilities=total_capabilities))
+    rejection_pressure = int(_capability_stagnation(
+        channel, capability, curriculum_scope).get("rejection_streak", 0))
+    return (grade, channel, diagnostic_key, context_key, scope,
+            active_effective, inventory, retired_effective,
+            rejection_pressure)
+
+
 def contextual_pick(engine, teacher: dict, capability: str, phase: str, rng,
                     *, curriculum_scope: str = "", diagnostics: dict | None = None,
                     return_metadata: bool = False,
@@ -146,54 +280,17 @@ def contextual_pick(engine, teacher: dict, capability: str, phase: str, rng,
                     total_capabilities: int | None = None,
                     plasticity_active: bool = False):
     """Preserve the inherited bandit's exploration; prefer proven safe context."""
-    grade = capability.partition(".")[0]
-    channel = _channel(teacher)
-    diagnostic_key, _diagnostic_payload = _diagnostic_context(
-        channel, capability, curriculum_scope, diagnostics)
-
-    context_key = capability+"|"+phase+"|"+curriculum_scope
-    scope = channel["contexts"].get(context_key, {})
-    active_effective, inventory, retired_effective = _teacher_breeding.selection_population(
-        teacher, grade=grade, capability=capability, curriculum_scope=curriculum_scope,
-        scope=scope, channel=channel, context_key=context_key,
-        student_checkpoint_sha256=student_checkpoint_sha256, total_capabilities=total_capabilities)
+    (grade, channel, diagnostic_key, context_key, scope, active_effective,
+     inventory, retired_effective, rejection_pressure) = _pick_context(
+         teacher, capability, curriculum_scope, phase, diagnostics,
+         student_checkpoint_sha256, total_capabilities)
     active_set = set(active_effective)
-    capability_stagnation = _capability_stagnation(channel, capability, curriculum_scope)
-    rejection_pressure = int(capability_stagnation.get("rejection_streak", 0))
-    def result(key, policy, *, diagnostic_context_consumed=False, selection_reason="INHERITED_FALLBACK", selection_detail=None):
-        if return_metadata:
-            return key, policy, _teacher_breeding.selection_metadata(
-                teacher, channel=channel, inventory=inventory,
-                active_effective=active_effective, checkpoint_retired=retired_effective,
-                total_capabilities=total_capabilities,
-                diagnostic_context_consumed=diagnostic_context_consumed,
-                diagnostic_context_key=diagnostic_key,
-                selection_reason=selection_reason, selection_policy=TEACHER_SELECTION_POLICY,
-                selection_detail=selection_detail)
-        return key, policy
+    result = partial(
+        _selection_result, return_metadata, teacher, channel, inventory,
+        active_effective, retired_effective, total_capabilities, diagnostic_key)
     if plasticity_active and scope:
-        retryable = []
-        for policy_key, record in scope.items():
-            policy = teacher.get("strategies", {}).get(policy_key)
-            if policy is None or not isinstance(record, dict):
-                continue
-            if _effective_policy_key(policy) not in active_set:
-                continue
-            if (int(record.get("unsafe", 0)) < 1 or
-                    int(record.get("retained", 0)) > 0 or
-                    int(record.get("no_target_gain_streak", 0)) > 0 or
-                    bool(record.get("last_plasticity_active", False))):
-                continue
-            trials = int(record.get("trials", 0))
-            if trials < 1:
-                continue
-            retryable.append((
-                float(record.get("latest", float("-inf"))),
-                float(record.get("reward_sum", 0.)) / trials,
-                -int(record.get("unsafe", 0)), policy_key,
-            ))
-        if retryable:
-            _latest, _mean, _unsafe, policy_key = max(retryable)
+        policy_key = _plasticity_retry(teacher, scope, active_set)
+        if policy_key is not None:
             return result(policy_key, teacher["strategies"][policy_key],
                           selection_reason="PLASTICITY_RETRY")
     effective_scope = {
@@ -223,60 +320,10 @@ def contextual_pick(engine, teacher: dict, capability: str, phase: str, rng,
         return result(
             original_key, original_policy,
             selection_reason="FRESH_ACTIVE_CHALLENGER")
-    diagnostic_scope = _diagnostic_effective_scope(
-        teacher, scope, diagnostic_key)
-    diagnostic_scope = {
-        key: record for key, record in diagnostic_scope.items()
-        if key in active_set
-    }
-    usable_diagnostic = {
-        key: record for key, record in diagnostic_scope.items()
-        if record.get("retained", 0) > 0
-    }
-    selection_scope = usable_diagnostic or effective_scope
-    diagnostic_consumed = bool(usable_diagnostic)
-    trials = sum(v["trials"] for v in effective_scope.values())
-    learning_rate_priors = (_learning_rate_prior_scope(
-        teacher, channel, capability, curriculum_scope, context_key)
-        if rejection_pressure > 0 else {})
-    # Priors stay owned by the inherited bandit. Context decides only when its
-    # observed safety preference is demonstrably better than the current pick.
-    def score_effective(key):
-        record = selection_scope.get(key)
-        if not record:
-            return float("-inf")
-        mean = record["reward_sum"] / record["trials"]
-        if learning_rate_priors and not diagnostic_consumed:
-            member_lrs = {
-                float(teacher["strategies"][member]["lr"])
-                for member in record["members"]
-            }
-            if len(member_lrs) != 1:
-                raise ValueError(LearningExperimentError.EFFECTIVE_POLICY_LR_DRIFT.value)
-            prior = learning_rate_priors.get(next(iter(member_lrs)))
-            if prior and prior["trials"]:
-                mean = (
-                    record["reward_sum"] + prior["reward_sum"]
-                ) / (
-                    record["trials"] + prior["trials"]
-                )
-        exploration = (TEACHER_UCB_EXPLORATION_WEIGHT *
-                       math.sqrt(math.log(trials+2)/(record["trials"]+1)))
-        stagnation = record["no_target_gain_streak"]
-        return mean + exploration/(1+stagnation+rejection_pressure) - _sibling_cooldown_penalty(channel, capability, curriculum_scope, key)
-    retained_scope = {
-        key: record for key, record in selection_scope.items()
-        if record.get("retained", 0) > 0
-    }
-    best_effective = max(retained_scope or selection_scope, key=score_effective)
-    best_record = selection_scope[best_effective]
-
-    def member_rank(key):
-        record = scope[key]
-        mean = record["reward_sum"] / record["trials"]
-        return (record.get("retained", 0), mean, record["trials"], key)
-
-    best = max(best_record["members"], key=member_rank)
+    (effective_scope, diagnostic_consumed, scores, best_effective,
+     best_record, best) = _contextual_scope_state(
+         teacher, channel, capability, curriculum_scope, context_key, scope,
+         active_set, diagnostic_key, rejection_pressure)
     proven_retained = best_record.get("retained", 0) > 0
     pressure_exploit = rejection_pressure >= REJECTION_PRESSURE_CONTEXTUAL_START
     if diagnostic_consumed:
@@ -293,10 +340,6 @@ def contextual_pick(engine, teacher: dict, capability: str, phase: str, rng,
             best, teacher["strategies"][best],
             selection_reason="DIAGNOSTIC_OR_PRESSURE_CONTEXT")
 
-    # Healthy operation and a bounded pressure cadence still consult the
-    # inherited bandit. Avoid calling it on pressure-exploitation visits:
-    # pick() may mutate the strategy inventory, and discarded mutations would
-    # otherwise consume the finite 512-strategy budget without being tried.
     original_key, original_policy = _pick_existing_active(
         engine, teacher, grade, rng, active_effective, inventory)
     original_effective = _effective_policy_key(original_policy)
@@ -308,11 +351,10 @@ def contextual_pick(engine, teacher: dict, capability: str, phase: str, rng,
     # still gets a chance whenever it lacks direct context observations.
     if (proven_retained and rejection_pressure > 0 and
             (original_effective not in effective_scope or
-             score_effective(best_effective) >
-             score_effective(original_effective))):
+             scores[best_effective] > scores[original_effective])):
         return result(best, teacher["strategies"][best], selection_reason="PROVEN_RETAINED_CONTEXT")
     if ((best_record["trials"] >= 2 or proven_retained) and
             original_effective in effective_scope and
-            score_effective(best_effective) > score_effective(original_effective)):
+            scores[best_effective] > scores[original_effective]):
         return result(best, teacher["strategies"][best], selection_reason="CONTEXT_UCB_PREFERENCE")
     return result(original_key, original_policy)
