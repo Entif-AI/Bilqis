@@ -22,6 +22,7 @@ class SalienceAuxiliaryTests(unittest.TestCase):
     def setUp(self):
         self.fixture = AtlasTrainingAdapterTest()
         self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
         self.fixture.model_generation = "d" * 64
         rows = self.fixture.context.draw_rows(seed=17, capability='Z.C0', each=2)
         self.batch = self.fixture.compile(rows)

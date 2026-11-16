@@ -34,6 +34,11 @@ jobs:
             # Validate only commits authored on the bridge's first-parent spine;
             # inherited unified subjects are provenance, not new PR commits.
             LOG_ARGS=(--first-parent --format=%s "$BASE_SHA..$HEAD_SHA")
+          elif [[ "$HEAD_REF" == codex/bamf-unified-base-* ]]; then
+            # The unified trunk is itself a reviewed integration surface. Child
+            # PR commits and merge subjects were validated before integration;
+            # validate only directly authored non-merge commits on this spine.
+            LOG_ARGS=(--first-parent --no-merges --format=%s "$BASE_SHA..$HEAD_SHA")
           fi
           while IFS= read -r subject; do
             python3 -B scripts/maintenance/release_version.py --validate-subject "$subject"

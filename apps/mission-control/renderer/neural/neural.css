@@ -1,0 +1,74 @@
+.neural-view { display: grid; gap: var(--space-5); min-width: 0; }
+.neural-heading { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, .85fr); gap: var(--space-5); align-items: end; }
+.neural-heading h2, .neural-section-heading h3 { margin: var(--space-1) 0 0; font-size: var(--type-section); }
+.neural-heading p, .neural-fixture-posture p { max-width: 660px; margin: 0; color: var(--text-muted); line-height: 1.5; }
+.neural-fixture-posture { display: flex; justify-content: space-between; gap: var(--space-5); align-items: center; padding: var(--space-3) var(--space-4); border-block: 1px solid var(--border); }
+.neural-fixture-posture > div { display: grid; gap: 3px; }
+.neural-fixture-help { display: flex !important; grid-template-columns: none; align-items: center; gap: var(--space-2) !important; min-width: 0; }
+.neural-fixture-posture strong { font-size: var(--type-label); letter-spacing: .04em; }
+.neural-fixture-posture span { color: var(--text-muted); font-size: var(--type-label); }
+.neural-mode-switch { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.neural-mode-switch button, .neural-section button { min-height: var(--control-height); border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface-2); color: var(--text); padding-inline: var(--space-3); cursor: pointer; font: inherit; }
+.neural-mode-switch button[aria-pressed="true"] { border-style: double; box-shadow: inset 3px 0 0 var(--accent); font-weight: 700; }
+.neural-primary, .neural-mechanism-stack { min-width: 0; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-1); }
+.neural-primary { padding: var(--space-5); }
+.neural-mechanism-stack { display: grid; }
+.neural-mechanism-stack > .neural-section { padding: var(--space-5); border-block-start: 1px solid var(--border); }
+.neural-mechanism-stack > .neural-section:first-child { border-block-start: 0; }
+.neural-section { min-width: 0; }
+.neural-section-heading { display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; flex-wrap: wrap; min-width: 0; }
+.neural-section-heading > div:first-child { min-width: 0; }
+.neural-section-tools { display: flex; align-items: center; gap: var(--space-2); flex: 0 0 auto; }
+.neural-section h4 { margin: 0 0 var(--space-2); font-size: var(--type-subsection); }
+.neural-state { display: inline-flex; align-items: center; min-height: 28px; padding: 3px 8px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-size: var(--type-label); font-weight: 700; white-space: nowrap; }
+.neural-state[data-neural-state="present"], .neural-state[data-neural-state="complete"] { border-style: double; color: var(--healthy); }
+.neural-state[data-neural-state="partial"], .neural-state[data-neural-state="unknown"] { border-style: dotted; color: var(--attention); }
+.neural-state[data-neural-state="unavailable"] { border-style: dashed; color: var(--text-muted); }
+.neural-state[data-neural-state="invalid"] { border-style: double; color: var(--invalid); }
+.neural-runtime-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(260px, .7fr); gap: var(--space-6); margin-top: var(--space-4); }
+.neural-manifest { display: block; color: var(--text-muted); overflow-wrap: anywhere; }
+.topology-path { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; margin: var(--space-4) 0; padding: 0; border: 1px solid var(--border); background: var(--border); list-style: none; }
+.topology-path li { min-height: 58px; padding: var(--space-3); background: var(--surface-2); }
+.topology-path span { display: block; color: var(--text-muted); font-size: var(--type-label); }
+.topology-path strong { display: block; margin-top: 4px; }
+.topology-facts, .runtime-metrics { display: grid; gap: 1px; margin: 0; background: var(--border); }
+.topology-facts { grid-template-columns: repeat(auto-fit, minmax(125px, 1fr)); }
+.runtime-metrics { grid-template-columns: repeat(2, minmax(120px, 1fr)); margin-top: var(--space-4); }
+.topology-facts div, .runtime-metrics div { min-width: 0; padding: var(--space-3); background: var(--surface-1); }
+.topology-facts dt, .runtime-metrics dt { color: var(--text-muted); font-size: var(--type-label); }
+.topology-facts dd, .runtime-metrics dd { margin: 4px 0 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.runtime-metrics small { display: block; margin-top: 4px; color: var(--text-muted); }
+.neural-runtime-authority { display: flex; justify-content: flex-end; margin-top: var(--space-2); }
+.neural-time-facts { display: grid; gap: var(--space-2); margin: var(--space-4) 0 0; }
+.neural-time-facts div { display: grid; grid-template-columns: minmax(110px, .4fr) minmax(0, 1fr); gap: var(--space-3); align-items: baseline; }
+.neural-time-facts dt { color: var(--text-muted); font-size: var(--type-label); }
+.neural-time-facts dd { margin: 0; }
+.neural-disclosure { margin-top: var(--space-3); min-width: 0; border-block-start: 1px solid var(--border); padding-top: var(--space-2); }
+.neural-disclosure > summary { min-height: var(--control-height); cursor: pointer; font-weight: 650; display: flex; align-items: center; }
+.neural-table-wrap { max-inline-size: 100%; min-inline-size: 0; overflow: auto; margin-top: var(--space-4); scrollbar-gutter: stable; border-block: 1px solid var(--border); direction: ltr; }
+.neural-table { inline-size: 100%; min-inline-size: 700px; border-collapse: collapse; font-size: var(--type-label); font-variant-numeric: tabular-nums; }
+:root[dir="rtl"] .neural-table { direction: rtl; }
+.neural-table th, .neural-table td { padding: 8px 10px; border-block-end: 1px solid var(--border); text-align: start; vertical-align: middle; }
+.neural-table thead th { color: var(--text-muted); font-weight: 650; white-space: nowrap; }
+.neural-table tbody th { font-weight: 650; }
+.neural-table tr[data-evidence-state="invalid"] { box-shadow: inset 3px 0 0 var(--invalid); }
+.invalid-evidence-note { display: block; margin-top: 5px; color: var(--invalid); }
+.neural-doctrine, .neural-unavailable p, .refinement-summary p { color: var(--text-muted); line-height: 1.5; overflow-wrap: anywhere; }
+.neural-unavailable { background: var(--surface-1); }
+.attnres-table { min-inline-size: 760px; }
+.mixture-bars { display: grid; gap: 6px; min-width: 220px; }
+.mixture-bars div { display: grid; grid-template-columns: 34px minmax(100px, 1fr) 42px; gap: 8px; align-items: center; }
+.mixture-bars progress, .refinement-histogram progress { width: 100%; accent-color: var(--accent); }
+.refinement-summary { display: grid; grid-template-columns: minmax(0, 1fr) minmax(240px, .8fr); gap: var(--space-5); align-items: center; margin-top: var(--space-4); }
+.refinement-histogram { display: grid; gap: 7px; min-width: 0; }
+.refinement-histogram div { display: grid; grid-template-columns: 130px minmax(80px, 1fr) 34px; gap: var(--space-2); align-items: center; min-width: 0; }
+.refinement-histogram strong { text-align: end; font-variant-numeric: tabular-nums; }
+.instrumentation-panel .neural-table { min-inline-size: 560px; }
+.neural-mode-switch button:focus-visible, .neural-section button:focus-visible, .neural-disclosure > summary:focus-visible, .neural-table-wrap:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+:root[data-density="compact"] .neural-primary, :root[data-density="compact"] .neural-mechanism-stack > .neural-section { padding: var(--space-3); }
+:root[data-density="compact"] .neural-view { gap: var(--space-4); }
+@media (max-width: 980px) { .neural-heading, .neural-runtime-grid, .refinement-summary { grid-template-columns: 1fr; } .neural-fixture-posture { align-items: start; flex-direction: column; } .neural-fixture-help { align-items: flex-start; } .neural-section-tools { max-width: 100%; flex-wrap: wrap; justify-content: flex-start; } .topology-path { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 720px) { .runtime-metrics, .topology-path { grid-template-columns: 1fr; } .refinement-histogram div { grid-template-columns: 110px minmax(70px, 1fr) 30px; } }
+@media (max-width: 400px) { .refinement-histogram div { grid-template-columns: minmax(0, 1fr) 30px; } .refinement-histogram div span { grid-column: 1 / -1; } }
+@media (prefers-reduced-motion: reduce) { .neural-view *, .neural-view *::before, .neural-view *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+@media (forced-colors: active) { .neural-state, .neural-primary, .neural-mechanism-stack, .neural-table-wrap { forced-color-adjust: auto; } }

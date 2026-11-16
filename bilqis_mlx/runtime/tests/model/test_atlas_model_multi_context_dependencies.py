@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from bilqis_mlx.learning.atlas_engram import MotifManifest
 from bilqis_mlx.learning.tests.frames.nested_fixtures import _case as _nested_case
-from bilqis_mlx.runtime.atlas_model_forward import _execution_dependencies
+from bilqis_mlx.runtime.atlas_model_participation import _execution_dependencies
 from bilqis_mlx.runtime.atlas_training_authority import (
     extend_training_dependencies,
 )

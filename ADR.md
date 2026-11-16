@@ -1336,7 +1336,7 @@ new implementation families.
 
 ## ADR-096 | 2026-10-25 | Conjoined Triangle authority, immutable identity and projection boundaries
 
-**Direct user decision.** The Bilqis semantic corpus, curriculum factory, Akasha and Mission Control must converge without collapsing their authority boundaries. State transitions should follow functional, append-only semantics wherever practical: a correction or revision creates a new immutable artifact, event, receipt or projection version. Historical evidence is never rewritten to make current state look cleaner.
+**Direct user decision.** The Bilqis semantic corpus, curriculum factory, Akasha and Model Forensics must converge without collapsing their authority boundaries. State transitions should follow functional, append-only semantics wherever practical: a correction or revision creates a new immutable artifact, event, receipt or projection version. Historical evidence is never rewritten to make current state look cleaner.
 
 ### Semantic authority and Rosetta boundary
 
@@ -1374,17 +1374,17 @@ Automation may advance deterministic and evidence-backed stages through `STAGED`
 
 Every cross-leg artifact must name the semantic/factory release it expects. Stale or mismatched identity fails explicitly. Implementations must not silently substitute "latest", guess a translation or repair identity drift by convenience.
 
-### Integration and Mission Control
+### Integration and Model Forensics
 
 PR-level completion is not holistic qualification. Each implementation payload must first qualify independently. Exact qualified heads are then combined into an ephemeral integration candidate. Cross-boundary tests and one reproducible qualification receipt govern merge readiness. The tested combination, or a sequence proven equivalent to it, is the merge authority.
 
-Mission Control begins as a read-only control plane over durable sources and projections. It must not become semantic, learner-evidence, factory or receipt authority through UI convenience. Operator status distinguishes at least implemented, turned in, individually qualified, integrated, launch qualified, blocked and superseded. These states must derive from their owning evidence rather than a generic mutable `done` flag.
+Model Forensics begins as a read-only control plane over durable sources and projections. It must not become semantic, learner-evidence, factory or receipt authority through UI convenience. Operator status distinguishes at least implemented, turned in, individually qualified, integrated, launch qualified, blocked and superseded. These states must derive from their owning evidence rather than a generic mutable `done` flag.
 
-The Conjoined Triangle tracker is temporary. Mission Control replaces bespoke project trackers only after the same Program, WorkItem, Dependency, Gate, Evidence, Risk, Decision and Notification model can onboard a second non-Bilqis project without a core schema fork or another spreadsheet.
+The Conjoined Triangle tracker is temporary. Model Forensics replaces bespoke project trackers only after the same Program, WorkItem, Dependency, Gate, Evidence, Risk, Decision and Notification model can onboard a second non-Bilqis project without a core schema fork or another spreadsheet.
 
 ### Write-admission boundary reserved for follow-up
 
-The user agrees with the core direction that canonical mutations must pass through governed authority and that Mission Control or arbitrary workers must not write source meaning or canonical evidence directly. The detailed information-flow model, including writer topology, command brokering, authorization stages and propagation mechanics, is intentionally **not frozen by this ADR**. That design remains open for the next architecture discussion. Future implementation must not infer a more specific write topology from this ADR.
+The user agrees with the core direction that canonical mutations must pass through governed authority and that Model Forensics or arbitrary workers must not write source meaning or canonical evidence directly. The detailed information-flow model, including writer topology, command brokering, authorization stages and propagation mechanics, is intentionally **not frozen by this ADR**. That design remains open for the next architecture discussion. Future implementation must not infer a more specific write topology from this ADR.
 
 ## ADR-097 | 2026-10-27 | Suspend developmental generalization until explicit maturity admission
 

@@ -15,6 +15,10 @@ ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v5"
 MOTIF_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v6"
 CLOSURE_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v7"
 MOTIF_CLOSURE_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v8"
+EXACT_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v9"
+EXACT_CLOSURE_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v10"
+EXACT_MOTIF_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v11"
+EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA = "bilqis.mlx.accepted-candidate-binding/v12"
 DIGEST_HEX_LENGTH = 64
 LEGACY_FIELDS = (
     "run_id", "generation", "candidate_identity_sha256", "feature_sha256",
@@ -35,6 +39,10 @@ MOTIF_BINDING_FIELDS = BINDING_FIELDS[:-1] + (
     "generation_authority_sha256", "schema_version")
 CLOSURE_BINDING_FIELDS = BINDING_FIELDS[:-1] + ("artifact_closures", "schema_version")
 MOTIF_CLOSURE_BINDING_FIELDS = MOTIF_BINDING_FIELDS[:-1] + ("artifact_closures", "schema_version")
+EXACT_BINDING_FIELDS = BINDING_FIELDS[:-1] + (
+    "teacher_state_sha256", "generation_authority_sha256", "schema_version")
+EXACT_CLOSURE_BINDING_FIELDS = EXACT_BINDING_FIELDS[:-1] + (
+    "artifact_closures", "schema_version")
 V3_SOURCE_ANCHOR_WIDTH = 9
 SOURCE_ANCHOR_WIDTH = 10
 DEPENDENCY_RECORD_WIDTH = 2
@@ -75,7 +83,9 @@ def normalize_source_anchors(value, schema):
         anchor = tuple(anchor)
         if schema in (
                 PREVIOUS_DEPENDENCY_ACCEPTANCE_SCHEMA, ACCEPTANCE_SCHEMA,
-                MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA):
+                MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA):
             if len(anchor) != SOURCE_ANCHOR_WIDTH:
                 invalid()
             dependencies = anchor[-1]
@@ -93,7 +103,9 @@ def valid_source_anchors(value, schema=ACCEPTANCE_SCHEMA) -> bool:
         return False
     width = (SOURCE_ANCHOR_WIDTH if schema in (
                  PREVIOUS_DEPENDENCY_ACCEPTANCE_SCHEMA, ACCEPTANCE_SCHEMA,
-                 MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+                 MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+                 EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+                 EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
              else V3_SOURCE_ANCHOR_WIDTH)
     for anchor in value:
         if type(anchor) is not tuple or len(anchor) != width:
@@ -105,7 +117,9 @@ def valid_source_anchors(value, schema=ACCEPTANCE_SCHEMA) -> bool:
             return False
         if (schema in (
                 PREVIOUS_DEPENDENCY_ACCEPTANCE_SCHEMA, ACCEPTANCE_SCHEMA,
-                MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+                MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
                 and not dependency_records(
                     anchor[SOURCE_ANCHOR_DEPENDENCIES_INDEX])):
             return False
@@ -119,7 +133,9 @@ class ParsedAcceptedCandidateBinding:
 
     def __getattr__(self, name: str):
         known = (LEGACY_FIELDS, V2_BINDING_FIELDS, V3_BINDING_FIELDS,
-                 V4_BINDING_FIELDS, BINDING_FIELDS, MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS)
+                 V4_BINDING_FIELDS, BINDING_FIELDS, MOTIF_BINDING_FIELDS,
+                 CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS,
+                 EXACT_BINDING_FIELDS, EXACT_CLOSURE_BINDING_FIELDS)
         if any(name in fields for fields in known):
             return self.fields.get(name)
         raise AttributeError(name)
@@ -145,6 +161,10 @@ def parse_accepted_candidate_binding(record) -> ParsedAcceptedCandidateBinding:
         (MOTIF_ACCEPTANCE_SCHEMA, MOTIF_BINDING_FIELDS),
         (CLOSURE_ACCEPTANCE_SCHEMA, CLOSURE_BINDING_FIELDS),
         (MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_BINDING_FIELDS),
+        (EXACT_ACCEPTANCE_SCHEMA, EXACT_BINDING_FIELDS),
+        (EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_BINDING_FIELDS),
+        (EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_BINDING_FIELDS),
+        (EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_BINDING_FIELDS),
     ) if version == schema), ())
     if not names or set(record) != set(names) | {"binding_sha256"}:
         invalid()
@@ -159,26 +179,38 @@ def parse_accepted_candidate_binding(record) -> ParsedAcceptedCandidateBinding:
                 "candidate_identity_sha256", "feature_sha256", "decision_sha256"))):
         invalid()
     if names in (V2_BINDING_FIELDS, V4_BINDING_FIELDS, BINDING_FIELDS,
-                 MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS) and any(
+                 MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS,
+                 MOTIF_CLOSURE_BINDING_FIELDS, EXACT_BINDING_FIELDS,
+                 EXACT_CLOSURE_BINDING_FIELDS) and any(
             not is_digest(record[name]) for name in (
                 "parent_candidate_identity_sha256", "evidence_sha256", "policy_sha256")):
         invalid()
     anchors = None
     if names in (V3_BINDING_FIELDS, V4_BINDING_FIELDS, BINDING_FIELDS,
-                 MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS):
+                 MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS,
+                 MOTIF_CLOSURE_BINDING_FIELDS, EXACT_BINDING_FIELDS,
+                 EXACT_CLOSURE_BINDING_FIELDS):
         anchors = normalize_source_anchors(record.get("source_anchors"), schema)
         if not valid_source_anchors(anchors, schema):
             invalid()
-    if (names in (BINDING_FIELDS, MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS)
+    if (names in (BINDING_FIELDS, MOTIF_BINDING_FIELDS, CLOSURE_BINDING_FIELDS,
+                  MOTIF_CLOSURE_BINDING_FIELDS, EXACT_BINDING_FIELDS,
+                  EXACT_CLOSURE_BINDING_FIELDS)
             and record["source_authority_registry_sha256"] is not None
             and not is_digest(record["source_authority_registry_sha256"])):
         invalid()
-    if names in (MOTIF_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS) and not is_digest(record["generation_authority_sha256"]):
+    if (names in (MOTIF_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS,
+                  EXACT_BINDING_FIELDS, EXACT_CLOSURE_BINDING_FIELDS)
+            and not is_digest(record["generation_authority_sha256"])):
+        invalid()
+    if (names in (EXACT_BINDING_FIELDS, EXACT_CLOSURE_BINDING_FIELDS)
+            and not is_digest(record["teacher_state_sha256"])):
         invalid()
     payload = {name: record[name] for name in names}
     if anchors is not None:
         payload["source_anchors"] = anchors
-    if names in (CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS):
+    if names in (CLOSURE_BINDING_FIELDS, MOTIF_CLOSURE_BINDING_FIELDS,
+                 EXACT_CLOSURE_BINDING_FIELDS):
         payload["artifact_closures"] = normalize_artifact_closures(record["artifact_closures"])
     if record["binding_sha256"] != hashlib.sha256(canonical(payload)).hexdigest():
         invalid()

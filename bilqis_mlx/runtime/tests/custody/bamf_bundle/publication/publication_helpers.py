@@ -74,12 +74,12 @@ def rewrite_motif_bundle_fixture(
     return {**record, "manifest_sha256": manifest_sha}
 
 
-def shape_patch():
+def shape_patch(registry=REGISTRY):
     from ..helpers import DECLARED
     from ..genesis_authority_fixtures import genesis_feature_source_patch
 
     stack = ExitStack()
-    stack.enter_context(host_source_authority_patch())
+    stack.enter_context(host_source_authority_patch(registry))
     stack.enter_context(genesis_feature_source_patch())
     for target in ("bilqis_mlx.runtime.model_topology_v2.expected_bamf_shapes",
                    "bilqis_mlx.runtime.topology_v2.ledger.expected_bamf_shapes",
@@ -116,13 +116,19 @@ def retention_decision(*, accepted=True, parent=None, retained=None) -> object:
 
 
 def acceptance(bundle, *, parent=None) -> object:
+    from bilqis_mlx.runtime.bamf_bundle.genesis.records import (
+        successor_candidate_identity_digest,
+    )
+    from bilqis_mlx.runtime.bamf_bundle.records import canonical, sha
     return mint_acceptance_binding(
         retention_decision(parent=parent, retained=bundle.retained_state),
         bundle.retained_state, run_id=bundle.run_id,
         generation=bundle.generation,
         feature_sha256=bundle.extents.factor_map_digest,
         source_authority_registry_sha256=bundle.correction_frontier.get(
-            "source_authority_registry_sha256"))
+            "source_authority_registry_sha256"),
+        teacher_state_sha256=sha(canonical(dict(bundle.teacher_state))),
+        generation_authority_sha256=successor_candidate_identity_digest(bundle))
 
 
 def _publish_initial_candidate(run_dir, bundle, foundation_features):
@@ -199,16 +205,21 @@ def _normalize_candidate_for_parent(bundle, parent):
         provenance = replace(
             parent.provenance, release_digest=bundle.provenance.release_digest)
         correction = {
-            **bundle.correction_frontier,
+            **parent.correction_frontier,
             "source_identity": provenance.source_identity,
             "release_digest": provenance.release_digest,
+        }
+        compiler = {
+            **parent.compiler_features,
+            "factor_map_sha256": extents.factor_map_digest,
+            "compiler_sha256": bundle.compiler_features["compiler_sha256"],
         }
         bundle = replace(
             bundle, implementation_sha256=parent.implementation_sha256,
             topology=parent.topology, extents=extents,
             retained_state=retained, provenance=provenance,
             semantic_abi=semantic,
-            compiler_features=dict(bundle.compiler_features),
+            compiler_features=compiler,
             correction_frontier=correction,
             teacher_state=dict(parent.teacher_state),
             evaluation_contract=dict(parent.evaluation_contract),

@@ -60,7 +60,7 @@ class BamfCreateResumeTests(BamfCreateResumeCase):
         persist(self.source, source_state)
         with patch(
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle_inputs.active_run_dir",
-                return_value=self.source), patch(
+                side_effect=AssertionError("explicit source run must bypass active default")), patch(
                 "bilqis_mlx.runtime.mlx_checkpoint._read_catalog",
                 return_value=self.graph), patch(
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle.atlas_manifest_identity",
@@ -72,6 +72,7 @@ class BamfCreateResumeTests(BamfCreateResumeCase):
             code, output, errors = self.invoke([
                 "--dry-run", "--model-topology", str(TOPOLOGY),
                 "--atlas-release-manifest", str(manifest),
+                "--source-run-dir", str(self.source),
                 "--run-dir", str(target), *self.FOUNDATION_ARGS,
             ])
         self.assertEqual((code, errors), (0, ""))

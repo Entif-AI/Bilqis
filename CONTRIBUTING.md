@@ -1,6 +1,6 @@
 # Contributing to Bilqis MLX
 
-This is a private, human-operated MLX student and teacher project. Source changes, disposable tests and read-only inspection are allowed. Only the human operator starts or resumes training the real student. Never put a model bundle or actual training state into Git.
+This is the public source repository for a human-operated MLX student and teacher project. Source changes, disposable tests and read-only inspection are allowed. Only the human operator starts or resumes training the real student. Protected source-authority material, model bundles and actual training state do not belong in Git.
 
 ## One canonical checkout
 
@@ -16,6 +16,6 @@ Run `python3 -B -m unittest discover -s tests -q` on Apple Silicon for the full 
 
 ## Release discipline
 
-Tag releases with immutable annotated SemVer tags `vMAJOR.MINOR.PATCH`. Python and npm project versions must agree, and `CHANGELOG.md` must include a dated version section. Run `npm run release:check` before tagging. Verify the release tag points at the same reviewed commit on `main`. `.github/workflows/release.yml` checks the tag and publishes a private GitHub Release with notes derived from the checked-in changelog.
+Tag releases with immutable annotated SemVer tags `vMAJOR.MINOR.PATCH`. Python and npm project versions must agree, and `CHANGELOG.md` must include a dated version section. Run `npm run release:check` before tagging. Verify the release tag points at the same reviewed commit on `main`. `.github/workflows/release.yml` checks the tag and publishes GitHub Release notes derived from the checked-in changelog.
 
 Never re-tag a release after publication. Use another patch version to correct an error. Experimental checkpoint scores and best-of-history markers are not claims of qualified neural performance.

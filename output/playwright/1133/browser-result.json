@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "claims": [
+    "source authority leads",
+    "derived similarity separated",
+    "exact ABI/source fields visible",
+    "canonical/learned relation separation",
+    "unique hooks"
+  ],
+  "variants": [
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "rtlTextSpacingReducedMotion": true
+}

@@ -5,11 +5,23 @@ from pathlib import Path
 
 from bilqis_mlx.learning.atlas_acceptance import (
     ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+    EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+    EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
 )
 
 from .atlas_requalification_contracts import RequalificationLedger
 from .atlas_revalidation_common import _invalid
 from .capability_support_materialization import materialized_support, retained_closure_nodes
+
+
+_SOURCE_QUALIFIED_ACCEPTANCE_SCHEMAS = (
+    ACCEPTANCE_SCHEMA,
+    CLOSURE_ACCEPTANCE_SCHEMA,
+    MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+    EXACT_ACCEPTANCE_SCHEMA,
+    EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+    EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+)
 
 
 def _accepted_materialization(
@@ -63,7 +75,7 @@ def _latest_source_qualified_materialization(
     for manifest_sha256 in reversed(_manifest_lineage(
             Path(run_dir), current_manifest_sha256)):
         binding, student = _accepted_materialization(run_dir, manifest_sha256)
-        if (binding.schema_version not in (ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+        if (binding.schema_version not in _SOURCE_QUALIFIED_ACCEPTANCE_SCHEMAS
                 or not any(anchor[0] == capability_id
                            for anchor in getattr(binding, "source_anchors", ()))):
             continue
@@ -109,7 +121,7 @@ def accepted_support_census(
     materializations = {}
     for lineage_manifest in reversed(_manifest_lineage(run_dir, manifest_sha256)):
         binding, student = _accepted_materialization(run_dir, lineage_manifest)
-        if (binding.schema_version not in (ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+        if (binding.schema_version not in _SOURCE_QUALIFIED_ACCEPTANCE_SCHEMAS
                 or not getattr(binding, "source_anchors", ())):
             continue
         for capability_id in sorted({anchor[0] for anchor in binding.source_anchors}):

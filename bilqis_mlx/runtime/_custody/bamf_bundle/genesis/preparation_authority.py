@@ -7,7 +7,9 @@ from typing import Mapping
 from bilqis_mlx.factory.executable_release import (
     ExecutableAdmissionReceipt, ExecutableFactoryRelease,
 )
-from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
+)
 from bilqis_mlx.learning.atlas_candidate import CandidateState
 from bilqis_mlx.learning.atlas_engram import INITIAL_MOTIF_CAPACITY, MotifManifest
 from bilqis_mlx.learning.atlas_engram_transaction import MotifAllocationSnapshot
@@ -168,7 +170,7 @@ def _validate_candidate_source_authority(
             or identity.factory_release_sha256 != release.release_sha256
             or identity.semantic_graph_sha256 != admission.semantic_graph_sha256
             or identity.initial_candidate_identity_sha256
-            != candidate_identity_digest(candidate.retained_state)
+            != candidate_identity_for_canonical_consumer(candidate.retained_state)
             or identity.initial_topology_digest != candidate.topology.digest
             or identity.initial_extents_digest != candidate.extents.digest
             or identity.initial_implementation_sha256 != candidate.implementation_sha256
@@ -221,7 +223,8 @@ def _validate_candidate_b01_authority(
             "FOUNDATION", 0, initial_foundation_row_ages(
                 foundation_features))
         expected_state = CandidateState(
-            optimizer, expected_policy, allocations, 0)
+            optimizer, expected_policy, allocations, 0,
+            identity_scheme=candidate.retained_state.identity_scheme)
     except (TypeError, ValueError, KeyError, AttributeError):
         invalid("BAMF_INITIAL_GENERATION_MODEL_AUTHORITY_DRIFT")
     if (candidate.topology.digest != authority.parameter_census.topology_digest
@@ -233,6 +236,6 @@ def _validate_candidate_b01_authority(
             or candidate.retained_state.optimizer_step != 0
             or candidate.retained_state.custody is not None
             or candidate.retained_state.step_proofs != ()
-            or candidate_identity_digest(candidate.retained_state)
-            != candidate_identity_digest(expected_state)):
+            or candidate_identity_for_canonical_consumer(candidate.retained_state)
+            != candidate_identity_for_canonical_consumer(expected_state)):
         invalid("BAMF_INITIAL_GENERATION_MODEL_AUTHORITY_DRIFT")

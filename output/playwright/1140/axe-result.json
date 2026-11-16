@@ -1,0 +1,30 @@
+[
+  {
+    "theme": "dark",
+    "density": "comfortable",
+    "width": 1440,
+    "violations": [],
+    "passes": 17
+  },
+  {
+    "theme": "light",
+    "density": "compact",
+    "width": 1440,
+    "violations": [],
+    "passes": 17
+  },
+  {
+    "theme": "dark",
+    "density": "comfortable",
+    "width": 390,
+    "violations": [],
+    "passes": 18
+  },
+  {
+    "theme": "light",
+    "density": "compact",
+    "width": 320,
+    "violations": [],
+    "passes": 18
+  }
+]

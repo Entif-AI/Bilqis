@@ -258,15 +258,25 @@ def _require_provisioned_source_authority_registry_unlocked(
     return trusted
 
 
+from .currentness import (
+    SourceAuthorityCurrentness,
+    bind_source_authority_currentness,
+    require_source_authority_currentness,
+)
+
+
 __all__ = (
     "HOST_SYSTEM_SOURCE_AUTHORITY_ORIGIN",
     "SOURCE_AUTHORITY_REGISTRY_FILE",
     "SOURCE_AUTHORITY_REGISTRY_LOCK",
+    "SourceAuthorityCurrentness",
     "_require_provisioned_source_authority_registry_unlocked",
+    "bind_source_authority_currentness",
     "read_host_system_source_authority_registry",
     "read_provisioned_source_authority_registry",
     "require_source_authority_successor_inheritance",
     "require_provisioned_source_authority_registry",
+    "require_source_authority_currentness",
     "resolve_source_authority_registry",
     "source_authority_registry_lock",
 )

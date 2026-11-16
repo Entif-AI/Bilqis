@@ -41,6 +41,7 @@ class AcceptedRuntimeHost:
     """Host-owned production ingress for one accepted run's C09 authority."""
 
     run_dir: Path
+    currentness_metrics: object | None = field(default=None, repr=False, compare=False)
     _accepted_cache: object | None = field(
         default=None, init=False, repr=False, compare=False)
     _source_authority: object | None = field(
@@ -56,7 +57,8 @@ class AcceptedRuntimeHost:
             _provision_source_authority_runtime,
         )
 
-        cache = bind_accepted_execution_cache(self.run_dir)
+        cache = bind_accepted_execution_cache(
+            self.run_dir, metrics=self.currentness_metrics)
         if not isinstance(cache._correction_registry, SourceAuthorityRegistry):
             _invalid("BAMF_C09_CORRECTION_AUTHORITY_REQUIRED")
         authority = _provision_source_authority_runtime(cache)
@@ -68,23 +70,27 @@ class AcceptedRuntimeHost:
         from bilqis_mlx.runtime.atlas_source_authority import (
             require_source_authority_runtime,
         )
-        from bilqis_mlx.runtime.bamf_bundle.admission import (
-            bind_accepted_execution_cache,
+        from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
+        from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
+            require_accepted_execution_cache,
         )
-
-        cache = bind_accepted_execution_cache(self.run_dir)
+        cache = self._accepted_cache
+        if getattr(cache, "_currentness_transaction", None) is None:
+            cache = bind_accepted_execution_cache(
+                self.run_dir, metrics=self.currentness_metrics)
+        else:
+            cache = require_accepted_execution_cache(cache)
         return require_source_authority_runtime(self._source_authority, cache)
 
     def source_context(self, *, graph: dict | None = None, source_root: Path | None):
         """Mint context for the Factory release bound by accepted B13 custody."""
         self.source_authority()
         from bilqis_mlx.factory.live_answers import live_answer_registry
-        from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
+        from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
         from bilqis_mlx.runtime.source_execution import SourceExecutionContext
         from bilqis_mlx.source_adapters.school import live_source_registry
 
-        student, _manifest_sha256 = load_bamf_generation_authority(
-            self.run_dir / "bamf-state.json")
+        student = load_accepted_generation(self.run_dir)
         from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
         release = read_accepted_atlas_factory_release(self.run_dir)
         release_sha256 = release.release_sha256

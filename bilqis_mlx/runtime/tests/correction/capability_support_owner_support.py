@@ -82,31 +82,41 @@ def training_authority(
 
 
 def source_qualified_state(
-        parent=None, *, authority=None, extents=None, spec=None, **authority_kwargs):
+        parent=None, *, authority=None, extents=None, spec=None, steps=1,
+        **authority_kwargs):
     parent = parent_state() if parent is None else parent
     transaction = begin_candidate(parent)
     authority = training_authority(**authority_kwargs) if authority is None else authority
     spec = ModelTopologySpecV2() if spec is None else spec
     extents = extents or GenerationExtents(
         1, 1, "a" * 64, parent.allocations.manifest.digest, "c" * 64)
+    if type(steps) is not int or steps < 1:
+        raise ValueError("steps must be a positive integer")
     with shape_patch():
-        transaction = candidate_step(
-            transaction,
-            {NAME: mx.array([[3., 4.], [0., 0.]], dtype=mx.float32)},
-            execution_provenance(
-                transaction.parent, rows=(0,),
-                candidate_step=transaction.update_steps + 1,
-                extents=extents),
-            HP, spec=spec, extents=extents, loss_bearing=True, max_norm=1.,
-            training_authority=authority)
+        for _ in range(steps):
+            transaction = candidate_step(
+                transaction,
+                {NAME: mx.array([[3., 4.], [0., 0.]], dtype=mx.float32)},
+                execution_provenance(
+                    transaction.parent, rows=(0,),
+                    candidate_step=transaction.update_steps + 1,
+                    extents=extents),
+                HP, spec=spec, extents=extents, loss_bearing=True, max_norm=1.,
+                training_authority=authority)
     return parent, transaction, resolve_candidate(transaction, accepted=True), authority
 
 
 def publish_support_fixture(
         run, *, authority=None, authority_registry=None,
         delivery_event="FIXTURE_CAPABILITY_SUPPORT", **authority_kwargs):
-    with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
-        pointer = publish_genesis(run)
+    patch_context = (
+        shape_patch()
+        if authority_registry is None
+        else shape_patch(authority_registry)
+    )
+    with patch_context, patch.object(mlx_checkpoint, "assert_headroom"):
+        pointer = publish_genesis(
+            run, source_authority_registry=authority_registry)
         accepted_parent = load_accepted_generation(run)
         parent, transaction, retained, authority = source_qualified_state(
             accepted_parent.retained_state,
@@ -140,20 +150,39 @@ class CapabilitySupportOwnerFixture(unittest.TestCase):
         self.environment = patch.dict(
             os.environ, {"BILQIS_DATA_PLANE": str(self.root / "plane.sqlite3")})
         self.environment.start()
+        self._authority_registry = None
 
     def tearDown(self):
         self.environment.stop()
         self.temporary.cleanup()
 
     def publish_support(self, *, authority=None, authority_registry=None):
+        self._authority_registry = authority_registry
         return publish_support_fixture(
             self.run, authority=authority,
             authority_registry=authority_registry)
 
+    def _shape_patch(self):
+        return (
+            shape_patch()
+            if self._authority_registry is None
+            else shape_patch(self._authority_registry)
+        )
+
     def load_support(self, authority_registry=None):
-        with shape_patch():
-            if authority_registry is not None:
+        registry = (
+            self._authority_registry
+            if authority_registry is None
+            else authority_registry
+        )
+        patch_context = (
+            shape_patch()
+            if registry is None
+            else shape_patch(registry)
+        )
+        with patch_context:
+            if registry is not None:
                 from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
                 cache = bind_accepted_execution_cache(self.run)
-                self.assertEqual(cache._correction_registry, authority_registry)
+                self.assertEqual(cache._correction_registry, registry)
             return load_capability_support_owner(self.run, TARGET)

@@ -10,7 +10,7 @@ from .kernel import _encode_one
 
 def encode_group(
     group, supplied, cursor, closure_outputs, compiled, parameters, *,
-    atlas_selection=None,
+    atlas_selection=None, source_execution_authority=None,
 ):
     selected = []
     for request in group:
@@ -34,6 +34,7 @@ def encode_group(
     matrix = mx.stack(selected)
     factor = frame_factor_terms(
         parameters, group, compiled.features,
-        extents=compiled.extents, atlas_selection=atlas_selection)
+        extents=compiled.extents, atlas_selection=atlas_selection,
+        source_execution_authority=source_execution_authority)
     seed = _encode_one(matrix, factor, parameters)
     return seed, matrix, factor, cursor

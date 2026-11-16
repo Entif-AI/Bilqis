@@ -41,6 +41,17 @@ class BAMF_ATLAS_ADMISSION:
     )
 
 
+class BAMF_CONTROL_PLANE:
+    INVALID = _spec(
+        ("SCHOOL", "BAMF_CONTROL_PLANE", "INVALID"),
+        owner="control_plane.service",
+        title="BAMF local control-plane boundary invalid",
+        message_template="The BAMF local control-plane boundary is invalid: {reason}",
+        disposition="PRESERVE_AND_INSPECT",
+        next_action="Keep learner and checkpoint custody unchanged; reconcile the local service transport, protocol session, or accepted-generation read boundary before retry.",
+    )
+
+
 class BAMF_SALIENCE:
     INVALID = _spec(
         ("SCHOOL", "BAMF_SALIENCE", "INVALID"),

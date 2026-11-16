@@ -58,7 +58,7 @@ class CapabilityRetentionTests(unittest.TestCase):
                 PARENT, CANDIDATE)
 
         self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
-        self.assertEqual(observed, [EvidenceKind.FIXED_SCHOOL] * 6)
+        self.assertEqual(observed, [EvidenceKind.FIXED_SCHOOL] * 4)
         self.assertIsNone(decision.blocking_capability)
 
     def test_foundation_acceptance_uses_fixed_school_only(self):
@@ -71,7 +71,7 @@ class CapabilityRetentionTests(unittest.TestCase):
         original = foundation_module.evaluate_capabilities
 
         def traced(solver, cohort, generation):
-            observed.append(cohort.kind)
+            observed.append((solver, cohort.kind))
             return original(solver, cohort, generation)
 
         with patch.object(foundation_module, "evaluate_capabilities", side_effect=traced):
@@ -80,7 +80,11 @@ class CapabilityRetentionTests(unittest.TestCase):
                 PARENT, CANDIDATE)
 
         self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
-        self.assertEqual(observed, [EvidenceKind.FIXED_SCHOOL] * 6)
+        self.assertEqual(
+            [kind for _solver, kind in observed],
+            [EvidenceKind.FIXED_SCHOOL] * 4)
+        self.assertEqual(sum(solver is parent_solver for solver, _kind in observed), 1)
+        self.assertEqual(sum(solver is candidate_solver for solver, _kind in observed), 3)
         self.assertIsNone(decision.blocking_capability)
 
     def test_strict_generalization_keeps_complete_paired_screen(self):

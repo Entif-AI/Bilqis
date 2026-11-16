@@ -27,10 +27,12 @@ from .atlas_admission import ParsedAtlasAdmissionBinding
 from .feature.receipt import AcceptedGenerationFeatureReceipt, is_digest
 from .feature.context import (
     AcceptedGenerationFeatureContext, AuthenticatedCandidateFeatureContext,
-    AuthenticatedGenerationFeatureContext,
+    AuthenticatedGenerationFeatureContext, _issue_candidate_feature_context,
+    _issue_generation_feature_context,
 )
 from .feature.replay_support import (
     artifact_identity as _artifact_identity,
+    authenticate_feature_materialization as _authenticate_feature_materialization_with,
     authenticate_features as _authenticate_features_with,
     feature_schema as _feature_schema,
     feature_schema_from_compiler_features,
@@ -42,6 +44,17 @@ def _authenticate_features(
         student, artifact_path: str | None = None, *, predecessor=None,
         require_active_set_match: bool = True):
     return _authenticate_features_with(
+        student, artifact_path, predecessor=predecessor,
+        resolve_selection=resolve_atlas_artifact_selection,
+        load_snapshot=load_pinned_atlas_snapshot,
+        build_manifest=build_feature_manifest,
+        require_active_set_match=require_active_set_match)
+
+
+def _authenticate_feature_materialization(
+        student, artifact_path: str | None = None, *, predecessor=None,
+        require_active_set_match: bool = True):
+    return _authenticate_feature_materialization_with(
         student, artifact_path, predecessor=predecessor,
         resolve_selection=resolve_atlas_artifact_selection,
         load_snapshot=load_pinned_atlas_snapshot,
@@ -87,7 +100,9 @@ def _accepted_feature_context(run_dir: Path, manifest_sha256: str, student, *,
         current = parent
 
     genesis, _, = history[-1]
-    features = _authenticate_features(genesis)
+    materialization = _authenticate_feature_materialization(genesis)
+    materialization_count = 1
+    features = materialization.features
     predecessor = None
     construction_predecessor = None
     result_binding = history[0][1]
@@ -113,17 +128,21 @@ def _accepted_feature_context(run_dir: Path, manifest_sha256: str, student, *,
                 invalid("BAMF_FEATURE_SOURCE_REPLAY_MISMATCH")
         else:
             construction_predecessor = features
-            features = _authenticate_features(child, predecessor=features)
+            materialization = _authenticate_feature_materialization(
+                child, predecessor=features)
+            materialization_count += 1
+            features = materialization.features
             if features.predecessor_digest != predecessor.digest:
                 invalid("BAMF_FEATURE_PREDECESSOR_UNAUTHENTICATED")
         current = child
-    return features, result_binding, predecessor, construction_predecessor
+    return (features, result_binding, predecessor, construction_predecessor,
+            materialization, materialization_count)
 
 
 def _accepted_feature_chain(run_dir: Path, manifest_sha256: str, student, *,
                             expected_acceptance_sha256: str):
     """Return current features plus the immediate parent generation's feature map."""
-    features, binding, predecessor, _ = _accepted_feature_context(
+    features, binding, predecessor, _, _materialization, _count = _accepted_feature_context(
         run_dir, manifest_sha256, student,
         expected_acceptance_sha256=expected_acceptance_sha256)
     return features, binding, predecessor
@@ -163,14 +182,11 @@ def authenticate_bamf_candidate_feature_context(
     # strict about active-set drift and C07 still owns admission.
     features = _authenticate_features(
         candidate, artifact_path, require_active_set_match=False)
-    context = AuthenticatedCandidateFeatureContext(
-        selection, snapshot, schema, features)
-    context.__post_init__()
-    return context
+    return _issue_candidate_feature_context(selection, snapshot, schema, features)
 
 
 def authenticate_bamf_generation_feature_context(
-        student: CompleteStudent, artifact_path: str,
+        student: CompleteStudent, artifact_path: str | None,
         pointer_path: Path) -> AuthenticatedGenerationFeatureContext:
     """Replay feature inputs for one exact accepted generation through B13 custody."""
     if type(student) is not CompleteStudent or not isinstance(pointer_path, Path):
@@ -180,24 +196,33 @@ def authenticate_bamf_generation_feature_context(
     # generation, not while importing custody/release contracts.
     from .accepted_runtime import _published_in_memory_identity
     _published_in_memory_identity(pointer_path.parent, student)
-    accepted = read_accepted_generation_feature_context(pointer_path)
-    receipt = accepted.receipt
+    (receipt, features, _predecessor, _construction,
+     materialization, materialization_count) = (
+        _read_accepted_generation_feature_materialization(pointer_path))
     if (receipt.run_id != student.run_id
             or receipt.generation != student.generation
             or receipt.active_set_sha256 != student.extents.active_semantic_digest
             or receipt.feature_sha256 != student.extents.factor_map_digest):
         invalid("BAMF_ACCEPTED_FEATURE_GENERATION_DRIFT")
-    source = _feature_source(student.compiler_features)
-    identity = _artifact_identity(source)
-    selection = AtlasArtifactSelection(
-        str(artifact_path), identity.bundle_id,
-        identity.release_sha256, identity.source_bundle_id)
-    snapshot = load_pinned_atlas_snapshot(selection)
+    selection = materialization.selection
+    if artifact_path is not None:
+        source = _feature_source(student.compiler_features)
+        identity = _artifact_identity(source)
+        selection = AtlasArtifactSelection(
+            str(artifact_path), identity.bundle_id,
+            identity.release_sha256, identity.source_bundle_id)
     schema = _feature_schema(student.compiler_features)
-    context = AuthenticatedGenerationFeatureContext(
-        selection, snapshot, schema, accepted.features, receipt)
-    context.__post_init__()
-    return context
+    snapshot = materialization.snapshot
+    if (materialization.schema != schema
+            or (snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+            != (selection.release_sha256, selection.bundle_id,
+                selection.source_bundle_id)):
+        invalid("BAMF_ACCEPTED_FEATURE_GENERATION_DRIFT")
+    return _issue_generation_feature_context(
+        selection, snapshot, schema, features, receipt,
+        construction_predecessor=_construction,
+        atlas_reload_count=materialization_count,
+        feature_manifest_rebuild_count=materialization_count)
 
 
 def authenticate_bamf_execution_feature_context(
@@ -214,12 +239,13 @@ def authenticate_bamf_execution_feature_context(
     invalid("BAMF_FEATURE_CANDIDATE_REQUIRED")
 
 
-def _read_accepted_generation_feature_context(pointer_path: Path):
-    """Return accepted receipt plus generation and feature-construction ancestry."""
+def _read_accepted_generation_feature_materialization(pointer_path: Path):
+    """Return accepted receipt plus the one A01/A06 materialization used for replay."""
     pointer, student = accepted_generation(pointer_path)
     current_binding = _require_published_acceptance(
         pointer_path.parent, pointer, student)
-    features, binding, predecessor_features, construction_predecessor = (
+    (features, binding, predecessor_features, construction_predecessor,
+     materialization, materialization_count) = (
         _accepted_feature_context(
         pointer_path.parent, pointer["manifest_sha256"], student,
         expected_acceptance_sha256=pointer["acceptance_sha256"]))
@@ -247,7 +273,15 @@ def _read_accepted_generation_feature_context(pointer_path: Path):
         source_release_sha256=features.semantic_release,
         source_source_bundle_id=features.source_bundle_id,
     )
-    return receipt, features, predecessor_features, construction_predecessor
+    return (receipt, features, predecessor_features, construction_predecessor,
+            materialization, materialization_count)
+
+
+def _read_accepted_generation_feature_context(pointer_path: Path):
+    """Compatibility seam for callers that do not need materialized A01 state."""
+    receipt, features, predecessor, construction, _materialization, _count = (
+        _read_accepted_generation_feature_materialization(pointer_path))
+    return receipt, features, predecessor, construction
 
 
 def read_accepted_generation_feature_context(

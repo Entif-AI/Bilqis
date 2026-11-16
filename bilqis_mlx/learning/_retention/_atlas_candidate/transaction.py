@@ -2,6 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 import mlx.core as mx
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.learning.atlas_engram import MotifBudget
 from bilqis_mlx.learning.atlas_engram_transaction import (
     MotifAllocationSnapshot,
@@ -17,12 +18,31 @@ from .common import (CLOSURE_STEP_PROOF_SCHEMA, LEGACY_STEP_PROOF_SCHEMA,
     STEP_PROOF_SCHEMA, RETAINED_STATE_ISSUER, STATE_SCHEMA, TRANSACTION_ISSUER,
     TRANSACTION_SCHEMA, invalid)
 from .proofs import CandidateStepProof
+from bilqis_mlx.learning._retention._atlas_candidate.identity import RAW_IDENTITY_SCHEME
+from .identity_binding import protect_candidate_state
 from .state import CandidateState, _is_genesis_allocations
 from .motif_transition import (
     CandidateMotifAllocationTransition,
     _require_candidate_motif_allocation_transition,
     _stage_candidate_motif_allocation,
 )
+
+
+def _parent_object_guard(parent: CandidateState) -> tuple:
+    """Cheap process-local proof that the accepted parent objects are unchanged."""
+    optimizer = parent.optimizer
+    groups = []
+    for group in ("parameters", "m", "v", "update_counts"):
+        values = getattr(optimizer, group)
+        groups.append((
+            group, id(values),
+            tuple((name, id(value)) for name, value in sorted(values.items())),
+        ))
+    return (
+        id(parent), id(optimizer), parent.optimizer_step,
+        id(parent.policy), id(parent.allocations), tuple(groups),
+    )
+
 
 @dataclass(frozen=True, init=False)
 class CandidateTransaction:
@@ -37,6 +57,8 @@ class CandidateTransaction:
     training_authorities: tuple = ()
     motif_transition: CandidateMotifAllocationTransition | None = None
     schema_version: str = TRANSACTION_SCHEMA
+    _parent_identity_sha256: str = field(init=False, repr=False, compare=False)
+    _parent_guard: tuple = field(init=False, repr=False, compare=False)
     _issuance: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -60,10 +82,13 @@ class CandidateTransaction:
                        for index, proof in enumerate(self.step_proofs))
                 or (self.motif_transition is not None
                     and type(self.motif_transition) is not CandidateMotifAllocationTransition)
+                or not isinstance(self._parent_identity_sha256, str)
+                or len(self._parent_identity_sha256) != SHA256_HEX_LENGTH
+                or _parent_object_guard(self.parent) != self._parent_guard
                 or self.schema_version != TRANSACTION_SCHEMA):
             invalid()
         self.parent.__post_init__()
-        self.optimizer.validate()
+        self.optimizer.validate_structure()
         self.allocations.__post_init__()
         if self.motif_transition is None:
             if (self.allocations is not self.parent.allocations
@@ -81,6 +106,7 @@ class CandidateTransaction:
                     or transition.parent_allocation_sha256 != self.parent.allocations.digest
                     or transition.candidate_allocation_sha256 != self.allocations.digest):
                 invalid()
+        count_checks = []
         for name, count in self.optimizer.update_counts.items():
             previous = self.parent.optimizer.update_counts.get(name)
             if previous is None:
@@ -88,9 +114,16 @@ class CandidateTransaction:
                     invalid()
                 continue
             if (self.optimizer.parameters[name].shape != self.parent.optimizer.parameters[name].shape
-                    or count.shape != previous.shape
-                    or not bool(mx.all(count >= previous))
-                    or not bool(mx.all(count - previous <= self.update_steps))):
+                    or count.shape != previous.shape):
+                invalid()
+            count_checks.extend((
+                mx.all(count >= previous),
+                mx.all(count - previous <= self.update_steps),
+            ))
+        if count_checks:
+            counts_valid = mx.all(mx.stack(tuple(count_checks)))
+            mx.eval(counts_valid)
+            if not bool(counts_valid):
                 invalid()
 
     @property
@@ -100,16 +133,23 @@ class CandidateTransaction:
 
 def _issue_transaction(parent, optimizer, teacher_requests_full, update_steps=0,
                        step_proofs=(), training_authorities=(), *, allocations=None,
-                       motif_transition=None):
+                       motif_transition=None, parent_identity_sha256=None,
+                       parent_guard=None):
     """Continue one candidate; B07 allocation state is terminal when present."""
     candidate = object.__new__(CandidateTransaction)
     allocations = parent.allocations if allocations is None else allocations
+    if parent_identity_sha256 is None:
+        from ..atlas_acceptance import candidate_identity_digest
+        parent_identity_sha256 = candidate_identity_digest(parent)
+    parent_guard = _parent_object_guard(parent) if parent_guard is None else parent_guard
     for name, value in (
             ('parent', parent), ('optimizer', optimizer), ('allocations', allocations),
             ('teacher_requests_full', teacher_requests_full), ('update_steps', update_steps),
             ('step_proofs', tuple(step_proofs)),
             ('training_authorities', tuple(training_authorities)),
             ('motif_transition', motif_transition),
+            ('_parent_identity_sha256', parent_identity_sha256),
+            ('_parent_guard', parent_guard),
             ('schema_version', TRANSACTION_SCHEMA), ('_issuance', TRANSACTION_ISSUER)):
         object.__setattr__(candidate, name, value)
     candidate.__post_init__()
@@ -127,6 +167,21 @@ def begin_candidate(parent: CandidateState, *, budget=None,
     return _issue_transaction(parent, parent.optimizer, teacher_requests_full)
 
 
+def _begin_candidate_with_parent_identity(
+        parent: CandidateState, parent_identity_sha256: str, *,
+        teacher_requests_full: bool = False) -> CandidateTransaction:
+    """Accepted-custody ingress that reuses an owner-issued immutable parent identity."""
+    if (type(parent) is not CandidateState
+            or not isinstance(parent_identity_sha256, str)
+            or len(parent_identity_sha256) != SHA256_HEX_LENGTH
+            or type(teacher_requests_full) is not bool):
+        invalid()
+    parent.__post_init__()
+    return _issue_transaction(
+        parent, parent.optimizer, teacher_requests_full,
+        parent_identity_sha256=parent_identity_sha256)
+
+
 def _validated_step_decay(candidate, execution, spec, extents):
     custody = candidate.parent.custody
     if custody is None:
@@ -140,7 +195,6 @@ def _validated_step_decay(candidate, execution, spec, extents):
             or extents.digest != custody.extents_digest):
         invalid()
     decay = reconcile_b01_optimizer_manifest(candidate.optimizer, spec, extents)
-    from ..atlas_acceptance import candidate_identity_digest
     if (execution.run_id != custody.run_id
             or execution.generation != custody.generation + 1
             or (custody.manifest_sha256 is not None
@@ -148,7 +202,7 @@ def _validated_step_decay(candidate, execution, spec, extents):
             or execution.topology_digest != custody.topology_digest
             or execution.extents_sha256 != custody.extents_digest
             or execution.parent_candidate_identity_sha256
-            != candidate_identity_digest(candidate.parent)
+            != candidate._parent_identity_sha256
             or execution.parent_optimizer_step != candidate.parent.optimizer_step
             or execution.candidate_step != candidate.update_steps + 1):
         invalid()
@@ -233,9 +287,14 @@ def candidate_step(candidate: CandidateTransaction, gradients, execution,
     decay = _validated_step_decay(candidate, execution, spec, extents)
     update_mask = optimizer_participation_mask(
         execution.mask, candidate.optimizer.update_counts)
+    participation_authority = {
+        item.name: (item.whole_parameter, item.row_indices)
+        for item in execution.mask.parameters
+    }
     optimizer = _adamw_update(
         candidate.optimizer, gradients, update_mask, teacher_hparams,
-        decay=decay, loss_bearing=loss_bearing, max_norm=max_norm)
+        decay=decay, loss_bearing=loss_bearing, max_norm=max_norm,
+        participation_authority=participation_authority)
     if optimizer is candidate.optimizer:
         return candidate
     proof = _candidate_step_proof(
@@ -243,7 +302,9 @@ def candidate_step(candidate: CandidateTransaction, gradients, execution,
     return _issue_transaction(
         candidate.parent, optimizer, candidate.teacher_requests_full,
         candidate.update_steps + 1, candidate.step_proofs + (proof,),
-        candidate.training_authorities + (training_authority,))
+        candidate.training_authorities + (training_authority,),
+        parent_identity_sha256=candidate._parent_identity_sha256,
+        parent_guard=candidate._parent_guard)
 
 
 def resolve_candidate(candidate: CandidateTransaction, *, accepted: bool) -> CandidateState:
@@ -265,16 +326,21 @@ def resolve_candidate(candidate: CandidateTransaction, *, accepted: bool) -> Can
         accepted=True, participating_rows=rows)
     step = candidate.parent.optimizer_step + candidate.update_steps
     if _is_genesis_allocations(candidate.allocations):
-        return CandidateState(candidate.optimizer, policy, candidate.allocations, step,
-                              candidate.parent.custody,
-                              tuple(candidate.step_proofs))
+        state = CandidateState(candidate.optimizer, policy, candidate.allocations, step,
+                               candidate.parent.custody,
+                               tuple(candidate.step_proofs),
+                               identity_scheme=RAW_IDENTITY_SCHEME)
+        protect_candidate_state(state)
+        return state
     state = object.__new__(CandidateState)
     for name, value in (
             ('optimizer', candidate.optimizer), ('policy', policy),
+            ('identity_scheme', RAW_IDENTITY_SCHEME),
             ('allocations', candidate.allocations), ('optimizer_step', step),
             ('custody', candidate.parent.custody),
             ('step_proofs', tuple(candidate.step_proofs)),
             ('schema_version', STATE_SCHEMA), ('_issuance', RETAINED_STATE_ISSUER)):
         object.__setattr__(state, name, value)
     state.__post_init__()
+    protect_candidate_state(state)
     return state

@@ -16,7 +16,7 @@ from bilqis_mlx.learning.teacher_lineage import (
 )
 from bilqis_mlx.learning.teacher_visit_identity import (
     TeacherVisitIdentity, derive_teacher_visit_identity,
-    record_teacher_visit_identity,
+    record_teacher_visit_authority, record_teacher_visit_identity,
 )
 from bilqis_mlx.learning._teaching.teacher_lineage_records import digest, invalid
 from bilqis_mlx.runtime.bamf_bundle import CompleteStudent
@@ -230,10 +230,13 @@ def select_accepted_teacher_visit(
         accepted_manifest_sha256=cache.accepted_manifest_sha256,
         capability_id=capability_id, policy_key=key)
     recorded = record_teacher_visit_identity(selected.teacher_state, identity)
+    recorded = record_teacher_visit_authority(recorded, identity)
     return _issue_bound_visit(recorded, identity), policy, metadata
 
 
-def _require_current_visit(parent, cache, visit: BoundTeacherVisit) -> None:
+def _require_current_visit(
+        parent, cache, visit: BoundTeacherVisit, *,
+        candidate_identity_sha256: str | None = None) -> None:
     if type(visit) is not BoundTeacherVisit:
         invalid("TEACHER_VISIT_CUSTODY_REQUIRED")
     visit.__post_init__()
@@ -245,9 +248,10 @@ def _require_current_visit(parent, cache, visit: BoundTeacherVisit) -> None:
         generation=parent.generation,
         accepted_manifest_sha256=cache.accepted_manifest_sha256,
         capability_id=identity.capability_id, policy_key=identity.policy_key)
+    if candidate_identity_sha256 is None:
+        candidate_identity_sha256 = candidate_identity_digest(parent.retained_state)
     if (identity != expected
-            or identity.student_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or identity.student_sha256 != candidate_identity_sha256):
         invalid("TEACHER_VISIT_ACCEPTED_GENERATION_DRIFT")
 
 

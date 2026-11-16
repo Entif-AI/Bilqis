@@ -192,6 +192,23 @@ class BamfPreflightTests(unittest.TestCase):
                 self.assertTrue(parse_args(['train', *spelling]).bamf_v2_foundation_explicit)
         self.assertFalse(parse_args(['train']).bamf_v2_foundation_explicit)
 
+    def test_parser_accepts_explicit_source_run_for_fresh_bamf(self):
+        args = parse_args(['train', '--source-run-dir', '/accepted/source-run'])
+        self.assertEqual(args.source_run_dir, Path('/accepted/source-run'))
+
+    def test_fresh_external_target_does_not_fall_through_to_legacy_trainer(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            run = Path(tmp) / 'aspirant'
+            output, errors = io.StringIO(), io.StringIO()
+            with redirect_stdout(output), redirect_stderr(errors):
+                code = main(['train', '--human-run', '--run-dir', str(run)])
+            self.assertEqual((code, output.getvalue()), (2, ''))
+            self.assertIn('BAMF_OPERATOR_FRESH_EXTERNAL_RUN_REQUIRES_FOUNDATION_INPUTS',
+                          errors.getvalue())
+            self.assertNotIn('LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN',
+                             errors.getvalue())
+            self.assertFalse(run.exists())
+
     def test_fresh_v2_optimizer_completeness_precedes_missing_topology(self):
         output, errors = io.StringIO(), io.StringIO()
         with redirect_stdout(output), redirect_stderr(errors):
@@ -234,9 +251,10 @@ class BamfPreflightTests(unittest.TestCase):
         help_text = ' '.join(output.getvalue().split()).replace('- ', '-')
         for text in (
             'PROVISIONAL max new wrong answers on any protected capability',
-            ('Explicit human authorization for mutating operator actions; BAMF create '
-             'and enrollment remain neural-inert, while an accepted BAMF --resume may '
-             'enter the persistent BAMF-native learner.'),
+            ('Explicit operator confirmation for mutating CLI actions; this is not '
+             'authentication. BAMF create and enrollment remain neural-inert, while '
+             'an accepted BAMF --resume may enter the persistent BAMF-native learner.'),
+            'Accepted source learner used to derive a fresh BAMF foundation.',
             'autonomously measure, teach, and remeasure factory evidence',
             'Optional complete visit cap',
             'low-overhead nanosecond timing markers',

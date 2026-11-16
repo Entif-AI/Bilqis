@@ -65,11 +65,15 @@ def resolve_ready_candidate(frontier, current, ledger, plan, checkpoint, proposa
 
 def verify_current_implementations(successor, source_registry, answer_registry):
     """A sealed historical package cannot authorize changed provider code."""
+    from bilqis_mlx.compatibility.source_adapter_resume import resume_adapter_compatible
+
     sources = {item.adapter_id: item for item in successor.source_adapters}
     for execution in successor.execution_plan.capabilities:
         binding = successor.source_bindings.by_capability[execution.capability_id]
         actual = source_registry.require(binding.generator_id, binding.oracle_id).descriptor
-        if actual != sources.get(execution.provider_id):
+        admitted = sources.get(execution.provider_id)
+        if (actual != admitted and
+                not resume_adapter_compatible(admitted, actual)):
             raise ValueError("JIT_ADOPTION_SOURCE_IMPLEMENTATION_DRIFT")
     if tuple(answer_registry.require(item.kind).descriptor
              for item in successor.answer_modalities) != successor.answer_modalities:

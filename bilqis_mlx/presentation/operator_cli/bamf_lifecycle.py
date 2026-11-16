@@ -205,7 +205,7 @@ def _resume(args, requested_topology):
             from bilqis_mlx.runtime.atlas_flywheel_runtime import (
                 run_accepted_atlas_flywheel,
             )
-            _source, _release, graph = source_foundation()
+            _source, _release, graph = source_foundation(args.source_run_dir)
             flywheel = run_accepted_atlas_flywheel(
                 run_dir, graph, reserve_gib=args.reserve_gib)
             result = flywheel.status.value
@@ -235,6 +235,20 @@ def _cold_recovery(args, topology, atlas, hp):
     )
 
 
+def _fresh_target(args):
+    from bilqis_mlx.runtime._bamf_first_student_support import (
+        _canonical_disjoint_run_paths, _canonical_run_dir_shape,
+    )
+    selected_source = source_run_dir(args.source_run_dir)
+    _source, target = _canonical_disjoint_run_paths(
+        str(selected_source), args.run_dir)
+    target = _canonical_run_dir_shape(target)
+    pointer_path = target / "bamf-state.json"
+    if pointer_path.exists() or pointer_path.is_symlink():
+        invalid("BAMF_OPERATOR_CREATE_USE_RESUME")
+    return selected_source, target, pointer_path
+
+
 def bamf_lifecycle(args, topology):
     """Resolve one BAMF v2 lifecycle request without entering the neural loop."""
     if args.resume:
@@ -247,19 +261,12 @@ def bamf_lifecycle(args, topology):
         if args.human_run is not True:
             invalid("BAMF_OPERATOR_CREATE_EXPLICIT_HUMAN_REQUEST_REQUIRED")
     _validate_fresh_request_compatibility(args, topology, atlas, request)
-    from bilqis_mlx.runtime._bamf_first_student_support import (
-        _canonical_disjoint_run_paths, _canonical_run_dir_shape, _fresh_run_dir,
-    )
-    _source, target = _canonical_disjoint_run_paths(
-        str(source_run_dir()), args.run_dir)
-    target = _canonical_run_dir_shape(target)
-    pointer_path = target / "bamf-state.json"
-    if pointer_path.exists() or pointer_path.is_symlink():
-        invalid("BAMF_OPERATOR_CREATE_USE_RESUME")
+    from bilqis_mlx.runtime._bamf_first_student_support import _fresh_run_dir
+    selected_source, target, pointer_path = _fresh_target(args)
 
     if args.dry_run:
         _fresh_run_dir(target)
-        source, release, graph = source_foundation()
+        source, release, graph = source_foundation(selected_source)
         from bilqis_mlx.runtime.bamf_first_student import (
             BamfFoundationConfig, preview_bamf_foundation_run_identity,
         )
@@ -283,7 +290,7 @@ def bamf_lifecycle(args, topology):
                 recovered = _cold_recovery(args, topology, atlas, hp)
 
     if recovered is None:
-        source, release, graph = source_foundation()
+        source, release, graph = source_foundation(selected_source)
         from bilqis_mlx.runtime.bamf_first_student import (
             BamfFoundationConfig, preflight_bamf_foundation,
         )

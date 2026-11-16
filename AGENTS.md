@@ -167,12 +167,43 @@ production OOM restore/retry path are wired and verified on the actual execution
 path. Never use a test-harness memory accident as evidence that production training
 is safe, and never use the analytical planner alone as proof of measured peak RAM.
 
-Run `npm run verify:premerge` only at an actual integration/turn-in boundary or when
-a change can invalidate broad prior evidence. That gate executes the repository's
-existing aggregate runner. A new source/configuration change,
-failed test, changed dependency/toolchain, or altered test policy can invalidate the
-prior broad receipt; prose-only progress and unchanged code cannot. Install the
-optional accelerator dependencies with `python3 -m pip install -e '.[test]'`.
+Run `npm run verify:premerge` only when the changed dependency closure is genuinely
+broad enough to justify the repository aggregate runner, or when the human explicitly
+requests a fresh whole-repository qualification. An integration/turn-in boundary by
+itself is **not** sufficient reason to run thousands of unrelated tests. Prefer the
+smallest owner/regression set that proves the changed contracts, plus hosted PR checks.
+A new source/configuration change, failed affected test, changed dependency/toolchain,
+or altered test policy can invalidate prior evidence; prose-only progress and unchanged
+code cannot. Install the optional accelerator dependencies with
+`python3 -m pip install -e '.[test]'`.
+
+**Legacy fixture boundary and verification-scope discipline — 2026-11-15:** The
+historical checkpoint
+`vendor/legacy-v16/runs/primitive-consolidation-v16-triplets/student-116760-7e9af4651f28.pt`
+is under the gitignored `runs/` boundary and is **not expected to exist in ordinary
+issue worktrees or the reviewed unified worktree**. The canonical provisioned legacy
+copy lives in
+`/Users/emilie/Code/.worktrees/bilqis-mlx/337-replay-349-20261026/vendor/legacy-v16/runs/primitive-consolidation-v16-triplets/student-116760-7e9af4651f28.pt`.
+Do not classify absence of that file in an ordinary worktree as a candidate regression,
+and do not launch a broad aggregate suite merely to rediscover that environment fact.
+First classify the issue's actual dependency surface. If the changed contract truly
+depends on the historical checkpoint, run the smallest explicit legacy-dependent
+witness against the canonical authority path after
+`python3 -B scripts/check_legacy_trainer_authority.py --live`; never copy, fabricate,
+or silently substitute the checkpoint.
+If the changed contract does not depend on it, exclude unrelated legacy-dependent suites
+from turn-in evidence. Expand verification only when a concrete affected failure or
+dependency edge justifies the expansion.
+
+**BAMF autodiff and evidence boundary — 2026-11-15:** Differentiated execution may
+perform structural validation that does not force MLX tensor values to the host.
+Tensor-content validation, numerical fingerprints, forensic hashing, receipt replay,
+and other host-synchronizing evidence checks must remain outside `mx.value_and_grad`
+and `mx.grad`. Deferring an evidence check does not waive it: after differentiated
+tensors materialize, complete the deferred validation before the result gains
+evidence-plane authority. Causal replay inside autodiff must reuse model-derived
+inference choices from the exact issued execution context. Supervision targets and
+masks affect loss only and must not replace the model's causal branch history.
 
 Open the lane-to-unified PR only after the candidate is otherwise ready to merge:
 the design review is complete, required differential evidence is green or validly
@@ -559,8 +590,12 @@ already-approved design does not require a whole-design review.
 
 ### Integration turn-in
 
-Run `npm run verify:premerge` only at an actual integration boundary and only when no
-reusable valid receipt already covers the relevant state.
+At an integration boundary, require the **minimum sufficient evidence set** for the
+actual changed contracts. Reuse valid receipts, run focused owner/regression tests for
+newly affected surfaces, and use hosted PR checks as the final integration proof. Run
+`npm run verify:premerge` only when the change genuinely invalidates broad repository
+evidence or the human explicitly asks for a fresh aggregate qualification; do not run
+the aggregate suite solely because a PR is about to be opened.
 
 Before opening a PR require:
 
@@ -830,7 +865,7 @@ training boundaries and the issue-owned two-run/100-GB exception remain unchange
 
 ## Current canonical operator binding (2026-10-17)
 
-This repository's authoritative working root is `~/Code/bilqis-mlx`. The old codex and Chat-On-Steroids worktree paths are historical provenance, not current operator instructions. The active teacher/student code is `bilqis_mlx/`, the historical source-oracle and policy inputs are pinned under `vendor/legacy-v16/`, the actual student and its AdamW are under ignored `runs/school-mlx-v1/`, and all old experimental state is retained without making it an active runtime dependency. Human-run alone may update live neural state. See `README.md` and `docs/operations/CANONICAL_REPOSITORY_AND_RELEASE_20261017.md` for the current tested command, storage and release procedures. Conflicting older location or command examples below are superseded; source-semantic identity, cumulative whole-student graduation and protection requirements remain binding.
+This repository's authoritative working root is `~/Code/bilqis-mlx`. The old codex and Chat-On-Steroids worktree paths are historical provenance, not current operator instructions. The active teacher/student code is `bilqis_mlx/`, the historical source-oracle and policy inputs are pinned under `vendor/legacy-v16/`, the actual student and its AdamW are under ignored `runs/school-mlx-v1/`, and all old experimental state is retained without making it an active runtime dependency. Human-run alone may update live neural state. See `README.md` and `docs/operations/OPERATOR_GUIDE.md` for the current tested setup, command, storage and operator procedures. `docs/operations/CANONICAL_REPOSITORY_AND_RELEASE_20261017.md` is retained only as a dated migration/release record. Conflicting older location or command examples below are superseded; source-semantic identity, cumulative whole-student graduation and protection requirements remain binding.
 
 Authority: user's latest directives, protected `IPR-0220`, `ADR.md`, and approved issue #1. **This repository and its implementation are public.** Code, tests, architecture, ordinary implementation notes, and project handoffs may be published directly. Protected source material remains protected unless separately released; refer to it publicly only by opaque authority ID such as `IPR-0220`, without copying private-only text, credentials, attachments, or private repository URLs.
 
@@ -1028,6 +1063,7 @@ Preserve real-student/own-AdamW recovery, stable token meanings, answer correctn
 - Never test untaught roots or compose tests before separate prerequisite mastery in earlier grades. Teach appropriate binary and finite typed answers. Source attest all lessons and independent oracles; if evidence is absent, block advancement rather than guessing.
 - Admit no grade examination with unapproved source tokens, semantic forms, or world sizes. Live Grade A uses the same six user-accepted direct predicates with reproducible fresh, balanced 72-item cohorts drawn from source-checked constructors. Source/oracle hashes, 222-token graph prefix, complete FP32 student and matching AdamW remain mandatory. The frozen 144+72 historical records are read-only evidence and do not govern the live question sample.
 - Vocabulary grows by append-only, separately attested token allocations. The 222-token parent has no fixed semantic ceiling. The 330 Semantic Bridges records are research candidates, not 330 approved new tokens or learned roots. Support atomic, composite and hybrid meanings (including lexicalized concepts); do not collapse roots, syntax, tokens, lessons or mastered skills into one count.
+- **Accepted provider-custody continuity:** Append-only successor staging must preserve the predecessor release's sealed source-provider descriptors for already accepted capabilities. A current callable may execute behind a predecessor descriptor only when an exact, explicitly enumerated, one-way historical-to-current compatibility pair has been behaviorally proven; new provider identities keep their current descriptors. Arbitrary hash drift, symmetric compatibility, descriptor rewriting, or weakening staging/JIT fail-closed checks is forbidden. Unproven provider drift must block before accepted-state mutation.
 - Agent-run dry-runs, tests, read-only parity, dashboard/status, and safe fixture experiments are authorized. **No agent-run neural optimizer updates to actual Bilqis students.** The experimental trainer requires a deliberate `--human-run` in the human's terminal; only the operator may initiate/continue the actual model, with exclusive lock, source verification and immutable own-AdamW checkpoints.
 - Reuse six-panel School50 and stable npm commands. Protect disk headroom; no recursive cleanup of `~/Code`, no archive deletion, no model binaries in Git. Backup only explicit source paths with external readback evidence.
 - **Forward-compatible School50 metrics (ADR-016):** Keep the six named panels but make their event/measurement schema grade-neutral. Preserve step, model, rubric, partition and teacher-source provenance; display first/latest/best, gains and cross-grade retention without mixing checkpoints. Optional independent sentinels, semantic construction probes and teacher-only soup metrics must be real and source-bound before presenting values; missing dimensions are NOT MEASURED or OFF, not manufactured from source-training rewards. Dashboard code cannot mutate the actively running human student or teacher. See `docs/architecture/SCHOOL50_TELEMETRY_V1_20261015.md`.

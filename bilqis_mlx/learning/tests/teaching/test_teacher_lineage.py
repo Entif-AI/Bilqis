@@ -10,7 +10,7 @@ from bilqis_mlx.learning.teacher_lineage import (
 )
 from bilqis_mlx.learning.teacher_visit_identity import (
     TeacherVisitIdentity, derive_teacher_visit_identity,
-    record_teacher_visit_identity,
+    record_teacher_visit_identity, teacher_visit_receipt_record,
 )
 from bilqis_mlx.learning.tests.teacher_strategy_test_support import teacher_fixture
 
@@ -192,13 +192,18 @@ class TeacherLineageTests(unittest.TestCase):
             accepted_manifest_sha256="2" * 64,
             capability_id="C.ADD", policy_key="p-strong")
         recorded = record_teacher_visit_identity(rotated, visit)
+        with_receipt = dict(recorded.teacher_state)
+        with_receipt["last_visit_receipt"] = teacher_visit_receipt_record(visit)
         next_epoch = bind_next_teacher_epoch(
-            recorded.teacher_state, _student("b" * 64, "student-b"),
+            with_receipt, _student("b" * 64, "student-b"),
             bank_identity="bank:v2", plasticity_identity="plasticity:adaptive")
         advanced = advance_teacher_lineage(
-            recorded.teacher_state, next_epoch,
+            with_receipt, next_epoch,
             next_seed=43, cursor="lesson:8")
         self.assertEqual(advanced.teacher_state["last_visit"], visit.to_record())
+        self.assertEqual(
+            advanced.teacher_state["last_visit_receipt"],
+            teacher_visit_receipt_record(visit))
         self.assertEqual(advanced.teacher_state["next_seed"], 43)
         self.assertEqual(advanced.teacher_state["cursor"], "lesson:8")
         self.assertEqual(

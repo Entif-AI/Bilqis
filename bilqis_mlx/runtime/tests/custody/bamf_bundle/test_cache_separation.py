@@ -14,7 +14,6 @@ import mlx.core as mx
 import numpy as np
 
 from bilqis_mlx.errors import BilqisError
-from bilqis_mlx.learning.atlas_acceptance import mint_acceptance_binding
 from bilqis_mlx.learning.atlas_candidate import CandidateState
 from bilqis_mlx.runtime import mlx_checkpoint
 from bilqis_mlx.runtime.atlas_attention import (
@@ -32,7 +31,7 @@ from bilqis_mlx.runtime.model_topology_v2 import (
     Initializer, ModelTopologySpecV2, ParameterGroup, ParameterSpec,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
-    DECLARED, candidate, parent_state, publish_candidate, retention_decision,
+    DECLARED, acceptance, candidate, parent_state, publish_candidate,
 )
 
 
@@ -103,14 +102,9 @@ def _attention_view(state: CandidateState) -> dict:
 
 
 def _publish(run: Path, bundle, *, parent_state_for_acceptance: CandidateState):
-    decision = retention_decision(
-        parent=parent_state_for_acceptance, retained=bundle.retained_state)
-    acceptance = mint_acceptance_binding(
-        decision, bundle.retained_state, run_id=bundle.run_id,
-        generation=bundle.generation, feature_sha256=bundle.extents.factor_map_digest,
-        source_authority_registry_sha256=bundle.correction_frontier.get(
-            "source_authority_registry_sha256"))
-    return publish_bamf_generation(run, bundle, acceptance=acceptance)
+    return publish_bamf_generation(
+        run, bundle,
+        acceptance=acceptance(bundle, parent=parent_state_for_acceptance))
 
 
 def _cache_for(run: Path, hidden, ids, valid):

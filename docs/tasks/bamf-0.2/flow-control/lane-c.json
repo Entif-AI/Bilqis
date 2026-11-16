@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "97a018ed7e9697fe284abd9fa8197cd7f4194b45",
-  "updated_at": "2026-11-13T15:22:11Z",
+  "observed_unified": "d280a3e8d47efdba34e1262ffa59018d93f7c443",
+  "updated_at": "2026-11-15T09:19:59+00:00",
   "exception": null,
   "items": [
     {
@@ -381,6 +381,75 @@
       "summary": "C07.3/#512 turned in after consuming reviewed unified 21b95a97 and merged #511. The event-driven A09/C07 flywheel emits only FIXED_POINT, WAITING_FOR_EVIDENCE, HELD, IMPLEMENTATION_UNCOVERED or LEASE_REQUIRED; replans only after a verified state advance; binds STAGED/ADOPTED results to the existing C07 owner semantics; and adds no source-rights, grade-promotion or MLX-training authority. Fresh independent exact-head review at semantic head c046edac found 0 Blockers / 0 Majors / 0 Minors. Bounded focused tests, module-size, code-smell, architecture, docs, error-control, diff, portable-core and semantic-ABI gates are green; no live learner mutation, over-budget test or self-merge authority was used.",
       "resume_trigger": null,
       "preserved_branch": "codex/512-c07-flywheel-20261112"
+    },
+    {
+      "issue": 1049,
+      "pr": 1082,
+      "state": "TURNED_IN",
+      "head_sha": "9828eb2bd8a5343df101b12b8fbbe1fceab8d4d6",
+      "head_sha_role": "exact CP01 semantic head after portable-CI repair and reviewed-unified e53bd672 consumption; the subsequent flow-control receipt commit is metadata only",
+      "summary": "CP01/#1049 is turned in as PR #1082 after consuming reviewed unified e53bd672. The standalone Python control-plane uses Unix-domain sockets only, version/session handshake, exact service/run/generation identity, metadata-only accepted-generation inspection, explicit service-vs-learner health, tri-state operator activity, explicit restart lifecycle, and lifetime local socket ownership without taking learner custody. Hosted portable CI initially exposed two eager-import leaks that pulled MLX into Linux test collection; the exact repair at 9828eb2b extracted the immutable run-identity record to a lightweight custody module and made bamf_operator package exports lazy. The exact portable-core command then passed with MLX forcibly unavailable (147 executed, 7 expected skips, 0 errors), CP01 plus owner-adjacent verification remained 37/37 PASS, static gates remained green, hosted portable-core/portable/semantic-ABI all passed on the repaired head, and independent targeted EGM review found 0 Blockers / 0 Majors / 0 Nits. Pre-turn-in review defects remain filed as PM-2026-11-13-001. Snapshot/event/command schemas, Electron UI, Akasha provider code, public networking, live learner/optimizer execution and self-merge remain outside this leaf.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1049-cp01-control-plane-20261113"
+    },
+    {
+      "issue": 1063,
+      "pr": 1101,
+      "state": "TURNED_IN",
+      "head_sha": "8eadde3cc5bcaf518592352038a61e3bf5cc913a",
+      "summary": "GUI08 turned in as ready PR #1101 after current-unified 5df83f69 synchronization. Fixture inspection, exact historical/causal identity and reconnect isolation are verified; 190 Node + 5 Python bridge tests, quality/ABI and browser proof pass. Pinned design/amendments PASS and scoped NO_DRIFT. PM-2026-11-13-002 and PM-2026-11-07-002 native receipts verified; no actual learner mutation. Human review/merge pending.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1063-frame-compiler-explorer-20261113"
+    },
+    {
+      "issue": 1140,
+      "pr": 1156,
+      "state": "TURNED_IN",
+      "head_sha": "40dc67c4335000b842ad239bc611fa6119951f77",
+      "summary": "PR #1155 is merged. Final same-acceptance Resources narrow-screen correction is turned in as ready PR #1156 on unified 490e86e1. 31 Resources regressions / 42 scoped tests, bounded sticky-column browser regression, updated renders and axe checks pass; scoped NO_DRIFT. Follow-up hosted gates and human review/merge pending.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1140-resources-narrow-followup-20261114",
+      "head_sha_role": "Exact ready narrow-screen follow-up candidate before this inventory-only receipt; initial PR #1155 merged at 490e86e1.",
+      "merged_pr": 1155
+    },
+    {
+      "issue": 1167,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "2c8cda55d1344626bc6c6f11d9b5db5836a36604",
+      "summary": "Issue #1167 is active on an isolated branch from reviewed unified 2c8cda55. It owns fixed-school C05 MLX evaluation batching only: reduce per-case neural launches while preserving complete-solver semantics, per-case bindings/receipts, deterministic CPU execution, retention decisions, accepted-generation semantics and bounded resource fallback. Pinned EGM design review precedes implementation.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1167-retention-mlx-batch-20261115"
+    },
+    {
+      "issue": 1171,
+      "pr": 1202,
+      "state": "TURNED_IN",
+      "head_sha": "2f6cc3c41b016cf81665936789580ac286d2a970",
+      "summary": "Issue #1171 is turned in as ready PR #1202 after consuming reviewed unified d280a3e8. Exact content-addressed frontier reuse now requires trusted builder/source/Factory-release/output/release identity; accepted B13/C09 planning custody binds deeply once before the 21-capability fan-out and downstream boundaries retain fail-closed currentness. The final acceptance-drift repair validates pointer/acceptance stability before issuing the process-live correction registrar. Pinned EGM is 0B/0M/0N. Focused owner proof is 69 passed + 2 subtests in 149.01s, static/flow/legacy-trainer gates are green, and the retained timing witness shows a 10.081268s warm median versus 13.937186s same-shape preimplementation control (27.66% / 3.855918s reduction). Verification is impact-scoped; unrelated gitignored legacy-checkpoint aggregate failures are not treated as #1171 regressions. No neural update occurred.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1171-planner-frontier-20261115",
+      "head_sha_role": "exact #1171 implementation, final acceptance-stability repair, current-unified synchronization, and turn-in evidence head before this flow-control receipt commit"
+    },
+    {
+      "issue": 1170,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "1111a7eb",
+      "preserved_branch": "codex/1170-live-trainer-telemetry-20261115",
+      "summary": "Observed trainer telemetry candidate consumes unified406e30c. Pinned design and intake review PASS; scoped NO_DRIFT. Native28, renderer382, Electron53 and bridge8 pass; broad leaf/premerge qualification remains pending. No PR or real learner mutation.",
+      "resume_trigger": null,
+      "head_sha_role": "Semantic implementation after unified406e30c intake; later review/evidence metadata does not change source behavior."
+    },
+    {
+      "issue": 1197,
+      "pr": 1199,
+      "state": "TURNED_IN",
+      "head_sha": "7e7f009ac64b0bcdedbb2150e61643cb9f7c0977",
+      "summary": "Issue #1197 is turned in as ready PR #1199 against reviewed unified d2815e31. Ordinary rejection now continues the same bounded human-authorized session, and repeated same-parent rejections carry replay-derived attempt ordinals so authenticated pressure accumulates without mutating accepted generation, AdamW, teacher state or pointer custody. Two repeated interference rejections are proven to reach the existing 16->8 horizon rule; CP07 preserves unique episode record identity while retaining the C03 visit_id. Focused proof: 14/14 operator, 7/7 priority/replay, 7/7 B13 + 5 subtests, 18/18 CP07, and 7/7 C13 + 2 subtests; structure/governance/smell/flow/diff checks pass. No agent-run neural training occurred.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1197-rejection-continue-20261115",
+      "head_sha_role": "exact #1197 semantic implementation, review repairs, repeated-rejection replay proof and CP07 compatibility head before this flow-control receipt commit"
     }
   ]
 }

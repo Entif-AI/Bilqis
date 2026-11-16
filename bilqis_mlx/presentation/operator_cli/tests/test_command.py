@@ -59,10 +59,27 @@ class OperatorTests(unittest.TestCase):
             self.assertEqual(operate.call_args.kwargs["source_prefetch_workers"], 0)
             with patch('bilqis_mlx.runtime.operating_loop.operate', side_effect=ValueError(
                     no_neural_work)) as operate, \
+                    patch('bilqis_mlx.presentation.operator_cli.command.ROOT', Path(tmp)), \
                     redirect_stderr(io.StringIO()):
                 self.assertEqual(main(["train", "--human-run", "--no-retention",
-                                       "--run-dir", tmp]), 2)
+                                       "--run-dir", str(Path(tmp) / "runs" / "independent")]), 2)
             self.assertFalse(operate.call_args.kwargs["retention_enabled"])
+
+    def test_explicit_source_verification_is_the_only_fresh_external_inspection_escape(self):
+        from bilqis_mlx.presentation.operator_cli.command import (
+            _reject_fresh_external_legacy_fallthrough,
+        )
+        from bilqis_mlx.presentation.operator_cli.parser import parse_args
+
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "external"
+            verify = parse_args([
+                "train", "--dry-run", "--verify-source", "--run-dir", str(target),
+            ])
+            _reject_fresh_external_legacy_fallthrough(verify, target)
+            ordinary = parse_args(["train", "--dry-run", "--run-dir", str(target)])
+            with self.assertRaises(ValueError):
+                _reject_fresh_external_legacy_fallthrough(ordinary, target)
 
     def test_issue_launcher_passes_registered_budget_owner(self):
         from bilqis_mlx import trainer

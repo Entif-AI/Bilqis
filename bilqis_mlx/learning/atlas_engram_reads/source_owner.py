@@ -31,6 +31,7 @@ from .records import MOTIF_WIDTH, MotifReadPosition, MotifReadResult, _invalid
 
 
 _B13_EXECUTION_SEAL = object()
+_MOTIF_ROW_FEATURE_RANK = 2
 
 
 def _canonical_adapter(source: SourceAtomRow):
@@ -66,12 +67,28 @@ def _execution_projection(compiled_row, config, replayed, frontier):
     return projected
 
 
+def _qualified_schema_map(source_execution_authority):
+    if source_execution_authority is None:
+        return None
+    schemas, pending = {}, list(source_execution_authority.motif_inputs)
+    while pending:
+        item = pending.pop()
+        occurrence_id = item.frame.occurrence_id
+        previous = schemas.get(occurrence_id)
+        if previous is not None and previous != item.schema:
+            _invalid()
+        schemas[occurrence_id] = item.schema
+        pending.extend(item.children)
+    return schemas
+
+
 def _row_read_inputs(
     compiled_row, config, projection, adapter, source, parameters, features,
-    extents,
+    extents, source_execution_authority=None,
 ):
     positions, vectors = [], []
     family = _source_family(adapter.descriptor.adapter_id)
+    qualified_schemas = _qualified_schema_map(source_execution_authority)
     for position in compiled_row.positions:
         if position.kind is not PositionKind.CLOSURE:
             positions.append(None)
@@ -88,14 +105,128 @@ def _row_read_inputs(
             continue
         if type(envelope.frame) is not FrameInstance:
             _invalid()
-        schema, _witness = lookup_source_pinned_frame_schema(
-            envelope.frame.frame_schema_id, envelope.frame.frame_schema_revision,
-            source_family=family, atlas_selection=source.selection)
+        if qualified_schemas is None:
+            schema, _witness = lookup_source_pinned_frame_schema(
+                envelope.frame.frame_schema_id, envelope.frame.frame_schema_revision,
+                source_family=family, atlas_selection=source.selection)
+        else:
+            schema = qualified_schemas.get(envelope.frame.occurrence_id)
+            if (schema is None
+                    or (schema.schema_id, schema.revision)
+                    != (envelope.frame.frame_schema_id,
+                        envelope.frame.frame_schema_revision)):
+                _invalid()
         positions.append(MotifReadPosition(envelope, schema, family))
         vectors.append(motif_gate_features(
             parameters, projection, position.frame_handle, features,
-            extents=extents, atlas_selection=source.selection).vector128)
+            extents=extents, atlas_selection=source.selection,
+            source_execution_authority=source_execution_authority).vector128)
     return tuple(positions), mx.stack(tuple(vectors))
+
+
+def _pad_motif_read_row(positions, features, width):
+    """Pad one source-owned motif row to the already-issued hidden width."""
+    if (type(positions) is not tuple
+            or not isinstance(features, mx.array)
+            or features.ndim != _MOTIF_ROW_FEATURE_RANK
+            or features.shape != (len(positions), MOTIF_WIDTH)
+            or features.dtype != mx.float32
+            or type(width) is not int
+            or width < len(positions)):
+        _invalid()
+    padding = width - len(positions)
+    if not padding:
+        return positions, features
+    return (
+        positions + (None,) * padding,
+        mx.concatenate((
+            features,
+            mx.zeros((padding, MOTIF_WIDTH), dtype=mx.float32),
+        ), axis=0),
+    )
+
+
+def _retained_read_authorities(
+    compiled, parameters, sources, manifest, spec, extents, seal,
+    source_execution_authorities,
+):
+    if (seal is not _B13_EXECUTION_SEAL
+            or type(compiled) is not CompiledEncoderInput
+            or type(sources) is not tuple
+            or len(sources) != len(compiled.compiled.rows)
+            or type(manifest) is not MotifManifest
+            or type(spec) is not ModelTopologySpecV2
+            or type(extents) is not GenerationExtents
+            or manifest.digest != extents.motif_key_map_digest
+            or extents != compiled.extents
+            or (source_execution_authorities is not None
+                and (type(source_execution_authorities) is not tuple
+                     or len(source_execution_authorities) != len(sources)))):
+        _invalid()
+    validate_bamf_parameters(spec, extents, parameters)
+    return (
+        (None,) * len(sources)
+        if source_execution_authorities is None
+        else source_execution_authorities)
+
+
+def _qualified_motif_row_authority(row, config, source, source_authority):
+    if type(source) is not SourceAtomRow:
+        _invalid()
+    if source_authority is None:
+        adapter = _canonical_adapter(source)
+        replayed = source_qualified_motif_context(
+            adapter, source.source_row, source.selection,
+            source_root=source.source_root, graph=source.graph,
+            task_scope=replace(config.task, causal_prefix_end=row.visible_end),
+            source_frontier=config.frontier, policy=config.policy,
+            source_seed=source.source_seed, source_each=source.source_each,
+            source_profile_parameters=source.source_profile_parameters,
+            course=source.course)
+        if isinstance(replayed, ContextHold):
+            _invalid()
+        projection, _motifs, issued_frontier = replayed
+    else:
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_source_authority_launch_trusted,
+            require_b11_source_execution_authority,
+        )
+        authority = source_authority
+        launch_trusted = b11_source_authority_launch_trusted(
+            authority, row, config, source)
+        if not launch_trusted:
+            authority = require_b11_source_execution_authority(
+                authority, row, config, source)
+        adapter = authority.source_adapter
+        projection = (
+            authority.motif_execution_projection
+            if launch_trusted else authority.motif_projection)
+        issued_frontier = authority.motif_frontier
+    if source_authority is None or not launch_trusted:
+        projection = _execution_projection(row, config, projection, issued_frontier)
+    elif projection.digest != row.context_digest:
+        _invalid()
+    return adapter, projection, issued_frontier
+
+
+def _retained_motif_row(
+    row, config, source, source_authority, parameters, features, extents,
+    padded_width,
+):
+    adapter, projection, issued_frontier = _qualified_motif_row_authority(
+        row, config, source, source_authority)
+    if projection is None:
+        positions = (None,) * len(row.positions)
+        vectors = mx.zeros(
+            (len(row.positions), MOTIF_WIDTH), dtype=mx.float32)
+    else:
+        positions, vectors = _row_read_inputs(
+            row, config, projection, adapter, source, parameters, features,
+            extents, source_execution_authority=source_authority)
+    positions, vectors = _pad_motif_read_row(
+        positions, vectors, padded_width)
+    task = replace(config.task, causal_prefix_end=row.visible_end)
+    return positions, vectors, task, issued_frontier, config.policy
 
 
 def _read_retained_compiled_motifs(
@@ -109,56 +240,48 @@ def _read_retained_compiled_motifs(
     site_index: int,
     hidden: mx.array,
     seal,
+    source_execution_authorities=None,
 ) -> MotifReadResult:
     """Execute B08 only for a B13-admitted caller holding the private seal."""
-    if (seal is not _B13_EXECUTION_SEAL
-            or type(compiled) is not CompiledEncoderInput
-            or type(sources) is not tuple
-            or len(sources) != len(compiled.compiled.rows)
-            or type(manifest) is not MotifManifest
-            or type(spec) is not ModelTopologySpecV2
-            or type(extents) is not GenerationExtents
-            or manifest.digest != extents.motif_key_map_digest
-            or extents != compiled.extents):
-        _invalid()
-    validate_bamf_parameters(spec, extents, parameters)
-    row_positions, row_features = [], []
-    tasks, frontiers, policies = [], [], []
-    for row, config, source in zip(
-            compiled.compiled.rows, compiled.compiler_configs, sources):
-        if type(source) is not SourceAtomRow:
-            _invalid()
-        adapter = _canonical_adapter(source)
-        replayed = source_qualified_motif_context(
-            adapter, source.source_row, source.selection,
-            source_root=source.source_root, graph=source.graph,
-            task_scope=replace(config.task, causal_prefix_end=row.visible_end),
-            source_frontier=config.frontier, policy=config.policy,
-            source_seed=source.source_seed, source_each=source.source_each,
-            source_profile_parameters=source.source_profile_parameters,
-            course=source.course)
-        if isinstance(replayed, ContextHold):
-            _invalid()
-        projection, _motifs, issued_frontier = replayed
-        projection = _execution_projection(row, config, projection, issued_frontier)
-        if projection is None:
-            row_positions.append((None,) * len(row.positions))
-            row_features.append(mx.zeros(
-                (len(row.positions), MOTIF_WIDTH), dtype=mx.float32))
-        else:
-            positions, vectors = _row_read_inputs(
-                row, config, projection, adapter, source, parameters,
-                compiled.features, extents)
-            row_positions.append(positions)
-            row_features.append(vectors)
-        task = replace(config.task, causal_prefix_end=row.visible_end)
+    authorities = _retained_read_authorities(
+        compiled, parameters, sources, manifest, spec, extents, seal,
+        source_execution_authorities)
+    row_positions, row_features, tasks, frontiers, policies = [], [], [], [], []
+    qualified_contexts = []
+    padded_width = hidden.shape[1]
+    for row, config, source, authority in zip(
+            compiled.compiled.rows, compiled.compiler_configs,
+            sources, authorities):
+        positions, vectors, task, frontier, policy = _retained_motif_row(
+            row, config, source, authority, parameters, compiled.features,
+            extents, padded_width)
+        row_positions.append(positions)
+        row_features.append(vectors)
         tasks.append(task)
-        frontiers.append(issued_frontier)
-        policies.append(config.policy)
+        frontiers.append(frontier)
+        policies.append(policy)
+        if authority is None:
+            qualified_contexts.append(None)
+        else:
+            from bilqis_mlx.runtime.b11_source_execution_authority import (
+                b11_source_authority_launch_trusted,
+            )
+            qualified_contexts.append(
+                (
+                    authority.motif_execution_projection,
+                    authority.motif_context_digest,
+                    authority.motif_schema_liveness,
+                )
+                if b11_source_authority_launch_trusted(
+                    authority, row, config, source)
+                else None
+            )
     return _read_motif_unqualified_candidate(
         site_index=site_index, hidden=hidden,
         features=mx.stack(tuple(row_features)), positions=tuple(row_positions),
         tasks=tuple(tasks), frontiers=tuple(frontiers), policies=tuple(policies),
+        qualified_contexts=tuple(qualified_contexts),
         manifest=manifest,
         parameters=motif_parameter_view(
             parameters, spec=spec, extents=extents, site_index=site_index))
+

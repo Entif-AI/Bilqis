@@ -19,7 +19,8 @@ import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import (
     LEGACY_ACCEPTANCE_SCHEMA, PREVIOUS_SOURCE_ACCEPTANCE_SCHEMA,
-    AcceptedCandidateBinding, mint_acceptance_binding,
+    EXACT_MOTIF_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
+    mint_acceptance_binding,
 )
 from bilqis_mlx.learning.atlas_retention_decision import (
     LEGACY_DECISION_SCHEMA, CandidateRetentionDecision, decide_candidate_retention,

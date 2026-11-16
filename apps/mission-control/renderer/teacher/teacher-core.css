@@ -1,0 +1,278 @@
+.teacher-view {
+  display: grid;
+  gap: var(--space-6);
+  margin-top: 0;
+}
+
+.teacher-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, .85fr);
+  gap: var(--space-5);
+  align-items: end;
+}
+
+.teacher-heading h2,
+.teacher-section-heading h3 {
+  margin: var(--space-1) 0 0;
+  font-size: var(--type-section);
+}
+
+.teacher-heading p {
+  max-width: 640px;
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.teacher-heading-context {
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.teacher-heading-context p {
+  flex: 1;
+}
+
+.teacher-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding-block-end: var(--space-3);
+  border-block-end: 1px solid var(--border);
+}
+
+.teacher-tab[aria-selected="true"] {
+  box-shadow: inset 0 -3px 0 var(--accent);
+}
+
+.teacher-tab-panel {
+  min-width: 0;
+}
+
+.teacher-heading-tools,
+.teacher-subheading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.teacher-subheading {
+  margin-bottom: var(--space-3);
+}
+
+.teacher-subheading h4 {
+  margin: 0;
+}
+
+.teacher-fixture-notice {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: 3px solid var(--attention);
+  background: var(--surface-1);
+}
+
+.teacher-fixture-notice strong {
+  white-space: nowrap;
+  font-size: var(--type-label);
+}
+
+.teacher-fixture-notice span,
+.teacher-roster-counts,
+.teacher-comparison-note,
+.teacher-doctrine,
+.teacher-fidelity-boundary,
+.teacher-projection p {
+  color: var(--text-muted);
+}
+
+.teacher-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.teacher-roster,
+.teacher-comparison,
+.teacher-fidelity {
+  min-width: 0;
+}
+
+.teacher-state,
+.teacher-coverage-label,
+.teacher-observational {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 3px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: var(--type-label);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.teacher-state[data-state="active"],
+.teacher-state[data-state="present"] {
+  color: var(--healthy);
+  border-style: double;
+}
+
+.teacher-state[data-state="partial"],
+.teacher-state[data-state="partial_observed_denominators"] {
+  color: var(--attention);
+  border-style: dashed;
+}
+
+.teacher-state[data-state="checkpoint_local_retired"],
+.teacher-state[data-state="retired"] {
+  color: var(--invalid);
+  border-width: 2px;
+}
+
+.teacher-state[data-state="observational"],
+.teacher-state[data-state="shadow"],
+.teacher-observational {
+  color: var(--text-muted);
+  border-style: dotted;
+}
+
+.teacher-table-wrap {
+  min-width: 0;
+  width: 100%;
+  overflow: auto;
+  scrollbar-gutter: stable;
+  border-block: 1px solid var(--border);
+}
+
+.teacher-table-wrap:focus-visible,
+.teacher-tab:focus-visible,
+.teacher-strategy-select:focus-visible,
+.teacher-inspect:focus-visible,
+.teacher-compare-strategy:focus-visible,
+.teacher-scope-control select:focus-visible,
+.teacher-projection summary:focus-visible,
+.teacher-glossary summary:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.teacher-production-provenance {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+.teacher-production-provenance h4 {
+  margin: 0;
+  font-size: var(--type-subsection);
+}
+
+.teacher-production-refs {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.teacher-production-refs div {
+  display: grid;
+  grid-template-columns: minmax(110px, .25fr) minmax(0, 1fr);
+  gap: var(--space-3);
+}
+
+.teacher-production-refs dt {
+  color: var(--text-muted);
+  font-size: var(--type-label);
+}
+
+.teacher-production-refs dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.teacher-roster-table,
+.teacher-comparison-table,
+.teacher-fidelity-table {
+  width: 100%;
+  min-width: 860px;
+  border-collapse: collapse;
+  font-size: var(--type-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.teacher-roster-table caption,
+.teacher-fidelity-table caption {
+  padding: var(--space-2) 0;
+  color: var(--text-muted);
+  text-align: start;
+  caption-side: top;
+}
+
+.teacher-roster-table th,
+.teacher-roster-table td,
+.teacher-comparison-table th,
+.teacher-comparison-table td,
+.teacher-fidelity-table th,
+.teacher-fidelity-table td {
+  padding: 9px 10px;
+  border-block-end: 1px solid var(--border);
+  text-align: start;
+  vertical-align: middle;
+}
+
+.teacher-roster-table thead th,
+.teacher-comparison-table thead th,
+.teacher-fidelity-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.teacher-roster-table tbody tr[data-selected="true"] {
+  background: var(--surface-1);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.teacher-strategy-select {
+  display: grid;
+  gap: 2px;
+  min-height: var(--control-height);
+  padding: 4px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  text-align: start;
+  cursor: pointer;
+}
+
+.teacher-strategy-select span {
+  font-weight: 700;
+}
+
+.teacher-strategy-select code,
+.teacher-comparison-table code,
+.teacher-fidelity-table code,
+.teacher-strategy-id,
+.machine-value {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: var(--type-label);
+}
+
+.teacher-strategy-select code,
+.teacher-comparison-table code,
+.teacher-fidelity-table code,
+.teacher-strategy-id {
+  color: var(--text-muted);
+}

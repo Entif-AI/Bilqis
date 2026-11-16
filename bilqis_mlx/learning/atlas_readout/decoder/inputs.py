@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 from collections.abc import Mapping
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 from bilqis_mlx.runtime.model_topology_v2 import GenerationExtents
 from bilqis_mlx.semantics.atlas_features import AtlasFeatures
 from bilqis_mlx.semantics.context_eligibility import ApprovedContextProjection
@@ -42,7 +43,8 @@ class DecoderMemory:
         count = len(self.compiled.positions)
         if (not 0 < count <= self.hidden.shape[0]
                 or self.row_identities[:count] != tuple(p.cache_identity for p in self.compiled.positions)
-                or not bool(mx.all(mx.isfinite(self.hidden[:count])))):
+                or (host_tensor_validation_enabled()
+                    and not bool(mx.all(mx.isfinite(self.hidden[:count]))))):
             invalid()
         for pair in self.anchors:
             if (type(pair) is not tuple or len(pair) != _ANCHOR_ARITY

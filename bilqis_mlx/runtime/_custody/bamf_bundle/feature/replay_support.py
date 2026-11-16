@@ -1,6 +1,8 @@
 """B13 feature replay primitives shared by accepted and candidate custody."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.semantics.atlas_features import FeatureSchema
 from bilqis_mlx.semantics.atlas.snapshot import (
@@ -14,6 +16,14 @@ FEATURE_SOURCE_KEYS = frozenset({
     "atlas_bundle_id", "release_sha256", "source_bundle_id"})
 FEATURE_SCHEMA_KEYS = frozenset({"role_ids", "schema_ids", "source_bindings"})
 SOURCE_BINDING_WIDTH = 2
+
+
+@dataclass(frozen=True)
+class FeatureMaterialization:
+    selection: AtlasArtifactSelection
+    snapshot: object
+    schema: FeatureSchema
+    features: object
 
 
 def feature_source(compiler_features: dict) -> dict:
@@ -59,11 +69,11 @@ def artifact_identity(source: dict) -> AtlasArtifactIdentity:
         source["source_bundle_id"])
 
 
-def authenticate_features(
+def authenticate_feature_materialization(
         student, artifact_path: str | None = None, *, predecessor=None,
         resolve_selection, load_snapshot, build_manifest,
-        require_active_set_match: bool = True):
-    """Replay the admitted source release and rederive the accepted feature map."""
+        require_active_set_match: bool = True) -> FeatureMaterialization:
+    """Replay A01/A06 once and retain the exact immutable materialization."""
     compiler = student.compiler_features
     if compiler.get("factor_map_sha256") != student.extents.factor_map_digest:
         invalid("BAMF_FEATURE_BINDING_DRIFT")
@@ -94,4 +104,16 @@ def authenticate_features(
         invalid("BAMF_FEATURE_SOURCE_IDENTITY_DRIFT")
     if student.provenance.release_digest != features.semantic_release:
         invalid("BAMF_FEATURE_RELEASE_DRIFT")
-    return features
+    return FeatureMaterialization(selection, snapshot, schema, features)
+
+
+def authenticate_features(
+        student, artifact_path: str | None = None, *, predecessor=None,
+        resolve_selection, load_snapshot, build_manifest,
+        require_active_set_match: bool = True):
+    """Compatibility seam returning only the replayed feature map."""
+    return authenticate_feature_materialization(
+        student, artifact_path, predecessor=predecessor,
+        resolve_selection=resolve_selection, load_snapshot=load_snapshot,
+        build_manifest=build_manifest,
+        require_active_set_match=require_active_set_match).features

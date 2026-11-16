@@ -75,6 +75,7 @@ target directory:
 
 ```sh
 npm run train -- --dry-run --model-topology configs/models/bamf-0.2.json \
+  --source-run-dir /absolute/path/to/accepted-source-run \
   --atlas-release-manifest /absolute/path/to/manifest.json \
   --run-dir /absolute/path/to/new-bamf-run --run-id example-run --run-seed 543 \
   --learning-rate 0.0007 --adam-beta1 0.88 --adam-beta2 0.97 \
@@ -92,6 +93,7 @@ foundation fields plus the explicit human gate:
 
 ```sh
 npm run train -- --human-run --model-topology configs/models/bamf-0.2.json \
+  --source-run-dir /absolute/path/to/accepted-source-run \
   --atlas-release-manifest /absolute/path/to/manifest.json \
   --run-dir /absolute/path/to/new-bamf-run --run-id example-run --run-seed 543 \
   --learning-rate 0.0007 --adam-beta1 0.88 --adam-beta2 0.97 \
@@ -109,6 +111,7 @@ explicit policy and a versioned lease request:
 
 ```sh
 npm run train -- --human-run --model-topology configs/models/bamf-0.2.json \
+  --source-run-dir /absolute/path/to/accepted-source-run \
   --admission-policy atlas-release --atlas-admission-scope /absolute/path/to/enrollment-request.json \
   --atlas-release-manifest /absolute/path/to/manifest.json \
   --run-dir /absolute/path/to/new-bamf-run --run-id example-run --run-seed 543 \

@@ -4,6 +4,18 @@ from __future__ import annotations
 from .base import _spec
 
 class FACTORY:
+    class SOURCE_ADAPTER:
+        COMPATIBILITY_INVALID = _spec(
+            ("FACTORY", "SOURCE_ADAPTER", "COMPATIBILITY_INVALID"),
+            owner="compatibility.source_adapter_resume",
+            title="Factory source-adapter compatibility invalid",
+            message_template="Factory source-adapter compatibility invalid: {reason}",
+            disposition="PRESERVE_AND_REPAIR",
+            next_action=(
+                "Preserve the accepted release and repair the exact source-adapter "
+                "identity or registry boundary before retrying."),
+        )
+
     class DEVELOPMENTAL_PROGRAM:
         INVALID = _spec(
             ("FACTORY", "DEVELOPMENTAL_PROGRAM", "INVALID"),

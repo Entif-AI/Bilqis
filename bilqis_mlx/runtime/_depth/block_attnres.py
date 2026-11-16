@@ -11,6 +11,7 @@ from types import MappingProxyType
 from typing import Callable, Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning.frame_embeddings import FeatureRequest, compose_factor_features
@@ -81,7 +82,8 @@ def _group_boundary_numerical(
             or not isinstance(depth_params["norm"], mx.array)
             or depth_params["norm"].shape != (WIDTH,)
             or depth_params["norm"].dtype != mx.float32
-            or not bool(mx.all(mx.isfinite(current)))):
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(current))))):
         _invalid()
     post_motif = (second_motif_read(current)
                   if second_motif_read is not None else current)

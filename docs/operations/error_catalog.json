@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 267,
-  "legacy_raw_raise_count": 2092,
+  "legacy_raw_file_count": 273,
+  "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -3587,6 +3587,13 @@
       "path": "bilqis_mlx/compatibility/schedule_program.py"
     },
     {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN:' + registered.descriptor.adapter_id",
+      "path": "bilqis_mlx/compatibility/source_adapter_resume.py"
+    },
+    {
       "code_hint": "ANSWER_FAMILY_AUTHORITY_INVALID",
       "count": 1,
       "exception": "ValueError",
@@ -6037,13 +6044,6 @@
       "path": "bilqis_mlx/factory/generation.py"
     },
     {
-      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
-      "path": "bilqis_mlx/factory/generation.py"
-    },
-    {
       "code_hint": "FACTORY_EXECUTABLE_GENERATION_UNKNOWN_CAPABILITY",
       "count": 1,
       "exception": "ValueError",
@@ -6121,67 +6121,74 @@
       "path": "bilqis_mlx/factory/generation.py"
     },
     {
+      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
+      "path": "bilqis_mlx/factory/generation_compat.py"
+    },
+    {
       "code_hint": "FACTORY_GENERATION_ADAPTER_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ADAPTER_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_EMPTY_SCOPE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_EMPTY_SCOPE'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_INVALID_COUNT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_INVALID_COUNT'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_GENERATION_UNKNOWN_CAPABILITY",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_GENERATION_UNKNOWN_CAPABILITY'",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "",
       "count": 1,
       "exception": "ValueError",
       "expression": "drift_code + ':' + execution.capability_id",
-      "path": "bilqis_mlx/factory/generation.py"
+      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_ANSWER_HEAD_COMPILATION_INVALID_INPUT",
@@ -11056,53 +11063,53 @@
       "path": "bilqis_mlx/runtime/checkpoints.py"
     },
     {
-      "code_hint": "CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
-    },
-    {
       "code_hint": "DIAGNOSTIC_PAIRED_S3_PARENT_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'DIAGNOSTIC_PAIRED_S3_PARENT_DRIFT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/diagnostics.py"
     },
     {
       "code_hint": "DIAGNOSTIC_PAIRED_S3_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'DIAGNOSTIC_PAIRED_S3_SCOPE_DRIFT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/diagnostics.py"
     },
     {
       "code_hint": "DIAGNOSTIC_PAIRED_S3_UNSAFE_PARENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'DIAGNOSTIC_PAIRED_S3_UNSAFE_PARENT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/diagnostics.py"
+    },
+    {
+      "code_hint": "CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CHAMPIONSHIP_SCHOOL_IDENTITY_RESET_REQUIRED'",
+      "path": "bilqis_mlx/runtime/exam/orchestration_phases.py"
     },
     {
       "code_hint": "FLASH_SCHEDULER_EXAM_REQUIRES_CHECKPOINTED_STUDENT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'FLASH_SCHEDULER_EXAM_REQUIRES_CHECKPOINTED_STUDENT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/orchestration_phases.py"
     },
     {
       "code_hint": "HUMAN_TRAINER_EXAM_OUTSIDE_SCHEDULED_BOUNDARY",
       "count": 1,
       "exception": "ValueError",
       "expression": "'HUMAN_TRAINER_EXAM_OUTSIDE_SCHEDULED_BOUNDARY'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/orchestration_phases.py"
     },
     {
       "code_hint": "HUMAN_TRAINER_EXAM_SCORE_SCOPE_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'HUMAN_TRAINER_EXAM_SCORE_SCOPE_DRIFT'",
-      "path": "bilqis_mlx/runtime/exam_execution.py"
+      "path": "bilqis_mlx/runtime/exam/shared.py"
     },
     {
       "code_hint": "AUTONOMY_EVIDENCE_REQUIRES_DURABLE_CHECKPOINT",
@@ -11305,56 +11312,70 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic Factory release drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic capability is not admitted",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic capability is not admitted'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic cohort unavailable",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic cohort unavailable'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic optimizer census drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic optimizer census drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic protected capability absent",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic protected capability absent'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 fixed diagnostic training authority drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 fixed diagnostic training authority drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_fixed_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_fixed_diagnostic.py"
     },
     {
       "code_hint": "C05 lesson diagnostic capability is not admitted",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 lesson diagnostic capability is not admitted'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_lesson_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_lesson_diagnostic.py"
     },
     {
       "code_hint": "C05 lesson diagnostic training authority drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'C05 lesson diagnostic training authority drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_lesson_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_lesson_diagnostic.py"
+    },
+    {
+      "code_hint": "C05 target diagnostic capability is not admitted",
+      "count": 1,
+      "exception": "AssertionError",
+      "expression": "'C05 target diagnostic capability is not admitted'",
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_target_diagnostic.py"
+    },
+    {
+      "code_hint": "C05 target diagnostic training authority drift",
+      "count": 1,
+      "exception": "AssertionError",
+      "expression": "'C05 target diagnostic training authority drift'",
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/diagnostics/factory_retention_target_diagnostic.py"
     },
     {
       "code_hint": "C05 source-owned identity bank unavailable",
@@ -11368,196 +11389,182 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 accepted bundle/CAS mutated'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 accepted pointer mutated",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 accepted pointer mutated'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 cold accepted parent drift or generation-2 publication",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 cold accepted parent drift or generation-2 publication'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 destination arm is not CPU",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 destination arm is not CPU'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 in-memory accepted parent mutated",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 in-memory accepted parent mutated'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric reference already exists",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric reference already exists'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric reference census drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric reference census drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric reference schema drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric reference schema drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric tensor contract drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 numeric tensor contract drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 source arm is not Apple Metal",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 source arm is not Apple Metal'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 structural parity drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 structural parity drift: forward'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 structural parity drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 structural parity drift: step_proof fields=' + ','.join(differing)",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 execution provenance drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "f'B13.2 execution provenance drift: {field}'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 numeric",
       "count": 1,
       "exception": "AssertionError",
       "expression": "f'B13.2 numeric {role} non-finite: {logical}'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 structural parity drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "f'B13.2 structural parity drift: {field}'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_evidence.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_evidence.py"
     },
     {
       "code_hint": "B13.2 controlled capability selection drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 controlled capability selection drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 execution seal already written",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 execution seal already written'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 sealed execution drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 sealed execution drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 sealed visit drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 sealed visit drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_state.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_state.py"
     },
     {
       "code_hint": "B13.2 committed semantic output drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 committed semantic output drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 cross-backend FP32 parity exceeded tolerance",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 cross-backend FP32 parity exceeded tolerance'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 expected exactly one route decision",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 expected exactly one route decision'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 natural Factory next capability drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 natural Factory next capability drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 natural Factory next-selection cold readback drift",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 natural Factory next-selection cold readback drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 next step did not execute exactly once",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 next step did not execute exactly once'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "B13.2 witness requires published accepted generation one",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'B13.2 witness requires published accepted generation one'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_next_step_witness.py"
-    },
-    {
-      "code_hint": "C05 target diagnostic capability is not admitted",
-      "count": 1,
-      "exception": "AssertionError",
-      "expression": "'C05 target diagnostic capability is not admitted'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_target_diagnostic.py"
-    },
-    {
-      "code_hint": "C05 target diagnostic training authority drift",
-      "count": 1,
-      "exception": "AssertionError",
-      "expression": "'C05 target diagnostic training authority drift'",
-      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/factory_retention_target_diagnostic.py"
+      "path": "bilqis_mlx/runtime/tests/capability/factory/retention/next_step/factory_retention_next_step_witness.py"
     },
     {
       "code_hint": "C05 source-owned generation-one publication drift",
@@ -11623,11 +11630,25 @@
       "path": "bilqis_mlx/runtime/tests/capability/test_capability_evidence_history.py"
     },
     {
+      "code_hint": "steps must be a positive integer",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'steps must be a positive integer'",
+      "path": "bilqis_mlx/runtime/tests/correction/capability_support_owner_support.py"
+    },
+    {
       "code_hint": "source-owned context was not approved",
       "count": 1,
       "exception": "AssertionError",
       "expression": "'source-owned context was not approved'",
       "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/correction_runtime/temporal_support.py"
+    },
+    {
+      "code_hint": "missing",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'missing'",
+      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/test_planning_currentness.py"
     },
     {
       "code_hint": "COLD_RESUME_CONTINUATION_REJECTED before=",
@@ -11704,7 +11725,7 @@
       "count": 1,
       "exception": "AssertionError",
       "expression": "'bamf_operator must not inspect Factory capability order'",
-      "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_session.py"
+      "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_routing.py"
     },
     {
       "code_hint": "GRAPH_UNAVAILABLE",
@@ -11788,13 +11809,6 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'HISTORICAL_ABI_FIELDS_INVALID'",
-      "path": "bilqis_mlx/semantics/foundation/abi.py"
-    },
-    {
-      "code_hint": "HISTORICAL_ABI_GRAPH_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'HISTORICAL_ABI_GRAPH_INVALID'",
       "path": "bilqis_mlx/semantics/foundation/abi.py"
     },
     {
@@ -13777,6 +13791,20 @@
   "schema": "bilqis.error-catalog/v1",
   "typed_errors": [
     {
+      "code": "FACTORY.SOURCE_ADAPTER.COMPATIBILITY_INVALID",
+      "disposition": "PRESERVE_AND_REPAIR",
+      "legacy_codes": [],
+      "message_key": "errors.factory.source_adapter.compatibility_invalid.message",
+      "message_template": "Factory source-adapter compatibility invalid: {reason}",
+      "next_action": "Preserve the accepted release and repair the exact source-adapter identity or registry boundary before retrying.",
+      "operator_steps": [],
+      "owner": "compatibility.source_adapter_resume",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.source_adapter.compatibility_invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory source-adapter compatibility invalid"
+    },
+    {
       "code": "FACTORY.DEVELOPMENTAL_PROGRAM.INVALID",
       "disposition": "CORRECT_INPUT_OR_STATE",
       "legacy_codes": [],
@@ -13845,6 +13873,20 @@
       "recovery_key": "errors.source.bamf_world.invalid.recovery",
       "self_heal_owner": null,
       "title": "Qualified world source contract invalid"
+    },
+    {
+      "code": "SCHOOL.BAMF_CONTROL_PLANE.INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_control_plane.invalid.message",
+      "message_template": "The BAMF local control-plane boundary is invalid: {reason}",
+      "next_action": "Keep learner and checkpoint custody unchanged; reconcile the local service transport, protocol session, or accepted-generation read boundary before retry.",
+      "operator_steps": [],
+      "owner": "control_plane.service",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_control_plane.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "BAMF local control-plane boundary invalid"
     },
     {
       "code": "SCHOOL.BAMF_ATLAS_ADMISSION.INVALID",

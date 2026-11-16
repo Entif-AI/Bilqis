@@ -9,6 +9,9 @@ from pathlib import Path
 import bilqis_mlx.runtime.mlx_checkpoint as _mlx_checkpoint
 from bilqis_mlx.data_plane import DataPlaneError, data_plane
 from bilqis_mlx.runtime.disk import assert_headroom
+from bilqis_mlx.learning._retention._atlas_candidate.identity import (
+    IDENTITY_SCHEMES, LEGACY_IDENTITY_SCHEME,
+)
 from .records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_BUNDLE_SCHEMA, SIDECARS,
     BamfBundleCandidate,
@@ -37,8 +40,12 @@ class _ValidatedBundleParts:
 def _write_file(path: Path, raw: bytes) -> str:
     with path.open("xb") as stream:
         stream.write(raw)
+        from .publication.instrumentation import note_write
+        note_write(len(raw))
         stream.flush()
         os.fsync(stream.fileno())
+        from .publication.instrumentation import note_fsync
+        note_fsync(len(raw))
     return sha(raw)
 
 
@@ -95,7 +102,10 @@ def save_bamf_bundle(candidate: BamfBundleCandidate, destination: Path, *,
         candidate.implementation_sha256, candidate.topology.to_record(),
         candidate.extents.to_record(), candidate.provenance.to_record(), tensor,
         {"schema": retained.optimizer.schema_version, "step": retained.optimizer_step,
-         "hyperparameters": asdict(hp)}, candidate.transition, bindings,
+         "hyperparameters": asdict(hp),
+         **({"identity_scheme": retained.identity_scheme}
+            if retained.identity_scheme != LEGACY_IDENTITY_SCHEME else {})},
+        candidate.transition, bindings,
         parent_acceptance_sha256 if publication_bound else None,
         ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA if publication_bound
         else BAMF_BUNDLE_SCHEMA).to_record()
@@ -107,7 +117,7 @@ def save_bamf_bundle(candidate: BamfBundleCandidate, destination: Path, *,
         os.fsync(directory)
     finally:
         os.close(directory)
-    load_bamf_bundle(destination, expected_manifest_sha256=digest)
+    validate_bamf_bundle_custody(destination, expected_manifest_sha256=digest)
     return {**manifest, "manifest_sha256": digest}
 
 
@@ -152,7 +162,11 @@ def validate_bamf_bundle_custody(
     required = set(SIDECARS) - {"run_identity"}
     if (recorded not in (set(SIDECARS), set(SIDECARS) - {"step_proofs"},
                          required, required - {"step_proofs"})
-            or set(manifest["optimizer"]) != {"schema", "step", "hyperparameters"}
+            or set(manifest["optimizer"]) not in (
+                {"schema", "step", "hyperparameters"},
+                {"schema", "step", "hyperparameters", "identity_scheme"})
+            or manifest["optimizer"].get(
+                "identity_scheme", LEGACY_IDENTITY_SCHEME) not in IDENTITY_SCHEMES
             or manifest["optimizer"]["step"] != manifest.get("tensors", {}).get("optimizer_step")):
         invalid()
     for name in recorded:
@@ -248,6 +262,8 @@ def load_bamf_bundle(root: Path, *, expected_manifest_sha256: str | None = None)
         expected_manifest_sha256 = sha(manifest_path.read_bytes())
     retained, parts = _load_retained_candidate_state_with_parts(
         root, expected_manifest_sha256=expected_manifest_sha256)
+    from .publication.instrumentation import note_bundle_load
+    note_bundle_load(parts.manifest)
     manifest = parts.manifest
     student = CompleteStudent(
         manifest["run_id"], manifest["generation"], manifest["parent_manifest_sha256"],
@@ -257,10 +273,14 @@ def load_bamf_bundle(root: Path, *, expected_manifest_sha256: str | None = None)
         parts.records["evaluation_contract"], manifest["transition"],
         tuple(parts.records["outbox"]), parts.run_identity)
     if student.run_identity is not None and student.generation == 0:
-        from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+        from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+            bind_candidate_identity_or_fallback,
+        )
         identity = student.run_identity
-        if (identity.initial_candidate_identity_sha256
-                != candidate_identity_digest(student.retained_state)
+        candidate_digest = bind_candidate_identity_or_fallback(
+            student.retained_state, student.topology.digest, student.extents.digest,
+            expected_digest=identity.initial_candidate_identity_sha256)
+        if (candidate_digest != identity.initial_candidate_identity_sha256
                 or identity.initial_topology_digest != student.topology.digest
                 or identity.initial_extents_digest != student.extents.digest
                 or identity.initial_implementation_sha256 != student.implementation_sha256

@@ -6,9 +6,13 @@ from pathlib import Path
 from bilqis_mlx.data_plane import DataPlaneError
 from bilqis_mlx.learning.atlas_acceptance import (
     ACCEPTANCE_SCHEMA, MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA,
-    MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
+    MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_ACCEPTANCE_SCHEMA,
+    EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+    EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
     _require_issued_binding,
-    candidate_identity_digest,
+)
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    candidate_identity_for_canonical_consumer,
 )
 
 from ..factory_release.admission import (
@@ -24,13 +28,35 @@ from ..package_import_transition import (
 from ..motif.transition import (
     is_motif_allocation_transition, require_issued_motif_allocation_transition,
 )
-from ..records import ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BamfBundleCandidate, CompleteStudent, invalid
+from ..records import (
+    ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BamfBundleCandidate, CompleteStudent,
+    canonical, invalid, sha,
+)
 from .acceptance import (
     load_generation_locked, require_accepted_parent, require_published_acceptance,
 )
 
 
 _UNBOUND_RETRY = object()
+
+
+def _require_c03_visit_authority(candidate: BamfBundleCandidate) -> None:
+    """Authenticate any portable C03 visit marker before B13 seals custody."""
+    state = candidate.teacher_state
+    receipt = state.get("last_visit_receipt")
+    visit = state.get("last_visit")
+    if receipt is None and visit is None:
+        return
+    if receipt is None or visit is None:
+        invalid("TEACHER_VISIT_CUSTODY_INVALID")
+    from bilqis_mlx.learning.teacher_visit_identity import (
+        TeacherVisitIdentity, require_teacher_visit_receipt,
+        validate_teacher_visit_receipt_record,
+    )
+
+    identity = TeacherVisitIdentity.from_record(visit)
+    validate_teacher_visit_receipt_record(identity, receipt)
+    require_teacher_visit_receipt(identity)
 
 
 def require_acceptance(
@@ -41,29 +67,34 @@ def require_acceptance(
         invalid("BAMF_INITIAL_GENERATION_BOOTSTRAP_REQUIRED")
     if type(acceptance) is not AcceptedCandidateBinding:
         invalid("BAMF_GENERATION_ACCEPTANCE_REQUIRED")
+    _require_c03_visit_authority(candidate)
     _require_issued_binding(acceptance)
     acceptance.__post_init__()
     motif_transition = is_motif_allocation_transition(candidate.transition)
-    expected_schema = ((MOTIF_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA) if motif_transition
-                       else (ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA))
+    expected_schema = ((EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+                        EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+                       if motif_transition
+                       else (EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA))
     if (acceptance.schema_version not in expected_schema
             or acceptance.run_id != candidate.run_id
             or acceptance.generation != candidate.generation
             or acceptance.feature_sha256 != candidate.extents.factor_map_digest
             or acceptance.optimizer_step != candidate.retained_state.optimizer_step
             or acceptance.candidate_identity_sha256
-            != candidate_identity_digest(candidate.retained_state)
+            != candidate_identity_for_canonical_consumer(candidate.retained_state)
             or acceptance.step_proof_sha256 != tuple(
                 proof.digest for proof in candidate.retained_state.step_proofs)
             or acceptance.source_authority_registry_sha256
             != candidate.correction_frontier.get(
                 "source_authority_registry_sha256")):
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-    if motif_transition:
-        from ..genesis.records import successor_candidate_identity_digest
-        if (acceptance.generation_authority_sha256
-                != successor_candidate_identity_digest(candidate)):
-            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    from ..genesis.records import successor_candidate_identity_digest
+    if (acceptance.generation_authority_sha256
+            != successor_candidate_identity_digest(candidate)):
+        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    if (acceptance.teacher_state_sha256
+            != sha(canonical(dict(candidate.teacher_state)))):
+        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
     from bilqis_mlx.learning._retention._atlas_acceptance_records import require_closure_proofs
     require_closure_proofs(acceptance, candidate.retained_state.step_proofs)
     return acceptance
@@ -71,7 +102,7 @@ def require_acceptance(
 
 def validate_parent_transition(
         run_dir: Path, pointer: dict | None, candidate: BamfBundleCandidate, *,
-        load_bundle, reconcile) -> CompleteStudent | None:
+        load_bundle, reconcile, parent: CompleteStudent | None = None) -> CompleteStudent | None:
     if pointer is None:
         if candidate.generation != 0 or candidate.parent_manifest_sha256 is not None:
             invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
@@ -80,8 +111,11 @@ def validate_parent_transition(
             or pointer["generation"] != candidate.generation - 1
             or pointer["manifest_sha256"] != candidate.parent_manifest_sha256):
         invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
-    parent = load_bundle(
-        run_dir / pointer["bundle"], expected_manifest_sha256=pointer["manifest_sha256"])
+    if parent is None:
+        parent = load_bundle(
+            run_dir / pointer["bundle"], expected_manifest_sha256=pointer["manifest_sha256"])
+    elif type(parent) is not CompleteStudent:
+        invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
     if (parent.run_id != pointer["run_id"]
             or parent.generation != pointer["generation"]
             or parent.parent_manifest_sha256 != pointer["parent_manifest_sha256"]):
@@ -99,7 +133,7 @@ def validate_parent_transition(
                 != transition["parent_allocation_sha256"]
                 or candidate.retained_state.allocations.digest
                 != transition["candidate_allocation_sha256"]
-                or candidate_identity_digest(candidate.retained_state)
+                or candidate_identity_for_canonical_consumer(candidate.retained_state)
                 != transition["candidate_identity_sha256"]
                 or parent.extents.semantic_bank_count != candidate.extents.semantic_bank_count
                 or parent.extents.active_semantic_digest != candidate.extents.active_semantic_digest
@@ -176,7 +210,7 @@ def authenticate_current_successor_retry(
             or parent.generation + 1 != current_child.generation
             or parent.run_identity != current_child.run_identity
             or persisted.parent_candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            != candidate_identity_for_canonical_consumer(parent.retained_state)):
         invalid("BAMF_RUN_IDENTITY_DRIFT")
     return parent, persisted
 
@@ -184,7 +218,9 @@ def authenticate_current_successor_retry(
 def parent_acceptance_for_publication(
         run_dir: Path, candidate: BamfBundleCandidate,
         accepted: AcceptedCandidateBinding, *, pointer_lock, read_pointer,
-        live_manifest, load_bundle, require_published_acceptance):
+        live_manifest, load_bundle, require_published_acceptance,
+        parent_witness=None, bind_parent_witness_locked=None,
+        require_parent_witness_locked=None):
     """Read the exact parent acceptance that the new immutable manifest must bind."""
     pointer_path = Path(run_dir) / "bamf-state.json"
     with pointer_lock(run_dir):
@@ -192,7 +228,7 @@ def parent_acceptance_for_publication(
         if current is None:
             if candidate.generation != 0 or candidate.parent_manifest_sha256 is not None:
                 invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
-            return None
+            return None, None
         if current["generation"] == candidate.generation:
             if (current["run_id"] != candidate.run_id
                     or current["parent_manifest_sha256"] != candidate.parent_manifest_sha256
@@ -200,14 +236,25 @@ def parent_acceptance_for_publication(
                 invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
             manifest = live_manifest(run_dir, current)
             if manifest.get("schema") != ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA:
-                return _UNBOUND_RETRY
-            return manifest.get("parent_acceptance_sha256")
+                return _UNBOUND_RETRY, None
+            return manifest.get("parent_acceptance_sha256"), None
         if (current["run_id"] != candidate.run_id
                 or current["generation"] != candidate.generation - 1
                 or current["manifest_sha256"] != candidate.parent_manifest_sha256):
             invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
+        if parent_witness is None and bind_parent_witness_locked is not None:
+            parent_witness = bind_parent_witness_locked(run_dir, current)
+        if parent_witness is not None:
+            if require_parent_witness_locked is None:
+                invalid("B13_PUBLICATION_PARENT_REQUIRED")
+            witness = require_parent_witness_locked(run_dir, current, parent_witness)
+            if (witness.student.run_id != current["run_id"]
+                    or witness.student.generation != current["generation"]
+                    or witness.manifest_sha256 != current["manifest_sha256"]):
+                invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+            return witness.acceptance_sha256, witness
         parent = load_bundle(
             run_dir / current["bundle"],
             expected_manifest_sha256=current["manifest_sha256"])
         require_published_acceptance(run_dir, current, parent)
-        return current["acceptance_sha256"]
+        return current["acceptance_sha256"], None

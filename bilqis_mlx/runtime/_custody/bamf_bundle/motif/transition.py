@@ -118,10 +118,13 @@ _require_transition_issued, _raw_issue_transition = _new_transition_owner()
 
 def _make_transition_deriver(issue_transition):
     def derive(b12: CandidateMotifAllocationTransition, retained_state):
-        from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+        from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+            candidate_identity_for_canonical_consumer,
+        )
 
         _require_candidate_motif_allocation_transition(b12)
-        candidate_identity_sha256 = candidate_identity_digest(retained_state)
+        candidate_identity_sha256 = candidate_identity_for_canonical_consumer(
+            retained_state)
         values = {
         "b12_transition_sha256": b12.digest,
         "parent_extents_sha256": b12.parent_extents_sha256,

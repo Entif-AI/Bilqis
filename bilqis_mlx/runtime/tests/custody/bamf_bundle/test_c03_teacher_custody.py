@@ -45,6 +45,30 @@ class C03AcceptedTeacherCustodyTests(unittest.TestCase):
         self.environment.stop()
         self.temporary.cleanup()
 
+    def _assert_bound_visit(self, bound, parent, pointer, current_student):
+        self.assertEqual(bound.identity.run_identity_sha256, parent.run_identity.digest)
+        self.assertEqual(bound.identity.run_seed, 71)
+        self.assertEqual(bound.identity.generation, 0)
+        self.assertEqual(bound.identity.accepted_manifest_sha256, pointer["manifest_sha256"])
+        self.assertEqual(bound.identity.student_sha256, current_student)
+        self.assertEqual(bound.identity.selection_seed, 71)
+        self.assertEqual(bound.identity.cursor, "GENESIS")
+        self.assertEqual(bound.projection.teacher_state["last_visit"], bound.identity.to_record())
+        self.assertEqual(
+            bound.projection.teacher_state["last_visit_receipt"]["visit_id"],
+            bound.identity.visit_id)
+
+    def _assert_cold_visit(self, cold, bound, restored):
+        self.assertEqual(cold.teacher_state["last_visit"], bound.identity.to_record())
+        self.assertEqual(
+            cold.teacher_state["last_visit_receipt"],
+            bound.projection.teacher_state["last_visit_receipt"])
+        self.assertEqual(cold.teacher_state["next_seed"], 72)
+        self.assertEqual(cold.teacher_state["cursor"], "lesson:1")
+        self.assertEqual(cold.teacher_state["teacher_epoch"], 1)
+        self.assertEqual(
+            restored.student_sha256, candidate_identity_digest(cold.retained_state))
+
     def test_genesis_visit_and_accepted_successor_cold_resume_exact_c03_identity(self):
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             pointer = publish_genesis(self.run, run_seed=71)
@@ -64,15 +88,7 @@ class C03AcceptedTeacherCustodyTests(unittest.TestCase):
                 adaptation=adaptation(), prior_region="legacy-region")
         self.assertIsInstance(policy, dict)
         self.assertIsInstance(metadata, dict)
-        self.assertEqual(bound.identity.run_identity_sha256, parent.run_identity.digest)
-        self.assertEqual(bound.identity.run_seed, 71)
-        self.assertEqual(bound.identity.generation, 0)
-        self.assertEqual(bound.identity.accepted_manifest_sha256, pointer["manifest_sha256"])
-        self.assertEqual(bound.identity.student_sha256, current_student)
-        self.assertEqual(bound.identity.selection_seed, 71)
-        self.assertEqual(bound.identity.cursor, "GENESIS")
-        self.assertEqual(bound.projection.teacher_state["last_visit"],
-                         bound.identity.to_record())
+        self._assert_bound_visit(bound, parent, pointer, current_student)
 
         retained = accepted_state(parent.retained_state, parent.extents)
         with shape_patch():
@@ -95,12 +111,7 @@ class C03AcceptedTeacherCustodyTests(unittest.TestCase):
         with shape_patch():
             cold = load_accepted_generation(self.run)
         restored = restore_teacher_lineage(cold.teacher_state)
-        self.assertEqual(cold.teacher_state["last_visit"], bound.identity.to_record())
-        self.assertEqual(cold.teacher_state["next_seed"], 72)
-        self.assertEqual(cold.teacher_state["cursor"], "lesson:1")
-        self.assertEqual(cold.teacher_state["teacher_epoch"], 1)
-        self.assertEqual(restored.student_sha256,
-                         candidate_identity_digest(cold.retained_state))
+        self._assert_cold_visit(cold, bound, restored)
 
         cold_school = SimpleNamespace(
             stage="RECOVERY_1",

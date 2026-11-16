@@ -166,11 +166,15 @@ class CurriculumSnapshot:
     def canonical_bytes(self) -> bytes:
         return _bytes(self)
 
-    def expected_digest(self) -> str:
-        return hashlib.sha256(_bytes({
+    def digest_bytes(self) -> bytes:
+        """Canonical bytes covered by ``snapshot_sha256``."""
+        return _bytes({
             field.name: getattr(self, field.name)
             for field in fields(self) if field.name != "snapshot_sha256"
-        })).hexdigest()
+        })
+
+    def expected_digest(self) -> str:
+        return hashlib.sha256(self.digest_bytes()).hexdigest()
 
     def verify(self) -> None:
         if self.snapshot_sha256 != self.expected_digest():

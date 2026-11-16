@@ -141,6 +141,7 @@ def _group_receipt_values(
             site_index=1,
             hidden=expected.hidden,
             seal=producer._motif_seal,
+            source_execution_authorities=producer._source_execution_authorities,
         )
         producer._motif_read = motif
         hidden = motif.hidden

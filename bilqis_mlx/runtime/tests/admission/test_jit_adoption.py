@@ -85,6 +85,17 @@ class JitAdoptionTests(CandidateStagingFixture, unittest.TestCase):
                                        fixture.registry, fixture.answers)
         self.assertEqual(self.staged.successor.manifest(), before)
 
+    def test_explicit_historical_source_provider_chains_pass_jit_verification(self):
+        from bilqis_mlx.factory.live_answers import live_answer_registry
+        from bilqis_mlx.runtime.tests.operator.pre_neural_journey_support import (
+            historical_school_release,
+        )
+        from bilqis_mlx.source_adapters.school import live_source_registry
+
+        release, _graph = historical_school_release()
+        verify_current_implementations(
+            release, live_source_registry(), live_answer_registry())
+
     def test_source_and_answer_drift_block_before_admission_transactions(self):
         from bilqis_mlx.runtime import release_adoption
 

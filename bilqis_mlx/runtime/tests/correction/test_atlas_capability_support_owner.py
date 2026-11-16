@@ -118,7 +118,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
         dependency = next(
             ref for ref in owner.current_node.immediate_dependencies
             if ref.kind is DependencyKind.OPERATOR)
-        with shape_patch():
+        with shape_patch(authority):
             AcceptedRuntimeHost(self.run).record_correction(_event(dependency))
         with self.assertRaises(BilqisError) as caught:
             owner.require(TARGET)
@@ -138,7 +138,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
             owner.current_node.immediate_dependencies,
         )
         self.assertNotEqual(SOURCE_ID, SOURCE_ROW)
-        with shape_patch():
+        with shape_patch(authority):
             AcceptedRuntimeHost(self.run).record_correction(_event(DependencyRef(DependencyKind.SOURCE, SOURCE_ID)))
         with self.assertRaises(BilqisError) as caught:
             owner.require(TARGET)
@@ -159,7 +159,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
         self.publish_support(authority=authority, authority_registry=registry)
         owner = self.load_support(registry)
         self.assertIn(motif_source, owner.current_node.immediate_dependencies)
-        with shape_patch():
+        with shape_patch(registry):
             AcceptedRuntimeHost(self.run).record_correction(_event(motif_source))
         with self.assertRaises(BilqisError) as caught:
             owner.require(TARGET)
@@ -219,7 +219,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
         ):
             published, _authority = self.publish_support(authority_registry=AUTHORITY)
         owner = self.load_support(AUTHORITY)
-        with shape_patch():
+        with self._shape_patch():
             host = AcceptedRuntimeHost(self.run)
         invalidation = C09ContextInvalidation(
             old_context_digest=case.previous.digest,
@@ -239,7 +239,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
                 for handle in (frame.frame_handle, *frame.member_handles)
             })),
         )
-        with shape_patch():
+        with self._shape_patch():
             record = context_invalidation_record(
                 published["manifest_sha256"], invalidation)
             append_record(
@@ -262,7 +262,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
             ))),
             digest="d" * 64,
         )
-        with shape_patch():
+        with self._shape_patch():
             host.record_context_revalidation(
                 ContextRevalidationFrontier((result,)))
         self.assertIs(
@@ -291,7 +291,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
     def test_retained_capability_provenance_survives_unrelated_successor_acceptance(self):
         first, _authority_a = self.publish_support(authority_registry=AUTHORITY)
         first_manifest = first["manifest_sha256"]
-        with shape_patch():
+        with self._shape_patch():
             accepted_parent = load_accepted_generation(self.run)
         capability_b = "capability:unrelated-b"
         source_b = "source:capability-support:row-b"
@@ -312,14 +312,14 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
             delivery_events=({"event": "FIXTURE_SUCCESSOR_B"},),
         )
         decision = retention_decision(parent=parent_state_b, retained=retained_b)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with self._shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             second = accept_and_publish(
                 self.run, successor, retained_b, decision=decision,
                 feature_sha256=successor.extents.factor_map_digest,
                 training_authorities=transaction_b.training_authorities,
             )
 
-        with shape_patch():
+        with self._shape_patch():
             ledger, _nodes = accepted_support_census(
                 self.run, second["manifest_sha256"])
         self.assertEqual(
@@ -333,7 +333,7 @@ class CapabilitySupportOwnerTests(CapabilitySupportOwnerFixture):
             first_manifest,
         )
         correction = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with self._shape_patch():
             AcceptedRuntimeHost(self.run).record_correction(correction)
         with self.assertRaises(BilqisError):
             inherited.require(TARGET)

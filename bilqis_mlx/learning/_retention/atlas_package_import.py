@@ -1,6 +1,8 @@
 """B12 package-import state custody, distinct from native training candidates."""
 from __future__ import annotations
 
+from bilqis_mlx.learning._retention._atlas_candidate.identity import RAW_IDENTITY_SCHEME
+
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from hashlib import sha256
@@ -180,6 +182,7 @@ def _reset_state(parent: CandidateState, parameters, slices):
     candidate = object.__new__(CandidateState)
     for name, value in (
             ("optimizer", optimizer), ("policy", policy),
+            ("identity_scheme", RAW_IDENTITY_SCHEME),
             ("allocations", parent.allocations), ("optimizer_step", parent.optimizer_step),
             ("custody", parent.custody), ("step_proofs", parent.step_proofs),
             ("schema_version", STATE_SCHEMA), ("_issuance", RETAINED_STATE_ISSUER)):

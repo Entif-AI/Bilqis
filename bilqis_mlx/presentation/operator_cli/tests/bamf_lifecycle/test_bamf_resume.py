@@ -135,8 +135,12 @@ class BamfResumeTests(BamfFirstStudentCase):
         report = json.loads(output)
         self.assertEqual(report["status"], "VISIT_LIMIT")
         self.assertEqual(report["generation"], 1)
-        operate.assert_called_once_with(
-            target, minutes=90, max_visits=1, reserve_gib=100.0)
+        call = operate.call_args
+        self.assertEqual(call.args, (target,))
+        self.assertEqual(call.kwargs["minutes"], 90)
+        self.assertEqual(call.kwargs["max_visits"], 1)
+        self.assertEqual(call.kwargs["reserve_gib"], 100.0)
+        self.assertTrue(callable(call.kwargs["progress"]))
         self.assertEqual(_tree_snapshot(target), before)
 
     def test_human_resume_with_saved_atlas_lease_replans_then_continues_learning(self):
@@ -167,8 +171,12 @@ class BamfResumeTests(BamfFirstStudentCase):
         self.assertEqual(report["admission_status"], "WAITING_FOR_EVIDENCE")
         flywheel.assert_called_once()
         self.assertEqual(Path(flywheel.call_args.args[0]), target.resolve())
-        operate.assert_called_once_with(
-            target, minutes=90, max_visits=1, reserve_gib=100.0)
+        call = operate.call_args
+        self.assertEqual(call.args, (target,))
+        self.assertEqual(call.kwargs["minutes"], 90)
+        self.assertEqual(call.kwargs["max_visits"], 1)
+        self.assertEqual(call.kwargs["reserve_gib"], 100.0)
+        self.assertTrue(callable(call.kwargs["progress"]))
 
     def test_human_resume_with_ambiguous_flywheel_hold_does_not_start_learning(self):
         target = self.root / "accepted-bamf"

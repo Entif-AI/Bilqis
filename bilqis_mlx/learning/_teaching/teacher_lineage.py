@@ -36,7 +36,8 @@ def _lineage_payload(epoch: TeacherEpoch, *, adaptation: Mapping,
 def _projection(epoch: TeacherEpoch, *, adaptation: Mapping,
                 source_teacher_sha256: str, teacher_epoch: int,
                 next_seed: int, cursor: str,
-                last_visit: Mapping | None = None) -> TeacherCustodyProjection:
+                last_visit: Mapping | None = None,
+                last_visit_receipt: Mapping | None = None) -> TeacherCustodyProjection:
     if (type(teacher_epoch) is not int or teacher_epoch < 0
             or type(next_seed) is not int or next_seed < 0
             or not isinstance(cursor, str) or not cursor):
@@ -54,8 +55,16 @@ def _projection(epoch: TeacherEpoch, *, adaptation: Mapping,
             source_teacher_sha256=source_teacher_sha256),
     }
     if last_visit is not None:
-        from .teacher_visit_identity import TeacherVisitIdentity
-        state["last_visit"] = TeacherVisitIdentity.from_record(last_visit).to_record()
+        from .teacher_visit_identity import (
+            TeacherVisitIdentity, validate_teacher_visit_receipt_record,
+        )
+        visit_identity = TeacherVisitIdentity.from_record(last_visit)
+        state["last_visit"] = visit_identity.to_record()
+        if last_visit_receipt is not None:
+            validate_teacher_visit_receipt_record(visit_identity, last_visit_receipt)
+            state["last_visit_receipt"] = dict(last_visit_receipt)
+    elif last_visit_receipt is not None:
+        invalid("TEACHER_VISIT_RECEIPT_DRIFT")
     return TeacherCustodyProjection(state, identity, teacher_epoch)
 
 
@@ -87,12 +96,16 @@ def restore_teacher_lineage(
         "schema", "teacher_identity", "teacher_epoch", "next_seed", "cursor", "c03_lineage",
     }
     priority_outer = {"priority_counter", "priority_last_selected"}
+    visit_outer = {"last_visit"}
+    receipt_outer = {"last_visit", "last_visit_receipt"}
     actual_outer = set(teacher_state) if isinstance(teacher_state, Mapping) else set()
     if (not isinstance(teacher_state, Mapping)
             or actual_outer not in (
-                expected_outer, expected_outer | {"last_visit"},
+                expected_outer, expected_outer | visit_outer,
+                expected_outer | receipt_outer,
                 expected_outer | priority_outer,
-                expected_outer | priority_outer | {"last_visit"},
+                expected_outer | priority_outer | visit_outer,
+                expected_outer | priority_outer | receipt_outer,
             )
             or teacher_state.get("schema") != TEACHER_STATE_SCHEMA
             or not valid_hex(teacher_state.get("teacher_identity"), SHA256_HEX_LENGTH)
@@ -138,13 +151,18 @@ def restore_teacher_lineage(
     if identity != teacher_state["teacher_identity"]:
         invalid("TEACHER_LINEAGE_IDENTITY_DRIFT")
     if "last_visit" in teacher_state:
-        from .teacher_visit_identity import TeacherVisitIdentity
+        from .teacher_visit_identity import (
+            TeacherVisitIdentity, validate_teacher_visit_receipt_record,
+        )
         visit = TeacherVisitIdentity.from_record(teacher_state["last_visit"])
         if (visit.teacher_epoch > teacher_state["teacher_epoch"]
                 or (visit.teacher_epoch == teacher_state["teacher_epoch"]
                     and (visit.teacher_identity != teacher_state["teacher_identity"]
                          or visit.student_sha256 != lineage["student_sha256"]))):
             invalid("TEACHER_VISIT_IDENTITY_DRIFT")
+        if "last_visit_receipt" in teacher_state:
+            validate_teacher_visit_receipt_record(
+                visit, teacher_state["last_visit_receipt"])
     return TeacherEpoch(
         lineage["prior_region"], lineage["current_region"], lineage["student_sha256"],
         HISTORICAL_REPLAY_HEAD, canonical(lineage["prior_teacher"]),
@@ -206,7 +224,8 @@ def advance_teacher_lineage(
         source_teacher_sha256=lineage["source_teacher_sha256"],
         teacher_epoch=previous_state["teacher_epoch"] + 1,
         next_seed=next_seed, cursor=cursor,
-        last_visit=previous_state.get("last_visit"))
+        last_visit=previous_state.get("last_visit"),
+        last_visit_receipt=previous_state.get("last_visit_receipt"))
     counter, selected = priority_rotation_state(previous_state)
     if counter == 0 and not selected:
         return projected

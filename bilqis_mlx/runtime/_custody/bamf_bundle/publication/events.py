@@ -9,6 +9,36 @@ from ..records import CompleteStudent, canonical, invalid, sha
 from .storage import _live_bundle_manifest, _pointer_lock, _read_pointer
 
 
+def _validated_c03_rejection_evidence(student: CompleteStudent, pointer: dict,
+                                      evidence: dict) -> dict:
+    """Bind supported rejection evidence to an actually issued C03 visit."""
+    if evidence.get("schema") != "bilqis.bamf.c16.3-rejection/v2":
+        return dict(evidence)
+    from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+    from bilqis_mlx.learning.teacher_visit_identity import (
+        TeacherVisitIdentity, require_teacher_visit_receipt,
+    )
+
+    state = student.teacher_state
+    identity = TeacherVisitIdentity.from_record(evidence.get("teacher_visit"))
+    if (evidence.get("visit_id") != identity.visit_id
+            or evidence.get("capability") != identity.capability_id
+            or evidence.get("selected_policy_key") != identity.policy_key
+            or identity.run_identity_sha256 != student.run_identity.digest
+            or identity.run_seed != student.run_identity.run_seed
+            or identity.generation != student.generation
+            or identity.accepted_manifest_sha256 != pointer["manifest_sha256"]
+            or identity.student_sha256 != candidate_identity_digest(student.retained_state)
+            or identity.selection_seed != state.get("next_seed")
+            or identity.cursor != state.get("cursor")
+            or ("c03_lineage" in state
+                and (identity.teacher_identity != state.get("teacher_identity")
+                     or identity.teacher_epoch != state.get("teacher_epoch")))):
+        invalid("BAMF_REJECTION_VISIT_DRIFT")
+    require_teacher_visit_receipt(identity)
+    return {**evidence, "teacher_visit": identity.to_record()}
+
+
 def reconcile_bamf_outbox(
         run_dir: Path, student: CompleteStudent, *, publish_missing=True) -> bool:
     """Reconcile while the caller holds the generation pointer writer lock."""
@@ -35,6 +65,7 @@ def record_bamf_rejection(run_dir: Path, student: CompleteStudent, evidence: dic
         optimizer_step = manifest.get("optimizer", {}).get("step") if isinstance(manifest, dict) else None
         if type(optimizer_step) is not int or optimizer_step != manifest.get("tensors", {}).get("optimizer_step"):
             invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
+        evidence = _validated_c03_rejection_evidence(student, pointer, evidence)
         authority = {
             "schema": "bilqis.mlx.bamf-rejection-authority/v1",
             "run_id": student.run_id,

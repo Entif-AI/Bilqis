@@ -1,0 +1,83 @@
+{
+  "ok": true,
+  "results": [
+    {
+      "launchMode": "production",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "dark",
+      "density": "comfortable",
+      "violations": [],
+      "overflow": false,
+      "peerControls": 2,
+      "nestedTabs": 0
+    },
+    {
+      "launchMode": "production",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "overflow": false,
+      "peerControls": 2,
+      "nestedTabs": 0
+    },
+    {
+      "launchMode": "production",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "overflow": false,
+      "peerControls": 2,
+      "nestedTabs": 0
+    },
+    {
+      "launchMode": "fixtures",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "dark",
+      "density": "comfortable",
+      "violations": [],
+      "overflow": false,
+      "peerControls": 2,
+      "nestedTabs": 0
+    },
+    {
+      "launchMode": "fixtures",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "overflow": false,
+      "peerControls": 2,
+      "nestedTabs": 0
+    },
+    {
+      "launchMode": "fixtures",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "overflow": false,
+      "peerControls": 2,
+      "nestedTabs": 0
+    }
+  ]
+}

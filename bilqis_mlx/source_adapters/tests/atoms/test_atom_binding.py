@@ -18,6 +18,9 @@ from bilqis_mlx.source_adapters.atom_binding import (
 from bilqis_mlx.source_adapters.copular import CAPABILITY, SYMBOL
 from bilqis_mlx.source_adapters.copular_curriculum import proposed_graph
 from bilqis_mlx.source_adapters.school import live_source_registry
+from bilqis_mlx.b11_observation import (
+    note_atlas_reload, note_provider_draw, source_replay_observation,
+)
 from bilqis_mlx.live_grade_c import registry_graph
 from bilqis_mlx.grade_a_probe import read_sources
 
@@ -59,12 +62,15 @@ class SourceAtomAdapterTests(TestCase):
 
         self.assertEqual(row["generator"], owner.descriptor.cohort_generator)
         self.assertNotEqual(row["generator"], owner.descriptor.generator_id)
-        witness, reason = verify_source_row(
-            row, graph, source_root=source_root,
-            source_seed=31, source_each=2, course=None,
-            source_profile_parameters=None)
+        with source_replay_observation() as observed:
+            witness, reason = verify_source_row(
+                row, graph, source_root=source_root,
+                source_seed=31, source_each=2, course=None,
+                source_profile_parameters=None)
         self.assertIsNone(reason)
         self.assertIsNotNone(witness)
+        self.assertEqual(observed["provider_draws"], 1)
+        self.assertEqual(observed["atlas_reloads"], 0)
         self.assertEqual(witness.generator_id, owner.descriptor.generator_id)
         self.assertEqual(
             witness.oracle_id, owner.descriptor.accepted_oracle_ids[0])
@@ -84,6 +90,14 @@ class SourceAtomAdapterTests(TestCase):
             source_profile_parameters=None)
         self.assertIsNone(witness)
         self.assertEqual(reason, "SOURCE_ATOM_SOURCE_ROW_UNVERIFIED")
+
+    def test_replay_observation_counts_only_inside_active_scope(self):
+        note_provider_draw()
+        note_atlas_reload()
+        with source_replay_observation() as observed:
+            note_provider_draw()
+            note_atlas_reload()
+        self.assertEqual(observed, {"provider_draws": 1, "atlas_reloads": 1})
 
     def test_unsupported_or_unreproducible_source_row_has_no_witness(self):
         row = {"generator": "missing.generator", "oracle": "missing.oracle",
