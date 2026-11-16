@@ -25,7 +25,7 @@ _MOTIF_SCHEMA_LIVENESS_ROW_WIDTH = 2
 
 
 def _invalid(reason: str) -> None:
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID, reason=reason)
 
 
 def _source_digest(source: SourceAtomRow) -> str:
