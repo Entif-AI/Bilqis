@@ -15,6 +15,7 @@ from .feature_authority import (
     verify_accepted_generation_feature_receipt,
 )
 from .publication import (
+    AcceptedGenerationInspection, inspect_accepted_generation,
     load_bamf_generation, load_bamf_generation_authority,
     publish_atlas_admission_generation, publish_bamf_generation,
     record_bamf_rejection,
@@ -75,6 +76,7 @@ __all__ = (
     "SourceQualifiedMotifContinuation",
     "publish_bamf_generation", "load_bamf_generation",
     "publish_atlas_admission_generation",
+    "AcceptedGenerationInspection", "inspect_accepted_generation",
     "load_bamf_generation_authority", "record_bamf_rejection",
     "A02StagedVocabularyExtension", "A02VocabularyStagingReceipt",
     "require_issued_a02_staged_vocabulary_extension", "stage_vocabulary_extension",

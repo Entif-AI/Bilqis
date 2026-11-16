@@ -1,0 +1,59 @@
+.resource-view { display: grid; gap: var(--content-gap); min-width: 0; }
+.resource-view > *, .resource-analysis > *, .resource-panel { min-width: 0; }
+.resource-heading h2 { margin: 5px 0 0; font-size: var(--type-section); }
+.resource-provenance { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; padding: var(--space-3); border-left: 3px solid var(--attention); background: var(--surface-1); }
+.resource-provenance[data-provenance="live_query"] { border-color: var(--border-strong); }
+.resource-provenance span, .resource-muted { color: var(--text-muted); }
+.resource-tabs { display: flex; gap: var(--space-1); min-width: 0; overflow-x: auto; border-bottom: 1px solid var(--border); }
+.resource-tabs .ui-control { flex: 0 0 auto; }
+.resource-tabpanel[hidden] { display: none; }
+.resource-tabpanel { min-width: 0; }
+.resource-tabpanel > .resource-panel:first-child { border-top: 0; }
+.resource-panel { padding: var(--space-3) 0; border-top: 1px solid var(--border); }
+.resource-panel > header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.resource-panel-tools { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.resource-panel h3 { margin: 0; font-size: var(--type-section); }
+.resource-panel p { line-height: 1.5; }
+.resource-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-4); margin: var(--space-4) 0; }
+.resource-summary article { display: grid; justify-items: start; align-content: start; gap: 6px; min-width: 0; }
+.resource-summary article > span:first-child { color: var(--text-muted); }
+.resource-summary strong { font-size: var(--type-section); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.resource-panel details summary { cursor: pointer; min-height: var(--control-height); padding: 8px 0; }
+.resource-state, .resource-semantic { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 6px; border: 1px solid var(--border-strong); font-size: var(--type-label); font-weight: 800; letter-spacing: .05em; white-space: nowrap; }
+.resource-state[data-resource-state="present"], .resource-state[data-resource-state="complete"], .resource-state[data-resource-state="reconciled"], .resource-semantic[data-resource-semantic="measured"] { color: var(--healthy); }
+.resource-state[data-resource-state="partial"], .resource-state[data-resource-state="explicit-remainder"], .resource-state[data-resource-state="loading"], .resource-semantic[data-resource-semantic="estimate"], .resource-semantic[data-resource-semantic="inferred"] { border-style: dotted; color: var(--attention); }
+.resource-state[data-resource-state="unavailable"], .resource-state[data-resource-state="empty"], .resource-semantic[data-resource-semantic="unavailable"] { border-style: dashed; color: var(--text-muted); }
+.resource-semantic[data-resource-semantic="configured-limit"], .resource-semantic[data-resource-semantic="budget-value"] { border-style: double; color: var(--accent); }
+.resource-analysis { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--content-gap); min-width: 0; }
+.resource-table-wrap { max-width: 100%; min-width: 0; overflow: auto; margin-top: var(--space-3); }
+.resource-table { width: 100%; border-collapse: collapse; font-size: var(--type-label); font-variant-numeric: tabular-nums; }
+.resource-table th, .resource-table td { padding: 9px; border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+.resource-table thead th { color: var(--text-muted); }
+.resource-table tbody th { font-weight: 500; }
+.resource-table td:nth-child(2), .resource-table td:nth-child(3):not(:has(.resource-semantic)), .resource-table td:nth-child(4):not(:has(.resource-state)), .resource-table td:nth-child(n+5) { text-align: end; }
+.resource-table td small, .resource-table th small { display: block; color: var(--text-muted); }
+.resource-table button, .resource-compare-form input, .resource-compare-form button { min-height: var(--control-height); border: 1px solid var(--border-strong); background: var(--surface-2); color: var(--text); padding: 6px 9px; }
+.resource-compare-form { display: flex; flex-wrap: wrap; align-items: end; gap: var(--space-3); margin-top: var(--space-4); }
+.resource-compare-form label { display: grid; gap: 4px; color: var(--text-muted); }
+.resource-compare-input { min-width: 13ch; }
+.resource-compare-form span { color: var(--text-muted); font-size: var(--type-label); }
+.resource-view :is(button, input, summary, [tabindex="0"]):focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+:root[data-density="compact"] .resource-table th, :root[data-density="compact"] .resource-table td { padding: 5px 7px; }
+:root[data-density="compact"] .resource-summary { margin: var(--space-3) 0; }
+@media (max-width: 1000px) { .resource-analysis { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .resource-summary { grid-template-columns: 1fr; gap: var(--space-3); } }
+@media (prefers-reduced-motion: reduce) { .resource-view * { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+
+.resource-view small { font-size: var(--type-label); }
+.resource-table thead th:not(:first-child) { text-align: end; }
+.resource-table :is(th, td):first-child { position: sticky; inset-inline-start: 0; background: var(--canvas); z-index: 1; }
+.resource-table button { max-inline-size: 220px; white-space: normal; overflow-wrap: anywhere; text-align: start; }
+.resource-summary article { grid-template-columns: minmax(0, 1fr); }
+.resource-summary article > *, .resource-panel > header > * { min-inline-size: 0; max-inline-size: 100%; }
+.resource-summary .resource-semantic, .resource-panel > header .resource-state { white-space: normal; }
+@media (max-width: 640px) {
+  .resource-panel > header { align-items: flex-start; }
+  .resource-panel-tools { justify-content: flex-start; }
+  .resource-table :is(th, td):first-child { inline-size: 40vw; min-inline-size: 40vw; max-inline-size: 40vw; white-space: normal; overflow-wrap: anywhere; }
+  .resource-table button { max-inline-size: 100%; }
+}

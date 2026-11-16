@@ -41,7 +41,7 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
         self.publish_support(authority_registry=AUTHORITY)
         owner = self.load_support()
         correction = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(correction)
         queue = owner.queue
         self.assertEqual(queue.held_artifact_ids, (owner.current_node.artifact_id,))
@@ -55,7 +55,7 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
             reloaded.require(TARGET)
 
         node = owner.current_node
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_revalidation(_result(node, digest=node.content_digest, correction=correction),
             )
         self.assertEqual(owner.require(TARGET).status, "QUALIFIED")
@@ -66,10 +66,10 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
             event_id="correction:synthetic:2",
             source_signature_hex="0" * 128,
         ))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(second)
         node = owner.current_node
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_revalidation(_result(node, digest="f" * 64, correction=second))
         self.assertEqual(owner.support.status, "REQUALIFICATION_REQUIRED")
         self.assertEqual(len(owner.ledger.pending_source_tasks), 1)
@@ -87,7 +87,7 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
         self.publish_support(authority_registry=AUTHORITY)
         owner = self.load_support(AUTHORITY)
         correction = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(correction)
         self.assertEqual(
             owner.queue.held_artifact_ids, (owner.current_node.artifact_id,))
@@ -103,7 +103,7 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
             reloaded.require(TARGET)
 
         node = reloaded.current_node
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_revalidation(_result(node, digest="f" * 64, correction=correction),
             )
         self.assertEqual(reloaded.support.status, "REQUALIFICATION_REQUIRED")
@@ -115,7 +115,7 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
         published, _authority = self.publish_support(authority_registry=AUTHORITY)
         owner = self.load_support()
         correction = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(correction)
         hold_dir = self.run / "c09-capability-support" / published["manifest_sha256"]
         state_path = next(hold_dir.glob("*.json"))
@@ -129,7 +129,7 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
         published, _authority = self.publish_support(authority_registry=AUTHORITY)
         owner = self.load_support()
         correction = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(correction)
         hold_dir = self.run / "c09-capability-support" / published["manifest_sha256"]
         state_path = next(hold_dir.glob("*.json"))
@@ -143,10 +143,10 @@ class CapabilitySupportReplayTests(CapabilitySupportOwnerFixture):
         published, _authority = self.publish_support(authority_registry=AUTHORITY)
         owner = self.load_support()
         correction = _event(_ref(DependencyKind.SOURCE, SOURCE_ROW))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_correction(correction)
         node = owner.current_node
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             AcceptedRuntimeHost(self.run).record_revalidation(_result(node, digest=node.content_digest, correction=correction),
             )
         hold_dir = self.run / "c09-capability-support" / published["manifest_sha256"]

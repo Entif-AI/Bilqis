@@ -3,6 +3,7 @@ from pathlib import Path
 import unittest
 
 from bilqis_mlx.live_grade_a import draw_predicates, live_course
+from bilqis_mlx.grade_a_probe import read_sources
 from bilqis_mlx.source_adapters.grade_a_presentation import (
     draw_a as draw_a_presentation, draw_a_contextual,
 )
@@ -16,18 +17,18 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[4] / "vendor" / "legacy-v16"
-SOURCE = ROOT / "runs/primitive-consolidation-v16-triplets/student-116760-7e9af4651f28.pt"
 MANIFEST = Path(__file__).resolve().parents[4] / "docs/provenance/GRADE_A_CANDIDATE_MANIFEST_V2.json"
 
 
-@unittest.skipUnless(SOURCE.is_file(), "Pinned original source not available")
 class LiveGradeAGenerationTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.graph = read_sources(ROOT)[2]
+
     def test_all_six_families_regenerate_oracle_agreed_rows_per_seed(self):
-        import torch
-        graph = torch.load(SOURCE, map_location="cpu", weights_only=True)["graph"]
-        one = draw_predicates(ROOT, graph, seed=833, each=12)
-        same = draw_predicates(ROOT, graph, seed=833, each=12)
-        another = draw_predicates(ROOT, graph, seed=834, each=12)
+        one = draw_predicates(ROOT, self.graph, seed=833, each=12)
+        same = draw_predicates(ROOT, self.graph, seed=833, each=12)
+        another = draw_predicates(ROOT, self.graph, seed=834, each=12)
         self.assertEqual(one, same)
         self.assertNotEqual(one, another)
         self.assertEqual(len(one), 72)
@@ -46,9 +47,7 @@ class LiveGradeAGenerationTests(unittest.TestCase):
                                         seed=834, rubric_version="A/live/v1").digest)
 
     def test_routine_provider_uses_plain_grade_a_presentation(self):
-        import torch
         from bilqis_mlx.source_adapters.school import live_source_registry
-        graph = torch.load(SOURCE, map_location="cpu", weights_only=True)["graph"]
         registry = live_source_registry()
         adapter = registry.require(
             "bilqis_mlx.grade_a_probe.make_record",
@@ -56,22 +55,20 @@ class LiveGradeAGenerationTests(unittest.TestCase):
         for capability in (
                 "A.IDENTITY", "A.PARENT", "A.LINK",
                 "A.MEMBER", "A.EDGE", "A.MAPS"):
-            base = draw_predicates(ROOT, graph, seed=377, each=12,
+            base = draw_predicates(ROOT, self.graph, seed=377, each=12,
                                    capability=capability)
             rows = adapter.draw(
-                source_root=ROOT, graph=graph, course=None,
+                source_root=ROOT, graph=self.graph, course=None,
                 capability=capability, seed=377, each=12)
             self.assertEqual(rows, tuple(base))
             self.assertTrue(all(adapter.check(
-                row, source_root=ROOT, graph=graph, course=None) for row in rows))
+                row, source_root=ROOT, graph=self.graph, course=None) for row in rows))
 
     def test_member_context_expands_the_fresh_false_size3_source_space(self):
-        import torch
-        graph = torch.load(SOURCE, map_location="cpu", weights_only=True)["graph"]
         identities = set()
         for seed in range(12):
             rows = draw_a_contextual(
-                source_root=ROOT, graph=graph, course=None,
+                source_root=ROOT, graph=self.graph, course=None,
                 capability="A.MEMBER", seed=seed, each=12)
             for row in rows:
                 if row["gold"] == "FALSE" and row["universe_size"] == 3:
@@ -103,11 +100,9 @@ class LiveGradeAGenerationTests(unittest.TestCase):
         self.assertEqual(school.stage, "RECOVERY_2")
 
     def test_saved_cohort_replay_verifies_exact_content_and_source(self):
-        import torch
         manifest = json.loads(MANIFEST.read_text())
         course = live_course(accepted_grade_a(manifest))
-        graph = torch.load(SOURCE, map_location="cpu", weights_only=True)["graph"]
-        rows = draw_predicates(ROOT, graph, seed=9002)
+        rows = draw_predicates(ROOT, self.graph, seed=9002)
         cohort = make_cohort(rows,
             generator_version="bilqis.mlx.grade-a-live-constructor/v1",
             seed=9002, rubric_version="bilqis.mlx.grade-a-live/20261015")

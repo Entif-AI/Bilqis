@@ -7,11 +7,27 @@ import tempfile
 import unittest
 from unittest.mock import patch
 from bilqis_mlx.cli import main
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.presentation.dashboard import build
-from bilqis_mlx.presentation.operator_cli.terminal import human_stop_summary
+from bilqis_mlx.presentation.operator_cli.terminal import (
+    _report_operator_blocked, human_stop_summary,
+)
 
 
 class OperatorTests(unittest.TestCase):
+    def test_blocked_report_surfaces_structured_reason(self):
+        try:
+            ErrorBus.Raise(
+                SCHOOL.MODEL_TOPOLOGY.INVALID,
+                reason="BAMF_PRIORITY_REJECTION_ORDER_INVALID")
+        except ValueError as error:
+            stderr = io.StringIO()
+            with redirect_stderr(stderr):
+                self.assertEqual(_report_operator_blocked(error, None), 2)
+        self.assertIn(
+            "DETAILS: reason=BAMF_PRIORITY_REJECTION_ORDER_INVALID",
+            stderr.getvalue())
+
     def test_cold_resume_stop_explains_accepted_generation_restart(self):
         summary = human_stop_summary({
             "stop_reason": "ATLAS_ADMISSION_ADOPTED_COLD_RESUME",

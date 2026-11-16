@@ -40,6 +40,50 @@ def _bamf_operator_admission_status(report):
     return report.get("result") if report.get("result") in safe else False
 
 
+def _reject_fresh_external_legacy_fallthrough(args, run_dir: Path) -> None:
+    if args.dry_run and args.verify_source:
+        # Source verification is an explicitly neural-inert inspection path.
+        # It may use a disposable target solely to prove that preflight does
+        # not mutate run custody; it is not permission to create or train an
+        # external legacy lineage.
+        return
+    legacy_pointer = run_dir / "state.json"
+    if (args.resume or args.bamf_v2_foundation_explicit
+            or args.model_topology is not None
+            or legacy_pointer.exists() or legacy_pointer.is_symlink()):
+        return
+    target = run_dir.resolve()
+    local_runs = (ROOT / "runs").resolve()
+    if target != local_runs and local_runs not in target.parents:
+        from .bamf_lifecycle_inputs import invalid
+        invalid("BAMF_OPERATOR_FRESH_EXTERNAL_RUN_REQUIRES_FOUNDATION_INPUTS")
+
+
+def _dispatch_bamf_resume(args, run_dir: Path, report):
+    admission_status = _bamf_operator_admission_status(report)
+    if (args.human_run and not args.dry_run
+            and admission_status is not False):
+        from dataclasses import asdict
+        from bilqis_mlx.control_plane.active_endpoint import advertise_active_endpoint
+        from bilqis_mlx.runtime.bamf_operator import operate_bamf
+
+        def progress(message):
+            print("BAMF TRAINER: " + message, file=sys.stderr, flush=True)
+
+        with advertise_active_endpoint(run_dir):
+            result = operate_bamf(
+                run_dir, minutes=args.minutes,
+                max_visits=args.max_visits, steps_per_visit=args.steps_per_visit,
+                reserve_gib=args.reserve_gib,
+                source_prefetch_workers=args.source_prefetch_workers,
+                progress=progress)
+        operator_report = asdict(result)
+        if admission_status is not None:
+            operator_report["admission_status"] = admission_status
+        return True, _print_status(operator_report), None
+    return True, _print_status(report), None
+
+
 def _bamf_or_topology(args):
     """Route BAMF v2 before legacy training while preserving C07 early failure."""
     run_dir = Path(args.run_dir).expanduser()
@@ -89,19 +133,9 @@ def _bamf_or_topology(args):
     if resume_v2_intent:
         from .bamf_lifecycle import bamf_lifecycle
         report = bamf_lifecycle(args, None)
-        admission_status = _bamf_operator_admission_status(report)
-        if (args.human_run and not args.dry_run
-                and admission_status is not False):
-            from dataclasses import asdict
-            from bilqis_mlx.runtime.bamf_operator import operate_bamf
-            result = operate_bamf(
-                run_dir, minutes=args.minutes,
-                max_visits=args.max_visits, reserve_gib=args.reserve_gib)
-            operator_report = asdict(result)
-            if admission_status is not None:
-                operator_report["admission_status"] = admission_status
-            return True, _print_status(operator_report), None
-        return True, _print_status(report), None
+        return _dispatch_bamf_resume(args, run_dir, report)
+
+    _reject_fresh_external_legacy_fallthrough(args, run_dir)
 
     from bilqis_mlx.runtime.topology_lifecycle import topology_from_file
     try:

@@ -14,14 +14,9 @@ class TeacherFixture:
     @classmethod
     def setUpClass(cls):
         if not fixtures.PARENT.is_file():
-            source = Path.home() / "Code/bilqis-mlx-retention-lab/vendor/legacy-v16"
-            parent = (source / "runs/primitive-consolidation-v16-triplets" /
-                      fixtures.PARENT.name)
-            if not parent.is_file():
-                raise FileNotFoundError(
-                    "CAUSAL_TEACHER_PINNED_PARENT_FIXTURE_MISSING:" + str(parent))
-            fixtures.SOURCE = source
-            fixtures.PARENT = parent
+            raise FileNotFoundError(
+                "CAUSAL_TEACHER_PINNED_PARENT_FIXTURE_MISSING:"
+                + str(fixtures.PARENT))
         staircase_fixtures.NumericStaircaseTests.setUpClass()
         cls.source_root = fixtures.SOURCE
         cls.grade_a_course = initial_course(

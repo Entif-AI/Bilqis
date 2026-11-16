@@ -43,12 +43,12 @@ class AcceptedCorrectionCompositionTests(AcceptedCorrectionCompositionCase):
             self.publish(candidate(parent_state()))
             binding, generation, _budget, add, _ambiguous = _fixture()
             context = SolveContext(binding)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
             dependency = DependencyRef(
                 DependencyKind.SOURCE, "source:binding:" + contract_digest(binding))
             correction = _event(dependency)
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction)
             owner = context.operator_composition_artifact_owner
             self.assertIsNone(owner.queue)
@@ -73,13 +73,13 @@ class AcceptedCorrectionCompositionTests(AcceptedCorrectionCompositionCase):
                 frames=case.frames,
             )
             context = SolveContext(binding)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
             owner = context.operator_composition_artifact_owner
             invalidation = self._context_invalidation(case, "e" * 64)
             # Persist through the same accepted-run ledger/dispatch path used in production.
             from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
-            with shape_patch():
+            with self._shape_patch():
                 accepted_cache = bind_accepted_execution_cache(self.run)
                 record = context_invalidation_record(
                     accepted_cache.accepted_manifest_sha256, invalidation)
@@ -116,12 +116,12 @@ class AcceptedCorrectionCompositionTests(AcceptedCorrectionCompositionCase):
                     request.unresolved_signature, "c" * 64)
 
             context = SolveContext(binding, neural_proposer=neural)
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
             correction = _event(DependencyRef(
                 DependencyKind.SOURCE,
                 "source:binding:" + contract_digest(binding)))
-            with shape_patch():
+            with self._shape_patch():
                 AcceptedRuntimeHost(self.run).record_correction(correction)
             self.assertIsNone(context.operator_composition_artifact_owner.queue)
 
@@ -140,7 +140,7 @@ class AcceptedCorrectionCompositionTests(AcceptedCorrectionCompositionCase):
             self.publish(candidate(parent_state()), SYNTHETIC_SOURCE_AUTHORITY)
             binding, context, compositions = self._composition_context(1)
             source_reference = binding.operands[0].source_reference
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
                 correction = _event(DependencyRef(
                     DependencyKind.SOURCE, source_reference))
@@ -184,7 +184,7 @@ class AcceptedCorrectionCompositionTests(AcceptedCorrectionCompositionCase):
                 qualified_compositions=(composition,),
                 qualification_verifier=lambda item: True,
             )
-            with shape_patch():
+            with self._shape_patch():
                 register_solve_context(self.run, context)
                 correction = _event(DependencyRef(
                     DependencyKind.SOURCE, source_id))

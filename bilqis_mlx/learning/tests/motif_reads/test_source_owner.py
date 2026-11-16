@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from dataclasses import replace
 import os
+from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 import mlx.core as mx
 
@@ -14,13 +16,17 @@ from bilqis_mlx.learning._engram.tests.test_atlas_engram_source import (
 from bilqis_mlx.learning.atlas_engram import MotifBudget
 from bilqis_mlx.learning.atlas_engram_source import prepare_source_qualified_motifs
 from bilqis_mlx.learning.atlas_engram_reads.source_owner import (
-    _B13_EXECUTION_SEAL, _read_retained_compiled_motifs,
+    _B13_EXECUTION_SEAL, _pad_motif_read_row, _read_retained_compiled_motifs,
 )
 from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
 from bilqis_mlx.learning.source_atoms import SourceAtomRow
 from bilqis_mlx.runtime.model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, expected_bamf_shapes,
 )
+from bilqis_mlx.runtime.b11_source_execution_authority import (
+    bind_b11_source_execution_authority, b11_source_authority_launch_epoch,
+)
+import bilqis_mlx.learning.atlas_engram_reads.numerical as numerical_impl
 from bilqis_mlx.semantics.atlas_features import FeatureSchema, build_feature_manifest
 from bilqis_mlx.semantics.atlas.snapshot import load_pinned_atlas_snapshot
 from bilqis_mlx.semantics.context_eligibility import SourceFrontier
@@ -38,6 +44,19 @@ from bilqis_mlx.source_adapters.atoms.admission import public_formal_atom_contex
 
 
 class SourceOwnedMotifReadBoundaryTests(unittest.TestCase):
+    def test_mixed_width_row_padding_adds_only_none_positions_and_zero_features(self):
+        short_positions, short_features = _pad_motif_read_row(
+            (None, None), mx.ones((2, 128), dtype=mx.float32), 3)
+        long_positions, long_features = _pad_motif_read_row(
+            (None, None, None), mx.ones((3, 128), dtype=mx.float32), 3)
+        stacked = mx.stack((short_features, long_features))
+        self.assertEqual(short_positions, (None, None, None))
+        self.assertEqual(long_positions, (None, None, None))
+        self.assertEqual(stacked.shape, (2, 3, 128))
+        self.assertTrue(bool(mx.all(stacked[0, :2] == 1)))
+        self.assertTrue(bool(mx.all(stacked[0, 2] == 0)))
+        self.assertTrue(bool(mx.all(stacked[1] == 1)))
+
     def test_wrong_private_seal_rejects_before_read_inputs_can_authorize(self):
         with self.assertRaises(BilqisError):
             _read_retained_compiled_motifs(
@@ -108,11 +127,50 @@ class SourceOwnedMotifReadTests(unittest.TestCase):
             projection = f"motif.site.{site_index}.projection"
             parameters[projection] = parameters[projection].at[0, 0].add(1.0)
         source = SourceAtomRow(selection, row, graph, root, seed, each, None, profile)
+        self.adapter = adapter
+        self.snapshot = snapshot
+        self.features = features
+        self.config = config
         hidden = mx.zeros(
             (1, len(rows.rows[0].positions), 768), dtype=mx.float32)
         return (
             compiled, parameters, source, feature_schema, manifest, spec, extents,
             hidden, slot_id)
+
+    def test_bound_launch_reuses_exact_b08_context_without_requalification(self):
+        (compiled, parameters, source, _feature_schema, manifest, spec, extents,
+         hidden, _) = self._fixture()
+        cold = _read_retained_compiled_motifs(
+            compiled, parameters, (source,), manifest, spec=spec, extents=extents,
+            site_index=1, hidden=hidden, seal=_B13_EXECUTION_SEAL)
+        authority = bind_b11_source_execution_authority(
+            compiled.compiled.rows[0], self.config, source, self.adapter,
+            self.snapshot, self.features)
+        batch = SimpleNamespace(
+            source_execution_authority=authority,
+            compiled=compiled,
+            sources=(source,),
+        )
+        with patch.object(
+                numerical_impl, "project_context",
+                wraps=numerical_impl.project_context) as project_call:
+            with patch.object(
+                    numerical_impl, "_schema_grant_live",
+                    wraps=numerical_impl._schema_grant_live) as live_call:
+                with b11_source_authority_launch_epoch((batch,)):
+                    bound = _read_retained_compiled_motifs(
+                        compiled, parameters, (source,), manifest,
+                        spec=spec, extents=extents, site_index=1,
+                        hidden=hidden, seal=_B13_EXECUTION_SEAL,
+                        source_execution_authorities=(authority,))
+                project_call.assert_not_called()
+                live_call.assert_not_called()
+        mx.eval(cold.hidden, bound.hidden)
+        self.assertTrue(bool(mx.allclose(cold.hidden, bound.hidden)))
+        self.assertEqual(bound.dispositions, cold.dispositions)
+        self.assertEqual(bound.context_digests, cold.context_digests)
+        self.assertEqual(bound.participating_slots, cold.participating_slots)
+        self.assertEqual(bound.row_participating_slots, cold.row_participating_slots)
 
     def test_retained_exact_slot_changes_only_the_a05_closure(self):
         (compiled, parameters, source, _feature_schema, manifest, spec, extents,

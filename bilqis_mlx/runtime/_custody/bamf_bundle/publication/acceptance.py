@@ -8,8 +8,12 @@ from bilqis_mlx.data_plane import DataPlaneError
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import (
     ACCEPTANCE_SCHEMA, MOTIF_ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA,
-    MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
-    candidate_identity_digest,
+    MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_ACCEPTANCE_SCHEMA,
+    EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+    EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding,
+)
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    bind_candidate_identity_or_fallback,
 )
 
 from ..atlas_admission import (
@@ -30,21 +34,27 @@ from .storage import ACCEPTANCE_DIR
 
 
 def require_accepted_parent(
-        run_dir: Path, candidate, acceptance, *, load_bundle) -> None:
+        run_dir: Path, candidate, acceptance, *, load_bundle,
+        parent: CompleteStudent | None = None) -> None:
     """Verify the C05 parent identity against immutable B13 parent custody."""
     if candidate.generation == 0:
         return
     parent_sha = candidate.parent_manifest_sha256
     if parent_sha is None:
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-    parent = load_bundle(
-        run_dir / "bamf-bundles" / parent_sha,
-        expected_manifest_sha256=parent_sha)
+    if parent is None:
+        parent = load_bundle(
+            run_dir / "bamf-bundles" / parent_sha,
+            expected_manifest_sha256=parent_sha)
+    elif type(parent) is not CompleteStudent:
+        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    parent_digest = bind_candidate_identity_or_fallback(
+        parent.retained_state, parent.topology.digest, parent.extents.digest,
+        expected_digest=acceptance.parent_candidate_identity_sha256)
     if (parent.run_id != candidate.run_id
             or parent.generation + 1 != candidate.generation
             or parent.run_identity != candidate.run_identity
-            or acceptance.parent_candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or acceptance.parent_candidate_identity_sha256 != parent_digest):
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
     vocabulary_changed = (
         parent.extents.semantic_bank_count != candidate.extents.semantic_bank_count
@@ -109,19 +119,25 @@ def _parse_published_acceptance(student, pointer, record):
 
 
 def _require_non_genesis_acceptance_identity(acceptance, pointer, student) -> None:
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import bind_candidate_identity
+    candidate_digest = bind_candidate_identity_or_fallback(
+        student.retained_state, student.topology.digest, student.extents.digest,
+        expected_digest=acceptance.candidate_identity_sha256)
     if (acceptance.digest != pointer["acceptance_sha256"]
             or acceptance.run_id != student.run_id
             or acceptance.generation != student.generation
             or acceptance.feature_sha256 != student.extents.factor_map_digest
             or acceptance.optimizer_step != student.retained_state.optimizer_step
-            or acceptance.candidate_identity_sha256
-            != candidate_identity_digest(student.retained_state)
+            or acceptance.candidate_identity_sha256 != candidate_digest
             or (not isinstance(acceptance, (
                     ParsedAtlasAdmissionBinding,
                     ParsedFactoryReleaseAdmissionBinding))
                 and (acceptance.schema_version not in {
                         ACCEPTANCE_SCHEMA, MOTIF_ACCEPTANCE_SCHEMA,
-                        CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA}
+                        CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+                        EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+                        EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+                        EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA}
                      or acceptance.step_proof_sha256 != tuple(
                          proof.digest for proof in student.retained_state.step_proofs)
                      or acceptance.source_authority_registry_sha256
@@ -130,14 +146,31 @@ def _require_non_genesis_acceptance_identity(acceptance, pointer, student) -> No
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
     if is_motif_allocation_transition(student.transition):
         from ..genesis.records import successor_candidate_identity_digest
-        if (acceptance.schema_version not in (MOTIF_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+        if (acceptance.schema_version not in (
+                MOTIF_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
                 or acceptance.generation_authority_sha256
                 != successor_candidate_identity_digest(student)):
             invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
     elif (not isinstance(acceptance, (
             ParsedAtlasAdmissionBinding, ParsedFactoryReleaseAdmissionBinding))
-          and acceptance.schema_version not in (ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA)):
+          and acceptance.schema_version not in (
+              ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA,
+              EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA)):
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+
+    if (not isinstance(acceptance, (
+            ParsedAtlasAdmissionBinding, ParsedFactoryReleaseAdmissionBinding))
+            and acceptance.schema_version in (
+                EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+                EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)):
+        from ..genesis.records import successor_candidate_identity_digest
+        from ..records import canonical, sha
+        if (acceptance.generation_authority_sha256
+                != successor_candidate_identity_digest(student)
+                or acceptance.teacher_state_sha256
+                != sha(canonical(dict(student.teacher_state)))):
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
 
     if not isinstance(acceptance, (
             ParsedAtlasAdmissionBinding, ParsedFactoryReleaseAdmissionBinding)):
@@ -147,7 +180,8 @@ def _require_non_genesis_acceptance_identity(acceptance, pointer, student) -> No
 
 def require_published_acceptance(
         run_dir: Path, pointer: dict, student: CompleteStudent, *,
-        load_bundle, live_manifest):
+        load_bundle, live_manifest,
+        accepted_parent: tuple[str, CompleteStudent] | None = None):
     """Authenticate the generation-specific acceptance bound by one live pointer."""
     if pointer.get("schema") != BAMF_POINTER_SCHEMA:
         invalid("BAMF_GENERATION_ACCEPTANCE_MISSING")
@@ -163,9 +197,18 @@ def require_published_acceptance(
     parent_sha = student.parent_manifest_sha256
     if parent_sha is None:
         invalid("BAMF_RUN_IDENTITY_DRIFT")
-    parent = load_bundle(
-        Path(run_dir) / "bamf-bundles" / parent_sha,
-        expected_manifest_sha256=parent_sha)
+    if accepted_parent is not None and accepted_parent[0] == parent_sha:
+        parent = accepted_parent[1]
+        if type(parent) is not CompleteStudent:
+            invalid("BAMF_RUN_IDENTITY_DRIFT")
+    else:
+        parent = load_bundle(
+            Path(run_dir) / "bamf-bundles" / parent_sha,
+            expected_manifest_sha256=parent_sha)
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import bind_candidate_identity
+    parent_digest = bind_candidate_identity_or_fallback(
+        parent.retained_state, parent.topology.digest, parent.extents.digest,
+        expected_digest=acceptance.parent_candidate_identity_sha256)
     if (parent.run_id != student.run_id
             or parent.generation + 1 != student.generation
             or (not legacy_student
@@ -173,7 +216,6 @@ def require_published_acceptance(
             or (not is_motif_allocation_transition(student.transition)
                 and parent.retained_state.allocations.digest
                 != student.retained_state.allocations.digest)
-            or acceptance.parent_candidate_identity_sha256
-            != candidate_identity_digest(parent.retained_state)):
+            or acceptance.parent_candidate_identity_sha256 != parent_digest):
         invalid("BAMF_RUN_IDENTITY_DRIFT")
     return acceptance

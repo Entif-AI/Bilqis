@@ -10,6 +10,10 @@ from unittest.mock import patch
 from bilqis_mlx.data_plane import close_data_planes, data_plane
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+    _reset_candidate_identity_metrics_for_tests,
+    candidate_identity_metrics_snapshot,
+)
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
@@ -143,11 +147,16 @@ class GenerationZeroColdTrustTests(unittest.TestCase):
         close_data_planes()
 
         with shape_patch():
+            _reset_candidate_identity_metrics_for_tests()
             accepted = load_accepted_generation(self.run)
+            metrics = candidate_identity_metrics_snapshot()
             authoritative, manifest = load_bamf_generation_authority(
                 self.run / "bamf-state.json")
 
         self.assertEqual(accepted.run_identity.run_seed, 1303)
+        self.assertEqual(metrics["candidate_identity_full_computations"], 1)
+        self.assertGreater(metrics["candidate_identity_numerical_bytes_hashed"], 0)
+        self.assertEqual(metrics["candidate_identity_binding_issues"], 1)
         self.assertEqual(authoritative.run_identity, accepted.run_identity)
         self.assertEqual(manifest, pointer["manifest_sha256"])
 

@@ -47,7 +47,7 @@ class AcceptedContextRevalidationTests(AcceptedContextFixture):
         result = signed_context_result(
             direct, invalidation=invalidation,
             accepted_event_id=accepted_event_id, dependencies=(new_time,))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_context_revalidation(ContextRevalidationFrontier((result,)))
 
         self.assertIsNone(require_pending_corrections(owner, direct.artifact_id))
@@ -58,7 +58,7 @@ class AcceptedContextRevalidationTests(AcceptedContextFixture):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         cold_owner = ContextOwner((replace(direct), replace(descendant)))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cold_cache.accepted_manifest_sha256,
@@ -76,7 +76,7 @@ class AcceptedContextRevalidationTests(AcceptedContextFixture):
             dependencies=(DependencyRef(
                 DependencyKind.TIME,
                 "time:asof:context:" + invalidation.new_context_digest),))
-        with shape_patch(), self.assertRaises(BilqisError) as rejected:
+        with shape_patch(AUTHORITY), self.assertRaises(BilqisError) as rejected:
             host.record_context_revalidation(ContextRevalidationFrontier((result,)))
         self.assertEqual(
             rejected.exception.context["reason"],
@@ -86,7 +86,7 @@ class AcceptedContextRevalidationTests(AcceptedContextFixture):
         case = source_owned_temporal_case()
         owner = ContextOwner(())
         cache = self.publish()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,
                 "TEST_CONTEXT_LATE", owner)
@@ -109,7 +109,7 @@ class AcceptedContextRevalidationTests(AcceptedContextFixture):
                 for handle in (frame.frame_handle, *frame.member_handles)
             })),
         )
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             record = context_invalidation_record(
                 cache.accepted_manifest_sha256, invalidation)
             append_record(self.run, cache.accepted_manifest_sha256, record)
@@ -126,7 +126,7 @@ class AcceptedContextRevalidationTests(AcceptedContextFixture):
         result = signed_context_result(
             late, invalidation=invalidation,
             accepted_event_id=record["event_id"], dependencies=(new_time,))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             evidence_id = host.record_context_revalidation(
                 ContextRevalidationFrontier((result,)))
         owner._index = DependencyIndex.build((late,))

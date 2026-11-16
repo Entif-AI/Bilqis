@@ -40,6 +40,8 @@ def _add_bamf_foundation_args(parser) -> None:
         parser, admission_policy_action=_AdmissionPolicyExplicitStore)
     parser.add_argument('--atlas-release-manifest', type=Path,
                         help='Pinned Atlas release manifest for a BAMF semantic foundation.')
+    parser.add_argument('--source-run-dir', type=Path, action=_FoundationExplicitStore,
+                        help='Accepted source learner used to derive a fresh BAMF foundation.')
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--model-topology", type=Path,
@@ -95,15 +97,22 @@ def _add_training_execution_args(parser) -> None:
                         help="Recheck all 216 candidate records against the pinned source (neural-inert)")
     parser.add_argument(
         "--human-run", action="store_true",
-        help=("Explicit human authorization for mutating operator actions; BAMF create and "
+        help=("Explicit operator confirmation for mutating CLI actions; this is not "
+              "authentication. BAMF create and "
               "enrollment remain neural-inert, while an accepted BAMF --resume may enter "
               "the persistent BAMF-native learner."))
     parser.add_argument("--autonomous-curriculum", action="store_true",
                         help="After --human-run authorization, autonomously measure, teach, and remeasure factory evidence while preserving the school scheduler")
     parser.add_argument("--issue-349-experiment-root", type=Path,
                         help="Register/enforce this run under issue #349's <=2-run, 100-GB collective experiment custody root")
-    parser.add_argument("--minutes", type=int, default=90)
-    parser.add_argument("--steps-per-visit", type=int, default=16)
+    parser.add_argument(
+        "--minutes", type=int, default=90,
+        help=("Session admission window in minutes. A bounded candidate already in flight "
+              "finishes atomically before the next time-limit check."))
+    parser.add_argument(
+        "--steps-per-visit", type=int, default=16,
+        help=("Training steps per visit. For BAMF --resume the atomic candidate ceiling is "
+              "1-16 and teacher-owned interference policy may shorten it."))
     parser.add_argument("--max-visits", type=int, default=0,
                         help="Optional complete visit cap (default 0: use --minutes and disk reserve)")
     parser.add_argument("--timing-trace", action="store_true",

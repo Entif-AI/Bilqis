@@ -9,15 +9,15 @@ import mlx.core as mx
 from bilqis_mlx import state_dag
 
 from ..retention.factory_retention_live_support import live_factory_context
-from ..retention.factory_retention_next_step_evidence import (
+from ..retention.next_step.factory_retention_next_step_evidence import (
     _compare_numeric_reference, _write_numeric_reference,
 )
-from ..retention.factory_retention_next_step_state import (
+from ..retention.next_step.factory_retention_next_step_state import (
     _persist_controlled_visit, _persist_unforced_visit,
     _require_sealed_execution, _require_sealed_visit, _seal_execution,
     _verified_visit, natural_next_selection,
 )
-from ..retention.factory_retention_next_step_witness import _spawn_cpu_natural
+from ..retention.next_step.factory_retention_next_step_witness import _spawn_cpu_natural
 
 
 class FactoryRetentionNextStepWitnessTests(unittest.TestCase):

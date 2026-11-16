@@ -95,7 +95,10 @@ def _bank_allocation(issue, require_source, source):
 
 
 def _motif(issue, require_source, source):
-    from bilqis_mlx.learning.atlas_acceptance import MOTIF_CLOSURE_ACCEPTANCE_SCHEMA
+    from bilqis_mlx.learning.atlas_acceptance import (
+        MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+        EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+    )
     from bilqis_mlx.runtime.bamf_bundle.motif.transition import (
         is_motif_allocation_transition, validate_motif_allocation_transition,
     )
@@ -103,7 +106,8 @@ def _motif(issue, require_source, source):
     source = require_source(source)
     student, binding = source.student, source.binding
     transition = dict(student.transition)
-    if (getattr(binding, "schema_version", None) != MOTIF_CLOSURE_ACCEPTANCE_SCHEMA
+    if (getattr(binding, "schema_version", None) not in (
+            MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
             or not is_motif_allocation_transition(transition)):
         return None
     validate_motif_allocation_transition(transition)

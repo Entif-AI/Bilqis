@@ -9,8 +9,10 @@ import tempfile
 import unittest
 
 from bilqis_mlx.semantics.foundation.abi import (
-    HISTORICAL_ABI, HISTORICAL_PREFIX_SIZE, fingerprint_graph_prefix,
+    HISTORICAL_ABI, HISTORICAL_GRAPH_REGISTRY, HISTORICAL_PREFIX_SIZE,
+    fingerprint_graph_prefix,
     fingerprint_sheet_prefix, fingerprint_sheet_source_fields,
+    load_historical_graph,
     prefix_preserving_vocab_size, require_external_expected,
     require_historical_prefix,
 )
@@ -45,6 +47,24 @@ class HistoricalAbiTests(unittest.TestCase):
                          HISTORICAL_ABI.index_contract_sha256)
         self.assertEqual(prefix_preserving_vocab_size(graph),
                          HISTORICAL_PREFIX_SIZE)
+
+    def test_architecture_neutral_historical_graph_matches_checkpoint_contract(self):
+        graph = load_historical_graph()
+        self.assertEqual(len(graph["tokens"]), HISTORICAL_PREFIX_SIZE)
+        self.assertEqual(fingerprint_graph_prefix(graph),
+                         HISTORICAL_ABI.index_contract_sha256)
+        self.assertEqual(prefix_preserving_vocab_size(graph),
+                         HISTORICAL_PREFIX_SIZE)
+
+    def test_architecture_neutral_graph_rejects_nonsemantic_registry_drift(self):
+        evidence = json.loads(HISTORICAL_GRAPH_REGISTRY.read_text(encoding="utf-8"))
+        evidence["graph"]["version"] = "tampered-version"
+        with tempfile.TemporaryDirectory() as td:
+            source = Path(td) / "registry.json"
+            source.write_text(json.dumps(evidence), encoding="utf-8")
+            with self.assertRaisesRegex(
+                    ValueError, "SCHOOL.STATE.HISTORICAL_ARTIFACT_INVALID"):
+                load_historical_graph(source)
 
     def test_sheet_reordering_does_not_mutate_semantic_identity(self):
         source = deepcopy(self.source)

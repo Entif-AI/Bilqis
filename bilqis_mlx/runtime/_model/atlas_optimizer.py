@@ -11,15 +11,19 @@ from types import MappingProxyType
 from typing import Mapping
 
 import mlx.core as mx
-import mlx.optimizers as optim
 import numpy as np
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.mlx_parity import clip_gradients
 from bilqis_mlx.runtime.optimizer_count_geometry import declared_update_count_shape
+from bilqis_mlx.runtime.optimizer_step import (
+    adamw_leaf_update, adamw_selected_rows_update, optimizer_parent_witness_matches,
+)
 
 
+DENSE_COUNT_RANK = 0
 ROW_COUNT_RANK = 1
+ROW_SELECTION_PARTS = 2
 ADAM_MOMENT_COUNT = 2
 UINT64_MAX = int(np.iinfo(np.uint64).max)
 STATE_SCHEMA = "bilqis.mlx.adamw-count-state/provisional-v1"
@@ -73,8 +77,8 @@ class AdamWStateTree:
         for name in ("parameters", "m", "v", "update_counts"):
             object.__setattr__(self, name, MappingProxyType(dict(getattr(self, name))))
 
-    def validate(self):
-        """Inspect without rewriting the parent, including rejected/no-loss calls."""
+    def validate_structure(self):
+        """Validate CPU-visible schema, tree, shape and dtype invariants only."""
         trees = (self.parameters, self.m, self.v, self.update_counts)
         if (self.schema_version != STATE_SCHEMA or any(not isinstance(tree, Mapping) for tree in trees) or
                 not self.parameters or any(type(name) is not str or not name for name in self.parameters) or
@@ -92,9 +96,22 @@ class AdamWStateTree:
                     not (count.shape == () or (parameter.ndim >= ROW_COUNT_RANK and
                                               count.shape == (parameter.shape[0],)))):
                 _invalid()
-            if (not all(bool(mx.all(mx.isfinite(value))) for value in (parameter, self.m[name], self.v[name])) or
-                    not bool(mx.all(self.v[name] >= 0))):
-                _invalid()
+
+    def validate(self):
+        """Validate structure plus one aggregated device-visible numerical predicate."""
+        self.validate_structure()
+        checks = []
+        for name, parameter in self.parameters.items():
+            checks.extend((
+                mx.all(mx.isfinite(parameter)),
+                mx.all(mx.isfinite(self.m[name])),
+                mx.all(mx.isfinite(self.v[name])),
+                mx.all(self.v[name] >= 0),
+            ))
+        valid = mx.all(mx.stack(tuple(checks)))
+        mx.eval(valid)
+        if not bool(valid):
+            _invalid()
 
 
 def reconcile_b01_optimizer_manifest(
@@ -115,7 +132,7 @@ def reconcile_b01_optimizer_manifest(
             or type(spec) is not ModelTopologySpecV2
             or type(extents) is not GenerationExtents):
         _invalid()
-    state.validate()
+    state.validate_structure()
     validate_bamf_parameters(spec, extents, state.parameters)
     declared = expected_bamf_shapes(spec, extents)
     names = tuple(item.name for item in declared)
@@ -137,27 +154,73 @@ def _validate_step_inputs(parent, gradients, participation):
             any(not isinstance(tree, Mapping) or set(tree) != set(parent.parameters)
                 for tree in (gradients, participation))):
         _invalid()
-    parent.validate()
+    parent.validate_structure()
+    checks = []
     for name, parameter in parent.parameters.items():
         gradient, mask = gradients[name], participation[name]
-        if (not isinstance(gradient, mx.array) or gradient.shape != parameter.shape or gradient.dtype != mx.float32 or
-                not bool(mx.all(mx.isfinite(gradient))) or
-                not isinstance(mask, mx.array) or mask.dtype != mx.bool_ or
+        if (not isinstance(gradient, mx.array) or gradient.shape != parameter.shape
+                or gradient.dtype != mx.float32
+                or not isinstance(mask, mx.array) or mask.dtype != mx.bool_ or
                 mask.shape != parent.update_counts[name].shape):
             _invalid()
+        checks.append(mx.all(mx.isfinite(gradient)))
+    return checks
 
 
-def _preflight(parent, gradients, participation, hyperparameters, decay, loss_bearing):
-    _validate_step_inputs(parent, gradients, participation)
+def _participation_authority_checks(parent, participation, authority):
+    """Validate owner-issued row selections and bind them to device masks."""
+    if authority is None:
+        return []
+    if not isinstance(authority, Mapping) or set(authority) != set(parent.parameters):
+        _invalid()
+    checks = []
+    for name, count in parent.update_counts.items():
+        selection = authority[name]
+        if type(selection) is not tuple or len(selection) != ROW_SELECTION_PARTS:
+            _invalid()
+        whole, rows = selection
+        if (type(whole) is not bool or type(rows) is not tuple
+                or any(type(row) is not int or row < 0 for row in rows)
+                or rows != tuple(sorted(set(rows)))
+                or (whole and rows)):
+            _invalid()
+        mask = participation[name]
+        if count.ndim == DENSE_COUNT_RANK:
+            if rows:
+                _invalid()
+            expected = mx.array(whole, dtype=mx.bool_)
+        else:
+            if any(row >= count.shape[0] for row in rows):
+                _invalid()
+            expected = mx.ones_like(mask) if whole else mx.zeros_like(mask)
+            if rows:
+                expected[mx.array(rows, dtype=mx.uint32)] = True
+        checks.append(mx.all(mask == expected))
+    return checks
+
+
+def _preflight(parent, gradients, participation, hyperparameters, decay, loss_bearing,
+               participation_authority=None):
+    checks = _validate_step_inputs(parent, gradients, participation)
     if (type(hyperparameters) is not AdamWHyperparameters or type(loss_bearing) is not bool or
             not isinstance(decay, Mapping) or set(decay) != set(parent.parameters) or
             any(type(value) is not bool for value in decay.values())):
         _invalid()
     hyperparameters.__post_init__()
-    for name, count in parent.update_counts.items():
-        if loss_bearing and bool(mx.any(participation[name] &
-                                       (count == mx.array(np.array(UINT64_MAX, dtype=np.uint64))))):
-            _invalid()
+    checks.extend(_participation_authority_checks(
+        parent, participation, participation_authority))
+    if loss_bearing:
+        maximum = mx.array(np.array(UINT64_MAX, dtype=np.uint64))
+        checks.extend(
+            ~mx.any(participation[name] & (count == maximum))
+            for name, count in parent.update_counts.items())
+    any_participation = mx.any(mx.stack(tuple(
+        mx.any(mask) for mask in participation.values())))
+    valid = mx.all(mx.stack(tuple(checks)))
+    mx.eval(valid, any_participation)
+    if not bool(valid):
+        _invalid()
+    return bool(any_participation)
 
 
 def _masked_clipped_gradients(parent, gradients, participation, *, max_norm):
@@ -166,7 +229,6 @@ def _masked_clipped_gradients(parent, gradients, participation, *, max_norm):
     This numerical adapter does not attest that masks came from actual model
     execution. The full-model owner must supply that independent provenance.
     """
-    _validate_step_inputs(parent, gradients, participation)
     if not _finite_number(max_norm) or max_norm <= 0:
         _invalid()
     masked = {}
@@ -176,7 +238,9 @@ def _masked_clipped_gradients(parent, gradients, participation, *, max_norm):
             mask = mask.reshape((-1,) + (1,) * (gradient.ndim - 1))
         masked[name] = mx.where(mask, gradient, mx.zeros_like(gradient))
     clipped, norm = clip_gradients(mx, masked, max_norm=max_norm)
-    if not bool(mx.isfinite(norm)):
+    finite_norm = mx.isfinite(norm)
+    mx.eval(finite_norm)
+    if not bool(finite_norm):
         _invalid()
     return clipped, norm
 
@@ -184,7 +248,8 @@ def _masked_clipped_gradients(parent, gradients, participation, *, max_norm):
 def _adamw_update(parent: AdamWStateTree, gradients: Mapping[str, mx.array],
                   participation: Mapping[str, mx.array], hyperparameters: AdamWHyperparameters, *,
                   decay: Mapping[str, bool], loss_bearing: bool = True,
-                  max_norm: float | None = None) -> AdamWStateTree:
+                  max_norm: float | None = None, parent_witness=None,
+                  participation_authority=None) -> AdamWStateTree:
     """Apply native AdamW only to selected numerical leaves/rows, without publication.
 
     max_norm uses the existing global clip after participation masking. When
@@ -193,10 +258,18 @@ def _adamw_update(parent: AdamWStateTree, gradients: Mapping[str, mx.array],
     nonzero gradients. Selected zero gradients still advance moments/counts.
     No-loss and wholly frozen steps return the original state object.
     """
-    _preflight(parent, gradients, participation, hyperparameters, decay, loss_bearing)
+    # Numerical validation belongs to this exact consumption boundary.  A
+    # witness may attest object ownership, but MLX leaves remain mutable, so it
+    # must never substitute for validating the state at the instant it is used.
+    if parent_witness is not None and not optimizer_parent_witness_matches(parent_witness, parent):
+        _invalid()
+    parent.validate()
+    any_participation = _preflight(
+        parent, gradients, participation, hyperparameters, decay, loss_bearing,
+        participation_authority)
     if max_norm is not None and (not _finite_number(max_norm) or max_norm <= 0):
         _invalid()
-    if not loss_bearing or not any(bool(mx.any(mask)) for mask in participation.values()):
+    if not loss_bearing or not any_participation:
         return parent
     if max_norm is not None:
         gradients, _ = _masked_clipped_gradients(parent, gradients, participation, max_norm=max_norm)
@@ -204,32 +277,28 @@ def _adamw_update(parent: AdamWStateTree, gradients: Mapping[str, mx.array],
                                          (parent.parameters, parent.m, parent.v, parent.update_counts))
     for name, parameter in parent.parameters.items():
         mask = participation[name]
-        if not bool(mx.any(mask)):
-            continue
         count = parent.update_counts[name]
-        rowwise = count.ndim == ROW_COUNT_RANK
-        indices = mx.array(np.flatnonzero(np.asarray(mask)), dtype=mx.uint32) if rowwise else None
-        selected = lambda value: value[indices] if rowwise else value
-        next_count = selected(count) + 1
-        step = next_count.reshape((-1,) + (1,) * (parameter.ndim-1)) if rowwise else next_count
-        optimizer = optim.AdamW(learning_rate=hyperparameters.learning_rate, betas=hyperparameters.betas,
-                                eps=hyperparameters.eps,
-                                weight_decay=hyperparameters.weight_decay if decay[name] else 0,
-                                bias_correction=True)
-        optimizer.state = {"step": step, "learning_rate": mx.array(hyperparameters.learning_rate, dtype=mx.float32)}
-        cell = {"m": selected(parent.m[name]), "v": selected(parent.v[name])}
-        updated = optimizer.apply_single(selected(gradients[name]), selected(parameter), cell)
-        for target, original, replacement in (
-                (parameters, parameter, updated),
-                (first, parent.m[name], cell["m"]),
-                (second, parent.v[name], cell["v"])):
-            if rowwise:
-                candidate = mx.array(original)
-                candidate[indices] = replacement
-                target[name] = candidate
-            else:
-                target[name] = replacement
-        counts[name] = count + mask.astype(mx.uint64) if rowwise else next_count
+        authority = None if participation_authority is None else participation_authority[name]
+        if authority is not None and not authority[0] and not authority[1]:
+            continue
+        kwargs = dict(
+            learning_rate=hyperparameters.learning_rate,
+            betas=hyperparameters.betas,
+            eps=hyperparameters.eps,
+            weight_decay=hyperparameters.weight_decay if decay[name] else 0.,
+        )
+        if authority is not None and authority[1]:
+            updated, next_first, next_second, next_count = adamw_selected_rows_update(
+                parameter, parent.m[name], parent.v[name], count, gradients[name],
+                mask, authority[1], **kwargs)
+        else:
+            updated, next_first, next_second, next_count = adamw_leaf_update(
+                parameter, parent.m[name], parent.v[name], count,
+                gradients[name], mask, **kwargs)
+        parameters[name] = updated
+        first[name] = next_first
+        second[name] = next_second
+        counts[name] = next_count
     return AdamWStateTree(parameters, first, second, counts)
 
 

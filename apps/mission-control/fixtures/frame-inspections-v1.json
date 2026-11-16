@@ -1,0 +1,373 @@
+[
+  {
+    "schemaVersion": "bamf.gui08.frame-page/v1",
+    "request": {
+      "schemaVersion": "bamf.gui08.frame-query/v1",
+      "runId": "fixture-run",
+      "generation": 6,
+      "mode": "historical"
+    },
+    "state": "PRESENT",
+    "coverage": "COMPLETE",
+    "provenance": "ILLUSTRATIVE_FIXTURE",
+    "operatorView": {
+      "active_capability_id": "B.EXAMPLE",
+      "learner_state": "READY",
+      "meta": {
+        "as_of": 100,
+        "authority": "DERIVED",
+        "coverage": "COMPLETE",
+        "evidence_refs": [
+          "evidence:fixture-run:6"
+        ],
+        "materialized_at": 101,
+        "observed_at": 100,
+        "receipt_refs": [
+          "receipt:fixture-run:6"
+        ],
+        "record_id": "operator-view:fixture-run:6",
+        "run": {
+          "candidate_identity_sha256": "72f098cc766c414588a1b2ab534eb8772015c57f72927954e51fb16bc97a5737",
+          "factory_release_sha256": "b2215733a09f850e07dd8bf0a9c79b2548aefb8fc61dd51f3efcdac96c619895",
+          "generation": 6,
+          "generation_manifest_sha256": "8b5b2005ccf1656a56b35d817936c17816837d404cb92ce5231ff17947ac43f7",
+          "run_id": "fixture-run",
+          "run_identity_sha256": "23c5e64a5158d98ea6a322b851f6037196d2db43dd78b14471eb6e2f580f35eb",
+          "semantic_release_sha256": "5dde68833e1139b237456ad0a01c36c3cab559db6365d73c367af749e34163f0",
+          "topology_sha256": "da4f158d564c8439cdb8889a043847af3083795bd09e02faf44022fefe9d426f"
+        },
+        "source_refs": [
+          "run-state:fixture-run:6"
+        ]
+      },
+      "related_record_ids": [
+        "school:fixture-run:6"
+      ],
+      "schema_version": "bilqis.bamf.mission-control.operator-view/v1",
+      "stage": "ASSESS_MAIN"
+    },
+    "examples": [
+      {
+        "receiptId": "fixture:receipt:6:frame:quad-fast",
+        "frameId": "frame:quad-fast",
+        "sourceId": "fixture:source:quad",
+        "generationManifest": "8b5b2005ccf1656a56b35d817936c17816837d404cb92ce5231ff17947ac43f7",
+        "compiler": {
+          "version": "illustrative-compiler/v1",
+          "digest": "0467c1a9f3b3e180d17c9f614768c38fc93088f2359d6701641f6a3da22c5c8a"
+        },
+        "sourceDigest": "16b5205303df1fcc8221b128f09ea64275ca6a43084f6a2da4bf1c27160ddccf",
+        "compiledDigest": "4d0a194861765095989da66b4ec6cc9e574f86f97e8fdba5bfdae0f63af6104a",
+        "positions": [
+          {
+            "index": 0,
+            "path": "FAST",
+            "schema": "frame:quad/v1",
+            "tag": "7",
+            "occurrenceId": "quad-occurrence",
+            "visibleAt": 4,
+            "reason": null,
+            "sidecarRef": null,
+            "fields": [
+              {
+                "name": "codec_word",
+                "value": "0x0007000100020003",
+                "visibleAt": 4
+              }
+            ],
+            "constituents": [
+              {
+                "sourceOrder": 0,
+                "atom": "alpha",
+                "role": "subject",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:0",
+                "sourceRef": "fixture:source:quad:0",
+                "visibleAt": 1
+              },
+              {
+                "sourceOrder": 1,
+                "atom": "beta",
+                "role": "relation",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:1",
+                "sourceRef": "fixture:source:quad:1",
+                "visibleAt": 2
+              },
+              {
+                "sourceOrder": 2,
+                "atom": "gamma",
+                "role": "object",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:2",
+                "sourceRef": "fixture:source:quad:2",
+                "visibleAt": 3
+              },
+              {
+                "sourceOrder": 3,
+                "atom": "delta",
+                "role": "qualifier",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:3",
+                "sourceRef": "fixture:source:quad:3",
+                "visibleAt": 4
+              }
+            ]
+          }
+        ],
+        "expansionCount": 0,
+        "expansionPasses": 0,
+        "sidecarBytes": 0,
+        "preparationMs": null
+      }
+    ]
+  },
+  {
+    "schemaVersion": "bamf.gui08.frame-page/v1",
+    "request": {
+      "schemaVersion": "bamf.gui08.frame-query/v1",
+      "runId": "fixture-run",
+      "generation": 7,
+      "mode": "current"
+    },
+    "state": "PRESENT",
+    "coverage": "COMPLETE",
+    "provenance": "ILLUSTRATIVE_FIXTURE",
+    "operatorView": {
+      "active_capability_id": "B.EXAMPLE",
+      "learner_state": "READY",
+      "meta": {
+        "as_of": 118,
+        "authority": "DERIVED",
+        "coverage": "COMPLETE",
+        "evidence_refs": [
+          "evidence:fixture-run:7"
+        ],
+        "materialized_at": 120,
+        "observed_at": 118,
+        "receipt_refs": [
+          "receipt:fixture-run:7"
+        ],
+        "record_id": "operator-view:fixture-run:7",
+        "run": {
+          "candidate_identity_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "factory_release_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+          "generation": 7,
+          "generation_manifest_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+          "run_id": "fixture-run",
+          "run_identity_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+          "semantic_release_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+          "topology_sha256": "4444444444444444444444444444444444444444444444444444444444444444"
+        },
+        "source_refs": [
+          "run-state:fixture-run:7"
+        ]
+      },
+      "related_record_ids": [
+        "school:fixture-run:7"
+      ],
+      "schema_version": "bilqis.bamf.mission-control.operator-view/v1",
+      "stage": "ASSESS_MAIN"
+    },
+    "examples": [
+      {
+        "receiptId": "fixture:receipt:7:frame:quad-fast",
+        "frameId": "frame:quad-fast",
+        "sourceId": "fixture:source:quad",
+        "generationManifest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "compiler": {
+          "version": "illustrative-compiler/v2",
+          "digest": "e261c31736e2b1429a1e400b54929f4125de7fa277ea8423a08f1fca59f23e1f"
+        },
+        "sourceDigest": "4170c0db905e328d013c9323196829b8f1b996bfff5b0141daa43440a4735f7c",
+        "compiledDigest": "65a570d3ff7875e9f5ab5b76a3ec878c289e3e6c89d84de7b0f920d7c0a9f2ff",
+        "positions": [
+          {
+            "index": 0,
+            "path": "FAST",
+            "schema": "frame:quad/v1",
+            "tag": "7",
+            "occurrenceId": "quad-occurrence",
+            "visibleAt": 4,
+            "reason": null,
+            "sidecarRef": null,
+            "fields": [
+              {
+                "name": "codec_word",
+                "value": "0x0007000100020003",
+                "visibleAt": 4
+              }
+            ],
+            "constituents": [
+              {
+                "sourceOrder": 0,
+                "atom": "alpha",
+                "role": "subject",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:0",
+                "sourceRef": "fixture:source:quad:0",
+                "visibleAt": 1
+              },
+              {
+                "sourceOrder": 1,
+                "atom": "beta",
+                "role": "relation",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:1",
+                "sourceRef": "fixture:source:quad:1",
+                "visibleAt": 2
+              },
+              {
+                "sourceOrder": 2,
+                "atom": "gamma",
+                "role": "object",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:2",
+                "sourceRef": "fixture:source:quad:2",
+                "visibleAt": 3
+              },
+              {
+                "sourceOrder": 3,
+                "atom": "delta",
+                "role": "qualifier",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:3",
+                "sourceRef": "fixture:source:quad:3",
+                "visibleAt": 4
+              }
+            ]
+          }
+        ],
+        "expansionCount": 0,
+        "expansionPasses": 0,
+        "sidecarBytes": 0,
+        "preparationMs": null
+      },
+      {
+        "receiptId": "fixture:receipt:7:frame:mixed-fallback",
+        "frameId": "frame:mixed-fallback",
+        "sourceId": "fixture:source:quad",
+        "generationManifest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "compiler": {
+          "version": "illustrative-compiler/v2",
+          "digest": "e261c31736e2b1429a1e400b54929f4125de7fa277ea8423a08f1fca59f23e1f"
+        },
+        "sourceDigest": "b6e1bc481011cce23f8c360102d9eeddc95e1f81aebc9525f6c8c6546fe2dfd1",
+        "compiledDigest": "bf67fe058337e172609f5a2addd8a25ba5bd20746f69e316746f6cbd3e3f927d",
+        "positions": [
+          {
+            "index": 0,
+            "path": "PARTIAL",
+            "schema": "frame:quad/v1",
+            "tag": "7",
+            "occurrenceId": "quad-occurrence",
+            "visibleAt": 4,
+            "reason": "FIXTURE_PARTIAL_ROLE_COVERAGE",
+            "sidecarRef": "fixture:sidecar:0",
+            "fields": [
+              {
+                "name": "codec_word",
+                "value": "0x0007000100020003",
+                "visibleAt": 4
+              }
+            ],
+            "constituents": [
+              {
+                "sourceOrder": 0,
+                "atom": "alpha",
+                "role": "subject",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:0",
+                "sourceRef": "fixture:source:quad:0",
+                "visibleAt": 1
+              },
+              {
+                "sourceOrder": 1,
+                "atom": "beta",
+                "role": "relation",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:1",
+                "sourceRef": "fixture:source:quad:1",
+                "visibleAt": 2
+              }
+            ]
+          },
+          {
+            "index": 1,
+            "path": "EXTENDED",
+            "schema": "frame:quad/v1",
+            "tag": "7",
+            "occurrenceId": "quad-occurrence",
+            "visibleAt": 4,
+            "reason": "FIXTURE_EXTENDED_ID_WIDTH",
+            "sidecarRef": "fixture:sidecar:1",
+            "fields": [
+              {
+                "name": "codec_word",
+                "value": "0x0007000100020003",
+                "visibleAt": 4
+              }
+            ],
+            "constituents": [
+              {
+                "sourceOrder": 2,
+                "atom": "gamma",
+                "role": "object",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:2",
+                "sourceRef": "fixture:source:quad:2",
+                "visibleAt": 3
+              }
+            ]
+          },
+          {
+            "index": 2,
+            "path": "ATOMIC",
+            "schema": "frame:quad/v1",
+            "tag": "7",
+            "occurrenceId": "quad-occurrence",
+            "visibleAt": 4,
+            "reason": "FIXTURE_NO_PACKABLE_SCHEMA",
+            "sidecarRef": "fixture:sidecar:2",
+            "fields": [
+              {
+                "name": "codec_word",
+                "value": "0x0007000100020003",
+                "visibleAt": 4
+              }
+            ],
+            "constituents": [
+              {
+                "sourceOrder": 3,
+                "atom": "delta",
+                "role": "qualifier",
+                "occurrenceIndex": 0,
+                "semanticId": "fixture:entity:3",
+                "sourceRef": "fixture:source:quad:3",
+                "visibleAt": 4
+              }
+            ]
+          }
+        ],
+        "expansionCount": 2,
+        "expansionPasses": 1,
+        "sidecarBytes": 96,
+        "preparationMs": 0.25
+      },
+      {
+        "receiptId": "fixture:receipt:7:frame:detail-missing",
+        "frameId": "frame:detail-missing",
+        "sourceId": "fixture:source:quad",
+        "generationManifest": "1111111111111111111111111111111111111111111111111111111111111111",
+        "compiler": null,
+        "sourceDigest": "85f7c2be9119a398fee9825aa053c36b06142935a774614a618731f038e2fa19",
+        "compiledDigest": "6bc1a525ffa376b58e2e1c8199339b9fcb934dc6bc1efc41fe664558e3329dfc",
+        "positions": null,
+        "expansionCount": null,
+        "expansionPasses": null,
+        "sidecarBytes": null,
+        "preparationMs": null
+      }
+    ]
+  }
+]

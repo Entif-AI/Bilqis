@@ -133,7 +133,8 @@ def prepare_salience_training(prepared, source_context, request):
     owner.require()
     rebound = tuple(bind_compiled_training_batch(
         labelled, original.compiled, original.sources, original.feature_schema,
-        active_semantic_rows=original.active_semantic_rows, row_index=index)
+        active_semantic_rows=original.active_semantic_rows, row_index=index,
+        source_execution_authority=original.source_execution_authority)
         for index, original in enumerate(prepared.compiled_rows))
     for compiled in rebound:
         source_context.register_compiled_batch(compiled)

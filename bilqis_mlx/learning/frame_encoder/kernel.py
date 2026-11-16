@@ -4,6 +4,7 @@ from __future__ import annotations
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.model_topology_v2 import expected_bamf_shapes
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 from .contracts import (
     INNER, WIDTH, _invalid,
 )
@@ -39,7 +40,8 @@ def _validate_vectors(atom_vectors, counts):
     for row, count_row in zip(atom_vectors, counts):
         for members, count in zip(row, count_row):
             if (not isinstance(members, mx.array) or members.shape != (count, WIDTH) or
-                    members.dtype != mx.float32 or not bool(mx.all(mx.isfinite(members)))):
+                    members.dtype != mx.float32 or (host_tensor_validation_enabled()
+                    and not bool(mx.all(mx.isfinite(members))))):
                 _invalid()
 
 
@@ -54,5 +56,6 @@ def _validate_encoder_parameters(parameters, extents):
         if not isinstance(tensor, mx.array) or tensor.shape != item.shape or tensor.dtype != mx.float32:
             _invalid()
     values = tuple(parameters[item.name] for item in declarations)
-    if not all(bool(mx.all(mx.isfinite(value))) for value in values):
+    if (host_tensor_validation_enabled()
+            and not all(bool(mx.all(mx.isfinite(value))) for value in values)):
         _invalid()

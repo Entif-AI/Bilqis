@@ -1,6 +1,8 @@
 """Evaluator-side complete-solver measurements and advisory paired eligibility."""
 from __future__ import annotations
 
+from bilqis_mlx.runtime.bamf_operator.telemetry import emit
+
 from dataclasses import dataclass, field
 from enum import Enum
 import re
@@ -195,7 +197,7 @@ def retain_candidate(parent, candidate, paired_assessment) -> Decision:
 
 def evaluate_retention_candidate(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
-        parent_generation, candidate_generation) -> Decision:
+        parent_generation, candidate_generation, *, observer=None) -> Decision:
     """Run the authoritative C05 cohorts before deciding candidate retention.
 
     This is the owner-run screen from #744. Accepting a caller-built
@@ -220,12 +222,22 @@ def evaluate_retention_candidate(
         from .capability_retention_foundation import evaluate_foundation_retention_candidate
         return evaluate_foundation_retention_candidate(
             parent_solver, candidate_solver, target_capability, policy, cohorts,
-            parent_generation, candidate_generation)
+            parent_generation, candidate_generation,
+            **({"observer": observer} if observer is not None else {}))
 
-    pairs = tuple(AssessmentPair(
-        evaluate_capabilities(parent_solver, cohort, parent_generation),
-        evaluate_capabilities(candidate_solver, cohort, candidate_generation),
-    ) for cohort in cohorts)
+    pairs = []
+    completed, total = 0, 2 * len(cohorts)
+    for cohort in cohorts:
+        assessments = []
+        for role, solver, generation in (("parent", parent_solver, parent_generation),
+                                         ("candidate", candidate_solver, candidate_generation)):
+            emit(observer, retention_completed=completed, retention_total=total,
+                 retention_subject=cohort.kind.value, retention_role=role)
+            assessments.append(evaluate_capabilities(solver, cohort, generation))
+            completed += 1
+            emit(observer, retention_completed=completed, retention_total=total,
+                 retention_subject=cohort.kind.value, retention_role=role)
+        pairs.append(AssessmentPair(*assessments))
     target_pair, fresh_lesson_pair, fixed_school_pair = pairs
     evidence = PairedRetentionEvidence(
         target_capability, policy,

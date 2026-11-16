@@ -61,15 +61,17 @@ def _source_pins() -> tuple[dict, ...]:
 
 
 
-def _load_pinned_released_frame_schemas(
-    source_family: str, atlas_selection: AtlasArtifactSelection,
+def _load_pinned_released_frame_schemas_from_snapshot(
+    source_family: str, atlas_selection: AtlasArtifactSelection, snapshot,
 ) -> VerifiedReleasedFrameSchemas:
-    """Offline source-owner lookup; no caller-supplied schema registry or hash."""
+    """Verify A03 pins against an already-authenticated A01 snapshot."""
     if not isinstance(source_family, str) or not source_family:
         _public()._fail("FRAME_RELEASED_SOURCE_FAMILY_INVALID")
-    # The A01 source pin is checked against its own independent repository
-    # ledger before any A03 schema manifest can gain consumer authority.
-    snapshot = _public().load_pinned_atlas_snapshot(atlas_selection)
+    if (not isinstance(atlas_selection, AtlasArtifactSelection)
+            or (snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+            != (atlas_selection.release_sha256, atlas_selection.bundle_id,
+                atlas_selection.source_bundle_id)):
+        _public()._fail("FRAME_RELEASED_SOURCE_PIN_NOT_REGISTERED")
     matches = tuple(entry for entry in _public()._source_pins()
                     if entry["family"] == source_family
                     and entry["semantic_release"] == snapshot.release_sha256
@@ -91,6 +93,18 @@ def _load_pinned_released_frame_schemas(
         snapshot=snapshot,
         expected_semantic_release=entry["semantic_release"],
         expected_schema_map_sha256=entry["schema_map_sha256"])
+
+
+def _load_pinned_released_frame_schemas(
+    source_family: str, atlas_selection: AtlasArtifactSelection,
+) -> VerifiedReleasedFrameSchemas:
+    """Offline source-owner lookup; no caller-supplied schema registry or hash."""
+    # The cold/public path re-enters the independent A01 pin before A03 can
+    # gain authority. Hot owners may call the private snapshot-aware helper
+    # only after A01 has already authenticated that exact immutable snapshot.
+    snapshot = _public().load_pinned_atlas_snapshot(atlas_selection)
+    return _load_pinned_released_frame_schemas_from_snapshot(
+        source_family, atlas_selection, snapshot)
 
 
 

@@ -44,6 +44,21 @@ class SourceExecutionContextTests(unittest.TestCase):
         self.assertIs(context.answer_registry, self.answers)
         self.assertIsNone(context.source_root)
 
+    def test_bound_source_batch_draws_provider_once_and_revalidates_without_redraw(self):
+        from bilqis_mlx.factory import generation
+
+        context = SourceExecutionContext(**self.arguments)
+        original = generation.draw_executable_release_rows
+        with patch.object(
+                generation, "draw_executable_release_rows",
+                wraps=original) as draw:
+            rows, authority = context.draw_bound_rows(
+                seed=17, capability="Z.C0", each=1)
+            self.assertEqual(draw.call_count, 1)
+            self.assertIs(context.require_bound_rows(rows, authority), authority)
+            self.assertEqual(draw.call_count, 1)
+        self.assertEqual(context._source_preparation_metrics.provider_draws, 1)
+
     def test_unbound_source_context_cannot_claim_accepted_runtime_custody(self):
         from pathlib import Path
         context = SourceExecutionContext(**self.arguments)
@@ -69,7 +84,7 @@ class SourceExecutionContextTests(unittest.TestCase):
             provision_source_authority_registry(run_dir, AUTHORITY)
             source = with_source_authority_registry(
                 candidate(parent_state()), AUTHORITY)
-            with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
                 publish_candidate(run_dir, source)
             with patch(
                 "bilqis_mlx.runtime.admission._read_executable_factory_release_artifact",
@@ -81,10 +96,10 @@ class SourceExecutionContextTests(unittest.TestCase):
                 "bilqis_mlx.factory.live_answers.live_answer_registry",
                 return_value=self.answers,
             ):
-                with shape_patch():
+                with shape_patch(AUTHORITY):
                     context = AcceptedRuntimeHost(run_dir).source_context(
                         graph=self.graph, source_root=None)
-            with shape_patch():
+            with shape_patch(AUTHORITY):
                 context.require_accepted_runtime(run_dir)
                 self.assertIs(
                     context.source_authority(),
@@ -98,7 +113,7 @@ class SourceExecutionContextTests(unittest.TestCase):
             provision_source_authority_registry(run_dir, AUTHORITY)
             source = with_source_authority_registry(
                 candidate(parent_state()), AUTHORITY)
-            with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
                 pointer = publish_candidate(run_dir, source)
             with patch(
                 "bilqis_mlx.runtime.admission._read_executable_factory_release_artifact",
@@ -109,7 +124,7 @@ class SourceExecutionContextTests(unittest.TestCase):
             ), patch(
                 "bilqis_mlx.factory.live_answers.live_answer_registry",
                 return_value=self.answers,
-            ), shape_patch():
+            ), shape_patch(AUTHORITY):
                 context = AcceptedRuntimeHost(run_dir).source_context(
                     graph=self.graph, source_root=None)
             successor = candidate(
@@ -117,10 +132,10 @@ class SourceExecutionContextTests(unittest.TestCase):
                 parent=pointer["manifest_sha256"],
             )
             successor = with_source_authority_registry(successor, AUTHORITY)
-            with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
                 publish_candidate(run_dir, successor)
             correction = _event(_ref(DependencyKind.RIGHTS, "rights:stale-context"))
-            with shape_patch(), self.assertRaises(BilqisError):
+            with shape_patch(AUTHORITY), self.assertRaises(BilqisError):
                 context.record_correction(correction)
 
     def test_forged_accepted_runtime_host_subclass_cannot_mint_live_context(self):

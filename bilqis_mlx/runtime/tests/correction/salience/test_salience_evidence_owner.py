@@ -14,6 +14,7 @@ class SalienceEvidenceOwnerTests(unittest.TestCase):
     def setUp(self):
         self.fixture = SalienceAuxiliaryTests()
         self.fixture.setUp()
+        self.addCleanup(self.fixture.doCleanups)
         row = self.fixture.batch.rows[0]
         self.records = ((self.fixture.binding(), self.fixture.evidence),)
         self.dependencies = ((row.provenance.row_id, row.provenance.immediate_dependencies),)

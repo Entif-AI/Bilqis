@@ -95,7 +95,7 @@ def _inspect(run_dir: Path) -> dict:
             "generation_manifest_sha256": manifest_sha256,
             "optimizer_step": student.retained_state.optimizer_step,
             "factory_release_sha256": student.run_identity.factory_release_sha256,
-            "topology_sha256": student.run_identity.topology_sha256,
+            "topology_sha256": student.topology.digest,
             "teacher_epoch": teacher.get("teacher_epoch"),
             "teacher_cursor": teacher.get("cursor"),
             "teacher_next_seed": teacher.get("next_seed"),

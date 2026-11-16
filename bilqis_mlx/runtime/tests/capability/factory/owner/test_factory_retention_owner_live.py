@@ -21,10 +21,10 @@ from bilqis_mlx.runtime.factory_evaluation_compiler import compile_factory_evalu
 from bilqis_mlx.runtime.factory_retention_owner import _candidate_from_live_parent
 from bilqis_mlx.runtime.factory_task_authority import factory_task_authority
 from bilqis_mlx.runtime.task_goal_readout import task_goal_route_plan
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_lesson_diagnostic import diagnose_factory_retention_lesson
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_lesson_diagnostic import diagnose_factory_retention_lesson
 from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_live_support import live_factory_context
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_next_step_witness import prove_source_qualified_continuation
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_target_diagnostic import diagnose_factory_retention_target
+from bilqis_mlx.runtime.tests.capability.factory.retention.next_step.factory_retention_next_step_witness import prove_source_qualified_continuation
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_target_diagnostic import diagnose_factory_retention_target
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.publication.publication_helpers import (
     host_source_authority_patch,
 )
@@ -135,7 +135,9 @@ class FactoryRetentionOwnerLiveTests(SourceBackboneTestBase):
                 run_dir, source_context, self.snapshot, self.artifact)
             transaction, gradient, row, targets, teacher = _teacher_selected_source_owned_candidate_step_evidence(
                 run_dir, source_context, parent, cache, self.artifact)
-            _, candidate_bundle, _, _ = _candidate_from_live_parent(run_dir, transaction)
+            _, candidate_bundle, candidate_state, _ = _candidate_from_live_parent(
+                run_dir, transaction)
+            self.assertIs(candidate_bundle.retained_state, candidate_state)
             target = targets[0]
             parent_compiled, before = _evaluation_output(
                 source_context, parent, self.artifact, row)
@@ -196,7 +198,9 @@ class FactoryRetentionOwnerLiveTests(SourceBackboneTestBase):
             transaction, _gradient, row, targets, teacher = (
                 _teacher_selected_source_owned_candidate_step_evidence(
                     run_dir, source_context, parent, cache, self.artifact))
-            _, candidate_bundle, _, _ = _candidate_from_live_parent(run_dir, transaction)
+            _, candidate_bundle, candidate_state, _ = _candidate_from_live_parent(
+                run_dir, transaction)
+            self.assertIs(candidate_bundle.retained_state, candidate_state)
             target = targets[0]
             parent_compiled, before = _evaluation_output(
                 source_context, parent, self.artifact, row)

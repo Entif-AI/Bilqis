@@ -16,12 +16,12 @@ from ...semantics.source_atom_binding.common import invalid
 from .authority import project_verified_row, require_canonical_graph
 
 
-def public_formal_atom_context(
-    selection, source_row, graph, *, source_root, source_seed, source_each,
+def _public_formal_atom_context_from_snapshot(
+    selection, snapshot, source_row, graph, *, source_root, source_seed, source_each,
     task: TaskScope, frontier: SourceFrontier, policy: ContextPolicy,
     course=None, source_profile_parameters=None,
 ):
-    """Return a source-owned raw AST and current compiler authority.
+    """Return raw-atom authority from an already authenticated Atlas snapshot.
 
     Only atoms visible at the requested prefix receive grants. Existing
     conflicting or revoked grants are never replaced. This neither admits a
@@ -29,7 +29,10 @@ def public_formal_atom_context(
     """
     from ..atom_binding import verify_source_row
 
-    snapshot = load_pinned_atlas_snapshot(selection)
+    if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+          != (selection.release_sha256, selection.bundle_id,
+              selection.source_bundle_id)):
+        invalid("SOURCE_ATOM_PUBLIC_FORMAL_SOURCE_DRIFT")
     canonical_graph = require_canonical_graph(source_row, graph, source_root)
     witness, reason = verify_source_row(
         source_row, canonical_graph, source_root=source_root,
@@ -68,6 +71,20 @@ def public_formal_atom_context(
         (), SchemaTagMap.from_schemas(task.semantic_release, ()),
         None, task, current, policy)
     return source.ast, config
+
+
+def public_formal_atom_context(
+    selection, source_row, graph, *, source_root, source_seed, source_each,
+    task: TaskScope, frontier: SourceFrontier, policy: ContextPolicy,
+    course=None, source_profile_parameters=None,
+):
+    """Cold public source replay; hot owners use the private snapshot seam."""
+    snapshot = load_pinned_atlas_snapshot(selection)
+    return _public_formal_atom_context_from_snapshot(
+        selection, snapshot, source_row, graph,
+        source_root=source_root, source_seed=source_seed, source_each=source_each,
+        task=task, frontier=frontier, policy=policy, course=course,
+        source_profile_parameters=source_profile_parameters)
 
 
 def authorize_public_formal_prefix(

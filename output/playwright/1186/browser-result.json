@@ -1,0 +1,155 @@
+{
+  "ok": true,
+  "results": [
+    {
+      "launchMode": "production",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "dark",
+      "density": "comfortable",
+      "violations": [],
+      "documentOverflow": false,
+      "tablists": 1,
+      "tabs": 3,
+      "duplicateIds": [],
+      "helpTriggers": 6,
+      "sourceLabels": 6,
+      "derivedLabels": 5,
+      "timedFacts": 4,
+      "sourceTimes": [
+        "1794699900",
+        "1794699000",
+        "1794700118",
+        "1794700120"
+      ],
+      "text": "SEMANTIC ATLAS\nSemantic identity and ABI placement\n\nInspect source identity, generation-local ABI placement, and derived similarity in separate evidence layers.\n\nCurrent generation\n?\nATLAS OVERVIEW\n?\nActive concepts\n742\nSource eligible\n801\nHeld mappings\n1\nLearned edges\n1\nMaterialized\n11 hours ago\nLookup\nABI\nDossier\nSELECTED SEMANTIC DOSSIER\nhttps://production.example/id/sense/atlas/primary-with-a-long-semantic-identity\nOpen inspector\n?\nIdentity and authority\nSource truth\nSemantic ID\nhttps://production.example/id/sense/atlas/primary-with-a-long-semantic-identity\nKind\nsense\nSource and ABI\nSource truth\nSource revision\n7777777777777777777777777777777777777777777777777777777777777777\nSource loci\nProduction semantic source row 12 with a deliberately long source locus value\nABI address\n1 · Bank 0 · Row 1\nSource snapshot materialized\n11 hours ago\nGeneration projection\nDerived generation state\nGeneration state\n●\nACTIVE\nNew / exercised / requalification affected\nfalse / true / false\nObserved\n10 hours ago\nMaterialized\n10 hours ago\nCapability and frame bindings\nSource truth\nCapabilities\nB.PRODUCTION.ATLAS\nFrames\nframe:relation/v2\nRELATIONSHIP LENS\n?\nCanonical identity\nLearned similarity\n\nDerived similarity measurements for the selected generation.\n\nLearned similarity neighborhood\nDerived similarity\n\nDerived similarity shows observational proximity for the selected generation. Canonical source relationships are available in the Canonical identity lens.\n\nRelation\tTarget identity\tEvidence\nsimilarity · 0.91\thttps://production.example/id/sense/atlas/neighbor-with-an-even-longer-semantic-identity\tDerived basis embedding:production:g7 · distinct source identities"
+    },
+    {
+      "launchMode": "production",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "documentOverflow": false,
+      "tablists": 1,
+      "tabs": 3,
+      "duplicateIds": [],
+      "helpTriggers": 6,
+      "sourceLabels": 6,
+      "derivedLabels": 5,
+      "timedFacts": 4,
+      "sourceTimes": [
+        "1794699900",
+        "1794699000",
+        "1794700118",
+        "1794700120"
+      ],
+      "text": "SEMANTIC ATLAS\nSemantic identity and ABI placement\n\nInspect source identity, generation-local ABI placement, and derived similarity in separate evidence layers.\n\nCurrent generation\n?\nATLAS OVERVIEW\n?\nActive concepts\n742\nSource eligible\n801\nHeld mappings\n1\nLearned edges\n1\nMaterialized\n11 hours ago\nLookup\nABI\nDossier\nSELECTED SEMANTIC DOSSIER\nhttps://production.example/id/sense/atlas/primary-with-a-long-semantic-identity\nOpen inspector\n?\nIdentity and authority\nSource truth\nSemantic ID\nhttps://production.example/id/sense/atlas/primary-with-a-long-semantic-identity\nKind\nsense\nSource and ABI\nSource truth\nSource revision\n7777777777777777777777777777777777777777777777777777777777777777\nSource loci\nProduction semantic source row 12 with a deliberately long source locus value\nABI address\n1 · Bank 0 · Row 1\nSource snapshot materialized\n11 hours ago\nGeneration projection\nDerived generation state\nGeneration state\n●\nACTIVE\nNew / exercised / requalification affected\nfalse / true / false\nObserved\n10 hours ago\nMaterialized\n10 hours ago\nCapability and frame bindings\nSource truth\nCapabilities\nB.PRODUCTION.ATLAS\nFrames\nframe:relation/v2\nRELATIONSHIP LENS\n?\nCanonical identity\nLearned similarity\n\nDerived similarity measurements for the selected generation.\n\nLearned similarity neighborhood\nDerived similarity\n\nDerived similarity shows observational proximity for the selected generation. Canonical source relationships are available in the Canonical identity lens.\n\nRelation\tTarget identity\tEvidence\nsimilarity · 0.91\thttps://production.example/id/sense/atlas/neighbor-with-an-even-longer-semantic-identity\tDerived basis embedding:production:g7 · distinct source identities"
+    },
+    {
+      "launchMode": "production",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "documentOverflow": false,
+      "tablists": 1,
+      "tabs": 3,
+      "duplicateIds": [],
+      "helpTriggers": 6,
+      "sourceLabels": 6,
+      "derivedLabels": 5,
+      "timedFacts": 4,
+      "sourceTimes": [
+        "1794699900",
+        "1794699000",
+        "1794700118",
+        "1794700120"
+      ],
+      "text": "SEMANTIC ATLAS\nSemantic identity and ABI placement\n\nInspect source identity, generation-local ABI placement, and derived similarity in separate evidence layers.\n\nCurrent generation\n?\nATLAS OVERVIEW\n?\nActive concepts\n742\nSource eligible\n801\nHeld mappings\n1\nLearned edges\n1\nMaterialized\n11 hours ago\nLookup\nABI\nDossier\nSELECTED SEMANTIC DOSSIER\nhttps://production.example/id/sense/atlas/primary-with-a-long-semantic-identity\nOpen inspector\n?\nIdentity and authority\nSource truth\nSemantic ID\nhttps://production.example/id/sense/atlas/primary-with-a-long-semantic-identity\nKind\nsense\nSource and ABI\nSource truth\nSource revision\n7777777777777777777777777777777777777777777777777777777777777777\nSource loci\nProduction semantic source row 12 with a deliberately long source locus value\nABI address\n1 · Bank 0 · Row 1\nSource snapshot materialized\n11 hours ago\nGeneration projection\nDerived generation state\nGeneration state\n●\nACTIVE\nNew / exercised / requalification affected\nfalse / true / false\nObserved\n10 hours ago\nMaterialized\n10 hours ago\nCapability and frame bindings\nSource truth\nCapabilities\nB.PRODUCTION.ATLAS\nFrames\nframe:relation/v2\nRELATIONSHIP LENS\n?\nCanonical identity\nLearned similarity\n\nDerived similarity measurements for the selected generation.\n\nLearned similarity neighborhood\nDerived similarity\n\nDerived similarity shows observational proximity for the selected generation. Canonical source relationships are available in the Canonical identity lens.\n\nRelation\tTarget identity\tEvidence\nsimilarity · 0.91\thttps://production.example/id/sense/atlas/neighbor-with-an-even-longer-semantic-identity\tDerived basis embedding:production:g7 · distinct source identities"
+    },
+    {
+      "launchMode": "fixtures",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "dark",
+      "density": "comfortable",
+      "violations": [],
+      "documentOverflow": false,
+      "tablists": 1,
+      "tabs": 3,
+      "duplicateIds": [],
+      "helpTriggers": 6,
+      "sourceLabels": 6,
+      "derivedLabels": 5,
+      "timedFacts": 4,
+      "sourceTimes": [
+        "1794700120",
+        "1794700120",
+        "1794700118",
+        "1794700120"
+      ],
+      "text": "SEMANTIC ATLAS\nSemantic identity and ABI placement\n\nInspect source identity, generation-local ABI placement, and derived similarity in separate evidence layers.\n\nREFERENCE FIXTURES · Generation 7\n?\nATLAS OVERVIEW\n?\nActive concepts\n742\nSource eligible\n801\nHeld mappings\n1\nLearned edges\n1\nMaterialized\n10 hours ago\nLookup\nABI\nDossier\nSELECTED SEMANTIC DOSSIER\nhttps://example.test/id/sense/atlas-fixture/primary\nOpen inspector\n?\nIdentity and authority\nSource truth\nSemantic ID\nhttps://example.test/id/sense/atlas-fixture/primary\nKind\nsense\nSource and ABI\nSource truth\nSource revision\n3333333333333333333333333333333333333333333333333333333333333333\nSource loci\nReference fixture · semantic source row 12\nABI address\n1 · Bank 0 · Row 1\nSource snapshot materialized\n10 hours ago\nGeneration projection\nDerived generation state\nGeneration state\n●\nACTIVE\nNew / exercised / requalification affected\nfalse / true / false\nObserved\n10 hours ago\nMaterialized\n10 hours ago\nCapability and frame bindings\nSource truth\nCapabilities\nB.EXAMPLE\nFrames\nframe:relation/v2\nRELATIONSHIP LENS\n?\nCanonical identity\nLearned similarity\n\nDerived similarity measurements for the selected generation.\n\nLearned similarity neighborhood\nDerived similarity\n\nDerived similarity shows observational proximity for the selected generation. Canonical source relationships are available in the Canonical identity lens.\n\nRelation\tTarget identity\tEvidence\nsimilarity · 0.91\thttps://example.test/id/sense/atlas-fixture/neighbor\tDerived basis embedding:fixture:g7 · distinct source identities"
+    },
+    {
+      "launchMode": "fixtures",
+      "viewport": {
+        "width": 1440,
+        "height": 960
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "documentOverflow": false,
+      "tablists": 1,
+      "tabs": 3,
+      "duplicateIds": [],
+      "helpTriggers": 6,
+      "sourceLabels": 6,
+      "derivedLabels": 5,
+      "timedFacts": 4,
+      "sourceTimes": [
+        "1794700120",
+        "1794700120",
+        "1794700118",
+        "1794700120"
+      ],
+      "text": "SEMANTIC ATLAS\nSemantic identity and ABI placement\n\nInspect source identity, generation-local ABI placement, and derived similarity in separate evidence layers.\n\nREFERENCE FIXTURES · Generation 7\n?\nATLAS OVERVIEW\n?\nActive concepts\n742\nSource eligible\n801\nHeld mappings\n1\nLearned edges\n1\nMaterialized\n10 hours ago\nLookup\nABI\nDossier\nSELECTED SEMANTIC DOSSIER\nhttps://example.test/id/sense/atlas-fixture/primary\nOpen inspector\n?\nIdentity and authority\nSource truth\nSemantic ID\nhttps://example.test/id/sense/atlas-fixture/primary\nKind\nsense\nSource and ABI\nSource truth\nSource revision\n3333333333333333333333333333333333333333333333333333333333333333\nSource loci\nReference fixture · semantic source row 12\nABI address\n1 · Bank 0 · Row 1\nSource snapshot materialized\n10 hours ago\nGeneration projection\nDerived generation state\nGeneration state\n●\nACTIVE\nNew / exercised / requalification affected\nfalse / true / false\nObserved\n10 hours ago\nMaterialized\n10 hours ago\nCapability and frame bindings\nSource truth\nCapabilities\nB.EXAMPLE\nFrames\nframe:relation/v2\nRELATIONSHIP LENS\n?\nCanonical identity\nLearned similarity\n\nDerived similarity measurements for the selected generation.\n\nLearned similarity neighborhood\nDerived similarity\n\nDerived similarity shows observational proximity for the selected generation. Canonical source relationships are available in the Canonical identity lens.\n\nRelation\tTarget identity\tEvidence\nsimilarity · 0.91\thttps://example.test/id/sense/atlas-fixture/neighbor\tDerived basis embedding:fixture:g7 · distinct source identities"
+    },
+    {
+      "launchMode": "fixtures",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "theme": "light",
+      "density": "compact",
+      "violations": [],
+      "documentOverflow": false,
+      "tablists": 1,
+      "tabs": 3,
+      "duplicateIds": [],
+      "helpTriggers": 6,
+      "sourceLabels": 6,
+      "derivedLabels": 5,
+      "timedFacts": 4,
+      "sourceTimes": [
+        "1794700120",
+        "1794700120",
+        "1794700118",
+        "1794700120"
+      ],
+      "text": "SEMANTIC ATLAS\nSemantic identity and ABI placement\n\nInspect source identity, generation-local ABI placement, and derived similarity in separate evidence layers.\n\nREFERENCE FIXTURES · Generation 7\n?\nATLAS OVERVIEW\n?\nActive concepts\n742\nSource eligible\n801\nHeld mappings\n1\nLearned edges\n1\nMaterialized\n10 hours ago\nLookup\nABI\nDossier\nSELECTED SEMANTIC DOSSIER\nhttps://example.test/id/sense/atlas-fixture/primary\nOpen inspector\n?\nIdentity and authority\nSource truth\nSemantic ID\nhttps://example.test/id/sense/atlas-fixture/primary\nKind\nsense\nSource and ABI\nSource truth\nSource revision\n3333333333333333333333333333333333333333333333333333333333333333\nSource loci\nReference fixture · semantic source row 12\nABI address\n1 · Bank 0 · Row 1\nSource snapshot materialized\n10 hours ago\nGeneration projection\nDerived generation state\nGeneration state\n●\nACTIVE\nNew / exercised / requalification affected\nfalse / true / false\nObserved\n10 hours ago\nMaterialized\n10 hours ago\nCapability and frame bindings\nSource truth\nCapabilities\nB.EXAMPLE\nFrames\nframe:relation/v2\nRELATIONSHIP LENS\n?\nCanonical identity\nLearned similarity\n\nDerived similarity measurements for the selected generation.\n\nLearned similarity neighborhood\nDerived similarity\n\nDerived similarity shows observational proximity for the selected generation. Canonical source relationships are available in the Canonical identity lens.\n\nRelation\tTarget identity\tEvidence\nsimilarity · 0.91\thttps://example.test/id/sense/atlas-fixture/neighbor\tDerived basis embedding:fixture:g7 · distinct source identities"
+    }
+  ]
+}

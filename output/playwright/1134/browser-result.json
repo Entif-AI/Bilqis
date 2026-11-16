@@ -1,0 +1,79 @@
+{
+  "passed": true,
+  "claims": [
+    "peer workspaces distinct",
+    "mechanism-first diagnostics",
+    "fixture posture explicit",
+    "historical absence stays unavailable",
+    "frame receipts progressive",
+    "frame custody exact",
+    "unique hooks"
+  ],
+  "variants": [
+    {
+      "surface": "neural",
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "frame",
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "neural",
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "frame",
+      "theme": "light",
+      "density": "compact",
+      "width": 1440,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "neural",
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "frame",
+      "theme": "dark",
+      "density": "comfortable",
+      "width": 390,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "neural",
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "overflow": false,
+      "violations": []
+    },
+    {
+      "surface": "frame",
+      "theme": "light",
+      "density": "compact",
+      "width": 320,
+      "overflow": false,
+      "violations": []
+    }
+  ],
+  "rtlTextSpacingReducedMotion": true
+}

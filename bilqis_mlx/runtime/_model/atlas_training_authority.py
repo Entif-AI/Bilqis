@@ -299,7 +299,8 @@ def bind_logical_batch_training_authority(
 
 
 def bind_compiled_training_batch(
-        batch, compiled, sources, feature_schema, *, active_semantic_rows, row_index=0):
+        batch, compiled, sources, feature_schema, *, active_semantic_rows, row_index=0,
+        source_execution_authority=None):
     """Issue one B11 row from an exact source-owned C02 delivery batch."""
     from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
     from bilqis_mlx.learning.source_atoms import SourceAtomRow
@@ -327,4 +328,5 @@ def bind_compiled_training_batch(
     return BamfCompiledBatch(
         compiled, sources, feature_schema, active_semantic_rows,
         training_authority=_issue(batch, source, provenance, batch.rows[row_index].auxiliaries),
-        visit_provenance=provenance.visit)
+        visit_provenance=provenance.visit,
+        source_execution_authority=source_execution_authority)

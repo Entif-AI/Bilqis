@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.model_topology_v2 import (
@@ -51,7 +52,8 @@ class AdapterParameters:
                 or not isinstance(self.B, mx.array)
                 or self.B.shape != (WIDTH, RANK)
                 or any(value.dtype != mx.float32
-                       or not bool(mx.all(mx.isfinite(value)))
+                       or (host_tensor_validation_enabled()
+                           and not bool(mx.all(mx.isfinite(value))))
                        for value in (self.norm, self.A, self.B))
                 or self.schema_version != ADAPTER_SCHEMA):
             _invalid()
@@ -89,7 +91,8 @@ def adapter_forward(hidden: mx.array, params: AdapterParameters) -> mx.array:
             or not isinstance(hidden, mx.array)
             or hidden.ndim != 3 or hidden.shape[2] != WIDTH
             or hidden.dtype != mx.float32
-            or not bool(mx.all(mx.isfinite(hidden)))):
+            or (host_tensor_validation_enabled()
+                and not bool(mx.all(mx.isfinite(hidden))))):
         _invalid()
     params.__post_init__()
     normalized = mx.fast.rms_norm(
@@ -97,7 +100,7 @@ def adapter_forward(hidden: mx.array, params: AdapterParameters) -> mx.array:
     projected = normalized @ params.A.T
     activated = projected * mx.sigmoid(projected)
     result = hidden + (activated @ params.B.T) / RANK
-    if not bool(mx.all(mx.isfinite(result))):
+    if host_tensor_validation_enabled() and not bool(mx.all(mx.isfinite(result))):
         _invalid()
     return result
 

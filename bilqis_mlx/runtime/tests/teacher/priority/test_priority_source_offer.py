@@ -1,5 +1,9 @@
 """Portable source-offer serialization and issuance boundaries."""
+from dataclasses import replace
 import pytest
+from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.priority_source_offer import (
@@ -39,6 +43,132 @@ def test_offer_rejects_context_without_accepted_host():
         assert error.value.context['reason'] == 'FACTORY_SOURCE_CORRECTION_RUNTIME_REQUIRED'
     finally:
         fixture.doCleanups()
+
+
+def test_priority_offer_qualifies_source_without_heavy_context_or_prefix_build():
+    from bilqis_mlx.runtime import priority_source_offer as offer_module
+    from bilqis_mlx.runtime import priority_planning_generation as planning_module
+    from bilqis_mlx.runtime.tests.batch import test_atlas_training_adapter as fixture_module
+
+    fixture = fixture_module.AtlasTrainingAdapterTest()
+    fixture.setUp()
+    try:
+        context = replace(
+            fixture.context, run_dir=Path("/run"), source_root=Path("/source"))
+        planning = object.__new__(planning_module.PriorityPlanningGeneration)
+        object.__setattr__(planning, "_issuance", planning_module._PLANNING_ISSUER)
+        object.__setattr__(
+            planning, "_target_registrar",
+            SimpleNamespace(register=lambda *_args, **_kwargs: None))
+        cache = SimpleNamespace(
+            accepted_manifest_sha256="a" * 64,
+            generation_binding="b" * 64)
+        authenticated = SimpleNamespace(
+            receipt=SimpleNamespace(
+                generation_manifest_sha256=cache.accepted_manifest_sha256),
+            features=SimpleNamespace(semantic_release="0" * 64))
+        with patch.object(
+                offer_module, "_require_planning_generation",
+                return_value=(cache, authenticated)):
+            offer = offer_module.prepare_priority_source_offer(
+                context, object(), "unused", capability="Z.C0",
+                source_seed=17, source_each=1,
+                planning_generation=planning)
+        assert offer.rows()
+        assert context._source_preparation_metrics.provider_draws == 1
+        assert context._source_preparation_metrics.source_context_builds == 0
+        assert context._source_preparation_metrics.compiled_source_builds == 0
+    finally:
+        fixture.doCleanups()
+
+
+@pytest.mark.parametrize('kind', ['SOURCE', 'RIGHTS'])
+def test_lightweight_priority_offer_holds_before_materialization(kind):
+    from bilqis_mlx.runtime import priority_source_offer as offer_module
+    from bilqis_mlx.runtime import priority_planning_generation as planning_module
+    from bilqis_mlx.runtime.atlas_revalidation_runtime import apply_correction
+    from bilqis_mlx.runtime.tests.batch import test_atlas_training_adapter as fixture_module
+    from bilqis_mlx.runtime.tests.test_atlas_revalidation import AUTHORITY, _event
+    from bilqis_mlx.semantics.cognitive_dependencies import DependencyKind
+
+    fixture = fixture_module.AtlasTrainingAdapterTest()
+    fixture.setUp()
+    try:
+        context = replace(
+            fixture.context, run_dir=Path("/run"), source_root=Path("/source"))
+        planning = object.__new__(planning_module.PriorityPlanningGeneration)
+        object.__setattr__(planning, "_issuance", planning_module._PLANNING_ISSUER)
+        object.__setattr__(
+            planning, "_target_registrar",
+            SimpleNamespace(register=lambda *_args, **_kwargs: None))
+        cache = SimpleNamespace(
+            accepted_manifest_sha256="a" * 64,
+            generation_binding="b" * 64)
+        authenticated = SimpleNamespace(
+            receipt=SimpleNamespace(
+                generation_manifest_sha256=cache.accepted_manifest_sha256),
+            features=SimpleNamespace(semantic_release="0" * 64))
+        with patch.object(
+                offer_module, "_require_planning_generation",
+                return_value=(cache, authenticated)):
+            offer = offer_module.prepare_priority_source_offer(
+                context, object(), "unused", capability="Z.C0",
+                source_seed=17, source_each=1,
+                planning_generation=planning)
+            owner = offer._qualification_owner
+            target = next(
+                ref for ref in owner.current_node.immediate_dependencies
+                if ref.kind is DependencyKind(kind))
+            registry = AUTHORITY
+            if kind == 'SOURCE':
+                from bilqis_mlx.runtime.atlas_revalidation import (
+                    SourceAuthorityRegistry, SourceAuthorityScope,
+                )
+                key = AUTHORITY.keys[0]
+                scopes = tuple(sorted(
+                    (*key.allowed_scopes,
+                     SourceAuthorityScope(DependencyKind.SOURCE, 'Z.C0:')),
+                    key=lambda scope: (scope.kind.value, scope.key_prefix)))
+                registry = SourceAuthorityRegistry((replace(
+                    key, allowed_scopes=scopes),))
+            owner._queue = apply_correction(_event(target), owner.index, registry)
+            with pytest.raises(BilqisError) as error:
+                offer.require_qualified_current(context, object())
+        assert error.value.context['reason'] == 'BAMF_C09_ARTIFACT_HELD'
+        assert context._source_preparation_metrics.source_context_builds == 0
+        assert context._source_preparation_metrics.compiled_source_builds == 0
+    finally:
+        fixture.doCleanups()
+
+
+def test_planning_generation_rejects_acceptance_change_during_binding():
+    from bilqis_mlx.runtime.bamf_bundle import currentness_transaction
+
+    cache = SimpleNamespace(
+        run_id='run', generation=0, accepted_manifest_sha256='a' * 64,
+        generation_binding='c' * 64, _correction_registry=None,
+        _candidate_identity_sha256='d' * 64,
+    )
+    optimizer = SimpleNamespace(
+        parameters={}, m={}, v={}, update_counts={})
+    state = SimpleNamespace(
+        optimizer=optimizer, optimizer_step=0, policy=object(), allocations=object())
+    parent = SimpleNamespace(
+        run_id='run', generation=0, retained_state=state, correction_frontier={})
+    before = ('e' * 64, 'b' * 64, (1, 2, 3, 4, 5))
+    after = ('f' * 64, 'b' * 64, (1, 2, 3, 4, 5))
+    with patch.object(
+            currentness_transaction, 'CompleteStudent', SimpleNamespace), patch.object(
+            currentness_transaction, '_pointer_snapshot',
+            side_effect=(before, after)), patch.object(
+            currentness_transaction, 'bind_bamf_bundle_currentness',
+            return_value=object()), patch.object(
+            currentness_transaction, 'bind_source_authority_currentness',
+            return_value=object()):
+        with pytest.raises(BilqisError) as error:
+            currentness_transaction.bind_accepted_currentness_transaction(
+                Path('/run'), parent, cache)
+    assert error.value.context['reason'] == 'B13_CURRENTNESS_POINTER_DRIFT'
 
 
 @pytest.mark.parametrize('kind', ['SOURCE', 'RIGHTS'])

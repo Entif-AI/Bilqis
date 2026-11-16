@@ -58,8 +58,28 @@ class VisitObservationTests(unittest.TestCase):
         receipt["teacher"]["strategies"] = {"fixture-policy": policy}
         return fixture, release, program, parameters, optimizer, receipt, policy
 
+    def _qualify_retention_canary(self, receipt):
+        from bilqis_mlx.learning._retention import canary
+        receipt["teacher"]["retention_canary_projection"] = {
+            "schema": canary.HISTORY_SCHEMA,
+            "reviews": [{
+                "schema": canary.SCHEMA,
+                "channel": "RETENTION_TARGET_CANARY",
+                "mode": "SHADOW",
+                "policy_version": canary.DEFAULT_POLICY.version,
+                "first_would_stop_step": 8,
+                "final_retained": False,
+                "false_kill": False,
+                "false_continue": False,
+                "actual_steps_spent": 16,
+                "shadow_steps_if_active": 8,
+                "shadow_steps_saved": 8,
+            } for _ in range(64)],
+        }
+
     def run_visit(self, *, enabled=True, outcome_kind="retained", autonomy=False,
-                  previous=None, use_schedule_program=False):
+                  previous=None, use_schedule_program=False, steps_per_visit=2,
+                  qualified_retention_canary=False, canary_target_gain=False):
         try:
             import mlx.core as mx
             import numpy as np
@@ -72,6 +92,8 @@ class VisitObservationTests(unittest.TestCase):
         from bilqis_mlx.runtime import visits, state
         from bilqis_mlx.runtime.teacher_observation_capture import read_observation
         fixture, release, program, parameters, optimizer, receipt, policy = self._fixture(previous)
+        if qualified_retention_canary:
+            self._qualify_retention_canary(receipt)
         trace = {"pick": [], "observe": [], "draw": [], "train": []}
         def pick(teacher, grade, rng):
             trace["pick"].append((grade, rng.getstate(), rng.random(), rng.getstate()))
@@ -86,6 +108,9 @@ class VisitObservationTests(unittest.TestCase):
             trace["draw"].append((seed, capability, each, [row["id"] for row in result]))
             return result
         def predictions(_mx, weights, selected, *_):
+            if (canary_target_gain and weights is not parameters
+                    and selected and all(row.get("capability") == target for row in selected)):
+                return {row["id"]: row["gold"] for row in selected}
             return {row["id"]: (row["gold"] if outcome_kind == "skip" else "FALSE") for row in selected}
         target = "Z.C0"
         def evidence(*args):
@@ -110,7 +135,7 @@ class VisitObservationTests(unittest.TestCase):
             mx.set_default_device(mx.cpu)
             result = visits._take_visit(mx, root, receipt, {"manifest_sha256": "b" * 64},
                 program if use_schedule_program else fixture.course,
-                engine, parameters, optimizer, fixture.graph, steps_per_visit=2,
+                engine, parameters, optimizer, fixture.graph, steps_per_visit=steps_per_visit,
                 batch_size=6, reserve_gib=0., source_root=root, learning_settings=Settings(),
                 autonomy_teaching_option="source.direct/Z.C0" if autonomy else None,
                 capture_teacher_observations=enabled)
@@ -177,7 +202,10 @@ class VisitObservationTests(unittest.TestCase):
         self.assertEqual(emitted[0]["event_id"], cold[0]["event_id"])
         self.assertEqual(emitted[0]["publication"]["checkpoint"], asdict(published))
         summary = summarize_observations(emitted)
-        self.assertEqual(summary["attempted_steps"]["value"], 0 if outcome_kind == "skip" else 2)
+        expected_attempted = (
+            0 if outcome_kind == "skip"
+            else pending[-1]["attempted_optimizer_updates"])
+        self.assertEqual(summary["attempted_steps"]["value"], expected_attempted)
         expected = ("NOT_MEASURED" if outcome_kind == "skip" else "MEASURED")
         self.assertEqual(observation["outcome"]["retention"]["status"], expected)
         if outcome_kind == "skip":
@@ -216,3 +244,46 @@ class VisitObservationTests(unittest.TestCase):
                     self.assertTrue(any("retention_support" in position["roles"] for position in step["positions"]))
                     self.assertIsNotNone(step["delivered_teaching"])
                     self.assertTrue(step["realization_changed"])
+
+    def test_qualified_retention_canary_stops_at_eight_and_confirms_target_rejection(self):
+        result = self.run_visit(
+            outcome_kind="target-only", steps_per_visit=16,
+            qualified_retention_canary=True)
+        event = result["event"]
+        self.assertEqual(len(result["trace"]["train"]), 8)
+        self.assertEqual(event["candidate_step_control"]["effective_steps"], 16)
+        self.assertEqual(event["candidate_step_control"]["spent_steps"], 8)
+        self.assertTrue(event["candidate_step_control"]["retention_canary_stopped"])
+        self.assertEqual(event["candidate_retention"]["reason"], "NO_MEASURABLE_TARGET_GAIN")
+        self.assertEqual(event["retention_canary"]["mode"], "ACTIVE")
+        self.assertTrue(event["retention_canary"]["stop"])
+        self.assertEqual(event["retention_canary"]["steps_saved"], 8)
+
+    def test_canary_pass_still_requires_full_protected_retention_proof(self):
+        result = self.run_visit(
+            outcome_kind="rejected", steps_per_visit=16,
+            qualified_retention_canary=True, canary_target_gain=True)
+        event = result["event"]
+        self.assertEqual(len(result["trace"]["train"]), 16)
+        self.assertFalse(event["candidate_step_control"]["retention_canary_stopped"])
+        self.assertEqual(event["candidate_step_control"]["spent_steps"], 16)
+        self.assertEqual(event["retention_canary"]["mode"], "ACTIVE")
+        self.assertFalse(event["retention_canary"]["stop"])
+        self.assertEqual(event["candidate_retention"]["decision"], "REJECT")
+        self.assertEqual(
+            event["candidate_retention"]["reason"],
+            "PROTECTED_CAPABILITY_REGRESSION")
+
+    def test_retention_canary_is_deterministic_for_same_visit(self):
+        first = self.run_visit(
+            outcome_kind="target-only", steps_per_visit=16,
+            qualified_retention_canary=True)
+        second = self.run_visit(
+            outcome_kind="target-only", steps_per_visit=16,
+            qualified_retention_canary=True)
+        self.assertEqual(
+            first["event"]["retention_canary"],
+            second["event"]["retention_canary"])
+        self.assertEqual(
+            first["event"]["candidate_step_control"],
+            second["event"]["candidate_step_control"])

@@ -39,8 +39,9 @@ class CapabilitySupportGenerationTests(unittest.TestCase):
         self.temporary.cleanup()
 
     def test_retained_update_binds_support_to_current_execution_generation(self):
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
-            pointer = publish_genesis(self.run)
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
+            pointer = publish_genesis(
+                self.run, source_authority_registry=AUTHORITY)
             accepted_parent = load_accepted_generation(self.run)
             parent = accepted_parent.retained_state
             parent_generation = execution_generation_digest(
@@ -76,7 +77,7 @@ class CapabilitySupportGenerationTests(unittest.TestCase):
             )
         self.assertEqual(authority.generation_binding, parent_generation)
         self.assertNotEqual(current_generation, parent_generation)
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             owner = load_capability_support_owner(self.run, TARGET)
         self.assertEqual(owner.require(TARGET, current_generation), owner.support)
 

@@ -18,7 +18,8 @@ import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.data_plane import data_plane
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_bundle import (
-    load_bamf_generation, publish_bamf_generation, record_bamf_rejection,
+    inspect_accepted_generation, load_bamf_generation, publish_bamf_generation,
+    record_bamf_rejection,
 )
 
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
@@ -57,6 +58,37 @@ class BamfPublicationTests(unittest.TestCase):
         self.assertEqual(loaded.parent_manifest_sha256, first["manifest_sha256"])
         self.assertTrue((self.run / first["bundle"]).is_dir())
         self.assertNotEqual(first["manifest_sha256"], second["manifest_sha256"])
+
+    def test_lightweight_inspection_exposes_current_command_target_identity(self):
+        published = self.publish(candidate(parent_state()))
+        inspection = inspect_accepted_generation(self.run / "bamf-state.json")
+        acceptance = json.loads((
+            self.run / "bamf-acceptance"
+            / f"{published['manifest_sha256']}.json"
+        ).read_text())
+        manifest = json.loads((
+            self.run / published["bundle"] / "manifest.json"
+        ).read_text())
+        identity_binding = manifest["sidecars"]["run_identity"]
+        identity = json.loads((
+            self.run / published["bundle"] / identity_binding["filename"]
+        ).read_text())
+
+        self.assertEqual(
+            inspection.candidate_identity_sha256,
+            acceptance["candidate_identity_sha256"],
+        )
+        self.assertEqual(
+            inspection.semantic_release_sha256,
+            manifest["provenance"]["release_digest"],
+        )
+        self.assertEqual(
+            inspection.factory_release_sha256,
+            acceptance.get(
+                "factory_release_sha256",
+                identity["factory_release_sha256"],
+            ),
+        )
 
     def test_retry_converges_after_renamed_bundle_before_pointer(self):
         source = candidate(parent_state())

@@ -16,27 +16,25 @@ from typing import Mapping
 import mlx.core as mx
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from .atlas_attention import AttentionCache, AttentionScope, ccgqa
-from .backbone_identity import bamf_parameter_tree_digest, tensor_content_digest
+from .atlas_attention import AttentionCache
+from .backbone_identity import (
+    bamf_parameter_tree_digest, require_execution_generation_binding,
+    tensor_content_digest,
+)
 from .backbone_group_inputs import validated_group_parameters
 from .model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, expected_bamf_shapes,
 )
+from .backbone_group_trace import (
+    BackboneGroupTrace, BackboneTraceSession, run_backbone_group_trace,
+)
 
 
 UNADMITTED_NUMERICAL = "UNADMITTED_NUMERICAL"
-_ATTENTION_PARAMETERS = (
-    "query", "key", "value", "output", "conv_q", "conv_k", "conv_v")
 
 
 def _invalid() -> None:
     ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID)
-
-
-def _norm(hidden: mx.array, scale: mx.array, epsilon: float) -> mx.array:
-    return (hidden * mx.rsqrt(
-        mx.mean(hidden * hidden, axis=-1, keepdims=True) + epsilon)
-        * scale)
 
 
 @dataclass(frozen=True)
@@ -87,11 +85,17 @@ def _group_parameter_digest(parameters: Mapping[str, mx.array], names: tuple[str
                           _content_digest(parameters[name])) for name in names])
 
 
-def _owned_parameter_tree_digest(parameters, spec, extents) -> str:
+def _owned_parameter_tree_digest(parameters, spec, extents, execution_binding=None) -> str:
     """Use full-model identity when present; preserve B04's local numerical slice."""
     expected = tuple(item.name for item in expected_bamf_shapes(spec, extents))
     if set(parameters) == set(expected):
+        if execution_binding is not None:
+            return require_execution_generation_binding(
+                execution_binding, parameters, spec=spec, extents=extents,
+            ).parameter_tree_digest
         return bamf_parameter_tree_digest(parameters, spec=spec, extents=extents)
+    if execution_binding is not None:
+        _invalid()
     return _group_parameter_digest(parameters, tuple(sorted(parameters)))
 
 
@@ -113,41 +117,31 @@ def run_backbone_group_numerical(
     prefix_digest: str,
     prior: UnadmittedGroupNumerical | None = None,
     sequence_starts: mx.array | None = None,
+    execution_binding=None,
 ) -> UnadmittedGroupNumerical:
     """Execute standalone numerical group; caller predecessors are never authority."""
     if prior is not None:
         _invalid()
-    start, end, required = validated_group_parameters(
-        hidden, parameters, group_index, spec, extents, scope_ids, valid, sequence_starts)
+    trace = run_backbone_group_trace(
+        hidden, parameters, group_index=group_index, spec=spec, extents=extents,
+        scope_ids=scope_ids, valid=valid, generation=generation,
+        prefix_digest=prefix_digest, sequence_starts=sequence_starts)
+    start, end = trace.layer_start, trace.layer_end
+    _start, _end, required = validated_group_parameters(
+        hidden, parameters, group_index, spec, extents, scope_ids, valid,
+        sequence_starts)
     parameter_digest = _group_parameter_digest(parameters, tuple(sorted(required)))
-    full_digest = _owned_parameter_tree_digest(parameters, spec, extents)
+    full_digest = _owned_parameter_tree_digest(
+        parameters, spec, extents, execution_binding)
+    if (execution_binding is not None
+            and execution_binding.generation_digest != generation):
+        _invalid()
     scope_digest = _hash_record({"scope": _content_digest(scope_ids),
                                  "valid": _content_digest(valid),
                                  "starts": None if sequence_starts is None else _content_digest(sequence_starts),
                                  "generation": generation, "prefix": prefix_digest})
-    caches = []
-    current = hidden
-    for layer in range(start, end):
-        prefix = f"blocks.{layer}."
-        attn_input = _norm(
-            current, parameters[prefix + "attn_norm"],
-            spec.rms_norm_epsilon)
-        scope = AttentionScope(
-            scope_ids, layer, generation, prefix_digest, sequence_starts=sequence_starts)
-        attention, cache = ccgqa({
-                name: parameters[prefix + name]
-                for name in _ATTENTION_PARAMETERS},
-            attn_input, valid, scope)
-        current = current + attention
-        feed_input = _norm(
-            current, parameters[prefix + "ffn_norm"],
-            spec.rms_norm_epsilon)
-        activated = mx.maximum(
-            feed_input @ parameters[prefix + "ffn_in"].T, 0)
-        current = current + (
-            (activated * activated) @ parameters[prefix + "ffn_out"].T)
-        caches.append(cache)
-    cache_digest = _cache_chain_digest(tuple(caches))
+    current = trace.hidden
+    cache_digest = _cache_chain_digest(trace.attention_caches)
     predecessor = prior.execution_digest if prior is not None else _content_digest(hidden)
     execution_digest = _hash_record({
         "group": group_index, "layer_start": start, "layer_end": end,
@@ -158,7 +152,7 @@ def run_backbone_group_numerical(
         "input": _content_digest(hidden), "output": _content_digest(current),
         "predecessor": predecessor, "status": UNADMITTED_NUMERICAL,
     })
-    return UnadmittedGroupNumerical(current, group_index, start, end, tuple(caches),
+    return UnadmittedGroupNumerical(current, group_index, start, end, trace.attention_caches,
                                     parameter_digest, full_digest, scope_digest,
                                     _content_digest(hidden), cache_digest, predecessor, execution_digest)
 
@@ -171,7 +165,8 @@ class UnadmittedBackboneSession:
     """
 
     def __init__(self, hidden, parameters, *, spec, extents, scope_ids, valid,
-                 generation, prefix_digest, sequence_starts=None):
+                 generation, prefix_digest, sequence_starts=None,
+                 execution_binding=None):
         if type(spec) is not ModelTopologySpecV2 or type(extents) is not GenerationExtents:
             _invalid()
         self._hidden = hidden
@@ -183,9 +178,13 @@ class UnadmittedBackboneSession:
         self._generation = generation
         self._prefix_digest = prefix_digest
         self._sequence_starts = sequence_starts
+        self._execution_binding = execution_binding
         self._results = ()
         self._tree_digest = _owned_parameter_tree_digest(
-            self._parameters, self._spec, self._extents)
+            self._parameters, self._spec, self._extents, self._execution_binding)
+        if (self._execution_binding is not None
+                and self._execution_binding.generation_digest != self._generation):
+            _invalid()
 
     @property
     def results(self):
@@ -207,7 +206,8 @@ class UnadmittedBackboneSession:
                 _invalid()
             self._hidden = next_input
         if _owned_parameter_tree_digest(
-                self._parameters, self._spec, self._extents) != self._tree_digest:
+                self._parameters, self._spec, self._extents,
+                self._execution_binding) != self._tree_digest:
             _invalid()
         group_index = len(self._results) + 1
         result = run_backbone_group_numerical(
@@ -215,7 +215,8 @@ class UnadmittedBackboneSession:
             spec=self._spec, extents=self._extents,
             scope_ids=self._scope_ids, valid=self._valid,
             generation=self._generation, prefix_digest=self._prefix_digest,
-            sequence_starts=self._sequence_starts)
+            sequence_starts=self._sequence_starts,
+            execution_binding=self._execution_binding)
         if result.full_parameter_tree_digest != self._tree_digest:
             _invalid()
         if self._results:

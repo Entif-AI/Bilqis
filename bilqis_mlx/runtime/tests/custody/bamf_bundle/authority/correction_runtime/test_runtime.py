@@ -54,13 +54,13 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
     def publish(self, source):
         provision_source_authority_registry(self.run, AUTHORITY)
         source = with_source_authority_registry(source, AUTHORITY)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+        with shape_patch(AUTHORITY), patch.object(mlx_checkpoint, "assert_headroom"):
             pointer = publish_candidate(self.run, source)
             return pointer
 
     def _motif_fixture(self):
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
         fixture = FrameEncoderTests()
         fixture.setUp()
@@ -72,24 +72,24 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
                 motif_key_map_digest=cache.motif_manifest.digest,
             ),
         )
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             owner = bind_motif_artifact_owner(cache, compiled)
         return cache, compiled, owner
 
     def test_signed_revalidation_replays_after_correction_and_clears_cold_hold(self):
         _cache, compiled, owner = self._motif_fixture()
         correction = _event(owner.source_dependencies[0])
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host = AcceptedRuntimeHost(self.run)
             host.record_correction(correction)
         held = owner.index.node(owner.queue.held_artifact_ids[0])
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             host.record_revalidation(_result(
                 held, digest=held.content_digest, correction=correction))
         self.assertEqual(owner.queue.held_artifact_ids, ())
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             cold_owner = bind_motif_artifact_owner(cold_cache, compiled)
         self.assertEqual(cold_owner.queue.held_artifact_ids, ())
@@ -100,7 +100,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
         owner = case.owner()
 
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,
@@ -129,7 +129,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
         _reset_execution_cache_owner_for_tests()
         _reset_accepted_correction_runtime_for_tests()
         cold_owner = case.owner()
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cold_cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cold_cache.accepted_manifest_sha256,
@@ -144,7 +144,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
         owner = case.owner()
 
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,
@@ -190,7 +190,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
 
         owner = Owner()
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "TEST_CONTEXT", owner
@@ -219,7 +219,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
 
         owner = Owner()
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "TEST_TAMPER", owner
@@ -237,7 +237,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
         case = source_owned_temporal_case()
         owner = case.owner()
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
         with self.assertRaises(TypeError):
             register_accepted_target(
@@ -261,7 +261,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
 
         owner = Owner()
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256, "TEST_RESET", owner
@@ -295,7 +295,7 @@ class AcceptedCorrectionRuntimeTests(unittest.TestCase):
         old_owner = Owner(("old",))
         replacement = Owner(("replacement",))
         self.publish(candidate(parent_state()))
-        with shape_patch():
+        with shape_patch(AUTHORITY):
             cache = bind_accepted_execution_cache(self.run)
             register_accepted_target(
                 self.run, cache.accepted_manifest_sha256,

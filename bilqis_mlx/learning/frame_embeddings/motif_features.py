@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Mapping
 
 import mlx.core as mx
+from bilqis_mlx.runtime.autodiff_trace import host_tensor_validation_enabled
 
 from bilqis_mlx.runtime.model_topology_v2 import FEATURE_NONE_ROW, GenerationExtents
 from bilqis_mlx.semantics.atlas_features import AtlasFeatures
@@ -33,11 +34,14 @@ class MotifGateFeatures:
     schema_version: str = "bilqis.mlx.motif-gate-features/v1"
 
 
-def _categorical_factors(parameters, features, request, atlas_selection=None):
+def _categorical_factors(
+        parameters, features, request, atlas_selection=None,
+        source_execution_authority=None):
     if type(request) is ChildFrameRequest:
         schema, role, types = _child_categorical_factors(parameters, request, features)
         return types, role, schema
-    row = _source_qualified_feature_row(features, request, atlas_selection)
+    row = _source_qualified_feature_row(
+        features, request, atlas_selection, source_execution_authority)
     return _released_categorical_factors(parameters, row)
 
 
@@ -60,6 +64,7 @@ def motif_gate_features(
     parameters: Mapping[str, mx.array], projection: ApprovedContextProjection,
     frame_handle: str, features: AtlasFeatures, *, extents: GenerationExtents,
     atlas_selection: AtlasArtifactSelection | None = None,
+    source_execution_authority=None,
 ) -> MotifGateFeatures:
     """Mean member types, mean member roles and schema, before 768 projections.
 
@@ -78,7 +83,8 @@ def motif_gate_features(
     if envelope.frame.bindings:
         requests = _requests(projection, frame_handle, envelope)
         values = tuple(_categorical_factors(
-                       parameters, features, request, atlas_selection)
+                       parameters, features, request, atlas_selection,
+                       source_execution_authority)
                        for request in requests)
         types, roles, schema = (
             mx.mean(mx.stack(tuple(value[index] for value in values)), axis=0)
@@ -90,7 +96,7 @@ def motif_gate_features(
         types = parameters["features.type"][FEATURE_NONE_ROW]
         roles, schema = terms.mean_role128, terms.schema128
     vector = (types + roles + schema) / 3
-    if not bool(mx.all(mx.isfinite(vector))):
+    if host_tensor_validation_enabled() and not bool(mx.all(mx.isfinite(vector))):
         _invalid()
     return MotifGateFeatures(vector, frame_handle, projection.digest,
                              features.digest, features.semantic_release, requests)

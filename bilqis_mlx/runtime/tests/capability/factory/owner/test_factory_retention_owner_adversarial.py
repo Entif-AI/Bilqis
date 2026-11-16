@@ -15,10 +15,11 @@ from bilqis_mlx.runtime.factory_retention_owner import (
     C05_MAX_FRESH_DRAWS, FactoryRetentionEvaluation, _cohort, _fresh_rows,
     evaluate_factory_retention_candidate,
 )
+from bilqis_mlx.runtime._factory_parent_assessment_cache import ParentAssessmentCacheReceipt
 from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import _screen_inputs
 from bilqis_mlx.runtime.capability_retention import Decision, DecisionStatus
-from bilqis_mlx.runtime.tests.capability.factory.retention import factory_retention_target_diagnostic as diagnostic
-from bilqis_mlx.runtime.tests.capability.factory.retention.factory_retention_fixed_diagnostic import (
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics import factory_retention_target_diagnostic as diagnostic
+from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_fixed_diagnostic import (
     _optimizer_delta_summary,
 )
 import mlx.core as mx
@@ -90,6 +91,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         fixed = SimpleNamespace(rows=({"id": "fixed"},), seed=7)
         fresh = Mock(side_effect=AssertionError(
             "foundation acceptance constructed measure-only fresh rows"))
+        policy_factory = Mock(return_value=object())
         decision = Decision(
             DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
             "a" * 64, "b" * 64, "c" * 64, "d" * 64)
@@ -119,9 +121,11 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
                     _instruments=Mock(return_value=(SimpleNamespace(case=SimpleNamespace()),)),
                     case_census_digest=Mock(return_value="e" * 64),
                     _cohort=Mock(return_value=object()),
-                    FoundationRetentionPolicy=Mock(return_value=object()),
+                    FoundationRetentionPolicy=policy_factory,
                     factory_complete_solver=Mock(side_effect=((object(), "b" * 64),
                                                               (object(), "c" * 64))),
+                    factory_parent_assessment_identity=Mock(return_value=object()),
+                    use_parent_assessment=Mock(return_value=(object(), ParentAssessmentCacheReceipt("1" * 64, "2" * 64, "3" * 64, False))),
                     evaluate_foundation_fixed_school_candidate=Mock(return_value=decision),
                 ):
             result = evaluate_factory_retention_candidate(
@@ -133,7 +137,11 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertTrue(issued.accepted)
         self.assertEqual(issued.parent_generation, "d" * 64)
         self.assertEqual(issued.candidate_generation, "d" * 64)
+        self.assertEqual(result.parent_assessment_cache.assessment_sha256, "2" * 64)
         self.assertEqual(result.candidate_generation_authority_sha256, "f" * 64)
+        self.assertEqual(
+            policy_factory.call_args.args[2], (),
+            "a virgin accepted parent must not fabricate protected capability baselines")
         retained = SimpleNamespace(optimizer_step=1, step_proofs=())
         with patch.object(acceptance_owner, "candidate_identity_digest",
                           return_value="d" * 64), self.assertRaises(BilqisError):

@@ -1,0 +1,15 @@
+{
+  "checks": [
+    "keyboard-local-scroll",
+    "expanded-copy",
+    "historical-provenance",
+    "measured-zero",
+    "one-byte",
+    "typed-refs",
+    "forced-colors"
+  ],
+  "width": {
+    "viewport": 320,
+    "document": 320
+  }
+}

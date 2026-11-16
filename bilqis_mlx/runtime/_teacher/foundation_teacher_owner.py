@@ -109,7 +109,8 @@ def current_foundation_teacher_projection(run_dir):
 
 
 def select_foundation_priority_visit(
-        run_dir, source_context, atlas_artifact_path, *, program, school):
+        run_dir, source_context, atlas_artifact_path, *, program, school,
+        progress=None):
     """Compose C16.3 bootstrap with the production C03.4 priority owner."""
     from bilqis_mlx.learning.learning_experiment import Settings
     from bilqis_mlx.runtime.accepted_priority_visit import select_accepted_priority_visit
@@ -120,7 +121,8 @@ def select_foundation_priority_visit(
     projection = current_foundation_teacher_projection(run_dir)
     epoch = restore_teacher_lineage(projection.teacher_state)
     authority = issue_foundation_priority_authority(
-        run_dir, source_context, parent, epoch, atlas_artifact_path)
+        run_dir, source_context, parent, epoch, atlas_artifact_path,
+        teacher_state=projection.teacher_state, progress=progress)
     bootstrap = {"legacy_receipt": None, "adaptation": None, "prior_region": None}
     if "c03_lineage" not in parent.teacher_state:
         owned = foundation_teacher_bootstrap()
@@ -129,14 +131,20 @@ def select_foundation_priority_visit(
             "adaptation": owned.adaptation,
             "prior_region": owned.prior_region,
         }
-    return select_accepted_priority_visit(
+    if progress is not None:
+        progress("teacher: selecting current priority visit")
+    result = select_accepted_priority_visit(
         run_dir, source_context, authority.frontier, authority.history,
         authority.planning,
         authority.offers, historical_teacher_policy, school,
         random.Random(parent.teacher_state["next_seed"]), Settings(),
         program=program, now=authority.now,
         total_capabilities=len(source_context.release.execution_plan.capabilities),
+        accepted_parent=parent, planning_generation=authority.planning_generation,
         **bootstrap)
+    if progress is not None:
+        progress(f"teacher: priority selection complete ({result.status})")
+    return result
 
 
 def accepted_teacher_trajectory(visit: BoundTeacherVisit) -> TeacherTrajectoryAdvance:

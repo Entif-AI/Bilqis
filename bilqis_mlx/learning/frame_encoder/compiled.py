@@ -141,6 +141,13 @@ class CompiledEncoderInput:
             object.__setattr__(
                 self, "packed_frame_artifact_owner",
                 PackedFrameArtifactOwner(self.compiled))
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_compiled_input_launch_trusted,
+        )
+        if (b11_compiled_input_launch_trusted(self)
+                and hasattr(self, "_groups") and hasattr(self, "_projections")
+                and hasattr(self, "member_requests") and hasattr(self, "atomic_handles")):
+            return
         source_asts = self.source_asts or (None,) * len(self.compiled.rows)
         receipts = self.partial_forest_receipts or (None,) * len(self.compiled.rows)
         checked = tuple(

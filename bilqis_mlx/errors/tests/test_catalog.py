@@ -13,10 +13,10 @@ class CatalogTests(unittest.TestCase):
     def test_frozen_catalog_order_and_complete_contracts(self):
         payload = json.dumps([asdict(spec) for spec in CATALOG[:-10]],
                              sort_keys=True, separators=(",", ":"))
-        self.assertEqual(len(CATALOG), 129)
+        self.assertEqual(len(CATALOG), 133)
         self.assertEqual(hashlib.sha256(payload.encode()).hexdigest(),
-                         "80ec114d560fa1e5e178957305f7ef446812660110ad9d0206d1b58c32778c26")
-        self.assertEqual(len(BY_CODE), 129)
+                         "753528902fed2b4d2ddd844ad07e8494b2dc7746f2dcc61f8cd4fd39a0b704cc")
+        self.assertEqual(len(BY_CODE), 133)
         self.assertIs(BY_CODE["SCHOOL.STATE.COURSE_DIGEST_MISMATCH"],
                       SCHOOL.STATE.COURSE_DIGEST_MISMATCH)
         self.assertIs(CATALOG[-1], SCHOOL.BAMF_PACKAGE.INVALID)

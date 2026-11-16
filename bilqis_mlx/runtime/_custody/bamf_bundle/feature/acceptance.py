@@ -6,7 +6,10 @@ from pathlib import Path
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import (
-    ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, AcceptedCandidateBinding, candidate_identity_digest,
+    ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+    EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+    EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+    AcceptedCandidateBinding, candidate_identity_digest,
 )
 
 from ..atlas_admission import (
@@ -42,6 +45,46 @@ def accepted_generation(pointer_path: Path):
                 or student.parent_manifest_sha256 != pointer["parent_manifest_sha256"]):
             invalid("BAMF_FEATURE_POINTER_DRIFT")
     return pointer, student
+
+
+def _require_retention_binding(student, binding) -> None:
+    if isinstance(binding, (ParsedAtlasAdmissionBinding, ParsedFactoryReleaseAdmissionBinding)):
+        return
+    if (binding.schema_version not in (
+            ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA,
+            MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_ACCEPTANCE_SCHEMA,
+            EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+            EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
+            or binding.step_proof_sha256 != tuple(
+                proof.digest for proof in student.retained_state.step_proofs)):
+        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    from bilqis_mlx.learning._retention._atlas_acceptance_records import require_closure_proofs
+    from ..motif.transition import is_motif_allocation_transition
+    if ((binding.schema_version in (
+            MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+            EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA))
+            != is_motif_allocation_transition(student.transition)):
+        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    if binding.schema_version in (
+            CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+            EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA):
+        if binding.source_authority_registry_sha256 != student.correction_frontier.get(
+                "source_authority_registry_sha256"):
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    if binding.schema_version in (
+            MOTIF_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_ACCEPTANCE_SCHEMA,
+            EXACT_CLOSURE_ACCEPTANCE_SCHEMA, EXACT_MOTIF_ACCEPTANCE_SCHEMA,
+            EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA):
+        from ..genesis.records import successor_candidate_identity_digest
+        if binding.generation_authority_sha256 != successor_candidate_identity_digest(student):
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    if binding.schema_version in (
+            EXACT_ACCEPTANCE_SCHEMA, EXACT_CLOSURE_ACCEPTANCE_SCHEMA,
+            EXACT_MOTIF_ACCEPTANCE_SCHEMA, EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA):
+        from ..records import canonical
+        if binding.teacher_state_sha256 != sha(canonical(dict(student.teacher_state))):
+            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    require_closure_proofs(binding, student.retained_state.step_proofs)
 
 
 def accepted_binding_for_manifest(
@@ -89,26 +132,7 @@ def accepted_binding_for_manifest(
             or binding.candidate_identity_sha256
             != candidate_identity_digest(student.retained_state)):
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-    if (not isinstance(binding, (
-            ParsedAtlasAdmissionBinding, ParsedFactoryReleaseAdmissionBinding))
-            and (binding.schema_version not in (ACCEPTANCE_SCHEMA, CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
-                 or binding.step_proof_sha256 != tuple(
-                     proof.digest for proof in student.retained_state.step_proofs))):
-        invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-    if not isinstance(binding, (ParsedAtlasAdmissionBinding, ParsedFactoryReleaseAdmissionBinding)):
-        from bilqis_mlx.learning._retention._atlas_acceptance_records import require_closure_proofs
-        from ..motif.transition import is_motif_allocation_transition
-        if ((binding.schema_version == MOTIF_CLOSURE_ACCEPTANCE_SCHEMA)
-                != is_motif_allocation_transition(student.transition)):
-            invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-        if binding.schema_version in (CLOSURE_ACCEPTANCE_SCHEMA, MOTIF_CLOSURE_ACCEPTANCE_SCHEMA):
-            if binding.source_authority_registry_sha256 != student.correction_frontier.get("source_authority_registry_sha256"):
-                invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-        if binding.schema_version == MOTIF_CLOSURE_ACCEPTANCE_SCHEMA:
-            from ..genesis.records import successor_candidate_identity_digest
-            if binding.generation_authority_sha256 != successor_candidate_identity_digest(student):
-                invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
-        require_closure_proofs(binding, student.retained_state.step_proofs)
+    _require_retention_binding(student, binding)
     parent_anchor = parent_acceptance_anchor_from_manifest(
         run_dir, manifest_sha256)
     parent_sha = student.parent_manifest_sha256

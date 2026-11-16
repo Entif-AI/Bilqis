@@ -178,10 +178,13 @@ class DependencyEvidenceTests(unittest.TestCase):
         manifest = json.loads((root / 'workstack.json').read_text())
         registry = json.loads((root / 'children/registry.json').read_text())
         numbers = json.loads((root / 'issue-map.json').read_text())
+        release_overrides = json.loads(
+            (root / 'release-boundary-overrides.json').read_text())
         mirrors = {e['key']: (root / 'children' / (e['key'] + '.md')).read_bytes()
                    for e in registry['entries']}
         report = validate_workstack(manifest, registry, numbers, mirrors,
-            evidence_sources=load_dependency_sources(root, registry))
+            evidence_sources=load_dependency_sources(root, registry),
+            release_overrides=release_overrides)
         self.assertEqual(report['child_count'], len(registry['entries']))
         self.assertEqual(report['registry_integrity'], 'valid')
         self.assertEqual(report['status'], 'valid')

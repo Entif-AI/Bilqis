@@ -1,0 +1,140 @@
+.episode-diff-wrap {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  overflow: auto;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.episode-diff {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: var(--type-label);
+  font-variant-numeric: tabular-nums;
+}
+
+.episode-diff caption {
+  padding: var(--space-2) 0;
+  color: var(--text-muted);
+  text-align: left;
+  caption-side: top;
+}
+
+.episode-diff th,
+.episode-diff td {
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.episode-diff thead th {
+  position: sticky;
+  top: 0;
+  background: var(--surface-1);
+  color: var(--text-muted);
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.episode-diff tbody th {
+  position: sticky;
+  left: 0;
+  background: var(--canvas);
+  font-weight: 650;
+}
+
+.episode-diff tr[data-state="partial"] td,
+.episode-diff tr[data-state="missing"] td {
+  color: var(--text-muted);
+}
+
+.episode-comparison-note {
+  margin: var(--space-3) 0 0;
+  max-width: 760px;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.episode-outcome {
+  padding: var(--space-5);
+  border-left: 4px solid var(--border-strong);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  background: var(--surface-1);
+}
+
+.episode-outcome[data-outcome="retained"] {
+  border-left-color: var(--healthy);
+}
+
+.episode-outcome[data-outcome="rejected"] {
+  border-left-color: var(--invalid);
+}
+
+.episode-outcome[data-outcome="unknown"] {
+  border-left-style: dashed;
+  border-left-color: var(--attention);
+}
+
+.episode-transition {
+  display: grid;
+  grid-template-columns: minmax(120px, .5fr) auto minmax(120px, .5fr) minmax(260px, 1fr);
+  align-items: center;
+  gap: var(--space-4);
+  margin-top: var(--space-4);
+}
+
+.episode-transition > div {
+  display: grid;
+  gap: 3px;
+}
+
+.episode-transition dd {
+  font-size: var(--type-subsection);
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.episode-transition-checkpoint dd {
+  font-size: var(--type-label);
+  font-weight: 500;
+}
+
+.episode-transition-arrow {
+  color: var(--text-muted);
+}
+
+.episode-rollback-table {
+  width: min(760px, 100%);
+  margin-top: var(--space-4);
+  border-collapse: collapse;
+  font-size: var(--type-body);
+}
+
+.episode-rollback-table th,
+.episode-rollback-table td {
+  padding: 9px 10px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.episode-rollback-table thead th {
+  color: var(--text-muted);
+  font-size: var(--type-label);
+}
+
+.episode-proof-marker {
+  display: inline-block;
+  width: 1.3em;
+  font-weight: 800;
+}
+
+.episode-rollback-table tr[data-pass="true"] .episode-proof-marker {
+  color: var(--healthy);
+}
+
+.episode-rollback-table tr[data-pass="false"] .episode-proof-marker {
+  color: var(--invalid);
+}

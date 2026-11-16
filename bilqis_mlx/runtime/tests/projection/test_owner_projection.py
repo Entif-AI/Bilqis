@@ -10,6 +10,7 @@ from unittest.mock import patch
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.compatibility import historical_teacher_policy
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
+from bilqis_mlx.learning.atlas_acceptance import EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA
 from bilqis_mlx.learning.learning_experiment import Settings
 
 from bilqis_mlx.errors import BilqisError
@@ -69,6 +70,42 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
 
 
 class AcceptedOwnerProjectionTests(GenerationAcceptanceFixture, unittest.TestCase):
+    def test_exact_motif_closure_schema_projects_motif_candidate(self):
+        from bilqis_mlx.runtime.owner_generation_projection import _motif
+
+        binding = SimpleNamespace(
+            schema_version=EXACT_MOTIF_CLOSURE_ACCEPTANCE_SCHEMA,
+            digest="9" * 64,
+        )
+        transition = {
+            "kind": "MOTIF_ALLOCATION",
+            "motif_candidate_sha256": "1" * 64,
+            "approved_context_sha256": "2" * 64,
+            "candidate_allocation_sha256": "3" * 64,
+            "added_pages": 0,
+        }
+        student = SimpleNamespace(
+            transition=transition,
+            run_id="run:fixture",
+            generation=7,
+        )
+        source = SimpleNamespace(student=student, binding=binding)
+        issued = {}
+
+        def issue(**kwargs):
+            issued.update(kwargs)
+            return SimpleNamespace(**kwargs)
+
+        with patch(
+                "bilqis_mlx.runtime.bamf_bundle.motif.transition."
+                "is_motif_allocation_transition", return_value=True), patch(
+                "bilqis_mlx.runtime.bamf_bundle.motif.transition."
+                "validate_motif_allocation_transition"):
+            event = _motif(issue, lambda value: value, source)
+        self.assertIs(issued["kind"], AkashaEventKind.MOTIF_CANDIDATE)
+        self.assertEqual(issued["source_receipt_sha256"], binding.digest)
+        self.assertEqual(event.payload["motif_candidate_sha256"], "1" * 64)
+
     def test_teacher_visit_projects_from_accepted_c03_custody_not_native_name(self):
         parent = self.parent()
         school = SimpleNamespace(
