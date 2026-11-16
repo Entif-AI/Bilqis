@@ -7,6 +7,8 @@ from types import ModuleType, SimpleNamespace
 from unittest.mock import patch
 import pytest
 
+from bilqis_mlx.errors import BilqisError
+
 @dataclass(frozen=True)
 class HParams:
     learning_rate: float
@@ -69,6 +71,9 @@ def priority():
         'bilqis_mlx.runtime.bamf_bundle.currentness_transaction': module(
             refresh_accepted_currentness=lambda transaction, parent: transaction),
         'bilqis_mlx.runtime.factory_candidate_training': module(execute_factory_candidate_step=None),
+        'bilqis_mlx.runtime.lawful_teaching_frontier': module(
+            require_bound_lawful_teaching_frontier=lambda frontier, context, parent: frontier,
+            require_current_lawful_teaching_frontier=lambda frontier, context, parent: frontier),
         'bilqis_mlx.runtime.teacher_policy_selection': module(select_visit_policy=None),
         'bilqis_mlx.semantics.domains': module(contract_digest=None),
         'bilqis_mlx.runtime.accepted_teacher_custody': module(_accepted_parent=None, _c03_projection=None,
@@ -105,10 +110,18 @@ class Offer:
     def require_current(self, context, parent):
         return self.materialized
 
+
+def lawful(*capabilities):
+    ready = ('cap',) if not capabilities else tuple(capabilities)
+    return SimpleNamespace(
+        ready_capability_ids=ready,
+        _planning_generation=Offer._planning_generation,
+    )
+
 def test_execution_owns_rows_policy_and_teacher_rate(priority):
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     selected = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), Visit(identity),
-        {'lr': 0.25, 'nested': {'x': 1}}, {}, 'g', (), '/run')
+        {'lr': 0.25, 'nested': {'x': 1}}, {}, 'g', (), '/run', lawful())
     selected.policy['nested']['x'] = 99
     release = SimpleNamespace(execution_plan=SimpleNamespace(capability_map={
         'cap': SimpleNamespace(teaching_option_ids=('instruction',))}))
@@ -132,7 +145,7 @@ def test_execution_owns_rows_policy_and_teacher_rate(priority):
 def test_execution_reuses_authenticated_planning_parent(priority):
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     selected = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), Visit(identity),
-        {'lr': 0.25}, {}, 'g', (), '/run')
+        {'lr': 0.25}, {}, 'g', (), '/run', lawful())
     release = SimpleNamespace(execution_plan=SimpleNamespace(capability_map={
         'cap': SimpleNamespace(teaching_option_ids=('instruction',))}))
     with patch.object(priority, '_accepted_parent',
@@ -175,7 +188,7 @@ def test_issuer_and_rate_are_required(priority):
         priority.PriorityVisitResult()
     visit = Visit(SimpleNamespace(to_record=lambda: {'visit': 1}))
     selection = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), visit,
-        {'lr': True}, {}, 'g', (), '/run')
+        {'lr': True}, {}, 'g', (), '/run', lawful())
     with patch.object(priority, '_accepted_parent', return_value=('parent', 'cache')), \
          patch.object(priority, '_require_current_visit'):
         with pytest.raises(ValueError):
@@ -189,7 +202,7 @@ def test_stale_offer_rejects_candidate_without_call(priority):
             raise ValueError('C09 hold')
     visit = Visit(SimpleNamespace(to_record=lambda: {'visit': 1}))
     selection = priority._issue_result('TEACHER_SELECTED', 'o', Stale(), visit,
-        {'lr': 0.1}, {}, 'g', (), '/run')
+        {'lr': 0.1}, {}, 'g', (), '/run', lawful())
     with patch.object(priority, '_accepted_parent', return_value=('parent', 'cache')), \
          patch.object(priority, '_require_current_visit'), \
          patch.object(priority, 'execute_factory_candidate_step') as execute:
@@ -227,8 +240,10 @@ def test_preselection_hold_never_calls_policy(priority):
          patch.object(priority, 'salience_priority_features'), \
          patch.object(priority, 'requalify_priority', return_value=qualified), \
          patch.object(priority, 'select_visit_policy') as policy:
-        result = priority.select_accepted_priority_visit('/run', None, frontier, None, None, (),
-            None, school, None, None, program=None, now=1)
+        result = priority.select_accepted_priority_visit('/run', None, frontier, None, None,
+            (('o', qualified.offers[0][1]),),
+            None, school, None, None, program=None, now=1,
+            lawful_frontier=lawful())
     assert result.status == 'NO_ADMISSIBLE_TEACHING'
     assert result.holds == (('o', 'SOURCE_OFFER_HELD'),)
     policy.assert_not_called()
@@ -261,9 +276,73 @@ def test_accepted_selection_calls_policy_once(priority):
          patch.object(priority, 'derive_teacher_visit_identity', return_value=identity), \
          patch.object(priority, 'record_teacher_visit_identity', return_value='recorded'), \
          patch.object(priority, '_issue_bound_visit', return_value=Visit(identity)):
-        result = priority.select_accepted_priority_visit('/run', None, frontier, None, None, (),
-            None, school, None, None, program=None, now=1)
+        result = priority.select_accepted_priority_visit('/run', None, frontier, None, None,
+            (('o', qualified.offers[0][1]),),
+            None, school, None, None, program=None, now=1,
+            lawful_frontier=lawful())
     assert result.status == 'TEACHER_SELECTED'
     assert result.policy == {'lr': 0.5}
     policy.assert_called_once()
     assert policy.call_args.args[2] == 'cap'
+
+
+def test_stale_lawful_frontier_rejects_before_visit_or_source_execution(priority):
+    identity = SimpleNamespace(to_record=lambda: {'visit': 1})
+    selected = priority._issue_result(
+        'TEACHER_SELECTED', 'o', Offer(), Visit(identity),
+        {'lr': 0.1}, {}, 'g', (), '/run', lawful())
+    frontier_owner = sys.modules['bilqis_mlx.runtime.lawful_teaching_frontier']
+    with patch.object(
+            frontier_owner, 'require_bound_lawful_teaching_frontier',
+            side_effect=ValueError('frontier stale')), patch.object(
+                priority, '_require_current_visit') as require_visit, patch.object(
+                priority, 'execute_factory_candidate_step') as execute:
+        with pytest.raises(ValueError, match='frontier stale'):
+            priority.execute_accepted_priority_candidate(
+                selected, object(), 'a', 'b',
+                teacher_hparams=HParams(0.1, (0.9, 0.99), 1e-8, 0),
+                observation=object(), optimizer_step_seed=1, max_norm=1)
+    require_visit.assert_not_called()
+    execute.assert_not_called()
+
+
+def test_held_capability_cannot_reach_visit_or_candidate_execution(priority):
+    identity = SimpleNamespace(to_record=lambda: {'visit': 1})
+    held = SimpleNamespace(
+        ready_capability_ids=(),
+        _planning_generation=Offer._planning_generation,
+    )
+    selected = priority._issue_result(
+        'TEACHER_SELECTED', 'o', Offer(), Visit(identity),
+        {'lr': 0.1}, {}, 'g', (), '/run', held)
+    with patch.object(priority, '_require_current_visit') as require_visit, \
+         patch.object(priority, 'execute_factory_candidate_step') as execute:
+        with pytest.raises(BilqisError) as failure:
+            priority.execute_accepted_priority_candidate(
+                selected, object(), 'a', 'b',
+                teacher_hparams=HParams(0.1, (0.9, 0.99), 1e-8, 0),
+                observation=object(), optimizer_step_seed=1, max_norm=1)
+    assert getattr(failure.value, 'context', {}).get('reason') == (
+        'BAMF_PRIORITY_SELECTION_OUTSIDE_LAWFUL_FRONTIER')
+    require_visit.assert_not_called()
+    execute.assert_not_called()
+
+
+def test_empty_lawful_frontier_returns_no_admissible_without_teacher_policy(priority):
+    planning = SimpleNamespace(parent_candidate_identity_sha256='student-id')
+    empty = SimpleNamespace(
+        ready_capability_ids=(), _planning_generation=planning)
+    school = SimpleNamespace(current_student=SimpleNamespace(sha256='student-id'))
+    parent = SimpleNamespace(retained_state='student')
+    with patch.object(
+            priority, '_accepted_parent', return_value=(parent, object())), patch.object(
+                priority, 'candidate_identity_digest', return_value='student-id'), patch.object(
+                priority, '_c03_projection') as projection, patch.object(
+                priority, 'select_visit_policy') as policy:
+        result = priority.select_accepted_priority_visit(
+            '/run', object(), None, None, None, (), None, school, None, None,
+            program=None, now=1, lawful_frontier=empty)
+    assert result.status == 'NO_ADMISSIBLE_TEACHING'
+    assert result.holds == ()
+    projection.assert_not_called()
+    policy.assert_not_called()

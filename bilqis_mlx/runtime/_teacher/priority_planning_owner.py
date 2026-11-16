@@ -92,8 +92,8 @@ def build_priority_planning_epoch(
         plan, ledger, checkpoint, source)
 
 
-def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=None):
-    """Project current A09 state from accepted custody without requiring a C07 lease."""
+def priority_planning_from_epoch(epoch, *, progress=None):
+    """Project C03 planning from one already-derived accepted A09 epoch."""
     from bilqis_mlx.factory import candidate_realizations
     from bilqis_mlx.factory.atlas_frontier_progress import plan_frontier_progress
     from bilqis_mlx.factory.atlas_frontier_selection import (
@@ -101,9 +101,8 @@ def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=
     )
     from bilqis_mlx.runtime.priority_qualification import PriorityPlanningInput
 
-    run_dir = Path(run_dir)
-    epoch = build_priority_planning_epoch(
-        run_dir, source_context, atlas_artifact_path, progress)
+    if type(epoch) is not PriorityPlanningEpoch:
+        _invalid("BAMF_PRIORITY_PLANNING_EPOCH_INVALID")
     current = epoch.current_release
     candidate = epoch.candidate_set
     snapshot = epoch.snapshot
@@ -132,8 +131,16 @@ def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=
     return PriorityPlanningInput(planning_progress, closure, selected, projection)
 
 
+def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=None):
+    """Project current A09 state from accepted custody without requiring a C07 lease."""
+    epoch = build_priority_planning_epoch(
+        Path(run_dir), source_context, atlas_artifact_path, progress)
+    return priority_planning_from_epoch(epoch, progress=progress)
+
+
 __all__ = (
     "PriorityPlanningEpoch",
     "build_priority_planning_epoch",
     "priority_planning",
+    "priority_planning_from_epoch",
 )
