@@ -18,7 +18,6 @@ import bilqis_mlx.runtime.retention.local_screen as local_screen
 from bilqis_mlx.runtime.factory_retention_owner import (
     FactoryRetentionEvaluation, _cohort, evaluate_factory_retention_candidate,
 )
-from bilqis_mlx.runtime._factory_parent_assessment_cache import ParentAssessmentCacheReceipt
 from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import _screen_inputs
 from bilqis_mlx.runtime.capability_retention import Decision, DecisionStatus
 from bilqis_mlx.runtime.baseline.lifecycle import BaselineLifecycleState
@@ -59,8 +58,8 @@ def _foundation_owner_fixture():
         SimpleNamespace(delivery_capability=target, release_sha256=release_sha),
     ))
     fixed = SimpleNamespace(rows=({"id": "fixed"},), seed=7)
-    fresh = Mock(side_effect=AssertionError(
-        "foundation acceptance constructed measure-only fresh rows"))
+    fresh = Mock(return_value=SimpleNamespace(
+        seed=13, rows=({"id": "fresh", "capability": target},)))
     policy_factory = Mock(return_value=object())
     decision = Decision(
         DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
@@ -119,16 +118,18 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                         source_authority_registry_sha256=None))),
                 require_current_retention_source_rows=Mock(
                     return_value=(plan, target_plan, ((target, 7, ({"id": "row"},)),))),
-                _local_retention_instruments=Mock(return_value=(instrument,)),
                 candidate_identity_digest=Mock(return_value="d" * 64),
                 _owner_seed=Mock(return_value=11),
                 read_current=Mock(return_value={"factory_release_sha256": release_sha}),
                 frontier_exam=Mock(return_value={"factory_release_sha256": release_sha}),
                 load_frontier_cohort=Mock(return_value=fixed),
-                _fresh_rows=fresh,
             ), patch.multiple(
                 local_screen,
                 case_census_digest=Mock(return_value="e" * 64),
+                candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
+                _owner_seed=Mock(return_value=11),
+                _fresh_rows=fresh,
+                _instruments=Mock(return_value=(instrument,)),
                 _cohort=Mock(return_value=SimpleNamespace(
                     rubric_sha256="1" * 64, scope_sha256="2" * 64,
                     policy_sha256="3" * 64, source_sha256="4" * 64,
@@ -136,17 +137,10 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 FoundationRetentionPolicy=policy_factory,
                 factory_complete_solver=Mock(side_effect=(
                     (object(), "b" * 64), (object(), "c" * 64))),
-                factory_parent_assessment_identity=Mock(return_value=SimpleNamespace(
-                    factory_release_sha256="5" * 64,
-                    semantic_catalog_sha256="6" * 64,
-                    source_authority_registry_sha256=None,
-                    correction_frontier_sha256="7" * 64,
-                    evaluation_contract_sha256="8" * 64,
-                    fixed_cohort_sha256="9" * 64)),
-                use_parent_assessment=Mock(return_value=(
-                    object(),
-                    ParentAssessmentCacheReceipt("1" * 64, "2" * 64, "3" * 64, False))),
-                evaluate_foundation_local_candidate=Mock(return_value=decision),
+                evaluate_capabilities=Mock(return_value=object()),
+                AssessmentPair=Mock(return_value=object()),
+                evaluate_target_gate=Mock(return_value=None),
+                finalize_target_first_local_candidate=Mock(return_value=decision),
             ), patch.multiple(
                 owner_screen,
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
@@ -180,7 +174,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(summary["readout"]["changed_parameters"], 1)
         self.assertEqual(summary["readout"]["zero_gradient_changed_parameters"], 0)
 
-    def test_foundation_owner_does_not_construct_measure_only_fresh_cohorts(self):
+    def test_foundation_owner_draws_only_the_fresh_target_before_local_protection(self):
         fixture = _foundation_owner_fixture()
         source, candidate, target, _, fresh, policy_factory, _ = fixture
         result = _evaluate_foundation_owner(*fixture)
@@ -191,7 +185,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertTrue(issued.accepted)
         self.assertEqual(issued.parent_generation, "d" * 64)
         self.assertEqual(issued.candidate_generation, "d" * 64)
-        self.assertEqual(result.parent_assessment_cache.assessment_sha256, "2" * 64)
+        self.assertIsNone(result.parent_assessment_cache)
         self.assertEqual(result.candidate_generation_authority_sha256, "f" * 64)
         self.assertEqual(
             _issued_decision_baseline_ledger_sha256(issued),
@@ -208,9 +202,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
             result.baseline_ledger.state_for(result.baseline_transition.measurement.comparison),
             BaselineLifecycleState.BASELINE_ESTABLISHED,
         )
-        self.assertEqual(
-            policy_factory.call_args.args[2], (),
-            "a virgin accepted parent must not fabricate protected capability baselines")
+        self.assertTrue(all(call.args[2] == () for call in policy_factory.call_args_list))
         retained = SimpleNamespace(optimizer_step=1, step_proofs=())
         with patch.object(acceptance_owner, "candidate_identity_digest",
                           return_value="d" * 64):
@@ -220,7 +212,8 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(
             acceptance_owner._issued_acceptance_baseline_ledger_sha256(bound),
             result.baseline_ledger.digest)
-        fresh.assert_not_called()
+        fresh.assert_called_once()
+        self.assertEqual(fresh.call_args.args[1], (target,))
 
     def test_caller_cannot_construct_evaluation_authority(self):
         with self.assertRaises(Exception):
