@@ -19,6 +19,7 @@ from bilqis_mlx.runtime.factory_retention_owner import (
 from bilqis_mlx.runtime._factory_parent_assessment_cache import ParentAssessmentCacheReceipt
 from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import _screen_inputs
 from bilqis_mlx.runtime.capability_retention import Decision, DecisionStatus
+from bilqis_mlx.runtime.baseline.lifecycle import BaselineLifecycleState
 from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_fixed_diagnostic import (
     _optimizer_delta_summary,
 )
@@ -166,6 +167,11 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(
             _issued_decision_baseline_ledger_sha256(issued),
             result.baseline_ledger.digest)
+        self.assertIsNotNone(result.baseline_transition)
+        self.assertIs(
+            result.baseline_ledger.state_for(result.baseline_transition.measurement.comparison),
+            BaselineLifecycleState.BASELINE_ESTABLISHED,
+        )
         self.assertEqual(
             policy_factory.call_args.args[2], (),
             "a virgin accepted parent must not fabricate protected capability baselines")

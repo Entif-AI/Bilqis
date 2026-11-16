@@ -204,14 +204,16 @@ def _final_fixed_school_decision(
         scores[capability] = {"before": before, "after": after, "total": total}
 
     target_delta = fixed_pair.delta(target_capability)
-    if target_delta < 0 and target_capability in measured_set:
+    target_measured = target_capability in measured_set
+    if target_delta < 0 and target_measured:
         return Decision(
             DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",
             parent_generation, candidate_generation,
             evidence_digest(pair_digests, target_capability), policy.digest(),
             blocking_capability=target_capability,
             baseline_coverage=coverage)
-    if target_delta <= 0:
+    blocking_scope = None
+    if target_delta <= 0 and target_measured:
         reason = "NO_MEASURABLE_TARGET_GAIN"
     else:
         protected = tuple(references)
@@ -233,7 +235,6 @@ def _final_fixed_school_decision(
             reason = "FIXED_LESSON_GRADE_REGRESSION"
             blocking_scope = "fixed_group:" + target_group
         else:
-            blocking_scope = None
             for group in policy.protected_groups:
                 grade = tuple(capability for capability in measured
                               if census[capability] == group)
@@ -252,7 +253,7 @@ def _final_fixed_school_decision(
         else DecisionStatus.REJECT,
         reason, parent_generation, candidate_generation,
         evidence_digest(pair_digests, None), policy.digest(),
-        blocking_scope=(blocking_scope if target_delta > 0 else None),
+        blocking_scope=blocking_scope,
         baseline_coverage=coverage)
 
 
