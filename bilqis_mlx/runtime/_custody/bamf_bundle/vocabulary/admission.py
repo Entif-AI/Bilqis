@@ -273,7 +273,8 @@ def _stage_vocabulary_extension_from_accepted(
         dict(parent.evaluation_contract),
         {"schema": "bilqis.mlx.bamf-generation-transition/v1",
          "kind": "PARAMETER_EXTENSION", "invalidate_derived_caches": True},
-        (event,), parent.run_identity, parent.baseline_evidence)
+        (event,), parent.run_identity, parent.baseline_evidence,
+        parent.learning_health_state)
     return _issue_a02_staged_vocabulary_extension(candidate, receipt)
 
 

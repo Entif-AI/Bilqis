@@ -7,7 +7,9 @@ import random
 from bilqis_mlx.compatibility.legacy_trainer_authority import live_authority
 from bilqis_mlx.compatibility import historical_teacher_policy
 from bilqis_mlx.learning.teacher_lineage import adaptation_authority_ref
-from bilqis_mlx.learning.teacher_lineage import advance_priority_rotation
+from bilqis_mlx.learning.teacher_lineage import (
+    advance_priority_rotation, record_instruction_history,
+)
 from bilqis_mlx.learning.teacher_lineage import restore_teacher_lineage
 from bilqis_mlx.learning.teacher_lineage_records import digest, invalid
 from bilqis_mlx.runtime.accepted_teacher_custody import BoundTeacherVisit
@@ -214,11 +216,16 @@ def derive_accepted_teacher_successor(
         next_seed=trajectory.next_seed, cursor=trajectory.cursor,
         delivery_events=delivery_events)
     from dataclasses import replace
-    return replace(
-        candidate,
-        teacher_state=advance_priority_rotation(
-            candidate.teacher_state, visit.identity.capability_id),
-    )
+    teacher_state = advance_priority_rotation(
+        candidate.teacher_state, visit.identity.capability_id)
+    for event in delivery_events:
+        if (isinstance(event, dict)
+                and event.get("event") == "BAMF_INSTRUCTION_HISTORY"
+                and event.get("schema") == "bilqis.bamf.instruction-history/v1"):
+            teacher_state = record_instruction_history(
+                teacher_state, event.get("capability_ids", ()),
+                state=event.get("state"))
+    return replace(candidate, teacher_state=teacher_state)
 
 
 __all__ = (

@@ -13,6 +13,8 @@ from .teacher_vnext_replay import (
     TeacherEpoch, bind_teacher_successor, refresh_teacher_region,
 )
 
+MAX_INSTRUCTION_HISTORY_CAPABILITIES = 4096
+
 
 def _lineage_payload(epoch: TeacherEpoch, *, adaptation: Mapping,
                      source_teacher_sha256: str) -> dict:
@@ -89,6 +91,27 @@ def initialize_teacher_lineage(
         teacher_epoch=0, next_seed=next_seed, cursor=cursor)
 
 
+def _validate_optional_teacher_history(
+        teacher_state: Mapping, actual_outer: set[str]) -> None:
+    priority_outer = {"priority_counter", "priority_last_selected"}
+    instruction_outer = {"instruction_history_state", "instruction_seen_capabilities"}
+    if priority_outer <= actual_outer:
+        counter = teacher_state["priority_counter"]
+        selected = teacher_state["priority_last_selected"]
+        if (type(counter) is not int or counter < 0 or not isinstance(selected, Mapping)
+                or any(not isinstance(key, str) or not key or type(value) is not int
+                       or not 0 < value <= counter for key, value in selected.items())):
+            invalid("TEACHER_PRIORITY_ROTATION_INVALID")
+    if instruction_outer <= actual_outer:
+        seen = teacher_state["instruction_seen_capabilities"]
+        if (teacher_state["instruction_history_state"] not in {"COMPLETE", "PARTIAL"}
+                or not isinstance(seen, (list, tuple))
+                or len(seen) > MAX_INSTRUCTION_HISTORY_CAPABILITIES
+                or any(not isinstance(item, str) or not item for item in seen)
+                or len(set(seen)) != len(seen)):
+            invalid("TEACHER_INSTRUCTION_HISTORY_INVALID")
+
+
 def restore_teacher_lineage(
         teacher_state: Mapping, *, expected_adaptation: Mapping | None = None) -> TeacherEpoch:
     """Reconstruct exact TeacherEpoch while rejecting altered nested or outer custody."""
@@ -96,6 +119,7 @@ def restore_teacher_lineage(
         "schema", "teacher_identity", "teacher_epoch", "next_seed", "cursor", "c03_lineage",
     }
     priority_outer = {"priority_counter", "priority_last_selected"}
+    instruction_outer = {"instruction_history_state", "instruction_seen_capabilities"}
     visit_outer = {"last_visit"}
     receipt_outer = {"last_visit", "last_visit_receipt"}
     actual_outer = set(teacher_state) if isinstance(teacher_state, Mapping) else set()
@@ -106,6 +130,10 @@ def restore_teacher_lineage(
                 expected_outer | priority_outer,
                 expected_outer | priority_outer | visit_outer,
                 expected_outer | priority_outer | receipt_outer,
+                expected_outer | instruction_outer,
+                expected_outer | priority_outer | instruction_outer,
+                expected_outer | priority_outer | instruction_outer | visit_outer,
+                expected_outer | priority_outer | instruction_outer | receipt_outer,
             )
             or teacher_state.get("schema") != TEACHER_STATE_SCHEMA
             or not valid_hex(teacher_state.get("teacher_identity"), SHA256_HEX_LENGTH)
@@ -116,13 +144,7 @@ def restore_teacher_lineage(
             or not isinstance(teacher_state.get("cursor"), str)
             or not teacher_state["cursor"]):
         invalid("TEACHER_STATE_INVALID")
-    if priority_outer <= actual_outer:
-        counter = teacher_state["priority_counter"]
-        selected = teacher_state["priority_last_selected"]
-        if (type(counter) is not int or counter < 0 or not isinstance(selected, Mapping)
-                or any(not isinstance(key, str) or not key or type(value) is not int
-                       or not 0 < value <= counter for key, value in selected.items())):
-            invalid("TEACHER_PRIORITY_ROTATION_INVALID")
+    _validate_optional_teacher_history(teacher_state, actual_outer)
     lineage = teacher_state["c03_lineage"]
     expected_lineage = {
         "schema", "historical_replay", "adaptation_authority", "student_sha256",
@@ -190,6 +212,33 @@ def advance_priority_rotation(teacher_state: Mapping, capability_id: str) -> dic
     return result
 
 
+def instruction_history(teacher_state: Mapping) -> tuple[str, tuple[str, ...]]:
+    """Read durable instruction coverage without treating selection as instruction."""
+    restore_teacher_lineage(teacher_state)
+    if "instruction_history_state" in teacher_state:
+        return (
+            teacher_state["instruction_history_state"],
+            tuple(teacher_state["instruction_seen_capabilities"]),
+        )
+    counter, selected = priority_rotation_state(teacher_state)
+    state = "COMPLETE" if counter == 0 and not selected else "PARTIAL"
+    return state, tuple(sorted(selected))
+
+
+def record_instruction_history(
+        teacher_state: Mapping, capabilities, *, state: str | None = None) -> dict:
+    current_state, seen = instruction_history(teacher_state)
+    incoming = tuple(capabilities)
+    if (any(not isinstance(item, str) or not item for item in incoming)
+            or len(set(incoming)) != len(incoming)):
+        invalid("TEACHER_INSTRUCTION_HISTORY_INVALID")
+    result = dict(teacher_state)
+    result["instruction_history_state"] = state or current_state
+    result["instruction_seen_capabilities"] = sorted(set(seen) | set(incoming))
+    restore_teacher_lineage(result)
+    return result
+
+
 def bind_next_teacher_epoch(
         teacher_state: Mapping, new_student: Mapping, *,
         bank_identity: str, plasticity_identity: str) -> TeacherEpoch:
@@ -232,6 +281,9 @@ def advance_teacher_lineage(
     state = dict(projected.teacher_state)
     state["priority_counter"] = counter
     state["priority_last_selected"] = dict(sorted(selected.items()))
+    history_state, history_seen = instruction_history(previous_state)
+    state["instruction_history_state"] = history_state
+    state["instruction_seen_capabilities"] = list(history_seen)
     restore_teacher_lineage(state)
     return TeacherCustodyProjection(
         state, projected.teacher_identity, projected.teacher_epoch)
@@ -241,5 +293,6 @@ __all__ = (
     "ADAPTATION_SCHEMA", "HISTORICAL_REPLAY_HEAD", "LINEAGE_SCHEMA",
     "TeacherCustodyProjection", "adaptation_authority_ref", "advance_teacher_lineage",
     "advance_priority_rotation", "bind_next_teacher_epoch", "initialize_teacher_lineage",
+    "instruction_history", "record_instruction_history",
     "priority_rotation_state", "restore_teacher_lineage",
 )

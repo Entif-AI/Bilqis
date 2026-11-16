@@ -38,6 +38,7 @@ def test_c05_progress_uses_actual_owner_blocker_before_issued_token_loses_it():
         evaluate_candidate=lambda *a, **kw: evaluation,
         issue_decision=lambda e: decision, identity_delta=lambda old: {},
         resource_observation=lambda *a, **kw: {}, derive_successor=lambda *a, **kw: None,
+            bind_baseline_successor=lambda evaluation, successor: successor,
         prepared_visit_type=lambda *args, **kw: N(status=args[0], **kw),
         emit_progress=lambda callback, message: callback(message),
         measure_observed_phase_fn=lambda *a: nullcontext())

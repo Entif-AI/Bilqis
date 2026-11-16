@@ -245,13 +245,26 @@ def _observed_retention_pairs(
 def _emit_retention_scorecard(
         observer, target_capability, policy, stage,
         target_pair, fixed_school_pair):
+    from bilqis_mlx.diagnostics.assessment_signals import optional_prediction_signals
     measured = (set(policy.baseline_coverage.measured_capabilities)
                 if policy.baseline_coverage is not None
                 else set(dict(policy.capability_groups)))
     emit(observer, retention_scorecard={
         "schema": "bilqis.bamf.retention-scorecard/v1",
+        "fixed_cohort_sha256": fixed_school_pair.parent.cohort.expected_case_digest,
+        "rubric_sha256": fixed_school_pair.parent.cohort.rubric_sha256,
+        "source_sha256": fixed_school_pair.parent.cohort.source_sha256,
         "evidence_stage": stage.value,
         "target_capability": target_capability,
+        "learning_signals": optional_prediction_signals(
+            observer, fixed_school_pair.candidate, target_capability),
+        "learning_target": {
+            "capability_id": target_capability,
+            "state": ("MEASURED" if target_capability in measured else "NOT_MEASURED"),
+            "before": fixed_school_pair.parent.score(target_capability)[0],
+            "after": fixed_school_pair.candidate.score(target_capability)[0],
+            "total": fixed_school_pair.parent.score(target_capability)[1],
+        },
         "target": {
             "capability_id": target_capability,
             "state": ("MEASURED" if target_capability in measured else "NOT_MEASURED"),

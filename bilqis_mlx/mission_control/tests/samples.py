@@ -69,7 +69,11 @@ SEMANTIC_HELD_META = RecordMeta(
 
 from bilqis_mlx.mission_control.contracts.trainer import (
     CandidateStepPerformance, TrainerObservation, TrainerObservationV2,
-    TrainerObservationV3, TrainerObservationV4,
+    TrainerObservationV3, TrainerObservationV4, TrainerObservationV5,
+)
+from bilqis_mlx.mission_control.contracts.trainer_evidence import (
+    LearningHealthCheckpoint, LearningHealthEvidence, LearningHealthScore,
+    LearningHealthWarning,
 )
 
 SAMPLES = (
@@ -280,5 +284,40 @@ SAMPLES += (
         broad_certification_wall_seconds=None,
         visit_evidence=None, generated_grade_evidence=None,
         retention_stage_timings=(),
+    ),
+)
+
+SAMPLES += (
+    TrainerObservationV5(
+        meta=RecordMeta('observed:sample-v5', RUN, 120, 118, None,
+                        CoverageState.PARTIAL, AuthorityClass.MEASURED),
+        **{field.name: getattr(SAMPLES[-1], field.name)
+           for field in __import__('dataclasses').fields(TrainerObservationV4)
+           if field.name != 'meta'},
+        learning_health=LearningHealthEvidence(
+            capability_id='future:capability', grade_id='future:grade',
+            grade_definition_id='future:definition',
+            grade_definition_version='v1', epoch_sha256=D1,
+            state='MEASURED', history_state='VALID', history_error=None,
+            first=LearningHealthScore(3, 5),
+            latest=LearningHealthScore(4, 5),
+            best=LearningHealthScore(4, 5),
+            comparable_points=2,
+            recent_checkpoints=(LearningHealthCheckpoint(D2, 9, 4, 5),),
+            gain_from_first=1, regressed_from_first=False,
+            distance_to_mastery_state='NOT_MEASURED',
+            distance_to_mastery=None, fixed_screen_errors=1,
+            qualification_state='NOT_MEASURED',
+            protected_regression_state='NOT_MEASURED',
+            regressed_protected_capabilities=(),
+            prior_certified_surface_ids=(),
+            certified_surface_regression_state='NOT_MEASURED',
+            warnings=tuple(LearningHealthWarning(
+                signal, 'NOT_MEASURED', 'Fixture evidence unavailable', 0)
+                for signal in (
+                    'REPETITIVE_ANSWERS', 'CHANCE_LEVEL_OR_LAGGING',
+                    'LACK_OF_DURABLE_GAIN', 'DISCONNECTED_PREREQUISITES',
+                    'EXCESSIVE_INTRODUCTORY_COMPLEXITY')),
+        ),
     ),
 )

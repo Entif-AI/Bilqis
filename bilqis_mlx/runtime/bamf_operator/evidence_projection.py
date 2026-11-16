@@ -107,6 +107,11 @@ def merge_retention_scorecard(visit, scorecard):
     result["protected_scope_state"] = "PARTIAL"
     result["retention_economics_state"] = "PARTIAL"
     result["retention_policy_sha256"] = scorecard.get("policy_sha256")
+    result["evidence_stage"] = scorecard.get("evidence_stage")
+    result["learning_signals"] = deepcopy(scorecard.get("learning_signals", ()))
+    result["learning_target"] = deepcopy(scorecard.get("learning_target"))
+    for field in ("fixed_cohort_sha256", "rubric_sha256", "source_sha256"):
+        result[field] = scorecard.get(field)
     result["probe_each"] = scorecard.get("probe_each")
     result["baseline_coverage"] = deepcopy(scorecard.get("baseline_coverage"))
     return result
