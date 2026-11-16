@@ -41,4 +41,3 @@ export function disclosureHost() {
     disclosure(id) { return details.get(id) ?? null; },
   };
 }
-

@@ -154,4 +154,3 @@ test("disconnected observations preserve last values without claiming current ac
   assert.match(renderHomeMarkup(model), /Disconnected · last observed/);
   assert.equal(model.observed.current.retention_completed, 1);
 });
-
