@@ -5,6 +5,10 @@ import unittest
 from unittest.mock import patch
 
 import bilqis_mlx.runtime.atlas_model_microbatch as microbatch_impl
+import bilqis_mlx.learning._engram.atlas_engram_source_context as motif_context_impl
+import bilqis_mlx.learning.atlas_engram_reads.source_owner as motif_read_impl
+import bilqis_mlx.learning.source_atoms.embedding as source_embedding_impl
+import bilqis_mlx.semantics.atlas_features.formal as formal_features_impl
 from bilqis_mlx.runtime.factory_candidate_microbatch import (
     execute_factory_logical_batch,
 )
@@ -17,15 +21,43 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
     def test_four_distinct_factory_rows_use_one_vectorized_gradient_launch(self):
         rows, prepared = self.prepare("A.IDENTITY", 37172, 4)
         resource_plan, _ = _resource_plan(prepared, self.candidate, None)
+        self.assertIs(
+            prepared.compiled_rows[0].source_execution_authority.snapshot,
+            prepared.semantic_context.snapshot,
+        )
         with patch.object(
-                microbatch_impl, "_decode_bamf_producer_row",
-                wraps=microbatch_impl._decode_bamf_producer_row) as row_decode, \
+                motif_context_impl, "load_pinned_atlas_snapshot",
+                side_effect=AssertionError("B11 reopened Atlas")) as atlas_reload, \
+                patch.object(
+                    motif_context_impl, "public_formal_context",
+                    side_effect=AssertionError("B11 redrew motif source")) as motif_redraw, \
+                patch.object(
+                    motif_read_impl, "lookup_source_pinned_frame_schema",
+                    side_effect=AssertionError("B11 reopened released frame schemas")) as schema_reload, \
+                patch.object(
+                    formal_features_impl, "load_pinned_atlas_snapshot",
+                    side_effect=AssertionError("B11 reopened formal Atlas")) as formal_atlas, \
+                patch.object(
+                    formal_features_impl, "lookup_source_pinned_frame_schema",
+                    side_effect=AssertionError("B11 reopened formal schema")) as formal_schema, \
+                patch.object(
+                    formal_features_impl, "source_graph_for_adapter",
+                    side_effect=AssertionError("B11 reopened formal source graph")) as formal_graph, \
+                patch.object(
+                    source_embedding_impl, "_build_source_atom_handoff_from_snapshot",
+                    side_effect=AssertionError("B11 rebuilt source handoff")) as atom_redraw, \
+                patch.object(
+                    source_embedding_impl, "_require_embedding_ready_from_snapshot",
+                    side_effect=AssertionError("B11 revalidated source handoff")) as atom_recheck, \
+                patch.object(
+                    microbatch_impl, "_decode_bamf_producer_row",
+                    wraps=microbatch_impl._decode_bamf_producer_row) as row_decode, \
                 patch.object(
                     microbatch_impl, "loss_bearing_bamf",
                     wraps=microbatch_impl.loss_bearing_bamf) as row_loss:
             gradient, authorities, targets = execute_factory_logical_batch(
                 dict(self.candidate.retained_state.optimizer.parameters),
-                prepared, self.context, self.feature_context.snapshot,
+                prepared, self.context, prepared.semantic_context.snapshot,
                 self.generation, None, resource_plan)
         row_ids = tuple(row["id"] for row in rows)
 
@@ -35,6 +67,14 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
         self.assertEqual(gradient.materialization_barriers, 1)
         self.assertEqual(gradient.scalar_fallback_rows, 0)
         self.assertGreaterEqual(gradient.wall_seconds, 0.0)
+        self.assertEqual(atlas_reload.call_count, 0)
+        self.assertEqual(motif_redraw.call_count, 0)
+        self.assertEqual(schema_reload.call_count, 0)
+        self.assertEqual(formal_atlas.call_count, 0)
+        self.assertEqual(formal_schema.call_count, 0)
+        self.assertEqual(formal_graph.call_count, 0)
+        self.assertEqual(atom_redraw.call_count, 0)
+        self.assertEqual(atom_recheck.call_count, 0)
         self.assertEqual(row_decode.call_count, 0)
         self.assertEqual(row_loss.call_count, 0)
         self.assertEqual(len(gradient.loss_executions), 4)

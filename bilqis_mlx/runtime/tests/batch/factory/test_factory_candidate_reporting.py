@@ -30,6 +30,7 @@ class FactoryCandidateReportingTests(unittest.TestCase):
 
     def test_realized_cost_projects_stage_and_b11_observation_without_device_work(self):
         compiled = lambda positions: SimpleNamespace(
+            source_execution_authority=object(),
             compiled=SimpleNamespace(
                 compiled=SimpleNamespace(rows=(SimpleNamespace(positions=positions),)))
         )
@@ -67,6 +68,8 @@ class FactoryCandidateReportingTests(unittest.TestCase):
         self.assertEqual(cost["b11_autodiff_wall_seconds"], 0.4)
         self.assertEqual(cost["b11_provider_draw_count"], 8)
         self.assertEqual(cost["b11_atlas_reload_count"], 4)
+        self.assertEqual(cost["b11_source_authority_bound_rows"], 2)
+        self.assertEqual(cost["b11_source_cold_requalification_rows"], 0)
         self.assertEqual(cost["c08_gradient_launches"], 2)
         self.assertEqual(cost["c08_vectorized_microbatches"], 1)
         self.assertEqual(cost["logical_rows"], 2)

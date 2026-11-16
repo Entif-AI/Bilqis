@@ -84,7 +84,7 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
     def route_context(self, compiled):
         authority = factory_task_authority(self.context, compiled)
         plan = task_goal_route_plan(
-            authority.goal, compiled, self.feature_context.snapshot,
+            authority.goal, compiled, self.b11_snapshot(compiled),
             self.generation)
         return authority, plan
 

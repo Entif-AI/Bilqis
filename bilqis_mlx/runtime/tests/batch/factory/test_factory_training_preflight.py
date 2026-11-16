@@ -2,7 +2,6 @@
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from bilqis_mlx.runtime.bamf_bundle import authenticate_bamf_execution_feature_context
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
 from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
@@ -67,8 +66,6 @@ class FactoryTrainingPreflightTests(FactoryTrainingBridgeFixture):
             resource_plan, _ = _resource_plan(
                 prepared, parent, split_budget(parent, prepared))
             self.assertEqual(resource_plan.groups, ((0,), (1,)))
-            feature_context = authenticate_bamf_execution_feature_context(
-                parent, str(self.artifact), source_context.run_dir)
             for compiled in prepared.compiled_rows:
                 authority = factory_task_authority(source_context, compiled)
                 self.assertEqual(
@@ -81,7 +78,7 @@ class FactoryTrainingPreflightTests(FactoryTrainingBridgeFixture):
                 plan = task_goal_route_plan(
                     authority.goal,
                     bound,
-                    feature_context.snapshot,
+                    self.b11_snapshot(compiled),
                     generation,
                 )
                 self.assertTrue(targets)

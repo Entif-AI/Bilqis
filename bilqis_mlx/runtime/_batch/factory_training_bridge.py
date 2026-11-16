@@ -180,8 +180,8 @@ def prepare_factory_training_batch(
         atlas_selection=authenticated.selection,
         prepared_model_sources=prepared_model_sources)
     compiled_rows = _bind_b11_rows(
-        source_context, candidate, authenticated, training, source_rows, profile,
-        source_seed=source_seed, source_each=source_each)
+        source_context, candidate, authenticated, training, source_rows,
+        adapter, profile, source_seed=source_seed, source_each=source_each)
     motif_inputs = (
         prepared_motif_inputs if prepared_motif_inputs is not None else
         tuple(_motif_planning_input(

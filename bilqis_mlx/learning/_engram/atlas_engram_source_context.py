@@ -7,6 +7,7 @@ from bilqis_mlx.factory.adapters import RegisteredSourceAdapter
 from bilqis_mlx.semantics.atlas.snapshot import (
     AtlasArtifactSelection, load_pinned_atlas_snapshot,
 )
+from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
 from bilqis_mlx.semantics.context_eligibility import (
     ApprovedContextProjection, ContextHold, ContextPolicy, SourceFrontier,
     TaskScope,
@@ -26,11 +27,11 @@ from bilqis_mlx.semantics.frame_adapters.public_formal_schema_rights import (
 from bilqis_mlx.semantics.frame_adapters.public_formal_sources import canonical_graph
 from bilqis_mlx.semantics.frame_schema import FrameInstance, validate_frame_bindings
 from bilqis_mlx.semantics.released_frame_schemas import (
-    lookup_source_pinned_frame_schema,
+    _load_pinned_released_frame_schemas_from_snapshot,
 )
 
-from .atlas_engram import MotifFrameInput, build_motif_input
-from .atlas_engram_identity import _invalid
+from .atlas_engram_identity import MotifFrameInput, _invalid
+from .atlas_engram_keys import build_motif_input
 
 
 _BOOLEAN_SOURCE_ADAPTERS = (
@@ -50,13 +51,19 @@ def _source_family(adapter_id: str) -> str:
     _invalid("BAMF_MOTIF_SOURCE_FAMILY_UNRELEASED")
 
 
-def _qualify_frame(envelope, snapshot, source_family, atlas_selection,
+def _qualify_frame(envelope, snapshot, pinned_schemas,
                    source_root, graph, adapter_id):
     frame = envelope.frame
-    schema, _witness = lookup_source_pinned_frame_schema(
-        frame.frame_schema_id, frame.frame_schema_revision,
-        source_family=source_family, atlas_selection=atlas_selection,
-    )
+    witness = pinned_schemas.lookup(
+        frame.frame_schema_id, frame.frame_schema_revision)
+    body = next((
+        item for item in pinned_schemas.manifest.bodies
+        if (item.schema_id, item.revision)
+        == (frame.frame_schema_id, frame.frame_schema_revision)
+    ), None)
+    if body is None:
+        _invalid("BAMF_MOTIF_SOURCE_SCHEMA_UNRELEASED")
+    schema = pinned_schemas.require_schema(body.parse(), witness)
     _, authoritative_graph = canonical_graph(
         source_root, graph, adapter_id, frame.source_span)
     validated = validate_frame_bindings(
@@ -86,12 +93,14 @@ def _qualified_motif_inputs(projection, snapshot, source_adapter,
         for envelope in projection.envelopes
         if not isinstance(envelope.frame, FrameInstance)
     }
+    pinned_schemas = _load_pinned_released_frame_schemas_from_snapshot(
+        source_family, atlas_selection, snapshot)
     qualified = {}
     for envelope in projection.envelopes:
         if not isinstance(envelope.frame, FrameInstance):
             continue
         frame, schema = _qualify_frame(
-            envelope, snapshot, source_family, atlas_selection,
+            envelope, snapshot, pinned_schemas,
             source_root, graph, adapter_id)
         if frame.occurrence_id in qualified:
             _invalid("BAMF_MOTIF_CHILD_STRUCTURE_INVALID")
@@ -117,6 +126,7 @@ def qualify_source_motif_context(
     source_each: int,
     source_profile_parameters: dict | None = None,
     course=None,
+    snapshot: FrozenAtlasSnapshot | None = None,
 ) -> tuple[
     ApprovedContextProjection, tuple[MotifFrameInput, ...], SourceFrontier,
 ] | ContextHold:
@@ -126,7 +136,21 @@ def qualify_source_motif_context(
             or type(source_frontier) is not SourceFrontier
             or type(policy) is not ContextPolicy):
         _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
-    snapshot = load_pinned_atlas_snapshot(atlas_selection)
+    if snapshot is None:
+        snapshot = load_pinned_atlas_snapshot(atlas_selection)
+    elif (
+        type(snapshot) is not FrozenAtlasSnapshot
+        or (
+            snapshot.release_sha256,
+            snapshot.bundle_id,
+            snapshot.source_bundle_id,
+        ) != (
+            atlas_selection.release_sha256,
+            atlas_selection.bundle_id,
+            atlas_selection.source_bundle_id,
+        )
+    ):
+        _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
     if snapshot.release_sha256 != task_scope.semantic_release:
         _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
     rights_authority = issue_source_schema_rights_authority(atlas_selection)
