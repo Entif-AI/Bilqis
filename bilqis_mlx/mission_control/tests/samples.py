@@ -68,7 +68,8 @@ SEMANTIC_HELD_META = RecordMeta(
 
 
 from bilqis_mlx.mission_control.contracts.trainer import (
-    TrainerObservation, TrainerObservationV2,
+    CandidateStepPerformance, TrainerObservation, TrainerObservationV2,
+    TrainerObservationV3,
 )
 
 SAMPLES = (
@@ -226,6 +227,41 @@ SAMPLES += (
         retention_wall_seconds=None,
         evidence_finalization_wall_seconds=None,
         publishing_wall_seconds=None,
+    ),
+    TrainerObservationV3(
+        meta=RecordMeta('observed:sample-v3', RUN, 120, 118, None,
+                        CoverageState.PARTIAL, AuthorityClass.MEASURED),
+        observation_id='sample-v3', revision=1, process_id=1, visit_index=1,
+        posture='OBSERVED', phase='TRAINING', outcome='RUNNING',
+        connection_state='LIVE', capability_id='A.IDENTITY', elapsed_ms=100,
+        candidate_optimizer_step=9, candidate_step=2, candidate_horizon=2,
+        retention_completed=None, retention_total=None, retention_subject=None,
+        retention_role=None, cpu_seconds=0.1, peak_rss_bytes=4096,
+        disk_free_bytes=100000, error_code=None, error_detail=None,
+        candidate_step_wall_seconds=0.5,
+        pre_neural_source_compile_wall_seconds=None,
+        currentness_binding_wall_seconds=None, b11_preflight_wall_seconds=None,
+        b11_autodiff_wall_seconds=None, optimizer_admission_wall_seconds=None,
+        motif_staging_wall_seconds=None, evidence_capture_wall_seconds=None,
+        candidate_terminal_step=None, c08_gradient_launches=None,
+        c08_vectorized_microbatches=None, c08_materialization_barriers=None,
+        c08_scalar_fallback_rows=None, c08_logical_batch_wall_seconds=None,
+        c08_rows_per_gradient_launch=None, b11_provider_draw_count=None,
+        b11_atlas_reload_count=None, logical_rows=None, compiled_positions=None,
+        retention_wall_seconds=None, evidence_finalization_wall_seconds=None,
+        publishing_wall_seconds=None,
+        candidate_steps=(CandidateStepPerformance(
+            candidate_step=1, candidate_optimizer_step=8,
+            candidate_step_wall_seconds=0.9,
+            pre_neural_source_compile_wall_seconds=0.1,
+            currentness_binding_wall_seconds=0.01, b11_preflight_wall_seconds=0.2,
+            b11_autodiff_wall_seconds=0.4, optimizer_admission_wall_seconds=0.1,
+            motif_staging_wall_seconds=0.0, evidence_capture_wall_seconds=0.01,
+            candidate_terminal_step=False, c08_gradient_launches=1,
+            c08_vectorized_microbatches=1, c08_materialization_barriers=1,
+            c08_scalar_fallback_rows=0, c08_logical_batch_wall_seconds=0.6,
+            c08_rows_per_gradient_launch=4.0, b11_provider_draw_count=16,
+            b11_atlas_reload_count=0, logical_rows=4, compiled_positions=32),),
     ),
 
 )
