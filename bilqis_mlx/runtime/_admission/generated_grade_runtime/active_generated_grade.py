@@ -226,7 +226,8 @@ def activate_certified_generated_grade(
             transition_authority.certification_receipt_sha256),
         transition_reason="GRADE_CERTIFIED",
     )
-    return _publish_if_current(root, identity, active, predecessor=predecessor)
+    return _publish_if_current(
+        root, identity, active, proposal, predecessor=predecessor)
 
 
 def ensure_active_generated_grade(run_dir: Path) -> ActiveGeneratedGrade:
