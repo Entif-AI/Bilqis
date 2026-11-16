@@ -6,6 +6,7 @@ from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
@@ -215,6 +216,36 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
 
     def journey_mounts(self, snapshot, schema, features, selection):
         stack = ExitStack()
+        active_cache = {}
+
+        def historical_active_grade(run_dir):
+            if "grade" not in active_cache:
+                from bilqis_mlx.runtime.atlas_admission import (
+                    read_accepted_atlas_factory_release,
+                )
+                release = read_accepted_atlas_factory_release(run_dir)
+                members = []
+                for capability_id in sorted(release.execution_plan.capability_map):
+                    capability = release.curriculum.capability_map[capability_id]
+                    semantic_ids = tuple(sorted(set((
+                        *capability.taught_roots, *capability.examined_roots,
+                    ))))
+                    for semantic_id in semantic_ids:
+                        members.append(SimpleNamespace(
+                            capability_id=capability_id,
+                            semantic_id=semantic_id,
+                            source_anchor=(release.source_bindings.by_capability[
+                                capability_id].source_anchor),
+                        ))
+                active_cache["grade"] = SimpleNamespace(
+                    activation_sha256="e" * 64,
+                    definition=SimpleNamespace(
+                        definition_sha256="d" * 64,
+                        members=tuple(members),
+                    ),
+                )
+            return active_cache["grade"]
+
         stack.enter_context(self.source_replay(snapshot, schema, features))
         for target in (
             "bilqis_mlx.semantics.atlas.snapshot.load_pinned_atlas_snapshot",
@@ -240,6 +271,14 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
             "read_host_system_source_authority_signer",
             side_effect=lambda registry: HostSourceAuthoritySigner(
                 "owner:c06", "44" * 32, registry)))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.active_generated_grade."
+            "ensure_active_generated_grade",
+            side_effect=historical_active_grade))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.active_generated_grade."
+            "read_active_generated_grade",
+            side_effect=historical_active_grade))
         return stack
 
     def exercise_journey(self):

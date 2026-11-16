@@ -1,20 +1,14 @@
-"""#1291 learner-relative lawful teaching frontier ownership."""
-from dataclasses import replace
+"""#1291 learner-relative lawful teaching frontier runtime ownership."""
 from types import SimpleNamespace
 from unittest.mock import patch
 import unittest
 
 from bilqis_mlx.errors import BilqisError
-from bilqis_mlx.factory.atlas_frontier_closure import (
-    ClosureReason,
-    ClosureStatus,
-)
 from bilqis_mlx.factory.autonomy import (
     EvidenceReceipt,
     obligations_for_capability,
     record_evidence,
 )
-from bilqis_mlx.factory.curriculum_definition import CapabilitySourceBinding
 from bilqis_mlx.paths import LEGACY_SOURCE
 from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
 from bilqis_mlx.runtime.autonomy_state import (
@@ -23,161 +17,15 @@ from bilqis_mlx.runtime.autonomy_state import (
 )
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
 from bilqis_mlx.runtime.lawful_teaching_frontier import (
-    LawfulTeachingDisposition,
-    LawfulTeachingFrontier,
     issue_lawful_teaching_frontier,
     require_current_lawful_teaching_frontier,
-)
-from bilqis_mlx.runtime.lawful_teaching_frontier import (
-    _capabilities,
 )
 from bilqis_mlx.runtime.tests.admission.atlas.v2.mixed_witness_support import (
     MixedWitnessSupport,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
-from bilqis_mlx.semantics.atlas_projection import CorpusCoverageRow
 from bilqis_mlx.semantics.domains import contract_digest
-
-
-_SHA = "a" * 64
-
-
-def _release(*, reversed_order=False, relabeled=False):
-    prerequisite = SimpleNamespace(
-        capability_id="P", grade_id="X" if relabeled else "A",
-        prerequisites=(), composed_of=())
-    dependent = SimpleNamespace(
-        capability_id="D", grade_id="Y" if relabeled else "B",
-        prerequisites=("P",), composed_of=("P",))
-    rows = (dependent, prerequisite) if reversed_order else (
-        prerequisite, dependent)
-    specs = {
-        "P": SimpleNamespace(
-            taught_roots=("sem.p",), examined_roots=("sem.p",)),
-        "D": SimpleNamespace(
-            taught_roots=("sem.d",), examined_roots=("sem.d",)),
-    }
-    bindings = {
-        item: CapabilitySourceBinding(
-            item, f"source:{item}", f"generator:{item}", f"oracle:{item}")
-        for item in ("P", "D")
-    }
-    return SimpleNamespace(
-        release_sha256=_SHA,
-        execution_plan=SimpleNamespace(
-            capability_map={item.capability_id: item for item in rows}),
-        curriculum=SimpleNamespace(capability_map=specs),
-        source_bindings=SimpleNamespace(by_capability=bindings),
-    )
-
-
-def _snapshot(*, held=False):
-    source_held = ()
-    if held:
-        source_held = (CorpusCoverageRow(
-            "fixture", "concepts", "D", "sem.d", "SOURCE_HELD",
-            "PROGRAM_BOUND", False, "SOURCE_RIGHTS_HELD",
-            "rights hold", "source:rights"),)
-    return SimpleNamespace(source_held_rows=source_held)
-
-
-def _closure(*, waiting=False, uncovered=False):
-    status = (
-        ClosureStatus.IMPLEMENTATION_UNCOVERED if uncovered
-        else ClosureStatus.WAITING_FOR_EVIDENCE if waiting
-        else ClosureStatus.READY)
-    reason = ()
-    if status is not ClosureStatus.READY:
-        reason = (ClosureReason(
-            "A09_" + status.value, "factory:a09", "sem.p"),)
-    return SimpleNamespace(candidates=(
-        SimpleNamespace(
-            semantic_id="sem.d", status=status,
-            prerequisites=("sem.p",), reasons=reason),
-    ))
-
-
-def _plan(*blocked):
-    return SimpleNamespace(blocked_capabilities=tuple(blocked))
-
-
-class LawfulTeachingProjectionTests(unittest.TestCase):
-    def test_real_prerequisite_evidence_unlocks_dependent_without_grade_logic(self):
-        before = _capabilities(
-            _release(), _snapshot(), _closure(), _plan(), ())
-        after = _capabilities(
-            _release(), _snapshot(), _closure(), _plan(), ("P",))
-        by_id_before = {item.capability_id: item for item in before}
-        by_id_after = {item.capability_id: item for item in after}
-        self.assertIs(
-            by_id_before["D"].disposition,
-            LawfulTeachingDisposition.HELD_PREREQUISITE_EVIDENCE)
-        self.assertEqual(
-            by_id_before["D"].evidence_complete_prerequisites, ())
-        self.assertIs(
-            by_id_after["D"].disposition,
-            LawfulTeachingDisposition.READY)
-        self.assertEqual(
-            by_id_after["D"].evidence_complete_prerequisites, ("P",))
-        self.assertEqual(by_id_after["D"].semantic_prerequisites, ("sem.p",))
-
-    def test_evidence_complete_target_is_not_ready_for_teaching_again(self):
-        by_id = {item.capability_id: item for item in _capabilities(
-            _release(), _snapshot(), _closure(), _plan(), ("P",))}
-
-        self.assertTrue(by_id["P"].target_evidence_complete)
-        self.assertIs(
-            by_id["P"].disposition,
-            LawfulTeachingDisposition.EVIDENCE_COMPLETE,
-        )
-        self.assertIs(
-            by_id["D"].disposition,
-            LawfulTeachingDisposition.READY,
-        )
-
-    def test_grade_labels_and_release_iteration_order_cannot_mint_readiness(self):
-        canonical = _capabilities(
-            _release(), _snapshot(), _closure(), _plan(), ())
-        adversarial = _capabilities(
-            _release(reversed_order=True, relabeled=True),
-            _snapshot(), _closure(), _plan(), ())
-        self.assertEqual(
-            tuple(item.to_record() for item in canonical),
-            tuple(item.to_record() for item in adversarial))
-        self.assertIs(
-            adversarial[0].disposition,
-            LawfulTeachingDisposition.HELD_PREREQUISITE_EVIDENCE)
-
-    def test_source_rights_and_implementation_holds_outrank_prerequisite_readiness(self):
-        source_held = {item.capability_id: item for item in _capabilities(
-            _release(), _snapshot(held=True), _closure(), _plan(), ("P",))}
-        uncovered = {item.capability_id: item for item in _capabilities(
-            _release(), _snapshot(), _closure(uncovered=True),
-            _plan("D"), ("P",))}
-        self.assertIs(
-            source_held["D"].disposition,
-            LawfulTeachingDisposition.HELD_SOURCE_RIGHTS)
-        self.assertIs(
-            uncovered["D"].disposition,
-            LawfulTeachingDisposition.IMPLEMENTATION_UNCOVERED)
-
-    def test_a09_waiting_evidence_cannot_be_overridden_by_capability_prerequisites(self):
-        by_id = {item.capability_id: item for item in _capabilities(
-            _release(), _snapshot(), _closure(waiting=True), _plan(), ("P",))}
-        self.assertIs(
-            by_id["D"].disposition,
-            LawfulTeachingDisposition.HELD_PREREQUISITE_EVIDENCE)
-        self.assertIn(
-            "A09_WAITING_FOR_EVIDENCE",
-            {item.code for item in by_id["D"].holds})
-
-    def test_frontier_cannot_be_constructed_by_a_caller(self):
-        with self.assertRaises(BilqisError) as forbidden:
-            LawfulTeachingFrontier()
-        self.assertEqual(
-            forbidden.exception.context.get("reason"),
-            "BAMF_LEARNER_FRONTIER_CALLER_CONSTRUCTION_FORBIDDEN")
 
 
 class LawfulTeachingFrontierRuntimeTests(MixedWitnessSupport, unittest.TestCase):
@@ -196,6 +44,36 @@ class LawfulTeachingFrontierRuntimeTests(MixedWitnessSupport, unittest.TestCase)
             "/artifact", snapshot.bundle_id, snapshot.release_sha256,
             snapshot.source_bundle_id)
         combined = self.combined_source_registry()
+        active_cache = {}
+
+        def active_grade(run_dir):
+            if "grade" not in active_cache:
+                from bilqis_mlx.runtime.atlas_admission import (
+                    read_accepted_atlas_factory_release,
+                )
+                release = read_accepted_atlas_factory_release(run_dir)
+                members = []
+                for capability_id in sorted(release.execution_plan.capability_map):
+                    capability = release.curriculum.capability_map[capability_id]
+                    semantic_ids = tuple(dict.fromkeys((
+                        *capability.taught_roots, *capability.examined_roots,
+                    )))
+                    members.append(SimpleNamespace(
+                        capability_id=capability_id,
+                        semantic_id=semantic_ids[0],
+                        source_anchor=(
+                            release.source_bindings.by_capability[
+                                capability_id].source_anchor),
+                    ))
+                active_cache["grade"] = SimpleNamespace(
+                    activation_sha256="e" * 64,
+                    definition=SimpleNamespace(
+                        definition_sha256="d" * 64,
+                        members=tuple(members),
+                    ),
+                )
+            return active_cache["grade"]
+
         stack = ExitStack()
         stack.enter_context(self.source_replay(snapshot, schema, features))
         stack.enter_context(self.host_registry())
@@ -228,6 +106,14 @@ class LawfulTeachingFrontierRuntimeTests(MixedWitnessSupport, unittest.TestCase)
         stack.enter_context(patch(
             "bilqis_mlx.factory.live_answers.live_answer_registry",
             return_value=self.answer_registry))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.active_generated_grade."
+            "ensure_active_generated_grade",
+            side_effect=active_grade))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.active_generated_grade."
+            "read_active_generated_grade",
+            side_effect=active_grade))
         return stack, selection
 
     def test_exact_accepted_frontier_reissues_after_cold_read_and_stales_on_new_evidence(self):

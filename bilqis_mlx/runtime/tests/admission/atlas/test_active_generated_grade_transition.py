@@ -1,0 +1,139 @@
+"""#1314 successor-transition and non-churn authority tests."""
+from dataclasses import replace
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+import unittest
+
+from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
+from bilqis_mlx.factory.tests.curriculum.generated_grade.test_definition import (
+    _single_member_fixture,
+)
+
+
+def _fixture(semantic_id="skos:fixture", capability_id="F.FIXTURE"):
+    release = __import__(
+        "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
+        fromlist=["_release"],
+    )._release()
+    if semantic_id == "skos:fixture":
+        semantic_id = release.semantic_catalog[0]
+        capability_id = next(iter(release.curriculum.capability_map)).strip()
+    exact_release, proposal = _single_member_fixture(semantic_id, capability_id)
+    definition = _seal_generated_grade(
+        proposal, exact_release, release_lineage=(exact_release,))
+    return proposal, definition
+
+
+def _successor_definition(definition, proposal):
+    draft = replace(
+        definition,
+        proposal_sha256=proposal.proposal_sha256,
+        learner_foot_sha256=proposal.learner_foot_sha256,
+        definition_sha256="0" * 64,
+    )
+    return replace(draft, definition_sha256=draft.expected_digest())
+
+
+class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
+    def _identity(self, generation=11):
+        return (
+            "fixture-run", generation,
+            f"{generation:064x}", f"{generation + 1:064x}")
+
+    def _patches(self, proposal, definition, *, second=None, second_definition=None):
+        issued = {proposal.proposal_sha256: proposal}
+        if second is not None:
+            issued[second.proposal_sha256] = second
+        definitions = [definition]
+        if second_definition is not None:
+            definitions.append(second_definition)
+        return (
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_accepted_generation_identity",
+                return_value=self._identity()),
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_activation_is_accepted_ancestor",
+                return_value=True),
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_require_identity_still_current",
+                return_value=None),
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade_custody."
+                "_read_issued_proposal",
+                side_effect=lambda _root, digest: issued[digest]),
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "seal_accepted_generated_grade",
+                side_effect=definitions),
+        )
+
+    def test_c07_adoption_alone_cannot_replace_frozen_active_grade(self):
+        from bilqis_mlx.runtime.active_generated_grade import (
+            ensure_active_generated_grade,
+        )
+
+        proposal, definition = _fixture()
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            patches = self._patches(proposal, definition)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patch(
+                "bilqis_mlx.runtime.active_generated_grade_custody."
+                "_accepted_bound_generated_grade_proposal",
+                return_value=proposal,
+            ):
+                first = ensure_active_generated_grade(root)
+                with patch(
+                    "bilqis_mlx.runtime.active_generated_grade_custody."
+                    "_accepted_bound_generated_grade_proposal",
+                    side_effect=AssertionError("active grade must not be resynthesized"),
+                ):
+                    again = ensure_active_generated_grade(root)
+        self.assertEqual(again, first)
+
+    def test_only_issued_certification_authority_activates_successor(self):
+        from bilqis_mlx.runtime.active_generated_grade import (
+            _issue_certified_grade_transition_authority,
+            activate_accepted_generated_grade,
+            activate_certified_generated_grade,
+        )
+
+        proposal, definition = _fixture()
+        _release, successor_proposal = _single_member_fixture(
+            "skos:future-z", "Z.FUTURE")
+        successor_definition = _successor_definition(
+            definition, successor_proposal)
+        receipt = "c" * 64
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            patches = self._patches(
+                proposal, definition, second=successor_proposal,
+                second_definition=successor_definition)
+            with patches[0], patches[1], patches[2], patches[3], patches[4]:
+                first = activate_accepted_generated_grade(root, proposal)
+                with self.assertRaises(BilqisError) as forged:
+                    activate_certified_generated_grade(
+                        root, successor_proposal, transition_authority=object())
+                authority = _issue_certified_grade_transition_authority(
+                    first.activation_sha256,
+                    successor_proposal.proposal_sha256,
+                    receipt,
+                )
+                successor = activate_certified_generated_grade(
+                    root, successor_proposal, transition_authority=authority)
+
+        self.assertEqual(
+            forged.exception.context.get("reason"),
+            "BAMF_ACTIVE_GENERATED_GRADE_CERTIFICATION_AUTHORITY_REQUIRED")
+        self.assertEqual(successor.transition_kind, "CERTIFICATION")
+        self.assertEqual(successor.transition_receipt_sha256, receipt)
+        self.assertEqual(
+            successor.predecessor_activation_sha256, first.activation_sha256)
+
+
+if __name__ == "__main__":
+    unittest.main()
