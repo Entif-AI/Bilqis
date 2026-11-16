@@ -33,10 +33,10 @@ import bilqis_mlx.runtime.state as _runtime_state
 import bilqis_mlx.runtime.timing_trace as _runtime_timing_trace
 import bilqis_mlx.source_adapters.school as _source_adapters_school
 
-from .._visits import common as _common
-from .._visits.orchestration import take_visit as _orchestrate_visit
-from ..teacher_observation_capture import ObservationCapture
-from ..teacher_policy_selection import select_visit_policy as _select_visit_policy
+from ._visits import common as _common
+from ._visits.orchestration import take_visit as _orchestrate_visit
+from .teacher_observation_capture import ObservationCapture
+from .teacher_policy_selection import select_visit_policy as _select_visit_policy
 
 
 RETENTION_REQUIRES_ACTIVE_GRADE_ERROR = _common.RETENTION_REQUIRES_ACTIVE_GRADE_ERROR

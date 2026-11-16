@@ -1,8 +1,6 @@
 """Immutable championship history plus evolving per-capability defense batteries."""
 from __future__ import annotations
 
-from bilqis_mlx.errors import ErrorBus, SCHOOL
-
 import json
 
 from bilqis_mlx.generated_assessment import digest
@@ -12,32 +10,6 @@ from .championship_policy import CONTEXT_KEYS
 SCHEMA = "bilqis.mlx.championship-questions/v1"
 BATTERY_SCHEMA = "bilqis.mlx.championship-defense-battery/v1"
 COHORT_RUBRIC_KEY = "cohort_rubric_sha256"
-
-
-def _invalid(reason: str) -> None:
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
-
-
-def championship_threshold_met(score: dict) -> bool:
-    """Capability-local championship eligibility: strictly greater than 90%."""
-    if (not isinstance(score, dict) or type(score.get("correct")) is not int or
-            type(score.get("total")) is not int or score["total"] < 1 or
-            not 0 <= score["correct"] <= score["total"]):
-        _invalid("championship threshold score invalid")
-    return 10 * score["correct"] > 9 * score["total"]
-
-
-def championship_role_qualified(role: dict) -> bool:
-    """Sticky earned eligibility, falling back to legacy stored role score."""
-    if not isinstance(role, dict):
-        _invalid("championship threshold score invalid")
-    correct = role.get("championship_qualification_correct")
-    total = role.get("championship_qualification_total")
-    if correct is None and total is None:
-        return championship_threshold_met(role)
-    if correct is None or total is None:
-        _invalid("championship qualification witness invalid")
-    return championship_threshold_met({"correct": correct, "total": total})
 
 
 def _context_payload(context: dict) -> dict:

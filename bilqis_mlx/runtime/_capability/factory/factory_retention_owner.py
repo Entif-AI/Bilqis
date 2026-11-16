@@ -32,7 +32,6 @@ from .factory_complete_solver import (
     factory_complete_solver,
 )
 from .factory_fixed_school import _bamf_fixed_school_cohort
-from ._factory_retention_support import _earned_protected_capabilities
 
 
 CURRENT_EVIDENCE_STAGE = EvidenceStage.FOUNDATION_ACQUISITION
@@ -139,14 +138,10 @@ def _foundation_retention_screen(
     release, groups, training, fixed_instruments,
 ):
     fixed_cases = tuple(item.case for item in fixed_instruments)
-    protected = _earned_protected_capabilities(parent, target_capability)
-    admitted = {capability for capability, _ in groups}
-    if not set(protected) <= admitted - {target_capability}:
-        _invalid("BAMF_C05_EARNED_PROTECTION_NOT_ADMITTED")
     policy = FoundationRetentionPolicy(
         groups, tuple(dict.fromkeys(group for _, group in groups)),
         tuple((capability, C05_PROTECTED_REFERENCE_LOSS)
-              for capability in protected),
+              for capability, _ in groups if capability != target_capability),
         C05_PROBE_EACH, case_census_digest(fixed_cases))
     fixed_cohort = _cohort(
         EvidenceKind.FIXED_SCHOOL, fixed_instruments, groups,

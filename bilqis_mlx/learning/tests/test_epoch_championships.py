@@ -44,11 +44,11 @@ def _with_question_evidence(exam):
     return result
 
 
-def _panel(seed, step, capability, correct, *, cohort="1", grade=None, total=12):
+def _panel(seed, step, capability, correct, *, cohort="1", grade=None):
     exam = _exam(seed, 208)
     exam["checkpoint"]["optimizer_step"] = step
     exam["cohort_sha256"] = cohort * 64
-    exam["scores"] = {capability: {"correct": correct, "total": total}}
+    exam["scores"] = {capability: {"correct": correct, "total": 12}}
     exam["challenge_grade"] = grade or capability.split(".", 1)[0]
     exam["checkpoint_origin_grade"] = exam["challenge_grade"]
     return _with_question_evidence(exam)
@@ -89,16 +89,16 @@ def _match(role, incumbent_current, challenger_current, *,
 
 class EpochChampionshipTests(TestCase):
     def _fanout_fixture(self):
-        first = _panel("a", 11, "B.AND", 11)
+        first = _panel("a", 11, "B.AND", 8)
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
-        second = _panel("b", 12, "B.XOR", 11, cohort="2")
+        second = _panel("b", 12, "B.XOR", 8, cohort="2")
         epoch, _, _ = advance_epoch(
             epoch, grades=GRADES, challenger_exam=second, incumbent_exams={})
         challenger = _multi_panel(
-            "c", 13, {"B.AND": 12, "B.XOR": 11}, cohort="6", grade="B")
+            "c", 13, {"B.AND": 10, "B.XOR": 8}, cohort="6", grade="B")
         incumbents = {
-            "a" * 64: _panel("a", 11, "B.AND", 11, cohort="6"),
-            "b" * 64: _panel("b", 12, "B.XOR", 11, cohort="6"),
+            "a" * 64: _panel("a", 11, "B.AND", 8, cohort="6"),
+            "b" * 64: _panel("b", 12, "B.XOR", 8, cohort="6"),
         }
         return epoch, challenger, incumbents

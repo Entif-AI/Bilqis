@@ -144,5 +144,5 @@ class ChampionshipIdentityTests(TestCase):
         second, _ = enforce_school_identity(
             first, _identity(course="d", graph="e"), generation=21, student=student)
         filenames = {pointer["filename"] for pointer in reference_checkpoints(second)}
-        self.assertNotIn("bundles/alias-one", filenames)
-        self.assertNotIn("bundles/alias-two", filenames)
+        self.assertIn("bundles/alias-one", filenames)
+        self.assertIn("bundles/alias-two", filenames)

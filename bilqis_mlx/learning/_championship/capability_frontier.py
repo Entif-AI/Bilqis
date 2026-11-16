@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from bilqis_mlx.errors import ErrorBus, SCHOOL
-from .championship_witnesses import championship_threshold_met
 
 
 def _key(rubric: str, capability: str) -> str:
@@ -26,17 +24,6 @@ def _score(value: dict) -> tuple[int, int]:
     return right, total
 
 
-def qualified_frontier(frontier: dict) -> dict:
-    """Active championship pointers only; subthreshold entries are metadata."""
-    if not isinstance(frontier, dict):
-        ErrorBus.Raise(
-            SCHOOL.MODEL_TOPOLOGY.INVALID,
-            reason="capability frontier invalid")
-    return {
-        key: item for key, item in frontier.items()
-        if championship_threshold_met(item)}
-
-
 def candidate_roles(frontier: dict, scores: dict, rubric: str) -> tuple[str, ...]:
     """Qualify *before* writing a candidate binary.
 
@@ -46,18 +33,14 @@ def candidate_roles(frontier: dict, scores: dict, rubric: str) -> tuple[str, ...
     """
     if not scores:
         raise ValueError("CAPABILITY_FRONTIER_EMPTY_TEST")
-    active = qualified_frontier(frontier)
-    previously_measured = {
-        item["capability"] for item in active.values()
-        if item["rubric"] == rubric and championship_threshold_met(item)}
+    previously_measured = {item["capability"] for item in frontier.values()
+                           if item["rubric"] == rubric}
     if previously_measured and not previously_measured <= set(scores):
         raise ValueError("CAPABILITY_FRONTIER_INCOMPLETE_RUBRIC")
     gain, tied = set(), set()
     for cap, score in scores.items():
         right, total = _score(score)
-        if not championship_threshold_met(score):
-            continue
-        previous = active.get(_key(rubric, cap))
+        previous = frontier.get(_key(rubric, cap))
         if previous is None:
             gain.add(cap)
             continue
@@ -70,7 +53,7 @@ def candidate_roles(frontier: dict, scores: dict, rubric: str) -> tuple[str, ...
             tied.add(cap)
     if gain:
         return tuple(sorted(gain | tied))
-    distinct = {active[_key(rubric, cap)]["checkpoint"]["sha256"]
+    distinct = {frontier[_key(rubric, cap)]["checkpoint"]["sha256"]
                 for cap in tied}
     return tuple(sorted(tied)) if len(distinct) > 1 else ()
 
@@ -83,7 +66,7 @@ def promote(frontier: dict, scores: dict, rubric: str, checkpoint: dict,
     actual = set(candidate_roles(frontier, scores, rubric))
     if set(roles) != actual:
         raise ValueError("CAPABILITY_FRONTIER_ROLE_SELECTION_DRIFT")
-    result = qualified_frontier(frontier)
+    result = dict(frontier)
     for cap in roles:
         right, total = _score(scores[cap])
         result[_key(rubric, cap)] = {
@@ -98,7 +81,7 @@ def pinned(frontier: dict, current: dict,
            grade_champions: dict) -> set[str]:
     """These roles, not existence of old receipt JSON, protect hot binaries."""
     checkpoints = [current, *grade_champions.values(),
-                   *(item["checkpoint"] for item in qualified_frontier(frontier).values())]
+                   *(item["checkpoint"] for item in frontier.values())]
     result = set()
     for cp in checkpoints:
         name = cp["filename"]

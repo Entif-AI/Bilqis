@@ -11,19 +11,7 @@ class DataPlaneCustodyTests(DataPlaneCase):
                 "previous": {"filename": "soups/C-previous.safetensors",
                              "sha256": "d" * 64}}}},
             "championship_epoch_history": [{"active_grade_soups": {"C": {
-                "filename": "soups/C-archived.safetensors", "sha256": "e" * 64}},
-                "active_roles": {"A.X": {"checkpoint": {
-                    "filename": "bundles/archived-champion", "sha256": "f" * 64}}}}],
-            "capability_best": {"A.X": {"checkpoint": {
-                "filename": "bundles/stale-best", "sha256": "1" * 64}}},
-            "graduation_perfect": {"A.X": {"checkpoint": {
-                "filename": "bundles/stale-perfect", "sha256": "2" * 64}}},
-            "school": {
-                "current_student": {
-                    "filename": "bundles/working-1", "sha256": "a" * 64},
-                "champions": {"A": {
-                    "filename": "bundles/stale-grade-champion", "sha256": "3" * 64}},
-            },
+                "filename": "soups/C-archived.safetensors", "sha256": "e" * 64}}}],
             "unrelated": {"filename": "cohorts/x.json", "sha256": "c" * 64},
         }
         found = referenced_custody_files(self.root, receipt)

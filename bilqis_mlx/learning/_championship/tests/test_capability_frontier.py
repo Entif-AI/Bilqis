@@ -24,22 +24,6 @@ def scores(*values):
 
 
 class CapabilityFrontierTests(unittest.TestCase):
-    def test_subthreshold_scores_do_not_create_or_pin_championship_frontier(self):
-        current = checkpoint("current", 9)
-        self.assertEqual(candidate_roles({}, scores(10, 10, 10), RUBRIC), ())
-        legacy = {
-            RUBRIC + ":A.IDENTITY": {
-                "rubric": RUBRIC, "capability": "A.IDENTITY",
-                "correct": 10, "total": 12,
-                "checkpoint": checkpoint("stale", 1), "evaluation_id": "legacy",
-            },
-        }
-        self.assertEqual(pinned(legacy, current, {}), {"bundles/current"})
-
-    def test_strictly_above_ninety_percent_can_create_frontier_role(self):
-        roles = candidate_roles({}, scores(11, 10, 12), RUBRIC)
-        self.assertEqual(roles, ("A.EDGE", "A.IDENTITY"))
-
     def test_simultaneous_perfect_breadth_consolidates_only_eligible_roles(self):
         rubric = "b" * 64
         caps = ("A.3", "A.5", "A.7", "A.11")
@@ -74,10 +58,9 @@ class CapabilityFrontierTests(unittest.TestCase):
     def test_perfect_graduation_retained_independent_of_candidate_ranking(self):
         student = checkpoint("perfect", 20)
         old = checkpoint("old", 10)
-        prior_scores = scores(11, 12, 11)
-        frontier = promote({}, prior_scores, RUBRIC, old,
-                           "candidate-prior", candidate_roles({}, prior_scores, RUBRIC))
-        self.assertEqual(candidate_roles(frontier, scores(10, 11, 10), RUBRIC), ())
+        frontier = promote({}, scores(7, 5, 4), RUBRIC, old,
+                           "candidate-prior", tuple(scores(7, 5, 4)))
+        self.assertEqual(candidate_roles(frontier, scores(6, 4, 3), RUBRIC), ())
         perfect, roles = graduation_perfect({}, scores(12, 9, 8), RUBRIC,
                                             "b" * 64, student, "graduation")
         self.assertEqual(roles, ("A.IDENTITY",))
@@ -113,9 +96,9 @@ class CapabilityFrontierTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "HISTORICAL_EVIDENCE_MISSING"):
             recover_graduation_breadth(old, (wrong,))
 
-    def test_above_threshold_best_can_be_subperfect_and_share_multiple_capabilities(self):
+    def test_best_can_be_subperfect_and_share_multiple_capabilities(self):
         a = checkpoint("first", 1)
-        s = scores(11, 12, 11)
+        s = scores(5, 7, 4)
         roles = candidate_roles({}, s, RUBRIC)
         self.assertEqual(set(roles), set(s))
         result = promote({}, s, RUBRIC, a, "exam-1", roles)
@@ -125,34 +108,30 @@ class CapabilityFrontierTests(unittest.TestCase):
 
     def test_new_candidate_claims_all_best_slots_and_old_is_only_retired_when_unused(self):
         a, b, c = (checkpoint("a", 1), checkpoint("b", 2), checkpoint("c", 3))
-        first = scores(11, 12, 11)
-        base = promote({}, first, RUBRIC, a, "exam-1",
-                       candidate_roles({}, first, RUBRIC))
-        roles = candidate_roles(base, scores(12, 12, 10), RUBRIC)
+        base = promote({}, scores(5, 7, 4), RUBRIC, a, "exam-1",
+                       candidate_roles({}, scores(5, 7, 4), RUBRIC))
+        roles = candidate_roles(base, scores(6, 7, 3), RUBRIC)
         self.assertEqual(set(roles), {"A.IDENTITY", "A.LINK"})
-        next_best = promote(base, scores(12, 12, 10), RUBRIC, b, "exam-2", roles)
+        next_best = promote(base, scores(6, 7, 3), RUBRIC, b, "exam-2", roles)
         self.assertEqual(pinned(next_best, b, {}), {"bundles/a", "bundles/b"})
-        roles = candidate_roles(next_best, scores(12, 12, 12), RUBRIC)
+        roles = candidate_roles(next_best, scores(6, 7, 5), RUBRIC)
         self.assertEqual(set(roles), {"A.IDENTITY", "A.LINK", "A.EDGE"})
-        final_best = promote(next_best, scores(12, 12, 12), RUBRIC, c,
+        final_best = promote(next_best, scores(6, 7, 5), RUBRIC, c,
                              "exam-3", roles)
         self.assertEqual(pinned(final_best, c, {}), {"bundles/c"})
 
     def test_nonbest_does_not_qualify_for_a_new_champion_binary(self):
-        first = scores(11, 12, 11)
-        base = promote({}, first, RUBRIC, checkpoint("a", 1),
-                       "exam-1", candidate_roles({}, first, RUBRIC))
-        self.assertEqual(candidate_roles(base, scores(10, 11, 10), RUBRIC), ())
-        self.assertEqual(candidate_roles(base, first, RUBRIC), ())
+        base = promote({}, scores(6, 8, 4), RUBRIC, checkpoint("a", 1),
+                       "exam-1", tuple(scores(6, 8, 4)))
+        self.assertEqual(candidate_roles(base, scores(4, 6, 3), RUBRIC), ())
+        self.assertEqual(candidate_roles(base, scores(6, 8, 4), RUBRIC), ())
 
     def test_ties_can_consolidate_multiple_independent_champions(self):
-        first = scores(11, 12, 11)
-        base = promote({}, first, RUBRIC, checkpoint("a", 1),
-                       "exam-1", candidate_roles({}, first, RUBRIC))
-        second = scores(12, 10, 10)
-        base = promote(base, second, RUBRIC, checkpoint("b", 2),
+        base = promote({}, scores(5, 8, 4), RUBRIC, checkpoint("a", 1),
+                       "exam-1", tuple(scores(5, 8, 4)))
+        base = promote(base, scores(7, 7, 3), RUBRIC, checkpoint("b", 2),
                        "exam-2", ("A.IDENTITY",))
-        self.assertEqual(set(candidate_roles(base, scores(12, 12, 11), RUBRIC)),
+        self.assertEqual(set(candidate_roles(base, scores(7, 8, 4), RUBRIC)),
                          {"A.IDENTITY", "A.LINK", "A.EDGE"})
 
     def test_retirement_plan_checks_all_holders_and_unrecognized_content(self):
@@ -164,10 +143,8 @@ class CapabilityFrontierTests(unittest.TestCase):
                 for filename in ("manifest.json", "semantic-catalog.json",
                                  "model-and-own-adamw.safetensors"):
                     (folder / filename).write_bytes(b"fixture")
-            first = scores(11, 11, 11)
-            front = promote({}, first, RUBRIC,
-                            checkpoint("capability", 1), "exam",
-                            candidate_roles({}, first, RUBRIC))
+            front = promote({}, scores(5, 6, 4), RUBRIC,
+                            checkpoint("capability", 1), "exam", tuple(scores(5, 6, 4)))
             protected = pinned(front, checkpoint("current", 3),
                                {"A": checkpoint("grade", 2)})
             self.assertEqual(retirement_plan(Path(temp), protected),
@@ -201,7 +178,7 @@ class CapabilityFrontierTests(unittest.TestCase):
                 (d / "manifest.json").write_text(json.dumps({
                     "safetensors_sha256": f"{i:064x}", "optimizer_step": i}))
             with (root / "events.jsonl").open("w") as log:
-                for i, vals in ((1, scores(11, 12, 11)), (2, scores(12, 11, 12))):
+                for i, vals in ((1, scores(5, 7, 4)), (2, scores(6, 6, 5))):
                     log.write(json.dumps({"event": "GRADE_A_EXAM_COMMITTED",
                         "rubric": RUBRIC, "generation": i,
                         "student_sha256": f"{i:064x}", "scores": vals}) + "\n")
@@ -240,7 +217,7 @@ class CapabilityFrontierTests(unittest.TestCase):
                        "capability_best": {RUBRIC + ":A.IDENTITY": {
                            "checkpoint": best["leader"],
                            "rubric": RUBRIC, "capability": "A.IDENTITY",
-                           "correct": 11, "total": 12}}}
+                           "correct": 5, "total": 12}}}
             _verify_best_custody(root, receipt)
             (root / "bundles/leader/model-and-own-adamw.safetensors").write_bytes(
                 b"same file name, wrong bytes")

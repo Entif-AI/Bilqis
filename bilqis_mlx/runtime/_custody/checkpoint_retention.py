@@ -13,12 +13,12 @@ def mentor_epoch_references(receipt):
     if receipt.get("mentor_epoch") is None:
         return ()
     from bilqis_mlx.learning.mentor_epoch import reference_checkpoints
-    epoch = receipt["mentor_epoch"]
-    return (
-        *reference_checkpoints(epoch),
-        *(item["checkpoint"] for item in
-          _learning_epoch_championships.active_frontier(epoch).values()),
-    )
+    epochs = (*receipt.get("championship_epoch_history", ()), receipt["mentor_epoch"])
+    return tuple(pointer for epoch in epochs
+                 for pointer in (
+                     *reference_checkpoints(epoch),
+                     *(item["checkpoint"] for item in
+                       _learning_epoch_championships.active_frontier(epoch).values())))
 
 
 def regression_recovery_checkpoint(receipt):
@@ -46,29 +46,26 @@ def verify_frozen_soup_custody(run_dir, receipt):
 
 def verify_best_custody(run_dir, receipt):
     school = receipt["school"]
-    epoch = receipt.get("mentor_epoch")
-    historical_pending = (
-        receipt.get("historical_capability_best", {})
-        if epoch is None and receipt.get("legacy_frontier_pending_replay") else {})
-    grade_champions = school["champions"] if epoch is None else {}
-    active_best = (_learning_capability_frontier.qualified_frontier(
-        receipt.get("capability_best", {})) if epoch is None else {})
-    graduation_perfect = receipt.get("graduation_perfect", {}) if epoch is None else {}
-    sources = [school["current_student"], *grade_champions.values(),
-               *(cap["checkpoint"] for cap in active_best.values()),
-               *(cap["checkpoint"] for cap in graduation_perfect.values()),
+    historical_pending = (receipt.get("historical_capability_best", {})
+                          if receipt.get("legacy_frontier_pending_replay") else {})
+    sources = [school["current_student"], *school["champions"].values(),
+               *receipt.get("historical_grade_champions", {}).values(),
+               *(cap["checkpoint"] for cap in receipt.get("capability_best", {}).values()),
+               *(cap["checkpoint"] for cap in receipt.get("graduation_perfect", {}).values()),
                *(cap["checkpoint"] for cap in historical_pending.values())]
     protected = _learning_capability_frontier.pinned(
-        active_best, school["current_student"], grade_champions)
+        receipt.get("capability_best", {}), school["current_student"], school["champions"])
     protected |= _learning_capability_frontier.pinned(
-        graduation_perfect, school["current_student"], grade_champions)
+        receipt.get("graduation_perfect", {}), school["current_student"], school["champions"])
     abandoned = regression_recovery_checkpoint(receipt)
     if abandoned is not None:
         sources.append(abandoned)
         protected |= _learning_capability_frontier.pinned({}, abandoned, {})
     if historical_pending:
         protected |= _learning_capability_frontier.pinned(
-            historical_pending, school["current_student"], grade_champions)
+            historical_pending, school["current_student"], school["champions"])
+    for item in receipt.get("historical_grade_champions", {}).values():
+        protected |= _learning_capability_frontier.pinned({}, item, {})
     if receipt.get("curriculum_parent"):
         sources.append(receipt["curriculum_parent"])
         protected |= _learning_capability_frontier.pinned({}, receipt["curriculum_parent"], {})

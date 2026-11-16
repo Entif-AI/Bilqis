@@ -3,18 +3,6 @@
 **Status:** Normative for the isolated human-training experiment; 2026-10-18, ADR-054 as refined by ADR-055 through ADR-057 and ADR-079.
 **Scope:** Candidate student + own AdamW admission during individual training visits. Separate from championship succession and whole-school graduation.
 
-**2026-11-15 BAMF foundation amendment (ADR-142):** In
-`FOUNDATION_ACQUISITION`, curriculum admission alone does not create protected
-retention authority. A capability earns its first ordinary protected baseline only
-after retained learning targeting that capability, and an unaccepted candidate may
-not bootstrap its own protection. Keep full fixed-school measurement, but use
-one-vote-per-capability normalized quadratic mastery-debt utility
-`(1-a_before)^2 - (1-a_after)^2` for foundation tradeoffs instead of the fixed
-reference-loss budget below. Raw-negative measured scopes may pass only when that
-same scope has positive utility. This amendment is specific to BAMF foundation
-acquisition; later retention regimes retain their existing contracts unless
-separately superseded.
-
 ## Reproduced failure
 
 The isolated run's immutable event generation **11566** accepted a B.XOR candidate at attempted step **230680** (PROVISIONAL, PAIRED_SCREEN_WITHIN_BUDGET) and retained **16** optimizer steps. Its own paired source-oracled panel measured **B.XOR +1, B.IFF -1, B.IMPLIES -1**, hence **Grade B net -1**. The recorded protected aggregate was diagnostic and did not gate admission. Independent fixed-cohort exams also show declines between successive retained student checkpoints; these separate exams are corroboration, not substitutes for the exact paired candidate evidence.

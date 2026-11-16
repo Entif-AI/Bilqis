@@ -261,22 +261,14 @@ def _compare_incumbents(mx, run_dir, receipt, cohort, config, answer_ids, graph)
     """Replay every unique historical and current leader on this exact cohort."""
     historic = receipt.get("historical_capability_best", {}) if receipt.get(
         "legacy_frontier_pending_replay") else {}
-    epoch = receipt.get("mentor_epoch")
-    current = (
-        _learning_epoch_championships.active_frontier(epoch)
-        if epoch is not None else
-        _learning_capability_frontier.qualified_frontier(
-            receipt.get("capability_best", {})))
-    references = list(current.values())
-    if epoch is None:
-        references += list(historic.values())
-        references += list(receipt.get("graduation_perfect", {}).values())
-        # Legacy pre-epoch runs used graduated-grade checkpoint pointers as
-        # frozen championship incumbents.  Once mentor_epoch exists, those
-        # pointers are graduation-status metadata only and must not survive a
-        # new-semantic reset as championship authority.
-        references.extend({"checkpoint": p} for p in
-                          receipt["school"]["champions"].values())
+    current = receipt.get("capability_best", {})
+    references = list(current.values()) + list(historic.values()) + list(receipt.get("graduation_perfect", {}).values())
+    references.extend({"checkpoint": p} for p in
+                      receipt.get("historical_grade_champions", {}).values())
+    # A graduate keeps a teacher/champion vote even if its current capability
+    # best slot was superseded under a newer multi-grade rubric.
+    references.extend({"checkpoint": p} for p in
+                      receipt["school"]["champions"].values())
     unique = {}
     for item in references:
         pointer = item["checkpoint"]
