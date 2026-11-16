@@ -21,6 +21,13 @@ class LawfulTeachingDisposition(str, Enum):
     IMPLEMENTATION_UNCOVERED = "IMPLEMENTATION_UNCOVERED"
 
 
+class ActiveGeneratedGradeState(str, Enum):
+    INCOMPLETE_READY = "INCOMPLETE_READY"
+    INCOMPLETE_HELD = "INCOMPLETE_HELD"
+    COMPLETE = "COMPLETE"
+    GLOBAL_FIXED_POINT = "GLOBAL_FIXED_POINT"
+
+
 @dataclass(frozen=True, order=True)
 class LawfulTeachingHold:
     code: str
@@ -89,6 +96,10 @@ class LawfulTeachingFrontier:
     correction_generation: int
     policy_epoch: int
     source_authority_registry_sha256: str
+    active_grade_activation_sha256: str
+    active_grade_definition_sha256: str
+    active_grade_members: tuple[tuple[str, str], ...]
+    active_grade_state: ActiveGeneratedGradeState
     capabilities: tuple[LawfulTeachingCapability, ...]
     frontier_sha256: str
     schema: str = FRONTIER_SCHEMA
@@ -132,6 +143,15 @@ class LawfulTeachingFrontier:
             "policy_epoch": self.policy_epoch,
             "source_authority_registry_sha256":
                 self.source_authority_registry_sha256,
+            "active_grade_activation_sha256":
+                self.active_grade_activation_sha256,
+            "active_grade_definition_sha256":
+                self.active_grade_definition_sha256,
+            "active_grade_members": [
+                [capability_id, semantic_id]
+                for capability_id, semantic_id in self.active_grade_members
+            ],
+            "active_grade_state": self.active_grade_state.value,
             "capabilities": [item.to_record() for item in self.capabilities],
             "frontier_sha256": self.frontier_sha256,
         }
