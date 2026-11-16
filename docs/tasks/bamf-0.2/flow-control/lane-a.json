@@ -1,10 +1,20 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "2c572202978df9542e379cfb975007cdea3f05ad",
-  "updated_at": "2026-11-10T17:24:27Z",
+  "observed_unified": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
+  "updated_at": "2026-11-16T15:21:04Z",
   "exception": null,
   "items": [
+    {
+      "issue": 1320,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
+      "head_sha_role": "feature branch created from exact reviewed unified baseline; design EGM and mandatory structural interruption pending before feature implementation",
+      "summary": "#1320 learner-relative next-grade synthesis is ACTIVE on an isolated issue branch. Exact reviewed unified 1f077f2a consumed. No production implementation yet. EGM design review is pending and AGENTS structural interruption must refactor encountered factory/model.py and factory/autonomy.py before feature implementation resumes.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1320-dynamic-grade-synthesis-20261116"
+    },
     {
       "issue": 429,
       "pr": 952,
