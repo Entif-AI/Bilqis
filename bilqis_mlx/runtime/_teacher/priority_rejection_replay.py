@@ -14,7 +14,7 @@ SHA256_HEX_LENGTH = 64
 
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 @lru_cache(maxsize=16)

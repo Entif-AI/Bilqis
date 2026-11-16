@@ -1821,6 +1821,162 @@ Message: Cognitive package is invalid: {reason}
 
 Recovery: Preserve the receiver generation; inspect exact bindings and source clearance before staging again.
 
+### `SCHOOL.BAMF_CURRICULUM.INVALID`
+
+Curriculum priority authority invalid.
+
+Owner: `runtime.priority_qualification`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Curriculum priority authority invalid: {reason}
+
+Recovery: Reload accepted learner, release and teacher authority; inspect the detailed reason before selecting work.
+
+### `SCHOOL.BAMF_CURRICULUM.NOT_ADMITTED`
+
+Capability not admitted.
+
+Owner: `runtime.priority_qualification`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Capability not admitted: {reason}
+
+Recovery: Use C07 to admit a source-qualified executable capability before teaching it.
+
+### `SCHOOL.BAMF_CURRICULUM.NOT_TEACHABLE`
+
+Admitted capability not currently teachable.
+
+Owner: `runtime.priority_qualification`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Admitted capability not currently teachable: {reason}
+
+Recovery: Rebuild the current learner frontier and inspect its eligibility evidence.
+
+### `SCHOOL.BAMF_CURRICULUM.PREREQUISITE_HELD`
+
+Prerequisite or learner evidence required.
+
+Owner: `runtime.priority_qualification`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Prerequisite or learner evidence required: {reason}
+
+Recovery: Establish the required prerequisite evidence through lawful teaching and reassess this dependent capability.
+
+### `SCHOOL.BAMF_CURRICULUM.SOURCE_HELD`
+
+Source, rights or correction authority held.
+
+Owner: `runtime.priority_qualification`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Source, rights or correction authority held: {reason}
+
+Recovery: Requalify the exact source binding, rights and correction epoch; preserve unrelated lawful work.
+
+### `SCHOOL.BAMF_RETENTION.BASELINE_ABSENT`
+
+Baseline absent or unmeasured.
+
+Owner: `runtime.capability_retention`
+Disposition: `MEASURE_WITH_CURRENT_AUTHORITY`
+Self-heal owner: `none`
+
+Message: Baseline absent or unmeasured: {reason}
+
+Recovery: Obtain a lawful baseline under the current evidence identity before comparing regression.
+
+### `SCHOOL.BAMF_RETENTION.COMPARABLE_REGRESSION`
+
+Comparable retention regression.
+
+Owner: `runtime.capability_retention`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Comparable retention regression: {reason}
+
+Recovery: Inspect the producer's blocking capability or scope and comparable evidence; preserve the accepted learner.
+
+### `SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID`
+
+B11 exact source execution authority invalid.
+
+Owner: `runtime.b11_source_execution_authority`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: B11 exact source execution authority invalid: {reason}
+
+Recovery: Rebind the exact emitted row to its canonical source owner and current rights/correction authority before execution.
+
+### `SCHOOL.BAMF_ADMISSION.LEASE_REQUIRED`
+
+C07 admission lease required.
+
+Owner: `runtime.atlas_flywheel`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: C07 admission lease required: {reason}
+
+Recovery: Use the existing explicit enrollment path for an accepted lease covering this successor.
+
+### `SCHOOL.BAMF_ADMISSION.WAITING_FOR_EVIDENCE`
+
+C07 waiting for learner evidence.
+
+Owner: `runtime.atlas_flywheel`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: C07 waiting for learner evidence: {reason}
+
+Recovery: Establish the planner's required learner evidence and replan through C07.
+
+### `SCHOOL.BAMF_ADMISSION.HELD`
+
+C07 admission held.
+
+Owner: `runtime.atlas_flywheel`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: C07 admission held: {reason}
+
+Recovery: Inspect the exact admission hold and source/custody authority before retrying.
+
+### `SCHOOL.BAMF_ADMISSION.IMPLEMENTATION_UNCOVERED`
+
+C07 implementation uncovered.
+
+Owner: `runtime.atlas_flywheel`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: C07 implementation uncovered: {reason}
+
+Recovery: Implement and independently qualify the missing Factory construction before admission.
+
+### `SCHOOL.BAMF_ADMISSION.FIXED_POINT`
+
+C07 no ready delta.
+
+Owner: `runtime.atlas_flywheel`
+Disposition: `NO_READY_DELTA`
+Self-heal owner: `none`
+
+Message: C07 no ready delta: {reason}
+
+Recovery: Inspect current coverage and obligations; replan only after source, evidence or admission state changes.
+
 ## Operational signals and blockers
 
 These terms are not exceptions. They describe a controlled stop, handoff, or gate.

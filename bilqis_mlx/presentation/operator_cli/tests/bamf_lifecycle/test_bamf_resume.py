@@ -155,6 +155,7 @@ class BamfResumeTests(BamfFirstStudentCase):
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
                 return_value=SimpleNamespace(
                     status=AdmissionFlywheelStatus.WAITING_FOR_EVIDENCE,
+                    reason="LEARNER_EVIDENCE_REQUIRED", advances=2,
                 )) as flywheel, patch(
                 "bilqis_mlx.presentation.operator_cli.command._invoke_learner",
                 side_effect=AssertionError("BAMF v2 must not re-enter the legacy learner")), patch(
@@ -169,6 +170,9 @@ class BamfResumeTests(BamfFirstStudentCase):
         report = json.loads(output)
         self.assertEqual(report["status"], "VISIT_LIMIT")
         self.assertEqual(report["admission_status"], "WAITING_FOR_EVIDENCE")
+        self.assertEqual(report["admission_reason"], "LEARNER_EVIDENCE_REQUIRED")
+        self.assertEqual(report["admission_advances"], 2)
+        self.assertEqual(report["admission_label"], "C07 waiting for learner evidence")
         flywheel.assert_called_once()
         self.assertEqual(Path(flywheel.call_args.args[0]), target.resolve())
         call = operate.call_args
@@ -189,6 +193,7 @@ class BamfResumeTests(BamfFirstStudentCase):
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
                 return_value=SimpleNamespace(
                     status=AdmissionFlywheelStatus.HELD,
+                    reason="EXACT_HOLD", advances=3,
                 )), patch(
                 "bilqis_mlx.runtime.bamf_operator.operate_bamf",
                 side_effect=AssertionError("ambiguous admission hold must stop learning")):
@@ -198,6 +203,8 @@ class BamfResumeTests(BamfFirstStudentCase):
         self.assertEqual((code, errors), (0, ""))
         report = json.loads(output)
         self.assertEqual(report["result"], "HELD")
+        self.assertEqual(report["admission_reason"], "EXACT_HOLD")
+        self.assertEqual(report["admission_advances"], 3)
         self.assertEqual(report["admission_policy"], "atlas-release")
         self.assertEqual(report["neural_updates"], 0)
 

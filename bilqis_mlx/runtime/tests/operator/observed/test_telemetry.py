@@ -4,7 +4,11 @@ from tempfile import TemporaryDirectory
 import time
 import unittest
 
-from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.errors import ErrorBus
+from bilqis_mlx.runtime.topology_v2.spec import ModelTopologySpecV2
+from bilqis_mlx.runtime.b11_source_execution_authority import (
+    B11SourceExecutionAuthority, require_b11_source_execution_authority_current,
+)
 from bilqis_mlx.runtime.bamf_operator.telemetry import TrainerObservation
 
 
@@ -37,13 +41,11 @@ class TrainerObservationTests(unittest.TestCase):
 
             with self.assertRaises(ValueError):
                 with TrainerObservation(root, 11):
-                    ErrorBus.Raise(
-                        SCHOOL.MODEL_TOPOLOGY.INVALID,
-                        reason='B11_EXECUTION_BINDING_MISMATCH')
+                    B11SourceExecutionAuthority()
             failed = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
             self.assertEqual(failed['outcome'], 'INTERRUPTED')
-            self.assertEqual(failed['error_code'], 'SCHOOL.MODEL_TOPOLOGY.INVALID')
-            self.assertEqual(failed['error_detail'], 'B11_EXECUTION_BINDING_MISMATCH')
+            self.assertEqual(failed['error_code'], 'SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID')
+            self.assertEqual(failed['error_detail'], 'B11_SOURCE_EXECUTION_AUTHORITY_CALLER_CONSTRUCTION_FORBIDDEN')
 
     def test_active_step_ticks_live_and_completed_steps_are_retained(self):
         with TemporaryDirectory() as tmp:
@@ -165,3 +167,24 @@ class TrainerObservationTests(unittest.TestCase):
             retention = [item['visits'][-1] for item in reads if item['visits'][-1]['phase'] == 'RETENTION']
             self.assertTrue(retention)
             self.assertTrue(all(item['candidate_step'] == 11 and item['retention_completed'] == 2 for item in retention))
+
+
+def test_b11_authority_error_report_and_topology_negative_control():
+    import pytest
+    for call, reason in (
+        (lambda: B11SourceExecutionAuthority(), 'B11_SOURCE_EXECUTION_AUTHORITY_CALLER_CONSTRUCTION_FORBIDDEN'),
+        (lambda: require_b11_source_execution_authority_current(None, None, None, None),
+         'B11_SOURCE_EXECUTION_AUTHORITY_DRIFT'),
+    ):
+        with pytest.raises(ValueError) as failure:
+            call()
+        report = ErrorBus.report(failure.value)
+        assert report.code == 'SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID'
+        assert report.context['reason'] == reason
+        assert report.preserve_state
+        assert report.disposition == 'PRESERVE_AND_INSPECT'
+    with pytest.raises(ValueError) as failure:
+        ModelTopologySpecV2(layers=0)
+    report = ErrorBus.report(failure.value)
+    assert report.code == 'SCHOOL.MODEL_TOPOLOGY.INVALID'
+    assert report.context['field'] == 'layers'

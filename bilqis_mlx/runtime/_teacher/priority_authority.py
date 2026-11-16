@@ -34,7 +34,7 @@ _SOURCE_EACH = DEFAULT_BINARY_BALANCE.minimum_total
 
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 @dataclass(frozen=True)

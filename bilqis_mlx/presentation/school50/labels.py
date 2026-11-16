@@ -1,6 +1,16 @@
 from __future__ import annotations
 
 from types import MappingProxyType
+from bilqis_mlx.errors.authority import authority_label, authority_report
+
+
+def _authority_candidate_reason(candidate: dict) -> str | None:
+    reason = candidate.get("reason")
+    if authority_report(reason, domain="retention") is None:
+        return None
+    return authority_label(reason, domain="retention",
+                           blocking_capability=candidate.get("blocking_capability"),
+                           blocking_scope=candidate.get("blocking_scope"))
 
 
 def _signal_label(signal) -> str:
@@ -39,7 +49,7 @@ def _candidate_result_reason(event: dict) -> tuple[str, str]:
     if not isinstance(candidate, dict):
         return "UNK", "ADMISSION UNKNOWN"
     reason = str(candidate.get("reason") or "UNKNOWN")
-    reason = _REASON_LABELS.get(reason, reason)
+    reason = _authority_candidate_reason(candidate) or _REASON_LABELS.get(reason, reason)
     if candidate.get("decision") == "PROVISIONAL" and type(steps) is int and steps > 0:
         return "RETAIN", reason
     if candidate.get("decision") == "REJECT" and steps == 0:
@@ -60,7 +70,10 @@ def _candidate_admission_text(event: dict) -> str:
         label = f"RETAIN {steps}"
     elif candidate.get("decision") == "REJECT" and steps == 0:
         reason = candidate.get("reason")
-        if reason == "NO_MEASURABLE_TARGET_GAIN":
+        authority = _authority_candidate_reason(candidate)
+        if authority is not None:
+            label = "REJECT " + authority
+        elif reason == "NO_MEASURABLE_TARGET_GAIN":
             label = "REJECT NO TARGET GAIN"
         elif reason == "FRAGILE_COMPOSITION_REPLAY_REGRESSION":
             label = "REJECT OR/XOR LOSS"

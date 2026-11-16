@@ -117,6 +117,11 @@ def retention_result(
             **({"observer": lambda fields: observer.update(**fields)}
                if observer is not None else {}))
         decision = issue_decision(evaluation)
+        if not decision.accepted:
+            from bilqis_mlx.errors.authority import authority_label
+            emit_progress(progress, "retention decision: " + authority_label(
+                decision.reason, blocking_capability=getattr(
+                    getattr(evaluation, "decision", None), "blocking_capability", None)))
         identity_metrics = identity_delta(identity_before)
         retained = (
             evaluation.candidate_state if decision.accepted else evaluation.parent_state)

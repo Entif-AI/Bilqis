@@ -17,7 +17,7 @@ PRIORITY_OFFER_PAIR_WIDTH = 2
 
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 @dataclass(frozen=True)
@@ -130,15 +130,19 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
             eligible.append(option)
             continue
         cap, context = option.context.capability_id, option.context
+        if (cap not in release.execution_plan.capability_map
+                or cap not in release.curriculum.capability_map):
+            holds.append((option.stable_id, 'CAPABILITY_NOT_ADMITTED'))
+            continue
+        if cap not in release.source_bindings.by_capability:
+            holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
+            continue
+        if _grade(program, school, cap) is None:
+            holds.append((option.stable_id, 'CAPABILITY_NOT_TEACHABLE'))
+            continue
         offer = by_id.get(option.stable_id)
         if offer is None:
             holds.append((option.stable_id, 'SOURCE_OFFER_MISSING'))
-            continue
-        if (cap not in release.execution_plan.capability_map
-                or cap not in release.curriculum.capability_map
-                or cap not in release.source_bindings.by_capability
-                or _grade(program, school, cap) is None):
-            holds.append((option.stable_id, 'CAPABILITY_NOT_ADMITTED'))
             continue
         if (context.semantic_release != release.release_sha256
                 or context.generation_digest != cache.generation_binding
