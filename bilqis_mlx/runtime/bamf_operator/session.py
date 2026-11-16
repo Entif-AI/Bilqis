@@ -270,6 +270,22 @@ def _accepted_admission_reentry(
     }.get(result.status)
     return result.status.value, result.advances, stop_status
 
+def _accepted_learning_reentry(
+        run_dir: Path, parent_graph: dict, reserve_gib: float, progress=None):
+    """Refresh accepted learner evidence before C07 considers another successor."""
+    from .accepted_learning_evidence import refresh_accepted_learning_evidence
+
+    evidence = refresh_accepted_learning_evidence(
+        Path(run_dir), progress=progress)
+    _emit_progress(
+        progress,
+        "accepted learner evidence refresh: "
+        f"{evidence.measured} measured, {evidence.passed} passed; "
+        f"next {evidence.final_action}",
+    )
+    return _accepted_admission_reentry(
+        run_dir, parent_graph, reserve_gib, progress)
+
 def operate_bamf(
     run_dir: Path, *, minutes: int = 90,
     max_visits: int = 0, steps_per_visit: int = 16,
@@ -294,6 +310,6 @@ def operate_bamf(
         accepted_reentry=(
             None if parent_graph is None else
             lambda current_run_dir, current_reserve_gib, current_progress:
-            _accepted_admission_reentry(
+            _accepted_learning_reentry(
                 current_run_dir, parent_graph, current_reserve_gib,
                 current_progress)))

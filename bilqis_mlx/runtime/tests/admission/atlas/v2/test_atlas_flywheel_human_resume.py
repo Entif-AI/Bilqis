@@ -221,7 +221,11 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
 
                 with patch(
                         "bilqis_mlx.runtime.bamf_operator.session._visit",
-                        side_effect=fake_visit):
+                        side_effect=fake_visit), patch(
+                        "bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence."
+                        "refresh_accepted_learning_evidence",
+                        return_value=SimpleNamespace(
+                            measured=0, passed=0, final_action="QUALIFICATION")):
                     result = operate_bamf(
                         self.run, minutes=1, max_visits=0, reserve_gib=100.,
                         source_prefetch_workers=0, parent_graph=self.parent_graph)
