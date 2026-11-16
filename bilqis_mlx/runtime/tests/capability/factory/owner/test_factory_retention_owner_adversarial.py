@@ -26,6 +26,96 @@ import mlx.core as mx
 from bilqis_mlx.errors.model import BilqisError
 
 
+def _foundation_owner_fixture():
+    release_sha = "a" * 64
+    target = "B.IDBOOLOPS"
+    capabilities = (
+        SimpleNamespace(capability_id="B.AND", grade_id="B"),
+        SimpleNamespace(capability_id=target, grade_id="B"),
+    )
+    release = SimpleNamespace(
+        release_sha256=release_sha,
+        execution_plan=SimpleNamespace(
+            capabilities=capabilities,
+            capability_map={item.capability_id: item for item in capabilities},
+        ),
+    )
+    source = SimpleNamespace(
+        __post_init__=lambda: None,
+        release=release,
+        require_accepted_runtime=Mock(),
+    )
+    candidate = object.__new__(CandidateTransaction)
+    object.__setattr__(candidate, "training_authorities", (
+        SimpleNamespace(delivery_capability=target, release_sha256=release_sha),
+    ))
+    fixed = SimpleNamespace(rows=({"id": "fixed"},), seed=7)
+    fresh = Mock(side_effect=AssertionError(
+        "foundation acceptance constructed measure-only fresh rows"))
+    policy_factory = Mock(return_value=object())
+    decision = Decision(
+        DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
+        "a" * 64, "b" * 64, "c" * 64, "d" * 64)
+    return source, candidate, target, fixed, fresh, policy_factory, decision
+
+
+def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
+                               policy_factory, decision):
+    release_sha = source.release.release_sha256
+    with patch(
+            "bilqis_mlx.runtime.bamf_bundle.genesis.records."
+            "successor_candidate_identity_digest", return_value="f" * 64), \
+            patch.multiple(
+                owner,
+                create=True,
+                _training_exclusions=Mock(
+                    return_value=(("trained-family",), ("trained-episode",))),
+                _candidate_from_live_parent=Mock(return_value=(
+                    SimpleNamespace(
+                        retained_state=object(), run_identity=None,
+                        run_id="fixture-run", generation=0, baseline_evidence=None),
+                    SimpleNamespace(
+                        retained_state=object(),
+                        parent_manifest_sha256="0" * 64,
+                        transition={
+                            "schema": "bilqis.mlx.bamf-generation-transition/v3",
+                            "kind": "MOTIF_ALLOCATION",
+                        }),
+                    object(), SimpleNamespace(accepted_manifest_sha256="0" * 64))),
+                candidate_identity_digest=Mock(return_value="d" * 64),
+                _owner_seed=Mock(return_value=11),
+                read_current=Mock(return_value={"factory_release_sha256": release_sha}),
+                frontier_exam=Mock(return_value={"factory_release_sha256": release_sha}),
+                load_frontier_cohort=Mock(return_value=fixed),
+                _fresh_rows=fresh,
+                _instruments=Mock(return_value=(SimpleNamespace(case=SimpleNamespace()),)),
+            ), patch.multiple(
+                owner_screen,
+                case_census_digest=Mock(return_value="e" * 64),
+                _cohort=Mock(return_value=SimpleNamespace(
+                    rubric_sha256="1" * 64, scope_sha256="2" * 64,
+                    policy_sha256="3" * 64, source_sha256="4" * 64,
+                    evidence_stage=owner.CURRENT_EVIDENCE_STAGE)),
+                FoundationRetentionPolicy=policy_factory,
+                factory_complete_solver=Mock(side_effect=(
+                    (object(), "b" * 64), (object(), "c" * 64))),
+                factory_parent_assessment_identity=Mock(return_value=SimpleNamespace(
+                    factory_release_sha256="5" * 64,
+                    semantic_catalog_sha256="6" * 64,
+                    source_authority_registry_sha256=None,
+                    correction_frontier_sha256="7" * 64,
+                    evaluation_contract_sha256="8" * 64,
+                    fixed_cohort_sha256="9" * 64)),
+                use_parent_assessment=Mock(return_value=(
+                    object(),
+                    ParentAssessmentCacheReceipt("1" * 64, "2" * 64, "3" * 64, False))),
+                evaluate_foundation_fixed_school_candidate=Mock(return_value=decision),
+                candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
+                candidate_identity_binding_for_state=Mock(return_value=None)):
+        return evaluate_factory_retention_candidate(
+            source, candidate, "artifact", target, run_dir=Path("unused"))
+
+
 class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
     def test_optimizer_delta_summary_distinguishes_decay_only_from_gradient_driven_change(self):
         parent = SimpleNamespace(retained_state=SimpleNamespace(
@@ -52,86 +142,9 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(summary["readout"]["zero_gradient_changed_parameters"], 0)
 
     def test_foundation_owner_does_not_construct_measure_only_fresh_cohorts(self):
-        release_sha = "a" * 64
-        target = "B.IDBOOLOPS"
-        capabilities = (
-            SimpleNamespace(capability_id="B.AND", grade_id="B"),
-            SimpleNamespace(capability_id=target, grade_id="B"),
-        )
-        release = SimpleNamespace(
-            release_sha256=release_sha,
-            execution_plan=SimpleNamespace(
-                capabilities=capabilities,
-                capability_map={item.capability_id: item for item in capabilities},
-            ),
-        )
-        source = SimpleNamespace(
-            __post_init__=lambda: None,
-            release=release,
-            require_accepted_runtime=Mock(),
-        )
-        candidate = object.__new__(CandidateTransaction)
-        object.__setattr__(candidate, "training_authorities", (
-            SimpleNamespace(delivery_capability=target, release_sha256=release_sha),
-        ))
-        fixed = SimpleNamespace(rows=({"id": "fixed"},), seed=7)
-        fresh = Mock(side_effect=AssertionError(
-            "foundation acceptance constructed measure-only fresh rows"))
-        policy_factory = Mock(return_value=object())
-        decision = Decision(
-            DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
-            "a" * 64, "b" * 64, "c" * 64, "d" * 64)
-
-        with patch(
-                "bilqis_mlx.runtime.bamf_bundle.genesis.records."
-                "successor_candidate_identity_digest", return_value="f" * 64), \
-                patch.multiple(
-                    owner,
-                    create=True,
-                    _training_exclusions=Mock(return_value=(("trained-family",), ("trained-episode",))),
-                    _candidate_from_live_parent=Mock(return_value=(
-                        SimpleNamespace(
-                            retained_state=object(), run_identity=None,
-                            run_id="fixture-run", generation=0, baseline_evidence=None),
-                    SimpleNamespace(
-                        retained_state=object(),
-                        parent_manifest_sha256="0" * 64,
-                        transition={
-                            "schema": "bilqis.mlx.bamf-generation-transition/v3",
-                            "kind": "MOTIF_ALLOCATION",
-                        }),
-                    object(), SimpleNamespace(accepted_manifest_sha256="0" * 64))),
-                    candidate_identity_digest=Mock(return_value="d" * 64),
-                    _owner_seed=Mock(return_value=11),
-                    read_current=Mock(return_value={"factory_release_sha256": release_sha}),
-                    frontier_exam=Mock(return_value={"factory_release_sha256": release_sha}),
-                    load_frontier_cohort=Mock(return_value=fixed),
-                    _fresh_rows=fresh,
-                    _instruments=Mock(return_value=(SimpleNamespace(case=SimpleNamespace()),)),
-                ), patch.multiple(
-                    owner_screen,
-                    case_census_digest=Mock(return_value="e" * 64),
-                    _cohort=Mock(return_value=SimpleNamespace(
-                        rubric_sha256="1" * 64, scope_sha256="2" * 64,
-                        policy_sha256="3" * 64, source_sha256="4" * 64,
-                        evidence_stage=owner.CURRENT_EVIDENCE_STAGE)),
-                    FoundationRetentionPolicy=policy_factory,
-                    factory_complete_solver=Mock(side_effect=((object(), "b" * 64),
-                                                              (object(), "c" * 64))),
-                    factory_parent_assessment_identity=Mock(return_value=SimpleNamespace(
-                        factory_release_sha256="5" * 64,
-                        semantic_catalog_sha256="6" * 64,
-                        source_authority_registry_sha256=None,
-                        correction_frontier_sha256="7" * 64,
-                        evaluation_contract_sha256="8" * 64,
-                        fixed_cohort_sha256="9" * 64)),
-                    use_parent_assessment=Mock(return_value=(object(), ParentAssessmentCacheReceipt(
-                        "1" * 64, "2" * 64, "3" * 64, False))),
-                    evaluate_foundation_fixed_school_candidate=Mock(return_value=decision),
-                    candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
-                    candidate_identity_binding_for_state=Mock(return_value=None)):
-            result = evaluate_factory_retention_candidate(
-                source, candidate, "artifact", target, run_dir=Path("unused"))
+        fixture = _foundation_owner_fixture()
+        source, candidate, target, _, fresh, policy_factory, _ = fixture
+        result = _evaluate_foundation_owner(*fixture)
 
         self.assertIsInstance(result, FactoryRetentionEvaluation)
         result.__post_init__()
@@ -142,7 +155,8 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(result.parent_assessment_cache.assessment_sha256, "2" * 64)
         self.assertEqual(result.candidate_generation_authority_sha256, "f" * 64)
         self.assertEqual(
-            _issued_decision_baseline_ledger_sha256(issued), result.baseline_ledger.digest)
+            _issued_decision_baseline_ledger_sha256(issued),
+            result.baseline_ledger.digest)
         self.assertEqual(
             policy_factory.call_args.args[2], (),
             "a virgin accepted parent must not fabricate protected capability baselines")
