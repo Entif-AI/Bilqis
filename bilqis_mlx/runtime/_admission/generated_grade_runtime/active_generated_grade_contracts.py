@@ -222,8 +222,11 @@ def active_from_record(
     if set(record) != expected or record.get(
             "definition_sha256") != definition.definition_sha256:
         _fail("BAMF_ACTIVE_GENERATED_GRADE_RECORD_INVALID")
-    return issue_active_generated_grade(
+    active = issue_active_generated_grade(
         **{key: record[key] for key in expected - {
             "schema", "definition_sha256", "activation_sha256"}},
         definition=definition,
     )
+    if active.activation_sha256 != record["activation_sha256"]:
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_RECORD_INVALID")
+    return active

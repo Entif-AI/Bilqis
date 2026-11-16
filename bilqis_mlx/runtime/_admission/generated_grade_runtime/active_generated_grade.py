@@ -13,7 +13,16 @@ from .active_generated_grade_contracts import (
 )
 from . import active_generated_grade_custody as _custody
 from .generated_grade import (
+    _read_issued_proposal,
     seal_accepted_generated_grade,
+)
+from .active_generated_grade_acceptance import (
+    _persist_proposal_acceptance,
+    _reconcile_accepted_generated_grade,
+)
+from .active_generated_grade_correction import (
+    _issue_correction_transition_authority,
+    require_correction_transition_authority,
 )
 
 
@@ -38,11 +47,18 @@ def _activation_is_accepted_ancestor(
 
 
 def read_active_generated_grade(run_dir: Path) -> ActiveGeneratedGrade:
-    active = _custody._read_stored_active(Path(run_dir))
+    root = Path(run_dir)
+    active = _custody._read_stored_active(root)
     if active is None:
         _fail("BAMF_ACTIVE_GENERATED_GRADE_MISSING")
-    if not _activation_is_accepted_ancestor(Path(run_dir), active):
+    proposal = _read_issued_proposal(root, active.proposal_sha256)
+    if not _activation_is_accepted_ancestor(root, active):
         _fail("BAMF_ACTIVE_GENERATED_GRADE_ACCEPTED_ANCESTRY_DRIFT")
+    if active.transition_kind == "CORRECTION":
+        require_correction_transition_authority(root, active)
+    _reconcile_accepted_generated_grade(root, active, proposal)
+    # Heal only after every accepted-ancestry and transition check succeeds.
+    _custody._persist_commit(root, active)
     return active
 
 
@@ -78,6 +94,7 @@ def _publish_if_current(
     run_dir: Path,
     identity,
     active: ActiveGeneratedGrade,
+    proposal: GeneratedGradeProposal,
     *,
     predecessor: ActiveGeneratedGrade | None,
 ) -> ActiveGeneratedGrade:
@@ -91,14 +108,18 @@ def _publish_if_current(
         if predecessor is None:
             if current is not None:
                 if current.definition == active.definition:
-                    return current
+                    return read_active_generated_grade(root)
                 _fail(
                     "BAMF_ACTIVE_GENERATED_GRADE_TRANSITION_AUTHORITY_REQUIRED")
+            if _custody._activation_history_exists(root):
+                if not _custody._recoverable_initial_orphan(root, active):
+                    _fail("BAMF_ACTIVE_GENERATED_GRADE_POINTER_MISSING")
         elif (
             current is None
             or current.activation_sha256 != predecessor.activation_sha256
         ):
             _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
+        _persist_proposal_acceptance(root, active, proposal)
         _custody._persist_activation(root, active)
     return read_active_generated_grade(root)
 
@@ -112,20 +133,11 @@ def activate_accepted_generated_grade(
     proposal: GeneratedGradeProposal,
 ) -> ActiveGeneratedGrade:
     root = Path(run_dir)
-    definition = seal_accepted_generated_grade(root, proposal)
     identity = _accepted_generation_identity(root)
+    definition = seal_accepted_generated_grade(root, proposal)
     active = _active_from_proposal(identity, proposal, definition)
     return _publish_if_current(
-        root, identity, active, predecessor=None)
-
-
-def _accepted_correction_by_id(
-    run_dir: Path,
-    manifest_sha256: str,
-    correction_event_id: str,
-):
-    return _custody._accepted_correction_by_id(
-        run_dir, manifest_sha256, correction_event_id)
+        root, identity, active, proposal, predecessor=None)
 
 
 def activate_corrected_generated_grade(
@@ -136,22 +148,45 @@ def activate_corrected_generated_grade(
 ) -> ActiveGeneratedGrade:
     root = Path(run_dir)
     predecessor = read_active_generated_grade(root)
+    if (predecessor.transition_kind == "CORRECTION"
+            and predecessor.proposal_sha256 == proposal.proposal_sha256):
+        prior_authority = require_correction_transition_authority(root, predecessor)
+        if prior_authority.correction_record_sha256 == correction_event_id:
+            return predecessor
     identity = _accepted_generation_identity(root)
-    correction = _accepted_correction_by_id(
-        root, identity[2], correction_event_id)
     definition = seal_accepted_generated_grade(root, proposal)
-    if definition.learner_foot_sha256 != (
-            predecessor.definition.learner_foot_sha256):
-        _fail("BAMF_ACTIVE_GENERATED_GRADE_CORRECTION_LEARNER_DRIFT")
-    active = _active_from_proposal(
-        identity, proposal, definition,
-        predecessor=predecessor,
-        transition_kind="CORRECTION",
-        transition_receipt_sha256=correction_event_id,
-        transition_reason=correction.reason_code,
-    )
-    return _publish_if_current(
-        root, identity, active, predecessor=predecessor)
+    from bilqis_mlx.runtime.bamf_bundle.publication import _pointer_lock
+    with _pointer_lock(root, create=True):
+        _require_identity_still_current(root, identity)
+        current = _custody._read_stored_active(root)
+        if current is None:
+            _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
+        if current.activation_sha256 != predecessor.activation_sha256:
+            if (current.transition_kind == "CORRECTION"
+                    and current.proposal_sha256 == proposal.proposal_sha256):
+                prior_authority = require_correction_transition_authority(
+                    root, current)
+                if prior_authority.correction_record_sha256 == correction_event_id:
+                    return current
+            _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
+        authority = _issue_correction_transition_authority(
+            root,
+            accepted_manifest_sha256=identity[2],
+            correction_record_sha256=correction_event_id,
+            predecessor=predecessor,
+            proposal=proposal,
+            definition=definition,
+        )
+        active = _active_from_proposal(
+            identity, proposal, definition,
+            predecessor=predecessor,
+            transition_kind="CORRECTION",
+            transition_receipt_sha256=authority.authority_sha256,
+            transition_reason=authority.reason_code,
+        )
+        _persist_proposal_acceptance(root, active, proposal)
+        _custody._persist_activation(root, active)
+    return read_active_generated_grade(root)
 
 
 _CERTIFIED_TRANSITION_ISSUER = object()
@@ -165,30 +200,13 @@ class _CertifiedGradeTransitionAuthority:
     _issuance: object = field(init=False, repr=False, compare=False)
 
 
-def _issue_certified_grade_transition_authority(
-    predecessor_activation_sha256: str,
-    successor_proposal_sha256: str,
-    certification_receipt_sha256: str,
-) -> _CertifiedGradeTransitionAuthority:
-    """Internal handoff minted by #1334 only after successful certification."""
-    authority = object.__new__(_CertifiedGradeTransitionAuthority)
-    object.__setattr__(
-        authority, "predecessor_activation_sha256",
-        predecessor_activation_sha256)
-    object.__setattr__(authority, "successor_proposal_sha256", successor_proposal_sha256)
-    object.__setattr__(
-        authority, "certification_receipt_sha256", certification_receipt_sha256)
-    object.__setattr__(authority, "_issuance", _CERTIFIED_TRANSITION_ISSUER)
-    return authority
-
-
 def activate_certified_generated_grade(
     run_dir: Path,
     proposal: GeneratedGradeProposal,
     *,
     transition_authority: _CertifiedGradeTransitionAuthority,
 ) -> ActiveGeneratedGrade:
-    """Activate #1320's sealed successor only with #1334-issued authority."""
+    """Consume an authority that only #1334's success path may issue."""
     root = Path(run_dir)
     predecessor = read_active_generated_grade(root)
     if (type(transition_authority) is not _CertifiedGradeTransitionAuthority

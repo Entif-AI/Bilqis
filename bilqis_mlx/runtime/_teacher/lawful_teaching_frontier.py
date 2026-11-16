@@ -70,6 +70,10 @@ def _issue_lawful_teaching_frontier_from_epoch(
     from bilqis_mlx.runtime.active_generated_grade import ensure_active_generated_grade
     active_grade = ensure_active_generated_grade(
         Path(source_context.run_dir))
+    active_grade_members = tuple(
+        (member.capability_id, member.semantic_id)
+        for member in active_grade.definition.members
+    )
     active_members = _active_member_projection(
         epoch.current_release, active_grade)
     mastered = evidence_complete_capabilities(
@@ -118,6 +122,7 @@ def _issue_lawful_teaching_frontier_from_epoch(
         active_grade_activation_sha256=active_grade.activation_sha256,
         active_grade_definition_sha256=(
             active_grade.definition.definition_sha256),
+        active_grade_members=active_grade_members,
         active_grade_state=_active_grade_state(capabilities, planning_status),
         capabilities=capabilities,
         _source_context=source_context,
@@ -203,6 +208,9 @@ def _require_lawful_teaching_frontier(
            != active_grade.activation_sha256
         or frontier.active_grade_definition_sha256
            != active_grade.definition.definition_sha256
+        or frontier.active_grade_members != tuple(
+            (member.capability_id, member.semantic_id)
+            for member in active_grade.definition.members)
     ):
         _invalid("BAMF_LEARNER_FRONTIER_STALE")
     return frontier

@@ -98,6 +98,7 @@ class LawfulTeachingFrontier:
     source_authority_registry_sha256: str
     active_grade_activation_sha256: str
     active_grade_definition_sha256: str
+    active_grade_members: tuple[tuple[str, str], ...]
     active_grade_state: ActiveGeneratedGradeState
     capabilities: tuple[LawfulTeachingCapability, ...]
     frontier_sha256: str
@@ -146,6 +147,10 @@ class LawfulTeachingFrontier:
                 self.active_grade_activation_sha256,
             "active_grade_definition_sha256":
                 self.active_grade_definition_sha256,
+            "active_grade_members": [
+                [capability_id, semantic_id]
+                for capability_id, semantic_id in self.active_grade_members
+            ],
             "active_grade_state": self.active_grade_state.value,
             "capabilities": [item.to_record() for item in self.capabilities],
             "frontier_sha256": self.frontier_sha256,

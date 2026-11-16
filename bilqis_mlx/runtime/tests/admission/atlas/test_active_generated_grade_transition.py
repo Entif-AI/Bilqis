@@ -68,8 +68,18 @@ class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
                 side_effect=lambda _root, digest: issued[digest]),
             patch(
                 "bilqis_mlx.runtime.active_generated_grade."
+                "_read_issued_proposal",
+                side_effect=lambda _root, digest: issued[digest]),
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade."
                 "seal_accepted_generated_grade",
-                side_effect=definitions),
+                side_effect=lambda _root, issued_proposal, **_kwargs: (
+                    definition if issued_proposal.proposal_sha256
+                    == proposal.proposal_sha256 else second_definition)),
+            patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_reconcile_accepted_generated_grade",
+                side_effect=lambda _root, _proposal, stored: stored),
         )
 
     def test_c07_adoption_alone_cannot_replace_frozen_active_grade(self):
@@ -81,7 +91,7 @@ class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             root = Path(directory)
             patches = self._patches(proposal, definition)
-            with patches[0], patches[1], patches[2], patches[3], patches[4], patch(
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patch(
                 "bilqis_mlx.runtime.active_generated_grade_custody."
                 "_accepted_bound_generated_grade_proposal",
                 return_value=proposal,
@@ -95,9 +105,89 @@ class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
                     again = ensure_active_generated_grade(root)
         self.assertEqual(again, first)
 
-    def test_only_issued_certification_authority_activates_successor(self):
+    def test_missing_pointer_with_activation_history_fails_closed(self):
         from bilqis_mlx.runtime.active_generated_grade import (
-            _issue_certified_grade_transition_authority,
+            activate_accepted_generated_grade,
+            ensure_active_generated_grade,
+        )
+
+        proposal, definition = _fixture()
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            patches = self._patches(proposal, definition)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6], patch(
+                "bilqis_mlx.runtime.active_generated_grade_custody."
+                "_accepted_bound_generated_grade_proposal",
+                return_value=proposal,
+            ):
+                activate_accepted_generated_grade(root, proposal)
+                (root / "generated-grades" / "current.json").unlink()
+                with self.assertRaises(BilqisError) as raised:
+                    ensure_active_generated_grade(root)
+
+        self.assertEqual(
+            raised.exception.context.get("reason"),
+            "BAMF_ACTIVE_GENERATED_GRADE_POINTER_MISSING",
+        )
+
+    def test_first_publication_recovers_exact_orphan_after_pointer_write_crash(self):
+        from bilqis_mlx.runtime.active_generated_grade import (
+            activate_accepted_generated_grade,
+        )
+        from bilqis_mlx.runtime import active_generated_grade_custody as custody
+
+        proposal, definition = _fixture()
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            patches = self._patches(proposal, definition)
+            original = custody._durable_json
+
+            def crash_before_pointer(path, payload, **kwargs):
+                if Path(path).name == "current.json":
+                    raise RuntimeError("simulated pointer-write crash")
+                return original(path, payload, **kwargs)
+
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+                with patch.object(custody, "_durable_json", side_effect=crash_before_pointer):
+                    with self.assertRaisesRegex(RuntimeError, "pointer-write crash"):
+                        activate_accepted_generated_grade(root, proposal)
+
+                recovered = activate_accepted_generated_grade(root, proposal)
+
+        self.assertEqual(recovered.definition, definition)
+        self.assertEqual(recovered.transition_kind, "INITIAL")
+
+    def test_pointer_durable_commit_receipt_missing_is_healed_after_validation(self):
+        from bilqis_mlx.runtime.active_generated_grade import (
+            activate_accepted_generated_grade,
+            read_active_generated_grade,
+        )
+        from bilqis_mlx.runtime import active_generated_grade_custody as custody
+
+        proposal, definition = _fixture()
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            patches = self._patches(proposal, definition)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+                with patch.object(
+                    custody, "_persist_commit",
+                    side_effect=RuntimeError("simulated commit-receipt crash"),
+                ):
+                    with self.assertRaisesRegex(RuntimeError, "commit-receipt crash"):
+                        activate_accepted_generated_grade(root, proposal)
+
+                self.assertTrue((root / "generated-grades" / "current.json").is_file())
+                commits = root / "generated-grades" / "commits"
+                self.assertFalse(commits.exists() and any(commits.iterdir()))
+                cold = read_active_generated_grade(root)
+
+            self.assertEqual(cold.definition, definition)
+            self.assertTrue(
+                (commits / f"{cold.activation_sha256}.json").is_file())
+
+    def test_certification_transition_has_no_local_self_minting_path(self):
+        import bilqis_mlx.runtime.active_generated_grade as active_grade_module
+        from bilqis_mlx.runtime.active_generated_grade import (
             activate_accepted_generated_grade,
             activate_certified_generated_grade,
         )
@@ -107,32 +197,24 @@ class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
             "skos:future-z", "Z.FUTURE")
         successor_definition = _successor_definition(
             definition, successor_proposal)
-        receipt = "c" * 64
         with TemporaryDirectory() as directory:
             root = Path(directory)
             patches = self._patches(
                 proposal, definition, second=successor_proposal,
                 second_definition=successor_definition)
-            with patches[0], patches[1], patches[2], patches[3], patches[4]:
-                first = activate_accepted_generated_grade(root, proposal)
+            with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
+                activate_accepted_generated_grade(root, proposal)
                 with self.assertRaises(BilqisError) as forged:
                     activate_certified_generated_grade(
                         root, successor_proposal, transition_authority=object())
-                authority = _issue_certified_grade_transition_authority(
-                    first.activation_sha256,
-                    successor_proposal.proposal_sha256,
-                    receipt,
-                )
-                successor = activate_certified_generated_grade(
-                    root, successor_proposal, transition_authority=authority)
 
         self.assertEqual(
             forged.exception.context.get("reason"),
             "BAMF_ACTIVE_GENERATED_GRADE_CERTIFICATION_AUTHORITY_REQUIRED")
-        self.assertEqual(successor.transition_kind, "CERTIFICATION")
-        self.assertEqual(successor.transition_receipt_sha256, receipt)
-        self.assertEqual(
-            successor.predecessor_activation_sha256, first.activation_sha256)
+        self.assertFalse(hasattr(
+            active_grade_module,
+            "_issue_certified_grade_transition_authority",
+        ))
 
 
 if __name__ == "__main__":

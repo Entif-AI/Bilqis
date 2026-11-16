@@ -32,14 +32,26 @@ def _roots(run_dir: Path) -> tuple[Path, Path, Path]:
     return root, definitions, activations
 
 
+def _commit_root(run_dir: Path) -> Path:
+    commits = Path(run_dir) / "generated-grades" / "commits"
+    if commits.is_symlink() or (commits.exists() and not commits.is_dir()):
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_CUSTODY_UNSAFE")
+    return commits
+
+
 def _json(path: Path, reason: str) -> dict:
     if path.is_symlink() or not path.is_file():
         _fail(reason)
     try:
-        value = json.loads(path.read_text(encoding="utf-8"))
+        raw = path.read_text(encoding="utf-8")
+        value = json.loads(raw)
     except (OSError, json.JSONDecodeError):
         _fail(reason)
     if not isinstance(value, dict):
+        _fail(reason)
+    canonical = json.dumps(
+        value, sort_keys=True, indent=2, ensure_ascii=False, allow_nan=False) + "\n"
+    if raw != canonical:
         _fail(reason)
     return value
 
@@ -56,6 +68,75 @@ def _persist_immutable(path: Path, payload: dict, reason: str) -> None:
 
 def _pointer_path(run_dir: Path) -> Path:
     return Path(run_dir) / "generated-grades" / "current.json"
+
+
+def _activation_history_exists(run_dir: Path) -> bool:
+    """Distinguish genuine first activation from a lost current pointer."""
+    _root, _definitions, activations = _roots(run_dir)
+    if not activations.exists():
+        return False
+    entries = tuple(activations.iterdir())
+    if any(item.is_symlink() or not item.is_file() for item in entries):
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_CUSTODY_UNSAFE")
+    return bool(entries)
+
+
+def _commit_record(active: ActiveGeneratedGrade) -> dict:
+    return {
+        "schema": "bilqis.bamf.active-generated-grade-publication/v1",
+        "activation_sha256": active.activation_sha256,
+        "definition_sha256": active.definition.definition_sha256,
+        "predecessor_activation_sha256": active.predecessor_activation_sha256,
+        "transition_kind": active.transition_kind,
+    }
+
+
+def _persist_commit(run_dir: Path, active: ActiveGeneratedGrade) -> None:
+    path = _commit_root(run_dir) / f"{active.activation_sha256}.json"
+    _persist_immutable(
+        path,
+        _commit_record(active),
+        "BAMF_ACTIVE_GENERATED_GRADE_COMMIT_INVALID",
+    )
+
+
+def _committed_history_exists(run_dir: Path) -> bool:
+    commits = _commit_root(run_dir)
+    if not commits.exists():
+        return False
+    entries = tuple(commits.iterdir())
+    if any(item.is_symlink() or not item.is_file() for item in entries):
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_CUSTODY_UNSAFE")
+    for item in entries:
+        _json(item, "BAMF_ACTIVE_GENERATED_GRADE_COMMIT_INVALID")
+    return bool(entries)
+
+
+def _recoverable_initial_orphan(
+    run_dir: Path,
+    active: ActiveGeneratedGrade,
+) -> bool:
+    """Recognize bytes durably staged before the first pointer write crashed."""
+    if active.transition_kind != "INITIAL" or _committed_history_exists(run_dir):
+        return False
+    _root, definitions, activations = _roots(run_dir)
+    if not activations.exists():
+        return False
+    entries = tuple(activations.iterdir())
+    if len(entries) != 1 or entries[0].name != f"{active.activation_sha256}.json":
+        return False
+    definition_path = definitions / f"{active.definition.definition_sha256}.json"
+    if not definition_path.is_file() or definition_path.is_symlink():
+        return False
+    definition = definition_from_record(_json(
+        definition_path,
+        "BAMF_ACTIVE_GENERATED_GRADE_DEFINITION_INVALID",
+    ))
+    stored = active_from_record(_json(
+        entries[0],
+        "BAMF_ACTIVE_GENERATED_GRADE_RECORD_INVALID",
+    ), definition)
+    return stored == active
 
 
 def _read_stored_active(run_dir: Path) -> ActiveGeneratedGrade | None:
@@ -184,21 +265,6 @@ def _require_identity_still_current(run_dir: Path, identity) -> None:
         _fail("BAMF_ACTIVE_GENERATED_GRADE_ACCEPTED_GENERATION_DRIFT")
 
 
-def _accepted_correction_by_id(
-    run_dir: Path,
-    manifest_sha256: str,
-    correction_event_id: str,
-):
-    from bilqis_mlx.runtime.accepted_corrections import accepted_corrections
-    matches = tuple(
-        event for event_id, event in accepted_corrections(
-            Path(run_dir), manifest_sha256)
-        if event_id == correction_event_id)
-    if len(matches) != 1:
-        _fail("BAMF_ACTIVE_GENERATED_GRADE_CORRECTION_AUTHORITY_REQUIRED")
-    return matches[0]
-
-
 def _persist_activation(run_dir: Path, active: ActiveGeneratedGrade) -> None:
     root, definitions, activations = _roots(run_dir)
     _persist_immutable(
@@ -216,3 +282,4 @@ def _persist_activation(run_dir: Path, active: ActiveGeneratedGrade) -> None:
         "activation_sha256": active.activation_sha256,
         "definition_sha256": active.definition.definition_sha256,
     }, replace_existing=True)
+    _persist_commit(run_dir, active)

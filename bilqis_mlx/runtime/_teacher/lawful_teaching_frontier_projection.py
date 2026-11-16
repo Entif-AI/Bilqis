@@ -42,7 +42,7 @@ def _semantic_ids(release, capability_id: str) -> tuple[str, ...]:
 
 def _holds_for_capability(
         capability_id, semantic_ids, execution, snapshot, closure, plan,
-        mastered):
+        mastered, *, semantic_scope_complete=True):
     mastered = set(mastered)
     source_rows = tuple(
         row for row in snapshot.source_held_rows if row.semantic_id in semantic_ids)
@@ -61,6 +61,13 @@ def _holds_for_capability(
     if implementation:
         holds.append(LawfulTeachingHold(
             "AUTONOMY_PLAN_BLOCKED", "factory:autonomy", capability_id))
+    if not semantic_scope_complete:
+        implementation = True
+        holds.append(LawfulTeachingHold(
+            "ACTIVE_GRADE_SEMANTIC_SCOPE_UNCOVERED",
+            "runtime:active-generated-grade",
+            capability_id,
+        ))
     waiting = bool(missing_prerequisites or missing_constituents)
     for row in closure_rows:
         if row.status is ClosureStatus.IMPLEMENTATION_UNCOVERED:
@@ -127,7 +134,8 @@ def _capabilities(
         disposition, holds, missing_prerequisites, missing_constituents, (
             semantic_prerequisites
         ) = _holds_for_capability(
-            capability_id, semantic_ids, execution, snapshot, closure, plan, mastered)
+            capability_id, semantic_ids, execution, snapshot, closure, plan, mastered,
+            semantic_scope_complete=set(semantic_ids) == available_semantics)
         result.append(LawfulTeachingCapability(
             capability_id=capability_id,
             semantic_ids=semantic_ids,

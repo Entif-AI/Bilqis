@@ -1,9 +1,11 @@
 """#1314 frozen active generated-grade custody."""
+import json
+import unittest
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import patch
-import unittest
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
@@ -71,6 +73,14 @@ class ActiveGeneratedGradeTests(unittest.TestCase):
                 "bilqis_mlx.runtime.active_generated_grade_custody."
                 "_read_issued_proposal",
                 return_value=proposal,
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_read_issued_proposal",
+                return_value=proposal,
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_reconcile_accepted_generated_grade",
+                side_effect=lambda *_args, **_kwargs: None,
             ):
                 activated = activate_accepted_generated_grade(root, proposal)
                 cold = read_active_generated_grade(root)
@@ -114,8 +124,20 @@ class ActiveGeneratedGradeTests(unittest.TestCase):
                     else other_proposal),
             ), patch(
                 "bilqis_mlx.runtime.active_generated_grade."
+                "_read_issued_proposal",
+                side_effect=lambda _root, digest: (
+                    proposal if digest == proposal.proposal_sha256
+                    else other_proposal),
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
                 "seal_accepted_generated_grade",
-                side_effect=(definition, other_definition),
+                side_effect=lambda _root, issued_proposal, **_kwargs: (
+                    definition if issued_proposal.proposal_sha256
+                    == proposal.proposal_sha256 else other_definition),
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_reconcile_accepted_generated_grade",
+                side_effect=lambda *_args, **_kwargs: None,
             ):
                 activate_accepted_generated_grade(root, proposal)
                 with self.assertRaises(BilqisError) as raised:
@@ -139,7 +161,12 @@ class ActiveGeneratedGradeTests(unittest.TestCase):
         other_definition = self._successor_definition(
             definition, other_proposal)
         correction_id = "c" * 64
-        correction = unittest.mock.MagicMock(reason_code="SOURCE_CORRECTED")
+        authority_digest = "d" * 64
+        correction_authority = SimpleNamespace(
+            authority_sha256=authority_digest,
+            correction_record_sha256=correction_id,
+            reason_code="SOURCE_CORRECTED",
+        )
         with TemporaryDirectory() as directory:
             root = Path(directory)
             with patch(
@@ -162,26 +189,45 @@ class ActiveGeneratedGradeTests(unittest.TestCase):
                     else other_proposal),
             ), patch(
                 "bilqis_mlx.runtime.active_generated_grade."
-                "seal_accepted_generated_grade",
-                side_effect=(definition, other_definition),
+                "_read_issued_proposal",
+                side_effect=lambda _root, digest: (
+                    proposal if digest == proposal.proposal_sha256
+                    else other_proposal),
             ), patch(
                 "bilqis_mlx.runtime.active_generated_grade."
-                "_accepted_correction_by_id",
-                return_value=correction,
+                "seal_accepted_generated_grade",
+                side_effect=lambda _root, issued_proposal, **_kwargs: (
+                    definition if issued_proposal.proposal_sha256
+                    == proposal.proposal_sha256 else other_definition),
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_reconcile_accepted_generated_grade",
+                side_effect=lambda *_args, **_kwargs: None,
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_issue_correction_transition_authority",
+                return_value=correction_authority,
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "require_correction_transition_authority",
+                return_value=correction_authority,
             ):
                 first = activate_accepted_generated_grade(root, proposal)
                 successor = activate_corrected_generated_grade(
                     root, other_proposal, correction_event_id=correction_id)
+                retry = activate_corrected_generated_grade(
+                    root, other_proposal, correction_event_id=correction_id)
                 cold = read_active_generated_grade(root)
 
         self.assertEqual(cold, successor)
+        self.assertEqual(retry, successor)
         self.assertEqual(
             successor.predecessor_activation_sha256, first.activation_sha256)
         self.assertEqual(
             successor.predecessor_definition_sha256,
             first.definition.definition_sha256)
         self.assertEqual(successor.transition_kind, "CORRECTION")
-        self.assertEqual(successor.transition_receipt_sha256, correction_id)
+        self.assertEqual(successor.transition_receipt_sha256, authority_digest)
         self.assertEqual(successor.transition_reason, "SOURCE_CORRECTED")
 
 

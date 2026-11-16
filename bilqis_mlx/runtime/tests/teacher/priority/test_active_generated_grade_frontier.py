@@ -7,6 +7,7 @@ from bilqis_mlx.runtime.lawful_teaching_frontier import (
     _active_grade_state,
     _capabilities,
 )
+from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import _issue_frontier
 from bilqis_mlx.runtime.tests.teacher.priority.test_lawful_teaching_frontier_projection import (
     _closure,
     _plan,
@@ -37,7 +38,7 @@ class ActiveGeneratedGradeFrontierTests(unittest.TestCase):
         self.assertEqual(by_id["P"].disposition.value, "EVIDENCE_COMPLETE")
         self.assertEqual(by_id["D"].disposition.value, "HELD_SOURCE_RIGHTS")
 
-    def test_multi_semantic_capability_exposes_only_frozen_grade_members(self):
+    def test_multi_semantic_capability_cannot_teach_non_member_semantics(self):
         release = _release()
         release.curriculum.capability_map["P"].taught_roots = (
             "sem.p", "sem.future")
@@ -47,6 +48,14 @@ class ActiveGeneratedGradeFrontierTests(unittest.TestCase):
         )
 
         self.assertEqual(capabilities[0].semantic_ids, ("sem.p",))
+        self.assertEqual(
+            capabilities[0].disposition.value,
+            "IMPLEMENTATION_UNCOVERED",
+        )
+        self.assertIn(
+            "ACTIVE_GRADE_SEMANTIC_SCOPE_UNCOVERED",
+            {item.code for item in capabilities[0].holds},
+        )
 
     def test_complete_grade_distinguishes_successor_available_from_global_fixed_point(self):
         capabilities = _capabilities(
@@ -61,6 +70,40 @@ class ActiveGeneratedGradeFrontierTests(unittest.TestCase):
         self.assertIs(
             _active_grade_state(capabilities, SimpleNamespace(value="FIXED_POINT")),
             ActiveGeneratedGradeState.GLOBAL_FIXED_POINT,
+        )
+
+    def test_frontier_contract_preserves_exact_ordered_member_pairs(self):
+        frontier = _issue_frontier(
+            run_id="run", accepted_generation=1,
+            accepted_manifest_sha256="1" * 64,
+            accepted_correction_frontier_sha256="2" * 64,
+            accepted_checkpoint_sha256="3" * 64,
+            accepted_optimizer_step=4,
+            candidate_identity_sha256="4" * 64,
+            admitted_release_sha256="5" * 64,
+            admission_receipt_sha256="6" * 64,
+            a09_snapshot_sha256="7" * 64,
+            a09_closure_sha256="8" * 64,
+            prerequisite_evidence_sha256="9" * 64,
+            autonomy_plan_sha256="a" * 64,
+            autonomy_evidence_sha256="b" * 64,
+            rights_epoch=1, correction_generation=2, policy_epoch=3,
+            source_authority_registry_sha256="c" * 64,
+            active_grade_activation_sha256="d" * 64,
+            active_grade_definition_sha256="e" * 64,
+            active_grade_members=(("A", "s1"), ("B", "s2"), ("A", "s3")),
+            active_grade_state=ActiveGeneratedGradeState.INCOMPLETE_HELD,
+            capabilities=(), _source_context=object(), _parent=object(),
+            _planning_generation=object(),
+        )
+
+        self.assertEqual(
+            frontier.active_grade_members,
+            (("A", "s1"), ("B", "s2"), ("A", "s3")),
+        )
+        self.assertEqual(
+            frontier.to_record()["active_grade_members"],
+            [["A", "s1"], ["B", "s2"], ["A", "s3"]],
         )
 
 
