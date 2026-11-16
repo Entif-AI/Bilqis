@@ -71,10 +71,22 @@ def _fixed_school_score_context(
             _invalid("BAMF_FOUNDATION_FIXED_SCHOOL_SCORE_TOTAL_DRIFT")
         scores[capability] = {"before": before, "after": after, "total": total}
     target_delta = fixed_pair.delta(target_capability)
+    from bilqis_mlx.diagnostics.assessment_signals import optional_prediction_signals
     emit(observer, retention_scorecard={
         "schema": "bilqis.bamf.retention-scorecard/v1",
+        "fixed_cohort_sha256": fixed.expected_case_digest,
+        "rubric_sha256": fixed.rubric_sha256,
+        "source_sha256": fixed.source_sha256,
         "evidence_stage": fixed.evidence_stage.value,
         "target_capability": target_capability,
+        "learning_signals": optional_prediction_signals(
+            observer, fixed_pair.candidate, target_capability),
+        "learning_target": {
+            "capability_id": target_capability, "state": "MEASURED",
+            "before": scores[target_capability]["before"],
+            "after": scores[target_capability]["after"],
+            "total": scores[target_capability]["total"],
+        },
         "target": {
             "capability_id": target_capability,
             "state": ("MEASURED" if target_capability in measured_set else "NOT_MEASURED"),

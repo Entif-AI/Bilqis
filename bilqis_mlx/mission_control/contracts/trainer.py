@@ -237,6 +237,8 @@ from .trainer_evidence import (
     VisitCapabilityScore, VisitEvidence, VisitRankingEvidence, VisitRoleCount,
 )
 
+from .trainer_evidence import LearningHealthEvidence
+
 @dataclass(frozen=True)
 class TrainerObservationV4(TrainerObservationV3):
     SCHEMA = 'bilqis.bamf.mission-control.trainer-observation/v4'
@@ -268,3 +270,15 @@ class TrainerObservationV4(TrainerObservationV3):
                 'OBSERVATION_RETENTION_TIMINGS')
         require(len(self.retention_stage_timings) <= 256,
                 'OBSERVATION_RETENTION_TIMINGS_LIMIT')
+
+
+@dataclass(frozen=True)
+class TrainerObservationV5(TrainerObservationV4):
+    SCHEMA = 'bilqis.bamf.mission-control.trainer-observation/v5'
+    learning_health: LearningHealthEvidence | None
+
+    def __post_init__(self):
+        super().__post_init__()
+        require(self.learning_health is None
+                or type(self.learning_health) is LearningHealthEvidence,
+                'OBSERVATION_LEARNING_HEALTH')

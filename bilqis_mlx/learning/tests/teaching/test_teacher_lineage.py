@@ -6,7 +6,8 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.teacher_lineage import (
     HISTORICAL_REPLAY_HEAD, adaptation_authority_ref, advance_priority_rotation,
     advance_teacher_lineage, bind_next_teacher_epoch, initialize_teacher_lineage,
-    priority_rotation_state, restore_teacher_lineage,
+    instruction_history, priority_rotation_state, record_instruction_history,
+    restore_teacher_lineage,
 )
 from bilqis_mlx.learning.teacher_visit_identity import (
     TeacherVisitIdentity, derive_teacher_visit_identity,
@@ -58,6 +59,24 @@ class TeacherLineageTests(unittest.TestCase):
         self.assertEqual(epoch.teacher()["grade_stats"], {})
         self.assertEqual(projection.teacher_epoch, 0)
         self.assertEqual(len(projection.teacher_identity), 64)
+
+    def test_instruction_history_is_durable_and_legacy_uncertainty_is_explicit(self):
+        _teacher, _adaptation, projection = self.initialize()
+        state, seen = instruction_history(projection.teacher_state)
+        self.assertEqual((state, seen), ("COMPLETE", ()))
+        recorded = record_instruction_history(
+            projection.teacher_state, ("A.IDENTITY", "future:grade-z"))
+        self.assertEqual(
+            instruction_history(recorded),
+            ("COMPLETE", ("A.IDENTITY", "future:grade-z")))
+
+        legacy = advance_priority_rotation(
+            projection.teacher_state, "legacy:accepted")
+        legacy.pop("instruction_history_state", None)
+        legacy.pop("instruction_seen_capabilities", None)
+        state, seen = instruction_history(legacy)
+        self.assertEqual(state, "PARTIAL")
+        self.assertEqual(seen, ("legacy:accepted",))
 
     def test_current_adaptation_head_changes_identity_without_rewriting_historical_replay(self):
         _, first, first_projection = self.initialize(observed="d" * 40)
