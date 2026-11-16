@@ -37,6 +37,7 @@ from .b11_source_launch_trust import (
 _ISSUER = object()
 _MOTIF_FEATURE_ROW_WIDTH = 3
 _MOTIF_FEATURE_VALUE_INDEX = 2
+_MOTIF_SCHEMA_LIVENESS_ROW_WIDTH = 2
 
 
 def _invalid(reason: str) -> None:
@@ -99,7 +100,8 @@ class B11SourceExecutionAuthority:
             or not isinstance(self.motif_context_digest, str)
             or not self.motif_context_digest
             or type(self.motif_schema_liveness) is not tuple
-            or any(type(item) is not tuple or len(item) != 2
+            or any(type(item) is not tuple
+                   or len(item) != _MOTIF_SCHEMA_LIVENESS_ROW_WIDTH
                    or not isinstance(item[0], str) or not item[0]
                    or type(item[1]) is not bool
                    for item in self.motif_schema_liveness)

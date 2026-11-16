@@ -30,7 +30,7 @@ class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
 
         def source_digest_outside_launch(source):
             if b11_authority_impl._LAUNCH_TRUST.get():
-                raise AssertionError("B11 rehashed source inside trusted gradient launch")
+                self.fail("B11 rehashed source inside trusted gradient launch")
             return original_source_digest(source)
 
         with patch.object(
