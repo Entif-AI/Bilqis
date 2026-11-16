@@ -44,7 +44,8 @@ class FoundationTeacherOwnerTests(unittest.TestCase):
         epoch = object()
         authority = SimpleNamespace(
             frontier="frontier", history="history", planning="planning",
-            offers="offers", now=17, planning_generation="planning-generation")
+            lawful_frontier="lawful-frontier", offers="offers", now=17,
+            planning_generation="planning-generation")
         selected = object()
         with patch(
                 "bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation",

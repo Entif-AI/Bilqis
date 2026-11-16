@@ -37,6 +37,14 @@ def _registry(private_hex="44" * 32):
     return SourceAuthorityRegistry((SourceAuthorityKey("owner:c06", public, scopes),))
 
 
+def _lawful_frontier(planning_generation, *ready):
+    return SimpleNamespace(
+        ready_capability_ids=tuple(ready),
+        frontier_sha256="9" * 64,
+        _planning_generation=planning_generation,
+    )
+
+
 def test_host_signer_must_match_registered_owner_key_and_scope():
     registry = _registry()
     signer = HostSourceAuthoritySigner("owner:c06", "44" * 32, registry)
@@ -90,6 +98,8 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
     cache = SimpleNamespace(
         generation=2, accepted_manifest_sha256="f" * 64, run_id="run",
         _correction_registry=registry)
+    lawful = _lawful_frontier(
+        planning_generation, "capability:alpha", "capability:beta")
     with patch(
         "bilqis_mlx.runtime.bamf_bundle.accepted_runtime._accepted_correction_registry",
         return_value=(cache, registry),
@@ -106,7 +116,12 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         authority, "priority_rotation_state",
         return_value=(1, {"capability:alpha": 1}),
     ), patch.object(
-        authority, "_priority_planning", return_value=planning,
+        authority, "_build_priority_planning_epoch", return_value="epoch",
+    ), patch.object(
+        authority, "_priority_planning_from_epoch", return_value=planning,
+    ), patch(
+        "bilqis_mlx.runtime.lawful_teaching_frontier._issue_lawful_teaching_frontier_from_epoch",
+        return_value=lawful,
     ):
         issued = authority.issue_foundation_priority_authority(
             "/run", source_context, parent, {"epoch": 1}, "/atlas",
@@ -126,6 +141,55 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         DEFAULT_BINARY_BALANCE.minimum_total}
     assert len({offer.source_seed for _, offer in issued.offers}) == 2
     assert issued.planning is planning
+    assert issued.lawful_frontier is lawful
+    assert issued.lawful_frontier_sha256 == lawful.frontier_sha256
+
+
+def test_all_held_frontier_issues_empty_priority_authority_without_source_rows():
+    from bilqis_mlx.runtime import priority_authority as authority
+
+    release = SimpleNamespace(
+        release_sha256="a" * 64,
+        execution_plan=SimpleNamespace(capabilities=(
+            SimpleNamespace(capability_id="capability:alpha"),
+            SimpleNamespace(capability_id="capability:beta"),
+        )),
+    )
+    source_context = SimpleNamespace(release=release)
+    parent = SimpleNamespace(
+        teacher_state={"next_seed": 7},
+        retained_state=SimpleNamespace(optimizer_step=11),
+    )
+    cache = SimpleNamespace(_correction_registry=_registry())
+    planning_generation = object()
+    planning = SimpleNamespace(selection=None)
+    lawful = _lawful_frontier(planning_generation)
+
+    with patch.object(
+            authority, "priority_rotation_state", return_value=(3, {})), patch.object(
+            authority, "bind_priority_planning_generation",
+            return_value=planning_generation), patch.object(
+            authority, "_require_planning_generation",
+            return_value=(cache, None)), patch.object(
+            authority, "_build_priority_planning_epoch", return_value="epoch"), patch.object(
+            authority, "_priority_planning_from_epoch", return_value=planning), patch(
+            "bilqis_mlx.runtime.lawful_teaching_frontier."
+            "_issue_lawful_teaching_frontier_from_epoch",
+            return_value=lawful), patch.object(
+            authority, "prepare_priority_source_offer") as prepare, patch(
+            "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer."
+            "read_host_system_source_authority_signer") as signer:
+        issued = authority.issue_foundation_priority_authority(
+            "/run", source_context, parent, {"epoch": 1}, "/atlas",
+            teacher_state=parent.teacher_state)
+
+    assert issued.frontier is None
+    assert issued.history is None
+    assert issued.offers == ()
+    assert issued.now == 3
+    assert issued.lawful_frontier is lawful
+    prepare.assert_not_called()
+    signer.assert_not_called()
 
 
 def _rejection_custody():
@@ -189,6 +253,8 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         _correction_registry=registry)
 
     planning_generation = object()
+    lawful = _lawful_frontier(
+        planning_generation, "capability:alpha", "capability:beta")
 
     def offer(_context, _parent, _path, *, capability, source_seed, source_each,
               planning_generation):
@@ -221,7 +287,14 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         ), patch.object(authority, "prepare_priority_source_offer", side_effect=offer), patch.object(
             authority, "priority_rotation_state",
             return_value=(1, {"capability:alpha": 1}),
-        ), patch.object(authority, "_priority_planning", return_value=planning):
+        ), patch.object(
+            authority, "_build_priority_planning_epoch", return_value="epoch",
+        ), patch.object(
+            authority, "_priority_planning_from_epoch", return_value=planning,
+        ), patch(
+            "bilqis_mlx.runtime.lawful_teaching_frontier._issue_lawful_teaching_frontier_from_epoch",
+            return_value=lawful,
+        ):
             first = authority.issue_foundation_priority_authority(
                 run_dir, source_context, parent, {"epoch": 1}, "/atlas",
                 teacher_state=parent.teacher_state)
