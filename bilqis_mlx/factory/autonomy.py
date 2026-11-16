@@ -25,6 +25,15 @@ for _record in (
 ):
     _record.__module__ = __name__
 
-del _record
+for _function in (
+    closed_obligations, compile_autonomy_plan, evidence_complete_capabilities,
+    initial_evidence_ledger, next_action, next_source_coverage_debt, next_work,
+    obligations_for_capability, record_evidence, record_rejected_teaching_attempt,
+    record_teaching_intervention, rebind_evidence_ledger,
+    reconcile_successor_evidence,
+):
+    _function.__module__ = __name__
+
+del _function, _record
 
 __all__ = tuple(name for name in globals() if not name.startswith("_"))

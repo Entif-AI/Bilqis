@@ -34,12 +34,9 @@ def synthesize_generated_grade(
     order = {identity: index for index, identity in enumerate(closure.constituent_order)}
     rows = _grouped(closure)
     evidence = {item.semantic_id: item for item in candidate_evidence}
-    mastered = set(learner.baselined_semantic_ids)
     decisions = {
-        identity: _decision(identity, rows[identity], graph, order, mastered,
-                            evidence, policy)
+        identity: _decision(identity, rows, graph, order, evidence, policy)
         for identity in sorted(rows)
-        if identity not in mastered
     }
     capacity = min(policy.max_members, snapshot.budget.max_candidates,
                    snapshot.budget.max_identity_rows)
@@ -49,7 +46,7 @@ def synthesize_generated_grade(
     deferred_reasons: dict[str, str] = {}
     eligible = [item for item in decisions.values()
                 if item.disposition == "ELIGIBLE"]
-    ranked = sorted(eligible, key=lambda item: _rank_key(item, policy))
+    ranked = _pareto_ranked(eligible, policy)
     seen_neighborhoods: set[str] = set()
     for representative_only in (True, False):
         for item in ranked:
@@ -57,7 +54,7 @@ def synthesize_generated_grade(
                 continue
             if representative_only and item.neighborhood_id in seen_neighborhoods:
                 continue
-            new_members = set(item.required_semantic_ids) - members - mastered
+            new_members = set(item.required_semantic_ids) - members
             next_compute = compute + sum(
                 decisions[member].planning_compute_units for member in new_members)
             if len(members | new_members) > capacity:
@@ -75,7 +72,7 @@ def synthesize_generated_grade(
         if identity in selected_set:
             decisions[identity] = replace(
                 item, disposition="SELECTED_TARGET",
-                reason_codes=("LEXICOGRAPHIC_POLICY_SELECTED",))
+                reason_codes=("PARETO_A09_POLICY_SELECTED",))
         elif identity in members:
             decisions[identity] = replace(
                 item, disposition="SELECTED_BRIDGE", reason_codes=("REQUIRED_CONSTITUENT_BRIDGE",))
@@ -128,9 +125,10 @@ def _validate_inputs(snapshot, closure, release, learner, candidate_evidence, po
             or snapshot.admitted_factory_release_sha256 != release.release_sha256
             or learner.factory_release_sha256 != release.release_sha256
             or learner.policy_epoch != snapshot.policy_epoch
-            or learner.evidence_epoch != snapshot.qualification_epoch):
+            or learner.evidence_epoch != snapshot.qualification_epoch
+            or policy.policy_epoch != snapshot.policy_epoch):
         _fail("BAMF_GENERATED_GRADE_AUTHORITY_MISMATCH")
-    candidate_ids = tuple(sorted({item.semantic_id for item in closure.candidates}))
+    candidate_ids = tuple(sorted(set(closure.constituent_order)))
     evidence_ids = tuple(item.semantic_id for item in candidate_evidence)
     if (evidence_ids != tuple(sorted(set(evidence_ids)))
             or set(evidence_ids) != set(candidate_ids)):
@@ -166,21 +164,41 @@ def _ancestors(identity: str, graph: dict[str, tuple[str, ...]], order) -> tuple
     return tuple(sorted(result, key=order.__getitem__))
 
 
-def _effective_cost(identity, graph, order, mastered, evidence, policy):
+def _unmet_prerequisites(identity, rows, graph, order) -> tuple[str, ...]:
+    """Use A09's learner-evidence closure, never admission credit, as mastery truth."""
+    missing: set[str] = set()
+
+    def visit(current: str) -> None:
+        direct_missing = {
+            reason.dependency_id
+            for row in rows[current] for reason in row.reasons
+            if reason.code.startswith("PREREQUISITE_") and reason.dependency_id
+        }
+        for prerequisite in graph[current]:
+            if prerequisite not in direct_missing or prerequisite in missing:
+                continue
+            missing.add(prerequisite)
+            visit(prerequisite)
+
+    visit(identity)
+    return tuple(sorted(missing, key=order.__getitem__))
+
+
+def _effective_cost(identity, graph, order, unmet, evidence):
     item = evidence[identity].acquisition_cost
     ancestors = _ancestors(identity, graph, order)
-    if item.measure != policy.acquisition_cost_measure:
-        _fail("BAMF_GENERATED_GRADE_COST_MEASURE_MISMATCH")
-    if any(prerequisite not in ancestors for prerequisite, _ in item.transfer_savings):
+    transfer = item.transfer_savings
+    if transfer is not None and any(
+            prerequisite not in ancestors for prerequisite, _ in transfer):
         _fail("BAMF_GENERATED_GRADE_TRANSFER_NOT_CONSTITUENT")
-    savings = sum(value for prerequisite, value in item.transfer_savings
-                  if prerequisite in mastered)
+    savings = 0 if transfer is None else sum(
+        value for prerequisite, value in transfer if prerequisite not in unmet)
     return None if item.units is None else max(0, item.units - savings)
 
-def _decision(identity, rows, graph, order, mastered, evidence, policy):
+def _decision(identity, grouped_rows, graph, order, evidence, policy):
+    rows = grouped_rows[identity]
     prerequisites = graph[identity]
-    ancestors = _ancestors(identity, graph, order)
-    unmet = tuple(item for item in ancestors if item not in mastered)
+    unmet = _unmet_prerequisites(identity, grouped_rows, graph, order)
     required = (*unmet, identity)
     unlawful = any(item.status in {
         ClosureStatus.SOURCE_HELD, ClosureStatus.IMPLEMENTATION_UNCOVERED,
@@ -194,11 +212,14 @@ def _decision(identity, rows, graph, order, mastered, evidence, policy):
         disposition, reasons = "DEFERRED_STEEP_CLOSURE", ("UNMET_PREREQUISITE_BOUND",)
     development = evidence[identity]
     cost = development.acquisition_cost
-    savings = sum(value for prerequisite, value in cost.transfer_savings
-                  if prerequisite in mastered)
-    effective = _effective_cost(identity, graph, order, mastered, evidence, policy)
+    transfer = cost.transfer_savings
+    savings = 0 if transfer is None else sum(
+        value for prerequisite, value in transfer if prerequisite not in unmet)
+    effective = _effective_cost(identity, graph, order, unmet, evidence)
     closure_costs = [effective, *(
-        _effective_cost(item, graph, order, mastered, evidence, policy)
+        _effective_cost(
+            item, graph, order,
+            _unmet_prerequisites(item, grouped_rows, graph, order), evidence)
         for item in unmet)]
     closure_cost = None if any(item is None for item in closure_costs) else sum(closure_costs)
     return CandidateGradeDecision(
@@ -217,6 +238,7 @@ def _decision(identity, rows, graph, order, mastered, evidence, policy):
         effective,
         closure_cost,
         savings,
+        transfer,
         development.grounding_quality,
         development.answer_modality_burden,
         development.ast_burden,
@@ -227,6 +249,10 @@ def _decision(identity, rows, graph, order, mastered, evidence, policy):
         development.transfer_breadth,
         development.learning_progress,
         development.fairness_age,
+        development.a09_prerequisite_slope,
+        development.a09_cursor_distance,
+        development.a09_statuses,
+        development.a09_reason_receipts,
         development.planning_compute_units,
         tuple(sorted(item.source_evidence_sha256 for item in rows)),
         development.evidence_sha256,
@@ -235,28 +261,67 @@ def _decision(identity, rows, graph, order, mastered, evidence, policy):
     )
 
 
-def _rank_key(item: CandidateGradeDecision, policy: GeneratedGradePolicy):
-    cost_rank = 2 if item.closure_acquisition_units is None else {
+def _cost_rank(item: CandidateGradeDecision) -> int:
+    if item.closure_acquisition_units is None:
+        return 2
+    return {
         CostEvidenceKind.MEASURED: 0,
         CostEvidenceKind.BOOTSTRAPPED: 1,
         CostEvidenceKind.UNKNOWN: 2,
     }[item.cost_status]
-    cost_units = item.closure_acquisition_units or 0
+
+
+def _a09_rank_key(item: CandidateGradeDecision, policy: GeneratedGradePolicy):
     components = {
-        "unmet_prerequisite_count": len(item.unmet_prerequisite_ids),
-        "answer_modality_burden": item.answer_modality_burden,
-        "ast_burden": item.ast_burden,
-        "entanglement": item.entanglement,
-        "cost_evidence_rank": cost_rank,
-        "closure_acquisition_units": cost_units,
-        "grounding_quality_desc": -item.grounding_quality,
-        "reusable_constituent_value_desc": -item.reusable_constituent_value,
+        "prerequisite_slope": item.a09_prerequisite_slope,
         "downstream_unlocks_desc": -item.downstream_unlocks,
-        "minimal_contrast_value_desc": -item.minimal_contrast_value,
-        "transfer_breadth_desc": -item.transfer_breadth,
-        "learning_progress_desc": -item.learning_progress,
-        "coverage_factor_count_desc": -len(item.coverage_factors),
-        "fairness_age_desc": -item.fairness_age,
+        "cursor_distance": item.a09_cursor_distance,
         "semantic_id": item.semantic_id,
     }
     return tuple(components[name] for name in policy.comparator_order)
+
+
+def _pareto_vector(
+    item: CandidateGradeDecision, policy: GeneratedGradePolicy,
+) -> tuple[int, ...]:
+    components = {
+        "cost_evidence_rank": _cost_rank(item),
+        "closure_acquisition_units": (
+            item.closure_acquisition_units
+            if item.closure_acquisition_units is not None else 10**18),
+        "coverage_factor_count_desc": -len(item.coverage_factors),
+    }
+    return tuple(components[name] for name in policy.pareto_dimensions)
+
+
+def _dominates(
+    left: CandidateGradeDecision, right: CandidateGradeDecision,
+    policy: GeneratedGradePolicy,
+) -> bool:
+    a, b = _pareto_vector(left, policy), _pareto_vector(right, policy)
+    return all(x <= y for x, y in zip(a, b)) and any(
+        x < y for x, y in zip(a, b))
+
+
+def _pareto_ranked(
+    items: list[CandidateGradeDecision], policy: GeneratedGradePolicy,
+) -> list[CandidateGradeDecision]:
+    """Layer an unweighted cost/coverage Pareto frontier, then reuse A09 tie-breaks."""
+    remaining = list(items)
+    result: list[CandidateGradeDecision] = []
+    while remaining:
+        frontier = [
+            item for item in remaining
+            if not any(_dominates(other, item, policy)
+                       for other in remaining if other is not item)
+        ]
+        frontier.sort(key=lambda item: _a09_rank_key(item, policy))
+        result.extend(frontier)
+        chosen = set(item.semantic_id for item in frontier)
+        remaining = [item for item in remaining if item.semantic_id not in chosen]
+    return result
+
+
+def _rank_key(item: CandidateGradeDecision, policy: GeneratedGradePolicy):
+    """Compatibility helper: A09 remains the deterministic within-frontier order."""
+    return _a09_rank_key(item, policy)

@@ -145,4 +145,3 @@ def release_capabilities(release):
         item.provider_id, item.oracle_id,
         tuple(family.kind for family in item.answer_families))
         for item in release.execution_plan.capabilities)
-

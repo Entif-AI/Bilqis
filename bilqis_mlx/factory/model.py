@@ -22,6 +22,8 @@ for _record in (
 ):
     _record.__module__ = __name__
 
+assessment_plans.__module__ = __name__
+
 del _record
 
 __all__ = [

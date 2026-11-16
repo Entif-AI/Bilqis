@@ -133,6 +133,18 @@ def _fixture():
             transfer_breadth=breadth,
             learning_progress=progress,
             fairness_age=age,
+            a09_prerequisite_slope=ast,
+            a09_cursor_distance=max(0, 10 - age),
+            a09_statuses=tuple(sorted({
+                item.status.value for item in candidates
+                if item.semantic_id == identity
+            })),
+            a09_reason_receipts=tuple(sorted(
+                (item.family_id, item.status.value, reason.code, reason.owner,
+                 reason.dependency_id)
+                for item in candidates if item.semantic_id == identity
+                for reason in item.reasons
+            )),
             planning_compute_units=compute,
             evidence_sha256=_sha("dev:" + identity),
         )
@@ -147,13 +159,14 @@ def _fixture():
             ("skos:distinct", "distinct", "quantity", CostEvidenceKind.BOOTSTRAPPED, 2, (), 3, 0, 0, 0, 3, 2, 5, 3, 3, 6, 1),
             ("skos:new-z", "new-z", "new-factor", CostEvidenceKind.MEASURED, 1, (), 3, 0, 0, 0, 4, 3, 6, 4, 4, 5, 1),
             ("skos:steep", "steep", "mega-unlock", CostEvidenceKind.MEASURED, 1, (), 3, 0, 3, 2, 9, 99, 9, 9, 5, 10, 4),
-            ("skos:unknown", "cluster", "identity", CostEvidenceKind.UNKNOWN, None, (), 3, 0, 0, 0, 1, 1, 1, 1, 1, 4, 1),
+            ("skos:unknown", "cluster", "identity", CostEvidenceKind.UNKNOWN, None, None, 3, 0, 0, 0, 1, 1, 1, 1, 1, 4, 1),
         )
     )
     policy = GeneratedGradePolicy(
         policy_id="learner-relative-grade/v1",
         max_members=4,
         max_unmet_prerequisites=1,
+        policy_epoch=17,
     )
     learner = AcceptedLearnerFoot(
         checkpoint_sha256="8" * 64,
@@ -166,6 +179,28 @@ def _fixture():
         evidence_sha256=_sha("learner-before"),
     )
     return snapshot, closure, release, evidence, policy, learner
+
+
+def _closure_with_bridge_mastered(closure):
+    """Project the exact A09 shape after bridge evidence becomes current."""
+    candidates = []
+    for item in closure.candidates:
+        reasons = tuple(
+            reason for reason in item.reasons
+            if not (reason.code == "PREREQUISITE_WAITING_FOR_EVIDENCE"
+                    and reason.dependency_id == "skos:bridge")
+        )
+        status = item.status
+        if item.semantic_id == "skos:descendant":
+            status = ClosureStatus.READY
+        candidates.append(replace(item, status=status, reasons=reasons))
+    updated = replace(
+        closure,
+        candidates=tuple(sorted(candidates)),
+        prerequisite_evidence_sha256=_sha("prerequisite-evidence-after-bridge"),
+        closure_sha256="0" * 64,
+    )
+    return replace(updated, closure_sha256=updated.expected_digest())
 
 class GeneratedGradeSynthesisTests(unittest.TestCase):
     def test_representative_cohort_is_deterministic_and_not_a_static_grade_roster(self):
@@ -194,13 +229,9 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
         snapshot, closure, release, evidence, policy, learner = _fixture()
         before = synthesize_generated_grade(
             snapshot, closure, release, _inputs(learner, evidence, policy))
-        after_learner = replace(
-            learner,
-            baselined_semantic_ids=("skos:bridge",),
-            evidence_sha256=_sha("learner-after-bridge"),
-        )
+        after_closure = _closure_with_bridge_mastered(closure)
         after = synthesize_generated_grade(
-            snapshot, closure, release, _inputs(after_learner, evidence, policy))
+            snapshot, after_closure, release, _inputs(learner, evidence, policy))
 
         before_desc = next(
             item for item in before.decisions if item.semantic_id == "skos:descendant")
@@ -222,7 +253,7 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
             closure_sha256="0" * 64,
         )
         closure = replace(closure, closure_sha256=closure.expected_digest())
-        policy = GeneratedGradePolicy("learner-relative-grade/v1", 8, 1)
+        policy = GeneratedGradePolicy("learner-relative-grade/v1", 8, 1, 17)
 
         result = synthesize_generated_grade(
             snapshot, closure, release, _inputs(learner, evidence, policy))
@@ -244,6 +275,10 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
         self.assertNotIn("skos:steep", result.member_semantic_ids)
         self.assertEqual(decisions["skos:steep"].disposition, "DEFERRED_STEEP_CLOSURE")
         self.assertEqual(decisions["skos:steep"].downstream_unlocks, 99)
+        self.assertIn("WAITING_FOR_EVIDENCE", decisions["skos:steep"].a09_statuses)
+        self.assertTrue(any(
+            receipt[2] == "PREREQUISITE_WAITING_FOR_EVIDENCE"
+            for receipt in decisions["skos:steep"].a09_reason_receipts))
         self.assertEqual(
             result.source_holds,
             (("source/lexicon/held", "SOURCE_RIGHTS_HELD", "source:rights"),),
@@ -258,3 +293,6 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
 
         self.assertEqual(restored, proposal)
         self.assertEqual(restored.proposal_sha256, proposal.proposal_sha256)
+        unknown = next(item for item in restored.decisions
+                       if item.semantic_id == "skos:unknown")
+        self.assertIsNone(unknown.qualified_transfer_savings)

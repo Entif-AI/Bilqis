@@ -214,5 +214,3 @@ class FactoryRelease:
                                *adapter.teaching_option_ids))
             if teaching_by_capability[cap.capability_id] != expected_options:
                 raise ValueError("FACTORY_RELEASE_TEACHING_CONTRACT_DRIFT")
-
-

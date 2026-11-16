@@ -15,6 +15,7 @@ from bilqis_mlx.factory.autonomy import (
 from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
 from bilqis_mlx.runtime.atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
 from bilqis_mlx.runtime.atlas_flywheel_runtime import run_accepted_atlas_flywheel
+from bilqis_mlx.runtime.generated_grade import propose_accepted_generated_grade
 from bilqis_mlx.runtime.autonomy_live import LiveAutonomySession
 from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
 from bilqis_mlx.runtime.autonomy_state import persist_autonomy_state
@@ -318,8 +319,9 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
                     accepted_event.baseline_evidence, parent.baseline_evidence)
                 self._close_event_evidence_without_neural_update()
 
-                cold = AcceptedAtlasFlywheelSupervisor(
-                    self.run, self.parent_graph, reserve_gib=0.).load_state()
+                cold_supervisor = AcceptedAtlasFlywheelSupervisor(
+                    self.run, self.parent_graph, reserve_gib=0.)
+                cold = cold_supervisor.load_state()
                 handoff = next_atlas_delta(
                     cold.epoch, cold.learner_evidence, cold.plan)
                 self.assertNotIsInstance(handoff, FrontierStatus, handoff)
@@ -327,8 +329,9 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
                     handoff.staged_candidate.target_capability_id,
                     "D.COMMENCEMENT",
                 )
-                cold_again = AcceptedAtlasFlywheelSupervisor(
-                    self.run, self.parent_graph, reserve_gib=0.).load_state()
+                cold_again_supervisor = AcceptedAtlasFlywheelSupervisor(
+                    self.run, self.parent_graph, reserve_gib=0.)
+                cold_again = cold_again_supervisor.load_state()
                 handoff_again = next_atlas_delta(
                     cold_again.epoch, cold_again.learner_evidence, cold_again.plan)
                 self.assertNotIsInstance(handoff_again, FrontierStatus, handoff_again)
@@ -340,6 +343,11 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
                     cold_again.learner_evidence.ledger,
                     cold.learner_evidence.ledger,
                 )
+                first_grade = propose_accepted_generated_grade(cold_supervisor)
+                second_grade = propose_accepted_generated_grade(cold_again_supervisor)
+                self.assertEqual(first_grade.proposal_sha256, second_grade.proposal_sha256)
+                self.assertEqual(first_grade.input_sha256, second_grade.input_sha256)
+                self.assertEqual(first_grade.decisions, second_grade.decisions)
 
                 second = run_accepted_atlas_flywheel(
                     self.run, self.parent_graph, reserve_gib=0., max_advances=1)

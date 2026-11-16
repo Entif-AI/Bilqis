@@ -17,6 +17,7 @@ class GeneratedGradeMember:
     source_anchor: str
     family_ids: tuple[str, ...]
     proposal_disposition: str
+    reason_codes: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,7 @@ def _seal_generated_grade(
             source_binding.source_anchor,
             decision.family_ids,
             decision.disposition,
+            decision.reason_codes,
         ))
     verification_sha256 = hashlib.sha256(_bytes(adopted_release.verification)).hexdigest()
     provisional = GeneratedGradeDefinition(

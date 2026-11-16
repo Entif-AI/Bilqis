@@ -1,6 +1,7 @@
 from dataclasses import replace
 import hashlib
 import unittest
+from unittest.mock import patch
 
 from bilqis_mlx.curriculum import AnswerFamily, BINARY, Capability, Course, Grade
 from bilqis_mlx.factory.adapters import RegisteredSourceAdapter, SourceAdapterRegistry
@@ -32,6 +33,20 @@ class AutonomousCurriculumPlannerCoreTests(AutonomyFixture, unittest.TestCase):
             "EvidenceObligation", "EvidenceReceipt", "TeachingReceipt",
         ):
             self.assertEqual(getattr(autonomy, name).__module__, autonomy.__name__)
+        for name in (
+            "compile_autonomy_plan", "initial_evidence_ledger",
+            "evidence_complete_capabilities", "next_work",
+        ):
+            self.assertEqual(getattr(autonomy, name).__module__, autonomy.__name__)
+
+    def test_implicit_plan_resolution_preserves_public_patch_seam(self):
+        from bilqis_mlx.factory import autonomy
+        with patch.object(
+            autonomy, "compile_autonomy_plan",
+            side_effect=RuntimeError("public-patch-seam"),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "public-patch-seam"):
+                autonomy.initial_evidence_ledger(self.release)
 
     def test_generation_axes_constrain_evidence_without_becoming_mastery_claims(self):
         obligations = obligations_for_capability(self.release, "A.BASE")

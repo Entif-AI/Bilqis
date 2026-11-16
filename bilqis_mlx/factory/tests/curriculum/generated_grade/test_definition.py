@@ -66,9 +66,10 @@ def _single_member_fixture(semantic_id: str, capability_id: str):
         grounding_quality=3, answer_modality_burden=0, ast_burden=0,
         entanglement=0, reusable_constituent_value=1, downstream_unlocks=1,
         minimal_contrast_value=1, transfer_breadth=1, learning_progress=1,
-        fairness_age=1, planning_compute_units=1,
+        fairness_age=1, a09_prerequisite_slope=0, a09_cursor_distance=0,
+        a09_statuses=("READY",), a09_reason_receipts=(), planning_compute_units=1,
         evidence_sha256=_sha("development:" + semantic_id)),)
-    policy = GeneratedGradePolicy("learner-relative-grade/v1", 1, 0)
+    policy = GeneratedGradePolicy("learner-relative-grade/v1", 1, 0, 4)
     proposal = synthesize_generated_grade(
         snapshot, closure, release, _inputs(learner, evidence, policy))
     return release, proposal

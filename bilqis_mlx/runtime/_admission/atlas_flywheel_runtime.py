@@ -191,12 +191,13 @@ def _persist_ready_realizations(
 @dataclass(frozen=True)
 class AcceptedAtlasFlywheelSupervisor:
     run_dir: Path
-    parent_graph: dict
+    parent_graph: dict | None = None
     reserve_gib: float = 100.0
 
     def __post_init__(self) -> None:
         if (not isinstance(self.run_dir, Path)
-                or not isinstance(self.parent_graph, dict)
+                or (self.parent_graph is not None
+                    and not isinstance(self.parent_graph, dict))
                 or not isinstance(self.reserve_gib, (int, float))
                 or self.reserve_gib < 0):
             ErrorBus.raise_legacy(
@@ -221,7 +222,12 @@ class AcceptedAtlasFlywheelSupervisor:
             LearnedFrontier(selection.release_sha256))
         source = issue_source_context_transition_authority(selection)
         frontier = _candidate_frontier(self.run_dir, current.release_sha256)
-        graph = _replay_current_graph(current, self.parent_graph)
+        graph = (
+            AcceptedRuntimeHost(self.run_dir).source_context(
+                source_root=None).graph
+            if self.parent_graph is None else
+            _replay_current_graph(current, self.parent_graph)
+        )
         staged = _persist_ready_realizations(
             self.run_dir, current, candidate, frontier, graph)
         plan = build_live_autonomy_plan(current, LEGACY_SOURCE)
@@ -261,7 +267,12 @@ class AcceptedAtlasFlywheelSupervisor:
         if current.release_sha256 != handoff.receipt.predecessor_release.release_sha256:
             ErrorBus.raise_legacy(
                 SCHOOL.BAMF_ATLAS_ADMISSION.FLYWHEEL_PREDECESSOR_DRIFT)
-        graph = _replay_current_graph(current, self.parent_graph)
+        graph = (
+            AcceptedRuntimeHost(self.run_dir).source_context(
+                source_root=None).graph
+            if self.parent_graph is None else
+            _replay_current_graph(current, self.parent_graph)
+        )
         checkpoint = _accepted_checkpoint(self.run_dir)
         plan = build_live_autonomy_plan(current, LEGACY_SOURCE)
         ledger = reconcile_live_autonomy_state(self.run_dir, current, plan)

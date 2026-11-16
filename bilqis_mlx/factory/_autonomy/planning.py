@@ -129,7 +129,13 @@ def _require_plan_release(factory_release_sha256: str, plan: AutonomyPlan) -> No
 
 
 def _resolve_plan(release: FactoryRelease, plan: AutonomyPlan | None) -> AutonomyPlan:
-    resolved = compile_autonomy_plan(release) if plan is None else plan
+    if plan is None:
+        # Resolve through the historical public facade so callers that patch the
+        # supported seam keep the same behavior after the implementation split.
+        from .. import autonomy as public_autonomy
+        resolved = public_autonomy.compile_autonomy_plan(release)
+    else:
+        resolved = plan
     if not isinstance(resolved, AutonomyPlan):
         raise TypeError("AUTONOMY_INVALID_PLAN")
     _require_plan_release(release.release_sha256, resolved)

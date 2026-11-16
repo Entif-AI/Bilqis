@@ -172,5 +172,3 @@ def assessment_plans(grade_ids) -> tuple[AssessmentPlan, ...]:
             (AssessmentClass.ROUTINE, ROUTINE_EVAL_LIFECYCLE, True, False, False),
             (AssessmentClass.PROMOTION, PROMOTION_ATTEMPT_LIFECYCLE, False, True, False),
             (AssessmentClass.GENERALIZATION, GENERALIZATION_LIFECYCLE, True, False, True)))
-
-

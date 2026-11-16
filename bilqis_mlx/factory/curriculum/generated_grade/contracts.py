@@ -4,6 +4,7 @@ from dataclasses import dataclass, field, fields
 from enum import Enum
 import hashlib
 from bilqis_mlx.factory.atlas_frontier_contracts import _bytes, _fail
+from bilqis_mlx.factory.atlas_frontier_selection import A09_FRONTIER_COMPARATOR_ORDER
 class CostEvidenceKind(str, Enum):
     MEASURED = "MEASURED"
     BOOTSTRAPPED = "BOOTSTRAPPED"
@@ -13,15 +14,19 @@ class AcquisitionCostEvidence:
     status: CostEvidenceKind
     measure: str
     units: int | None
-    transfer_savings: tuple[tuple[str, int], ...] = ()
+    # ``None`` means no qualified causal-transfer estimate exists.  An empty
+    # tuple means a qualified comparison found zero transferable effect.
+    transfer_savings: tuple[tuple[str, int], ...] | None = None
     def __post_init__(self) -> None:
         known = self.status in {CostEvidenceKind.MEASURED, CostEvidenceKind.BOOTSTRAPPED}
-        ids = tuple(identity for identity, _ in self.transfer_savings)
+        transfer = self.transfer_savings
+        ids = () if transfer is None else tuple(identity for identity, _ in transfer)
         if (not isinstance(self.status, CostEvidenceKind) or not self.measure
                 or (known and (type(self.units) is not int or self.units < 0))
                 or (not known and self.units is not None)
                 or ids != tuple(sorted(set(ids)))
-                or any(type(value) is not int for _, value in self.transfer_savings)):
+                or (transfer is not None
+                    and any(type(value) is not int for _, value in transfer))):
             _fail("BAMF_GENERATED_GRADE_COST_EVIDENCE_INVALID")
 
 @dataclass(frozen=True)
@@ -57,25 +62,30 @@ class CandidateDevelopmentEvidence:
     coverage_factors: tuple[str, ...]
     acquisition_cost: AcquisitionCostEvidence
     grounding_quality: int
-    answer_modality_burden: int
-    ast_burden: int
-    entanglement: int
-    reusable_constituent_value: int
+    answer_modality_burden: int | None
+    ast_burden: int | None
+    entanglement: int | None
+    reusable_constituent_value: int | None
     downstream_unlocks: int
-    minimal_contrast_value: int
-    transfer_breadth: int
-    learning_progress: int
-    fairness_age: int
+    minimal_contrast_value: int | None
+    transfer_breadth: int | None
+    learning_progress: int | None
+    fairness_age: int | None
+    a09_prerequisite_slope: int
+    a09_cursor_distance: int
+    a09_statuses: tuple[str, ...]
+    a09_reason_receipts: tuple[tuple[str, str, str, str, str], ...]
     planning_compute_units: int
     evidence_sha256: str
 
     def __post_init__(self) -> None:
-        ordinal = (
-            self.grounding_quality, self.answer_modality_burden, self.ast_burden,
-            self.entanglement, self.reusable_constituent_value,
-            self.downstream_unlocks, self.minimal_contrast_value,
+        ordinal = (self.grounding_quality, self.downstream_unlocks,
+                   self.a09_prerequisite_slope, self.a09_cursor_distance,
+                   self.planning_compute_units)
+        optional_ordinal = (
+            self.answer_modality_burden, self.ast_burden, self.entanglement,
+            self.reusable_constituent_value, self.minimal_contrast_value,
             self.transfer_breadth, self.learning_progress, self.fairness_age,
-            self.planning_compute_units,
         )
         if (not self.semantic_id or not _canonical_ids(self.compiled_capability_ids)
                 or not _canonical_ids(self.source_anchor_ids)
@@ -83,6 +93,15 @@ class CandidateDevelopmentEvidence:
                 or not _canonical_ids(self.coverage_factors)
                 or type(self.acquisition_cost) is not AcquisitionCostEvidence
                 or any(type(item) is not int or item < 0 for item in ordinal)
+                or any(item is not None and (type(item) is not int or item < 0)
+                       for item in optional_ordinal)
+                or self.a09_statuses != tuple(sorted(set(self.a09_statuses)))
+                or any(not item for item in self.a09_statuses)
+                or self.a09_reason_receipts != tuple(sorted(set(self.a09_reason_receipts)))
+                or any(type(item) is not tuple
+                       or tuple(type(part) for part in item)
+                          != (str, str, str, str, str)
+                       for item in self.a09_reason_receipts)
                 or not _sha(self.evidence_sha256)):
             _fail("BAMF_GENERATED_GRADE_CANDIDATE_EVIDENCE_INVALID")
 
@@ -91,24 +110,22 @@ class GeneratedGradePolicy:
     policy_id: str
     max_members: int
     max_unmet_prerequisites: int
-    acquisition_cost_measure: str = "optimizer-steps-to-criterion"
-    comparator_order: tuple[str, ...] = (
-        "unmet_prerequisite_count", "answer_modality_burden", "ast_burden",
-        "entanglement", "cost_evidence_rank", "closure_acquisition_units",
-        "grounding_quality_desc", "reusable_constituent_value_desc",
-        "downstream_unlocks_desc", "minimal_contrast_value_desc",
-        "transfer_breadth_desc", "learning_progress_desc",
-        "coverage_factor_count_desc", "fairness_age_desc", "semantic_id",
+    policy_epoch: int = 0
+    comparator_order: tuple[str, ...] = A09_FRONTIER_COMPARATOR_ORDER
+    pareto_dimensions: tuple[str, ...] = (
+        "cost_evidence_rank", "closure_acquisition_units",
+        "coverage_factor_count_desc",
     )
     schema: str = "bilqis.generated-grade-policy/v1"
 
     def __post_init__(self) -> None:
-        if (not self.policy_id or not self.acquisition_cost_measure
-                or type(self.max_members) is not int
+        if (not self.policy_id or type(self.max_members) is not int
                 or self.max_members < 1 or type(self.max_unmet_prerequisites) is not int
                 or self.max_unmet_prerequisites < 0
-                or self.comparator_order != GeneratedGradePolicy.__dataclass_fields__[
-                    "comparator_order"].default
+                or type(self.policy_epoch) is not int or self.policy_epoch < 0
+                or self.comparator_order != A09_FRONTIER_COMPARATOR_ORDER
+                or self.pareto_dimensions != GeneratedGradePolicy.__dataclass_fields__[
+                    "pareto_dimensions"].default
                 or self.schema != "bilqis.generated-grade-policy/v1"):
             _fail("BAMF_GENERATED_GRADE_POLICY_INVALID")
 
@@ -132,16 +149,21 @@ class CandidateGradeDecision:
     effective_acquisition_units: int | None
     closure_acquisition_units: int | None
     applied_transfer_savings: int
+    qualified_transfer_savings: tuple[tuple[str, int], ...] | None
     grounding_quality: int
-    answer_modality_burden: int
-    ast_burden: int
-    entanglement: int
-    reusable_constituent_value: int
+    answer_modality_burden: int | None
+    ast_burden: int | None
+    entanglement: int | None
+    reusable_constituent_value: int | None
     downstream_unlocks: int
-    minimal_contrast_value: int
-    transfer_breadth: int
-    learning_progress: int
-    fairness_age: int
+    minimal_contrast_value: int | None
+    transfer_breadth: int | None
+    learning_progress: int | None
+    fairness_age: int | None
+    a09_prerequisite_slope: int
+    a09_cursor_distance: int
+    a09_statuses: tuple[str, ...]
+    a09_reason_receipts: tuple[tuple[str, str, str, str, str], ...]
     planning_compute_units: int
     source_evidence_sha256s: tuple[str, ...]
     development_evidence_sha256: str
@@ -157,7 +179,7 @@ class GeneratedGradeInputs:
     learner: AcceptedLearnerFoot
     candidate_evidence: tuple[CandidateDevelopmentEvidence, ...]
     policy: GeneratedGradePolicy
-    a09_progress_sha256: str
+    a09_progress_sha256: str | None
     a09_status: str
     a09_handoff_sha256: str | None
     a09_proposal_sha256: str | None
@@ -172,7 +194,8 @@ class GeneratedGradeInputs:
                 or any(type(item) is not CandidateDevelopmentEvidence
                        for item in self.candidate_evidence)
                 or type(self.policy) is not GeneratedGradePolicy
-                or not _sha(self.a09_progress_sha256)
+                or (self.a09_progress_sha256 is not None
+                    and not _sha(self.a09_progress_sha256))
                 or not self.a09_status
                 or (self.a09_handoff_sha256 is not None
                     and not _sha(self.a09_handoff_sha256))
@@ -214,7 +237,7 @@ class GeneratedGradeProposal:
     policy_epoch: int
     policy_sha256: str
     input_sha256: str
-    a09_progress_sha256: str
+    a09_progress_sha256: str | None
     a09_status: str
     a09_handoff_sha256: str | None
     a09_proposal_sha256: str | None
@@ -236,7 +259,9 @@ class GeneratedGradeProposal:
                     self.snapshot_sha256, self.closure_sha256,
                     self.current_release_sha256, self.learner_foot_sha256,
                     self.policy_sha256, self.input_sha256,
-                    self.a09_progress_sha256, self.proposal_sha256))
+                    self.proposal_sha256))
+                or (self.a09_progress_sha256 is not None
+                    and not _sha(self.a09_progress_sha256))
                 or not self.a09_status
                 or (self.a09_handoff_sha256 is not None
                     and not _sha(self.a09_handoff_sha256))
@@ -282,6 +307,13 @@ class GeneratedGradeProposal:
                     "unmet_prerequisite_ids": tuple(item["unmet_prerequisite_ids"]),
                     "required_semantic_ids": tuple(item["required_semantic_ids"]),
                     "coverage_factors": tuple(item["coverage_factors"]),
+                    "a09_statuses": tuple(item["a09_statuses"]),
+                    "a09_reason_receipts": tuple(
+                        tuple(value) for value in item["a09_reason_receipts"]),
+                    "qualified_transfer_savings": (
+                        None if item["qualified_transfer_savings"] is None else
+                        tuple(tuple(value) for value in item["qualified_transfer_savings"])
+                    ),
                     "source_evidence_sha256s": tuple(item["source_evidence_sha256s"]),
                     "reason_codes": tuple(item["reason_codes"]),
                     "cost_status": CostEvidenceKind(item["cost_status"]),
@@ -310,9 +342,13 @@ def _decision_manifest(item: CandidateGradeDecision) -> dict:
         "compiled_capability_ids", "source_anchor_ids", "family_ids",
         "prerequisite_ids", "unmet_prerequisite_ids",
         "required_semantic_ids", "coverage_factors", "source_evidence_sha256s",
-        "reason_codes",
+        "reason_codes", "a09_statuses", "a09_reason_receipts",
     ):
         result[key] = list(result[key])
+    result["qualified_transfer_savings"] = (
+        None if result["qualified_transfer_savings"] is None else
+        [list(value) for value in result["qualified_transfer_savings"]]
+    )
     return result
 
 def _sha(value: object) -> bool:

@@ -56,13 +56,21 @@ def _accepted_release_lineage(
 def seal_accepted_generated_grade(
     run_dir: Path, proposal: GeneratedGradeProposal,
 ):
-    """Seal only against the Factory release currently adopted by accepted B13 custody."""
+    """Seal only an accepted-state proposal against accepted B13 Factory custody."""
     if not isinstance(run_dir, Path) or type(proposal) is not GeneratedGradeProposal:
         ErrorBus.raise_(
             SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
             reason="BAMF_GENERATED_GRADE_ACCEPTED_SEAL_INPUT_INVALID",
         )
     proposal.verify()
+    from .atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
+    accepted_proposal = propose_accepted_generated_grade(
+        AcceptedAtlasFlywheelSupervisor(Path(run_dir)))
+    if accepted_proposal.proposal_sha256 != proposal.proposal_sha256:
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH",
+        )
     lineage = _accepted_release_lineage(run_dir, proposal)
     return _seal_generated_grade(
         proposal, lineage[-1], release_lineage=lineage)
