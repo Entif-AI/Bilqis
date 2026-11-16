@@ -1,4 +1,4 @@
-# Admin Main Frame screenshot-derived anti-pattern gallery
+# Model Forensics screenshot-derived anti-pattern gallery
 
 Status: exact-example evidence companion to \`STYLE_GUIDE.md\`
 Parent authority: GitHub issue #1124
@@ -23,7 +23,7 @@ Future screenshot review findings should be appended here with:
 
 ### AP-D-001 · Shell width changed between destinations
 
-- Exact observed failure: Admin Main Frame rail measured **176 px** while non-Home destinations measured **220 px** at the same viewport.
+- Exact observed failure: Model Forensics rail measured **176 px** while non-Home destinations measured **220 px** at the same viewport.
 - Why it failed: navigation caused the entire workspace to jump horizontally.
 - Rule: persistent shell geometry must be stable at a given viewport.
 - Owner: SHELL-D-001 / COMP-D-001 / #1127.

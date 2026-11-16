@@ -1,4 +1,4 @@
-"""Literal CP03 queries cover every required Admin Main Frame read family."""
+"""Literal CP03 queries cover every required Model Forensics read family."""
 from dataclasses import replace
 import unittest
 

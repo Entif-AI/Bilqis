@@ -1,4 +1,4 @@
-"""Local discovery records joining CLI operators to Admin Main Frame CP01."""
+"""Local discovery records joining CLI operators to Model Forensics CP01."""
 from __future__ import annotations
 
 from contextlib import contextmanager

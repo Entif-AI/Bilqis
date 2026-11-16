@@ -1,7 +1,7 @@
-# BAMF Admin Main Frame GUI19 accessibility and defensive-state contract
+# BAMF Model Forensics GUI19 accessibility and defensive-state contract
 
 GUI19 makes keyboard, assistive-technology, stale/offline, partial-data, and
-failure behavior part of the Admin Main Frame foundation. It extends GUI01,
+failure behavior part of the Model Forensics foundation. It extends GUI01,
 GUI02, GUI04, and GUI20; it does not create a second application state model,
 control-plane transport, or command authority.
 
@@ -54,7 +54,7 @@ means empty. Revoked is distinct from both denied and unavailable. Outcome
 unknown never becomes failed or completed without a proven receipt/postcondition.
 
 Startup uses the same defensive vocabulary but exposes progress as a four-step text
-sequence: control plane, learner discovery, Admin Main Frame telemetry, and trainer.
+sequence: control plane, learner discovery, Model Forensics telemetry, and trainer.
 Assistive technology receives the same progression through the existing polite live
 region. A healthy learner with no operator projection is `progressive`, not `live`,
 `offline`, or failed. The UI exposes the bounded technical error code when a startup

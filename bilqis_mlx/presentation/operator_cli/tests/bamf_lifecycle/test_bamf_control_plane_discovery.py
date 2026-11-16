@@ -1,4 +1,4 @@
-"""Admin Main Frame discovery is live for the full human BAMF operator visit."""
+"""Model Forensics discovery is live for the full human BAMF operator visit."""
 from contextlib import contextmanager, redirect_stderr, redirect_stdout
 import io
 import json

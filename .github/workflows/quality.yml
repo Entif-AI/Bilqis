@@ -120,7 +120,7 @@ jobs:
           else
             python3 -B scripts/error_control_plane.py --check
           fi
-      - name: Verify Admin Main Frame shell and Electron security boundary
+      - name: Verify Model Forensics shell and Electron security boundary
         run: |
           node --version
           npm ci --ignore-scripts

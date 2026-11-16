@@ -29,7 +29,7 @@ function fakeRenderer() {
   };
 }
 
-test("preload exposes only the enumerated Admin Main Frame capability surface", () => {
+test("preload exposes only the enumerated Model Forensics capability surface", () => {
   const renderer = fakeRenderer();
   const exposed = loadSandboxedPreload(renderer);
   const api = exposed.api;

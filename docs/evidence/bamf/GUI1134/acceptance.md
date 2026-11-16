@@ -142,19 +142,19 @@ Final composed-tree qualification against unified
   and zero owned-surface WCAG 2/2.1/2.2 A/AA violations in every recorded
   theme/density/width variant;
 - `verify:leaf`: **PASS**;
-- Admin Main Frame renderer: **335/335 PASS**;
+- Model Forensics renderer: **335/335 PASS**;
 - Electron security: **53/53 PASS**;
 - Python bridge: **6/6 PASS**;
 - structure/governance: **PASS**;
 - static adaptation-source authority: **PASS**, companion tests **7/7 PASS**;
 - BAMF flow control: **PASS**, companion tests **15/15 PASS**;
-- Admin Main Frame Python discovery: **80/80 PASS**;
+- Model Forensics Python discovery: **80/80 PASS**;
 - `git diff --check`: **PASS**.
 
 The fresh worktree initially lacked the lockfile dependency tree. `npm ci
 --ignore-scripts` restored the checked-in Node dependencies before the security
 gate; no dependency versions were changed. Python 3.14 emitted `ResourceWarning`
-messages for unclosed SQLite connections during Admin Main Frame test teardown;
+messages for unclosed SQLite connections during Model Forensics test teardown;
 the suite still exited `0`, and this UI leaf does not modify that backend
 lifecycle.
 

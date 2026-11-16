@@ -1,4 +1,4 @@
-# BAMF Admin Main Frame CP04 event stream
+# BAMF Model Forensics CP04 event stream
 
 CP04 is a bounded delivery layer over the versioned CP02
 `EventEnvelope`/`StreamPosition` contract. It is not a learner database,
@@ -19,7 +19,7 @@ checkpoint owner, event-sourced training runtime, or durable evidence store.
 ## Snapshot and replay
 
 Clients bootstrap authoritative view state through the snapshot/query side of
-Admin Main Frame and then subscribe after an event cursor/frontier. CP04 retains
+Model Forensics and then subscribe after an event cursor/frontier. CP04 retains
 only a bounded in-memory replay window. Reconnect with a retained cursor
 replays events after that cursor and then joins the live stream without a
 snapshot polling loop.

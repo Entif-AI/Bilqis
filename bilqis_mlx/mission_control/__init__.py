@@ -1,4 +1,4 @@
-"""BAMF Admin Main Frame typed records and bounded CP03 query contracts."""
+"""BAMF Model Forensics typed records and bounded CP03 query contracts."""
 from .contracts.codec import canonical_json, decode_json, decode_record, encode_record
 from .contracts.envelopes import (
     ErrorEnvelope, EventEnvelope, PartialEnvelope, StaleEnvelope,

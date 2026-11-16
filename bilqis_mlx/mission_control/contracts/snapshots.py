@@ -1,4 +1,4 @@
-"""Run, school, capability, and curriculum snapshots for Admin Main Frame."""
+"""Run, school, capability, and curriculum snapshots for Model Forensics."""
 from __future__ import annotations
 
 from dataclasses import dataclass

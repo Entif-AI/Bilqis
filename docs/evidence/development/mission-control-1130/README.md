@@ -1,4 +1,4 @@
-# Admin Main Frame School rendered acceptance evidence
+# Model Forensics School rendered acceptance evidence
 
 Issue #1130 redesigns `VIEW-D-002` from unified baseline
 `b621e1bb3195fe739a1916e32d46c7b605b5e510`.
@@ -28,5 +28,5 @@ curriculum views reported no document-level horizontal overflow at 320 px in
 light/compact mode. A second 320 px pass combined compact density, RTL direction,
 and increased line (`1.5`), letter (`.12em`), and word (`.16em`) spacing; both
 views again reported no document-level horizontal overflow. Reduced-motion and
-forced-colors behavior remain covered by the shared Admin Main Frame contract and
+forced-colors behavior remain covered by the shared Model Forensics contract and
 School CSS media queries.

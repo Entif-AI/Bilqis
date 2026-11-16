@@ -1,4 +1,4 @@
-"""Disposable CP06 projection over accepted Admin Main Frame records."""
+"""Disposable CP06 projection over accepted Model Forensics records."""
 from __future__ import annotations
 
 import hashlib

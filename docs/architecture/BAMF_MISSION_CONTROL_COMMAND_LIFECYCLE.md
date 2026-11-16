@@ -1,4 +1,4 @@
-# BAMF Admin Main Frame CP05 command lifecycle
+# BAMF Model Forensics CP05 command lifecycle
 
 CP05 is a guarded command gateway over the accepted C11 BAMF operator. It does
 not own training, scheduling, admission policy, checkpoint custody, or learner
