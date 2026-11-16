@@ -112,7 +112,7 @@ class ReleasedFrameAdapter:
     atlas_semantic_resolver: AtlasSemanticResolver | None = None
 
 
-_STRATEGY_TABLE: dict[str, ReleasedFrameAdapter] = {
+_STRATEGIES: Mapping[str, ReleasedFrameAdapter] = MappingProxyType({
     MICRO_PREDICATE_ADAPTER: ReleasedFrameAdapter(
         MICRO_PREDICATE_ADAPTER, _bind_source_row, "micro", _micro_graph),
     BOOLEAN_CONNECTIVE_ADAPTER: ReleasedFrameAdapter(
@@ -126,32 +126,34 @@ _STRATEGY_TABLE: dict[str, ReleasedFrameAdapter] = {
         FINITE_NUMERIC_ADAPTER, _bind_numeric_row, "numeric", _numeric_graph),
     C13_EPISODE_ADAPTER: ReleasedFrameAdapter(
         C13_EPISODE_ADAPTER, _bind_c13_episode_row, "numeric", _numeric_graph),
-}
-_STRATEGIES: Mapping[str, ReleasedFrameAdapter] = MappingProxyType(_STRATEGY_TABLE)
+})
 
-_ROW_BINDER_TABLE: dict[str, RowBinder] = {
+_ROW_BINDERS: Mapping[str, RowBinder] = MappingProxyType({
     adapter_id: strategy.binder for adapter_id, strategy in _STRATEGIES.items()
-}
-_ROW_BINDERS: Mapping[str, RowBinder] = MappingProxyType(_ROW_BINDER_TABLE)
+})
 
 
 def register_source_frame_strategy(
     strategy: ReleasedFrameAdapter,
 ) -> ReleasedFrameAdapter:
     """Register one provider-owned strategy without reversing semantic boundaries."""
+    global _STRATEGIES, _ROW_BINDERS
     if not isinstance(strategy, ReleasedFrameAdapter) or not strategy.source_adapter_id:
         _adapter_fail(
             "FRAME_SOURCE_STRATEGY_INVALID", "<unknown>",
             SourceSpan(0, 0), "<adapter>")
-    existing = _STRATEGY_TABLE.get(strategy.source_adapter_id)
+    existing = _STRATEGIES.get(strategy.source_adapter_id)
     if existing is not None:
         if existing != strategy:
             _adapter_fail(
                 "FRAME_SOURCE_ADAPTER_REGISTRATION_DRIFT",
                 strategy.source_adapter_id, SourceSpan(0, 0), "<adapter>")
         return existing
-    _STRATEGY_TABLE[strategy.source_adapter_id] = strategy
-    _ROW_BINDER_TABLE[strategy.source_adapter_id] = strategy.binder
+    _STRATEGIES = MappingProxyType({**_STRATEGIES, strategy.source_adapter_id: strategy})
+    _ROW_BINDERS = MappingProxyType({
+        adapter_id: released.binder
+        for adapter_id, released in _STRATEGIES.items()
+    })
     return strategy
 
 def released_frame_adapter_ids() -> tuple[str, ...]:
