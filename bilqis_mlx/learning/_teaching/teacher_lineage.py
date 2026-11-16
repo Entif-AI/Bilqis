@@ -89,6 +89,27 @@ def initialize_teacher_lineage(
         teacher_epoch=0, next_seed=next_seed, cursor=cursor)
 
 
+def _validate_optional_teacher_history(
+        teacher_state: Mapping, actual_outer: set[str]) -> None:
+    priority_outer = {"priority_counter", "priority_last_selected"}
+    instruction_outer = {"instruction_history_state", "instruction_seen_capabilities"}
+    if priority_outer <= actual_outer:
+        counter = teacher_state["priority_counter"]
+        selected = teacher_state["priority_last_selected"]
+        if (type(counter) is not int or counter < 0 or not isinstance(selected, Mapping)
+                or any(not isinstance(key, str) or not key or type(value) is not int
+                       or not 0 < value <= counter for key, value in selected.items())):
+            invalid("TEACHER_PRIORITY_ROTATION_INVALID")
+    if instruction_outer <= actual_outer:
+        seen = teacher_state["instruction_seen_capabilities"]
+        if (teacher_state["instruction_history_state"] not in {"COMPLETE", "PARTIAL"}
+                or not isinstance(seen, (list, tuple))
+                or len(seen) > 4096
+                or any(not isinstance(item, str) or not item for item in seen)
+                or len(set(seen)) != len(seen)):
+            invalid("TEACHER_INSTRUCTION_HISTORY_INVALID")
+
+
 def restore_teacher_lineage(
         teacher_state: Mapping, *, expected_adaptation: Mapping | None = None) -> TeacherEpoch:
     """Reconstruct exact TeacherEpoch while rejecting altered nested or outer custody."""
@@ -121,21 +142,7 @@ def restore_teacher_lineage(
             or not isinstance(teacher_state.get("cursor"), str)
             or not teacher_state["cursor"]):
         invalid("TEACHER_STATE_INVALID")
-    if priority_outer <= actual_outer:
-        counter = teacher_state["priority_counter"]
-        selected = teacher_state["priority_last_selected"]
-        if (type(counter) is not int or counter < 0 or not isinstance(selected, Mapping)
-                or any(not isinstance(key, str) or not key or type(value) is not int
-                       or not 0 < value <= counter for key, value in selected.items())):
-            invalid("TEACHER_PRIORITY_ROTATION_INVALID")
-    if instruction_outer <= actual_outer:
-        seen = teacher_state["instruction_seen_capabilities"]
-        if (teacher_state["instruction_history_state"] not in {"COMPLETE", "PARTIAL"}
-                or not isinstance(seen, (list, tuple))
-                or len(seen) > 4096
-                or any(not isinstance(item, str) or not item for item in seen)
-                or len(set(seen)) != len(seen)):
-            invalid("TEACHER_INSTRUCTION_HISTORY_INVALID")
+    _validate_optional_teacher_history(teacher_state, actual_outer)
     lineage = teacher_state["c03_lineage"]
     expected_lineage = {
         "schema", "historical_replay", "adaptation_authority", "student_sha256",
