@@ -148,15 +148,35 @@ def prepare_bamf_visit(
         candidate_identity_sha256=getattr(
             host_cache, "_candidate_identity_sha256", None))
     _emit_progress(progress, "planning current candidate frontier and teacher priority")
+    planning_started = time.perf_counter()
     selection = select_foundation_priority_visit(
         run_dir, context, atlas_path, program=program, school=school,
         progress=progress)
+    planning_total = max(0.0, time.perf_counter() - planning_started)
+    source_materialization_wall_seconds = float(
+        getattr(selection, "source_materialization_wall_seconds", None) or 0.0)
+    if observer is not None:
+        observer.update(
+            planning_wall_seconds=max(
+                0.0, planning_total - source_materialization_wall_seconds),
+            source_materialization_wall_seconds=(
+                source_materialization_wall_seconds or None))
     if selection.status != "TEACHER_SELECTED":
         status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
         _emit_progress(progress, "priority holds: " + json.dumps(
             getattr(selection, "holds", ()), ensure_ascii=True))
         return BamfPreparedVisit(status, parent, selection=selection)
     rows = selection.offer.rows()
+    if observer is not None:
+        from .evidence_projection import (
+            selected_visit_evidence, unknown_generated_grade_evidence,
+        )
+        visit_evidence = selected_visit_evidence(selection)
+        observer.update(
+            visit_evidence=visit_evidence,
+            generated_grade_evidence=unknown_generated_grade_evidence(
+                visit_evidence.get("grade_id")),
+        )
     _emit_progress(
         progress,
         f"selected {selection.offer.capability_id} with {len(rows)} source rows")

@@ -120,7 +120,7 @@ def retention_result(
         if not decision.accepted:
             from bilqis_mlx.errors.authority import authority_label
             emit_progress(progress, "retention decision: " + authority_label(
-                decision.reason, blocking_capability=getattr(
+                getattr(decision, "reason", None), blocking_capability=getattr(
                     getattr(evaluation, "decision", None), "blocking_capability", None),
                 blocking_scope=getattr(
                     getattr(evaluation, "decision", None), "blocking_scope", None)))
@@ -130,6 +130,18 @@ def retention_result(
     with measure_observed_phase_fn(observer, "evidence_finalization_wall_seconds"):
         candidate_evidence = capture.finalize(
             accepted=decision.accepted, decision=decision.to_record())
+    if observer is not None:
+        try:
+            from .evidence_projection import complete_visit_evidence
+            record = getattr(observer, "record", {})
+            current_visit = (record.get("visit_evidence")
+                             if isinstance(record, dict) else None) or {
+                "schema": "bilqis.bamf.visit-evidence/v1", "state": "PARTIAL"}
+            observer.update(visit_evidence=complete_visit_evidence(
+                run_dir, current_visit, candidate_evidence, decision))
+        except Exception:
+            # Projection is observation-only and must not gate C05/B13 completion.
+            pass
     resource = resource_observation(
         run_dir, tuple(steps),
         getattr(context, "_source_preparation_metrics", None),
