@@ -157,8 +157,11 @@ class LawfulPriorityRuntimeTests(PreNeuralJourneySupport, unittest.TestCase):
                 second = authority.issue_foundation_priority_authority(
                     self.run, context, parent, teacher_epoch, atlas_path,
                     teacher_state=projection.teacher_state)
-                self.assertEqual(len(second.offers), 15)
-                self.assertIn("C.COUNT", dict(second.offers))
+                second_offers = dict(second.offers)
+                self.assertEqual(len(second.offers), 13)
+                self.assertNotIn("A.IDENTITY", second_offers)
+                self.assertNotIn("A.MEMBER", second_offers)
+                self.assertIn("C.COUNT", second_offers)
                 ready = next(
                     item for item in second.lawful_frontier.capabilities
                     if item.capability_id == "C.COUNT")

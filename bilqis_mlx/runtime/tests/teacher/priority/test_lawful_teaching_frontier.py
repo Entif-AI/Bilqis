@@ -122,6 +122,20 @@ class LawfulTeachingProjectionTests(unittest.TestCase):
             by_id_after["D"].evidence_complete_prerequisites, ("P",))
         self.assertEqual(by_id_after["D"].semantic_prerequisites, ("sem.p",))
 
+    def test_evidence_complete_target_is_not_ready_for_teaching_again(self):
+        by_id = {item.capability_id: item for item in _capabilities(
+            _release(), _snapshot(), _closure(), _plan(), ("P",))}
+
+        self.assertTrue(by_id["P"].target_evidence_complete)
+        self.assertIs(
+            by_id["P"].disposition,
+            LawfulTeachingDisposition.EVIDENCE_COMPLETE,
+        )
+        self.assertIs(
+            by_id["D"].disposition,
+            LawfulTeachingDisposition.READY,
+        )
+
     def test_grade_labels_and_release_iteration_order_cannot_mint_readiness(self):
         canonical = _capabilities(
             _release(), _snapshot(), _closure(), _plan(), ())
