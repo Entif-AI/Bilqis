@@ -17,7 +17,8 @@ from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.learning_experiment import Settings
 from bilqis_mlx.learning.teacher_lineage import restore_teacher_lineage
 from bilqis_mlx.runtime.accepted_teacher_custody import (
-    BoundTeacherVisit, derive_c03_successor_bundle, select_accepted_teacher_visit,
+    BoundTeacherVisit, _c03_projection, derive_c03_successor_bundle,
+    select_accepted_teacher_visit,
 )
 from bilqis_mlx.runtime.bamf_bundle import BamfBundleCandidate, publish_bamf_generation
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
@@ -191,6 +192,36 @@ class C03AcceptedTeacherCustodyTests(unittest.TestCase):
             bound.identity.accepted_manifest_sha256,
             imported_pointer["manifest_sha256"])
         self.assertEqual(bound.identity.student_sha256, student)
+
+    def test_prebootstrap_parameter_extension_does_not_strand_c03_bootstrap(self):
+        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
+            pointer = publish_genesis(self.run, run_seed=79)
+        with shape_patch():
+            parent = load_accepted_generation(self.run)
+        extended = replace(
+            parent,
+            generation=1,
+            parent_manifest_sha256=pointer["manifest_sha256"],
+            transition={
+                "schema": "bilqis.mlx.bamf-generation-transition/v1",
+                "kind": "PARAMETER_EXTENSION",
+                "invalidate_derived_caches": True,
+            },
+        )
+
+        projection = _c03_projection(
+            extended,
+            legacy_receipt={"teacher": selection_teacher()},
+            adaptation=adaptation(),
+            prior_region="legacy-region",
+        )
+
+        restored = restore_teacher_lineage(projection.teacher_state)
+        self.assertEqual(
+            restored.student_sha256,
+            candidate_identity_digest(extended.retained_state),
+        )
+        self.assertEqual(restored.prior_region, "legacy-region")
 
 
 if __name__ == "__main__":

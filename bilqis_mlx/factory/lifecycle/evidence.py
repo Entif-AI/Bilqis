@@ -1,6 +1,7 @@
 """Neural-inert execution of one autonomous learner-evidence obligation."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 import hashlib
 import json
 
@@ -17,11 +18,20 @@ def _digest(value) -> str:
         allow_nan=False).encode()).hexdigest()
 
 
-def draw_evidence_rows(source_root, graph, release: FactoryRelease,
-                       registry: SourceAdapterRegistry,
-                       obligation: EvidenceObligation, *, seed: int,
-                       max_rounds: int = 8) -> tuple[dict, ...]:
-    """Materialize fresh source-checked rows that actually witness obligation."""
+@dataclass(frozen=True)
+class EvidenceSourceDraw:
+    """Exact source-generation coordinates for one qualified evidence row."""
+
+    row_id: str
+    source_seed: int
+    source_each: int
+
+
+def _draw_evidence_batch(source_root, graph, release: FactoryRelease,
+                         registry: SourceAdapterRegistry,
+                         obligation: EvidenceObligation, *, seed: int,
+                         max_rounds: int = 8):
+    """Return qualified rows together with their exact source draw coordinates."""
     release.verify()
     if not isinstance(registry, SourceAdapterRegistry):
         raise TypeError("FACTORY_EVIDENCE_REGISTRY_REQUIRED")
@@ -37,11 +47,12 @@ def draw_evidence_rows(source_root, graph, release: FactoryRelease,
 
     target = obligation.minimum_specimens
     each = target if obligation.kind is EvidenceKind.DIRECT else max(8, target * 4)
-    found: dict[str, dict] = {}
+    found: dict[str, tuple[dict, EvidenceSourceDraw]] = {}
     for round_index in range(max_rounds):
+        source_seed = seed + round_index
         rows = (draw_release_rows if legacy else draw_executable_release_rows)(
             source_root, graph, release, registry,
-            seed=seed + round_index,
+            seed=source_seed,
             capability=obligation.capability_id,
             each=each,
         )
@@ -52,21 +63,43 @@ def draw_evidence_rows(source_root, graph, release: FactoryRelease,
                     row=row, obligation=obligation,
                     source_root=source_root, graph=graph,
                     release=None if legacy else release):
-                found[row["id"]] = row
+                found[row["id"]] = (
+                    row,
+                    EvidenceSourceDraw(row["id"], source_seed, each),
+                )
                 if len(found) >= target:
-                    return tuple(found[key] for key in sorted(found)[:target])
+                    selected = tuple(found[key] for key in sorted(found)[:target])
+                    return (
+                        tuple(item[0] for item in selected),
+                        tuple(item[1] for item in selected),
+                    )
     raise ValueError(
         "FACTORY_EVIDENCE_WITNESS_EXHAUSTED:" + obligation.obligation_id)
+
+
+def draw_evidence_rows(source_root, graph, release: FactoryRelease,
+                       registry: SourceAdapterRegistry,
+                       obligation: EvidenceObligation, *, seed: int,
+                       max_rounds: int = 8) -> tuple[dict, ...]:
+    """Materialize fresh source-checked rows that actually witness obligation."""
+    rows, _source_draws = _draw_evidence_batch(
+        source_root, graph, release, registry, obligation,
+        seed=seed, max_rounds=max_rounds)
+    return rows
 
 
 def measure_evidence(source_root, graph, release: FactoryRelease,
                      registry: SourceAdapterRegistry,
                      obligation: EvidenceObligation, *,
-                     checkpoint: dict, seed: int, predictor) -> EvidenceReceipt:
+                     checkpoint: dict, seed: int, predictor=None,
+                     source_bound_predictor=None) -> EvidenceReceipt:
     """Score one intact checkpoint on a fresh obligation-specific cohort."""
-    if not callable(predictor):
+    if ((predictor is None) == (source_bound_predictor is None)
+            or (predictor is not None and not callable(predictor))
+            or (source_bound_predictor is not None
+                and not callable(source_bound_predictor))):
         raise TypeError("FACTORY_EVIDENCE_PREDICTOR_REQUIRED")
-    rows = draw_evidence_rows(
+    rows, source_draws = _draw_evidence_batch(
         source_root, graph, release, registry, obligation, seed=seed)
     legacy = isinstance(release, FactoryRelease)
     generator = (release.course.capability_map[obligation.capability_id].lesson_generator
@@ -79,7 +112,10 @@ def measure_evidence(source_root, graph, release: FactoryRelease,
         rubric_version=(
             release.release_sha256 + "/" + obligation.obligation_id),
     )
-    predictions = predictor(tuple(rows))
+    predictions = (
+        source_bound_predictor(tuple(rows), source_draws)
+        if source_bound_predictor is not None
+        else predictor(tuple(rows)))
     measured = score(cohort, predictions, checkpoint)
     evidence_id = _digest({
         "factory_release_sha256": release.release_sha256,

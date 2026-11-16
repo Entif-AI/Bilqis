@@ -144,6 +144,10 @@ class BamfOperatorRejectionContinuationTests(unittest.TestCase):
         with TemporaryDirectory() as temporary, patch(
                 "bilqis_mlx.runtime.bamf_operator.session._visit",
                 side_effect=("ACCEPTED", "HELD")) as visit, patch(
+                "bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence."
+                "refresh_accepted_learning_evidence",
+                return_value=SimpleNamespace(
+                    measured=0, passed=0, final_action="QUALIFICATION")), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._accepted_admission_reentry",
                 return_value=("WAITING_FOR_EVIDENCE", 1, None)) as reentry, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
@@ -167,6 +171,10 @@ class BamfOperatorRejectionContinuationTests(unittest.TestCase):
         with TemporaryDirectory() as temporary, patch(
                 "bilqis_mlx.runtime.bamf_operator.session._visit",
                 return_value="ACCEPTED") as visit, patch(
+                "bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence."
+                "refresh_accepted_learning_evidence",
+                return_value=SimpleNamespace(
+                    measured=0, passed=0, final_action="QUALIFICATION")), patch(
                 "bilqis_mlx.runtime.bamf_operator.session._accepted_admission_reentry",
                 return_value=("HELD", 0, "ADMISSION_HOLD")), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",

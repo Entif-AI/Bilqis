@@ -136,12 +136,13 @@ def reconcile_live_autonomy_state(
 
 def measure_live_evidence(
     source_root, graph, release: FactoryRelease, work: CurriculumWorkItem, *,
-    checkpoint: dict, seed: int, predictor,
+    checkpoint: dict, seed: int, predictor=None, source_bound_predictor=None,
 ):
     """Measure one obligation against the exact durable checkpoint supplied."""
     return measure_evidence(
         source_root, graph, release, live_source_registry(), work.obligation,
-        checkpoint=checkpoint, seed=seed, predictor=predictor)
+        checkpoint=checkpoint, seed=seed, predictor=predictor,
+        source_bound_predictor=source_bound_predictor)
 
 
 def scheduled_teaching_matches(

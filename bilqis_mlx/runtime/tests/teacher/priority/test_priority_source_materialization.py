@@ -35,7 +35,7 @@ def test_selected_source_ast_context_and_prefix_materialize_once_per_visit():
     rows = ({"id": "row:one", "capability": "cap", "tokens": [1]},)
     prefix = SimpleNamespace(positions=(1,))
     model_sources = (SimpleNamespace(prefix=prefix),)
-    source_rows = (SimpleNamespace(row=rows[0]),)
+    source_rows = (SimpleNamespace(row=rows[0], source_adapter="adapter"),)
     feature_owner, packed_owner, source_owner = _Owner(), _Owner(), _Owner()
     b11_source = _Owner()
     registrar = _Registrar()

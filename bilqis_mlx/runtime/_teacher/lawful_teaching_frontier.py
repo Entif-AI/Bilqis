@@ -95,6 +95,8 @@ def _holds_for_capability(
         disposition = LawfulTeachingDisposition.IMPLEMENTATION_UNCOVERED
     elif waiting:
         disposition = LawfulTeachingDisposition.HELD_PREREQUISITE_EVIDENCE
+    elif capability_id in mastered:
+        disposition = LawfulTeachingDisposition.EVIDENCE_COMPLETE
     else:
         disposition = LawfulTeachingDisposition.READY
     semantic_prerequisites = tuple(sorted({

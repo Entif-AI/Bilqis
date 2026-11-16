@@ -24,7 +24,13 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     bind_accepted_execution_cache, derive_successor_bundle,
     load_accepted_generation,
 )
-from bilqis_mlx.runtime.bamf_bundle.records import BamfBundleCandidate, sidecar_records
+from bilqis_mlx.runtime.bamf_bundle.factory_release_adoption import (
+    is_factory_release_adoption_transition,
+    validate_factory_release_adoption_transition,
+)
+from bilqis_mlx.runtime.bamf_bundle.records import (
+    BamfBundleCandidate, sidecar_records, validate_transition,
+)
 from bilqis_mlx.runtime.bamf_bundle.package_import_transition import (
     is_package_import_transition, validate_package_import_transition,
 )
@@ -114,15 +120,24 @@ def _student_reference(student: CompleteStudent, state: CandidateState | None = 
     }
 
 
-def _package_import_bootstrap_eligible(parent: CompleteStudent, state: Mapping) -> bool:
+def _prebootstrap_transition_eligible(parent: CompleteStudent, state: Mapping) -> bool:
     if (parent.generation <= 0
             or parent.retained_state.optimizer_step != 0
-            or not is_package_import_transition(parent.transition)
             or state.get("teacher_identity") != parent.provenance.teacher_identity
             or state.get("teacher_epoch") != parent.provenance.teacher_epoch):
         return False
-    validate_package_import_transition(parent.transition)
-    return True
+    transition = parent.transition
+    if is_package_import_transition(transition):
+        validate_package_import_transition(transition)
+        return True
+    if is_factory_release_adoption_transition(transition):
+        validate_factory_release_adoption_transition(transition)
+        return True
+    if (isinstance(transition, Mapping)
+            and transition.get("kind") == "PARAMETER_EXTENSION"):
+        validate_transition(parent.generation, transition)
+        return True
+    return False
 
 
 def _require_current_c03_lineage(parent: CompleteStudent, state: Mapping):
@@ -146,7 +161,7 @@ def _c03_projection(parent: CompleteStudent, *, legacy_receipt, adaptation,
         return TeacherCustodyProjection(
             state, state["teacher_identity"], state["teacher_epoch"])
     can_bootstrap = (
-        parent.generation == 0 or _package_import_bootstrap_eligible(parent, state))
+        parent.generation == 0 or _prebootstrap_transition_eligible(parent, state))
     if (not can_bootstrap or not isinstance(legacy_receipt, Mapping)
             or not isinstance(adaptation, Mapping)
             or not isinstance(prior_region, str) or not prior_region):
