@@ -17428,6 +17428,15 @@
                     }
                   ]
                 },
+                "distance_to_mastery_state": {
+                  "minLength": 1,
+                  "not": {
+                    "pattern": "\\n"
+                  },
+                  "pattern": "\\S",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
                 "epoch_sha256": {
                   "pattern": "^[0-9a-f]{64}$",
                   "type": "string",
@@ -17525,6 +17534,31 @@
                   "type": "string",
                   "x-bilqis-unicode-domain": "scalar-values"
                 },
+                "history_error": {
+                  "anyOf": [
+                    {
+                      "minLength": 1,
+                      "not": {
+                        "pattern": "\\n"
+                      },
+                      "pattern": "\\S",
+                      "type": "string",
+                      "x-bilqis-unicode-domain": "scalar-values"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "history_state": {
+                  "minLength": 1,
+                  "not": {
+                    "pattern": "\\n"
+                  },
+                  "pattern": "\\S",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
                 "latest": {
                   "anyOf": [
                     {
@@ -17565,6 +17599,15 @@
                   "type": "array",
                   "uniqueItems": true
                 },
+                "protected_regression_state": {
+                  "minLength": 1,
+                  "not": {
+                    "pattern": "\\n"
+                  },
+                  "pattern": "\\S",
+                  "type": "string",
+                  "x-bilqis-unicode-domain": "scalar-values"
+                },
                 "qualification_state": {
                   "minLength": 1,
                   "not": {
@@ -17573,6 +17616,42 @@
                   "pattern": "\\S",
                   "type": "string",
                   "x-bilqis-unicode-domain": "scalar-values"
+                },
+                "recent_checkpoints": {
+                  "items": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "checkpoint_sha256": {
+                        "pattern": "^[0-9a-f]{64}$",
+                        "type": "string",
+                        "x-bilqis-unicode-domain": "scalar-values"
+                      },
+                      "correct": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "optimizer_step": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "total": {
+                        "maximum": 9007199254740991,
+                        "minimum": 0,
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "checkpoint_sha256",
+                      "optimizer_step",
+                      "correct",
+                      "total"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array",
+                  "uniqueItems": true
                 },
                 "regressed_from_first": {
                   "type": "boolean"
@@ -17655,15 +17734,20 @@
                 "grade_definition_version",
                 "epoch_sha256",
                 "state",
+                "history_state",
+                "history_error",
                 "first",
                 "latest",
                 "best",
                 "comparable_points",
+                "recent_checkpoints",
                 "gain_from_first",
                 "regressed_from_first",
+                "distance_to_mastery_state",
                 "distance_to_mastery",
                 "fixed_screen_errors",
                 "qualification_state",
+                "protected_regression_state",
                 "regressed_protected_capabilities",
                 "prior_certified_surface_ids",
                 "certified_surface_regression_state",

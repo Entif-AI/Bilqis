@@ -129,11 +129,21 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     ["home.observed.healthStatus", health.state],
     ["home.observed.healthScore", score(health.latest)],
     ["home.observed.healthBest", score(health.best)],
+    ["home.observed.healthHistory", health.history_state],
+    ["home.observed.healthHistoryError", health.history_error ?? unknown],
     ["home.observed.healthGain", health.gain_from_first],
+    ["home.observed.healthDistance",
+      health.distance_to_mastery_state === "MEASURED"
+        ? health.distance_to_mastery : health.distance_to_mastery_state],
     ["home.observed.healthErrors", health.fixed_screen_errors],
     ["home.observed.healthQualification", health.qualification_state],
+    ["home.observed.healthCertifiedRegression", health.certified_surface_regression_state],
+    ["home.observed.healthCertifiedSurfaces",
+      (health.prior_certified_surface_ids ?? []).join(", ") || unknown],
     ["home.observed.healthProtected",
-      (health.regressed_protected_capabilities ?? []).join(", ") || "None observed"],
+      health.protected_regression_state === "OBSERVED_REGRESSION"
+        ? (health.regressed_protected_capabilities ?? []).join(", ")
+        : health.protected_regression_state],
   ] : [];
   const healthMarkup = health ? `<details data-test-id="home-observed-learning-health">
     <summary>${esc(t("home.observed.learningHealth"))}</summary>

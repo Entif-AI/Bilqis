@@ -130,11 +130,23 @@ export function projectionFromPages(pages, context) {
     })
     : null;
   const health = observed.current?.learning_health;
+  const checkpoints = Array.isArray(health?.recent_checkpoints)
+    ? health.recent_checkpoints : [];
+  const latestCheckpoint = checkpoints.at(-1);
+  const previousCheckpoint = checkpoints.at(-2);
+  const acceptedCurrent = observed.current?.outcome === "ACCEPTED";
+  const freshGain = acceptedCurrent && latestCheckpoint && previousCheckpoint &&
+    latestCheckpoint.total === previousCheckpoint.total &&
+    latestCheckpoint.correct > previousCheckpoint.correct ? 1 : 0;
+  const freshRegression = acceptedCurrent && latestCheckpoint && previousCheckpoint &&
+    latestCheckpoint.total === previousCheckpoint.total &&
+    latestCheckpoint.correct < previousCheckpoint.correct ? 1 : 0;
   const healthRegressions = Array.isArray(health?.regressed_protected_capabilities)
     ? health.regressed_protected_capabilities.length +
-      (health.regressed_from_first === true ? 1 : 0) : 0;
-  const acceptedGain = Number.isInteger(health?.gain_from_first) &&
-    health.gain_from_first > 0 ? 1 : 0;
+      (health.regressed_from_first === true ? 1 : 0) +
+      freshRegression +
+      (health.certified_surface_regression_state === "OBSERVED_REGRESSION" ? 1 : 0)
+    : 0;
 
   return Object.freeze({
     provenance: "LIVE_QUERY",
@@ -142,7 +154,7 @@ export function projectionFromPages(pages, context) {
     startup,
     state: Object.freeze(Object.fromEntries(HOME_FAMILIES.map((family) => [family, pageState(pages, family)]))),
     learningStatus: classifyLearning({
-      retained, freshRetainedImprovements: acceptedGain, regressions: healthRegressions,
+      retained, freshRetainedImprovements: freshGain, regressions: healthRegressions,
     }),
     learning: Object.freeze({
       latestSchoolScore: ratio(currentCorrect, currentTotal),

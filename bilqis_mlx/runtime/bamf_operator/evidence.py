@@ -98,7 +98,7 @@ class CandidateEvidenceCapture:
     def __init__(
             self, run_dir: Path, selection, *, generation: int,
             accepted_manifest_sha256: str, candidate_attempt_ordinal: int,
-            parent_optimizer_step: int):
+            parent_optimizer_step: int, introductory: bool | None = None):
         identity = getattr(getattr(selection, "visit", None), "identity", None)
         visit_id = getattr(identity, "visit_id", None)
         policy_key = getattr(identity, "policy_key", None)
@@ -153,6 +153,7 @@ class CandidateEvidenceCapture:
         self._learning_course = None
         self._learning_steps = []
         self._learning_missing = False
+        self._introductory = introductory
 
     def _object_ref(self, row):
         value = _plain(row)
@@ -254,7 +255,7 @@ class CandidateEvidenceCapture:
                 from bilqis_mlx.diagnostics.teaching import diagnose_teaching_visit
                 findings = diagnose_teaching_visit(
                     self._learning_course, self.proposal["capability"],
-                    tuple(self._learning_steps), introductory=None)
+                    tuple(self._learning_steps), introductory=self._introductory)
                 return tuple({
                     "signal": item.signal.value, "status": item.status.value,
                     "note": item.note, "evidence_count": item.evidence_count,

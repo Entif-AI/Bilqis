@@ -189,12 +189,18 @@ class ObservedSourceTests(unittest.TestCase):
             retention_stage_timings=[], learning_health=None)
         (self.root / 'trainer-observed.json').write_text(json.dumps({
             'schema': 'bilqis.bamf.trainer-observed/v5',
-            'learning_health_run_id': RUN.run_id,
-            'learning_health_by_capability': {'A.IDENTITY': health},
             'visits': [row],
         }))
+        (self.root / 'bamf-state.json').write_text(json.dumps({
+            'run_id': RUN.run_id,
+            'manifest_sha256': RUN.generation_manifest_sha256,
+        }))
         with patch('bilqis_mlx.control_plane.observed.source.process_exists',
-                   return_value=True):
+                   return_value=True), patch(
+            'bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation',
+            return_value=object()), patch(
+            'bilqis_mlx.runtime.bamf_operator.learning_health_runtime.accepted_learning_health_from_parent',
+            return_value={'A.IDENTITY': health}):
             observed = observed_records(self.root, (RUN,), now_ms=101000)[0]
         self.assertEqual(observed.learning_health.latest.correct, 4)
 
@@ -209,12 +215,18 @@ class ObservedSourceTests(unittest.TestCase):
                     retention_stage_timings=[], learning_health=None)
         (self.root / 'trainer-observed.json').write_text(json.dumps({
             'schema': 'bilqis.bamf.trainer-observed/v5',
-            'learning_health_run_id': RUN.run_id,
-            'learning_health_by_capability': {'A.IDENTITY': {'schema': 'invalid'}},
             'visits': [row],
         }))
+        (self.root / 'bamf-state.json').write_text(json.dumps({
+            'run_id': RUN.run_id,
+            'manifest_sha256': RUN.generation_manifest_sha256,
+        }))
         with patch('bilqis_mlx.control_plane.observed.source.process_exists',
-                   return_value=True):
+                   return_value=True), patch(
+            'bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation',
+            return_value=object()), patch(
+            'bilqis_mlx.runtime.bamf_operator.learning_health_runtime.accepted_learning_health_from_parent',
+            return_value={'A.IDENTITY': {'schema': 'invalid'}}):
             observed = observed_records(self.root, (RUN,), now_ms=101000)
         self.assertEqual(len(observed), 1)
         self.assertIsNone(observed[0].learning_health)
@@ -240,12 +252,18 @@ class ObservedSourceTests(unittest.TestCase):
         new = visit(**fields, observation_id='current', revision=2)
         (self.root / 'trainer-observed.json').write_text(json.dumps({
             'schema': 'bilqis.bamf.trainer-observed/v5',
-            'learning_health_run_id': RUN.run_id,
-            'learning_health_by_capability': {'A.IDENTITY': health},
             'visits': [old, new],
         }))
+        (self.root / 'bamf-state.json').write_text(json.dumps({
+            'run_id': RUN.run_id,
+            'manifest_sha256': RUN.generation_manifest_sha256,
+        }))
         with patch('bilqis_mlx.control_plane.observed.source.process_exists',
-                   return_value=True):
+                   return_value=True), patch(
+            'bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation',
+            return_value=object()), patch(
+            'bilqis_mlx.runtime.bamf_operator.learning_health_runtime.accepted_learning_health_from_parent',
+            return_value={'A.IDENTITY': health}):
             observed = observed_records(self.root, (RUN,), now_ms=101000)
         self.assertEqual(len(observed), 2)
         self.assertIsNone(observed[0].learning_health)

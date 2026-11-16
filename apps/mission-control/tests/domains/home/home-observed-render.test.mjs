@@ -30,6 +30,14 @@ test("v4 observation is visible and v5 learning health renders warning evidence"
     state: "MEASURED", latest: { correct: 4, total: 5 },
     best: { correct: 5, total: 5 },
     gain_from_first: 2, fixed_screen_errors: 1,
+    distance_to_mastery_state: "NOT_MEASURED",
+    protected_regression_state: "NOT_MEASURED",
+    regressed_protected_capabilities: [],
+    prior_certified_surface_ids: [],
+    recent_checkpoints: [
+      { checkpoint_sha256: "1".repeat(64), optimizer_step: 3, correct: 3, total: 5 },
+      { checkpoint_sha256: "2".repeat(64), optimizer_step: 4, correct: 4, total: 5 },
+    ],
     qualification_state: "NOT_MEASURED",
     certified_surface_regression_state: "NOT_MEASURED",
     warnings: [
@@ -50,7 +58,33 @@ test("v4 observation is visible and v5 learning health renders warning evidence"
   assert.match(html, /future:grade/);
   assert.match(html, /Latest fixed-screen score/);
   assert.match(html, /EXCESSIVE_INTRODUCTORY_COMPLEXITY: NOT_MEASURED/);
-  assert.equal(model.learningStatus, "IMPROVING");
+  assert.equal(model.learningStatus, "NO_FRESH_GAIN");
+
+  const accepted = projectionFromPages({ run: runPage(observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v5",
+    outcome: "ACCEPTED", learning_health: health,
+  })) }, context);
+  assert.equal(accepted.learningStatus, "IMPROVING");
+
+  const plateauHealth = { ...health, recent_checkpoints: [
+    { checkpoint_sha256: "2".repeat(64), optimizer_step: 4, correct: 4, total: 5 },
+    { checkpoint_sha256: "3".repeat(64), optimizer_step: 5, correct: 4, total: 5 },
+  ] };
+  const plateau = projectionFromPages({ run: runPage(observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v5",
+    outcome: "ACCEPTED", learning_health: plateauHealth,
+  })) }, context);
+  assert.equal(plateau.learningStatus, "NO_FRESH_GAIN");
+
+  const certifiedRegression = projectionFromPages({ run: runPage(observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v5",
+    outcome: "ACCEPTED",
+    learning_health: {
+      ...plateauHealth,
+      certified_surface_regression_state: "OBSERVED_REGRESSION",
+    },
+  })) }, context);
+  assert.equal(certifiedRegression.learningStatus, "REGRESSION");
 });
 
 test("v2 observation exposes completed-step stage timing and hidden B11 multiplicity", () => {

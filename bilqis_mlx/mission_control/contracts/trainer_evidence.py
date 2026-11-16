@@ -2,7 +2,10 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from .model import is_name, is_wire_integer, require
-from .trainer_learning_health import (LearningHealthScore, LearningHealthWarning, LearningHealthEvidence)
+from .trainer_learning_health import (
+    LearningHealthScore, LearningHealthWarning, LearningHealthCheckpoint,
+    LearningHealthEvidence,
+)
 from .trainer_visit_contract import (VisitCapabilityScore, VisitRankingEvidence, VisitRoleCount, RetentionStageTiming, VisitEvidence)
 
 

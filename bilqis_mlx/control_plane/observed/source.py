@@ -17,6 +17,7 @@ from bilqis_mlx.mission_control.contracts.trainer import (
 )
 from bilqis_mlx.mission_control.contracts.trainer_evidence import (
     LearningHealthEvidence, LearningHealthScore, LearningHealthWarning,
+    LearningHealthCheckpoint,
 )
 
 
@@ -63,6 +64,9 @@ def _learning_health(record):
         values[name] = tuple(values[name])
     values['warnings'] = tuple(
         LearningHealthWarning(**item) for item in values['warnings'])
+    values['recent_checkpoints'] = tuple(
+        LearningHealthCheckpoint(**item)
+        for item in values['recent_checkpoints'])
     return LearningHealthEvidence(**values)
 
 
@@ -194,6 +198,7 @@ def _record(row, runs, now_ms, accepted_health=None):
         return None
     if (isinstance(accepted_health, dict)
             and row.get('learning_health') is None
+            and row.get('outcome') != 'ACCEPTED'
             and row.get('capability_id') in accepted_health):
         try:
             _learning_health(accepted_health[row['capability_id']])
@@ -260,12 +265,25 @@ def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObserv
     # reader budget.  Currentness is in the tail, so bound the projection rather
     # than discarding every observation from an otherwise valid snapshot.
     bounded_visits = payload['visits'][-MAX_VISITS:]
+    accepted_health = None
+    if bounded_visits:
+        latest = bounded_visits[-1]
+        try:
+            pointer = json.loads((Path(run_dir) / 'bamf-state.json').read_text())
+            if (latest.get('run_id') == pointer.get('run_id')
+                    and latest.get('parent_manifest_sha256')
+                    == pointer.get('manifest_sha256')):
+                from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
+                from bilqis_mlx.runtime.bamf_operator.learning_health_runtime import (
+                    accepted_learning_health_from_parent,
+                )
+                accepted_health = accepted_learning_health_from_parent(
+                    load_accepted_generation(Path(run_dir)))
+        except (OSError, ValueError, TypeError, KeyError, AttributeError):
+            accepted_health = None
     for index, row in enumerate(bounded_visits):
         try:
-            health = (payload.get('learning_health_by_capability')
-                      if index == len(bounded_visits) - 1
-                      and payload.get('learning_health_run_id') == row.get('run_id')
-                      else None)
+            health = accepted_health if index == len(bounded_visits) - 1 else None
             record = _record(row, parents, now_ms, health)
             if record is not None:
                 records[record.observation_id] = record

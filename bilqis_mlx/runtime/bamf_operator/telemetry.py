@@ -81,17 +81,6 @@ class TrainerObservation:
                     and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
-                if (data.get('learning_health_run_id') == run_id
-                        and run_id is not None
-                        and isinstance(data.get('learning_health_by_capability'), dict)):
-                    from bilqis_mlx.diagnostics.learning_health import SCHEMA as HEALTH_SCHEMA
-                    self.learning_health_by_capability = {
-                        key: value for key, value in
-                        list(data['learning_health_by_capability'].items())[-LEARNING_HISTORY_LIMIT:]
-                        if isinstance(key, str) and isinstance(value, dict)
-                        and value.get('schema') == HEALTH_SCHEMA
-                        and value.get('capability_id') == key
-                    }
                 if self.visits and self.visits[-1].get('run_id') != run_id:
                     # Reused filesystem does not grant another run's trajectory.
                     self.visits = []

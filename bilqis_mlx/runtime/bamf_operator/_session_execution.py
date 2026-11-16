@@ -19,13 +19,28 @@ def execute_horizon(
             selection, context, parent, horizon, workers=source_prefetch_workers,
             executor=source_prefetch_executor, metrics=metrics)
     prepare_evidence_root(run_dir)
-    capture = capture_cls(
-        run_dir, selection,
+    introductory = None
+    try:
+        from bilqis_mlx.learning.teacher_lineage import instruction_history
+        from bilqis_mlx.runtime.priority_rejection_replay import rejection_recency
+        history_state, seen = instruction_history(parent.teacher_state)
+        _, rejected = rejection_recency(run_dir, parent, cache)
+        capability = selection.offer.capability_id
+        introductory = (
+            False if capability in set(seen) | set(rejected)
+            else True if history_state == "COMPLETE"
+            else None)
+    except (AttributeError, TypeError, ValueError, KeyError):
+        introductory = None
+    capture_kwargs = dict(
         generation=cache.generation,
         accepted_manifest_sha256=cache.accepted_manifest_sha256,
         candidate_attempt_ordinal=candidate_attempt_ordinal,
         parent_optimizer_step=parent.retained_state.optimizer_step,
     )
+    if introductory is not None:
+        capture_kwargs["introductory"] = introductory
+    capture = capture_cls(run_dir, selection, **capture_kwargs)
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
         candidate_step_started_at = time.perf_counter()
@@ -156,32 +171,73 @@ def retention_result(
         "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
         "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
     })
-    successor = None
-    if decision.accepted:
-        successor = derive_successor(
-            run_dir, retained, selection.visit,
-            delivery_events=({
-                "event": "BAMF_C16_3_ACCEPTED",
-                "optimizer_step": retained.optimizer_step,
-                "parent_generation": cache.generation,
-                "accepted_manifest_sha256": cache.accepted_manifest_sha256,
-                "candidate_attempt_ordinal": rejection_journal_ordinal,
-                "capability": capability,
-                "visit_id": selection.visit.identity.visit_id,
-                "selected_policy_key": selection.visit.identity.policy_key,
-                "selected_option_id": selection.option_id,
-                "resource": resource,
-                "candidate_evidence": candidate_evidence,
-            },))
-        successor = bind_baseline_successor(evaluation, successor)
+    successor, learning_health = _accepted_successor(
+        decision, run_dir, parent, selection, capability, cache, retained,
+        rejection_journal_ordinal, resource, candidate_evidence, capture,
+        derive_successor, bind_baseline_successor, evaluation)
     return prepared_visit_type(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
         retained=retained, capability=capability, successor=successor,
         identity_metrics=identity_metrics, resource=resource,
         candidate_evidence=candidate_evidence,
+        learning_health=learning_health,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)
+
+
+def _instruction_event(run_dir, parent, cache, capability):
+    try:
+        from bilqis_mlx.learning.teacher_lineage import instruction_history
+        from bilqis_mlx.runtime.priority_rejection_replay import rejection_recency
+        history_state, seen = instruction_history(parent.teacher_state)
+        _, rejected = rejection_recency(run_dir, parent, cache)
+        return {
+            "event": "BAMF_INSTRUCTION_HISTORY",
+            "schema": "bilqis.bamf.instruction-history/v1",
+            "state": history_state,
+            "capability_ids": sorted(set(seen) | set(rejected) | {capability}),
+        }
+    except (AttributeError, TypeError, ValueError, KeyError):
+        return {
+            "event": "BAMF_INSTRUCTION_HISTORY",
+            "schema": "bilqis.bamf.instruction-history/v1",
+            "state": "PARTIAL", "capability_ids": [capability],
+        }
+
+
+def _accepted_successor(
+        decision, run_dir, parent, selection, capability, cache, retained,
+        rejection_journal_ordinal, resource, candidate_evidence, capture,
+        derive_successor, bind_baseline_successor, evaluation):
+    if not decision.accepted:
+        return None, None
+    instruction_event = _instruction_event(run_dir, parent, cache, capability)
+    learning_health = None
+    try:
+        from .learning_health_runtime import accepted_learning_health_state
+        health_state, learning_health = accepted_learning_health_state(
+            run_dir, parent, selection, candidate_evidence, decision, retained, capture)
+    except (AttributeError, TypeError, ValueError, KeyError):
+        health_state = None
+    events = ({
+        "event": "BAMF_C16_3_ACCEPTED",
+        "optimizer_step": retained.optimizer_step,
+        "parent_generation": cache.generation,
+        "accepted_manifest_sha256": cache.accepted_manifest_sha256,
+        "candidate_attempt_ordinal": rejection_journal_ordinal,
+        "capability": capability,
+        "visit_id": selection.visit.identity.visit_id,
+        "selected_policy_key": selection.visit.identity.policy_key,
+        "selected_option_id": selection.option_id,
+        "resource": resource, "candidate_evidence": candidate_evidence,
+    }, instruction_event)
+    successor = derive_successor(
+        run_dir, retained, selection.visit, delivery_events=events)
+    if health_state is not None:
+        from dataclasses import replace
+        successor = replace(successor, learning_health_state=health_state)
+    return bind_baseline_successor(evaluation, successor), learning_health
 
 
 def operate(
