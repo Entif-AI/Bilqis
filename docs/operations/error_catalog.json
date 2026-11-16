@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 285,
-  "legacy_raw_raise_count": 2094,
+  "legacy_raw_file_count": 293,
+  "legacy_raw_raise_count": 2092,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -4525,6 +4525,440 @@
       "path": "bilqis_mlx/diagnostics/trajectories.py"
     },
     {
+      "code_hint": "AUTONOMY_PLAN_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PLAN_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PROJECTION_EVIDENCE_SPEC_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PROJECTION_EVIDENCE_SPEC_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_SOURCE_COMPOSITION_EDGE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_SOURCE_COMPOSITION_EDGE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_SUPPLEMENTAL_EVIDENCE_SPEC_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_SUPPLEMENTAL_EVIDENCE_SPEC_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_EVIDENCE_LEDGER_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_EVIDENCE_LEDGER_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_EVIDENCE_OBLIGATION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_EVIDENCE_OBLIGATION_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_EVIDENCE_RECEIPT_IDENTITY_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_EVIDENCE_RECEIPT_IDENTITY_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_EVIDENCE_RECEIPT_VALUE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_EVIDENCE_RECEIPT_VALUE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_DIGEST_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_DIGEST_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_IDENTITY_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_IDENTITY_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_STEP_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_STEP_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_RECEIPT_CHECKPOINT_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_RECEIPT_CHECKPOINT_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_RECEIPT_IDENTITY_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_RECEIPT_IDENTITY_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_RECEIPT_NO_CHECKPOINT_PROGRESS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_RECEIPT_NO_CHECKPOINT_PROGRESS'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_RECEIPT_PROVENANCE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_RECEIPT_PROVENANCE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_RECEIPT_STEP_DELTA_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_RECEIPT_STEP_DELTA_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_WORK_ITEM_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_WORK_ITEM_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_WORK_ITEM_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_WORK_ITEM_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/evidence_contracts.py"
+    },
+    {
+      "code_hint": "AUTONOMY_SUCCESSOR_RECONCILIATION_REQUIRES_V2",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'AUTONOMY_SUCCESSOR_RECONCILIATION_REQUIRES_V2'",
+      "path": "bilqis_mlx/factory/_autonomy/lineage.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PLAN_REBIND_INVALIDATES_ATTEMPT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PLAN_REBIND_INVALIDATES_ATTEMPT:' + attempt.obligation_id",
+      "path": "bilqis_mlx/factory/_autonomy/lineage.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PLAN_REBIND_INVALIDATES_EVIDENCE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PLAN_REBIND_INVALIDATES_EVIDENCE:' + receipt.obligation_id",
+      "path": "bilqis_mlx/factory/_autonomy/lineage.py"
+    },
+    {
+      "code_hint": "AUTONOMY_INVALID_INPUT",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'AUTONOMY_INVALID_INPUT'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_CURRENT_CHECKPOINT_CONTEXT_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_CURRENT_CHECKPOINT_CONTEXT_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PLAN_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PLAN_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_RELEASE_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_RELEASE_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_UNKNOWN_CAPABILITY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_UNKNOWN_CAPABILITY'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_UNKNOWN_EVIDENCE_OBLIGATION",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_UNKNOWN_EVIDENCE_OBLIGATION'",
+      "path": "bilqis_mlx/factory/_autonomy/obligations.py"
+    },
+    {
+      "code_hint": "AUTONOMY_INVALID_PLAN",
+      "count": 2,
+      "exception": "TypeError",
+      "expression": "'AUTONOMY_INVALID_PLAN'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_COMPOSITION_REPORT_BINDING_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_COMPOSITION_REPORT_BINDING_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_COMPOSITION_REPORT_SCOPE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_COMPOSITION_REPORT_SCOPE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PLAN_RELEASE_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PLAN_RELEASE_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PROJECTION_COVERAGE_DEBT_SCOPE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PROJECTION_COVERAGE_DEBT_SCOPE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_PROJECTION_EVIDENCE_SCOPE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_PROJECTION_EVIDENCE_SCOPE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_SUPPLEMENTAL_EVIDENCE_SCOPE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_SUPPLEMENTAL_EVIDENCE_SCOPE_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/planning.py"
+    },
+    {
+      "code_hint": "AUTONOMY_INVALID_EVIDENCE_RECEIPT",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'AUTONOMY_INVALID_EVIDENCE_RECEIPT'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_INVALID_REJECTED_TEACHING_ATTEMPT",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'AUTONOMY_INVALID_REJECTED_TEACHING_ATTEMPT'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_INVALID_TEACHING_RECEIPT",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'AUTONOMY_INVALID_TEACHING_RECEIPT'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_DUPLICATE_EVIDENCE_RECEIPT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_DUPLICATE_EVIDENCE_RECEIPT'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_DUPLICATE_TEACHING_RECEIPT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_DUPLICATE_TEACHING_RECEIPT'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_EVIDENCE_CURRENT_CHECKPOINT_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_EVIDENCE_CURRENT_CHECKPOINT_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_INSUFFICIENT_EVIDENCE_SPECIMENS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_INSUFFICIENT_EVIDENCE_SPECIMENS'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_CURRENT_CHECKPOINT_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_CURRENT_CHECKPOINT_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_OPTION_NOT_RELEASED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_OPTION_NOT_RELEASED'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_PARENT_EVIDENCE_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_PARENT_EVIDENCE_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_PROVIDER_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_REJECTED_ATTEMPT_PROVIDER_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_CURRENT_CHECKPOINT_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_CURRENT_CHECKPOINT_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_OPTION_NOT_RELEASED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_OPTION_NOT_RELEASED'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_PARENT_EVIDENCE_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_PARENT_EVIDENCE_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_PROVENANCE_UNPROVEN",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_PROVENANCE_UNPROVEN'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_PROVIDER_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_PROVIDER_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_REQUIRES_FAILED_EVIDENCE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_REQUIRES_FAILED_EVIDENCE'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_VARIATION_AXES_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_VARIATION_AXES_MISMATCH'",
+      "path": "bilqis_mlx/factory/_autonomy/recording.py"
+    },
+    {
+      "code_hint": "AUTONOMY_ACTION_DEFERRAL_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_ACTION_DEFERRAL_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
+      "code_hint": "AUTONOMY_ACTION_KIND_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_ACTION_KIND_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
+      "code_hint": "AUTONOMY_LEARNING_ACTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_LEARNING_ACTION_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
+      "code_hint": "AUTONOMY_QUALIFICATION_ACTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_QUALIFICATION_ACTION_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
+      "code_hint": "AUTONOMY_SAFE_HOLD_ACTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_SAFE_HOLD_ACTION_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
+      "code_hint": "AUTONOMY_SOURCE_ACTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_SOURCE_ACTION_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
+      "code_hint": "AUTONOMY_TEACHING_ACTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'AUTONOMY_TEACHING_ACTION_INVALID'",
+      "path": "bilqis_mlx/factory/_autonomy/scheduling.py"
+    },
+    {
       "code_hint": "FACTORY_EXECUTABLE_RELEASE_INVALID_INPUT",
       "count": 1,
       "exception": "TypeError",
@@ -4798,6 +5232,237 @@
       "path": "bilqis_mlx/factory/_execution/profiling.py"
     },
     {
+      "code_hint": "FACTORY_PROFILE_PROVIDER_DIMENSION_UNDECLARED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_PROVIDER_DIMENSION_UNDECLARED:' + self.adapter_id",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_PROVIDER_VALUES_NOT_CANONICAL_SUBSET:' + self.adapter_id + ':' + name",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SEMANTIC_RELEASE_VERSION_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SEMANTIC_RELEASE_VERSION_REQUIRED'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_COHORT_GENERATOR_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_COHORT_GENERATOR_INVALID'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_COHORT_RELEASE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_COHORT_RELEASE_INVALID'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_IDENTITY_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_IDENTITY_INVALID'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_TEACHING_OPTIONS_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_TEACHING_OPTIONS_INVALID'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_SOURCE_ADAPTER_VARIATION_AXES_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_SOURCE_ADAPTER_VARIATION_AXES_INVALID'",
+      "path": "bilqis_mlx/factory/_model/contracts.py"
+    },
+    {
+      "code_hint": "FACTORY_ADMISSION_OPTIMIZER_STEP_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_ADMISSION_OPTIMIZER_STEP_INVALID'",
+      "path": "bilqis_mlx/factory/_model/evidence.py"
+    },
+    {
+      "code_hint": "FACTORY_ADMISSION_RELEASE_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_ADMISSION_RELEASE_MISMATCH'",
+      "path": "bilqis_mlx/factory/_model/evidence.py"
+    },
+    {
+      "code_hint": "FACTORY_LEARNING_EVIDENCE_CLASS_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_LEARNING_EVIDENCE_CLASS_INVALID'",
+      "path": "bilqis_mlx/factory/_model/evidence.py"
+    },
+    {
+      "code_hint": "FACTORY_LEARNING_EVIDENCE_VALUE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_LEARNING_EVIDENCE_VALUE_INVALID'",
+      "path": "bilqis_mlx/factory/_model/evidence.py"
+    },
+    {
+      "code_hint": "_BINDING_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_' + field.upper() + '_BINDING_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_ADAPTER_WIRE_MIXED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_ADAPTER_WIRE_MIXED'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_ASSESSMENT_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_ASSESSMENT_CONTRACT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_CAPABILITY_BINDING_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_CAPABILITY_BINDING_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_CAPABILITY_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_CAPABILITY_CONTRACT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_CONSTRUCTION_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_CONSTRUCTION_CONTRACT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_CONTENT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_CONTENT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_COURSE_BINDING_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_COURSE_BINDING_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_COURSE_NOT_EXECUTABLE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_COURSE_NOT_EXECUTABLE'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_COVERAGE_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_COVERAGE_CONTRACT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_DUPLICATE_SOURCE_ADAPTER",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_DUPLICATE_SOURCE_ADAPTER'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_GRADE_BINDING_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_GRADE_BINDING_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_GRADE_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_GRADE_CONTRACT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_LEGACY_ADAPTER_SCOPE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_LEGACY_ADAPTER_SCOPE_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_MANIFEST_CONTENT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_MANIFEST_CONTENT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_MANIFEST_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_MANIFEST_INVALID'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_SEMANTIC_BINDING_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_SEMANTIC_BINDING_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_SOURCE_ORACLE_BINDING_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_SOURCE_ORACLE_BINDING_INVALID'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_TEACHING_BINDING_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_TEACHING_BINDING_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
+      "code_hint": "FACTORY_RELEASE_TEACHING_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_RELEASE_TEACHING_CONTRACT_DRIFT'",
+      "path": "bilqis_mlx/factory/_model/release.py"
+    },
+    {
       "code_hint": "FACTORY_INVALID_REGISTERED_SOURCE_ADAPTER",
       "count": 1,
       "exception": "TypeError",
@@ -4908,440 +5573,6 @@
       "exception": "ValueError",
       "expression": "prefix + 'SOURCE_FOOTPRINT_UNAVAILABLE'",
       "path": "bilqis_mlx/factory/adapters.py"
-    },
-    {
-      "code_hint": "AUTONOMY_INVALID_EVIDENCE_RECEIPT",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'AUTONOMY_INVALID_EVIDENCE_RECEIPT'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_INVALID_INPUT",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'AUTONOMY_INVALID_INPUT'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_INVALID_PLAN",
-      "count": 2,
-      "exception": "TypeError",
-      "expression": "'AUTONOMY_INVALID_PLAN'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_INVALID_REJECTED_TEACHING_ATTEMPT",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'AUTONOMY_INVALID_REJECTED_TEACHING_ATTEMPT'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_INVALID_TEACHING_RECEIPT",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'AUTONOMY_INVALID_TEACHING_RECEIPT'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_SUCCESSOR_RECONCILIATION_REQUIRES_V2",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'AUTONOMY_SUCCESSOR_RECONCILIATION_REQUIRES_V2'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_ACTION_DEFERRAL_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_ACTION_DEFERRAL_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_ACTION_KIND_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_ACTION_KIND_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_COMPOSITION_REPORT_BINDING_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_COMPOSITION_REPORT_BINDING_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_COMPOSITION_REPORT_EDGE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_COMPOSITION_REPORT_SCOPE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_COMPOSITION_REPORT_SCOPE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_COMPOSITION_REPORT_UNRESOLVED_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_CURRENT_CHECKPOINT_CONTEXT_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_CURRENT_CHECKPOINT_CONTEXT_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_DUPLICATE_EVIDENCE_OBLIGATION'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_DUPLICATE_EVIDENCE_RECEIPT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_DUPLICATE_EVIDENCE_RECEIPT'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_DUPLICATE_TEACHING_RECEIPT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_DUPLICATE_TEACHING_RECEIPT'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_EVIDENCE_CURRENT_CHECKPOINT_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_EVIDENCE_CURRENT_CHECKPOINT_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_EVIDENCE_LEDGER_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_EVIDENCE_LEDGER_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_EVIDENCE_OBLIGATION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_EVIDENCE_OBLIGATION_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_EVIDENCE_RECEIPT_IDENTITY_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_EVIDENCE_RECEIPT_IDENTITY_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_EVIDENCE_RECEIPT_VALUE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_EVIDENCE_RECEIPT_VALUE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_INSUFFICIENT_EVIDENCE_SPECIMENS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_INSUFFICIENT_EVIDENCE_SPECIMENS'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_LEARNING_ACTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_LEARNING_ACTION_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PLAN_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PLAN_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PLAN_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PLAN_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PLAN_REBIND_INVALIDATES_ATTEMPT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PLAN_REBIND_INVALIDATES_ATTEMPT:' + attempt.obligation_id",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PLAN_REBIND_INVALIDATES_EVIDENCE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PLAN_REBIND_INVALIDATES_EVIDENCE:' + receipt.obligation_id",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PLAN_RELEASE_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PLAN_RELEASE_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PROJECTION_COVERAGE_DEBT_SCOPE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PROJECTION_COVERAGE_DEBT_SCOPE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PROJECTION_EVIDENCE_SCOPE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PROJECTION_EVIDENCE_SCOPE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_PROJECTION_EVIDENCE_SPEC_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_PROJECTION_EVIDENCE_SPEC_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_QUALIFICATION_ACTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_QUALIFICATION_ACTION_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_CURRENT_CHECKPOINT_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_CURRENT_CHECKPOINT_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_DIGEST_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_DIGEST_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_IDENTITY_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_IDENTITY_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_OPTION_NOT_RELEASED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_OPTION_NOT_RELEASED'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_PARENT_EVIDENCE_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_PARENT_EVIDENCE_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_PROVIDER_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_PROVIDER_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_REJECTED_ATTEMPT_STEP_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_REJECTED_ATTEMPT_STEP_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_RELEASE_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_RELEASE_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_SAFE_HOLD_ACTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_SAFE_HOLD_ACTION_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_SOURCE_ACTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_SOURCE_ACTION_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_SOURCE_COMPOSITION_EDGE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_SOURCE_COMPOSITION_EDGE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_SUPPLEMENTAL_EVIDENCE_SCOPE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_SUPPLEMENTAL_EVIDENCE_SCOPE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_SUPPLEMENTAL_EVIDENCE_SPEC_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_SUPPLEMENTAL_EVIDENCE_SPEC_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_ACTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_ACTION_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_CURRENT_CHECKPOINT_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_CURRENT_CHECKPOINT_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_OPTION_NOT_RELEASED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_OPTION_NOT_RELEASED'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_PARENT_EVIDENCE_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_PARENT_EVIDENCE_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_PROVENANCE_UNPROVEN",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_PROVENANCE_UNPROVEN'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_PROVIDER_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_PROVIDER_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_RECEIPT_CHECKPOINT_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_RECEIPT_CHECKPOINT_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_RECEIPT_IDENTITY_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_RECEIPT_IDENTITY_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_RECEIPT_NO_CHECKPOINT_PROGRESS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_RECEIPT_NO_CHECKPOINT_PROGRESS'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_RECEIPT_PROVENANCE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_RECEIPT_PROVENANCE_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_RECEIPT_STEP_DELTA_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_RECEIPT_STEP_DELTA_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_REQUIRES_FAILED_EVIDENCE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_REQUIRES_FAILED_EVIDENCE'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_VARIATION_AXES_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_VARIATION_AXES_MISMATCH'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_TEACHING_WORK_ITEM_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_TEACHING_WORK_ITEM_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_UNKNOWN_CAPABILITY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_UNKNOWN_CAPABILITY'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_UNKNOWN_EVIDENCE_OBLIGATION",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_UNKNOWN_EVIDENCE_OBLIGATION'",
-      "path": "bilqis_mlx/factory/autonomy.py"
-    },
-    {
-      "code_hint": "AUTONOMY_WORK_ITEM_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'AUTONOMY_WORK_ITEM_INVALID'",
-      "path": "bilqis_mlx/factory/autonomy.py"
     },
     {
       "code_hint": "CANDIDATE_FRONTIER_CANDIDATE_INVALID",
@@ -6490,237 +6721,6 @@
       "exception": "ValueError",
       "expression": "'FACTORY_TEACHING_SOURCE_ORACLE_DISAGREEMENT'",
       "path": "bilqis_mlx/factory/lifecycle/teaching.py"
-    },
-    {
-      "code_hint": "FACTORY_ADMISSION_OPTIMIZER_STEP_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_ADMISSION_OPTIMIZER_STEP_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_ADMISSION_RELEASE_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_ADMISSION_RELEASE_MISMATCH'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_LEARNING_EVIDENCE_CLASS_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_LEARNING_EVIDENCE_CLASS_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_LEARNING_EVIDENCE_VALUE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_LEARNING_EVIDENCE_VALUE_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_PROVIDER_DIMENSION_UNDECLARED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_PROVIDER_DIMENSION_UNDECLARED:' + self.adapter_id",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_PROVIDER_VALUES_NOT_CANONICAL_SUBSET:' + self.adapter_id + ':' + name",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "_BINDING_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_' + field.upper() + '_BINDING_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_ADAPTER_WIRE_MIXED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_ADAPTER_WIRE_MIXED'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_ASSESSMENT_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_ASSESSMENT_CONTRACT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_CAPABILITY_BINDING_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_CAPABILITY_BINDING_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_CAPABILITY_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_CAPABILITY_CONTRACT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_CONSTRUCTION_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_CONSTRUCTION_CONTRACT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_CONTENT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_CONTENT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_COURSE_BINDING_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_COURSE_BINDING_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_COURSE_NOT_EXECUTABLE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_COURSE_NOT_EXECUTABLE'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_COVERAGE_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_COVERAGE_CONTRACT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_DUPLICATE_SOURCE_ADAPTER",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_DUPLICATE_SOURCE_ADAPTER'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_GRADE_BINDING_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_GRADE_BINDING_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_GRADE_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_GRADE_CONTRACT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_LEGACY_ADAPTER_SCOPE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_LEGACY_ADAPTER_SCOPE_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_MANIFEST_CONTENT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_MANIFEST_CONTENT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_MANIFEST_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_MANIFEST_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_SEMANTIC_BINDING_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_SEMANTIC_BINDING_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_SOURCE_ORACLE_BINDING_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_SOURCE_ORACLE_BINDING_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_TEACHING_BINDING_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_TEACHING_BINDING_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_RELEASE_TEACHING_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_RELEASE_TEACHING_CONTRACT_DRIFT'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SEMANTIC_RELEASE_VERSION_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SEMANTIC_RELEASE_VERSION_REQUIRED'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_ADAPTER_COHORT_GENERATOR_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_ADAPTER_COHORT_GENERATOR_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_ADAPTER_COHORT_RELEASE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_ADAPTER_COHORT_RELEASE_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_ADAPTER_IDENTITY_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_ADAPTER_IDENTITY_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_ADAPTER_TEACHING_OPTIONS_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_ADAPTER_TEACHING_OPTIONS_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
-    },
-    {
-      "code_hint": "FACTORY_SOURCE_ADAPTER_VARIATION_AXES_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_SOURCE_ADAPTER_VARIATION_AXES_INVALID'",
-      "path": "bilqis_mlx/factory/model.py"
     },
     {
       "code_hint": "UNSUPPORTED_FIXTURE_OPERATION",

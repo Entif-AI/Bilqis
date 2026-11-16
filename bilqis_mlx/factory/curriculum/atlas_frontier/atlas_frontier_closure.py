@@ -218,6 +218,13 @@ def _semantic_roots_for_release(current_release, mastered: tuple[str, ...]) -> t
     return tuple(sorted(roots))
 
 
+def semantic_roots_for_mastered_capabilities(
+    current_release, mastered: tuple[str, ...],
+) -> tuple[str, ...]:
+    """A09-owned projection from current capability mastery to semantic roots."""
+    return _semantic_roots_for_release(current_release, mastered)
+
+
 def _verified_evidence_context(
     snapshot: CurriculumSnapshot,
     current_release,

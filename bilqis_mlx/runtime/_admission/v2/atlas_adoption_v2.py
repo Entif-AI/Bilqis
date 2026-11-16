@@ -44,7 +44,8 @@ def _adopted_result(handoff, lease, pointer, reason):
     )
 
 
-def adopt_capability_only_atlas_successor_v2(current, delta, lease):
+def adopt_capability_only_atlas_successor_v2(
+        current, delta, lease, *, generated_grade_authority=None):
     """Publish one exact zero-ID Factory successor after v2 verification."""
     from bilqis_mlx.runtime.atlas_admission_policy import AdmissionStatus
     from bilqis_mlx.runtime.atlas_admission_policy_v2 import (
@@ -81,8 +82,13 @@ def adopt_capability_only_atlas_successor_v2(current, delta, lease):
     )
     if unavailable:
         _invalid("BAMF_ATLAS_V2_CAPABILITY_OWNER_UNAVAILABLE")
-    retry, parent_pointer = _accepted_capability_only_retry_state_v2(
-        current, handoff, lease)
+    if generated_grade_authority is None:
+        retry, parent_pointer = _accepted_capability_only_retry_state_v2(
+            current, handoff, lease)
+    else:
+        retry, parent_pointer = _accepted_capability_only_retry_state_v2(
+            current, handoff, lease,
+            generated_grade_authority=generated_grade_authority)
     if isinstance(retry, dict):
         return _adopted_result(handoff, lease, retry, "ADOPTED_CAPABILITY_ONLY")
     try:
@@ -104,12 +110,18 @@ def adopt_capability_only_atlas_successor_v2(current, delta, lease):
     else:
         source_registry, answer_registry = legacy.source_registry, legacy.answer_registry
     verify_current_implementations(staged.successor, source_registry, answer_registry)
-    pointer = publish_capability_only_factory_successor(
-        current, handoff, lease, expected_parent_pointer=parent_pointer)
+    if generated_grade_authority is None:
+        pointer = publish_capability_only_factory_successor(
+            current, handoff, lease, expected_parent_pointer=parent_pointer)
+    else:
+        pointer = publish_capability_only_factory_successor(
+            current, handoff, lease, expected_parent_pointer=parent_pointer,
+            generated_grade_authority=generated_grade_authority)
     return _adopted_result(handoff, lease, pointer, "ADOPTED_CAPABILITY_ONLY")
 
 
-def adopt_parameter_extension_atlas_successor_v2(current, delta, lease):
+def adopt_parameter_extension_atlas_successor_v2(
+        current, delta, lease, *, generated_grade_authority=None):
     """Publish one exact A02 parameter extension using persisted v2 lease authority."""
     from bilqis_mlx.runtime.atlas_admission_policy import AdmissionStatus
     from bilqis_mlx.runtime.atlas_admission_policy_v2 import (
@@ -148,7 +160,13 @@ def adopt_parameter_extension_atlas_successor_v2(current, delta, lease):
     if unavailable:
         _invalid("BAMF_ATLAS_V2_PARAMETER_OWNER_UNAVAILABLE")
     native = require_issued_a02_staged_vocabulary_extension(native)
-    retry = accepted_parameter_extension_retry_v2(current, handoff, native, lease)
+    if generated_grade_authority is None:
+        retry = accepted_parameter_extension_retry_v2(
+            current, handoff, native, lease)
+    else:
+        retry = accepted_parameter_extension_retry_v2(
+            current, handoff, native, lease,
+            generated_grade_authority=generated_grade_authority)
     if retry is not None:
         return _adopted_result(
             handoff, lease, retry, "ADOPTED_PARAMETER_EXTENSION_V2")
@@ -169,9 +187,12 @@ def adopt_parameter_extension_atlas_successor_v2(current, delta, lease):
     from bilqis_mlx.source_adapters.school import live_source_registry
     verify_current_implementations(
         staged.successor, live_source_registry(), live_answer_registry())
+    kwargs = dict(
+        current=current, checkpoint=legacy.checkpoint, handoff=handoff)
+    if generated_grade_authority is not None:
+        kwargs["generated_grade_authority"] = generated_grade_authority
     pointer = publish_native_staged_candidate_v2(
         legacy.runtime, staged, handoff.proposal, native, lease,
-        legacy.source_authority,
-        current=current, checkpoint=legacy.checkpoint, handoff=handoff)
+        legacy.source_authority, **kwargs)
     return _adopted_result(
         handoff, lease, pointer, "ADOPTED_PARAMETER_EXTENSION_V2")

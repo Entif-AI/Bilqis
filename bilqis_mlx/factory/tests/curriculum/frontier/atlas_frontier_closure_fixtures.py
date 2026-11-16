@@ -41,9 +41,9 @@ def row(semantic_id, family="positive_identity", *, implemented=True):
 
 
 def current_evidence(*capability_ids):
-    from bilqis_mlx.factory.tests.test_autonomy import AutonomousCurriculumPlannerTests
+    from bilqis_mlx.factory.tests.autonomy.autonomy_support import AutonomyFixture
 
-    fixture = AutonomousCurriculumPlannerTests()
+    fixture = AutonomyFixture()
     fixture.setUp()
     release = fixture.release
     plan = compile_autonomy_plan(release)
