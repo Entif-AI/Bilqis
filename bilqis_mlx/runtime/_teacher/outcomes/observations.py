@@ -8,6 +8,7 @@ from bilqis_mlx.learning.teacher_strategy_population import effective_policy_key
 from bilqis_mlx.runtime.state import _fingerprint
 
 SCHEMA = 'bilqis.bamf.teacher-outcome/v1'
+SCORE_FIELDS = ('capability', 'before', 'after', 'total')
 
 
 def invalid():
@@ -30,14 +31,13 @@ def _deltas(observation):
     scores = observation['scores']
     deltas = {}
     for row in scores:
-        if (not isinstance(row, (list, tuple)) or len(row) != 4
-                or not isinstance(row[0], str) or not row[0]
-                or row[0] in deltas
-                or any(type(value) is not int for value in row[1:])
-                or row[3] <= 0 or not 0 <= row[1] <= row[3]
-                or not 0 <= row[2] <= row[3]):
+        if not isinstance(row, (list, tuple)) or len(row) != len(SCORE_FIELDS):
             invalid()
         cap, before, after, total = row
+        if (not isinstance(cap, str) or not cap or cap in deltas
+                or any(type(value) is not int for value in (before, after, total))
+                or total <= 0 or not 0 <= before <= total or not 0 <= after <= total):
+            invalid()
         deltas[cap] = (after - before) / total
     return deltas
 

@@ -4,6 +4,7 @@ import json
 import weakref
 
 from bilqis_mlx.learning.teacher_lineage import restore_teacher_lineage
+from bilqis_mlx.learning.teacher_lineage_records import SHA256_HEX_LENGTH, valid_hex
 from bilqis_mlx.learning.teacher_realized_action import describe
 from bilqis_mlx.learning.teacher_strategy_population import effective_policy_key
 from bilqis_mlx.runtime.state import _fingerprint
@@ -53,8 +54,7 @@ def require_context(context):
             or any(not isinstance(context.get(key), str) or not context[key]
                    for key in ('grade', 'phase', 'curriculum_scope'))
             or not isinstance(context.get('diagnostics'), dict)
-            or any(not isinstance(context.get(key), str) or len(context[key]) != 64
-                   or any(c not in '0123456789abcdef' for c in context[key])
+            or any(not valid_hex(context.get(key), SHA256_HEX_LENGTH)
                    for key in ('grade_definition_sha256', 'source_binding_sha256',
                                'factory_release_sha256', 'rubric_sha256'))):
         invalid()

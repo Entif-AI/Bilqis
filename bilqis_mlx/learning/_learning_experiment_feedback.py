@@ -38,7 +38,7 @@ BESPOKE_EXPLORATION_START = 4
 
 
 from ._learning_experiment_decision import (
-    _capability_stagnation_record, _channel, _diagnostic_context,
+    DIAGNOSTIC_CONTEXT_KEY_LENGTH, _capability_stagnation_record, _channel, _diagnostic_context,
     _effective_policy_key, _inherited_exploration,
     _shared_stagnation_record,
 )
@@ -163,7 +163,7 @@ def _feedback_diagnostic_key(channel, capability, curriculum_scope, diagnostics,
         return _diagnostic_context(channel, capability, curriculum_scope, diagnostics)[0]
     payload = channel.get('diagnostic_contexts', {}).get(key)
     if (not isinstance(payload, dict) or payload != diagnostics
-            or hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16] != key):
+            or hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:DIAGNOSTIC_CONTEXT_KEY_LENGTH] != key):
         raise ValueError(LearningExperimentError.DIAGNOSTIC_CONTEXT_COLLISION.value)
     return key
 
