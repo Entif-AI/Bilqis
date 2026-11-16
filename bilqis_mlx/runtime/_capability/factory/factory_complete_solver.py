@@ -38,6 +38,7 @@ class FactoryEvaluationInstrument:
     source_row: dict
     source_seed: int
     source_each: int
+    release_prevalidated: bool = False
 
     def __post_init__(self):
         if (type(self.case) is not EvaluationCase
@@ -46,7 +47,8 @@ class FactoryEvaluationInstrument:
                 or not isinstance(self.source_row, dict)
                 or self.source_row.get("id") != self.case.case_id
                 or type(self.source_seed) is not int or self.source_seed < 0
-                or type(self.source_each) is not int or self.source_each < 1):
+                or type(self.source_each) is not int or self.source_each < 1
+                or type(self.release_prevalidated) is not bool):
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_INVALID")
 
 
@@ -58,10 +60,11 @@ def _execution_binding(candidate: BamfBundleCandidate):
 
 
 def _factory_gold(source_context, row, goal):
-    execution = source_context.release.execution_plan.capability_map.get(
-        row.get("capability"))
-    if execution is None:
+    try:
+        execution = source_context.execution_for(row.get("capability"))
+    except Exception:
         _invalid("BAMF_C05_GOLD_CAPABILITY_MISSING")
+        raise AssertionError
     raw = row.get("gold")
     if type(raw) not in (int, str):
         _invalid("BAMF_C05_GOLD_MODALITY_UNSUPPORTED")
@@ -95,15 +98,18 @@ def _factory_evaluation_instrument(
     source_seed: int,
     source_each: int,
     authenticated=None,
+    release_prevalidated: bool = False,
 ) -> FactoryEvaluationInstrument:
     """Freeze one independent Factory row into a C05 case without solver choice."""
     compiled_case = compile_factory_evaluation_case(
         source_context, candidate, artifact_path, row,
         source_seed=source_seed, source_each=source_each,
-        authenticated=authenticated)
+        authenticated=authenticated,
+        release_prevalidated=release_prevalidated)
     return _instrument_from_compiled(
         source_context, row, compiled_case,
-        source_seed=source_seed, source_each=source_each)
+        source_seed=source_seed, source_each=source_each,
+        release_prevalidated=release_prevalidated)
 
 
 def _instrument_from_compiled(
@@ -113,16 +119,17 @@ def _instrument_from_compiled(
     *,
     source_seed: int,
     source_each: int,
+    release_prevalidated: bool = False,
 ) -> FactoryEvaluationInstrument:
     authority = compiled_case.task_template
-    execution = source_context.release.execution_plan.capability_map[
-        authority.capability_id]
+    execution = source_context.execution_for(authority.capability_id)
     case = EvaluationCase(
         authority.source_row_id, authority.capability_id, execution.grade_id,
         authority.source_family_id, authority.episode_id, authority.goal,
         _factory_gold(source_context, row, authority.goal))
     return FactoryEvaluationInstrument(
-        case, compiled_case, row, source_seed, source_each)
+        case, compiled_case, row, source_seed, source_each,
+        release_prevalidated)
 
 
 def factory_evaluation_instrument(
@@ -148,6 +155,7 @@ def factory_evaluation_instruments(
     seed: int,
     each: int | None = None,
     source_cohort_sha256: str | None = None,
+    release_prevalidated: bool = False,
 ) -> tuple[FactoryEvaluationInstrument, ...]:
     """Compile one immutable cohort with one shared feature authentication."""
     rows = tuple(rows)
@@ -178,12 +186,14 @@ def factory_evaluation_instruments(
                     and all(compiled_case_matches_contract(
                         source_context, candidate, artifact_path, compiled_case, row,
                         source_seed=seed, source_each=row_each,
-                        authenticated=authenticated)
+                        authenticated=authenticated,
+                        release_prevalidated=release_prevalidated)
                         for compiled_case, row, row_each in zip(
                             cached, rows, each_values))):
                 return tuple(_instrument_from_compiled(
                     source_context, row, compiled_case,
-                    source_seed=seed, source_each=row_each)
+                    source_seed=seed, source_each=row_each,
+                    release_prevalidated=release_prevalidated)
                     for compiled_case, row, row_each in zip(
                         cached, rows, each_values))
     instruments = tuple(_factory_evaluation_instrument(
@@ -191,6 +201,7 @@ def factory_evaluation_instruments(
         source_seed=seed,
         source_each=row_each,
         authenticated=authenticated,
+        release_prevalidated=release_prevalidated,
     ) for row, row_each in zip(rows, each_values))
     if source_cohort_sha256 is not None:
         artifacts = tuple(seal_compiled_case(
@@ -247,7 +258,8 @@ class _FactoryCompleteSolverBuilder:
             self.source_context, self.candidate, self.artifact_path, instrument.compiled_case,
             instrument.source_row, generation=self.generation,
             source_seed=instrument.source_seed, source_each=instrument.source_each,
-            authenticated=self.feature_context)
+            authenticated=self.feature_context,
+            release_prevalidated=instrument.release_prevalidated)
         if (authority.goal != instrument.case.goal
                 or authority.source_family_id != instrument.case.source_family_id
                 or authority.episode_id != instrument.case.episode_id):

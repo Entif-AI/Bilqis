@@ -100,6 +100,21 @@ def candidate_horizon_execution(
     )
 
 
+def _observe_retention_scope(observer, decision):
+    if observer is None:
+        return
+    fields = {
+        "retention_evaluated_capability_count": len(
+            getattr(decision, "evaluated_capability_ids", ())),
+        "retention_protection_plan_sha256": getattr(
+            decision, "retention_protection_plan_sha256", None),
+        "retention_broad_certification_trigger": getattr(
+            decision, "broad_certification_trigger", None),
+    }
+    stage = getattr(observer, "stage", None)
+    (stage if callable(stage) else observer.update)(**fields)
+
+
 def retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
@@ -117,6 +132,7 @@ def retention_result(
             **({"observer": lambda fields: observer.update(**fields)}
                if observer is not None else {}))
         decision = issue_decision(evaluation)
+        _observe_retention_scope(observer, decision)
         if not decision.accepted:
             from bilqis_mlx.errors.authority import authority_label
             emit_progress(progress, "retention decision: " + authority_label(

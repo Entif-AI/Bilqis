@@ -26,7 +26,9 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
 )
 from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObservation
 from bilqis_mlx.runtime.factory_retention_owner import (
-    bind_factory_baseline_successor, evaluate_factory_retention_candidate,
+    bind_current_retention_protection_plan, bind_current_retention_source_rows,
+    bind_factory_baseline_successor,
+    evaluate_factory_retention_candidate,
 )
 from bilqis_mlx.runtime.foundation_teacher_owner import (
     derive_accepted_teacher_successor, select_foundation_priority_visit,
@@ -143,6 +145,8 @@ def prepare_bamf_visit(
     program = schedule_program_from_executable_release(context.release)
     accepted_host = getattr(context, "_accepted_runtime_host", None)
     host_cache = getattr(accepted_host, "_accepted_cache", None)
+    if host_cache is not None:
+        bind_current_retention_protection_plan(context, parent, host_cache)
     school = accepted_priority_school(
         parent, program,
         candidate_identity_sha256=getattr(
@@ -181,6 +185,8 @@ def prepare_bamf_visit(
         progress,
         f"selected {selection.offer.capability_id} with {len(rows)} source rows")
     capability = selection.offer.capability_id
+    if host_cache is not None:
+        bind_current_retention_source_rows(context, host_cache, capability)
     horizon_state = _candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,

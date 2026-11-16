@@ -113,6 +113,7 @@ def compile_factory_evaluation_batch(
     source_seed: int,
     source_each: int,
     _authenticated=None,
+    _release_prevalidated: bool = False,
 ) -> BamfCompiledBatch:
     """Produce B11 input without constructing or exposing evaluator gold."""
     if (type(source_context) is not SourceExecutionContext
@@ -124,14 +125,18 @@ def compile_factory_evaluation_batch(
             or type(source_each) is not int or source_each < 1
             or source_context.source_root is None):
         _invalid("BAMF_C05_EVALUATION_COMPILE_INPUT_INVALID")
-    source_context.release.verify()
-    source_context.release.verify_semantic_catalog(source_context.graph)
+    if type(_release_prevalidated) is not bool:
+        _invalid("BAMF_C05_EVALUATION_PREVALIDATION_INVALID")
+    if not _release_prevalidated:
+        source_context.release.verify()
+        source_context.release.verify_semantic_catalog(source_context.graph)
+    else:
+        source_context.require_accepted_runtime(source_context.run_dir)
     authenticated = (_authenticated if _authenticated is not None else
                      authenticate_bamf_execution_feature_context(
                          candidate, artifact_path, source_context.run_dir))
     authenticated.__post_init__()
-    execution = source_context.release.execution_plan.capability_map[
-        row["capability"]]
+    execution = source_context.execution_for(row["capability"])
     profile_parameters = (dict(execution.provider_parameters)
                           if execution.provider_parameters else None)
     source_graph = canonical_graph_for(
@@ -175,6 +180,7 @@ def compile_factory_evaluation_case(
     source_seed: int,
     source_each: int,
     authenticated=None,
+    release_prevalidated: bool = False,
 ) -> CompiledFactoryEvaluationCase:
     """Compile and lower one immutable evaluation case exactly once."""
     authenticated = (authenticated if authenticated is not None else
@@ -184,7 +190,8 @@ def compile_factory_evaluation_case(
     batch = compile_factory_evaluation_batch(
         source_context, candidate, artifact_path, row,
         source_seed=source_seed, source_each=source_each,
-        _authenticated=authenticated)
+        _authenticated=authenticated,
+        _release_prevalidated=release_prevalidated)
     task_template = factory_task_template(source_context, batch)
     config = batch.compiled.compiler_configs[0]
     compiler_sha256 = candidate.compiler_features.get("compiler_sha256")
@@ -223,10 +230,11 @@ def _source_atom_row(
     source_seed: int,
     source_each: int,
 ) -> SourceAtomRow:
-    execution = source_context.release.execution_plan.capability_map.get(
-        row.get("capability"))
-    if execution is None:
+    try:
+        execution = source_context.execution_for(row.get("capability"))
+    except Exception:
         _invalid("BAMF_C05_COMPILED_CASE_SOURCE_CAPABILITY_MISSING")
+        raise AssertionError
     profile_parameters = (dict(execution.provider_parameters)
                           if execution.provider_parameters else None)
     source_graph = canonical_graph_for(
@@ -246,13 +254,19 @@ def compiled_case_matches_contract(
     source_seed: int,
     source_each: int,
     authenticated=None,
+    release_prevalidated: bool = False,
 ) -> bool:
     """Check cold-cache reuse without recompiling or invoking the C04 lowerer."""
     if type(compiled_case) is not CompiledFactoryEvaluationCase:
         _invalid("BAMF_C05_COMPILED_CASE_REQUIRED")
     compiled_case.__post_init__()
-    source_context.release.verify()
-    source_context.release.verify_semantic_catalog(source_context.graph)
+    if type(release_prevalidated) is not bool:
+        _invalid("BAMF_C05_EVALUATION_PREVALIDATION_INVALID")
+    if not release_prevalidated:
+        source_context.release.verify()
+        source_context.release.verify_semantic_catalog(source_context.graph)
+    else:
+        source_context.require_accepted_runtime(source_context.run_dir)
     authenticated = (authenticated if authenticated is not None else
                      authenticate_bamf_execution_feature_context(
                          candidate, artifact_path, source_context.run_dir))
@@ -302,13 +316,19 @@ def bind_factory_evaluation_case(
     source_seed: int,
     source_each: int,
     authenticated=None,
+    release_prevalidated: bool = False,
 ) -> tuple[BamfCompiledBatch, FactoryTaskAuthority]:
     """Attach one immutable compilation to exact generation execution state."""
     if type(compiled_case) is not CompiledFactoryEvaluationCase:
         _invalid("BAMF_C05_COMPILED_CASE_REQUIRED")
     compiled_case.__post_init__()
-    source_context.release.verify()
-    source_context.release.verify_semantic_catalog(source_context.graph)
+    if type(release_prevalidated) is not bool:
+        _invalid("BAMF_C05_EVALUATION_PREVALIDATION_INVALID")
+    if not release_prevalidated:
+        source_context.release.verify()
+        source_context.release.verify_semantic_catalog(source_context.graph)
+    else:
+        source_context.require_accepted_runtime(source_context.run_dir)
     authenticated = (authenticated if authenticated is not None else
                      authenticate_bamf_execution_feature_context(
                          candidate, artifact_path, source_context.run_dir))
