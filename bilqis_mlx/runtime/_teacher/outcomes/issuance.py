@@ -92,6 +92,8 @@ def build_outcome(run_dir, selection, evaluation, decision, candidate_evidence):
             or context.get('diagnostic_context_key') != selection.metadata.get('diagnostic_context_key')):
         invalid()
     selected = restore_teacher_lineage(selection.visit.projection.teacher_state).teacher()
+    persisted_decision = json.loads(json.dumps(
+        decision.to_record(), sort_keys=True, allow_nan=False))
     if (evaluation.parent_candidate_sha256 != identity.student_sha256
             or proposal.get('teacher_visit') != identity.to_record()
             or proposal.get('selected_policy_key') != identity.policy_key
@@ -102,7 +104,8 @@ def build_outcome(run_dir, selection, evaluation, decision, candidate_evidence):
             or proposal.get('how_context') != context
             or proposal.get('selected_teacher') != selected
             or proposal.get('policy') != selection.policy
-            or payload['outcome'] != {'accepted': decision.accepted, 'decision': decision.to_record()}
+            or payload['outcome'] != {
+                'accepted': decision.accepted, 'decision': persisted_decision}
             or decision.evidence_sha256 != evaluation.decision.evidence_sha256
             or decision.policy_sha256 != evaluation.decision.policy_sha256
             or decision.parent_generation != evaluation.parent_candidate_sha256

@@ -130,7 +130,9 @@ def _package_import_from_live_parent(
     return parent, successor, transaction.candidate, cache
 
 
-def _instruments(source_context, candidate, artifact_path, rows, *, seed, each=None):
+def _instruments(
+        source_context, candidate, artifact_path, rows, *, seed, each=None,
+        release_prevalidated=False):
     source_cohort_sha256 = None
     if each is None:
         capabilities = tuple(
@@ -141,7 +143,8 @@ def _instruments(source_context, candidate, artifact_path, rows, *, seed, each=N
             rubric_sha256=contract.rubric_sha256, seed=seed)
     return factory_evaluation_instruments(
         source_context, candidate, artifact_path, rows, seed=seed, each=each,
-        source_cohort_sha256=source_cohort_sha256)
+        source_cohort_sha256=source_cohort_sha256,
+        release_prevalidated=release_prevalidated)
 
 
 @dataclass(frozen=True)
@@ -194,17 +197,21 @@ def _fresh_rows(
 
 def _cohort(
         kind, instruments, groups, release, policy, training, *,
-        evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION):
+        evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION,
+        rubric_sha256=None, scope_sha256=None, source_sha256=None):
     cases = tuple(item.case for item in instruments)
-    rubric = contract_digest(tuple(
-        (item.grade_id, item.assessment_blueprint_sha256)
-        for item in release.execution_plan.grades))
-    scope = contract_digest((
-        release.execution_plan.curriculum_sha256,
-        release.execution_plan.profile_id,
-        policy.capability_groups,
-    ))
-    source = release.execution_plan.projection_digests.source
+    rubric = (rubric_sha256 if rubric_sha256 is not None else
+              contract_digest(tuple(
+                  (item.grade_id, item.assessment_blueprint_sha256)
+                  for item in release.execution_plan.grades)))
+    scope = (scope_sha256 if scope_sha256 is not None else
+             contract_digest((
+                 release.execution_plan.curriculum_sha256,
+                 release.execution_plan.profile_id,
+                 policy.capability_groups,
+             )))
+    source = (source_sha256 if source_sha256 is not None else
+              release.execution_plan.projection_digests.source)
     return EvaluationCohort(
         kind, cases, tuple(groups), rubric, scope, source, policy.digest(),
         training[0], training[1], case_census_digest(cases),

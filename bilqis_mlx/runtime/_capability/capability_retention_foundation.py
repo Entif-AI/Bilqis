@@ -130,7 +130,7 @@ def _fixed_evidence_digest(
     })
 
 
-def _fixed_capability_order(target_capability, policy, fixed):
+def _fixed_capability_order(target_capability, policy, fixed, *, ordinary=False):
     target_group = dict(policy.capability_groups)[target_capability]
     references = dict(policy.protected_reference_losses)
     same_grade = tuple(
@@ -144,15 +144,20 @@ def _fixed_capability_order(target_capability, policy, fixed):
     remaining = tuple(
         capability for capability, _group in fixed.capability_groups
         if capability not in same_grade and capability not in other_protected)
+    if ordinary:
+        protected = tuple(dict.fromkeys((*same_grade, *other_protected)))
+        return target_group, references, (target_capability, *protected)
     return target_group, references, (*same_grade, *other_protected, *remaining)
 
 
 def _evaluate_fixed_school(
         parent_solver, candidate_solver, target_capability, policy, fixed,
         parent_generation, candidate_generation, evidence_digest,
-        parent_assessment=None, *, observer=None):
+        parent_assessment=None, *, observer=None, ordinary=False,
+        evaluated_capability_ids=(), retention_protection_plan_sha256=None,
+        broad_certification_trigger=None):
     target_group, references, capability_order = _fixed_capability_order(
-        target_capability, policy, fixed)
+        target_capability, policy, fixed, ordinary=ordinary)
     groups = dict(fixed.capability_groups)
     completed = int(parent_assessment is None)
     total = len(capability_order) + completed
@@ -197,7 +202,11 @@ def _evaluate_fixed_school(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts, observer=observer)
+        candidate_results, candidate_contracts, observer=observer,
+        ordinary=ordinary,
+        evaluated_capability_ids=evaluated_capability_ids,
+        retention_protection_plan_sha256=retention_protection_plan_sha256,
+        broad_certification_trigger=broad_certification_trigger)
     return replace(decision, outcome_scores=tuple(outcome_scores))
 
 

@@ -160,8 +160,11 @@ class Decision:
     blocking_capability: str | None = None
     blocking_scope: str | None = None
     baseline_coverage: BaselineCoverage | None = None
-    schema_version: str = "bilqis.c05.retention-decision/v2"
     outcome_scores: tuple[tuple[str, int, int, int], ...] = ()
+    evaluated_capability_ids: tuple[str, ...] = ()
+    retention_protection_plan_sha256: str | None = None
+    broad_certification_trigger: str | None = None
+    schema_version: str = "bilqis.c05.retention-decision/v3"
 
     def __post_init__(self):
         if (not isinstance(self.status, DecisionStatus)
@@ -177,7 +180,17 @@ class Decision:
                          or not self.blocking_scope))
                 or (self.baseline_coverage is not None
                     and type(self.baseline_coverage) is not BaselineCoverage)
-                or self.schema_version != "bilqis.c05.retention-decision/v2"):
+                or not isinstance(self.evaluated_capability_ids, tuple)
+                or any(not isinstance(item, str) or not item
+                       for item in self.evaluated_capability_ids)
+                or len(set(self.evaluated_capability_ids))
+                != len(self.evaluated_capability_ids)
+                or (self.retention_protection_plan_sha256 is not None
+                    and not _sha(self.retention_protection_plan_sha256))
+                or (self.broad_certification_trigger is not None
+                    and (not isinstance(self.broad_certification_trigger, str)
+                         or not self.broad_certification_trigger))
+                or self.schema_version != "bilqis.c05.retention-decision/v3"):
             _invalid("BAMF_RETENTION_DECISION_INVALID")
 
 

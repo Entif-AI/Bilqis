@@ -14,7 +14,7 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.model_topology_v2 import (
     GenerationExtents, ModelTopologySpecV2, bamf_parameter_census,
 )
-from bilqis_mlx.runtime.atlas_training_adapter import (
+from bilqis_mlx.runtime.atlas_training_contracts import (
     BamfDeliveryProvenance, BamfModelInput, BamfTarget, BamfTrainingRow,
 )
 from bilqis_mlx.runtime.atlas_resources import (

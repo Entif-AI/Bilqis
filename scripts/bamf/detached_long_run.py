@@ -23,7 +23,10 @@ SNAPSHOT_IGNORED_NAMES = frozenset({
     ".git", ".local", ".pytest_cache", ".venv", "__pycache__",
     "node_modules", "venv",
 })
-MUTATION_IGNORED_NAMES = SNAPSHOT_IGNORED_NAMES | frozenset({"_private", "runs"})
+MUTATION_IGNORED_NAMES = SNAPSHOT_IGNORED_NAMES | frozenset({
+    ".testmondata", ".testmondata-journal", ".testmondata-shm", ".testmondata-wal",
+    "_private", "runs",
+})
 SOURCE_MUTATED_EXIT = 86
 
 

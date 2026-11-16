@@ -130,6 +130,9 @@ class AcceptedAtlasFlywheelRuntimeTests(MixedWitnessSupport, unittest.TestCase):
                     "D.EVENT_OCCURRENCE")
 
     def test_cold_runtime_type_publishes_real_capability_only_owner_without_neural_step(self):
+        from bilqis_mlx.runtime.generated_grade import (
+            _mint_generated_grade_authority,
+        )
         with shape_patch():
             (handoff, plan, learner, snapshot, _event_candidate,
              schema, features, _selection, _source_authority,
@@ -142,9 +145,19 @@ class AcceptedAtlasFlywheelRuntimeTests(MixedWitnessSupport, unittest.TestCase):
             parent, _manifest = load_bamf_generation_authority(
                 self.run / "bamf-state.json")
             parent_step = parent.retained_state.optimizer_step
+            generated_grade_authority = _mint_generated_grade_authority(type(
+                "Proposal", (), {
+                    "proposal_sha256": "a" * 64,
+                    "current_release_sha256":
+                        handoff.receipt.predecessor_release.release_sha256,
+                    "a09_proposal_sha256": handoff.proposal.proposal_sha256,
+                })())
             with self.source_replay(snapshot, schema, features), patch(
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.build_live_autonomy_plan",
                 return_value=plan), patch(
+                    "bilqis_mlx.runtime.generated_grade."
+                    "_issue_generated_grade_admission_authority",
+                    return_value=generated_grade_authority), patch(
                     "bilqis_mlx.runtime.atlas_flywheel_runtime."
                     "reconcile_live_autonomy_state",
                     return_value=learner.ledger), patch(
