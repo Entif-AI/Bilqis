@@ -22,7 +22,7 @@ from bilqis_mlx.factory.autonomy import (
 from bilqis_mlx.factory.model import SourceAdapter
 from bilqis_mlx.factory.release import compile_factory_release
 
-from bilqis_mlx.factory.tests.autonomy_support import AutonomyFixture, _sha
+from bilqis_mlx.factory.tests.autonomy.autonomy_support import AutonomyFixture, _sha
 
 class TeachingValidationTests(AutonomyFixture, unittest.TestCase):
     def test_teaching_receipt_must_prove_checkpoint_progress(self):

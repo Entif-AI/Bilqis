@@ -9,7 +9,7 @@ from bilqis_mlx.factory.autonomy import (
 )
 from bilqis_mlx.factory.generated_grade import AcceptedLearnerFoot, CostEvidenceKind
 from bilqis_mlx.factory.generated_grade.inputs import _measured_acquisition_cost
-from bilqis_mlx.factory.tests.autonomy_support import AutonomyFixture, _sha
+from bilqis_mlx.factory.tests.autonomy.autonomy_support import AutonomyFixture, _sha
 
 
 class GeneratedGradeTransferEvidenceTests(AutonomyFixture, unittest.TestCase):

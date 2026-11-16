@@ -22,7 +22,7 @@ from bilqis_mlx.factory.autonomy import (
 from bilqis_mlx.factory.model import SourceAdapter
 from bilqis_mlx.factory.release import compile_factory_release
 
-from bilqis_mlx.factory.tests.autonomy_support import AutonomyFixture, _sha
+from bilqis_mlx.factory.tests.autonomy.autonomy_support import AutonomyFixture, _sha
 
 class AutonomousCurriculumPlannerExtensionTests(AutonomyFixture, unittest.TestCase):
     def test_passing_receipt_must_meet_obligation_specimen_floor(self):

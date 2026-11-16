@@ -9,7 +9,7 @@ from bilqis_mlx.factory.autonomy import (
     EvidenceLedger, EvidenceReceipt, compile_autonomy_plan, evidence_complete_capabilities,
     initial_evidence_ledger, next_work, record_evidence, record_teaching_intervention,
 )
-from bilqis_mlx.factory.tests.autonomy_support import AutonomyFixture, _sha
+from bilqis_mlx.factory.tests.autonomy.autonomy_support import AutonomyFixture, _sha
 
 class GeneratedGradeAcceptedCostEvidenceTests(AutonomyFixture, unittest.TestCase):
     def test_completed_accepted_teaching_receipt_becomes_measured_cost(self):
