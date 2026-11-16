@@ -205,24 +205,13 @@ def active_adviser_checkpoints(epoch: dict, *, cohort_sha256: str | None = None,
 
 
 def reference_checkpoints(epoch: dict) -> tuple[dict, ...]:
-    """Preserve *all* referenced whole models, not only the latest adviser.
-
-    A mentor can cease to qualify on a new cohort without becoming unowned
-    checkpoint data. Archive custody and active teaching eligibility differ.
-    """
+    """Preserve only non-championship live custody; history is metadata."""
     active_adviser_checkpoints(epoch)
     pointers = [_pointer(epoch["baseline"])]
     if epoch.get("previous_graduate") is not None:
         pointers.append(_pointer(epoch["previous_graduate"]))
     if epoch.get("previous_boundary_checkpoint") is not None:
         pointers.append(_pointer(epoch["previous_boundary_checkpoint"]))
-    pointers.extend(_pointer(item["checkpoint"]) for item in epoch["qualified"])
-    for historic in epoch.get("superseded_active_championships", ()):
-        pointers.extend(_pointer(item["checkpoint"])
-                        for item in historic["active_roles"].values())
-        pointers.append(_pointer(historic["starting_student"]))
-        if historic.get("prior_baseline") is not None:
-            pointers.append(_pointer(historic["prior_baseline"]))
     unique = {}
     identity_by_sha = {}
     for pointer in pointers:

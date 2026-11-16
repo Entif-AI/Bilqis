@@ -1862,7 +1862,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2093** raw raises across **265** files. The baseline gate permits only reduction.
+Current production scan: **2092** raw raises across **267** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2197,7 +2197,6 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `CHAMPIONSHIP_INITIAL_EPOCH_IDENTITY_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
 | `CHAMPIONSHIP_INITIAL_EPOCH_ROLE_DRIFT` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
 | `CHAMPIONSHIP_INITIAL_EPOCH_SOUPS_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
-| `CHAMPIONSHIP_INITIAL_TITLE_SCORE_INVALID` | 1 | `bilqis_mlx/learning/epoch_championships.py` |
 | `CHAMPIONSHIP_INVALID_SOURCE_SCORES` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
 | `CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID` | 1 | `bilqis_mlx/learning/championship_runtime.py` |
 | `CHAMPIONSHIP_QUESTION_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/_championship/championship_witnesses.py` |
@@ -2392,7 +2391,7 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `CUTOVER_INVALID_OBSERVATION` | 1 | `bilqis_mlx/_release_views/grade_release_plan.py` |
 | `DASHBOARD_PARTIAL_CANDIDATE_LEDGER` | 1 | `bilqis_mlx/presentation/renderer/commands.py` |
 | `DASHBOARD_REQUIRES_INTERACTIVE_TTY_USE_PLAIN_MODE` | 1 | `bilqis_mlx/presentation/renderer/commands.py` |
-| `DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
+| `DEBT_ADMISSION_REQUIRES_EXACT_COMPLETE_BOUNDARY` | 1 | `bilqis_mlx/runtime/_release_adoption/catalog.py` |
 | `DEBT_GRADE_ADMISSION_INCOMPATIBLE_WITH_NUMERIC_STAIRCASE` | 1 | `bilqis_mlx/runtime/operator_session/operator_preflight.py` |
 | `DEBT_GRADE_ADMISSION_REQUIRES_RESUME` | 1 | `bilqis_mlx/runtime/operator_session/operator_preflight.py` |
 | `DEBT_GRADE_APPEND_DEBT_OUTSIDE_PREVIOUS_PROGRAM` | 1 | `bilqis_mlx/curriculum/scheduler.py` |
@@ -2542,10 +2541,10 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_BOOLEAN_PROFILE_PARAMETER_SCOPE_DRIFT` | 1 | `bilqis_mlx/source_adapters/_school/boolean.py` |
 | `FACTORY_BOOLEAN_PROFILE_PARAMETER_UNKNOWN` | 1 | `bilqis_mlx/source_adapters/_school/boolean.py` |
 | `FACTORY_BOOLEAN_PROFILE_SELECTION_INVALID` | 1 | `bilqis_mlx/profiles/school.py` |
-| `FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
+| `FACTORY_CATALOG_BOUNDARY_COHORT_REQUIRED` | 1 | `bilqis_mlx/runtime/_release_adoption/prepared.py` |
 | `FACTORY_CATALOG_NO_DISABLED_GRADE` | 1 | `bilqis_mlx/profiles/catalog.py` |
 | `FACTORY_CATALOG_RELEASE_REQUIRED` | 1 | `bilqis_mlx/profiles/catalog.py` |
-| `FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
+| `FACTORY_CATALOG_TRANSITION_NOT_APPEND_ONLY` | 1 | `bilqis_mlx/runtime/_release_adoption/catalog.py` |
 | `FACTORY_COHORT_GRADE_NOT_RELEASED` | 1 | `bilqis_mlx/_release_views/live_curriculum.py` |
 | `FACTORY_COHORT_REQUIRES_ONE_SOURCE_ADAPTER_PER_GRADE` | 1 | `bilqis_mlx/_release_views/live_curriculum.py` |
 | `FACTORY_COMPATIBILITY_BOOLEAN_DOMAIN_UNKNOWN` | 1 | `bilqis_mlx/compatibility/executable_projection.py` |
@@ -2606,7 +2605,7 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_EXECUTABLE_GENERATION_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/generation.py` |
 | `FACTORY_EXECUTABLE_GENERATION_RELEASE_REQUIRED` | 1 | `bilqis_mlx/factory/generation.py` |
 | `FACTORY_EXECUTABLE_GENERATION_UNKNOWN_CAPABILITY` | 1 | `bilqis_mlx/factory/generation.py` |
-| `FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
+| `FACTORY_EXECUTABLE_PROFILE_TRANSITION_MISMATCH` | 1 | `bilqis_mlx/runtime/_release_adoption/core.py` |
 | `FACTORY_EXECUTABLE_RELEASE_ANSWER_HEAD_CATALOG_DRIFT` | 1 | `bilqis_mlx/factory/_executable_release/release.py` |
 | `FACTORY_EXECUTABLE_RELEASE_ANSWER_HEAD_INVALID` | 1 | `bilqis_mlx/factory/_executable_release/primitives.py` |
 | `FACTORY_EXECUTABLE_RELEASE_ARTIFACT_DIGEST_DRIFT` | 1 | `bilqis_mlx/runtime/_operator/admission.py` |
@@ -2706,8 +2705,8 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE` | 1 | `bilqis_mlx/factory/execution.py` |
 | `FACTORY_PROFILE_EMPTY_EXECUTION` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
 | `FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID` | 1 | `bilqis_mlx/factory/execution.py` |
-| `FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
-| `FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
+| `FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY` | 1 | `bilqis_mlx/runtime/_release_adoption/catalog.py` |
+| `FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX` | 1 | `bilqis_mlx/runtime/_release_adoption/catalog.py` |
 | `FACTORY_PROFILE_GRADE_ID_REQUIRED` | 1 | `bilqis_mlx/factory/execution.py` |
 | `FACTORY_PROFILE_ID_REQUIRED` | 1 | `bilqis_mlx/factory/execution.py` |
 | `FACTORY_PROFILE_OVERRIDE_FOR_DISABLED_CAPABILITY` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
@@ -2787,7 +2786,7 @@ Current production scan: **2093** raw raises across **265** files. The baseline 
 | `FACTORY_SOURCE_BINDING_IDENTITY_INVALID` | 1 | `bilqis_mlx/factory/curriculum_definition.py` |
 | `FACTORY_SOURCE_CONSTRUCTOR_AND_CHECKER_REQUIRED` | 1 | `bilqis_mlx/factory/adapters.py` |
 | `FACTORY_SOURCE_ORACLE_NOT_ADAPTER_OWNED` | 1 | `bilqis_mlx/factory/adapters.py` |
-| `FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING` | 1 | `bilqis_mlx/runtime/release_adoption.py` |
+| `FACTORY_SOURCE_PRESENTATION_ADMITTED_PROVIDER_MISSING` | 1 | `bilqis_mlx/runtime/_release_adoption/core.py` |
 | `FACTORY_TEACHING_DELIVERY_UNPROVEN` | 1 | `bilqis_mlx/factory/lifecycle/teaching.py` |
 | `FACTORY_TEACHING_ENRICHMENT_SCOPE_DRIFT` | 1 | `bilqis_mlx/factory/adapters.py` |
 | `FACTORY_TEACHING_OPTION_EMPTY` | 1 | `bilqis_mlx/factory/lifecycle/teaching.py` |

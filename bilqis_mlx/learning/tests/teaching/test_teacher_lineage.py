@@ -184,12 +184,14 @@ class TeacherLineageTests(unittest.TestCase):
 
     def test_accepted_teacher_successor_preserves_prior_visit_evidence(self):
         _teacher, _adaptation, projection = self.initialize()
+        rotated = advance_priority_rotation(
+            projection.teacher_state, "capability:retained-before")
         visit = derive_teacher_visit_identity(
-            projection.teacher_state,
+            rotated,
             run_identity_sha256="1" * 64, run_seed=17, generation=0,
             accepted_manifest_sha256="2" * 64,
             capability_id="C.ADD", policy_key="p-strong")
-        recorded = record_teacher_visit_identity(projection.teacher_state, visit)
+        recorded = record_teacher_visit_identity(rotated, visit)
         next_epoch = bind_next_teacher_epoch(
             recorded.teacher_state, _student("b" * 64, "student-b"),
             bank_identity="bank:v2", plasticity_identity="plasticity:adaptive")
@@ -199,6 +201,9 @@ class TeacherLineageTests(unittest.TestCase):
         self.assertEqual(advanced.teacher_state["last_visit"], visit.to_record())
         self.assertEqual(advanced.teacher_state["next_seed"], 43)
         self.assertEqual(advanced.teacher_state["cursor"], "lesson:8")
+        self.assertEqual(
+            priority_rotation_state(advanced.teacher_state),
+            (1, {"capability:retained-before": 1}))
 
     def test_priority_rotation_is_grade_neutral_backward_compatible_and_monotonic(self):
         _teacher, _adaptation, projection = self.initialize()

@@ -42,7 +42,7 @@ class EpochSettledLedgerTests(EpochChampionshipTests):
                              for d in decisions))
         self.assertEqual(result["active_roles"]["B.XOR"], frozen_role)
 
-    def test_settled_pair_remains_permanent_after_holistic_identity_reset(self):
+    def test_settled_pair_remains_permanent_after_nonsemantic_identity_reset(self):
         first = _panel("a", 11, "B.XOR", 12)
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
