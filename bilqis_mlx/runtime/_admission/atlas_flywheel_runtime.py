@@ -143,7 +143,12 @@ def _replay_current_graph(current, parent_graph: dict) -> dict:
         item.capability_id for item in current.execution_plan.capabilities
         if item.capability_id in event_frames.SOURCE_SPECS)
     if events:
-        graph = event_frames.projected_graph(parent_graph, events)
+        # C07 admits source-defined event semantics one successor at a time.
+        # Replay that same append sequence so accepted semantic-catalog identity
+        # is independent of whether several successors are reconstructed cold.
+        graph = parent_graph
+        for capability in events:
+            graph = event_frames.projected_graph(graph, (capability,))
     elif copular_curriculum.PROJECTION_ADMISSION_TOKEN in current.semantic_catalog:
         graph = copular_curriculum.expanded_graph(parent_graph)
     else:

@@ -9,9 +9,13 @@ import unittest
 from unittest.mock import ANY, patch
 
 from bilqis_mlx.cli import main
-from bilqis_mlx.factory.autonomy import EvidenceReceipt, obligations_for_capability, record_evidence
+from bilqis_mlx.factory.autonomy import (
+    AutonomyActionKind, EvidenceReceipt, obligations_for_capability, record_evidence,
+)
 from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
 from bilqis_mlx.runtime.atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
+from bilqis_mlx.runtime.atlas_flywheel_runtime import run_accepted_atlas_flywheel
+from bilqis_mlx.runtime.autonomy_live import LiveAutonomySession
 from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
 from bilqis_mlx.runtime.autonomy_state import persist_autonomy_state
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
@@ -77,6 +81,7 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
             "bilqis_mlx.runtime.bamf_bundle.vocabulary.admission.load_pinned_atlas_snapshot",
             "bilqis_mlx.semantics.atlas.vocabulary_planning.load_pinned_atlas_snapshot",
             "bilqis_mlx.semantics.atlas.vocabulary_resources.load_pinned_atlas_snapshot",
+            "bilqis_mlx.source_adapters.atoms.admission.load_pinned_atlas_snapshot",
         ):
             stack.enter_context(patch(target, return_value=fixture.snapshot))
         stack.enter_context(patch(
@@ -109,6 +114,44 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
                 current_optimizer_step=state.learner_evidence.optimizer_step)
         persist_autonomy_state(
             self.run, state.epoch.current_release, plan=state.plan, ledger=ledger)
+
+    def _close_event_evidence_without_neural_update(self):
+        from bilqis_mlx.runtime.atlas_flywheel_runtime import _accepted_checkpoint
+        from bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence import (
+            _measurement_seed,
+        )
+        from bilqis_mlx.runtime.bamf_operator.session_support import _execution_context
+
+        _accepted_parent, context, _atlas_path, _features = _execution_context(
+            self.run)
+        checkpoint = _accepted_checkpoint(self.run)
+        session = LiveAutonomySession.open(
+            self.run, Path(context.source_root), context.release)
+        for offset in range(64):
+            if "D.EVENT_OCCURRENCE" in set(session.evidence_complete(checkpoint)):
+                return
+            action = session.action(checkpoint)
+            self.assertIs(
+                action.kind,
+                AutonomyActionKind.LEARNING_EVIDENCE,
+                action,
+            )
+            work = action.evidence_work
+            seed = _measurement_seed(
+                checkpoint, work.obligation.obligation_id, offset)
+            evidence = session.measure(
+                context.graph,
+                work,
+                checkpoint={
+                    "sha256": checkpoint.sha256,
+                    "optimizer_step": checkpoint.optimizer_step,
+                    "model_and_native_adamw": True,
+                },
+                seed=seed,
+                predictor=lambda rows: {row["id"]: row["gold"] for row in rows},
+            )
+            self.assertTrue(evidence.passed)
+        self.fail("D.EVENT_OCCURRENCE evidence did not close within bound")
 
     @staticmethod
     def _json_records(rendered):
@@ -245,3 +288,67 @@ class AcceptedAtlasFlywheelHumanResumeTests(MixedWitnessSupport, unittest.TestCa
             self.assertEqual(
                 accepted.retained_state.optimizer_step,
                 parent.retained_state.optimizer_step)
+
+    def test_durable_a09_evidence_cold_reenters_c07_without_fabricated_mastery(self):
+        """Neural-free A09/C07 composition witness; not the #1299 learner proof."""
+        from bilqis_mlx.factory.atlas_frontier import next_atlas_delta
+        from bilqis_mlx.factory.atlas_frontier_progress import FrontierStatus
+
+        with patch(
+                "bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers.DECLARED",
+                _COMPACT_DECLARED), patch(
+                    "bilqis_mlx.runtime.topology_v2.serialization.expected_bamf_shapes",
+                    return_value=_COMPACT_DECLARED), shape_patch():
+            fixture = self._production_parameter_fixture()
+            supervisor = AcceptedAtlasFlywheelSupervisor(
+                self.run, self.parent_graph, reserve_gib=0.)
+            with self._production_parameter_context(fixture):
+                self._credit_identity_prerequisites(supervisor)
+                parent, _manifest = load_bamf_generation_authority(
+                    self.run / "bamf-state.json")
+                parent_step = parent.retained_state.optimizer_step
+                first = run_accepted_atlas_flywheel(
+                    self.run, self.parent_graph, reserve_gib=0., max_advances=1)
+                self.assertEqual(first.advances, 1)
+                accepted_event, _manifest = load_bamf_generation_authority(
+                    self.run / "bamf-state.json")
+                self.assertEqual(
+                    accepted_event.retained_state.optimizer_step, parent_step)
+                self.assertEqual(
+                    accepted_event.baseline_evidence, parent.baseline_evidence)
+                self._close_event_evidence_without_neural_update()
+
+                cold = AcceptedAtlasFlywheelSupervisor(
+                    self.run, self.parent_graph, reserve_gib=0.).load_state()
+                handoff = next_atlas_delta(
+                    cold.epoch, cold.learner_evidence, cold.plan)
+                self.assertNotIsInstance(handoff, FrontierStatus, handoff)
+                self.assertEqual(
+                    handoff.staged_candidate.target_capability_id,
+                    "D.COMMENCEMENT",
+                )
+                cold_again = AcceptedAtlasFlywheelSupervisor(
+                    self.run, self.parent_graph, reserve_gib=0.).load_state()
+                handoff_again = next_atlas_delta(
+                    cold_again.epoch, cold_again.learner_evidence, cold_again.plan)
+                self.assertNotIsInstance(handoff_again, FrontierStatus, handoff_again)
+                self.assertEqual(
+                    handoff_again.handoff_sha256,
+                    handoff.handoff_sha256,
+                )
+                self.assertEqual(
+                    cold_again.learner_evidence.ledger,
+                    cold.learner_evidence.ledger,
+                )
+
+                second = run_accepted_atlas_flywheel(
+                    self.run, self.parent_graph, reserve_gib=0., max_advances=1)
+                self.assertEqual(second.advances, 1)
+                accepted_commencement, _manifest = load_bamf_generation_authority(
+                    self.run / "bamf-state.json")
+                self.assertEqual(
+                    accepted_commencement.retained_state.optimizer_step, parent_step)
+                self.assertEqual(
+                    accepted_commencement.baseline_evidence,
+                    accepted_event.baseline_evidence,
+                )
