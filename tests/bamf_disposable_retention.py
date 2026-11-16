@@ -44,6 +44,11 @@ def issue_disposable_screen(screen, parent_state, candidate_state):
             ("candidate_generation", candidate_id),
             ("evidence_sha256", result.evidence_sha256),
             ("policy_sha256", result.policy_sha256),
+            ("blocking_capability", result.blocking_capability),
+            ("blocking_scope", result.blocking_scope),
+            ("baseline_coverage", (
+                result.baseline_coverage.to_record()
+                if result.baseline_coverage is not None else None)),
             ("schema_version", owner.DECISION_SCHEMA)):
         object.__setattr__(decision, name, value)
     _TEST_ISSUED[id(decision)] = decision

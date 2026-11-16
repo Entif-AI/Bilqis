@@ -121,7 +121,9 @@ def retention_result(
             from bilqis_mlx.errors.authority import authority_label
             emit_progress(progress, "retention decision: " + authority_label(
                 decision.reason, blocking_capability=getattr(
-                    getattr(evaluation, "decision", None), "blocking_capability", None)))
+                    getattr(evaluation, "decision", None), "blocking_capability", None),
+                blocking_scope=getattr(
+                    getattr(evaluation, "decision", None), "blocking_scope", None)))
         identity_metrics = identity_delta(identity_before)
         retained = (
             evaluation.candidate_state if decision.accepted else evaluation.parent_state)

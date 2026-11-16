@@ -14,13 +14,19 @@ from dataclasses import dataclass
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 LEGACY_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v1"
-DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
+PREVIOUS_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
+DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v3"
 ACCEPTED_DECISION = "PROVISIONAL"
 REJECTED_DECISION = "REJECT"
 ACCEPTING_REASON = "PAIRED_SCREEN_WITHIN_BUDGET"
-_DECISION_FIELDS = (
+_V2_DECISION_FIELDS = (
     "decision", "reason", "parent_generation", "candidate_generation",
     "evidence_sha256", "policy_sha256", "schema_version",
+)
+_DECISION_FIELDS = (
+    "decision", "reason", "parent_generation", "candidate_generation",
+    "evidence_sha256", "policy_sha256", "blocking_capability",
+    "blocking_scope", "baseline_coverage", "schema_version",
 )
 
 
@@ -90,6 +96,9 @@ class CandidateRetentionDecision:
     candidate_generation: str
     evidence_sha256: str
     policy_sha256: str
+    blocking_capability: str | None = None
+    blocking_scope: str | None = None
+    baseline_coverage: dict | None = None
     schema_version: str = DECISION_SCHEMA
 
     def __post_init__(self) -> None:
@@ -101,6 +110,14 @@ class CandidateRetentionDecision:
                 or any(not _digest(value) for value in (
                     self.parent_generation, self.candidate_generation,
                     self.evidence_sha256, self.policy_sha256))
+                or (self.blocking_capability is not None
+                    and (not isinstance(self.blocking_capability, str)
+                         or not self.blocking_capability))
+                or (self.blocking_scope is not None
+                    and (not isinstance(self.blocking_scope, str)
+                         or not self.blocking_scope))
+                or (self.baseline_coverage is not None
+                    and not _valid_baseline_coverage(self.baseline_coverage))
                 or self.schema_version != DECISION_SCHEMA):
             _invalid()
 
@@ -123,9 +140,10 @@ class CandidateRetentionDecision:
         """Parse v1/v2 evidence for inspection without granting issuer authority."""
         if not isinstance(record, dict):
             _invalid()
-        names = (_LEGACY_FIELDS if record.get("schema_version") == LEGACY_DECISION_SCHEMA
-                 else _DECISION_FIELDS if record.get("schema_version") == DECISION_SCHEMA
-                 else ())
+        schema = record.get("schema_version")
+        names = (_LEGACY_FIELDS if schema == LEGACY_DECISION_SCHEMA
+                 else _V2_DECISION_FIELDS if schema == PREVIOUS_DECISION_SCHEMA
+                 else _DECISION_FIELDS if schema == DECISION_SCHEMA else ())
         if not names or set(record) != set(names) | {"decision_sha256"}:
             _invalid()
         if (record["decision"] not in {ACCEPTED_DECISION, REJECTED_DECISION}
@@ -140,6 +158,16 @@ class CandidateRetentionDecision:
         elif any(not _digest(record[name]) for name in (
                 "parent_generation", "candidate_generation",
                 "evidence_sha256", "policy_sha256")):
+            _invalid()
+        if (names == _DECISION_FIELDS
+                and ((record["blocking_capability"] is not None
+                      and (not isinstance(record["blocking_capability"], str)
+                           or not record["blocking_capability"]))
+                     or (record["blocking_scope"] is not None
+                         and (not isinstance(record["blocking_scope"], str)
+                              or not record["blocking_scope"]))
+                     or (record["baseline_coverage"] is not None
+                         and not _valid_baseline_coverage(record["baseline_coverage"])))):
             _invalid()
         payload = {name: record[name] for name in names}
         if record["decision_sha256"] != hashlib.sha256(_canonical(payload)).hexdigest():
@@ -170,6 +198,17 @@ class ParsedCandidateRetentionDecision:
 
     def to_record(self) -> dict:
         return {**self.fields, "decision_sha256": self.digest}
+
+
+def _valid_baseline_coverage(record) -> bool:
+    if record is None:
+        return True
+    try:
+        from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
+        BaselineCoverage.from_record(record)
+    except Exception:
+        return False
+    return True
 
 
 def decide_candidate_retention(
@@ -215,6 +254,11 @@ def _make_factory_retention_issuer(raw_issue):
             ("candidate_generation", owner_evaluation.candidate_candidate_sha256),
             ("evidence_sha256", result.evidence_sha256),
             ("policy_sha256", result.policy_sha256),
+            ("blocking_capability", result.blocking_capability),
+            ("blocking_scope", result.blocking_scope),
+            ("baseline_coverage", (
+                result.baseline_coverage.to_record()
+                if result.baseline_coverage is not None else None)),
             ("schema_version", DECISION_SCHEMA),
         ), generation_authority_sha256=(
             owner_evaluation.candidate_generation_authority_sha256),

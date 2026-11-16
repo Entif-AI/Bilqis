@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from collections.abc import Mapping
 from pathlib import Path
 
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction, resolve_candidate
@@ -18,7 +17,7 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     derive_successor_bundle, load_accepted_generation,
 )
 from bilqis_mlx.runtime.capability_retention import (
-    EvidenceKind, EvidenceStage, EvaluationCohort, RetentionPolicy, case_census_digest,
+    EvidenceStage, EvaluationCohort, case_census_digest,
 )
 from bilqis_mlx.runtime.source_execution import _source_family
 from bilqis_mlx.semantics.domains import contract_digest
@@ -33,25 +32,6 @@ C05_PROTECTED_REFERENCE_LOSS = 1
 C05_FRESH_TARGET_SEED_OFFSET = 104729
 C05_FRESH_LESSON_SEED_OFFSET = 130363
 C05_MAX_FRESH_DRAWS = 32
-
-
-def _earned_protected_capabilities(parent, target_capability: str) -> tuple[str, ...]:
-    """Capabilities with accepted learning history before this candidate."""
-    earned = set()
-    teacher_state = getattr(parent, "teacher_state", None)
-    selected = (teacher_state.get("priority_last_selected", {})
-                if isinstance(teacher_state, Mapping) else {})
-    if isinstance(selected, Mapping):
-        earned.update(capability for capability, visit in selected.items()
-                      if isinstance(capability, str) and capability
-                      and type(visit) is int and visit > 0)
-    retained_state = getattr(parent, "retained_state", None)
-    for proof in getattr(retained_state, "step_proofs", ()):
-        capability = getattr(proof, "target_capability_id", None)
-        if isinstance(capability, str) and capability:
-            earned.add(capability)
-    earned.discard(target_capability)
-    return tuple(sorted(earned))
 
 
 def _training_exclusions(candidate: CandidateTransaction):
@@ -229,35 +209,3 @@ def _cohort(
         kind, cases, tuple(groups), rubric, scope, source, policy.digest(),
         training[0], training[1], case_census_digest(cases),
         evidence_stage=evidence_stage)
-
-
-def _policy_and_cohorts(
-    release, groups, target_capability, target_group, training,
-    target_instruments, lesson_instruments, fixed_instruments, *,
-    evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION,
-):
-    required = (
-        (EvidenceKind.FRESH_TARGET,
-         case_census_digest(tuple(item.case for item in target_instruments))),
-        (EvidenceKind.FRESH_LESSON,
-         case_census_digest(tuple(item.case for item in lesson_instruments))),
-        (EvidenceKind.FIXED_SCHOOL,
-         case_census_digest(tuple(item.case for item in fixed_instruments))),
-    )
-    policy = RetentionPolicy(
-        groups, tuple(dict.fromkeys(group for _, group in groups)),
-        tuple((capability, C05_PROTECTED_REFERENCE_LOSS)
-              for capability, _ in groups if capability != target_capability),
-        C05_PROBE_EACH, required)
-    target_cohort = _cohort(
-        EvidenceKind.FRESH_TARGET, target_instruments,
-        ((target_capability, target_group),), release, policy, training,
-        evidence_stage=evidence_stage)
-    lesson_groups = tuple(pair for pair in groups if pair[1] == target_group)
-    lesson_cohort = _cohort(
-        EvidenceKind.FRESH_LESSON, lesson_instruments,
-        lesson_groups, release, policy, training, evidence_stage=evidence_stage)
-    fixed_cohort = _cohort(
-        EvidenceKind.FIXED_SCHOOL, fixed_instruments,
-        groups, release, policy, training, evidence_stage=evidence_stage)
-    return policy, (target_cohort, lesson_cohort, fixed_cohort)
