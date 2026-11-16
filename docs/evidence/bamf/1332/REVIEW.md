@@ -56,3 +56,14 @@ merge into unified remain required; this receipt does not authorize either.
 Incident controls: `PM-2026-10-16-010` (native Sheet recurrence readback verified),
 `PM-2026-10-22-006`. Preserve source/gold, lawful WHAT frontier, C05 authority,
 matching student/AdamW and the human-run boundary.
+
+## Final unified integration
+
+Turn-in consumes `0891128bb330af2de44ef8c0aa0893cb4a16f6e7` at
+`0b72a38b50a286a7a35a0b4c3339e36aec5c577a`. Incoming baseline-first C05 behavior, scorecards,
+selection failure safeguards and ranking evidence are preserved. Outcome scores
+are attached outside the incoming decision helper so all returned decisions carry
+measured feedback. Refreshed integration: 52 tests passed, then both failure-
+boundary tests passed after adapting their mocked replay dependency; C05-focused
+34 tests/8 subtests and priority11 tests also pass. The error contract gate
+reports zero new debt; its generated field manual/catalog are refreshed.
