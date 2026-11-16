@@ -203,6 +203,14 @@ def require_b11_source_execution_authority_current(
     """Require exact objects plus the current A13 rights/correction epoch."""
     authority = require_b11_source_execution_authority(
         authority, compiled_row, config, source)
+    from bilqis_mlx.semantics.frame_adapters.registry import source_frame_strategy
+    adapter_id = authority.source_adapter.descriptor.adapter_id
+    if source_frame_strategy(adapter_id).source_family is None:
+        if (authority.motif_frontier.rights_epoch != config.frontier.rights_epoch
+                or authority.motif_frontier.correction_generation
+                != config.frontier.correction_generation):
+            _invalid("B11_SOURCE_EXECUTION_SCHEMA_RIGHTS_STALE")
+        return authority
     from bilqis_mlx.semantics.frame_adapters.public_formal_schema_rights import (
         issue_source_schema_rights_authority,
     )

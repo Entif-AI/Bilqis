@@ -1,5 +1,6 @@
 """Pinned source-owner boundary for raw-atom semantic candidates."""
 from dataclasses import replace
+import hashlib
 import os
 from unittest import TestCase, skipUnless
 
@@ -7,6 +8,7 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.factory.adapters import RegisteredSourceAdapter, SourceAdapterRegistry
 from bilqis_mlx.factory.model import SourceAdapter
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
+from bilqis_mlx.semantics.atlas_projection import AbiEntry
 from bilqis_mlx.semantics.frame_codec import SchemaTagMap
 from bilqis_mlx.semantics.frame_compiler import atom_evidence_digest, compile_prefix
 from bilqis_mlx.semantics.source_atom_binding import AtomBindingDisposition
@@ -20,20 +22,75 @@ from bilqis_mlx.source_adapters.atom_binding import (
 from bilqis_mlx.source_adapters.atoms.admission import (
     _public_formal_atom_context_from_witness,
 )
+from bilqis_mlx.source_adapters.atoms.authority import (
+    project_verified_row, require_canonical_graph,
+)
 from bilqis_mlx.source_adapters.tests.atoms.helpers import source_case
 from bilqis_mlx.source_adapters.copular import CAPABILITY, SYMBOL
 from bilqis_mlx.source_adapters.copular_curriculum import proposed_graph
 from bilqis_mlx.source_adapters.school import live_source_registry
+from bilqis_mlx.source_adapters import event_frames
 from bilqis_mlx.b11_observation import (
     note_atlas_reload, note_provider_draw, source_replay_observation,
 )
 from bilqis_mlx.live_grade_c import registry_graph
 from bilqis_mlx.grade_a_probe import read_sources
+from bilqis_mlx.semantics.tests.frame_adapters.helpers import _snapshot as frame_snapshot
 
 REAL_BUNDLE = os.environ.get("BILQIS_A01_ATLAS_BUNDLE", "")
 
 
 class SourceAtomAdapterTests(TestCase):
+    def test_event_graph_extension_projects_source_owned_formal_signature(self):
+        graph = event_frames.projected_graph(
+            registry_graph(), ("D.EVENT_OCCURRENCE",))
+        owner = live_source_registry().require(
+            event_frames.GENERATOR, event_frames.ORACLE)
+        row = owner.draw(
+            source_root=ROOT / "vendor" / "legacy-v16", graph=graph,
+            course=None, capability="D.EVENT_OCCURRENCE", seed=1319, each=2)[0]
+        witness, reason = _verified_source_row_witness(
+            row, expected_adapter_id=event_frames.ADAPTER_ID)
+        self.assertIsNone(reason)
+
+        snapshot = frame_snapshot()
+        registry_path = ROOT / "bilqis_mlx/semantics/copular_registry_v1.json"
+        event_index = graph["tokens"].index(
+            event_frames.SYMBOLS["D.EVENT_OCCURRENCE"])
+        self.assertEqual(event_index, len(snapshot.abi_entries))
+        atlas_semantic_id = event_frames.atlas_semantic_id("D.EVENT_OCCURRENCE")
+        event_entry = AbiEntry(
+            2, 0, 2, atlas_semantic_id, atlas_semantic_id,
+            "EVENT_TEST_EXTENSION", True, True, "EVENT_TEST_EXTENSION")
+        snapshot = replace(
+            snapshot,
+            prior_abi_sha256=hashlib.sha256(registry_path.read_bytes()).hexdigest(),
+            abi_entries=(*snapshot.abi_entries[:2], event_entry),
+            semantic_lookup=tuple(sorted((
+                *((entry.semantic_id, entry.index)
+                  for entry in snapshot.abi_entries[:2]),
+                (event_entry.semantic_id, 2),
+            ))),
+        )
+
+        projection = project_verified_row(row, graph, snapshot, witness)
+        position = row["tokens"].index(event_index)
+        self.assertEqual(
+            projection.formal_signatures[position], "Boolean*Boolean->Boolean")
+        self.assertEqual(projection.semantic_ids[position], atlas_semantic_id)
+        self.assertEqual(projection.abi_indices[position], event_entry.index)
+        self.assertNotEqual(event_index, event_entry.index)
+
+        forged = {**graph, "nodes": list(graph["nodes"])}
+        forged["nodes"][event_index] = {
+            **forged["nodes"][event_index], "signature": "Boolean->Boolean"}
+        with self.assertRaises(BilqisError) as caught:
+            require_canonical_graph(
+                row, forged, ROOT / "vendor" / "legacy-v16")
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "SOURCE_ATOM_SOURCE_GRAPH_DRIFT")
+
     def test_cohort_owner_resolution_rejects_ambiguous_and_oracle_mismatched_owners(self):
         def registered(generator: str, cohort: str, oracle: str):
             descriptor = SourceAdapter(
