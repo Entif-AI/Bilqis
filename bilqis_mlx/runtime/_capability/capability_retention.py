@@ -214,6 +214,74 @@ def retain_candidate(parent, candidate, paired_assessment) -> Decision:
     return _strict_retain_candidate(parent, candidate, paired_assessment)
 
 
+def _observed_retention_pairs(
+        parent_solver, candidate_solver, target_capability, cohorts,
+        parent_generation, candidate_generation, observer):
+    pairs = []
+    completed, total = 0, 2 * len(cohorts)
+    for cohort in cohorts:
+        assessments = []
+        for role, solver, generation in (
+                ("parent", parent_solver, parent_generation),
+                ("candidate", candidate_solver, candidate_generation)):
+            timing_subject = (target_capability
+                              if cohort.kind is EvidenceKind.FRESH_TARGET
+                              else cohort.kind.value)
+            emit(observer, retention_completed=completed, retention_total=total,
+                 retention_subject=cohort.kind.value, retention_role=role)
+            started = time.perf_counter()
+            assessments.append(evaluate_capabilities(solver, cohort, generation))
+            elapsed = max(0.0, time.perf_counter() - started)
+            completed += 1
+            emit(observer, retention_completed=completed, retention_total=total,
+                 retention_subject=cohort.kind.value, retention_role=role,
+                 retention_stage_timing={
+                     "subject": timing_subject, "role": role,
+                     "wall_seconds": elapsed})
+        pairs.append(AssessmentPair(*assessments))
+    return tuple(pairs)
+
+
+def _emit_retention_scorecard(
+        observer, target_capability, policy, stage,
+        target_pair, fixed_school_pair):
+    measured = (set(policy.baseline_coverage.measured_capabilities)
+                if policy.baseline_coverage is not None
+                else set(dict(policy.capability_groups)))
+    emit(observer, retention_scorecard={
+        "schema": "bilqis.bamf.retention-scorecard/v1",
+        "evidence_stage": stage.value,
+        "target_capability": target_capability,
+        "target": {
+            "capability_id": target_capability,
+            "state": ("MEASURED" if target_capability in measured else "NOT_MEASURED"),
+            "baseline": target_pair.parent.score(target_capability)[0],
+            "before": target_pair.parent.score(target_capability)[0],
+            "after": target_pair.candidate.score(target_capability)[0],
+            "total": target_pair.parent.score(target_capability)[1],
+            "delta": target_pair.delta(target_capability),
+        },
+        "protected": [
+            {
+                "capability_id": capability,
+                "state": ("MEASURED" if capability in measured else "NOT_MEASURED"),
+                "baseline": fixed_school_pair.parent.score(capability)[0],
+                "before": fixed_school_pair.parent.score(capability)[0],
+                "after": fixed_school_pair.candidate.score(capability)[0],
+                "total": fixed_school_pair.parent.score(capability)[1],
+                "delta": fixed_school_pair.delta(capability),
+                "loss_allowance": reference,
+            }
+            for capability, reference in policy.protected_reference_losses
+        ],
+        "policy_sha256": policy.digest(),
+        "probe_each": policy.probe_each,
+        "baseline_coverage": (
+            policy.baseline_coverage.to_record()
+            if policy.baseline_coverage is not None else None),
+    })
+
+
 def evaluate_retention_candidate(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
         parent_generation, candidate_generation, *, observer=None) -> Decision:
@@ -244,64 +312,13 @@ def evaluate_retention_candidate(
             parent_generation, candidate_generation,
             **({"observer": observer} if observer is not None else {}))
 
-    pairs = []
-    completed, total = 0, 2 * len(cohorts)
-    for cohort in cohorts:
-        assessments = []
-        for role, solver, generation in (("parent", parent_solver, parent_generation),
-                                         ("candidate", candidate_solver, candidate_generation)):
-            timing_subject = (target_capability
-                              if cohort.kind is EvidenceKind.FRESH_TARGET
-                              else cohort.kind.value)
-            emit(observer, retention_completed=completed, retention_total=total,
-                 retention_subject=cohort.kind.value, retention_role=role)
-            started = time.perf_counter()
-            assessments.append(evaluate_capabilities(solver, cohort, generation))
-            elapsed = max(0.0, time.perf_counter() - started)
-            completed += 1
-            emit(observer, retention_completed=completed, retention_total=total,
-                 retention_subject=cohort.kind.value, retention_role=role,
-                 retention_stage_timing={
-                     "subject": timing_subject, "role": role,
-                     "wall_seconds": elapsed})
-        pairs.append(AssessmentPair(*assessments))
-    target_pair, fresh_lesson_pair, fixed_school_pair = pairs
+    target_pair, fresh_lesson_pair, fixed_school_pair = _observed_retention_pairs(
+        parent_solver, candidate_solver, target_capability, cohorts,
+        parent_generation, candidate_generation, observer)
     evidence = PairedRetentionEvidence(
         target_capability, policy,
         target_pair, fresh_lesson_pair, fixed_school_pair)
-    measured = (set(policy.baseline_coverage.measured_capabilities)
-                if policy.baseline_coverage is not None
-                else set(dict(policy.capability_groups)))
-    emit(observer, retention_scorecard={
-        "schema": "bilqis.bamf.retention-scorecard/v1",
-        "evidence_stage": next(iter(stages)).value,
-        "target_capability": target_capability,
-        "target": {
-            "capability_id": target_capability,
-            "state": ("MEASURED" if target_capability in measured else "NOT_MEASURED"),
-            "baseline": target_pair.parent.score(target_capability)[0],
-            "before": target_pair.parent.score(target_capability)[0],
-            "after": target_pair.candidate.score(target_capability)[0],
-            "total": target_pair.parent.score(target_capability)[1],
-            "delta": target_pair.delta(target_capability),
-        },
-        "protected": [
-            {
-                "capability_id": capability,
-                "state": ("MEASURED" if capability in measured else "NOT_MEASURED"),
-                "baseline": fixed_school_pair.parent.score(capability)[0],
-                "before": fixed_school_pair.parent.score(capability)[0],
-                "after": fixed_school_pair.candidate.score(capability)[0],
-                "total": fixed_school_pair.parent.score(capability)[1],
-                "delta": fixed_school_pair.delta(capability),
-                "loss_allowance": reference,
-            }
-            for capability, reference in policy.protected_reference_losses
-        ],
-        "policy_sha256": policy.digest(),
-        "probe_each": policy.probe_each,
-        "baseline_coverage": (
-            policy.baseline_coverage.to_record()
-            if policy.baseline_coverage is not None else None),
-    })
+    _emit_retention_scorecard(
+        observer, target_capability, policy, next(iter(stages)),
+        target_pair, fixed_school_pair)
     return retain_candidate(parent_generation, candidate_generation, evidence)

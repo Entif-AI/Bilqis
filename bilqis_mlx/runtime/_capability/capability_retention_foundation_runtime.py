@@ -6,16 +6,17 @@ import time
 from bilqis_mlx.runtime.bamf_operator.telemetry import emit
 
 from ..learning.retention_policy import _mastery_debt_utility
-from .capability_evaluation import Assessment, _invalid, evaluate_capabilities
+from .capability_evaluation import Assessment, _invalid
 from .capability_retention import AssessmentPair, Decision, DecisionStatus
 
 
 def observed_assessment(
-        solver, cohort, generation, observer, completed, total, subject, role):
+        solver, cohort, generation, observer, completed, total, subject, role,
+        *, evaluator):
     emit(observer, retention_completed=completed, retention_total=total,
          retention_subject=subject, retention_role=role)
     started = time.perf_counter()
-    result = evaluate_capabilities(solver, cohort, generation)
+    result = evaluator(solver, cohort, generation)
     elapsed = max(0.0, time.perf_counter() - started)
     emit(observer, retention_completed=completed + 1, retention_total=total,
          retention_subject=subject, retention_role=role,
@@ -25,11 +26,12 @@ def observed_assessment(
 
 
 def parent_case_index(
-        parent_solver, fixed, parent_generation, parent_assessment, observer, total):
+        parent_solver, fixed, parent_generation, parent_assessment, observer, total,
+        *, evaluator):
     if parent_assessment is None:
         parent_assessment = observed_assessment(
             parent_solver, fixed, parent_generation, observer, 0, total,
-            "fixed_school", "parent")
+            "fixed_school", "parent", evaluator=evaluator)
     elif (type(parent_assessment) is not Assessment
             or parent_assessment.cohort != fixed
             or parent_assessment.generation_digest != parent_generation):
@@ -42,11 +44,11 @@ def parent_case_index(
     }
 
 
-def final_fixed_school_decision(
-        target_capability, target_group, references, policy, fixed,
+def _fixed_school_score_context(
+        target_capability, references, policy, fixed,
         parent_generation, candidate_generation,
-        evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts, observer=None):
+        parent_results, parent_contracts, candidate_results, candidate_contracts,
+        observer):
     parent_assessment = Assessment(
         fixed, parent_generation,
         tuple(parent_results[case.case_id] for case in fixed.cases),
@@ -61,10 +63,6 @@ def final_fixed_school_decision(
     measured = (tuple(coverage.measured_capabilities) if coverage is not None
                 else tuple(census))
     measured_set = set(measured)
-
-    def net(capabilities):
-        return sum(fixed_pair.delta(capability) for capability in capabilities)
-
     scores = {}
     for capability in census:
         before, total = fixed_pair.parent.score(capability)
@@ -72,7 +70,6 @@ def final_fixed_school_decision(
         if total != after_total:
             _invalid("BAMF_FOUNDATION_FIXED_SCHOOL_SCORE_TOTAL_DRIFT")
         scores[capability] = {"before": before, "after": after, "total": total}
-
     target_delta = fixed_pair.delta(target_capability)
     emit(observer, retention_scorecard={
         "schema": "bilqis.bamf.retention-scorecard/v1",
@@ -100,6 +97,23 @@ def final_fixed_school_decision(
         "probe_each": policy.probe_each,
         "baseline_coverage": (coverage.to_record() if coverage is not None else None),
     })
+    return fixed_pair, census, coverage, measured, measured_set, scores, target_delta
+
+
+def final_fixed_school_decision(
+        target_capability, target_group, references, policy, fixed,
+        parent_generation, candidate_generation,
+        evidence_digest, pair_digests, parent_results, parent_contracts,
+        candidate_results, candidate_contracts, observer=None):
+    (fixed_pair, census, coverage, measured, measured_set, scores,
+     target_delta) = _fixed_school_score_context(
+        target_capability, references, policy, fixed,
+        parent_generation, candidate_generation,
+        parent_results, parent_contracts, candidate_results, candidate_contracts,
+        observer)
+
+    def net(capabilities):
+        return sum(fixed_pair.delta(capability) for capability in capabilities)
     if target_delta < 0 and target_capability in measured_set:
         return Decision(
             DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",

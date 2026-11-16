@@ -142,6 +142,49 @@ def accepted_priority_school(parent, program, *, candidate_identity_sha256=None)
     )
 
 
+def _selected_priority_result(
+        run_dir, parent, cache, projection, epoch, teacher,
+        qualified, option, offer, school, engine, rng, learning_settings,
+        program, evidence, holds, lawful_frontier, total_capabilities,
+        plasticity_escape, priority_features,
+        source_materialization_wall_seconds):
+    capability = option.context.capability_id
+    grade = _grade(program, school, capability)
+    key, policy, metadata = select_visit_policy(
+        engine, teacher, capability, school, rng, learning_settings,
+        option.context.scope,
+        {'salience_evidence': evidence[option.stable_id],
+         'teacher_epoch_digest': contract_digest(epoch)},
+        grade, total_capabilities=total_capabilities,
+        plasticity_escape=plasticity_escape)
+    selected_epoch = replace(
+        epoch, current_json=json.dumps(teacher, sort_keys=True, allow_nan=False))
+    selected = _selection_projection(projection, selected_epoch)
+    identity = derive_teacher_visit_identity(
+        selected.teacher_state,
+        run_identity_sha256=parent.run_identity.digest,
+        run_seed=parent.run_identity.run_seed,
+        generation=parent.generation,
+        accepted_manifest_sha256=cache.accepted_manifest_sha256,
+        capability_id=capability,
+        policy_key=key)
+    recorded = record_teacher_visit_identity(selected.teacher_state, identity)
+    ranking_evidence = {
+        **priority_features,
+        'dispatch_tier': int(dict(qualified.ranked.tiers)[option.stable_id]),
+        'eligible_since': option.eligible_since,
+        'downstream_unlocks': option.downstream_unlocks,
+        'stable_id': option.stable_id,
+    }
+    recorded = record_teacher_visit_authority(recorded, identity)
+    visit = _issue_bound_visit(recorded, identity)
+    return _issue_result(
+        'TEACHER_SELECTED', option.stable_id, offer, visit, policy,
+        metadata, grade, sorted(holds), run_dir, lawful_frontier,
+        ranking_evidence=ranking_evidence,
+        source_materialization_wall_seconds=source_materialization_wall_seconds)
+
+
 def select_accepted_priority_visit(
         run_dir, source_context, frontier, history, planning, offers,
         engine, school, rng, learning_settings, *, program, now,
@@ -197,42 +240,20 @@ def select_accepted_priority_visit(
             return _issue_result('ACTION_REQUIRED', option.stable_id, None, None, None,
                                  None, None, sorted(holds), run_dir, lawful_frontier)
         offer = by_id[option.stable_id]
+        materialization_started = time.perf_counter()
         try:
-            materialization_started = time.perf_counter()
             offer.require_current(source_context, parent)
-            source_materialization_wall_seconds = max(
-                0.0, time.perf_counter() - materialization_started)
         except ValueError:
             holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
             continue
-        capability = option.context.capability_id
-        grade = _grade(program, school, capability)
-        key, policy, metadata = select_visit_policy(
-            engine, teacher, capability, school, rng, learning_settings, option.context.scope,
-            {'salience_evidence': evidence[option.stable_id], 'teacher_epoch_digest': contract_digest(epoch)},
-            grade, total_capabilities=total_capabilities, plasticity_escape=plasticity_escape)
-        selected_epoch = replace(epoch, current_json=json.dumps(teacher, sort_keys=True, allow_nan=False))
-        selected = _selection_projection(projection, selected_epoch)
-        identity = derive_teacher_visit_identity(selected.teacher_state,
-            run_identity_sha256=parent.run_identity.digest, run_seed=parent.run_identity.run_seed,
-            generation=parent.generation, accepted_manifest_sha256=cache.accepted_manifest_sha256,
-            capability_id=capability, policy_key=key)
-        recorded = record_teacher_visit_identity(selected.teacher_state, identity)
-        recorded = record_teacher_visit_authority(recorded, identity)
-        visit = _issue_bound_visit(recorded, identity)
-        rank_tiers = dict(qualified.ranked.tiers)
-        ranking_evidence = {
-            **priority_features,
-            'dispatch_tier': int(rank_tiers[option.stable_id]),
-            'eligible_since': option.eligible_since,
-            'downstream_unlocks': option.downstream_unlocks,
-            'stable_id': option.stable_id,
-        }
-        return _issue_result('TEACHER_SELECTED', option.stable_id, offer, visit, policy,
-                             metadata, grade, sorted(holds), run_dir, lawful_frontier,
-                             ranking_evidence=ranking_evidence,
-                             source_materialization_wall_seconds=(
-                                 source_materialization_wall_seconds))
+        source_materialization_wall_seconds = max(
+            0.0, time.perf_counter() - materialization_started)
+        return _selected_priority_result(
+            run_dir, parent, cache, projection, epoch, teacher,
+            qualified, option, offer, school, engine, rng, learning_settings,
+            program, evidence, holds, lawful_frontier, total_capabilities,
+            plasticity_escape, priority_features,
+            source_materialization_wall_seconds)
     return _issue_result('NO_ADMISSIBLE_TEACHING', None, None, None, None, None,
                          None, sorted(holds), run_dir, lawful_frontier)
 

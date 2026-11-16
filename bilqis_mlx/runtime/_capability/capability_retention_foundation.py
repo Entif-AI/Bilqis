@@ -157,7 +157,8 @@ def _evaluate_fixed_school(
     completed = int(parent_assessment is None)
     total = len(capability_order) + completed
     parent_by_case = parent_case_index(
-        parent_solver, fixed, parent_generation, parent_assessment, observer, total)
+        parent_solver, fixed, parent_generation, parent_assessment, observer, total,
+        evaluator=evaluate_capabilities)
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
@@ -174,7 +175,8 @@ def _evaluate_fixed_school(
             tuple(parent_by_case[case.case_id][1] for case in cases),
         )
         candidate_assessment = observed_assessment(
-            candidate_solver, cohort, candidate_generation, observer, completed, total, capability, "candidate")
+            candidate_solver, cohort, candidate_generation, observer, completed, total,
+            capability, "candidate", evaluator=evaluate_capabilities)
         completed += 1
         pair = AssessmentPair(parent_subset, candidate_assessment)
         pair_digests.append((parent_subset.digest(), candidate_assessment.digest()))
