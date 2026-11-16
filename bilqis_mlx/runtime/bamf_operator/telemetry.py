@@ -131,14 +131,35 @@ class TrainerObservation:
                     self.visits.pop(0)
                     payload = json.dumps({'schema': SCHEMA, 'visits': [*self.visits, self.record]},
                                          allow_nan=False).encode()
+                # Live telemetry must degrade in detail before it disappears entirely.
+                # A fully populated candidate-step history can approach the snapshot
+                # byte ceiling.  Preserve the newest completed steps and the active
+                # visit itself instead of permanently disabling observation when the
+                # current record alone no longer fits beside older detail.
+                steps = self.record.get('candidate_steps')
+                while (len(payload) > MAX_SNAPSHOT_BYTES
+                       and isinstance(steps, list) and len(steps) > 1):
+                    steps.pop(0)
+                    payload = json.dumps(
+                        {'schema': SCHEMA, 'visits': [*self.visits, self.record]},
+                        allow_nan=False).encode()
                 if len(payload) > MAX_SNAPSHOT_BYTES:
-                    self.enabled = False
+                    # Do not permanently blind Mission Control.  A later phase
+                    # update may reduce optional detail enough to fit, and the
+                    # next heartbeat should be allowed to retry.
                     return
                 fd, temporary = tempfile.mkstemp(prefix='.trainer-observed-', dir=self.run_dir)
                 with os.fdopen(fd, 'wb') as stream:
                     stream.write(payload)
                 os.replace(temporary, self.path)
-            except (OSError, ValueError, TypeError):
+            except OSError:
+                # Filesystem failures can be transient.  Observation is
+                # explicitly best-effort, so retry on the next heartbeat rather
+                # than turning one failed write into a visit-long blackout.
+                pass
+            except (ValueError, TypeError):
+                # Deterministic serialization failures cannot heal without a
+                # producer-side field change; avoid a tight retry loop.
                 self.enabled = False
             finally:
                 if temporary and os.path.exists(temporary):

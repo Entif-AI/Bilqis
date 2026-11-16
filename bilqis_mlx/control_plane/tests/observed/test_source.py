@@ -135,6 +135,15 @@ class ObservedSourceTests(unittest.TestCase):
             (self.root / 'trainer-observed.json').write_text(content)
             self.assertEqual(observed_records(self.root, (RUN,)), ())
 
+    def test_excess_history_keeps_newest_bounded_observations(self):
+        rows = [visit(observation_id=f'visit-{index}', revision=index)
+                for index in range(1, 11)]
+        self.write(*rows)
+        projected = observed_records(self.root, (RUN,), now_ms=100000)
+        self.assertEqual(len(projected), 8)
+        self.assertEqual(projected[0].observation_id, 'visit-3')
+        self.assertEqual(projected[-1].observation_id, 'visit-10')
+
     def test_liveness_transition_publishes_without_new_producer_revision(self):
         from types import SimpleNamespace
         emitted = []
