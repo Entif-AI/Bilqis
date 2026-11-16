@@ -21,6 +21,19 @@ The isolated run's immutable event generation **11566** accepted a B.XOR candida
 
 ## Candidate retention requirements
 
+**ADR-145 execution optimization:** A bounded candidate MAY run a calibrated
+intermediate retention-target canary over the exact source-oracled target probe
+used by stage one. The canary is a reject-only compute gate. Before its separate
+shadow history satisfies the approved activation threshold it MUST NOT change
+execution. After qualification, a no-gain canary MAY stop the remaining
+disposable optimizer steps, but the stopped candidate MUST still enter stage one
+below and be independently rejected there as `NO_MEASURABLE_TARGET_GAIN`.
+A canary pass grants no retention authority. Every candidate that reaches its
+configured optimizer horizon MUST still execute all ordinary stage-two and
+fixed/replay/frontier evidence required by its regime before it can become
+PROVISIONAL. Canary telemetry and saved-step accounting are not admission
+evidence.
+
 1. **Stage one: the target.** The target capability's parent-versus-candidate fresh source-oracled probe MUST improve strictly. If it does not, reject immediately. Do not spend additional inference on its unscored peers or fixed-grade replay just to re-prove a failure.
 2. **Stage two: fill only missing same-grade scores.** For a candidate that passes stage one, reuse exact scores already measured on that candidate checkpoint and paired source question set. Evaluate only the remaining currently admitted capabilities of that grade on paired identical source questions for parent and candidate, with equal question count per grade capability. Missing grade coverage at the final admission decision is a failed screen. Never borrow scores from a different checkpoint, optimizer step, seed or rubric.
 3. **Choose the evidence regime from what actually exists.** Before a complete immutable whole-school fixed frontier exists, preserve the original stricter guard: the complete fresh lesson-grade panel MUST improve strictly, individual protected-capability tolerances remain admission gates, the B.OR/B.XOR parent-correct replay remains an item-level veto, and any comparable fixed-grade score must not decline.

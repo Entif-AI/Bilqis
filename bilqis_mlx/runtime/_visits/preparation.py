@@ -91,6 +91,12 @@ def _prepare_policy_and_trial(d, s):
             d._learning_teacher_multifidelity.DEFAULT_SHADOW_POLICY, s.candidate_steps)
         if s.learning_settings is not None else ())
     s.shadow_probes = []
+    s.retention_canary_activation = (
+        d._learning_retention_canary.activation(s.teacher)
+        if s.learning_settings is not None else {"status": "NOT_QUALIFIED"})
+    s.retention_canary_probe = None
+    s.retention_canary_stop = False
+    s.attempted_candidate_steps = 0
     s.parent_parameters, s.parent_optimizer = s.params, s.optimizer
     (s.probe_rows, s.protected_caps, s.parent_predictions, s.params, s.optimizer,
      skipped) = d._prepare_retention_trial(

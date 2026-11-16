@@ -17,7 +17,8 @@ def _advance_school_and_describe(d, s):
             champion_candidate_count=len(s.champion_candidate_ids),
             prerequisite_capabilities=(
                 s.executable_release.execution_plan.capability_map[s.cap].prerequisites),
-            methodology=methodology, delivered_examples=s.candidate_steps * s.batch_size,
+            methodology=methodology,
+            delivered_examples=s.attempted_candidate_steps * s.batch_size,
             replayed_misses=s.replayed_misses,
             resolved_exam_misses=len(s.resolved_priority_ids),
             champion_prioritized=s.champion_prioritized,
@@ -41,13 +42,16 @@ def _base_event(d, s, methodology, teacher_decision, lesson_generator, lesson_so
         "attempted_optimizer_updates": s.attempted_optimizer_updates,
         "candidate_step_control": {
             "configured_steps": s.steps_per_visit, "effective_steps": s.candidate_steps,
-            "adaptive": s.candidate_steps != s.steps_per_visit},
+            "spent_steps": s.attempted_candidate_steps,
+            "adaptive": s.candidate_steps != s.steps_per_visit,
+            "retention_canary_stopped": s.retention_canary_stop},
         "source_prefetch": {
             "schema": "bilqis.mlx.source-prefetch/v1",
             "mode": "PROCESS_POOL" if s.prefetch_enabled else "SERIAL",
             "workers": s.source_prefetch_workers if s.prefetch_enabled else 0,
             "prepared_steps": s.candidate_steps if s.prefetch_enabled else 0,
             "serial_steps": 0 if s.prefetch_enabled else s.candidate_steps,
+            "consumed_steps": s.attempted_candidate_steps,
             "packet_identity_verified": s.prefetch_enabled, "neural_owner": "MAIN_LANE_ONLY"},
         "generator_version": lesson_generator, "generator_code_sha256": lesson_source_digest,
         "lesson_source_sha256": s.manifest["manifest_sha256"],
@@ -117,7 +121,8 @@ def _add_autonomy(d, s, event):
 
 def _finish_capture(d, s, event):
     shadow_review = shadow_activation = None
-    if s.learning_settings is not None and s.outcome is not None:
+    if (s.learning_settings is not None and s.outcome is not None
+            and s.attempted_candidate_steps == s.candidate_steps):
         shadow_review = d._learning_teacher_multifidelity.evaluate_shadow(
             d._learning_teacher_multifidelity.DEFAULT_SHADOW_POLICY, probes=s.shadow_probes,
             final_retained=s.outcome["decision"] == "PROVISIONAL",
@@ -125,6 +130,12 @@ def _finish_capture(d, s, event):
         shadow_activation = d._learning_teacher_multifidelity.record_review(s.teacher, shadow_review)
         event["teacher_multifidelity_shadow"] = shadow_review
         event["teacher_multifidelity_activation"] = shadow_activation
+    if s.learning_settings is not None and s.retention_canary_probe is not None:
+        event["retention_canary"] = d._learning_retention_canary.complete(
+            s.teacher, s.retention_canary_probe,
+            final_retained=s.outcome["decision"] == "PROVISIONAL",
+            spent_steps=s.attempted_candidate_steps,
+            full_budget_steps=s.candidate_steps)
     s.capture.finish(
         event, decision=s.outcome, paired=s.pair if s.learning_settings is not None else None,
         protected=s.probed if s.learning_settings is not None else None,

@@ -8197,35 +8197,35 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_PARAMETER_SET_MISMATCH'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_BLOB_CHANGED",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_BLOB_CHANGED'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "PLASTICITY_MASTERY_DEBT_SCOPE_INVALID",
@@ -8253,21 +8253,21 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_EMPTY_EXAM'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "WHOLE_STUDENT_PEAK_INVALID_SCORE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_INVALID_SCORE'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "CHAMPION_CONFIDENCE_TRAINING_GUIDANCE_INVALID",
