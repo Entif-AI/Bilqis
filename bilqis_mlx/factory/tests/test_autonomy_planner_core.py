@@ -25,6 +25,14 @@ from bilqis_mlx.factory.release import compile_factory_release
 from bilqis_mlx.factory.tests.autonomy_support import AutonomyFixture, _sha
 
 class AutonomousCurriculumPlannerCoreTests(AutonomyFixture, unittest.TestCase):
+    def test_public_contract_records_keep_historical_module_identity(self):
+        from bilqis_mlx.factory import autonomy
+        for name in (
+            "AutonomyAction", "AutonomyPlan", "EvidenceLedger",
+            "EvidenceObligation", "EvidenceReceipt", "TeachingReceipt",
+        ):
+            self.assertEqual(getattr(autonomy, name).__module__, autonomy.__name__)
+
     def test_generation_axes_constrain_evidence_without_becoming_mastery_claims(self):
         obligations = obligations_for_capability(self.release, "A.BASE")
         self.assertEqual(len(obligations), 1)

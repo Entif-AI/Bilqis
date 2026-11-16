@@ -1,75 +1,25 @@
-"""Accepted learner-foot derivation from current retained evidence."""
-import hashlib
-import unittest
-
-from bilqis_mlx.factory.atlas_delta_adapter import AtlasLearnerEvidence
-from bilqis_mlx.factory.autonomy import (
-    EvidenceReceipt,
-    compile_autonomy_plan,
-    initial_evidence_ledger,
-    obligations_for_capability,
-    record_evidence,
-)
-from bilqis_mlx.factory.generated_grade import (
-    AcquisitionCostEvidence,
-    CandidateDevelopmentEvidence,
-    CostEvidenceKind,
-    accepted_learner_foot,
-)
-from bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection import (
-    _release,
-    _snapshot,
+"""Learner-relative authority stays split between A09 semantic credit and evidence."""
+from bilqis_mlx.factory.atlas_frontier import AtlasCoverageEpoch
+from bilqis_mlx.factory.atlas_delta_adapter import _issue_accepted_obligation_credit
+from bilqis_mlx.factory.atlas_frontier_progress_validation import current_obligations
+from bilqis_mlx.factory.generated_grade.inputs import _a09_baselines
+from bilqis_mlx.factory.tests.curriculum.frontier.atlas_delta_adapter_fixtures import (
+    AtlasDeltaAdapterFixture,
 )
 
 
-def _sha(value: str) -> str:
-    return hashlib.sha256(value.encode()).hexdigest()
+class GeneratedGradeLearnerAuthorityTests(AtlasDeltaAdapterFixture):
+    def test_semantic_baseline_comes_only_from_authenticated_a09_credit(self):
+        current = current_obligations(self.closure)
+        semantic_id = sorted(current)[0]
+        credit = _issue_accepted_obligation_credit(
+            self.current.release_sha256,
+            "f" * 64,
+            ((semantic_id, current[semantic_id]),),
+        )
+        epoch = AtlasCoverageEpoch(
+            self.snapshot, self.closure, self.frontier, self.current,
+            (self.staged,), accepted_credit=credit)
 
-
-class AcceptedLearnerFootTests(unittest.TestCase):
-    def test_only_current_evidence_projects_mastery_into_generated_grade_foot(self):
-        release = _release()
-        snapshot = _snapshot(release)
-        plan = compile_autonomy_plan(release)
-        capability_id = next(iter(release.curriculum.capability_map))
-        semantic_id = snapshot.source_eligible_concept_ids[0]
-        evidence = (CandidateDevelopmentEvidence(
-            semantic_id=semantic_id,
-            compiled_capability_ids=(capability_id,),
-            source_anchor_ids=(release.source_bindings.by_capability[
-                capability_id].source_anchor,),
-            neighborhood_id="fixture-neighborhood",
-            coverage_factors=("fixture-factor",),
-            acquisition_cost=AcquisitionCostEvidence(
-                CostEvidenceKind.MEASURED, "optimizer-steps-to-criterion", 3),
-            grounding_quality=3, answer_modality_burden=0, ast_burden=0,
-            entanglement=0, reusable_constituent_value=1, downstream_unlocks=1,
-            minimal_contrast_value=1, transfer_breadth=1, learning_progress=1,
-            fairness_age=1, planning_compute_units=1,
-            evidence_sha256=_sha("candidate-development")),)
-        ledger = initial_evidence_ledger(release, plan=plan)
-        for index, obligation in enumerate(
-                obligations_for_capability(release, capability_id, plan=plan)):
-            ledger = record_evidence(release, ledger, EvidenceReceipt(
-                obligation.obligation_id,
-                f"accepted-{index}",
-                "e" * 64,
-                7,
-                _sha(f"cohort-{index}"),
-                obligation.minimum_specimens,
-                True,
-            ), plan=plan)
-
-        current = accepted_learner_foot(
-            snapshot, release, AtlasLearnerEvidence(ledger, "e" * 64, 7),
-            plan, evidence)
-        stale = accepted_learner_foot(
-            snapshot, release, AtlasLearnerEvidence(ledger, "f" * 64, 8),
-            plan, evidence)
-
-        self.assertEqual(current.mastered_capability_ids, (capability_id,))
-        self.assertEqual(current.mastered_semantic_ids, (semantic_id,))
-        self.assertEqual(stale.mastered_capability_ids, ())
-        self.assertEqual(stale.mastered_semantic_ids, ())
-        self.assertEqual(current.factory_release_sha256, release.release_sha256)
-        self.assertEqual(current.policy_epoch, snapshot.policy_epoch)
+        self.assertEqual(_a09_baselines(epoch), (semantic_id,))
+        self.assertEqual(_a09_baselines(self._epoch()), ())

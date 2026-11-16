@@ -14,4 +14,17 @@ from ._autonomy.recording import (record_evidence, record_rejected_teaching_atte
 from ._autonomy.scheduling import (AutonomyAction, AutonomyActionKind, next_action, next_work)
 from ._autonomy.lineage import rebind_evidence_ledger, reconcile_successor_evidence
 
+# Preserve the historical public identities for pickle/debug/introspection
+# compatibility after the internal compartment split.
+for _record in (
+    AutonomyAction, AutonomyActionKind, AutonomyPlan, CurriculumWorkItem,
+    EvidenceKind, EvidenceLedger, EvidenceObligation, EvidenceReceipt,
+    ProjectionEvidenceSpec, RejectedTeachingAttemptReceipt,
+    SourceCompositionEdge, SupplementalEvidenceSpec, TeachingReceipt,
+    TeachingWorkItem,
+):
+    _record.__module__ = __name__
+
+del _record
+
 __all__ = tuple(name for name in globals() if not name.startswith("_"))

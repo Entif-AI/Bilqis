@@ -10,6 +10,7 @@ from .contracts import (
     CandidateDevelopmentEvidence,
     CandidateGradeDecision,
     CostEvidenceKind,
+    GeneratedGradeInputs,
     GeneratedGradePolicy,
     GeneratedGradeProposal,
 )
@@ -17,17 +18,23 @@ def synthesize_generated_grade(
     snapshot: CurriculumSnapshot,
     closure: FrontierClosure,
     current_release: ExecutableFactoryRelease,
-    learner: AcceptedLearnerFoot,
-    candidate_evidence: tuple[CandidateDevelopmentEvidence, ...],
-    policy: GeneratedGradePolicy,
+    inputs: GeneratedGradeInputs,
 ) -> GeneratedGradeProposal:
     """Choose one bounded developmental contour without staging or admission."""
+    if type(inputs) is not GeneratedGradeInputs:
+        _fail("BAMF_GENERATED_GRADE_INPUT_AUTHORITY_REQUIRED")
+    inputs.__post_init__()
+    if inputs.input_sha256 != inputs.expected_digest():
+        _fail("BAMF_GENERATED_GRADE_INPUT_DIGEST_INVALID")
+    learner = inputs.learner
+    candidate_evidence = inputs.candidate_evidence
+    policy = inputs.policy
     _validate_inputs(snapshot, closure, current_release, learner, candidate_evidence, policy)
     graph = _graph(closure)
     order = {identity: index for index, identity in enumerate(closure.constituent_order)}
     rows = _grouped(closure)
     evidence = {item.semantic_id: item for item in candidate_evidence}
-    mastered = set(learner.mastered_semantic_ids)
+    mastered = set(learner.baselined_semantic_ids)
     decisions = {
         identity: _decision(identity, rows[identity], graph, order, mastered,
                             evidence, policy)
@@ -39,9 +46,10 @@ def synthesize_generated_grade(
     selected_targets: list[str] = []
     members: set[str] = set()
     compute = 0
+    deferred_reasons: dict[str, str] = {}
     eligible = [item for item in decisions.values()
                 if item.disposition == "ELIGIBLE"]
-    ranked = sorted(eligible, key=_rank_key)
+    ranked = sorted(eligible, key=lambda item: _rank_key(item, policy))
     seen_neighborhoods: set[str] = set()
     for representative_only in (True, False):
         for item in ranked:
@@ -52,8 +60,11 @@ def synthesize_generated_grade(
             new_members = set(item.required_semantic_ids) - members - mastered
             next_compute = compute + sum(
                 decisions[member].planning_compute_units for member in new_members)
-            if (len(members | new_members) > capacity
-                    or next_compute > snapshot.budget.max_compute_units):
+            if len(members | new_members) > capacity:
+                deferred_reasons[item.semantic_id] = "MEMBER_CAPACITY_BOUND"
+                continue
+            if next_compute > snapshot.budget.max_compute_units:
+                deferred_reasons[item.semantic_id] = "PLANNING_COMPUTE_BOUND"
                 continue
             selected_targets.append(item.semantic_id)
             members |= new_members
@@ -63,14 +74,20 @@ def synthesize_generated_grade(
     for identity, item in tuple(decisions.items()):
         if identity in selected_set:
             decisions[identity] = replace(
-                item, disposition="SELECTED_TARGET", reason_codes=("PARETO_NEAR_COHORT",))
+                item, disposition="SELECTED_TARGET",
+                reason_codes=("LEXICOGRAPHIC_POLICY_SELECTED",))
         elif identity in members:
             decisions[identity] = replace(
                 item, disposition="SELECTED_BRIDGE", reason_codes=("REQUIRED_CONSTITUENT_BRIDGE",))
         elif item.disposition == "ELIGIBLE":
+            reason = deferred_reasons.get(identity)
+            if reason is None:
+                reason = ("NEIGHBORHOOD_REDUNDANT" if any(
+                    decisions[selected].neighborhood_id == item.neighborhood_id
+                    for selected in selected_targets) else "COMPARATOR_LOWER_PRIORITY")
             decisions[identity] = replace(
                 item, disposition="DEFERRED_NEAR_FRONTIER",
-                reason_codes=("REPRESENTATIVE_OR_RESOURCE_BOUND",))
+                reason_codes=(reason,))
     member_ids = tuple(identity for identity in closure.constituent_order if identity in members)
     provisional = GeneratedGradeProposal(
         snapshot.snapshot_sha256,
@@ -80,6 +97,11 @@ def synthesize_generated_grade(
         learner.evidence_epoch,
         snapshot.policy_epoch,
         policy.digest(),
+        inputs.input_sha256,
+        inputs.a09_progress_sha256,
+        inputs.a09_status,
+        inputs.a09_handoff_sha256,
+        inputs.a09_proposal_sha256,
         member_ids,
         tuple(decisions[identity] for identity in sorted(decisions)),
         tuple(sorted((item.source_id, item.reason_code, item.owner)
@@ -213,27 +235,28 @@ def _decision(identity, rows, graph, order, mastered, evidence, policy):
     )
 
 
-def _rank_key(item: CandidateGradeDecision):
+def _rank_key(item: CandidateGradeDecision, policy: GeneratedGradePolicy):
     cost_rank = 2 if item.closure_acquisition_units is None else {
         CostEvidenceKind.MEASURED: 0,
         CostEvidenceKind.BOOTSTRAPPED: 1,
         CostEvidenceKind.UNKNOWN: 2,
     }[item.cost_status]
     cost_units = item.closure_acquisition_units or 0
-    return (
-        len(item.unmet_prerequisite_ids),
-        item.answer_modality_burden,
-        item.ast_burden,
-        item.entanglement,
-        cost_rank,
-        cost_units,
-        -item.grounding_quality,
-        -item.reusable_constituent_value,
-        -item.downstream_unlocks,
-        -item.minimal_contrast_value,
-        -item.transfer_breadth,
-        -item.learning_progress,
-        -len(item.coverage_factors),
-        -item.fairness_age,
-        item.semantic_id,
-    )
+    components = {
+        "unmet_prerequisite_count": len(item.unmet_prerequisite_ids),
+        "answer_modality_burden": item.answer_modality_burden,
+        "ast_burden": item.ast_burden,
+        "entanglement": item.entanglement,
+        "cost_evidence_rank": cost_rank,
+        "closure_acquisition_units": cost_units,
+        "grounding_quality_desc": -item.grounding_quality,
+        "reusable_constituent_value_desc": -item.reusable_constituent_value,
+        "downstream_unlocks_desc": -item.downstream_unlocks,
+        "minimal_contrast_value_desc": -item.minimal_contrast_value,
+        "transfer_breadth_desc": -item.transfer_breadth,
+        "learning_progress_desc": -item.learning_progress,
+        "coverage_factor_count_desc": -len(item.coverage_factors),
+        "fairness_age_desc": -item.fairness_age,
+        "semantic_id": item.semantic_id,
+    }
+    return tuple(components[name] for name in policy.comparator_order)

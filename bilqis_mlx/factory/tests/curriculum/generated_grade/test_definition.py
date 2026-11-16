@@ -12,9 +12,10 @@ from bilqis_mlx.factory.generated_grade import (
     CandidateDevelopmentEvidence,
     CostEvidenceKind,
     GeneratedGradePolicy,
-    seal_generated_grade,
     synthesize_generated_grade,
 )
+from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
+from bilqis_mlx.factory.tests.curriculum.generated_grade.test_synthesis import _inputs
 from bilqis_mlx.factory.tests.curriculum.frontier.atlas_frontier_closure_fixtures import (
     rehash,
     row,
@@ -69,7 +70,7 @@ def _single_member_fixture(semantic_id: str, capability_id: str):
         evidence_sha256=_sha("development:" + semantic_id)),)
     policy = GeneratedGradePolicy("learner-relative-grade/v1", 1, 0)
     proposal = synthesize_generated_grade(
-        snapshot, closure, release, learner, evidence, policy)
+        snapshot, closure, release, _inputs(learner, evidence, policy))
     return release, proposal
 
 
@@ -81,8 +82,8 @@ class GeneratedGradeDefinitionTests(unittest.TestCase):
         exact_release, proposal = _single_member_fixture(
             semantic_id, capability.capability_id)
 
-        definition = seal_generated_grade(
-            proposal, exact_release, ((semantic_id, capability.capability_id),))
+        definition = _seal_generated_grade(
+            proposal, exact_release, release_lineage=(exact_release,))
 
         self.assertEqual(definition.adopted_release_sha256, exact_release.release_sha256)
         self.assertEqual(definition.proposal_sha256, proposal.proposal_sha256)
@@ -97,9 +98,9 @@ class GeneratedGradeDefinitionTests(unittest.TestCase):
         release, proposal = _single_member_fixture("skos:future-z", capability_id)
 
         with self.assertRaises(BilqisError) as raised:
-            seal_generated_grade(
-                proposal, release, (("skos:future-z", capability_id),))
+            _seal_generated_grade(
+                proposal, release, release_lineage=(release,))
 
         self.assertEqual(
             raised.exception.context.get("reason"),
-            "BAMF_GENERATED_GRADE_MEMBER_NOT_EXECUTABLE")
+            "BAMF_GENERATED_GRADE_MEMBER_BINDING_AMBIGUOUS")

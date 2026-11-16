@@ -61,43 +61,48 @@ class GeneratedGradeDefinition:
             _fail("BAMF_GENERATED_GRADE_DEFINITION_INVALID")
 
 
-def seal_generated_grade(
+def _seal_generated_grade(
     proposal: GeneratedGradeProposal,
     adopted_release: ExecutableFactoryRelease,
-    member_capability_bindings: tuple[tuple[str, str], ...],
     *,
-    release_lineage: tuple[ExecutableFactoryRelease, ...] | None = None,
+    release_lineage: tuple[ExecutableFactoryRelease, ...],
 ) -> GeneratedGradeDefinition:
-    """Bind a proposal to executable members; activation remains #1314 authority."""
+    """Internal pure seal after runtime has proven accepted C07/B13 custody."""
     if (type(proposal) is not GeneratedGradeProposal
             or not isinstance(adopted_release, ExecutableFactoryRelease)
-            or type(member_capability_bindings) is not tuple):
+            or type(release_lineage) is not tuple):
         _fail("BAMF_GENERATED_GRADE_DEFINITION_INPUT_INVALID")
     proposal.verify()
     adopted_release.verify()
-    lineage = release_lineage or (adopted_release,)
+    lineage = release_lineage
     if (not lineage or lineage[-1].release_sha256 != adopted_release.release_sha256
             or lineage[0].release_sha256 != proposal.current_release_sha256):
         _fail("BAMF_GENERATED_GRADE_RELEASE_LINEAGE_INVALID")
     for predecessor, successor in zip(lineage, lineage[1:]):
         successor.verify_successor_of(predecessor)
-    binding_map = dict(member_capability_bindings)
-    if (len(binding_map) != len(member_capability_bindings)
-            or set(binding_map) != set(proposal.member_semantic_ids)):
-        _fail("BAMF_GENERATED_GRADE_MEMBER_BINDING_INVALID")
     capability_map = adopted_release.curriculum.capability_map
     executable_capabilities = adopted_release.execution_plan.capability_map
     source_bindings = adopted_release.source_bindings.by_capability
     decisions = {item.semantic_id: item for item in proposal.decisions}
     members = []
     for semantic_id in proposal.member_semantic_ids:
-        capability_id = binding_map[semantic_id]
+        decision = decisions.get(semantic_id)
+        if decision is None:
+            _fail("BAMF_GENERATED_GRADE_MEMBER_NOT_EXECUTABLE")
+        matches = tuple(sorted(
+            capability_id for capability_id in decision.compiled_capability_ids
+            if capability_id in executable_capabilities
+            and capability_id in source_bindings
+            and source_bindings[capability_id].source_anchor in decision.source_anchor_ids
+        ))
+        if len(matches) != 1:
+            _fail("BAMF_GENERATED_GRADE_MEMBER_BINDING_AMBIGUOUS")
+        capability_id = matches[0]
         capability = capability_map.get(capability_id)
         source_binding = source_bindings.get(capability_id)
-        decision = decisions.get(semantic_id)
         if (capability is None or capability_id not in executable_capabilities
                 or source_binding is None
-                or decision is None or capability_id not in decision.compiled_capability_ids
+                or capability_id not in decision.compiled_capability_ids
                 or source_binding.source_anchor not in decision.source_anchor_ids
                 or decision.disposition not in {"SELECTED_TARGET", "SELECTED_BRIDGE"}):
             _fail("BAMF_GENERATED_GRADE_MEMBER_NOT_EXECUTABLE")

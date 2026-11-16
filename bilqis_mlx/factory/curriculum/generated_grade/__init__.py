@@ -8,14 +8,13 @@ from .contracts import (
     CostEvidenceKind,
     GeneratedGradePolicy,
     GeneratedGradeProposal,
+    GeneratedGradeInputs,
 )
 from .synthesis import synthesize_generated_grade
 from .definition import (
     GeneratedGradeDefinition,
     GeneratedGradeMember,
-    seal_generated_grade,
 )
-from .learner import accepted_learner_foot
 
 __all__ = (
     "AcceptedLearnerFoot",
@@ -25,9 +24,8 @@ __all__ = (
     "CostEvidenceKind",
     "GeneratedGradePolicy",
     "GeneratedGradeProposal",
+    "GeneratedGradeInputs",
     "GeneratedGradeDefinition",
     "GeneratedGradeMember",
-    "seal_generated_grade",
-    "accepted_learner_foot",
     "synthesize_generated_grade",
 )

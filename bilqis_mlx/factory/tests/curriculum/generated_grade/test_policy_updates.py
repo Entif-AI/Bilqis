@@ -8,7 +8,7 @@ from bilqis_mlx.factory.generated_grade import (
     GeneratedGradePolicy,
     synthesize_generated_grade,
 )
-from bilqis_mlx.factory.tests.curriculum.generated_grade.test_synthesis import _fixture
+from bilqis_mlx.factory.tests.curriculum.generated_grade.test_synthesis import _fixture, _inputs
 
 
 class GeneratedGradePolicyUpdateTests(unittest.TestCase):
@@ -16,7 +16,7 @@ class GeneratedGradePolicyUpdateTests(unittest.TestCase):
         snapshot, closure, release, evidence, _, learner = _fixture()
         policy = GeneratedGradePolicy("learner-relative-grade/v1", 1, 0)
         before = synthesize_generated_grade(
-            snapshot, closure, release, learner, evidence, policy)
+            snapshot, closure, release, _inputs(learner, evidence, policy))
         changed = tuple(
             replace(
                 item,
@@ -29,7 +29,7 @@ class GeneratedGradePolicyUpdateTests(unittest.TestCase):
             for item in evidence
         )
         after = synthesize_generated_grade(
-            snapshot, closure, release, learner, changed, policy)
+            snapshot, closure, release, _inputs(learner, changed, policy))
 
         self.assertEqual(before.snapshot_sha256, after.snapshot_sha256)
         self.assertEqual(before.learner_foot_sha256, after.learner_foot_sha256)
@@ -40,7 +40,7 @@ class GeneratedGradePolicyUpdateTests(unittest.TestCase):
         snapshot, closure, release, evidence, policy, learner = _fixture()
         learner = replace(
             learner,
-            mastered_semantic_ids=("skos:bridge",),
+            baselined_semantic_ids=("skos:bridge",),
         )
         changed = tuple(
             replace(
@@ -55,7 +55,7 @@ class GeneratedGradePolicyUpdateTests(unittest.TestCase):
             for item in evidence
         )
         result = synthesize_generated_grade(
-            snapshot, closure, release, learner, changed, policy)
+            snapshot, closure, release, _inputs(learner, changed, policy))
         descendant = next(
             item for item in result.decisions if item.semantic_id == "skos:descendant")
 

@@ -18,6 +18,8 @@ from bilqis_mlx.factory.generated_grade import (
     GeneratedGradePolicy,
     synthesize_generated_grade,
 )
+from bilqis_mlx.factory.generated_grade.contracts import _issue_inputs
+from bilqis_mlx.factory.atlas_frontier_contracts import _bytes
 from bilqis_mlx.factory.tests.curriculum.frontier.atlas_frontier_closure_fixtures import (
     rehash,
     row,
@@ -29,6 +31,21 @@ from bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection 
 from bilqis_mlx.semantics.atlas_projection import CorpusCoverageRow
 def _sha(label: str) -> str:
     return hashlib.sha256(label.encode()).hexdigest()
+
+
+def _inputs(learner, evidence, policy, *, status="PROPOSAL"):
+    values = dict(
+        learner=learner,
+        candidate_evidence=evidence,
+        policy=policy,
+        a09_progress_sha256=_sha("a09-progress"),
+        a09_status=status,
+        a09_handoff_sha256=_sha("a09-handoff"),
+        a09_proposal_sha256=_sha("a09-proposal"),
+        schema="bilqis.generated-grade-inputs/v1",
+    )
+    digest = hashlib.sha256(_bytes(values)).hexdigest()
+    return _issue_inputs(**values, input_sha256=digest)
 
 def _fixture():
     release = _release()
@@ -144,7 +161,7 @@ def _fixture():
         factory_release_sha256=release.release_sha256,
         policy_epoch=17,
         evidence_epoch=23,
-        mastered_semantic_ids=(),
+        baselined_semantic_ids=(),
         mastered_capability_ids=(),
         evidence_sha256=_sha("learner-before"),
     )
@@ -153,8 +170,9 @@ def _fixture():
 class GeneratedGradeSynthesisTests(unittest.TestCase):
     def test_representative_cohort_is_deterministic_and_not_a_static_grade_roster(self):
         snapshot, closure, release, evidence, policy, learner = _fixture()
-        first = synthesize_generated_grade(snapshot, closure, release, learner, evidence, policy)
-        replay = synthesize_generated_grade(snapshot, closure, release, learner, evidence, policy)
+        issued = _inputs(learner, evidence, policy)
+        first = synthesize_generated_grade(snapshot, closure, release, issued)
+        replay = synthesize_generated_grade(snapshot, closure, release, issued)
 
         self.assertEqual(first, replay)
         self.assertEqual(first.proposal_sha256, replay.proposal_sha256)
@@ -174,14 +192,15 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
 
     def test_mastered_prerequisite_lowers_descendant_cost_and_changes_next_grade(self):
         snapshot, closure, release, evidence, policy, learner = _fixture()
-        before = synthesize_generated_grade(snapshot, closure, release, learner, evidence, policy)
+        before = synthesize_generated_grade(
+            snapshot, closure, release, _inputs(learner, evidence, policy))
         after_learner = replace(
             learner,
-            mastered_semantic_ids=("skos:bridge",),
+            baselined_semantic_ids=("skos:bridge",),
             evidence_sha256=_sha("learner-after-bridge"),
         )
         after = synthesize_generated_grade(
-            snapshot, closure, release, after_learner, evidence, policy)
+            snapshot, closure, release, _inputs(after_learner, evidence, policy))
 
         before_desc = next(
             item for item in before.decisions if item.semantic_id == "skos:descendant")
@@ -206,7 +225,7 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
         policy = GeneratedGradePolicy("learner-relative-grade/v1", 8, 1)
 
         result = synthesize_generated_grade(
-            snapshot, closure, release, learner, evidence, policy)
+            snapshot, closure, release, _inputs(learner, evidence, policy))
 
         descendant = next(item for item in result.decisions
                           if item.semantic_id == "skos:descendant")
@@ -218,7 +237,8 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
 
     def test_high_unlock_or_held_candidates_cannot_bypass_lawful_closure(self):
         snapshot, closure, release, evidence, policy, learner = _fixture()
-        result = synthesize_generated_grade(snapshot, closure, release, learner, evidence, policy)
+        result = synthesize_generated_grade(
+            snapshot, closure, release, _inputs(learner, evidence, policy))
         decisions = {item.semantic_id: item for item in result.decisions}
 
         self.assertNotIn("skos:steep", result.member_semantic_ids)
@@ -231,7 +251,8 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
 
     def test_manifest_round_trip_is_cold_resume_identical(self):
         snapshot, closure, release, evidence, policy, learner = _fixture()
-        proposal = synthesize_generated_grade(snapshot, closure, release, learner, evidence, policy)
+        proposal = synthesize_generated_grade(
+            snapshot, closure, release, _inputs(learner, evidence, policy))
 
         restored = type(proposal).from_manifest(proposal.manifest())
 

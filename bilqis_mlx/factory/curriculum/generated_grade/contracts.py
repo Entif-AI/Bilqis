@@ -1,6 +1,6 @@
 """Immutable learner-relative evidence and generated-grade proposal contracts."""
 from __future__ import annotations
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, field, fields
 from enum import Enum
 import hashlib
 from bilqis_mlx.factory.atlas_frontier_contracts import _bytes, _fail
@@ -31,7 +31,7 @@ class AcceptedLearnerFoot:
     factory_release_sha256: str
     policy_epoch: int
     evidence_epoch: int
-    mastered_semantic_ids: tuple[str, ...]
+    baselined_semantic_ids: tuple[str, ...]
     mastered_capability_ids: tuple[str, ...]
     evidence_sha256: str
 
@@ -41,7 +41,7 @@ class AcceptedLearnerFoot:
                 or type(self.optimizer_step) is not int or self.optimizer_step < 0
                 or type(self.policy_epoch) is not int or self.policy_epoch < 0
                 or type(self.evidence_epoch) is not int or self.evidence_epoch < 0
-                or not _canonical_ids(self.mastered_semantic_ids)
+                or not _canonical_ids(self.baselined_semantic_ids)
                 or not _canonical_ids(self.mastered_capability_ids)):
             _fail("BAMF_GENERATED_GRADE_LEARNER_FOOT_INVALID")
 
@@ -92,6 +92,14 @@ class GeneratedGradePolicy:
     max_members: int
     max_unmet_prerequisites: int
     acquisition_cost_measure: str = "optimizer-steps-to-criterion"
+    comparator_order: tuple[str, ...] = (
+        "unmet_prerequisite_count", "answer_modality_burden", "ast_burden",
+        "entanglement", "cost_evidence_rank", "closure_acquisition_units",
+        "grounding_quality_desc", "reusable_constituent_value_desc",
+        "downstream_unlocks_desc", "minimal_contrast_value_desc",
+        "transfer_breadth_desc", "learning_progress_desc",
+        "coverage_factor_count_desc", "fairness_age_desc", "semantic_id",
+    )
     schema: str = "bilqis.generated-grade-policy/v1"
 
     def __post_init__(self) -> None:
@@ -99,6 +107,8 @@ class GeneratedGradePolicy:
                 or type(self.max_members) is not int
                 or self.max_members < 1 or type(self.max_unmet_prerequisites) is not int
                 or self.max_unmet_prerequisites < 0
+                or self.comparator_order != GeneratedGradePolicy.__dataclass_fields__[
+                    "comparator_order"].default
                 or self.schema != "bilqis.generated-grade-policy/v1"):
             _fail("BAMF_GENERATED_GRADE_POLICY_INVALID")
 
@@ -138,6 +148,62 @@ class CandidateGradeDecision:
     disposition: str
     reason_codes: tuple[str, ...]
 
+
+_INPUT_ISSUER = object()
+
+
+@dataclass(frozen=True)
+class GeneratedGradeInputs:
+    learner: AcceptedLearnerFoot
+    candidate_evidence: tuple[CandidateDevelopmentEvidence, ...]
+    policy: GeneratedGradePolicy
+    a09_progress_sha256: str
+    a09_status: str
+    a09_handoff_sha256: str | None
+    a09_proposal_sha256: str | None
+    input_sha256: str
+    schema: str = "bilqis.generated-grade-inputs/v1"
+    _issuance: object = field(init=False, default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if (self._issuance is not _INPUT_ISSUER
+                or type(self.learner) is not AcceptedLearnerFoot
+                or type(self.candidate_evidence) is not tuple
+                or any(type(item) is not CandidateDevelopmentEvidence
+                       for item in self.candidate_evidence)
+                or type(self.policy) is not GeneratedGradePolicy
+                or not _sha(self.a09_progress_sha256)
+                or not self.a09_status
+                or (self.a09_handoff_sha256 is not None
+                    and not _sha(self.a09_handoff_sha256))
+                or (self.a09_proposal_sha256 is not None
+                    and not _sha(self.a09_proposal_sha256))
+                or not _sha(self.input_sha256)
+                or self.schema != "bilqis.generated-grade-inputs/v1"):
+            _fail("BAMF_GENERATED_GRADE_INPUT_AUTHORITY_INVALID")
+
+    def expected_digest(self) -> str:
+        return hashlib.sha256(_bytes({
+            "learner": self.learner,
+            "candidate_evidence": self.candidate_evidence,
+            "policy": self.policy,
+            "a09_progress_sha256": self.a09_progress_sha256,
+            "a09_status": self.a09_status,
+            "a09_handoff_sha256": self.a09_handoff_sha256,
+            "a09_proposal_sha256": self.a09_proposal_sha256,
+            "schema": self.schema,
+        })).hexdigest()
+
+
+def _issue_inputs(**values) -> GeneratedGradeInputs:
+    draft = object.__new__(GeneratedGradeInputs)
+    for name, value in (*values.items(), ("_issuance", _INPUT_ISSUER)):
+        object.__setattr__(draft, name, value)
+    draft.__post_init__()
+    if draft.input_sha256 != draft.expected_digest():
+        _fail("BAMF_GENERATED_GRADE_INPUT_DIGEST_INVALID")
+    return draft
+
 @dataclass(frozen=True)
 class GeneratedGradeProposal:
     snapshot_sha256: str
@@ -147,6 +213,11 @@ class GeneratedGradeProposal:
     learner_evidence_epoch: int
     policy_epoch: int
     policy_sha256: str
+    input_sha256: str
+    a09_progress_sha256: str
+    a09_status: str
+    a09_handoff_sha256: str | None
+    a09_proposal_sha256: str | None
     member_semantic_ids: tuple[str, ...]
     decisions: tuple[CandidateGradeDecision, ...]
     source_holds: tuple[tuple[str, str, str], ...]
@@ -164,7 +235,13 @@ class GeneratedGradeProposal:
                 or not all(_sha(value) for value in (
                     self.snapshot_sha256, self.closure_sha256,
                     self.current_release_sha256, self.learner_foot_sha256,
-                    self.policy_sha256, self.proposal_sha256))
+                    self.policy_sha256, self.input_sha256,
+                    self.a09_progress_sha256, self.proposal_sha256))
+                or not self.a09_status
+                or (self.a09_handoff_sha256 is not None
+                    and not _sha(self.a09_handoff_sha256))
+                or (self.a09_proposal_sha256 is not None
+                    and not _sha(self.a09_proposal_sha256))
                 or self.member_semantic_ids != tuple(dict.fromkeys(self.member_semantic_ids))
                 or self.decisions != tuple(sorted(self.decisions, key=lambda item: item.semantic_id))
                 or self.source_holds != tuple(sorted(set(self.source_holds)))
@@ -181,6 +258,11 @@ class GeneratedGradeProposal:
             "learner_evidence_epoch": self.learner_evidence_epoch,
             "policy_epoch": self.policy_epoch,
             "policy_sha256": self.policy_sha256,
+            "input_sha256": self.input_sha256,
+            "a09_progress_sha256": self.a09_progress_sha256,
+            "a09_status": self.a09_status,
+            "a09_handoff_sha256": self.a09_handoff_sha256,
+            "a09_proposal_sha256": self.a09_proposal_sha256,
             "member_semantic_ids": list(self.member_semantic_ids),
             "decisions": [_decision_manifest(item) for item in self.decisions],
             "source_holds": [list(item) for item in self.source_holds],
@@ -209,7 +291,9 @@ class GeneratedGradeProposal:
                 **{key: payload[key] for key in (
                     "snapshot_sha256", "closure_sha256", "current_release_sha256",
                     "learner_foot_sha256", "learner_evidence_epoch", "policy_epoch",
-                    "policy_sha256", "proposal_sha256", "schema")},
+                    "policy_sha256", "input_sha256", "a09_progress_sha256",
+                    "a09_status", "a09_handoff_sha256", "a09_proposal_sha256",
+                    "proposal_sha256", "schema")},
                 member_semantic_ids=tuple(payload["member_semantic_ids"]),
                 decisions=decisions,
                 source_holds=tuple(tuple(item) for item in payload["source_holds"]),
