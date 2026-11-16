@@ -1,4 +1,5 @@
 """Accepted A09 planning projection consumed by C03.4 priority authority."""
+from dataclasses import dataclass
 from pathlib import Path
 
 from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
@@ -13,7 +14,22 @@ def _emit_progress(progress, message):
         progress(message)
 
 
-def _build_epoch(run_dir, source_context, atlas_artifact_path, progress):
+@dataclass(frozen=True)
+class PriorityPlanningEpoch:
+    current_release: object
+    candidate_set: object
+    snapshot: object
+    closure: object
+    requested_keys: tuple
+    autonomy_plan: object
+    evidence_ledger: object
+    checkpoint: object
+    source_authority: object
+
+
+def build_priority_planning_epoch(
+        run_dir, source_context, atlas_artifact_path, progress=None):
+    """Derive the exact accepted A09 epoch once for planning/frontier consumers."""
     from bilqis_mlx.factory.atlas_delta_adapter import (
         AtlasCoverageEpoch, _accepted_requested_keys,
     )
@@ -71,7 +87,9 @@ def _build_epoch(run_dir, source_context, atlas_artifact_path, progress):
         snapshot, closure, frontier, current, staged,
         accepted_credit=read_accepted_atlas_obligation_credit(run_dir))
     epoch.verify()
-    return current, candidate, snapshot, closure, _accepted_requested_keys(epoch)
+    return PriorityPlanningEpoch(
+        current, candidate, snapshot, closure, _accepted_requested_keys(epoch),
+        plan, ledger, checkpoint, source)
 
 
 def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=None):
@@ -84,8 +102,13 @@ def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=
     from bilqis_mlx.runtime.priority_qualification import PriorityPlanningInput
 
     run_dir = Path(run_dir)
-    current, candidate, snapshot, closure, requested = _build_epoch(
+    epoch = build_priority_planning_epoch(
         run_dir, source_context, atlas_artifact_path, progress)
+    current = epoch.current_release
+    candidate = epoch.candidate_set
+    snapshot = epoch.snapshot
+    closure = epoch.closure
+    requested = epoch.requested_keys
     selected = projection = None
     _emit_progress(progress, "planner: ranking next bounded target")
     try:
@@ -109,4 +132,8 @@ def priority_planning(run_dir, source_context, atlas_artifact_path, *, progress=
     return PriorityPlanningInput(planning_progress, closure, selected, projection)
 
 
-__all__ = ("priority_planning",)
+__all__ = (
+    "PriorityPlanningEpoch",
+    "build_priority_planning_epoch",
+    "priority_planning",
+)
