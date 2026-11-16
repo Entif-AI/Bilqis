@@ -200,4 +200,3 @@ def _closure_with_bridge_mastered(closure):
         closure_sha256="0" * 64,
     )
     return replace(updated, closure_sha256=updated.expected_digest())
-
