@@ -1,10 +1,20 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
-  "updated_at": "2026-11-16T19:34:20Z",
+  "observed_unified": "0891128bb330af2de44ef8c0aa0893cb4a16f6e7",
+  "updated_at": "2026-11-16T20:55:31Z",
   "exception": null,
   "items": [
+    {
+      "issue": 1314,
+      "pr": 1349,
+      "state": "READY",
+      "head_sha": "b255c0dc613f1cd9d083597c09696bb0d1b8734c",
+      "head_sha_role": "exact semantic/test/EGM/hosted proof head before final flow-control evidence-only checkpoint",
+      "summary": "#1314 active generated-grade authority is READY for human review at exact semantic head b255c0dc on reviewed unified ca3ad4d0. Cold replay authenticates the issued #1320 proposal through accepted B13/C07 ancestry at or before activation, preserves historical adopted-release reseal, rejects canonical extra fields in durable proposal/correction authority, keeps #1334 as the only success-certification owner, and fails exact semantic widening closed. The mandatory v2.3.2-v2.3.4 structure split and mirrored tests are compliant. Focused affected ring 48/48 PASS; structure/error-control/diff green; fresh pinned Design and Codebase Goldfish 0B/0M/0N; drift NO_DRIFT; hosted semantic-abi-integrity, portable-core, bamf-readiness, and portable PASS on b255c0dc. Human merge remains external authority.",
+      "resume_trigger": "Human review/merge PR #1349 into codex/bamf-unified-base-20261028. Do not self-merge; #1334 remains the downstream certification-success owner.",
+      "preserved_branch": "codex/1314-active-generated-grade-20261116"
+    },
     {
       "issue": 1320,
       "pr": 1345,
