@@ -1,6 +1,8 @@
 """Strict-generalization paired C05 decision logic."""
 from __future__ import annotations
 
+from dataclasses import replace
+
 from ..learning.retention_policy import retention_reason, scaled_loss_allowance
 from .capability_evaluation import EvidenceStage, _invalid
 from .capability_retention import (
@@ -8,7 +10,7 @@ from .capability_retention import (
 )
 
 
-def retain_candidate(parent, candidate, paired_assessment) -> Decision:
+def _retain_candidate(parent, candidate, paired_assessment) -> Decision:
     evidence = paired_assessment
     if (not isinstance(evidence, PairedRetentionEvidence)
             or parent != evidence.target.parent.generation_digest
@@ -78,6 +80,17 @@ def retain_candidate(parent, candidate, paired_assessment) -> Decision:
             if reason == "ACTIVE_SCHOOL_GRADE_REGRESSION" and active_block else
             "fixed_school" if reason == "WHOLE_SCHOOL_NET_REGRESSION" else None),
         baseline_coverage=coverage)
+
+
+def retain_candidate(parent, candidate, paired_assessment) -> Decision:
+    decision = _retain_candidate(parent, candidate, paired_assessment)
+    target = paired_assessment.target_capability
+    pairs = {cap: paired_assessment.fixed_school
+             for cap, _ in paired_assessment.policy.capability_groups}
+    pairs[target] = paired_assessment.target
+    scores = tuple((cap, *pair.parent.score(cap)[:1], *pair.candidate.score(cap))
+                   for cap, pair in pairs.items())
+    return replace(decision, outcome_scores=scores)
 
 
 __all__ = ("retain_candidate",)

@@ -38,17 +38,17 @@ BESPOKE_EXPLORATION_START = 4
 
 
 from ._learning_experiment_decision import (
-    _capability_stagnation_record, _channel, _diagnostic_context,
+    DIAGNOSTIC_CONTEXT_KEY_LENGTH, _capability_stagnation_record, _channel, _diagnostic_context,
     _effective_policy_key, _inherited_exploration,
     _shared_stagnation_record,
 )
 
 def _stagnation_feedback(teacher: dict, capability: str, policy_key: str,
                          decision: dict, reward: float, record: dict,
-                         shared_stagnation: dict) -> tuple[float, float]:
+                         shared_stagnation: dict, lesson_grade=None) -> tuple[float, float]:
     no_target_gain = decision.get("reason") == "NO_MEASURABLE_TARGET_GAIN"
     inherited_exploration = _inherited_exploration(
-        teacher, capability.partition(".")[0], policy_key)
+        teacher, lesson_grade if lesson_grade is not None else capability.partition(".")[0], policy_key)
     selection_reward = reward
     repayment = 0.-inherited_exploration
     if no_target_gain and repayment < selection_reward:
@@ -158,12 +158,24 @@ def _record_context_metrics(record, diagnostic_key, decision, reward,
         }
 
 
+def _feedback_diagnostic_key(channel, capability, curriculum_scope, diagnostics, key):
+    if key is None:
+        return _diagnostic_context(channel, capability, curriculum_scope, diagnostics)[0]
+    payload = channel.get('diagnostic_contexts', {}).get(key)
+    if (not isinstance(payload, dict) or payload != diagnostics
+            or hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()[:DIAGNOSTIC_CONTEXT_KEY_LENGTH] != key):
+        raise ValueError(LearningExperimentError.DIAGNOSTIC_CONTEXT_COLLISION.value)
+    return key
+
+
 def observe_context(teacher: dict, *, capability: str, phase: str,
                     policy_key: str, decision: dict, local_gain: float,
                     curriculum_scope: str = "",
                     diagnostics: dict | None = None,
                     realized_action: dict | None = None,
-                    student_checkpoint_sha256: str | None = None) -> dict:
+                    student_checkpoint_sha256: str | None = None,
+                    lesson_grade: str | None = None,
+                    diagnostic_context_key: str | None = None) -> dict:
     """Source-paired trial outcome; never rewrite historical UCB rewards."""
     if (policy_key not in teacher.get("strategies", {}) or
             not math.isfinite(local_gain) or
@@ -173,8 +185,8 @@ def observe_context(teacher: dict, *, capability: str, phase: str,
         raise ValueError("LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME")
     no_target_gain = decision.get("reason") == "NO_MEASURABLE_TARGET_GAIN"
     channel = _channel(teacher)
-    diagnostic_key, _diagnostic_payload = _diagnostic_context(
-        channel, capability, curriculum_scope, diagnostics)
+    diagnostic_key = _feedback_diagnostic_key(
+        channel, capability, curriculum_scope, diagnostics, diagnostic_context_key)
     context_key = capability+"|"+phase+"|"+curriculum_scope
     scope = channel["contexts"].setdefault(context_key, {})
     record = scope.setdefault(policy_key, {"trials": 0, "reward_sum": 0.,
@@ -214,7 +226,7 @@ def observe_context(teacher: dict, *, capability: str, phase: str,
         capability_stagnation["no_target_gain_streak"] = 0
     inherited_exploration, selection_reward = _stagnation_feedback(
         teacher, capability, policy_key, decision, reward, record,
-        shared_stagnation)
+        shared_stagnation, lesson_grade)
     _record_context_metrics(
         record, diagnostic_key, decision, reward, action_record, no_target_gain)
     channel["events"] += 1

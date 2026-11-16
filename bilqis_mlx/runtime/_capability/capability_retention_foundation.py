@@ -13,6 +13,10 @@ from .capability_retention import AssessmentPair, Decision, RetentionPolicy
 from .capability_retention_foundation_runtime import (
     final_fixed_school_decision, observed_assessment, parent_case_index,
 )
+from .foundation_evidence import (
+    _cohort_contract, _evidence_digest, _fixed_capability_order,
+    _fixed_cohort_contract, _fixed_evidence_digest,
+)
 
 _PAIR_WIDTH = 2
 _MIN_PROBE_EACH = 2
@@ -60,208 +64,14 @@ class FoundationRetentionPolicy:
         return contract_digest(self)
 
 
-def _cohort_contract(target_capability, policy, cohorts):
-    target_group = dict(policy.capability_groups)[target_capability]
-    expected = (
-        {(target_capability, target_group)},
-        {item for item in policy.capability_groups if item[1] == target_group},
-        set(policy.capability_groups),
-    )
-    protected = set(dict(policy.protected_reference_losses))
-    if (target_group not in policy.protected_groups
-            or not protected <= set(dict(policy.capability_groups)) - {target_capability}
-            or any(set(cohort.capability_groups) != required
-                   for cohort, required in zip(cohorts, expected))
-            or len({(cohort.rubric_sha256, cohort.scope_sha256,
-                     cohort.source_sha256, cohort.policy_sha256)
-                    for cohort in cohorts}) != 1
-            or any(cohort.policy_sha256 != policy.digest()
-                   or cohort.expected_case_digest
-                   != dict(policy.required_census_digests)[cohort.kind]
-                   for cohort in cohorts)):
-        _invalid("BAMF_RETENTION_COMPLETE_COVERAGE_REQUIRED")
-    return target_group
-
-
-def _fixed_cohort_contract(target_capability, policy, fixed):
-    target_group = dict(policy.capability_groups).get(target_capability)
-    protected = set(dict(policy.protected_reference_losses))
-    measured = (set(policy.baseline_coverage.measured_capabilities)
-                if policy.baseline_coverage is not None
-                else set(dict(policy.capability_groups)))
-    if (target_group is None
-            or target_group not in policy.protected_groups
-            or not protected <= measured - {target_capability}
-            or type(fixed) is not EvaluationCohort
-            or fixed.kind is not EvidenceKind.FIXED_SCHOOL
-            or fixed.evidence_stage is not EvidenceStage.FOUNDATION_ACQUISITION
-            or set(fixed.capability_groups) != set(policy.capability_groups)
-            or fixed.policy_sha256 != policy.digest()
-            or fixed.expected_case_digest != policy.fixed_census_digest):
-        _invalid("BAMF_FOUNDATION_FIXED_SCHOOL_CONTRACT_INVALID")
-    return target_group
-
-
-def _evidence_digest(
-        target_capability, policy, cohorts, fixed_pair_digests,
-        blocking_capability=None):
-    return contract_digest({
-        "schema": "bilqis.c05.foundation-retention-evidence/v1",
-        "target_capability": target_capability,
-        "policy_sha256": policy.digest(),
-        "measure_only_census": tuple(
-            cohort.expected_case_digest for cohort in cohorts[:2]),
-        "fixed_school_census": cohorts[2].expected_case_digest,
-        "fixed_pairs": tuple(fixed_pair_digests),
-        "blocking_capability": blocking_capability,
-    })
-
-
-def _fixed_evidence_digest(
-        target_capability, policy, fixed, fixed_pair_digests,
-        blocking_capability=None):
-    return contract_digest({
-        "schema": "bilqis.c05.foundation-fixed-school-evidence/v1",
-        "target_capability": target_capability,
-        "policy_sha256": policy.digest(),
-        "fixed_school_census": fixed.expected_case_digest,
-        "fixed_pairs": tuple(fixed_pair_digests),
-        "blocking_capability": blocking_capability,
-    })
-
-
-def _fixed_capability_order(target_capability, policy, fixed):
-    target_group = dict(policy.capability_groups)[target_capability]
-    references = dict(policy.protected_reference_losses)
-    same_grade = tuple(
-        capability for capability, group in fixed.capability_groups
-        if capability != target_capability and group == target_group
-        and capability in references)
-    other_protected = tuple(
-        capability for capability, _group in fixed.capability_groups
-        if capability not in same_grade and capability != target_capability
-        and capability in references)
-    remaining = tuple(
-        capability for capability, _group in fixed.capability_groups
-        if capability not in same_grade and capability not in other_protected)
-    return target_group, references, (*same_grade, *other_protected, *remaining)
-
-
-def _observed_assessment(solver, cohort, generation, observer, completed, total, subject, role):
-    emit(observer, retention_completed=completed, retention_total=total,
-         retention_subject=subject, retention_role=role)
-    result = evaluate_capabilities(solver, cohort, generation)
-    emit(observer, retention_completed=completed + 1, retention_total=total,
-         retention_subject=subject, retention_role=role)
-    return result
-
-
-def _parent_case_index(parent_solver, fixed, parent_generation, parent_assessment, observer, total):
-    if parent_assessment is None:
-        parent_assessment = _observed_assessment(
-            parent_solver, fixed, parent_generation, observer, 0, total, "fixed_school", "parent")
-    elif (type(parent_assessment) is not Assessment
-            or parent_assessment.cohort != fixed
-            or parent_assessment.generation_digest != parent_generation):
-        _invalid("BAMF_C05_PARENT_ASSESSMENT_CACHE_DRIFT")
-    return {
-        case.case_id: (result, contract)
-        for case, result, contract in zip(
-            fixed.cases, parent_assessment.results,
-            parent_assessment.solver_contracts)
-    }
-
-def _final_fixed_school_decision(
-        target_capability, target_group, references, policy, fixed,
-        parent_generation, candidate_generation,
-        evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts):
-    parent_assessment = Assessment(
-        fixed, parent_generation,
-        tuple(parent_results[case.case_id] for case in fixed.cases),
-        tuple(parent_contracts[case.case_id] for case in fixed.cases))
-    candidate_assessment = Assessment(
-        fixed, candidate_generation,
-        tuple(candidate_results[case.case_id] for case in fixed.cases),
-        tuple(candidate_contracts[case.case_id] for case in fixed.cases))
-    fixed_pair = AssessmentPair(parent_assessment, candidate_assessment)
-    census = dict(policy.capability_groups)
-    coverage = policy.baseline_coverage
-    measured = (tuple(coverage.measured_capabilities) if coverage is not None
-                else tuple(census))
-    measured_set = set(measured)
-
-    def net(capabilities):
-        return sum(fixed_pair.delta(capability) for capability in capabilities)
-
-    scores = {}
-    for capability in census:
-        before, total = fixed_pair.parent.score(capability)
-        after, after_total = fixed_pair.candidate.score(capability)
-        if total != after_total:
-            _invalid("BAMF_FOUNDATION_FIXED_SCHOOL_SCORE_TOTAL_DRIFT")
-        scores[capability] = {"before": before, "after": after, "total": total}
-
-    target_delta = fixed_pair.delta(target_capability)
-    target_measured = target_capability in measured_set
-    if target_delta < 0 and target_measured:
-        return Decision(
-            DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",
-            parent_generation, candidate_generation,
-            evidence_digest(pair_digests, target_capability), policy.digest(),
-            blocking_capability=target_capability,
-            baseline_coverage=coverage)
-    blocking_scope = None
-    if target_delta <= 0 and target_measured:
-        reason = "NO_MEASURABLE_TARGET_GAIN"
-    else:
-        protected = tuple(references)
-        losses = tuple(capability for capability in protected
-                       if fixed_pair.delta(capability) < 0)
-        authoritative = (target_capability, *protected)
-        reason = "PAIRED_SCREEN_WITHIN_BUDGET"
-        if losses and _mastery_debt_utility(scores, authoritative)[0] <= 0:
-            return Decision(
-                DecisionStatus.REJECT, "PROTECTED_CAPABILITY_REGRESSION",
-                parent_generation, candidate_generation,
-                evidence_digest(pair_digests, losses[0]), policy.digest(),
-                blocking_capability=losses[0], baseline_coverage=coverage)
-
-        lesson = tuple(
-            capability for capability in measured
-            if census[capability] == target_group)
-        if net(lesson) < 0 and _mastery_debt_utility(scores, lesson)[0] <= 0:
-            reason = "FIXED_LESSON_GRADE_REGRESSION"
-            blocking_scope = "fixed_group:" + target_group
-        else:
-            for group in policy.protected_groups:
-                grade = tuple(capability for capability in measured
-                              if census[capability] == group)
-                if grade and net(grade) < 0 and _mastery_debt_utility(scores, grade)[0] <= 0:
-                    reason = "ACTIVE_SCHOOL_GRADE_REGRESSION"
-                    blocking_scope = "fixed_group:" + group
-                    break
-            if (reason == "PAIRED_SCREEN_WITHIN_BUDGET"
-                    and measured
-                    and net(measured) < 0
-                    and _mastery_debt_utility(scores, measured)[0] <= 0):
-                reason = "WHOLE_SCHOOL_NET_REGRESSION"
-                blocking_scope = "fixed_school"
-    return Decision(
-        DecisionStatus.ELIGIBLE if reason == "PAIRED_SCREEN_WITHIN_BUDGET"
-        else DecisionStatus.REJECT,
-        reason, parent_generation, candidate_generation,
-        evidence_digest(pair_digests, None), policy.digest(),
-        blocking_scope=blocking_scope,
-        baseline_coverage=coverage)
-
-
 def _evaluate_fixed_school(
         parent_solver, candidate_solver, target_capability, policy, fixed,
         parent_generation, candidate_generation, evidence_digest,
-        parent_assessment=None, *, observer=None, return_candidate_assessment=False):
+        parent_assessment=None, *, observer=None, ordinary=False,
+        evaluated_capability_ids=(), retention_protection_plan_sha256=None,
+        broad_certification_trigger=None, return_candidate_assessment=False):
     target_group, references, capability_order = _fixed_capability_order(
-        target_capability, policy, fixed)
+        target_capability, policy, fixed, ordinary=ordinary)
     groups = dict(fixed.capability_groups)
     completed = int(parent_assessment is None)
     total = len(capability_order) + completed
@@ -271,6 +81,7 @@ def _evaluate_fixed_school(
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
+    outcome_scores = []
     for capability in capability_order:
         cases = tuple(case for case in fixed.cases if case.capability_id == capability)
         cohort = replace(
@@ -289,6 +100,9 @@ def _evaluate_fixed_school(
         completed += 1
         pair = AssessmentPair(parent_subset, candidate_assessment)
         pair_digests.append((parent_subset.digest(), candidate_assessment.digest()))
+        before, score_total = parent_subset.score(capability)
+        after, _ = candidate_assessment.score(capability)
+        outcome_scores.append((capability, before, after, score_total))
         for case, result, contract in zip(
                 cases, parent_subset.results, parent_subset.solver_contracts):
             parent_results[case.case_id] = result
@@ -302,7 +116,12 @@ def _evaluate_fixed_school(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts, observer=observer)
+        candidate_results, candidate_contracts, observer=observer,
+        ordinary=ordinary,
+        evaluated_capability_ids=evaluated_capability_ids,
+        retention_protection_plan_sha256=retention_protection_plan_sha256,
+        broad_certification_trigger=broad_certification_trigger)
+    decision = replace(decision, outcome_scores=tuple(outcome_scores))
     if not return_candidate_assessment:
         return decision
     candidate_assessment = Assessment(

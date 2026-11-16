@@ -70,7 +70,8 @@ def _prepare_model_sources(source_context, authenticated, manifest, source_rows)
             atlas_selection=authenticated.selection, feature_artifact_path=None,
             semantic_context=authenticated, released_manifest=manifest,
             atlas_features=atlas_features,
-            prepared_inventory=item.source_inventory)
+            prepared_inventory=item.source_inventory,
+            source_graph=item.source_graph)
         config = (item.config if item.projection is None
                   else replace(item.config, approved=item.projection))
         config = authorize_public_formal_prefix(item.ast, current.prefix, config)

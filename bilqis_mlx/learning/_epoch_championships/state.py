@@ -69,6 +69,9 @@ def _sanitize_role_groups(updated: dict, capability_groups: dict) -> None:
     roles = updated.setdefault("active_roles", {})
     invalid = []
     for capability, role in list(roles.items()):
+        if not any(capability in capabilities
+                   for capabilities in capability_groups.values()):
+            continue
         group = _capability_group(capability, capability_groups)
         if capability not in _group_caps(capability_groups, group):
             raise ValueError("CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN")

@@ -26,38 +26,49 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
 )
 
 
+def _championship_evaluation_fixture():
+    fixture = _foundation_owner_fixture()
+    target, group = fixture[2], "B"
+    cases, contexts = _cases(target, group, 20, "native-championship")
+    cohort = EvaluationCohort(
+        EvidenceKind.FIXED_SCHOOL, cases, ((target, group),),
+        "1" * 64, "2" * 64, "3" * 64, "4" * 64, (), (),
+        case_census_digest(cases),
+        evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION)
+    solver = _solver(contexts, {case.case_id for case in cases[:19]})
+    assessment = evaluate_capabilities(solver, cohort, "b" * 64)
+    evaluation = _evaluate_foundation_owner(
+        *fixture, championship_cohort=cohort,
+        championship_assessment=assessment)
+    return fixture, target, group, solver, assessment, evaluation
+
+
+def _accepted_championship_successor(evaluation, solver, assessment, group):
+    parent = candidate(parent_state())
+    retained = accepted_state(parent.retained_state)
+    successor = candidate(retained, generation=1, parent="0" * 64)
+    object.__setattr__(evaluation, "parent_state", parent.retained_state)
+    object.__setattr__(evaluation, "candidate_state", retained)
+    checkpoint = Checkpoint(
+        candidate_identity_for_canonical_consumer(retained),
+        "bamf-generations/1", retained.optimizer_step, True)
+    binding = ReplayBinding(
+        solver, assessment.generation_digest, checkpoint, group,
+        tuple(sorted(set(assessment.solver_contracts))),
+        lambda generation, offered: (
+            generation == assessment.generation_digest and offered == checkpoint))
+    return parent, retained, successor, binding
+
+
 class CapabilityChampionshipOperatorPathTests(unittest.TestCase):
     def test_operate_bamf_publishes_first_title_from_issued_c05_evidence(self):
-        fixture = _foundation_owner_fixture()
-        target = fixture[2]
-        group = "B"
-        cases, contexts = _cases(target, group, 20, "native-championship")
-        cohort = EvaluationCohort(
-            EvidenceKind.FIXED_SCHOOL, cases, ((target, group),),
-            "1" * 64, "2" * 64, "3" * 64, "4" * 64, (), (),
-            case_census_digest(cases),
-            evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION)
-        solver = _solver(contexts, {case.case_id for case in cases[:19]})
-        assessment = evaluate_capabilities(solver, cohort, "b" * 64)
-        evaluation = _evaluate_foundation_owner(
-            *fixture, championship_cohort=cohort,
-            championship_assessment=assessment)
-
-        parent = candidate(parent_state())
-        retained = accepted_state(parent.retained_state)
-        successor = candidate(retained, generation=1, parent="0" * 64)
-        object.__setattr__(evaluation, "parent_state", parent.retained_state)
-        object.__setattr__(evaluation, "candidate_state", retained)
-        checkpoint = Checkpoint(
-            candidate_identity_for_canonical_consumer(retained),
-            "bamf-generations/1", retained.optimizer_step, True)
-        binding = ReplayBinding(
-            solver, assessment.generation_digest, checkpoint, group,
-            tuple(sorted(set(assessment.solver_contracts))),
-            lambda generation, offered: (
-                generation == assessment.generation_digest and offered == checkpoint))
+        fixture, target, group, solver, assessment, evaluation = (
+            _championship_evaluation_fixture())
+        parent, retained, successor, binding = _accepted_championship_successor(
+            evaluation, solver, assessment, group)
         selection = NS(
             option_id="fixture-option",
+            lesson_grade=group,
             visit=NS(identity=NS(
                 visit_id="fixture-visit", policy_key="fixture-policy")))
         step = NS(transaction=NS(training_authorities=()))
@@ -93,11 +104,17 @@ class CapabilityChampionshipOperatorPathTests(unittest.TestCase):
                  {"return_value": successor}),
                 (prefix + "bind_factory_baseline_successor",
                  {"side_effect": lambda _evaluation, value: value}),
+                ("bilqis_mlx.runtime.outcomes.issuance.build_outcome",
+                 {"return_value": {"schema": "fixture-outcome"}}),
+                ("bilqis_mlx.runtime.outcomes.issuance.credited_visit",
+                 {"side_effect": lambda visit, _outcome: visit}),
+                ("bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor",
+                 {"side_effect": lambda _visit, value, _parent: value}),
                 (prefix + "_resource_observation", {"return_value": {}}),
                 (prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
                 (prefix + "accept_and_publish", {"side_effect": publish}),
                 (prefix + "load_accepted_generation", {"return_value": successor}),
-                ("bilqis_mlx.runtime.bamf_operator.championship._current_binding",
+                ("bilqis_mlx.runtime.bamf_operator._championship_adjudication._current_binding",
                  {"return_value": binding}),
             ):
                 stack.enter_context(patch(target_name, **kwargs))

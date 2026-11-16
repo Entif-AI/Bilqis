@@ -72,6 +72,9 @@ def _operate_first_baseline_case(case):
 
     prefix = "bilqis_mlx.runtime.bamf_operator.session."
     patches = (
+        ('bilqis_mlx.runtime.outcomes.issuance.build_outcome', {'return_value': {}}),
+        ('bilqis_mlx.runtime.outcomes.issuance.credited_visit', {'side_effect': lambda visit, outcome: visit}),
+        ('bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor', {'side_effect': lambda visit, successor, parent: successor}),
         (prefix + "prepare_bamf_visit", {"side_effect": prepare}),
         (prefix + "evaluate_factory_retention_candidate", {"return_value": evaluation}),
         (prefix + "derive_accepted_teacher_successor", {"return_value": successor}),
@@ -93,6 +96,11 @@ def _operate_first_baseline_case(case):
 
 
 class SessionObservationTests(unittest.TestCase):
+    def setUp(self):
+        patched = patch('bilqis_mlx.runtime.outcomes.issuance.build_outcome', return_value={})
+        patched.start()
+        self.addCleanup(patched.stop)
+
     def test_publication_before_accepted_and_failure_propagates(self):
         events = []
         observer = NS(update=lambda **v: events.append(v))
@@ -152,6 +160,9 @@ class SessionObservationTests(unittest.TestCase):
             'issue_factory_retention_decision': NS(
                 accepted=False,
                 reason='PROTECTED_CAPABILITY_REGRESSION',
+                evaluated_capability_ids=('cap', 'protected-cap'),
+                retention_protection_plan_sha256='f' * 64,
+                broad_certification_trigger=None,
                 to_record=lambda: {'decision': 'REJECTED'}),
         }
         from contextlib import ExitStack
@@ -173,6 +184,11 @@ class SessionObservationTests(unittest.TestCase):
             self.assertIn({'candidate_step': i, 'candidate_optimizer_step': 4 + i}, events)
         self.assertIn({'retention_completed': 1, 'retention_total': 2,
                        'retention_subject': 'cap', 'retention_role': 'parent'}, events)
+        self.assertIn({
+            'retention_evaluated_capability_count': 2,
+            'retention_protection_plan_sha256': 'f' * 64,
+            'retention_broad_certification_trigger': None,
+        }, events)
 
     def test_operator_publishes_terminal_only_after_publication(self):
         import json

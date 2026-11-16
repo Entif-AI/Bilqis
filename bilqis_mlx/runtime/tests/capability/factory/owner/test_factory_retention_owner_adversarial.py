@@ -5,7 +5,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from bilqis_mlx.learning.atlas_retention_decision import (
-    _issued_decision_baseline_ledger_sha256, decide_candidate_retention,
+    CandidateRetentionDecision, _issued_decision_baseline_ledger_sha256,
+    decide_candidate_retention,
     issue_factory_retention_decision,
 )
 import bilqis_mlx.learning.atlas_acceptance as acceptance_owner
@@ -13,6 +14,7 @@ from bilqis_mlx.learning.atlas_acceptance import mint_acceptance_binding
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
 import bilqis_mlx.runtime.factory_retention_owner as owner
 import bilqis_mlx.runtime.retention.screen as owner_screen
+import bilqis_mlx.runtime.retention.local_screen as local_screen
 from bilqis_mlx.runtime.factory_retention_owner import (
     FactoryRetentionEvaluation, _cohort, evaluate_factory_retention_candidate,
 )
@@ -44,7 +46,9 @@ def _foundation_owner_fixture():
                 grade_id="B", assessment_blueprint_sha256="c" * 64),),
             curriculum_sha256="d" * 64,
             profile_id="factory-c05-adversarial",
-            projection_digests=SimpleNamespace(source="e" * 64),
+            projection_digests=SimpleNamespace(
+                roster="e" * 64, assessment="f" * 64,
+                coverage="0" * 64, source="1" * 64),
         ),
     )
     source = SimpleNamespace(
@@ -62,8 +66,32 @@ def _foundation_owner_fixture():
     policy_factory = Mock(return_value=object())
     decision = Decision(
         DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
-        "a" * 64, "b" * 64, "c" * 64, "d" * 64)
+        "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+        evaluated_capability_ids=(target,),
+        retention_protection_plan_sha256="3" * 64)
     return source, candidate, target, fixed, fresh, policy_factory, decision
+
+
+def _foundation_retention_plan(target):
+    target_plan = SimpleNamespace(
+        target_capability_id=target,
+        target_grade_id="B",
+        protected_capability_ids=(),
+        evaluated_capability_ids=(target,),
+        evaluated_capability_groups=((target, "B"),),
+        evaluation_scope_sha256="1" * 64,
+        comparison_scope_sha256="2" * 64,
+    )
+    plan = SimpleNamespace(
+        digest="3" * 64, rubric_sha256="4" * 64,
+        policy_epoch_sha256="5" * 64, source_sha256="6" * 64,
+        established_capability_ids=(),
+        evidence_stage=owner.CURRENT_EVIDENCE_STAGE.value,
+        for_target=lambda capability: target_plan if capability == target else None,
+    )
+    instrument = SimpleNamespace(
+        case=SimpleNamespace(capability_id=target, case_id="fixture-case"))
+    return plan, target_plan, instrument
 
 
 def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
@@ -71,6 +99,7 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                                championship_cohort=None,
                                championship_assessment=None):
     release_sha = source.release.release_sha256
+    plan, target_plan, instrument = _foundation_retention_plan(target)
     with patch(
             "bilqis_mlx.runtime.bamf_bundle.genesis.records."
             "successor_candidate_identity_digest", return_value="f" * 64), \
@@ -92,17 +121,20 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                             "kind": "MOTIF_ALLOCATION",
                         }),
                     object(), SimpleNamespace(
+                        run_id="fixture-run",
                         accepted_manifest_sha256="0" * 64,
                         source_authority_registry_sha256=None))),
+                require_current_retention_source_rows=Mock(
+                    return_value=(plan, target_plan, ((target, 7, ({"id": "row"},)),))),
+                _local_retention_instruments=Mock(return_value=(instrument,)),
                 candidate_identity_digest=Mock(return_value="d" * 64),
                 _owner_seed=Mock(return_value=11),
                 read_current=Mock(return_value={"factory_release_sha256": release_sha}),
                 frontier_exam=Mock(return_value={"factory_release_sha256": release_sha}),
                 load_frontier_cohort=Mock(return_value=fixed),
                 _fresh_rows=fresh,
-                _instruments=Mock(return_value=(SimpleNamespace(case=SimpleNamespace()),)),
             ), patch.multiple(
-                owner_screen,
+                local_screen,
                 case_census_digest=Mock(return_value="e" * 64),
                 _cohort=Mock(return_value=(
                     championship_cohort if championship_cohort is not None else
@@ -123,8 +155,11 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 use_parent_assessment=Mock(return_value=(
                     object(),
                     ParentAssessmentCacheReceipt("1" * 64, "2" * 64, "3" * 64, False))),
-                evaluate_foundation_fixed_school_candidate_with_evidence=Mock(
-                    return_value=(decision, championship_assessment)),
+                evaluate_foundation_local_candidate=Mock(return_value=decision),
+                capability_championship_evidence=Mock(return_value=(
+                    championship_cohort, championship_assessment)),
+            ), patch.multiple(
+                owner_screen,
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
                 candidate_identity_binding_for_state=Mock(return_value=None)):
         return evaluate_factory_retention_candidate(
@@ -172,6 +207,13 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(
             _issued_decision_baseline_ledger_sha256(issued),
             result.baseline_ledger.digest)
+        self.assertEqual(issued.evaluated_capability_ids, (target,))
+        self.assertEqual(
+            issued.retention_protection_plan_sha256, "3" * 64)
+        cold = CandidateRetentionDecision.from_record(issued.to_record())
+        self.assertEqual(cold.fields["evaluated_capability_ids"], (target,))
+        self.assertEqual(
+            cold.fields["retention_protection_plan_sha256"], "3" * 64)
         self.assertIsNotNone(result.baseline_transition)
         self.assertIs(
             result.baseline_ledger.state_for(result.baseline_transition.measurement.comparison),

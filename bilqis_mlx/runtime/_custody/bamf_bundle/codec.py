@@ -159,9 +159,13 @@ def validate_bamf_bundle_custody(
     except (ValueError, json.JSONDecodeError, KeyError, TypeError):
         invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
     recorded = set(manifest.get("sidecars", {}))
-    required = set(SIDECARS) - {
-        "run_identity", "step_proofs", "baseline_evidence", "learning_health_state",
-        "championship_state"}
+    optional = {
+        "run_identity", "baseline_evidence", "learning_health_state",
+        "championship_state",
+    }
+    if manifest["schema"] == BAMF_BUNDLE_SCHEMA:
+        optional.add("step_proofs")
+    required = set(SIDECARS) - optional
     if (not required <= recorded <= set(SIDECARS)
             or set(manifest["optimizer"]) not in (
                 {"schema", "step", "hyperparameters"},

@@ -31,6 +31,7 @@ from bilqis_mlx.learning.teacher_realized_action import bind_record as _bind_rea
 
 VERSION = "bilqis.mlx.causal-teacher-experiment/v1"
 MAX_FAILURE_ARCHETYPES = 24
+DIAGNOSTIC_CONTEXT_KEY_LENGTH = 16
 INTERFERENCE_REJECTIONS_FOR_HALF_BUDGET = 2
 INTERFERENCE_REJECTIONS_FOR_QUARTER_BUDGET = 4
 REJECTION_PRESSURE_CONTEXTUAL_START = 2
@@ -324,7 +325,7 @@ def _diagnostic_context(channel: dict, capability: str, curriculum_scope: str,
             diagnostics["salience_evidence"], capability, curriculum_scope,
             diagnostics.get("teacher_epoch_digest"))
     identity = hashlib.sha256(
-        json.dumps(payload, sort_keys=True).encode()).hexdigest()[:16]
+        json.dumps(payload, sort_keys=True).encode()).hexdigest()[:DIAGNOSTIC_CONTEXT_KEY_LENGTH]
     known = channel.setdefault("diagnostic_contexts", {})
     previous = known.get(identity)
     if previous is not None and previous != payload:

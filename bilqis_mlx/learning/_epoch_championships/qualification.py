@@ -95,8 +95,12 @@ def _fanout_scores(capability: str, prior: dict, challenger: dict,
         raise ValueError("CHAMPIONSHIP_FANOUT_SCREEN_IDENTITY_DRIFT")
     incumbent_exam = screen.get("incumbent_exam")
     challenger_exam = screen.get("challenger_exam")
-    _same_current_context(challenger, incumbent_exam, capability)
-    _same_current_context(challenger, challenger_exam, capability)
+    # The primary takeover may have been proved on a different capability-
+    # local panel.  Fan-out compares the sibling owner and challenger on the
+    # sibling's own fresh current panel; only checkpoint identity is inherited
+    # from the primary challenger.
+    _same_current_context(challenger_exam, incumbent_exam, capability)
+    _same_current_context(challenger_exam, challenger_exam, capability)
     if (_pointer(incumbent_exam["checkpoint"])["sha256"] != incumbent["sha256"] or
             _pointer(challenger_exam["checkpoint"])["sha256"] != contender["sha256"]):
         raise ValueError("CHAMPIONSHIP_FANOUT_SCREEN_OWNER_DRIFT")

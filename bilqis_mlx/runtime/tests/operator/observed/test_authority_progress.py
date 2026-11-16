@@ -31,17 +31,18 @@ def test_c05_progress_uses_actual_owner_blocker_before_issued_token_loses_it():
                    decision=N(blocking_capability='Z.established'))
     persisted = {'bytes_written': 0, 'file_fsyncs': 0, 'directory_fsyncs': 0,
                  'evidence_objects': 0, 'persistence_seconds': 0}
-    result = retention_result(
-        Path('/unused'), object(), N(), None, object(), 'new.target', object(),
-        (N(transaction=object()),), N(finalize=lambda **kw: {'persistence': persisted}),
-        1, 1, None, messages.append, None,
-        evaluate_candidate=lambda *a, **kw: evaluation,
-        issue_decision=lambda e: decision, identity_delta=lambda old: {},
-        resource_observation=lambda *a, **kw: {}, derive_successor=lambda *a, **kw: None,
+    with patch('bilqis_mlx.runtime.outcomes.issuance.build_outcome', return_value={}):
+        result = retention_result(
+            Path('/unused'), object(), N(), None, object(), 'new.target', object(),
+            (N(transaction=object()),), N(finalize=lambda **kw: {'persistence': persisted}),
+            1, 1, None, messages.append, None,
+            evaluate_candidate=lambda *a, **kw: evaluation,
+            issue_decision=lambda e: decision, identity_delta=lambda old: {},
+            resource_observation=lambda *a, **kw: {}, derive_successor=lambda *a, **kw: None,
             bind_baseline_successor=lambda evaluation, successor: successor,
-        prepared_visit_type=lambda *args, **kw: N(status=args[0], **kw),
-        emit_progress=lambda callback, message: callback(message),
-        measure_observed_phase_fn=lambda *a: nullcontext())
+            prepared_visit_type=lambda *args, **kw: N(status=args[0], **kw),
+            emit_progress=lambda callback, message: callback(message),
+            measure_observed_phase_fn=lambda *a: nullcontext())
     assert result.status == 'REJECTED'
     assert any('blocking capability Z.established' in message for message in messages)
     assert any('PROTECTED_CAPABILITY_REGRESSION' in message for message in messages)

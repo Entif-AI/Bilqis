@@ -34,7 +34,7 @@ class EpochFanoutTests(EpochChampionshipTests):
         self.assertTrue(any(d["decision"] == "FANOUT_TITLE_MATCH_REQUIRED" and
                             d["capability"] == "B.XOR" for d in decisions))
 
-    def test_primary_takeover_defers_unmeasured_sibling_fanout(self):
+    def test_primary_takeover_requests_capability_local_screen_for_unmeasured_sibling(self):
         epoch, _, _ = self._fanout_fixture()
         and_role = epoch["active_roles"]["B.AND"]
         challenger = _panel("c", 13, "B.AND", 12, cohort="6", group="B")
@@ -50,11 +50,11 @@ class EpochFanoutTests(EpochChampionshipTests):
             incumbent_exams={"a" * 64: incumbent},
             title_matches={"B.AND": primary})
         self.assertIn("B.AND", changes)
-        self.assertTrue(any(d["decision"] == "FANOUT_DEFERRED_UNMEASURED" and
-                            d["capability"] == "B.XOR" for d in decisions))
-        self.assertFalse(any(d["decision"] in (
-            "FANOUT_SCREEN_REQUIRED", "FANOUT_TITLE_MATCH_REQUIRED")
-            for d in decisions))
+        screen = next(d for d in decisions
+                      if d["decision"] == "FANOUT_SCREEN_REQUIRED")
+        self.assertEqual(screen["capabilities"], ["B.XOR"])
+        self.assertFalse(any(d["decision"] == "FANOUT_TITLE_MATCH_REQUIRED"
+                             for d in decisions))
         self.assertNotIn(
             "B.XOR|" + "b" * 64 + "|" + "c" * 64,
             result["settled_matchups"])

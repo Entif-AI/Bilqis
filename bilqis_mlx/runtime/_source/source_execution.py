@@ -7,6 +7,7 @@ from bilqis_mlx.semantics.domains import contract_digest
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 
 from ..factory.adapters import SourceAdapterRegistry
 from ..factory.answers import AnswerModalityRegistry
@@ -116,6 +117,12 @@ class SourceExecutionContext:
     _source_preparation_metrics: SourcePreparationMetrics = field(
         default_factory=SourcePreparationMetrics, init=False, repr=False,
         compare=False)
+    _execution_by_capability: object | None = field(
+        default=None, init=False, repr=False, compare=False)
+    _projection_by_capability: object | None = field(
+        default=None, init=False, repr=False, compare=False)
+    _verification_by_capability: object | None = field(
+        default=None, init=False, repr=False, compare=False)
 
     @classmethod
     def from_admitted_release(
@@ -154,11 +161,49 @@ class SourceExecutionContext:
             _invalid_source_batch("FACTORY_SOURCE_RUN_DIR_INVALID")
         self.release.verify()
         self.release.verify_semantic_catalog(self.graph)
+        execution_by_capability = {
+            item.capability_id: item
+            for item in self.release.execution_plan.capabilities
+        }
+        if len(execution_by_capability) != len(
+                self.release.execution_plan.capabilities):
+            _invalid_source_batch("FACTORY_SOURCE_EXECUTION_INDEX_INVALID")
+        object.__setattr__(
+            self, "_execution_by_capability",
+            MappingProxyType(execution_by_capability))
+        object.__setattr__(self, "_projection_by_capability", MappingProxyType({
+            item.capability_id: item
+            for item in self.release.execution_plan.capability_projection_digests
+        }))
+        object.__setattr__(self, "_verification_by_capability", MappingProxyType({
+            item.capability_id: item for item in self.release.verification.capabilities
+        }))
         bindings = self.release.source_bindings.by_capability
-        for capability in self.release.execution_plan.capabilities:
+        for capability in execution_by_capability.values():
             binding = bindings[capability.capability_id]
             self.source_registry.require(binding.generator_id, binding.oracle_id)
         self.answer_registry.validate_plan(self.release.execution_plan)
+
+    def execution_for(self, capability_id: str):
+        """Return one prevalidated execution contract without rebuilding plan maps."""
+        index = self._execution_by_capability
+        if (not isinstance(capability_id, str) or not capability_id
+                or index is None):
+            _invalid_source_batch("FACTORY_SOURCE_EXECUTION_INDEX_INVALID")
+        execution = index.get(capability_id)
+        if execution is None:
+            _invalid_source_batch("FACTORY_EXECUTION_GENERATION_UNKNOWN_CAPABILITY")
+        return execution
+
+    def assessment_projection_for(self, capability_id: str):
+        """Return preindexed assessment/source projection metadata for one capability."""
+        self.execution_for(capability_id)
+        return self._projection_by_capability[capability_id]
+
+    def verification_for(self, capability_id: str):
+        """Return preindexed source verification metadata for one capability."""
+        self.execution_for(capability_id)
+        return self._verification_by_capability[capability_id]
 
     def register_compiled_batch(self, batch) -> None:
         if self.run_dir is None:

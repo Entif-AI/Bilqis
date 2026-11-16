@@ -57,3 +57,5 @@ class SourceAtomOwnerProjection:
     ast: StreamingAST
     formal_signatures: tuple[str, ...]
     mapping_digests: tuple[str, ...]
+    semantic_ids: tuple[str, ...]
+    abi_indices: tuple[int, ...]

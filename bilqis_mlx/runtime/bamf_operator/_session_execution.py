@@ -119,6 +119,21 @@ def candidate_horizon_execution(
     )
 
 
+def _observe_retention_scope(observer, decision):
+    if observer is None:
+        return
+    fields = {
+        "retention_evaluated_capability_count": len(
+            getattr(decision, "evaluated_capability_ids", ())),
+        "retention_protection_plan_sha256": getattr(
+            decision, "retention_protection_plan_sha256", None),
+        "retention_broad_certification_trigger": getattr(
+            decision, "broad_certification_trigger", None),
+    }
+    stage = getattr(observer, "stage", None)
+    (stage if callable(stage) else observer.update)(**fields)
+
+
 def retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
@@ -136,6 +151,7 @@ def retention_result(
             **({"observer": lambda fields: observer.update(**fields)}
                if observer is not None else {}))
         decision = issue_decision(evaluation)
+        _observe_retention_scope(observer, decision)
         if not decision.accepted:
             from bilqis_mlx.errors.authority import authority_label
             emit_progress(progress, "retention decision: " + authority_label(
@@ -175,17 +191,20 @@ def retention_result(
         "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
         "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
     })
+    from bilqis_mlx.runtime.outcomes.issuance import build_outcome, credited_visit, carry_credit_to_successor
+    how_outcome = build_outcome(run_dir, selection, evaluation, decision, candidate_evidence)
     successor, learning_health = _accepted_successor(
         decision, run_dir, parent, context, atlas_path, selection, capability,
         cache, retained,
-        rejection_journal_ordinal, resource, candidate_evidence, capture,
-        derive_successor, bind_baseline_successor, evaluation)
+        rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
+        derive_successor, bind_baseline_successor, evaluation,
+        credited_visit, carry_credit_to_successor)
     return prepared_visit_type(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
         retained=retained, capability=capability, successor=successor,
         identity_metrics=identity_metrics, resource=resource,
-        candidate_evidence=candidate_evidence,
+        candidate_evidence=candidate_evidence, how_outcome=how_outcome,
         learning_health=learning_health,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)
@@ -214,10 +233,12 @@ def _instruction_event(run_dir, parent, cache, capability):
 def _accepted_successor(
         decision, run_dir, parent, context, atlas_path, selection, capability,
         cache, retained,
-        rejection_journal_ordinal, resource, candidate_evidence, capture,
-        derive_successor, bind_baseline_successor, evaluation):
+        rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
+        derive_successor, bind_baseline_successor, evaluation,
+        credited_visit, carry_credit_to_successor):
     if not decision.accepted:
         return None, None
+    learned_visit = credited_visit(selection.visit, how_outcome)
     instruction_event = _instruction_event(run_dir, parent, cache, capability)
     learning_health = None
     try:
@@ -237,17 +258,20 @@ def _accepted_successor(
         "selected_policy_key": selection.visit.identity.policy_key,
         "selected_option_id": selection.option_id,
         "resource": resource, "candidate_evidence": candidate_evidence,
+        "how_outcome": how_outcome,
     }, instruction_event)
     successor = derive_successor(
-        run_dir, retained, selection.visit, delivery_events=events)
-    successor = bind_baseline_successor(evaluation, successor)
+        run_dir, retained, learned_visit, delivery_events=events)
     if health_state is not None:
         from dataclasses import replace
         successor = replace(successor, learning_health_state=health_state)
+    successor = carry_credit_to_successor(learned_visit, successor, parent)
+    successor = bind_baseline_successor(evaluation, successor)
     from .championship import bind_accepted_championship_successor
     successor = bind_accepted_championship_successor(
         run_dir, parent, cache, successor, context, atlas_path,
-        capability, evaluation)
+        capability, evaluation,
+        checkpoint_origin_group=getattr(selection, "lesson_grade", None))
     return successor, learning_health
 
 

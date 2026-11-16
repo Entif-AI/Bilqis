@@ -13,11 +13,8 @@ from ..context_eligibility import (
 )
 from ..domains import contract_digest
 from ..frame_schema import SourceSpan
-from .common import (
-    BOOLEAN_COMPOSITE_ADAPTER, BOOLEAN_CONNECTIVE_ADAPTER,
-    BOOLEAN_IDENTIFICATION_ADAPTER, FINITE_NUMERIC_ADAPTER,
-    C13_EPISODE_ADAPTER, MAX_PUBLIC_FORMAL_DRAW_EACH, MICRO_PREDICATE_ADAPTER, _adapter_fail,
-)
+from .common import MAX_PUBLIC_FORMAL_DRAW_EACH, _adapter_fail
+from .registry import source_graph_for_adapter as _strategy_graph_for_adapter
 
 
 _PROJECTION_ISSUER = object()
@@ -110,8 +107,8 @@ def canonical_adapter(source_adapter, span):
     return canonical
 
 
-def canonical_graph(source_root, graph, adapter_id, span):
-    root, canonical = source_graph_for_adapter(adapter_id)
+def canonical_graph(source_root, graph, adapter_id, span, row=None):
+    root, canonical = source_graph_for_adapter(adapter_id, row=row)
     if Path(source_root).resolve() != root.resolve():
         _adapter_fail("BAMF_CONTEXT_PUBLIC_FORMAL_SOURCE_ROOT_DRIFT",
                       adapter_id, span, "<public-formal>")
@@ -121,19 +118,9 @@ def canonical_graph(source_root, graph, adapter_id, span):
     return root, canonical
 
 
-def source_graph_for_adapter(adapter_id: str):
+def source_graph_for_adapter(adapter_id: str, row=None):
     """Return the repository-owned source graph for a registered formal adapter."""
-    root = Path(__file__).resolve().parents[3] / "vendor/legacy-v16"
-    if adapter_id in (FINITE_NUMERIC_ADAPTER, C13_EPISODE_ADAPTER):
-        from ...live_grade_c import registry_graph
-        return root, registry_graph()
-    if adapter_id not in {
-            MICRO_PREDICATE_ADAPTER, BOOLEAN_CONNECTIVE_ADAPTER,
-            BOOLEAN_COMPOSITE_ADAPTER, BOOLEAN_IDENTIFICATION_ADAPTER}:
-        _adapter_fail("BAMF_CONTEXT_PUBLIC_FORMAL_ADAPTER_UNTRUSTED",
-                      str(adapter_id), SourceSpan(0, 0), "<public-formal>")
-    from ...grade_a_probe import read_sources
-    return root, read_sources(root)[2]
+    return _strategy_graph_for_adapter(adapter_id, row=row)
 
 
 def verify_draw(adapter, row, source_root, graph, span, seed, each, profile, course):

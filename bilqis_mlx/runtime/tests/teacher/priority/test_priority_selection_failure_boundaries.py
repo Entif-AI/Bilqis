@@ -58,6 +58,9 @@ def priority():
             require_bound_lawful_teaching_frontier=lambda frontier, context, parent: frontier,
             require_current_lawful_teaching_frontier=lambda frontier, context, parent: frontier),
         "bilqis_mlx.runtime.teacher_policy_selection": _module(select_visit_policy=None),
+        "bilqis_mlx.runtime.outcomes.replay": _module(
+            replay_rejected_outcomes=lambda run, parent, cache, teacher: teacher),
+        "bilqis_mlx.runtime.outcomes.issuance": _module(context_for_selection=lambda *args: {}),
         "bilqis_mlx.semantics.domains": _module(contract_digest=None),
         "bilqis_mlx.runtime.accepted_teacher_custody": _module(
             _accepted_parent=None, _c03_projection=None, _issue_bound_visit=None,

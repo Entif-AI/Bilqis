@@ -103,7 +103,9 @@ def _resolve_visible_atoms(
             type(source_projection) is not SourceAtomOwnerProjection
             or len(source_projection.ast.atoms) != len(witness.token_indices)
             or len(source_projection.formal_signatures) != len(witness.token_indices)
-            or len(source_projection.mapping_digests) != len(witness.token_indices)):
+            or len(source_projection.mapping_digests) != len(witness.token_indices)
+            or len(source_projection.semantic_ids) != len(witness.token_indices)
+            or len(source_projection.abi_indices) != len(witness.token_indices)):
         invalid("BAMF_SOURCE_ATOM_OWNER_PROJECTION_INVALID")
     atoms = tuple(
         item.atom for item in compiled.positions

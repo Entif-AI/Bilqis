@@ -20,15 +20,11 @@ def _advance_fanout(
             updated, cap, _pointer(prior["checkpoint"])["sha256"],
             pointer["sha256"]) is None
     ]
-    for cap in (item for item in eligible if item not in scores):
-        decisions.append({
-            "group": group,
-            "capability": cap,
-            "decision": "FANOUT_DEFERRED_UNMEASURED",
-            "challenger_sha256": pointer["sha256"],
-            "reason": "CAPABILITY_ABSENT_FROM_CURRENT_COHORT",
-        })
-    siblings = [cap for cap in eligible if cap in scores]
+    # Primary title evidence is intentionally capability-local.  A real
+    # takeover therefore has no obligation to have pre-measured its siblings.
+    # The takeover itself opens exactly one bounded same-group screen, which
+    # the runtime satisfies with each sibling's own capability-local panel.
+    siblings = eligible
     if siblings and fanout_screen is None:
         decisions.append({
             "group": group,
@@ -40,7 +36,7 @@ def _advance_fanout(
     for cap in siblings:
         prior = original_roles[cap]
         prior_pointer = _pointer(prior["checkpoint"])
-        if cap not in fanout_screen:
+        if fanout_screen is None or cap not in fanout_screen:
             raise ValueError("CHAMPIONSHIP_FANOUT_SCREEN_CAPABILITY_MISSING")
         incumbent_score, candidate = _fanout_scores(
             cap, prior, challenger_exam, fanout_screen[cap])

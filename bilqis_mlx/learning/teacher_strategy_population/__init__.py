@@ -1,6 +1,6 @@
 """Public bounded teacher-strategy surface over cohesive internal owners."""
 
-from ._teacher_strategy import (
+from .._teacher_strategy import (
     ACTIVE_EFFECTIVE_INCUMBENT_LIMIT,
     ACTIVE_EFFECTIVE_STRATEGY_LIMIT,
     BAMF_SUCCESSOR_SELECTION,
