@@ -113,8 +113,13 @@ class GeneratedGradePolicy:
     policy_epoch: int = 0
     comparator_order: tuple[str, ...] = A09_FRONTIER_COMPARATOR_ORDER
     pareto_dimensions: tuple[str, ...] = (
-        "cost_evidence_rank", "closure_acquisition_units",
-        "coverage_factor_count_desc",
+        "a09_prerequisite_slope", "cost_evidence_rank",
+        "closure_acquisition_units",
+        "answer_modality_burden",
+        "ast_burden", "entanglement",
+        "coverage_factor_count_desc", "reusable_constituent_value_desc",
+        "downstream_unlocks_desc", "minimal_contrast_value_desc",
+        "transfer_breadth_desc", "learning_progress_desc",
     )
     schema: str = "bilqis.generated-grade-policy/v1"
 

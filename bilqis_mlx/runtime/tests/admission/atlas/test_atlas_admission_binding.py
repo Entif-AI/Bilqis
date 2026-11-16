@@ -10,6 +10,7 @@ from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.runtime.bamf_bundle import BamfBundleCandidate, CompleteStudent
 from bilqis_mlx.runtime.bamf_bundle.atlas_admission import (
     ATLAS_ADMISSION_SCHEMA_V2,
+    ATLAS_ADMISSION_SCHEMA_V3,
     AtlasAdmissionBinding, _issue_atlas_admission_binding,
 )
 from bilqis_mlx.runtime.bamf_bundle.genesis import BamfRunIdentity
@@ -91,6 +92,30 @@ class AtlasAdmissionBindingTests(unittest.TestCase):
         self.assertEqual(binding.schema_version, ATLAS_ADMISSION_SCHEMA_V2)
         self.assertEqual(historical.selection_receipt_sha256, "3" * 64)
         self.assertEqual(historical.selected_obligation_keys, keys)
+        self.assertEqual(historical.digest, binding.digest)
+
+    def test_v3_binding_roundtrip_seals_generated_grade_and_predecessor(self):
+        parent, staged = self._parent_and_candidate()
+        keys = (("semantic:event", "2" * 64),)
+        binding = _issue_atlas_admission_binding(
+            staged, parent,
+            lease_sha256="9" * 64,
+            source_approval_sha256="8" * 64,
+            proposal_sha256="7" * 64,
+            factory_release_sha256="6" * 64,
+            staging_receipt_sha256="5" * 64,
+            parent_feature_receipt_sha256="4" * 64,
+            selection_receipt_sha256="3" * 64,
+            selected_obligation_keys=keys,
+            predecessor_factory_release_sha256="b" * 64,
+            generated_grade_proposal_sha256="c" * 64,
+        )
+        historical = AtlasAdmissionBinding.from_record(binding.to_record())
+        self.assertEqual(binding.schema_version, ATLAS_ADMISSION_SCHEMA_V3)
+        self.assertEqual(
+            historical.predecessor_factory_release_sha256, "b" * 64)
+        self.assertEqual(
+            historical.generated_grade_proposal_sha256, "c" * 64)
         self.assertEqual(historical.digest, binding.digest)
 
     def test_cold_obligation_credit_is_minted_from_v2_b13_binding(self):

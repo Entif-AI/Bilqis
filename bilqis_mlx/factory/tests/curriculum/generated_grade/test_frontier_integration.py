@@ -38,6 +38,11 @@ class GeneratedGradeFrontierIntegrationTests(AtlasDeltaAdapterFixture):
                         if item.semantic_id == "z.op.0")
         self.assertEqual(decision.compiled_capability_ids, ("Z.C6",))
         self.assertEqual(decision.source_anchor_ids, (self.staged.source_anchor,))
+        self.assertIsNotNone(decision.answer_modality_burden)
+        self.assertIsNotNone(decision.ast_burden)
+        self.assertIsNotNone(decision.entanglement)
+        self.assertIsNotNone(decision.reusable_constituent_value)
+        self.assertIsNone(decision.minimal_contrast_value)
         self.assertNotIn("Z", proposal.member_semantic_ids)
 
     def test_reloading_same_a09_epoch_recomputes_identical_proposal(self):

@@ -208,6 +208,9 @@ def _decision(identity, grouped_rows, graph, order, evidence, policy):
     if unlawful or any(not item.reasons and item.status not in {
             ClosureStatus.READY, ClosureStatus.WAITING_FOR_EVIDENCE} for item in rows):
         disposition, reasons = "DEFERRED_UNLAWFUL", ("A09_CLOSURE_NOT_LAWFUL",)
+    elif evidence[identity].grounding_quality == 0:
+        disposition, reasons = (
+            "DEFERRED_UNGROUNDED", ("FACTORY_OBJECTIVE_GROUNDING_REQUIRED",))
     elif len(unmet) > policy.max_unmet_prerequisites:
         disposition, reasons = "DEFERRED_STEEP_CLOSURE", ("UNMET_PREREQUISITE_BOUND",)
     development = evidence[identity]
@@ -284,12 +287,27 @@ def _a09_rank_key(item: CandidateGradeDecision, policy: GeneratedGradePolicy):
 def _pareto_vector(
     item: CandidateGradeDecision, policy: GeneratedGradePolicy,
 ) -> tuple[int, ...]:
+    unknown = 10**18
+    def ascending(value):
+        return value if value is not None else unknown
+    def descending(value):
+        return -value if value is not None else unknown
     components = {
+        "a09_prerequisite_slope": item.a09_prerequisite_slope,
         "cost_evidence_rank": _cost_rank(item),
         "closure_acquisition_units": (
             item.closure_acquisition_units
-            if item.closure_acquisition_units is not None else 10**18),
+            if item.closure_acquisition_units is not None else unknown),
+        "answer_modality_burden": ascending(item.answer_modality_burden),
+        "ast_burden": ascending(item.ast_burden),
+        "entanglement": ascending(item.entanglement),
         "coverage_factor_count_desc": -len(item.coverage_factors),
+        "reusable_constituent_value_desc": descending(
+            item.reusable_constituent_value),
+        "downstream_unlocks_desc": -item.downstream_unlocks,
+        "minimal_contrast_value_desc": descending(item.minimal_contrast_value),
+        "transfer_breadth_desc": descending(item.transfer_breadth),
+        "learning_progress_desc": descending(item.learning_progress),
     }
     return tuple(components[name] for name in policy.pareto_dimensions)
 

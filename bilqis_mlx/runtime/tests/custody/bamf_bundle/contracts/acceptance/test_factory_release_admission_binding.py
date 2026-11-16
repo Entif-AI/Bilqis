@@ -8,6 +8,7 @@ import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_bundle.factory_release.admission import (
     FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+    FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
     FactoryReleaseAdmissionBinding,
     ParsedFactoryReleaseAdmissionBinding,
     _issue_factory_release_admission_binding,
@@ -147,6 +148,19 @@ class FactoryReleaseAdmissionBindingTests(unittest.TestCase):
         parsed = FactoryReleaseAdmissionBinding.from_record(binding.to_record())
         self.assertEqual(binding.schema_version, FACTORY_RELEASE_ADMISSION_SCHEMA_V2)
         self.assertEqual(parsed.accepted_obligation_keys, keys)
+        self.assertEqual(parsed.digest, binding.digest)
+
+    def test_v3_binding_roundtrip_seals_generated_grade_proposal(self):
+        keys = (("semantic:event", "9" * 64),)
+        binding = _issue_factory_release_admission_binding(
+            self.candidate, self.parent, transition=self.transition,
+            accepted_obligation_keys=keys,
+            generated_grade_proposal_sha256="a" * 64)
+        parsed = FactoryReleaseAdmissionBinding.from_record(binding.to_record())
+        self.assertEqual(binding.schema_version, FACTORY_RELEASE_ADMISSION_SCHEMA_V3)
+        self.assertEqual(parsed.accepted_obligation_keys, keys)
+        self.assertEqual(parsed.predecessor_factory_release_sha256, "1" * 64)
+        self.assertEqual(parsed.generated_grade_proposal_sha256, "a" * 64)
         self.assertEqual(parsed.digest, binding.digest)
 
     def test_live_binding_rejects_substituted_candidate(self):

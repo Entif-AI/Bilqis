@@ -34,7 +34,10 @@ class AcceptedGeneratedGradeDefinitionTests(unittest.TestCase):
             "bilqis_mlx.runtime.generated_grade."
             "read_accepted_atlas_factory_release",
             return_value=exact_release,
-        ) as accepted_reader:
+        ) as accepted_reader, patch(
+            "bilqis_mlx.runtime.generated_grade._recompute_current_accepted_proposal",
+            return_value=proposal,
+        ):
             definition = seal_accepted_generated_grade(Path("/accepted-run"), proposal)
 
         issued_reader.assert_called_once_with(
@@ -68,6 +71,32 @@ class AcceptedGeneratedGradeDefinitionTests(unittest.TestCase):
             "BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH",
         )
 
+    def test_self_digested_forged_sidecar_is_not_accepted_authority(self):
+        release = __import__(
+            "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
+            fromlist=["_release"],
+        )._release()
+        capability = next(iter(release.curriculum.capability_map.values()))
+        semantic_id = release.semantic_catalog[0]
+        exact_release, accepted = _single_member_fixture(
+            semantic_id, capability.capability_id)
+        forged_draft = replace(
+            accepted, a09_status="CALLER_FORGED", proposal_sha256="0" * 64)
+        forged = replace(
+            forged_draft, proposal_sha256=forged_draft.expected_digest())
+
+        with patch(
+            "bilqis_mlx.runtime.generated_grade._read_issued_proposal",
+            return_value=forged,
+        ), patch(
+            "bilqis_mlx.runtime.generated_grade._accepted_release_lineage",
+            return_value=(exact_release,),
+        ), patch(
+            "bilqis_mlx.runtime.generated_grade._recompute_current_accepted_proposal",
+            return_value=accepted,
+        ), self.assertRaises(BilqisError):
+            seal_accepted_generated_grade(Path("/accepted-run"), forged)
+
     def test_issued_proposal_survives_successor_adoption_before_seal(self):
         release = __import__(
             "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
@@ -84,6 +113,9 @@ class AcceptedGeneratedGradeDefinitionTests(unittest.TestCase):
         ), patch(
             "bilqis_mlx.runtime.generated_grade._accepted_release_lineage",
             return_value=(proposal_release, successor),
+        ), patch(
+            "bilqis_mlx.runtime.generated_grade._proposal_bound_in_accepted_ancestry",
+            return_value=True,
         ), patch(
             "bilqis_mlx.runtime.generated_grade._seal_generated_grade",
             return_value=sentinel,

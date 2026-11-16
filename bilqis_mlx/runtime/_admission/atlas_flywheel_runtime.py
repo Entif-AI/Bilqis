@@ -267,6 +267,9 @@ class AcceptedAtlasFlywheelSupervisor:
         if current.release_sha256 != handoff.receipt.predecessor_release.release_sha256:
             ErrorBus.raise_legacy(
                 SCHOOL.BAMF_ATLAS_ADMISSION.FLYWHEEL_PREDECESSOR_DRIFT)
+        from .generated_grade import _issue_generated_grade_admission_authority
+        generated_grade_authority = _issue_generated_grade_admission_authority(
+            self, handoff)
         graph = (
             AcceptedRuntimeHost(self.run_dir).source_context(
                 source_root=None).graph
@@ -308,9 +311,13 @@ class AcceptedAtlasFlywheelSupervisor:
         )
         delta = AtlasDeltaEnvelopeV2(handoff, native)
         return (
-            adopt_parameter_extension_atlas_successor_v2(context, delta, lease)
+            adopt_parameter_extension_atlas_successor_v2(
+                context, delta, lease,
+                generated_grade_authority=generated_grade_authority)
             if introduced else
-            adopt_capability_only_atlas_successor_v2(context, delta, lease)
+            adopt_capability_only_atlas_successor_v2(
+                context, delta, lease,
+                generated_grade_authority=generated_grade_authority)
         )
 
 

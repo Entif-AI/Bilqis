@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+from dataclasses import dataclass
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.generated_grade import GeneratedGradeProposal, synthesize_generated_grade
@@ -12,6 +13,47 @@ from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
 from bilqis_mlx.factory.generated_grade.inputs import _compile_generated_grade_inputs
 
 from .atlas_admission import read_accepted_atlas_factory_release
+
+_GENERATED_GRADE_AUTHORITY_ISSUER = object()
+
+
+@dataclass(frozen=True, init=False)
+class _AcceptedGeneratedGradeAuthority:
+    """Unforgeable-by-contract capability issued from accepted #1320 state."""
+
+    proposal_sha256: str
+    predecessor_factory_release_sha256: str
+    a09_proposal_sha256: str
+    _issuance: object
+
+
+def _mint_generated_grade_authority(
+    proposal: GeneratedGradeProposal,
+) -> _AcceptedGeneratedGradeAuthority:
+    authority = object.__new__(_AcceptedGeneratedGradeAuthority)
+    object.__setattr__(authority, "proposal_sha256", proposal.proposal_sha256)
+    object.__setattr__(
+        authority, "predecessor_factory_release_sha256",
+        proposal.current_release_sha256)
+    object.__setattr__(
+        authority, "a09_proposal_sha256", proposal.a09_proposal_sha256)
+    object.__setattr__(
+        authority, "_issuance", _GENERATED_GRADE_AUTHORITY_ISSUER)
+    return authority
+
+
+def _require_generated_grade_authority(
+    value,
+) -> _AcceptedGeneratedGradeAuthority:
+    if (
+        type(value) is not _AcceptedGeneratedGradeAuthority
+        or getattr(value, "_issuance", None) is not _GENERATED_GRADE_AUTHORITY_ISSUER
+    ):
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_ACCEPTED_AUTHORITY_REQUIRED",
+        )
+    return value
 
 
 def _proposal_path(run_dir: Path, proposal_sha256: str) -> Path:
@@ -81,8 +123,8 @@ def _read_issued_proposal(
     return result
 
 
-def propose_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
-    """Recompute one proposal from a custody-reloaded A09/C07 flywheel state."""
+def _recompute_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
+    """Derive one proposal from custody-reloaded A09/C07 state without persisting."""
     from .atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
     if type(supervisor) is not AcceptedAtlasFlywheelSupervisor:
         ErrorBus.raise_(
@@ -95,6 +137,29 @@ def propose_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
     proposal = synthesize_generated_grade(
         state.epoch.snapshot, state.epoch.closure,
         state.epoch.current_release, inputs)
+    return proposal
+
+
+def _issue_generated_grade_admission_authority(
+    supervisor, handoff,
+) -> _AcceptedGeneratedGradeAuthority:
+    """Issue the exact accepted-state #1320 capability consumed by C07/B13."""
+    proposal = _recompute_accepted_generated_grade(supervisor)
+    if (
+        proposal.current_release_sha256
+        != handoff.receipt.predecessor_release.release_sha256
+        or proposal.a09_proposal_sha256 != handoff.proposal.proposal_sha256
+    ):
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_A09_PROPOSAL_MISMATCH",
+        )
+    return _mint_generated_grade_authority(proposal)
+
+
+def propose_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
+    """Issue one proposal derived from custody-reloaded A09/C07 flywheel state."""
+    proposal = _recompute_accepted_generated_grade(supervisor)
     _persist_issued_proposal(supervisor.run_dir, proposal)
     return proposal
 
@@ -125,6 +190,93 @@ def _accepted_release_lineage(
     return lineage
 
 
+def _recompute_current_accepted_proposal(run_dir: Path) -> GeneratedGradeProposal:
+    from .atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
+    return _recompute_accepted_generated_grade(
+        AcceptedAtlasFlywheelSupervisor(Path(run_dir), None))
+
+
+def _proposal_bound_in_accepted_ancestry(
+    run_dir: Path, proposal: GeneratedGradeProposal,
+) -> bool:
+    """Authenticate a predecessor proposal through accepted B13/C07 ancestry."""
+    from bilqis_mlx.runtime.bamf_bundle.atlas_admission import (
+        ATLAS_ADMISSION_SCHEMA_V3,
+        ParsedAtlasAdmissionBinding,
+    )
+    from bilqis_mlx.runtime.bamf_bundle.codec import load_bamf_bundle
+    from bilqis_mlx.runtime.bamf_bundle.factory_release.admission import (
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+        ParsedFactoryReleaseAdmissionBinding,
+    )
+    from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import (
+        accepted_binding_for_manifest,
+        accepted_generation,
+        parent_acceptance_anchor_from_manifest,
+    )
+
+    root = Path(run_dir)
+    pointer, student = accepted_generation(root / "bamf-state.json")
+    manifest_sha256 = pointer["manifest_sha256"]
+    acceptance_sha256 = pointer["acceptance_sha256"]
+    visited = set()
+    while student.generation > 0:
+        if manifest_sha256 in visited:
+            return False
+        visited.add(manifest_sha256)
+        binding = accepted_binding_for_manifest(
+            root, manifest_sha256, student,
+            expected_acceptance_sha256=acceptance_sha256)
+        if (
+            isinstance(binding, ParsedFactoryReleaseAdmissionBinding)
+            and binding.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+            and binding.predecessor_factory_release_sha256
+                == proposal.current_release_sha256
+            and binding.proposal_sha256 == proposal.a09_proposal_sha256
+            and binding.generated_grade_proposal_sha256
+                == proposal.proposal_sha256
+        ):
+            return True
+        if (
+            isinstance(binding, ParsedAtlasAdmissionBinding)
+            and binding.schema_version == ATLAS_ADMISSION_SCHEMA_V3
+            and binding.predecessor_factory_release_sha256
+                == proposal.current_release_sha256
+            and binding.proposal_sha256 == proposal.a09_proposal_sha256
+            and binding.generated_grade_proposal_sha256
+                == proposal.proposal_sha256
+        ):
+            return True
+        parent_manifest = student.parent_manifest_sha256
+        parent_acceptance = parent_acceptance_anchor_from_manifest(
+            root, manifest_sha256)
+        if parent_manifest is None or parent_acceptance is None:
+            return False
+        student = load_bamf_bundle(
+            root / "bamf-bundles" / parent_manifest,
+            expected_manifest_sha256=parent_manifest)
+        manifest_sha256 = parent_manifest
+        acceptance_sha256 = parent_acceptance
+    return False
+
+
+def _require_accepted_proposal_authority(
+    run_dir: Path,
+    proposal: GeneratedGradeProposal,
+    lineage: tuple,
+) -> None:
+    if len(lineage) == 1:
+        accepted = _recompute_current_accepted_proposal(run_dir)
+        authorized = accepted == proposal
+    else:
+        authorized = _proposal_bound_in_accepted_ancestry(run_dir, proposal)
+    if not authorized:
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH",
+        )
+
+
 def seal_accepted_generated_grade(
     run_dir: Path, proposal: GeneratedGradeProposal,
 ):
@@ -142,6 +294,7 @@ def seal_accepted_generated_grade(
             reason="BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH",
         )
     lineage = _accepted_release_lineage(run_dir, proposal)
+    _require_accepted_proposal_authority(run_dir, proposal, lineage)
     return _seal_generated_grade(
         proposal, lineage[-1], release_lineage=lineage)
 

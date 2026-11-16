@@ -211,10 +211,13 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
 
         self.assertEqual(first, replay)
         self.assertEqual(first.proposal_sha256, replay.proposal_sha256)
-        self.assertIn("skos:cluster-a", first.member_semantic_ids)
         self.assertNotIn("skos:cluster-b", first.member_semantic_ids)
         self.assertIn("skos:distinct", first.member_semantic_ids)
         self.assertIn("skos:new-z", first.member_semantic_ids)
+        self.assertGreaterEqual(len({
+            next(item for item in evidence if item.semantic_id == member).neighborhood_id
+            for member in first.member_semantic_ids
+        }), 3)
         self.assertTrue(all(
             not member.startswith(("A.", "B.", "C."))
             for member in first.member_semantic_ids))
@@ -226,7 +229,8 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
         self.assertNotIn("skos:unknown", first.member_semantic_ids)
 
     def test_mastered_prerequisite_lowers_descendant_cost_and_changes_next_grade(self):
-        snapshot, closure, release, evidence, policy, learner = _fixture()
+        snapshot, closure, release, evidence, _policy, learner = _fixture()
+        policy = GeneratedGradePolicy("learner-relative-grade/v1", 2, 1, 17)
         before = synthesize_generated_grade(
             snapshot, closure, release, _inputs(learner, evidence, policy))
         after_closure = _closure_with_bridge_mastered(closure)

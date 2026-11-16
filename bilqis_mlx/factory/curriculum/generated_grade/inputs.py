@@ -15,7 +15,8 @@ from bilqis_mlx.factory.atlas_frontier_progress_validation import (
     credited_obligation_keys, current_obligations,
 )
 from bilqis_mlx.factory.autonomy import (
-    AutonomyPlan, evidence_complete_capabilities, obligations_for_capability,
+    AutonomyPlan, EvidenceLedger, evidence_complete_capabilities,
+    obligations_for_capability,
 )
 from bilqis_mlx.factory._autonomy.contracts import release_capabilities
 from bilqis_mlx.factory import candidate_realizations
@@ -26,6 +27,8 @@ from .contracts import (
     AcceptedLearnerFoot, AcquisitionCostEvidence, CandidateDevelopmentEvidence,
     CostEvidenceKind, GeneratedGradeInputs, GeneratedGradePolicy, _issue_inputs,
 )
+
+_MIN_PROGRESS_OBSERVATIONS = 2
 
 
 def _a09_baselines(epoch: AtlasCoverageEpoch) -> tuple[str, ...]:
@@ -96,8 +99,44 @@ def _realization(epoch, semantic_id, rows):
     return tuple(sorted(set(capabilities))), tuple(sorted(set(anchors)))
 
 
-def _measured_acquisition_cost(
+def _mastery_before_intervention(epoch, learner, plan, intervention):
+    ledger = learner.ledger
+    before = EvidenceLedger(
+        ledger.factory_release_sha256,
+        ledger.autonomy_plan_sha256,
+        tuple(receipt for receipt in ledger.receipts
+              if receipt.optimizer_step <= intervention.parent_optimizer_step),
+        tuple(receipt for receipt in ledger.interventions
+              if receipt.optimizer_step <= intervention.parent_optimizer_step),
+        tuple(receipt for receipt in ledger.rejected_attempts
+              if receipt.retained_optimizer_step <= intervention.parent_optimizer_step),
+    )
+    return set(evidence_complete_capabilities(
+        epoch.current_release, before, plan=plan,
+        current_checkpoint_sha256=intervention.parent_checkpoint_sha256,
+        current_optimizer_step=intervention.parent_optimizer_step))
+
+
+def _qualified_transfer_savings(cost_rows, prerequisite_capabilities):
+    """Return only causal prerequisite comparisons with both control arms."""
+    result = []
+    for semantic_id, capability_ids in prerequisite_capabilities:
+        capabilities = set(capability_ids)
+        treatment = [cost for cost, mastered in cost_rows
+                     if capabilities.intersection(mastered)]
+        control = [cost for cost, mastered in cost_rows
+                   if not capabilities.intersection(mastered)]
+        if not treatment or not control:
+            continue
+        treatment_mean = (sum(treatment) + len(treatment) - 1) // len(treatment)
+        control_mean = (sum(control) + len(control) - 1) // len(control)
+        result.append((semantic_id, control_mean - treatment_mean))
+    return tuple(sorted(result)) or None
+
+
+def _measured_cost_profile(
     epoch, learner, plan, foot, capability_ids, family_ids,
+    prerequisite_capabilities=(),
 ):
     """Estimate candidate cost from accepted completed same-family teaching history."""
     known = {item.capability_id for item in release_capabilities(epoch.current_release)}
@@ -117,31 +156,67 @@ def _measured_acquisition_cost(
             comparable.update(capability for capability in realized
                               if capability in known and capability in mastered)
     if not comparable:
-        return None
+        return None, None
     costs = []
+    cost_rows = []
+    history_episodes = []
     for capability in sorted(comparable):
         obligation_ids = {
             obligation.obligation_id
             for obligation in obligations_for_capability(
                 epoch.current_release, capability, plan=plan)
         }
-        deltas = tuple(
-            receipt.optimizer_step_delta
-            for receipt in learner.ledger.interventions
+        interventions = tuple(
+            receipt for receipt in learner.ledger.interventions
             if receipt.obligation_id in obligation_ids
-            and receipt.optimizer_step_delta is not None
-        )
-        if deltas:
-            costs.append(sum(deltas))
+            and receipt.optimizer_step_delta is not None)
+        ordered = tuple(sorted(
+            interventions,
+            key=lambda item: (
+                item.parent_optimizer_step,
+                item.optimizer_step,
+                item.intervention_id,
+            ),
+        ))
+        if ordered:
+            episode_cost = sum(
+                receipt.optimizer_step_delta for receipt in ordered)
+            episode_start = ordered[0]
+            costs.append(episode_cost)
+            cost_rows.append((
+                episode_cost,
+                _mastery_before_intervention(
+                    epoch, learner, plan, episode_start),
+            ))
+            history_episodes.append((
+                episode_start.parent_optimizer_step,
+                episode_start.optimizer_step,
+                capability,
+                episode_cost,
+            ))
     if not costs:
-        return None
+        return None, None
     units = (sum(costs) + len(costs) - 1) // len(costs)
-    return AcquisitionCostEvidence(
+    evidence = AcquisitionCostEvidence(
         CostEvidenceKind.MEASURED,
         "accepted-teaching-family-mean-ceil/v1",
         units,
-        None,
+        _qualified_transfer_savings(cost_rows, prerequisite_capabilities),
     )
+    ordered_history = tuple(sorted(history_episodes))
+    progress = (
+        None if len(ordered_history) < _MIN_PROGRESS_OBSERVATIONS
+        else max(0, ordered_history[0][-1] - ordered_history[-1][-1]))
+    return evidence, progress
+
+
+def _measured_acquisition_cost(
+    epoch, learner, plan, foot, capability_ids, family_ids,
+    prerequisite_capabilities=(),
+):
+    return _measured_cost_profile(
+        epoch, learner, plan, foot, capability_ids, family_ids,
+        prerequisite_capabilities)[0]
 
 
 def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopmentEvidence, ...]:
@@ -154,6 +229,21 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
         epoch.snapshot, epoch.closure)}
     mastered_semantics = set(semantic_roots_for_mastered_capabilities(
         epoch.current_release, foot.mastered_capability_ids))
+    mastered_family_ids = {
+        family
+        for identity in mastered_semantics
+        for family in families.get(identity, set())
+    }
+    capability_definitions = {
+        item.capability_id: item for item in release_capabilities(epoch.current_release)}
+    semantic_specs = dict(epoch.current_release.curriculum.capability_map)
+    for staged in epoch.staged_candidates:
+        successor = getattr(staged, "successor", None)
+        if successor is None:
+            continue
+        capability_definitions.update({
+            item.capability_id: item for item in release_capabilities(successor)})
+        semantic_specs.update(successor.curriculum.capability_map)
     results = []
     for semantic_id in epoch.closure.constituent_order:
         if semantic_id in mastered_semantics:
@@ -163,16 +253,26 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
         capability_ids, anchors = _realization(epoch, semantic_id, rows)
         prerequisite_count = len(graph[semantic_id])
         family_ids = tuple(sorted(families[semantic_id]))
-        neighborhood_id = hashlib.sha256(_bytes(("a09-family-neighborhood/v1",
-                                                  family_ids))).hexdigest()
+        neighborhood_id = hashlib.sha256(_bytes((
+            "a09-family-prerequisite-neighborhood/v2",
+            family_ids,
+            tuple(sorted(graph[semantic_id])),
+        ))).hexdigest()
         metric = metrics[semantic_id]
         unmet = {
             reason.dependency_id
             for row in rows for reason in row.reasons
             if reason.code.startswith("PREREQUISITE_") and reason.dependency_id
         }
-        measured_cost = _measured_acquisition_cost(
-            epoch, learner, plan, foot, capability_ids, family_ids)
+        prerequisite_capabilities = tuple(
+            (prerequisite, _realization(
+                epoch, prerequisite,
+                tuple(item for item in epoch.closure.candidates
+                      if item.semantic_id == prerequisite))[0])
+            for prerequisite in sorted(graph[semantic_id]))
+        measured_cost, learning_progress = _measured_cost_profile(
+            epoch, learner, plan, foot, capability_ids, family_ids,
+            prerequisite_capabilities)
         cost = measured_cost or AcquisitionCostEvidence(
             CostEvidenceKind.BOOTSTRAPPED,
             "a09-unmet-prerequisite-slope/v1",
@@ -180,22 +280,50 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
             None,
         )
         compute_units = max(1, 1 + len(unmet))
+        modality_complete = bool(capability_ids) and all(
+            capability_id in capability_definitions
+            for capability_id in capability_ids)
+        answer_kinds = (
+            {
+                kind
+                for capability_id in capability_ids
+                for kind in capability_definitions[capability_id].answer_kinds
+            }
+            if modality_complete else set()
+        )
+        ast_complete = bool(capability_ids) and all(
+            capability_id in semantic_specs for capability_id in capability_ids)
+        ast_burden = (
+            sum(
+                len(semantic_specs[capability_id].taught_roots)
+                + len(semantic_specs[capability_id].prerequisites)
+                + len(semantic_specs[capability_id].composed_of)
+                for capability_id in capability_ids
+            )
+            if ast_complete else None
+        )
+        transfer = cost.transfer_savings
+        transfer_breadth = None if transfer is None else len(transfer)
         results.append(CandidateDevelopmentEvidence(
             semantic_id=semantic_id,
             compiled_capability_ids=capability_ids,
             source_anchor_ids=anchors,
             neighborhood_id=neighborhood_id,
-            coverage_factors=family_ids,
+            coverage_factors=tuple(
+                family for family in family_ids if family not in mastered_family_ids),
             acquisition_cost=cost,
-            grounding_quality=len(anchors),
-            answer_modality_burden=None,
-            ast_burden=None,
-            entanglement=None,
-            reusable_constituent_value=None,
+            grounding_quality=(
+                len(anchors) + len(answer_kinds)
+                if anchors and modality_complete and answer_kinds else 0),
+            answer_modality_burden=(
+                len(answer_kinds) if modality_complete else None),
+            ast_burden=ast_burden,
+            entanglement=len(unmet),
+            reusable_constituent_value=metric.downstream_unlocks,
             downstream_unlocks=metric.downstream_unlocks,
             minimal_contrast_value=None,
-            transfer_breadth=None,
-            learning_progress=None,
+            transfer_breadth=transfer_breadth,
+            learning_progress=learning_progress,
             fairness_age=None,
             a09_prerequisite_slope=metric.prerequisite_slope,
             a09_cursor_distance=metric.cursor_distance,
@@ -247,7 +375,7 @@ def _compile_generated_grade_inputs(
         _fail("BAMF_GENERATED_GRADE_AUTHORITY_MISMATCH")
     foot = _learner_foot(epoch, learner, plan)
     policy = GeneratedGradePolicy(
-        "a09-393-pareto-cohort/v1",
+        "a09-393-pareto-cohort/v2",
         max(1, epoch.snapshot.budget.max_candidates),
         max(0, min(
             epoch.snapshot.budget.max_candidates,

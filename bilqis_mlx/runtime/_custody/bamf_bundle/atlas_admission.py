@@ -11,9 +11,11 @@ from .records import BamfBundleCandidate, CompleteStudent, canonical, invalid, s
 
 ATLAS_ADMISSION_SCHEMA_V1 = "bilqis.mlx.bamf-atlas-admission-binding/v1"
 ATLAS_ADMISSION_SCHEMA_V2 = "bilqis.mlx.bamf-atlas-admission-binding/v2"
-ATLAS_ADMISSION_SCHEMA = ATLAS_ADMISSION_SCHEMA_V2
+ATLAS_ADMISSION_SCHEMA_V3 = "bilqis.mlx.bamf-atlas-admission-binding/v3"
+ATLAS_ADMISSION_SCHEMA = ATLAS_ADMISSION_SCHEMA_V3
 ATLAS_ADMISSION_SCHEMAS = frozenset({
     ATLAS_ADMISSION_SCHEMA_V1, ATLAS_ADMISSION_SCHEMA_V2,
+    ATLAS_ADMISSION_SCHEMA_V3,
 })
 _ISSUER = object()
 _FIELDS_V1 = (
@@ -26,6 +28,12 @@ _FIELDS_V1 = (
 _FIELDS_V2 = (
     *_FIELDS_V1[:-1],
     "selection_receipt_sha256", "selected_obligation_keys", "schema_version",
+)
+_FIELDS_V3 = (
+    *_FIELDS_V2[:-1],
+    "predecessor_factory_release_sha256",
+    "generated_grade_proposal_sha256",
+    "schema_version",
 )
 
 
@@ -60,6 +68,8 @@ class AtlasAdmissionBinding:
     parent_feature_receipt_sha256: str
     selection_receipt_sha256: str | None = None
     selected_obligation_keys: tuple[tuple[str, str], ...] = ()
+    predecessor_factory_release_sha256: str | None = None
+    generated_grade_proposal_sha256: str | None = None
     schema_version: str = ATLAS_ADMISSION_SCHEMA_V1
     _issuance: object = field(init=False, default=None, repr=False, compare=False)
 
@@ -82,9 +92,17 @@ class AtlasAdmissionBinding:
                          or not _valid_obligation_keys(self.selected_obligation_keys)
                          or not self.selected_obligation_keys))):
             invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
+        if (self.schema_version == ATLAS_ADMISSION_SCHEMA_V3
+                and (not _hex(self.selection_receipt_sha256)
+                     or not _valid_obligation_keys(self.selected_obligation_keys)
+                     or not self.selected_obligation_keys
+                     or not _hex(self.predecessor_factory_release_sha256)
+                     or not _hex(self.generated_grade_proposal_sha256))):
+            invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
 
     def _public_record(self) -> dict:
-        fields = (_FIELDS_V2 if self.schema_version == ATLAS_ADMISSION_SCHEMA_V2
+        fields = (_FIELDS_V3 if self.schema_version == ATLAS_ADMISSION_SCHEMA_V3
+                  else _FIELDS_V2 if self.schema_version == ATLAS_ADMISSION_SCHEMA_V2
                   else _FIELDS_V1)
         return {name: getattr(self, name) for name in fields}
 
@@ -100,12 +118,13 @@ class AtlasAdmissionBinding:
         if not isinstance(record, Mapping):
             invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
         schema = record.get("schema_version")
-        fields = (_FIELDS_V2 if schema == ATLAS_ADMISSION_SCHEMA_V2
+        fields = (_FIELDS_V3 if schema == ATLAS_ADMISSION_SCHEMA_V3
+                  else _FIELDS_V2 if schema == ATLAS_ADMISSION_SCHEMA_V2
                   else _FIELDS_V1 if schema == ATLAS_ADMISSION_SCHEMA_V1 else ())
         if not fields or set(record) != set(fields) | {"binding_sha256"}:
             invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
         payload = {name: record[name] for name in fields}
-        if schema == ATLAS_ADMISSION_SCHEMA_V2:
+        if schema in {ATLAS_ADMISSION_SCHEMA_V2, ATLAS_ADMISSION_SCHEMA_V3}:
             raw_keys = payload["selected_obligation_keys"]
             if not isinstance(raw_keys, (list, tuple)):
                 invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
@@ -126,6 +145,12 @@ class AtlasAdmissionBinding:
                     and (not _hex(payload["selection_receipt_sha256"])
                          or not _valid_obligation_keys(payload["selected_obligation_keys"])
                          or not payload["selected_obligation_keys"]))
+                or (schema == ATLAS_ADMISSION_SCHEMA_V3
+                    and (not _hex(payload["selection_receipt_sha256"])
+                         or not _valid_obligation_keys(payload["selected_obligation_keys"])
+                         or not payload["selected_obligation_keys"]
+                         or not _hex(payload["predecessor_factory_release_sha256"])
+                         or not _hex(payload["generated_grade_proposal_sha256"])))
                 or record["binding_sha256"] != sha(canonical(payload))):
             invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
         return ParsedAtlasAdmissionBinding(payload)
@@ -156,7 +181,10 @@ def _issue_atlas_admission_binding(
         factory_release_sha256: str, staging_receipt_sha256: str,
         parent_feature_receipt_sha256: str,
         selection_receipt_sha256: str | None = None,
-        selected_obligation_keys: tuple[tuple[str, str], ...] = ()) -> AtlasAdmissionBinding:
+        selected_obligation_keys: tuple[tuple[str, str], ...] = (),
+        predecessor_factory_release_sha256: str | None = None,
+        generated_grade_proposal_sha256: str | None = None,
+) -> AtlasAdmissionBinding:
     """Mint C07 authority only after its caller has replayed lease and staging proof."""
     transition = dict(candidate.transition)
     if (type(candidate) is not BamfBundleCandidate or type(parent) is not CompleteStudent
@@ -171,10 +199,14 @@ def _issue_atlas_admission_binding(
             }):
         invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
     obligation_keys = tuple(sorted(set(selected_obligation_keys)))
-    v2 = selection_receipt_sha256 is not None or bool(obligation_keys)
+    v3 = generated_grade_proposal_sha256 is not None
+    v2 = v3 or selection_receipt_sha256 is not None or bool(obligation_keys)
     if v2 and (not _hex(selection_receipt_sha256)
                or not _valid_obligation_keys(obligation_keys)
                or not obligation_keys):
+        invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
+    if v3 and (not _hex(predecessor_factory_release_sha256)
+               or not _hex(generated_grade_proposal_sha256)):
         invalid("BAMF_ATLAS_ADMISSION_BINDING_INVALID")
     binding = object.__new__(AtlasAdmissionBinding)
     for name, value in (
@@ -193,8 +225,12 @@ def _issue_atlas_admission_binding(
             ("parent_feature_receipt_sha256", parent_feature_receipt_sha256),
             ("selection_receipt_sha256", selection_receipt_sha256),
             ("selected_obligation_keys", obligation_keys),
+            ("predecessor_factory_release_sha256", predecessor_factory_release_sha256),
+            ("generated_grade_proposal_sha256", generated_grade_proposal_sha256),
             ("schema_version", (
-                ATLAS_ADMISSION_SCHEMA_V2 if v2 else ATLAS_ADMISSION_SCHEMA_V1)),
+                ATLAS_ADMISSION_SCHEMA_V3 if v3
+                else ATLAS_ADMISSION_SCHEMA_V2 if v2
+                else ATLAS_ADMISSION_SCHEMA_V1)),
             ("_issuance", _ISSUER)):
         object.__setattr__(binding, name, value)
     binding.__post_init__()

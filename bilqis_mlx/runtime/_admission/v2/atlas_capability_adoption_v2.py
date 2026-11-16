@@ -58,7 +58,24 @@ def _historical_factory_release_sha256(
         acceptance_sha256 = parent_acceptance
 
 
-def _accepted_capability_only_retry_state_once_v2(current, handoff, lease):
+def _generated_grade_digest(authority, handoff):
+    if authority is None:
+        return None
+    from bilqis_mlx.runtime.generated_grade import (
+        _require_generated_grade_authority,
+    )
+    authority = _require_generated_grade_authority(authority)
+    if (
+        authority.predecessor_factory_release_sha256
+        != handoff.receipt.predecessor_release.release_sha256
+        or authority.a09_proposal_sha256 != handoff.proposal.proposal_sha256
+    ):
+        _invalid("BAMF_GENERATED_GRADE_ACCEPTED_AUTHORITY_DRIFT")
+    return authority.proposal_sha256
+
+
+def _accepted_capability_only_retry_state_once_v2(
+        current, handoff, lease, *, generated_grade_authority=None):
     """Return an exact retry or the exact accepted predecessor pointer."""
     from bilqis_mlx.runtime.atlas_flywheel_runtime_context import (
         atlas_admission_checkpoint,
@@ -71,6 +88,7 @@ def _accepted_capability_only_retry_state_once_v2(current, handoff, lease):
     from bilqis_mlx.runtime.bamf_bundle.codec import load_bamf_bundle
     from bilqis_mlx.runtime.bamf_bundle.factory_release.admission import (
         FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
         ParsedFactoryReleaseAdmissionBinding,
     )
     from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import (
@@ -109,6 +127,8 @@ def _accepted_capability_only_retry_state_once_v2(current, handoff, lease):
         return None, dict(pointer)
     if accepted_release.release_sha256 != successor:
         _invalid("BAMF_ATLAS_V2_CAPABILITY_RETRY_CONFLICT")
+    expected_generated_grade = _generated_grade_digest(
+        generated_grade_authority, handoff)
     binding = accepted_binding_for_manifest(
         current.run_dir, pointer["manifest_sha256"], accepted,
         expected_acceptance_sha256=pointer["acceptance_sha256"])
@@ -127,9 +147,16 @@ def _accepted_capability_only_retry_state_once_v2(current, handoff, lease):
             or accepted.retained_state.optimizer_step
                != current.legacy.checkpoint.optimizer_step):
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_DRIFT")
-    if (binding.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V2
+    if (binding.schema_version in {
+            FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+            FACTORY_RELEASE_ADMISSION_SCHEMA_V3}
             and not set(requested_keys((handoff.receipt,))).issubset(
                 binding.accepted_obligation_keys)):
+        _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_DRIFT")
+    if expected_generated_grade is not None and (
+            binding.schema_version != FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+            or binding.generated_grade_proposal_sha256
+               != expected_generated_grade):
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_DRIFT")
     parent_manifest = accepted.parent_manifest_sha256
     parent_acceptance = parent_acceptance_anchor_from_manifest(
@@ -145,7 +172,8 @@ def _accepted_capability_only_retry_state_once_v2(current, handoff, lease):
     return pointer, None
 
 
-def _accepted_capability_only_retry_state_v2(current, handoff, lease):
+def _accepted_capability_only_retry_state_v2(
+        current, handoff, lease, *, generated_grade_authority=None):
     """Classify against one stable accepted-generation snapshot, retrying once."""
     from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import accepted_generation
 
@@ -159,8 +187,13 @@ def _accepted_capability_only_retry_state_v2(current, handoff, lease):
     for attempt in range(2):
         before, _student = accepted_generation(current.run_dir / "bamf-state.json")
         try:
-            result = _accepted_capability_only_retry_state_once_v2(
-                current, handoff, lease)
+            if generated_grade_authority is None:
+                result = _accepted_capability_only_retry_state_once_v2(
+                    current, handoff, lease)
+            else:
+                result = _accepted_capability_only_retry_state_once_v2(
+                    current, handoff, lease,
+                    generated_grade_authority=generated_grade_authority)
         except BilqisError:
             after, _student = accepted_generation(current.run_dir / "bamf-state.json")
             if identity(after) == identity(before):
@@ -177,15 +210,18 @@ def _accepted_capability_only_retry_state_v2(current, handoff, lease):
     _invalid("BAMF_ATLAS_V2_CAPABILITY_RETRY_CONFLICT")
 
 
-def accepted_capability_only_retry_v2(current, handoff, lease):
+def accepted_capability_only_retry_v2(
+        current, handoff, lease, *, generated_grade_authority=None):
     """Authenticate an exact accepted Factory-only child before live verification."""
     retry, _parent_pointer = _accepted_capability_only_retry_state_v2(
-        current, handoff, lease)
+        current, handoff, lease,
+        generated_grade_authority=generated_grade_authority)
     return retry
 
 
 def _revalidate_capability_publication(
-        current, handoff, lease, runtime, source_authority, expected_parent_pointer):
+        current, handoff, lease, runtime, source_authority, expected_parent_pointer,
+        *, generated_grade_authority=None):
     from bilqis_mlx.runtime.atlas_admission import (
         read_accepted_atlas_factory_release,
         read_accepted_atlas_lease_v2,
@@ -220,7 +256,9 @@ def _revalidate_capability_publication(
                 or parent.retained_state.optimizer_step
                    != current.legacy.checkpoint.optimizer_step
                 or runtime_checkpoint != current.legacy.checkpoint):
-            raced = accepted_capability_only_retry_v2(current, handoff, lease)
+            raced = accepted_capability_only_retry_v2(
+                current, handoff, lease,
+                generated_grade_authority=generated_grade_authority)
             if isinstance(raced, dict):
                 return raced, None, None
             _invalid("BAMF_ATLAS_RUNTIME_CONTEXT_CHANGED")
@@ -229,7 +267,9 @@ def _revalidate_capability_publication(
             handoff.staged_candidate.successor,
             live_source_registry(), live_answer_registry())
     except BilqisError:
-        raced = accepted_capability_only_retry_v2(current, handoff, lease)
+        raced = accepted_capability_only_retry_v2(
+            current, handoff, lease,
+            generated_grade_authority=generated_grade_authority)
         if isinstance(raced, dict):
             return raced, None, None
         raise
@@ -245,7 +285,8 @@ def _revalidate_capability_publication(
 
 
 def publish_capability_only_factory_successor(
-        current, handoff, lease, *, expected_parent_pointer):
+        current, handoff, lease, *, expected_parent_pointer,
+        generated_grade_authority=None):
     """Publish one verified zero-ID Factory successor without any A02 owner call."""
     from bilqis_mlx.runtime.atlas_admission import (
         _hold_current_atlas_lease_v2_publication,
@@ -253,11 +294,13 @@ def publish_capability_only_factory_successor(
     with _hold_current_atlas_lease_v2_publication(current.run_dir, lease):
         return _publish_capability_only_factory_successor_locked(
             current, handoff, lease,
-            expected_parent_pointer=expected_parent_pointer)
+            expected_parent_pointer=expected_parent_pointer,
+            generated_grade_authority=generated_grade_authority)
 
 
 def _publish_capability_only_factory_successor_locked(
-        current, handoff, lease, *, expected_parent_pointer):
+        current, handoff, lease, *, expected_parent_pointer,
+        generated_grade_authority=None):
     """Publish while human v2 lease renewal is structurally excluded."""
     from . import admission as runtime_admission
     from bilqis_mlx.runtime.atlas_admission import (
@@ -285,13 +328,16 @@ def _publish_capability_only_factory_successor_locked(
     if not is_atlas_admission_runtime(runtime):
         _invalid("BAMF_ATLAS_V2_CAPABILITY_OWNER_UNAVAILABLE")
     refreshed, current_parent_pointer = _accepted_capability_only_retry_state_v2(
-        current, handoff, lease)
+        current, handoff, lease,
+        generated_grade_authority=generated_grade_authority)
     if isinstance(refreshed, dict):
         return refreshed
     if current_parent_pointer != expected_parent_pointer:
         _invalid("BAMF_ATLAS_RUNTIME_CONTEXT_CHANGED")
     raced, parent, parent_manifest = _revalidate_capability_publication(
-        current, handoff, lease, runtime, source_authority, expected_parent_pointer)
+        current, handoff, lease, runtime, source_authority,
+        expected_parent_pointer,
+        generated_grade_authority=generated_grade_authority)
     if isinstance(raced, dict):
         return raced
     from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import accepted_generation
@@ -319,7 +365,9 @@ def _publish_capability_only_factory_successor_locked(
         parent, parent_manifest_sha256=parent_manifest, transition=transition)
     binding = _issue_factory_release_admission_binding(
         candidate, parent, transition=transition,
-        accepted_obligation_keys=accepted_obligation_keys)
+        accepted_obligation_keys=accepted_obligation_keys,
+        generated_grade_proposal_sha256=_generated_grade_digest(
+            generated_grade_authority, handoff))
     release_file = runtime_admission._persist_executable_factory_release(
         runtime.run_dir, handoff.staged_candidate.successor)
     expected_release_file = (
