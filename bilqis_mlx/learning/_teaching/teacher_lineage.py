@@ -201,21 +201,12 @@ def advance_teacher_lineage(
             or next_epoch.prior_teacher() != previous.teacher()
             or next_epoch.student_sha256 == previous.student_sha256):
         invalid("TEACHER_SUCCESSOR_EPOCH_INVALID")
-    projected = _projection(
+    return _projection(
         next_epoch, adaptation=adaptation_ref(lineage["adaptation_authority"]),
         source_teacher_sha256=lineage["source_teacher_sha256"],
         teacher_epoch=previous_state["teacher_epoch"] + 1,
         next_seed=next_seed, cursor=cursor,
         last_visit=previous_state.get("last_visit"))
-    counter, selected = priority_rotation_state(previous_state)
-    if counter == 0 and not selected:
-        return projected
-    state = dict(projected.teacher_state)
-    state["priority_counter"] = counter
-    state["priority_last_selected"] = dict(sorted(selected.items()))
-    restore_teacher_lineage(state)
-    return TeacherCustodyProjection(
-        state, projected.teacher_identity, projected.teacher_epoch)
 
 
 __all__ = (

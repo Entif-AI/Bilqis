@@ -674,11 +674,6 @@ This ADR changes no neural optimizer authority. Only the human invokes `--human-
 
 **Direct user correction of ADR-035:** active maxed capability champions are not confined to their own lesson grade. Each active capability role at 100% contributes one direct advisory vote to training examples in any admitted grade. A frozen grade soup remains a separate aggregate adviser. Same-grade soup advice keeps the soup's full frozen base vote count; foreign-grade soup advice divides that base count by the current number of admitted grades.
 
-**Superseded for live championship eligibility by ADR-143 (2026-11-15):** the
-cross-grade teaching geography remains historical provenance, but direct capability
-advice now begins once the role has earned the strict >90% capability threshold;
-perfection is no longer the eligibility floor.
-
 Direct votes are capability-role votes, not checkpoint votes. If one intact checkpoint owns several qualifying maxed roles, inference may load and evaluate that checkpoint once, but its advisory weight equals the number of active maxed roles it owns. Historical or global simultaneous-perfect breadth does not create extra direct votes. Active best-score roles below 100% remain valid championship and soup ingredients under ADR-058, but they contribute zero direct capability votes until maxed.
 
 Current issue #340 state makes the intended arithmetic concrete. A owns six active roles and all six are maxed, so a B lesson receives six direct A capability votes. A's frozen soup has base vote count six and, with A/B/C admitted, contributes another `6/3 = 2` votes. C currently owns seven active roles, five maxed, so B receives five direct C capability votes plus the existing C soup weight `7/3`. B currently has no maxed active roles, so it contributes no direct B capability votes to itself, while its six-role soup remains available under the existing soup contract.
@@ -796,10 +791,6 @@ Protected implementation owner is **socr8s/private-ip #344**. Governing desired 
 ## ADR-071 | 2026-10-19 | Empty capability titles require 66% proficiency and begin with only their first passed questions
 
 **Direct user decision:** after a championship field has been cleared, an empty capability title MUST remain vacant until one same-grade checkpoint reaches at least **66% proficiency on that capability**. On the current twelve-question capability exams this means **8/12 or better**. A checkpoint below that floor may be measured but cannot become the first owner merely because the slot is empty.
-
-**Superseded by ADR-143 (2026-11-15):** live capability championship eligibility is
-now strictly above 90%, with no subthreshold role, soup participation, teaching vote,
-or championship checkpoint custody.
 
 When a checkpoint first crosses that threshold and claims the empty title, its initial title-defense battery is exactly the set of questions for that capability that the checkpoint answered correctly on that threshold-crossing examination. No missed questions, sibling-capability questions, broader grade panel, historical battery, synthetic padding, or other evidence is added to the initial battery. Later valid contenders face the normal championship comparison against that battery under the existing one-lifetime-fight and same-grade rules.
 
@@ -3470,112 +3461,4 @@ two-hour ceiling.
 evidence reuse. ADR-139 still governs fail-fast staging. ADR-132 still requires
 detached execution for sufficiently long commands. ADR-138 and ADR-140 still govern
 MLX memory and concurrency. ADR-141 adds the wall-clock ceiling above those controls.
-
-## ADR-142 | 2026-11-15 | Foundation retention protects earned baselines and values trades by normalized mastery debt
-
-**Status:** Accepted by direct owner instruction on 2026-11-15 while repairing
-generation-0 BAMF retention.
-
-**Problem:** The BAMF-0.2 foundation screen treated every admitted non-target
-capability as if it already owned an earned protected baseline. On a brand-new
-student this caused initial learning candidates to reject as
-`PROTECTED_CAPABILITY_REGRESSION` against random generation-0 behavior. The
-foundation screen also used a fixed reference-loss budget and raw aggregate
-correct-answer deltas, which can reject a globally beneficial trade such as moving a
-weak capability from 57% to 60% while a near-mastered capability moves from 98% to
-93%.
-
-**Decision:** Curriculum admission is not retention protection. A capability first
-earns ordinary retention protection after a candidate targeting that capability has
-actually been retained. Its first retained measurement establishes the baseline to
-beat; an untrained admitted capability contributes observation but no veto authority.
-The candidate being evaluated may never bootstrap protection from its own unaccepted
-step.
-
-Foundation trade valuation uses the normalized quadratic mastery-debt utility already
-proven by ADR-114. For accuracy `a`, mastery debt is `1-a`, debt energy is
-`(1-a)^2`, and candidate utility is the sum of
-`E_before - E_after` with one normalized vote per affected capability regardless of
-probe-row count. Raw-negative grade or school deltas may be admitted only when the
-corresponding measured scope has positive mastery-debt utility. Utility-negative
-tradeoffs still reject. Source, custody, semantic identity, and other hard gates
-remain hard.
-
-This foundation rule is immediate acquisition policy; it does not wait for the
-starvation/plasticity activation thresholds that historically invoked ADR-114. It
-supersedes the fixed one-answer C05 protected-loss economics for foundation
-acquisition while leaving later strict/generalization policy unchanged unless
-separately amended.
-
-## ADR-143 | 2026-11-15 | Championship custody and teaching authority begin only above 90% capability proficiency
-
-**Status:** Accepted by direct owner instruction on 2026-11-15.
-
-**Problem:** The prior championship contract could mint and preserve a capability
-role at 66%. A whole frozen student plus native AdamW could therefore remain pinned
-for a mediocre capability even though that checkpoint was not useful enough to
-influence future learning. Besides risking stale low-skill advice, these frozen
-whole-student checkpoints materially contribute to disk growth.
-
-**Decision:** Championship eligibility is capability-local and begins only when that
-capability's verified score is **strictly greater than 90%**. Compare integer scores
-exactly as `10 * correct > 9 * total`; do not round percentages. On a twelve-item
-panel, 11/12 qualifies and 10/12 does not.
-
-Below that threshold, preserve lightweight score, source, cohort, and provenance
-evidence, but do not mint an active championship role, freeze or pin a checkpoint
-solely for championship, create a soup ingredient from it, or grant direct teaching
-votes. The causal current student may of course remain in custody for its independent
-student/optimizer role, and another independently authoritative reference may still
-require the same bundle.
-
-Once a capability crosses the threshold it may earn championship custody and
-source-gold-gated teaching influence without waiting for full graduation of its
-grade. Full cumulative grade/school graduation remains a separate contract. This
-supersedes the 66% empty-title threshold and the earlier practice of retaining
-subthreshold capability-best/champion checkpoints solely for possible future title
-use.
-
-Championship checkpoint custody is **active-title-only**. After any championship
-promotion or takeover, recompute the set of checkpoint identities that own at least
-one active capability title. A previously retained championship checkpoint that owns
-zero active titles must be released from championship custody immediately; archived
-title history, settled-match evidence and superseded-role metadata remain lightweight
-receipts and MUST NOT pin the old whole model or AdamW. If that same checkpoint is
-still protected by an independent authority such as the causal current student,
-explicit recovery custody, or a live graduation/admission baseline, that independent
-authority may keep the shared bytes until its own obligation ends.
-
-Every successful graduation boundary that admits **new semantics** starts a completely
-fresh championship epoch. No prior champion role, champion soup, title ownership, or
-championship checkpoint custody survives that boundary, even if the same capability
-name still exists afterward. Preserve the prior epoch only as lightweight provenance
-and settled-match/history metadata. This is stronger than ordinary active-title
-reconciliation: the post-admission active championship map is empty by definition.
-The sweep is post-commit cleanup and must never delete the newly published causal
-student or a checkpoint still named by some independent non-championship custody
-surface.
-
-## ADR-144 | 2026-11-15 | New-semantic admission clears settled-match authority
-
-**Status:** Accepted by direct owner clarification on 2026-11-15.
-
-**Problem:** ADR-143 established that new-semantic admission creates a completely
-fresh championship epoch, but the runtime still copied the prior epoch's
-`settled_matchups` ledger into the successor. Because a settled pair suppresses
-future title inference, a pre-admission fight could therefore veto a fresh fight
-after the semantic geometry changed even though no champion role, soup, or
-championship custody survived.
-
-**Decision:** A new-semantic admission resets competitive settlement authority as
-well as roles, soups, and championship custody. The successor semantic epoch starts
-with an empty active `settled_matchups` ledger. Prior matchup receipts remain
-immutable in the archived prior epoch/history for provenance and audit, but they
-MUST NOT suppress, qualify, or otherwise govern a title fight in the new semantic
-epoch.
-
-The existing no-rematch rule remains unchanged **within one championship epoch**.
-This amendment is intentionally narrower than a general identity-reset rewrite:
-non-semantic holistic identity resets retain their current settled-ledger behavior
-unless separately changed by owner authority.
 

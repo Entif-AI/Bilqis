@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from collections.abc import Mapping
 from pathlib import Path
 
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
@@ -29,25 +28,6 @@ C05_PROTECTED_REFERENCE_LOSS = 1
 C05_FRESH_TARGET_SEED_OFFSET = 104729
 C05_FRESH_LESSON_SEED_OFFSET = 130363
 C05_MAX_FRESH_DRAWS = 32
-
-
-def _earned_protected_capabilities(parent, target_capability: str) -> tuple[str, ...]:
-    """Capabilities with accepted learning history before this candidate."""
-    earned = set()
-    teacher_state = getattr(parent, "teacher_state", None)
-    selected = (teacher_state.get("priority_last_selected", {})
-                if isinstance(teacher_state, Mapping) else {})
-    if isinstance(selected, Mapping):
-        earned.update(capability for capability, visit in selected.items()
-                      if isinstance(capability, str) and capability
-                      and type(visit) is int and visit > 0)
-    retained_state = getattr(parent, "retained_state", None)
-    for proof in getattr(retained_state, "step_proofs", ()):
-        capability = getattr(proof, "target_capability_id", None)
-        if isinstance(capability, str) and capability:
-            earned.add(capability)
-    earned.discard(target_capability)
-    return tuple(sorted(earned))
 
 
 def _training_exclusions(candidate: CandidateTransaction):

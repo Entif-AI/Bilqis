@@ -13,7 +13,7 @@ from typing import Mapping
 import hashlib
 import json
 import math
-from ..topology_v2.spec import (
+from .topology_v2.spec import (
     SCHEMA,
     BAMF_ARCHITECTURE_ID,
     LEGACY_ARCHITECTURE_ID,
@@ -25,7 +25,7 @@ from ..topology_v2.spec import (
     deserialize_topology,
     initializer_seed,
 )
-from ..topology_v2.dimensions import (
+from .topology_v2.dimensions import (
     MATRIX_RANK,
     FEATURE_NONE_ROW,
     FEATURE_RESERVED_ROWS,
@@ -37,7 +37,7 @@ from ..topology_v2.dimensions import (
     IDENTITY_BANK_SHAPE,
     MOTIF_PAGE_SHAPE,
 )
-from ..topology_v2.records import (
+from .topology_v2.records import (
     ParameterGroup,
     ParameterCategory,
     AdapterMatrixComponent,
@@ -49,7 +49,7 @@ from ..topology_v2.records import (
     ParameterSpec,
     ParameterCensus,
 )
-from ..topology_v2.ledger import (
+from .topology_v2.ledger import (
     _parameter,
     _input_parameters,
     _block_parameters,
@@ -61,25 +61,25 @@ from ..topology_v2.ledger import (
     bamf_parameter_census,
     print_bamf_parameter_census,
 )
-from ..topology_v2.initialization import (
+from .topology_v2.initialization import (
     initialize_bamf_parameter,
     initialize_bamf_row,
 )
-from ..topology_v2.factors import (
+from .topology_v2.factors import (
     project_identity_source_factor,
 )
-from ..topology_v2.validation import (
+from .topology_v2.validation import (
     validate_bamf_parameters,
 )
-from ..topology_v2.construction import (
+from .topology_v2.construction import (
     create_unbound_bamf_state,
 )
-from ..topology_v2.serialization import (
+from .topology_v2.serialization import (
     bamf_storage_key,
     bamf_serialization_arrays,
     bamf_deserialize_arrays,
 )
-from ..topology_v2.authority import (
+from .topology_v2.authority import (
     AUTHORITY_SCHEMA as B01_GENERATION_AUTHORITY_SCHEMA,
     B01GenerationAuthority,
     b01_generation_authority,

@@ -88,7 +88,7 @@ class ChampionConfidenceTests(unittest.TestCase):
         self.assertEqual(sum(mentor["source_grade_votes"]["A"] for mentor in direct), 6)
         self.assertEqual(soup_vote_count(snapshot, "B", 3), 2.0)
 
-    def test_above_ninety_subperfect_roles_vote_directly(self):
+    def test_subperfect_roles_stay_soup_only_while_five_maxed_c_roles_vote_directly(self):
         from bilqis_mlx.learning.champion_confidence import perfect_role_roster
         from bilqis_mlx.learning.grade_soup import soup_vote_count
         frontier, roles = {}, []
@@ -105,8 +105,8 @@ class ChampionConfidenceTests(unittest.TestCase):
                           "checkpoint_sha256": item["checkpoint"]["sha256"]})
         snapshot = {"grade": "C", "vote_count": 7, "roles": roles}
         direct = perfect_role_roster(frontier, {"C": snapshot})
-        self.assertEqual(sum(mentor["breadth"] for mentor in direct), 7)
-        self.assertEqual(sum(mentor["source_grade_votes"]["C"] for mentor in direct), 7)
+        self.assertEqual(sum(mentor["breadth"] for mentor in direct), 5)
+        self.assertEqual(sum(mentor["source_grade_votes"]["C"] for mentor in direct), 5)
         self.assertAlmostEqual(soup_vote_count(snapshot, "B", 3), 7 / 3)
 
     def test_mlx_supervised_step_absorbs_advice_without_modifying_exam_inference(self):

@@ -45,30 +45,9 @@ def referenced_custody_files(run_dir: Path, receipt: dict) -> tuple[tuple[Path, 
             for member in value:
                 visit(member, include_soups=include_soups)
 
-    epoch = receipt.get("mentor_epoch")
-    if epoch is None:
-        # Pre-epoch compatibility: historical receipts used several legacy
-        # frontier maps as live custody and cannot be safely narrowed here.
-        visit(receipt, include_soups=False)
-    elif isinstance(epoch, dict):
-        school = receipt.get("school", {})
-        visit(school.get("current_student"), include_soups=False)
-        visit(receipt.get("curriculum_parent"), include_soups=False)
-        recovery = receipt.get("student_regression_recovery")
-        if isinstance(recovery, dict):
-            visit(recovery.get("abandoned_student"), include_soups=False)
-        for peak in receipt.get("whole_student_peaks", ()):
-            if isinstance(peak, dict):
-                visit(peak.get("checkpoint"), include_soups=False)
-        for key in ("baseline", "previous_graduate", "previous_boundary_checkpoint"):
-            visit(epoch.get(key), include_soups=False)
-        roles = epoch.get("active_roles", {})
-        if isinstance(roles, dict):
-            for role in roles.values():
-                if isinstance(role, dict):
-                    visit(role.get("checkpoint"), include_soups=False)
-    else:
-        raise ValueError(DataPlaneError.CUSTODY_ARTIFACT_INVALID.value)
+    # Bundle custody can legitimately be rooted by archival provenance, but
+    # superseded soup tensors obey the bounded active+rollback retention rule.
+    visit(receipt, include_soups=False)
     visit(live_grade_soups(receipt), include_soups=True)
     return tuple(found[key] for key in sorted(found))
 

@@ -266,9 +266,8 @@ def _resume(run_dir, manifest, course, policy_sha, *, grade_a_course,
         receipt = {**receipt, "graduation_perfect": ranked}
     receipt = _learning_championship_runtime._migrate_championship_governance(run_dir, receipt, active_course)
     # Governance migration can archive formerly active champion references.
-    # Re-run retirement after that durable reset so zero-title championship
-    # bundles cannot remain pinned until some later visit boundary.
-    _runtime_checkpoints._publish_boundary(run_dir, receipt, (), ())
+    # Re-run custody verification against that enlarged immutable reference set
+    # before this resumed state is allowed to proceed to any lesson or exam.
     _runtime_checkpoints._verify_best_custody(run_dir, receipt)
     _state_dag.migrate_current_head(run_dir, receipt)
     return parameters, optimizer, graph, receipt

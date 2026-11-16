@@ -38,7 +38,7 @@ class ChampionshipWitnessTests(TestCase):
         self.assertLess(epoch["championship_eligibility_after_step"], 10)
         self.assertEqual(reference_checkpoints(epoch), (student,))
 
-    def test_archived_championship_aliases_are_metadata_only(self):
+    def test_archived_same_sha_bundle_aliases_are_all_pinned(self):
         from bilqis_mlx.learning.mentor_epoch import begin_initial_epoch, reference_checkpoints
         student = {"filename": "bundles/inert", "sha256": "a" * 64,
                    "optimizer_step": 10, "model_and_native_adamw": True}
@@ -55,9 +55,10 @@ class ChampionshipWitnessTests(TestCase):
             "active_grade_soups": {},
         }]
         pointers = reference_checkpoints(epoch)
-        self.assertEqual(pointers, (student,))
+        self.assertIn(first, pointers)
+        self.assertIn(second, pointers)
 
-    def test_archived_conflicting_aliases_do_not_create_live_custody(self):
+    def test_archived_same_sha_with_conflicting_optimizer_step_fails_closed(self):
         from bilqis_mlx.learning.mentor_epoch import begin_initial_epoch, reference_checkpoints
         student = {"filename": "bundles/inert", "sha256": "a" * 64,
                    "optimizer_step": 10, "model_and_native_adamw": True}
@@ -73,7 +74,8 @@ class ChampionshipWitnessTests(TestCase):
             },
             "active_grade_soups": {},
         }]
-        self.assertEqual(reference_checkpoints(epoch), (student,))
+        with self.assertRaisesRegex(ValueError, "MENTOR_EPOCH_CHECKPOINT_POINTER_CONFLICT"):
+            reference_checkpoints(epoch)
 
     def test_all_influencing_questions_become_obligations_including_misses(self):
         measured = exam()

@@ -134,14 +134,12 @@ def _commit_scored_student(mx, run_dir, receipt, manifest, course, school,
         frontier, incumbent_comparisons = _learning_championship_runtime._compare_incumbents(
             mx, run_dir, replay_receipt, cohort, receipt["config"],
             receipt["answer_ids"], graph)
-        frontier = _learning_capability_frontier.qualified_frontier(frontier)
         roles = _learning_capability_frontier.candidate_roles(frontier, grades, rubric)
     else:
         # A quarantined capability remains mandatory graduation debt. Partial
         # ordinary scoring protects the causal student but cannot mint or move
         # championship authority from an incomplete capability inventory.
-        frontier = _learning_capability_frontier.qualified_frontier(
-            receipt.get("capability_best", {}))
+        frontier = dict(receipt.get("capability_best", {}))
         incumbent_comparisons = []
         roles = ()
     name = ("best-" if roles else "working-") + str(school.visits) + "-" + _uuid.uuid4().hex[:12]

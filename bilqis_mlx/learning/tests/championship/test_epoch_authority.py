@@ -28,12 +28,12 @@ class EpochAuthorityTests(EpochChampionshipTests):
     def test_role_persists_same_grade_checkpoint_origin(self):
         result, _, _ = advance_epoch(
             _epoch(), grades=GRADES,
-            challenger_exam=_panel("a", 11, "A.0", 11, grade="A"),
+            challenger_exam=_panel("a", 11, "A.0", 10, grade="A"),
             incumbent_exams={})
         self.assertEqual(result["active_roles"]["A.0"]["origin_grade"], "A")
 
     def test_cross_grade_legacy_owner_is_archived_before_same_grade_mint(self):
-        first = _panel("a", 11, "A.0", 11, grade="A")
+        first = _panel("a", 11, "A.0", 10, grade="A")
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
         epoch["active_roles"]["A.0"]["origin_grade"] = "B"
@@ -51,7 +51,7 @@ class EpochAuthorityTests(EpochChampionshipTests):
                          ("A.0", "B", "CROSS_GRADE_TITLE_OWNER"))
 
     def test_missing_legacy_origin_is_archived_fail_closed_before_same_grade_mint(self):
-        first = _panel("a", 11, "A.0", 11, grade="A")
+        first = _panel("a", 11, "A.0", 10, grade="A")
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
         del epoch["active_roles"]["A.0"]["origin_grade"]
@@ -63,24 +63,24 @@ class EpochAuthorityTests(EpochChampionshipTests):
         self.assertEqual(result["invalidated_active_roles"][-1]["reason"],
                          "TITLE_ORIGIN_PROVENANCE_MISSING")
 
-    def test_empty_role_requires_strictly_above_ninety_percent(self):
-        below = _panel("a", 11, "B.XOR", 10, grade="B")
+    def test_empty_role_requires_at_least_sixty_six_percent(self):
+        below = _panel("a", 11, "B.XOR", 7, grade="B")
         result, changes, decisions = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=below, incumbent_exams={})
         self.assertEqual(changes, ())
         self.assertNotIn("B.XOR", result.get("active_roles", {}))
         self.assertEqual(decisions[0]["decision"], "INITIAL_TITLE_THRESHOLD_NOT_MET")
 
-        candidate = _panel("c", 12, "B.XOR", 11, grade="B")
+        candidate = _panel("c", 12, "B.XOR", 8, grade="B")
         result, changes, decisions = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=candidate, incumbent_exams={})
         self.assertEqual(changes, ("B.XOR",))
         self.assertEqual(decisions, ())
         self.assertEqual(set(result["active_roles"]), {"B.XOR"})
-        self.assertEqual(result["active_roles"]["B.XOR"]["correct"], 11)
+        self.assertEqual(result["active_roles"]["B.XOR"]["correct"], 8)
 
     def test_initial_title_battery_is_exactly_first_threshold_passes(self):
-        candidate = _panel("a", 11, "B.XOR", 11, grade="B")
+        candidate = _panel("a", 11, "B.XOR", 8, grade="B")
         result, changes, decisions = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=candidate, incumbent_exams={})
         self.assertEqual(changes, ("B.XOR",))
@@ -95,7 +95,7 @@ class EpochAuthorityTests(EpochChampionshipTests):
         self.assertEqual(
             {question["id"] for question in battery},
             {question["id"] for question in expected})
-        self.assertEqual(len(battery), 11)
+        self.assertEqual(len(battery), 8)
         self.assertEqual({question["capability"] for question in battery}, {"B.XOR"})
 
     def test_empty_roles_get_per_capability_batteries(self):
@@ -109,24 +109,24 @@ class EpochAuthorityTests(EpochChampionshipTests):
                 {cap})
 
     def test_cross_grade_incumbents_are_not_requested_or_competed(self):
-        a = _panel("a", 11, "A.0", 11, grade="A")
+        a = _panel("a", 11, "A.0", 10, grade="A")
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=a, incumbent_exams={})
-        b = _panel("b", 12, "B.XOR", 11, grade="B")
+        b = _panel("b", 12, "B.XOR", 10, grade="B")
         epoch, _, _ = advance_epoch(
             epoch, grades=GRADES, challenger_exam=b, incumbent_exams={})
         challenger = _multi_panel("c", 13, {"A.0": 12, "B.XOR": 11},
                                   cohort="6", grade="B")
         needed = needed_incumbents(epoch, grades=GRADES, challenger_exam=challenger)
         self.assertEqual(set(needed), {"b" * 64})
-        incumbent = _panel("b", 12, "B.XOR", 11, cohort="6", grade="B")
+        incumbent = _panel("b", 12, "B.XOR", 10, cohort="6", grade="B")
         result, _, _ = advance_epoch(
             epoch, grades=GRADES, challenger_exam=challenger,
             incumbent_exams={"b" * 64: incumbent})
         self.assertEqual(result["active_roles"]["A.0"], epoch["active_roles"]["A.0"])
 
     def test_cross_grade_update_can_win_a_capability_local_title(self):
-        incumbent = _panel("a", 11, "B.XOR", 11, grade="B")
+        incumbent = _panel("a", 11, "B.XOR", 8, grade="B")
         epoch, _, _ = advance_epoch(
             _epoch(), grades=GRADES, challenger_exam=incumbent,
             incumbent_exams={})
@@ -138,7 +138,7 @@ class EpochAuthorityTests(EpochChampionshipTests):
             epoch, grades=GRADES, challenger_exam=challenger)
         self.assertEqual(set(requested), {"a" * 64})
 
-        incumbent_current = _panel("a", 11, "B.XOR", 11, cohort="6", grade="B")
+        incumbent_current = _panel("a", 11, "B.XOR", 8, cohort="6", grade="B")
         challenger_current = _panel("c", 12, "B.XOR", 12, cohort="6", grade="B")
         challenger_current["checkpoint_origin_grade"] = "A"
         result, changes, decisions = advance_epoch(
