@@ -19,6 +19,28 @@ from .factory_training_bridge_support import FactoryTrainingBridgeFixture
 
 
 class FactoryTrainingMicrobatchTests(FactoryTrainingBridgeFixture):
+    def test_b_and_exact_row_owner_executes_as_one_vectorized_microbatch(self):
+        rows, prepared = self.prepare("B.AND", 37129, 4)
+        resource_plan, _ = _resource_plan(prepared, self.candidate, None)
+
+        gradient, authorities, targets = execute_factory_logical_batch(
+            dict(self.candidate.retained_state.optimizer.parameters),
+            prepared, self.context, prepared.semantic_context.snapshot,
+            self.generation, None, resource_plan)
+
+        self.assertEqual(resource_plan.groups, ((0, 1, 2, 3),))
+        self.assertEqual(gradient.gradient_launches, 1)
+        self.assertEqual(gradient.vectorized_microbatches, 1)
+        self.assertEqual(gradient.scalar_fallback_rows, 0)
+        self.assertEqual(len(targets), 4)
+        self.assertEqual(
+            tuple(item.source_execution_authority.source_adapter.descriptor.adapter_id
+                  for item in prepared.compiled_rows),
+            ("source.micro.boolean-connectives/v1",) * 4)
+        self.assertEqual(
+            tuple(item.source_row_id for item in authorities),
+            tuple(row["id"] for row in rows))
+
     def test_four_distinct_factory_rows_use_one_vectorized_gradient_launch(self):
         rows, prepared = self.prepare("A.IDENTITY", 37172, 4)
         resource_plan, _ = _resource_plan(prepared, self.candidate, None)
