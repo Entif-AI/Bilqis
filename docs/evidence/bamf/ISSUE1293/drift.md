@@ -46,3 +46,23 @@ Post-sync verification passed:
 - lawful teaching frontier: 6/6.
 
 The integration changes do not alter the #1293 design verdict.
+
+## Current-unified reconciliation
+
+Reviewed unified advanced again to
+`20f5836e17cdbc2c1f50b29590d8abcd9f0f615d`, carrying #1294 exact B11
+row-owner authority and #1295 truthful operator/admission classification. The merge
+required manual reconciliation only in the BAMF resume lifecycle, command dispatch,
+and Lane C flow-control record. The resolved implementation preserves #1293's exact
+lineage-bound parent graph, post-accept C07 re-entry, and post-accept admission-status
+precedence while retaining #1295 admission reason/advance transport and labels.
+
+Post-reconciliation focused verification:
+
+- CLI provenance/status/label transport: 9/9 plus 10 subtests;
+- accepted C07 causal witness: 2/2;
+- operator/observed bundle: 23/23 excluding two telemetry assertions that reproduce
+  identically on clean unified `20f5836e` and therefore are not #1293 regressions.
+
+The current-unified reconciliation introduces no new #1293 design choice and does not
+alter the **PASS / `NO_DRIFT`** verdict.

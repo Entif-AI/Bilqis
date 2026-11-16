@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "596da2455e4e406ffb76cccf8e2c1d5e2a73f672",
-  "updated_at": "2026-11-16T05:37:58+00:00",
+  "observed_unified": "20f5836e17cdbc2c1f50b29590d8abcd9f0f615d",
+  "updated_at": "2026-11-16T05:47:33+00:00",
   "exception": null,
   "items": [
     {
@@ -453,13 +453,13 @@
     },
     {
       "issue": 1293,
-      "pr": null,
-      "state": "ACTIVE",
-      "head_sha": "babbc6a4b9e39a9f9e4430a862f296239159fd59",
-      "summary": "Issue #1293 is active after synchronizing with reviewed unified 596da245, including #1291 learner-relative lawful teaching frontier. The persistent BAMF operator re-enters the existing accepted C07 flywheel after accepted retained learning, uses the lineage-bound foundation graph and persisted lease, preserves typed admission outcomes, and lets the next visit cold-reconstruct accepted learner/release/semantic custody before further neural execution. Focused post-sync C07/admission 9/9, operator 22/22 and lawful-frontier 6/6 tests pass. No background admission loop, duplicate planner, grade-specific progression or live human learner mutation.",
+      "pr": 1309,
+      "state": "TURNED_IN",
+      "head_sha": "bc8c146eeb36531a4a42926ec317c803227d5dfb",
+      "summary": "Issue #1293 is turned in after synchronizing with reviewed unified 20f5836e, preserving #1294 exact B11 row-owner authority and #1295 truthful operator/admission classification. The persistent BAMF operator re-enters the accepted C07 flywheel after accepted retained learning, uses the lineage-bound foundation graph and persisted lease, preserves typed admission outcomes, and cold-reconstructs accepted custody on the next visit before further neural execution. Current-unified proof is green for CLI provenance/status/labels and the real disposable C07 causal witness; two telemetry assertions reproduce identically on clean unified 20f5836e and are baseline debt rather than #1293 regressions. No background admission loop, duplicate planner, grade-specific progression or live human learner mutation.",
       "resume_trigger": null,
       "preserved_branch": "codex/1293-c07-flywheel-reentry-20261115",
-      "head_sha_role": "reviewed-unified integration head before this flow-control receipt commit"
+      "head_sha_role": "exact reviewed-unified integration head before this drift/flow turn-in evidence commit"
     },
     {
       "issue": 1295,
