@@ -13,6 +13,8 @@ from .teacher_vnext_replay import (
     TeacherEpoch, bind_teacher_successor, refresh_teacher_region,
 )
 
+MAX_INSTRUCTION_HISTORY_CAPABILITIES = 4096
+
 
 def _lineage_payload(epoch: TeacherEpoch, *, adaptation: Mapping,
                      source_teacher_sha256: str) -> dict:
@@ -104,7 +106,7 @@ def _validate_optional_teacher_history(
         seen = teacher_state["instruction_seen_capabilities"]
         if (teacher_state["instruction_history_state"] not in {"COMPLETE", "PARTIAL"}
                 or not isinstance(seen, (list, tuple))
-                or len(seen) > 4096
+                or len(seen) > MAX_INSTRUCTION_HISTORY_CAPABILITIES
                 or any(not isinstance(item, str) or not item for item in seen)
                 or len(set(seen)) != len(seen)):
             invalid("TEACHER_INSTRUCTION_HISTORY_INVALID")

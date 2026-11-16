@@ -6,14 +6,25 @@ from a retention decision or a teaching heuristic.
 """
 from __future__ import annotations
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from .signals import DiagnosticStatus, LearningSignal
 from .trajectories import CohortTrajectory, MIN_RETENTION_OBSERVATIONS
 from bilqis_mlx.semantics.domains import contract_digest
 
 SCHEMA = "bilqis.bamf.learning-health/v1"
 STATE_SCHEMA = "bilqis.bamf.learning-health-state/v1"
+MAX_CAPABILITIES = 48
+MAX_CERTIFIED_SURFACES = 128
+MAX_COMPARABLE_POINTS = 64
+SHA256_HEX_LENGTH = 64
+CERTIFIED_DIGEST_FIELD_START = 2
+COMPARABLE_EPOCH_FIELD_START = 3
 _SIGNALS = tuple(LearningSignal)
 _UNKNOWN = DiagnosticStatus.NOT_MEASURED.value
+
+
+def _invalid(reason):
+    ErrorBus.raise_(SCHOOL.BAMF_LEARNING_HEALTH.INVALID, reason=reason)
 
 
 def validate_learning_health_state(record):
@@ -21,10 +32,10 @@ def validate_learning_health_state(record):
     if (not isinstance(record, dict) or record.get("schema") != STATE_SCHEMA
             or record.get("coverage_state") not in {"VALID", "PARTIAL"}
             or not isinstance(record.get("by_capability"), dict)
-            or len(record["by_capability"]) > 48
+            or len(record["by_capability"]) > MAX_CAPABILITIES
             or not isinstance(record.get("certified_surfaces", []), list)
-            or len(record.get("certified_surfaces", [])) > 128):
-        raise ValueError("LEARNING_HEALTH_STATE_ENVELOPE_INVALID")
+            or len(record.get("certified_surfaces", [])) > MAX_CERTIFIED_SURFACES):
+        _invalid("LEARNING_HEALTH_STATE_ENVELOPE_INVALID")
     for capability, health in record["by_capability"].items():
         if (not isinstance(capability, str) or not capability
                 or not isinstance(health, dict)
@@ -32,7 +43,7 @@ def validate_learning_health_state(record):
                 or health.get("capability_id") != capability
                 or health.get("history_state")
                 not in {"VALID", "PARTIAL", "INVALID", "NOT_MEASURED"}):
-            raise ValueError("LEARNING_HEALTH_STATE_CAPABILITY_INVALID")
+            _invalid("LEARNING_HEALTH_STATE_CAPABILITY_INVALID")
     for surface in record.get("certified_surfaces", []):
         _validate_certified_surface(surface)
     return record
@@ -47,11 +58,11 @@ def _validate_certified_surface(surface):
     if (not isinstance(surface, dict)
             or any(not isinstance(surface.get(key), str) or not surface[key]
                    for key in required)
-            or any(len(surface[key]) != 64
+            or any(len(surface[key]) != SHA256_HEX_LENGTH
                    or any(char not in "0123456789abcdef" for char in surface[key])
-                   for key in required[2:])
+                   for key in required[CERTIFIED_DIGEST_FIELD_START:])
             or _score(surface) is None):
-        raise ValueError("LEARNING_HEALTH_CERTIFIED_SURFACE_INVALID")
+        _invalid("LEARNING_HEALTH_CERTIFIED_SURFACE_INVALID")
 
 
 def _warning(signal, status=_UNKNOWN, note="Required source evidence unavailable"):
@@ -85,7 +96,8 @@ def _accepted_scores(accepted, score, previous, capability, epoch, epoch_sha256)
         return first, latest, best, points, comparable
     first = latest = best = {"correct": score[0], "total": score[1]}
     points = 1
-    if (all(isinstance(item, str) and item for item in epoch[3:])
+    if (all(isinstance(item, str) and item
+            for item in epoch[COMPARABLE_EPOCH_FIELD_START:])
             and isinstance(previous, dict)
             and previous.get("schema") == SCHEMA
             and previous.get("history_state") != "INVALID"
@@ -96,7 +108,8 @@ def _accepted_scores(accepted, score, previous, capability, epoch, epoch_sha256)
         first = previous["first"]
         best = (previous["best"] if previous["best"]["correct"] >= score[0]
                 else latest)
-        points = min(64, int(previous.get("comparable_points", 1)) + 1)
+        points = min(MAX_COMPARABLE_POINTS,
+                     int(previous.get("comparable_points", 1)) + 1)
         comparable = True
     return first, latest, best, points, comparable
 
@@ -105,7 +118,8 @@ def _recent_checkpoints(visit, accepted, score, previous, epoch_sha256):
     checkpoint = visit.get("accepted_checkpoint_sha256")
     optimizer_step = visit.get("accepted_optimizer_step")
     if (not accepted or score is None or not isinstance(checkpoint, str)
-            or len(checkpoint) != 64 or any(c not in "0123456789abcdef" for c in checkpoint)
+            or len(checkpoint) != SHA256_HEX_LENGTH
+            or any(c not in "0123456789abcdef" for c in checkpoint)
             or type(optimizer_step) is not int or optimizer_step < 0):
         return (), None
     prior = (tuple(previous.get("recent_checkpoints", ()))
@@ -173,12 +187,12 @@ def _certified_surface_regression(visit, score, surfaces):
     ids, compared, regressed = [], 0, False
     for surface in surfaces:
         if not isinstance(surface, dict):
-            raise ValueError("LEARNING_HEALTH_CERTIFIED_SURFACE_RECORD_INVALID")
+            _invalid("LEARNING_HEALTH_CERTIFIED_SURFACE_RECORD_INVALID")
         _validate_certified_surface(surface)
         identity = surface.get("surface_id")
         surface_score = _score(surface)
         if not isinstance(identity, str) or not identity:
-            raise ValueError("LEARNING_HEALTH_CERTIFIED_SURFACE_ID_INVALID")
+            _invalid("LEARNING_HEALTH_CERTIFIED_SURFACE_ID_INVALID")
         if (surface.get("capability_id") != visit.get("capability_id")
                 or surface.get("rubric_sha256") != visit.get("rubric_sha256")
                 or surface.get("source_sha256") != visit.get("source_sha256")
@@ -186,7 +200,7 @@ def _certified_surface_regression(visit, score, surfaces):
                 or surface.get("retention_policy_sha256")
                 != visit.get("retention_policy_sha256")
                 or not isinstance(surface.get("certified_checkpoint_sha256"), str)
-                or len(surface["certified_checkpoint_sha256"]) != 64
+                or len(surface["certified_checkpoint_sha256"]) != SHA256_HEX_LENGTH
                 or any(char not in "0123456789abcdef"
                        for char in surface["certified_checkpoint_sha256"])):
             ids.append(identity)
@@ -248,15 +262,15 @@ def project_learning_health(visit: dict, *, accepted: bool,
     Prior certified surfaces are explicit identities, never grade-letter order.
     """
     if not isinstance(visit, dict) or type(accepted) is not bool:
-        raise ValueError("LEARNING_HEALTH_VISIT_INVALID")
+        _invalid("LEARNING_HEALTH_VISIT_INVALID")
     capability = visit.get("capability_id")
     grade = visit.get("grade_id")
     if not isinstance(capability, str) or not capability:
-        raise ValueError("LEARNING_HEALTH_CAPABILITY_REQUIRED")
+        _invalid("LEARNING_HEALTH_CAPABILITY_REQUIRED")
     if not isinstance(grade, str) or not grade:
-        raise ValueError("LEARNING_HEALTH_GRADE_REQUIRED")
+        _invalid("LEARNING_HEALTH_GRADE_REQUIRED")
     if not isinstance(certified_surfaces, (tuple, list)):
-        raise ValueError("LEARNING_HEALTH_CERTIFIED_SURFACES_INVALID")
+        _invalid("LEARNING_HEALTH_CERTIFIED_SURFACES_INVALID")
     epoch = _epoch(visit)
     epoch_sha256 = contract_digest(epoch)
     measured_target = visit.get("learning_target")

@@ -332,6 +332,18 @@ Message: One candidate attempt has divergent committed teacher observations.
 
 Recovery: Preserve both receipts and reconcile the durable outbox before any replay.
 
+### `SCHOOL.BAMF_LEARNING_HEALTH.INVALID`
+
+BAMF learning-health evidence invalid.
+
+Owner: `diagnostics.learning_health`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Learning-health evidence is invalid: {reason}
+
+Recovery: Preserve accepted custody and inspect the reported evidence identity; do not infer a replacement measurement.
+
 ### `SCHOOL.MODEL_TOPOLOGY.INVALID`
 
 Invalid model topology.

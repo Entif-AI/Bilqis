@@ -205,6 +205,20 @@ class TEACHER_OBSERVATION:
     )
 
 
+class BAMF_LEARNING_HEALTH:
+    INVALID = _spec(
+        ("SCHOOL", "BAMF_LEARNING_HEALTH", "INVALID"),
+        owner="diagnostics.learning_health",
+        title="BAMF learning-health evidence invalid",
+        message_template="Learning-health evidence is invalid: {reason}",
+        disposition="PRESERVE_AND_INSPECT",
+        next_action=(
+            "Preserve accepted custody and inspect the reported evidence identity; "
+            "do not infer a replacement measurement."
+        ),
+    )
+
+
 class MODEL_TOPOLOGY:
     INVALID = _spec(
         ("SCHOOL", "MODEL_TOPOLOGY", "INVALID"), owner="runtime.model_topology",

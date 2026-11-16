@@ -54,7 +54,10 @@ def _learning_health(record):
         return None
     from bilqis_mlx.diagnostics.learning_health import SCHEMA
     if not isinstance(record, dict) or record.get('schema') != SCHEMA:
-        raise ValueError('OBSERVATION_LEARNING_HEALTH_SCHEMA')
+        from bilqis_mlx.errors import ErrorBus, SCHOOL
+        ErrorBus.raise_(
+            SCHOOL.BAMF_LEARNING_HEALTH.INVALID,
+            reason='OBSERVATION_LEARNING_HEALTH_SCHEMA')
     values = {key: value for key, value in record.items() if key != 'schema'}
     for name in ('first', 'latest', 'best'):
         if values.get(name) is not None:
