@@ -988,13 +988,16 @@ def selection_credit(lesson_reward: float, retention: dict | None,
 
 
 def fork_student(mx, parameters: dict, optimizer):
-    """Copy all FP32 weights and native AdamW to a disposable trial in RAM."""
+    """Create an isolated MLX-native trial without a host NumPy round-trip."""
     import mlx.optimizers as optim
     mx.eval(parameters, optimizer.state)
 
     def copy_value(value):
         if isinstance(value, mx.array):
-            return mx.array(np.asarray(value).copy())
+            # MLX-native construction gives the trial an independently mutable
+            # leaf without forcing the accepted parent through host-visible
+            # NumPy memory first.
+            return mx.array(value)
         if isinstance(value, dict):
             return {key: copy_value(item) for key, item in value.items()}
         raise ValueError("LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE")
