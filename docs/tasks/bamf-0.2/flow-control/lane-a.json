@@ -2,9 +2,19 @@
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
   "observed_unified": "1f077f2aaaf2c201b0105d510c7fa8463b399ccd",
-  "updated_at": "2026-11-16T19:34:20Z",
+  "updated_at": "2026-11-16T19:53:54Z",
   "exception": null,
   "items": [
+    {
+      "issue": 1314,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "d3d0f2b0a5999cbb94f3128244e5bbcb251ee838",
+      "head_sha_role": "stacked activation base: exact #1320 TURNED_IN head supplying accepted GeneratedGradeDefinition authority before #1314 source mutation",
+      "summary": "#1314 activates and freezes one #1320 GeneratedGradeDefinition as the learner's outer teaching surface. The active developmental road is temporal lineage of generated definitions, not a global grade-order table or grade-letter state machine. Exactly one accepted definition may govern a learner epoch; ordinary READY/HELD/COMPLETE changes do not mutate membership; later admitted semantics remain planning-visible but non-teachable until an authorized successor definition is activated. A09 remains prerequisite/frontier authority and C07/B13 remains accepted executable-release/custody authority.",
+      "resume_trigger": "Implement accepted active-grade custody and bind lawful teaching frontier membership to the exact frozen definition; prove cold resume, membership stability, correction lineage, and grade-neutral successor activation.",
+      "preserved_branch": "codex/1314-active-generated-grade-20261116"
+    },
     {
       "issue": 1320,
       "pr": 1345,
