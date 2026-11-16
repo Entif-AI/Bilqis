@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 272,
-  "legacy_raw_raise_count": 2099,
+  "legacy_raw_file_count": 271,
+  "legacy_raw_raise_count": 2095,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -3592,27 +3592,6 @@
       "exception": "ValueError",
       "expression": "'FACTORY_SOURCE_ADAPTER_RESUME_UNPROVEN:' + registered.descriptor.adapter_id",
       "path": "bilqis_mlx/compatibility/source_adapter_resume.py"
-    },
-    {
-      "code_hint": "CONTROL_PLANE_ACTIVE_ENDPOINT_PATH_UNSAFE",
-      "count": 1,
-      "exception": "RuntimeError",
-      "expression": "'CONTROL_PLANE_ACTIVE_ENDPOINT_PATH_UNSAFE'",
-      "path": "bilqis_mlx/control_plane/active_endpoint.py"
-    },
-    {
-      "code_hint": "CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE",
-      "count": 2,
-      "exception": "RuntimeError",
-      "expression": "'CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE'",
-      "path": "bilqis_mlx/control_plane/active_endpoint.py"
-    },
-    {
-      "code_hint": "CONTROL_PLANE_ACTIVE_ENDPOINT_ROLE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CONTROL_PLANE_ACTIVE_ENDPOINT_ROLE_INVALID'",
-      "path": "bilqis_mlx/control_plane/active_endpoint.py"
     },
     {
       "code_hint": "ANSWER_FAMILY_AUTHORITY_INVALID",
