@@ -29,7 +29,8 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
   const candidate = row.candidate_horizon === null ? unknown : `${row.candidate_step} / ${row.candidate_horizon}`;
   const elapsed = formatDurationSeconds(row.elapsed_ms / 1000, { locale });
   const posture = row.connection_state === "DISCONNECTED" ? t("home.observed.disconnected")
-    : t("home.observed.provisional");
+    : row.outcome === "INTERRUPTED" ? t("home.observed.terminated")
+      : t("home.observed.provisional");
   const observedTime = temporalMarkup({
     unixSeconds: row.meta?.observed_at ?? null,
     nowMs,
@@ -54,7 +55,20 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     ["home.observed.cpu", row.cpu_seconds === null ? null : formatDurationSeconds(row.cpu_seconds, { locale })],
     ["home.observed.memory", row.peak_rss_bytes === null ? null : `${(row.peak_rss_bytes / 1048576).toFixed(1)} MiB`],
     ["home.observed.disk", row.disk_free_bytes === null ? null : `${(row.disk_free_bytes / 1073741824).toFixed(1)} GiB`],
+    ...(row.error_code ? [["home.observed.errorCode", row.error_code]] : []),
+    ...(row.error_detail ? [["home.observed.errorDetail", row.error_detail]] : []),
   ];
+  const historyLine = (item) => {
+    if (item.outcome === "INTERRUPTED") {
+      const step = item.candidate_horizon === null ? null : t("home.observed.historyStep", {
+        step: item.candidate_step, horizon: item.candidate_horizon,
+      });
+      return [item.capability_id ?? unknown, item.outcome, step, item.error_code, item.error_detail]
+        .filter(Boolean).join(" · ");
+    }
+    return [item.capability_id ?? unknown, item.outcome, item.connection_state]
+      .filter(Boolean).join(" · ");
+  };
   const performance = [
     ["home.observed.stepWall", stageDuration(row.candidate_step_wall_seconds)],
     ["home.observed.sourceCompile", stageDuration(row.pre_neural_source_compile_wall_seconds)],
@@ -121,6 +135,6 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     <dl>${fields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
     ${stepRows.length ? `<section data-test-id="home-observed-steps"><h4>${esc(t("home.observed.steps"))}</h4>${stepsMarkup}</section>` : `<details ${testIdAttribute("home", "observed", "performance")}><summary>${esc(t("home.observed.performance"))}</summary><dl>${performance.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl></details>`}
 
-    <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(item.capability_id ?? unknown)} · ${esc(item.phase)} · ${esc(item.outcome)} · ${esc(item.connection_state)}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
+    <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(historyLine(item))}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
   </div>`;
 }

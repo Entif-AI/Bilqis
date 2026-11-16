@@ -6,6 +6,7 @@ export function observation(changes = {}) {
     phase: "RETENTION", outcome: "RUNNING", connection_state: "LIVE", capability_id: "A.IDENTITY",
     candidate_step: 1, candidate_horizon: 1, candidate_optimizer_step: 1,
     retention_completed: 1, retention_total: 4, retention_subject: "A.IDENTITY", retention_role: "parent",
+    error_code: null, error_detail: null,
     elapsed_ms: 1500, cpu_seconds: 0.4, peak_rss_bytes: 1048576, disk_free_bytes: 1073741824,
     ...changes };
 }

@@ -140,6 +140,21 @@ test("accepted, rejected and held observations never change retained counts", ()
   }
 });
 
+test("interrupted visit history renders the observed failure code and detail", () => {
+  const row = observation({
+    phase: "COMPLETED", outcome: "INTERRUPTED", connection_state: "FINISHED",
+    error_code: "SCHOOL.MODEL_TOPOLOGY.INVALID",
+    error_detail: "B11_EXECUTION_BINDING_MISMATCH",
+  });
+  const model = projectionFromPages({ run: runPage(row) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Observed · terminated/);
+  assert.match(html, /A\.IDENTITY · INTERRUPTED · candidate 1\/1/);
+  assert.match(html, /SCHOOL\.MODEL_TOPOLOGY\.INVALID/);
+  assert.match(html, /B11_EXECUTION_BINDING_MISMATCH/);
+  assert.doesNotMatch(html, /COMPLETED · INTERRUPTED · FINISHED/);
+});
+
 test("historical and wrong-run observations remain absent", () => {
   const historical = projectionFromPages({ run: runPage() }, { ...context, mode: "HISTORICAL" });
   assert.equal(historical.observed.current, null);

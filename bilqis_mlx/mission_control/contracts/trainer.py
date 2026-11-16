@@ -38,6 +38,8 @@ class TrainerObservation(WireRecord):
     cpu_seconds: float | None
     peak_rss_bytes: int | None
     disk_free_bytes: int | None
+    error_code: str | None
+    error_detail: str | None
 
     def __post_init__(self):
         super().__post_init__()
@@ -59,6 +61,12 @@ class TrainerObservation(WireRecord):
         require(self.retention_role in {None, 'parent', 'candidate'}, 'OBSERVATION_ROLE')
         for value in (self.capability_id, self.retention_subject):
             require(value is None or is_name(value), 'OBSERVATION_SUBJECT')
+        for value in (self.error_code, self.error_detail):
+            require(value is None or is_name(value), 'OBSERVATION_ERROR')
+        require(self.error_detail is None or self.error_code is not None,
+                'OBSERVATION_ERROR_PAIR')
+        require(self.outcome == 'INTERRUPTED' or self.error_code is None,
+                'OBSERVATION_ERROR_OUTCOME')
         require(is_wire_integer(self.elapsed_ms) and self.elapsed_ms >= 0,
                 'OBSERVATION_ELAPSED')
         for value in (self.candidate_optimizer_step, self.candidate_step,

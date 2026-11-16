@@ -24,6 +24,7 @@ _SCHEMAS = frozenset({
 })
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
+_OPTIONAL_FIELDS = frozenset(('error_code', 'error_detail'))
 _V2_FIELDS = {field.name for field in fields(TrainerObservationV2)} - {
     'meta', 'posture', 'connection_state'}
 _V2_ONLY = _V2_FIELDS - _FIELDS
@@ -71,7 +72,10 @@ def _record(row, runs, now_ms):
     record_fields = (
         _V3_FIELDS if record_type is TrainerObservationV3 else
         _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS)
-    values = {key: row[key] for key in record_fields}
+    values = {
+        key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
+        for key in record_fields
+    }
     if record_type is TrainerObservationV3:
         from bilqis_mlx.mission_control.contracts.trainer import CandidateStepPerformance
         values['candidate_steps'] = tuple(
