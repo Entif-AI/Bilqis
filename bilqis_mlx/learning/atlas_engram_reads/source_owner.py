@@ -188,14 +188,24 @@ def _qualified_motif_row_authority(row, config, source, source_authority):
         projection, _motifs, issued_frontier = replayed
     else:
         from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_source_authority_launch_trusted,
             require_b11_source_execution_authority,
         )
-        authority = require_b11_source_execution_authority(
-            source_authority, row, config, source)
+        authority = source_authority
+        launch_trusted = b11_source_authority_launch_trusted(
+            authority, row, config, source)
+        if not launch_trusted:
+            authority = require_b11_source_execution_authority(
+                authority, row, config, source)
         adapter = authority.source_adapter
-        projection = authority.motif_projection
+        projection = (
+            authority.motif_execution_projection
+            if launch_trusted else authority.motif_projection)
         issued_frontier = authority.motif_frontier
-    projection = _execution_projection(row, config, projection, issued_frontier)
+    if source_authority is None or not launch_trusted:
+        projection = _execution_projection(row, config, projection, issued_frontier)
+    elif projection.digest != row.context_digest:
+        _invalid()
     return adapter, projection, issued_frontier
 
 
@@ -237,6 +247,7 @@ def _read_retained_compiled_motifs(
         compiled, parameters, sources, manifest, spec, extents, seal,
         source_execution_authorities)
     row_positions, row_features, tasks, frontiers, policies = [], [], [], [], []
+    qualified_contexts = []
     padded_width = hidden.shape[1]
     for row, config, source, authority in zip(
             compiled.compiled.rows, compiled.compiler_configs,
@@ -249,10 +260,27 @@ def _read_retained_compiled_motifs(
         tasks.append(task)
         frontiers.append(frontier)
         policies.append(policy)
+        if authority is None:
+            qualified_contexts.append(None)
+        else:
+            from bilqis_mlx.runtime.b11_source_execution_authority import (
+                b11_source_authority_launch_trusted,
+            )
+            qualified_contexts.append(
+                (
+                    authority.motif_execution_projection,
+                    authority.motif_context_digest,
+                    authority.motif_schema_liveness,
+                )
+                if b11_source_authority_launch_trusted(
+                    authority, row, config, source)
+                else None
+            )
     return _read_motif_unqualified_candidate(
         site_index=site_index, hidden=hidden,
         features=mx.stack(tuple(row_features)), positions=tuple(row_positions),
         tasks=tuple(tasks), frontiers=tuple(frontiers), policies=tuple(policies),
+        qualified_contexts=tuple(qualified_contexts),
         manifest=manifest,
         parameters=motif_parameter_view(
             parameters, spec=spec, extents=extents, site_index=site_index))

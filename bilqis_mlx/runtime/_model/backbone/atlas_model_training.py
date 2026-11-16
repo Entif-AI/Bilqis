@@ -171,10 +171,14 @@ def _gradient_preflight(
         params, cache, spec=backend.topology, extents=compiled_batch.compiled.extents,
         generation=answer_plan.generation_binding)
     preflight_binding = rebind_execution(params)
-    preflight_output = _forward_bamf_impl(
-        backend, params, compiled_batch, answer_plan, ExecutionMode.INFERENCE, cache,
-        refinement_training=True, execution_binding=preflight_binding,
-        decoder_trace=False)
+    from bilqis_mlx.runtime.b11_source_execution_authority import (
+        b11_source_authority_launch_epoch,
+    )
+    with b11_source_authority_launch_epoch((compiled_batch,)):
+        preflight_output = _forward_bamf_impl(
+            backend, params, compiled_batch, answer_plan, ExecutionMode.INFERENCE, cache,
+            refinement_training=True, execution_binding=preflight_binding,
+            decoder_trace=False)
     preflight_execution = loss_bearing_bamf(
         preflight_output, targets, mask, salience_supervision=salience_supervision)
     return (
@@ -260,8 +264,12 @@ def _bamf_value_and_grad_impl(
                 holder["execution"] = execution
                 return execution.loss.total
 
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_source_authority_launch_epoch,
+        )
         autodiff_started = time.perf_counter()
-        loss_total, gradients = mx.value_and_grad(objective)(params)
+        with b11_source_authority_launch_epoch((compiled_batch,)):
+            loss_total, gradients = mx.value_and_grad(objective)(params)
         mx.eval(loss_total, gradients)
         autodiff_wall_seconds = time.perf_counter() - autodiff_started
     return _finalize_gradient_execution(

@@ -151,9 +151,13 @@ def _gradient_path(
     route_vectorized = route_microbatch_compatible(
         row_batches, answer_plans, targets, masks)
     if not route_vectorized:
-        preflight = microbatch_trace_preflight(
-            backend, params, batch, row_batches, answer_plans, targets, masks,
-            generation, cache, rebind_execution, salience_supervision, snapshot)
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_source_authority_launch_epoch,
+        )
+        with b11_source_authority_launch_epoch(row_batches):
+            preflight = microbatch_trace_preflight(
+                backend, params, batch, row_batches, answer_plans, targets, masks,
+                generation, cache, rebind_execution, salience_supervision, snapshot)
         return False, preflight, None, None
     refinement = prepare_refinement_selections(
         row_batches, answer_plans, generation)
@@ -272,9 +276,13 @@ def _bamf_microbatch_value_and_grad_impl(
             preflight_executions, refinement_selections, route_kernel,
             salience_supervision, holder)
         autodiff_started = time.perf_counter()
-        mean_loss, gradients, executions, route_trajectory = _materialize_gradient(
-            objective, params, route_vectorized, holder, backend, row_batches,
-            answer_plans, targets, masks, salience_supervision, rebind_execution)
+        from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_source_authority_launch_epoch,
+        )
+        with b11_source_authority_launch_epoch(row_batches):
+            mean_loss, gradients, executions, route_trajectory = _materialize_gradient(
+                objective, params, route_vectorized, holder, backend, row_batches,
+                answer_plans, targets, masks, salience_supervision, rebind_execution)
         autodiff_wall_seconds = time.perf_counter() - autodiff_started
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     result = finalize_microbatch_gradient(

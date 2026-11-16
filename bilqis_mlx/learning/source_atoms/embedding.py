@@ -26,10 +26,14 @@ def _resolve_source_embedding_authority(
     handoff = None
     if source_execution_authority is not None:
         from bilqis_mlx.runtime.b11_source_execution_authority import (
+            b11_source_authority_launch_trusted,
             require_b11_source_execution_authority,
         )
-        authority = require_b11_source_execution_authority(
-            source_execution_authority, compiled, config, source)
+        authority = source_execution_authority
+        if not b11_source_authority_launch_trusted(
+                authority, compiled, config, source):
+            authority = require_b11_source_execution_authority(
+                authority, compiled, config, source)
         if snapshot is not None and snapshot is not authority.snapshot:
             invalid("BAMF_SOURCE_ATOM_GENERATION_DRIFT")
         snapshot, handoff = authority.snapshot, authority.source_handoff
