@@ -453,10 +453,10 @@
     },
     {
       "issue": 1295,
-      "pr": null,
-      "state": "READY",
+      "pr": 1308,
+      "state": "TURNED_IN",
       "head_sha": "b64a17b39702c25fcbf0af9fad3e89178ef20dd5",
-      "summary": "#1286.E classification/producer/presentation repair is review-clean on current unified e6e327e6; bounded owner proof green, no learner mutation; human review pending.",
+      "summary": "#1286.E operator classification repair turned in as ready PR #1308 against unified e6e327e6; code-complete bounded owner proof and static gates green, independent review/drift reconciled; human merge pending. No persistent learner mutation.",
       "resume_trigger": null,
       "preserved_branch": "codex/1295-operator-error-semantics-20261116",
       "head_sha_role": "Code/test head before documentation and turn-in metadata; pinned EGM design and independent scoped implementation/drift review reconciled."
