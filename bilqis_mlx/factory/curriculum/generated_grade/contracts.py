@@ -1,0 +1,240 @@
+"""Immutable learner-relative evidence and generated-grade proposal contracts."""
+from __future__ import annotations
+from dataclasses import dataclass, fields
+from enum import Enum
+import hashlib
+from bilqis_mlx.factory.atlas_frontier_contracts import _bytes, _fail
+class CostEvidenceKind(str, Enum):
+    MEASURED = "MEASURED"
+    BOOTSTRAPPED = "BOOTSTRAPPED"
+    UNKNOWN = "UNKNOWN"
+@dataclass(frozen=True)
+class AcquisitionCostEvidence:
+    status: CostEvidenceKind
+    measure: str
+    units: int | None
+    transfer_savings: tuple[tuple[str, int], ...] = ()
+    def __post_init__(self) -> None:
+        known = self.status in {CostEvidenceKind.MEASURED, CostEvidenceKind.BOOTSTRAPPED}
+        ids = tuple(identity for identity, _ in self.transfer_savings)
+        if (not isinstance(self.status, CostEvidenceKind) or not self.measure
+                or (known and (type(self.units) is not int or self.units < 0))
+                or (not known and self.units is not None)
+                or ids != tuple(sorted(set(ids)))
+                or any(type(value) is not int for _, value in self.transfer_savings)):
+            _fail("BAMF_GENERATED_GRADE_COST_EVIDENCE_INVALID")
+
+@dataclass(frozen=True)
+class AcceptedLearnerFoot:
+    checkpoint_sha256: str
+    optimizer_step: int
+    factory_release_sha256: str
+    policy_epoch: int
+    evidence_epoch: int
+    mastered_semantic_ids: tuple[str, ...]
+    mastered_capability_ids: tuple[str, ...]
+    evidence_sha256: str
+
+    def __post_init__(self) -> None:
+        if (not _sha(self.checkpoint_sha256) or not _sha(self.factory_release_sha256)
+                or not _sha(self.evidence_sha256)
+                or type(self.optimizer_step) is not int or self.optimizer_step < 0
+                or type(self.policy_epoch) is not int or self.policy_epoch < 0
+                or type(self.evidence_epoch) is not int or self.evidence_epoch < 0
+                or not _canonical_ids(self.mastered_semantic_ids)
+                or not _canonical_ids(self.mastered_capability_ids)):
+            _fail("BAMF_GENERATED_GRADE_LEARNER_FOOT_INVALID")
+
+    def digest(self) -> str:
+        return hashlib.sha256(_bytes(self)).hexdigest()
+
+@dataclass(frozen=True)
+class CandidateDevelopmentEvidence:
+    semantic_id: str
+    compiled_capability_ids: tuple[str, ...]
+    source_anchor_ids: tuple[str, ...]
+    neighborhood_id: str
+    coverage_factors: tuple[str, ...]
+    acquisition_cost: AcquisitionCostEvidence
+    grounding_quality: int
+    answer_modality_burden: int
+    ast_burden: int
+    entanglement: int
+    reusable_constituent_value: int
+    downstream_unlocks: int
+    minimal_contrast_value: int
+    transfer_breadth: int
+    learning_progress: int
+    fairness_age: int
+    planning_compute_units: int
+    evidence_sha256: str
+
+    def __post_init__(self) -> None:
+        ordinal = (
+            self.grounding_quality, self.answer_modality_burden, self.ast_burden,
+            self.entanglement, self.reusable_constituent_value,
+            self.downstream_unlocks, self.minimal_contrast_value,
+            self.transfer_breadth, self.learning_progress, self.fairness_age,
+            self.planning_compute_units,
+        )
+        if (not self.semantic_id or not _canonical_ids(self.compiled_capability_ids)
+                or not _canonical_ids(self.source_anchor_ids)
+                or not self.neighborhood_id
+                or not _canonical_ids(self.coverage_factors)
+                or type(self.acquisition_cost) is not AcquisitionCostEvidence
+                or any(type(item) is not int or item < 0 for item in ordinal)
+                or not _sha(self.evidence_sha256)):
+            _fail("BAMF_GENERATED_GRADE_CANDIDATE_EVIDENCE_INVALID")
+
+@dataclass(frozen=True)
+class GeneratedGradePolicy:
+    policy_id: str
+    max_members: int
+    max_unmet_prerequisites: int
+    acquisition_cost_measure: str = "optimizer-steps-to-criterion"
+    schema: str = "bilqis.generated-grade-policy/v1"
+
+    def __post_init__(self) -> None:
+        if (not self.policy_id or not self.acquisition_cost_measure
+                or type(self.max_members) is not int
+                or self.max_members < 1 or type(self.max_unmet_prerequisites) is not int
+                or self.max_unmet_prerequisites < 0
+                or self.schema != "bilqis.generated-grade-policy/v1"):
+            _fail("BAMF_GENERATED_GRADE_POLICY_INVALID")
+
+    def digest(self) -> str:
+        return hashlib.sha256(_bytes(self)).hexdigest()
+
+@dataclass(frozen=True)
+class CandidateGradeDecision:
+    semantic_id: str
+    compiled_capability_ids: tuple[str, ...]
+    source_anchor_ids: tuple[str, ...]
+    family_ids: tuple[str, ...]
+    prerequisite_ids: tuple[str, ...]
+    unmet_prerequisite_ids: tuple[str, ...]
+    required_semantic_ids: tuple[str, ...]
+    neighborhood_id: str
+    coverage_factors: tuple[str, ...]
+    cost_status: CostEvidenceKind
+    cost_measure: str
+    base_acquisition_units: int | None
+    effective_acquisition_units: int | None
+    closure_acquisition_units: int | None
+    applied_transfer_savings: int
+    grounding_quality: int
+    answer_modality_burden: int
+    ast_burden: int
+    entanglement: int
+    reusable_constituent_value: int
+    downstream_unlocks: int
+    minimal_contrast_value: int
+    transfer_breadth: int
+    learning_progress: int
+    fairness_age: int
+    planning_compute_units: int
+    source_evidence_sha256s: tuple[str, ...]
+    development_evidence_sha256: str
+    disposition: str
+    reason_codes: tuple[str, ...]
+
+@dataclass(frozen=True)
+class GeneratedGradeProposal:
+    snapshot_sha256: str
+    closure_sha256: str
+    current_release_sha256: str
+    learner_foot_sha256: str
+    learner_evidence_epoch: int
+    policy_epoch: int
+    policy_sha256: str
+    member_semantic_ids: tuple[str, ...]
+    decisions: tuple[CandidateGradeDecision, ...]
+    source_holds: tuple[tuple[str, str, str], ...]
+    proposal_sha256: str
+    schema: str = "bilqis.generated-grade-proposal/v1"
+
+    def expected_digest(self) -> str:
+        return hashlib.sha256(_bytes({
+            field.name: getattr(self, field.name)
+            for field in fields(self) if field.name != "proposal_sha256"
+        })).hexdigest()
+
+    def verify(self) -> None:
+        if (self.schema != "bilqis.generated-grade-proposal/v1"
+                or not all(_sha(value) for value in (
+                    self.snapshot_sha256, self.closure_sha256,
+                    self.current_release_sha256, self.learner_foot_sha256,
+                    self.policy_sha256, self.proposal_sha256))
+                or self.member_semantic_ids != tuple(dict.fromkeys(self.member_semantic_ids))
+                or self.decisions != tuple(sorted(self.decisions, key=lambda item: item.semantic_id))
+                or self.source_holds != tuple(sorted(set(self.source_holds)))
+                or self.proposal_sha256 != self.expected_digest()):
+            _fail("BAMF_GENERATED_GRADE_PROPOSAL_INVALID")
+
+    def manifest(self) -> dict:
+        return {
+            "schema": self.schema,
+            "snapshot_sha256": self.snapshot_sha256,
+            "closure_sha256": self.closure_sha256,
+            "current_release_sha256": self.current_release_sha256,
+            "learner_foot_sha256": self.learner_foot_sha256,
+            "learner_evidence_epoch": self.learner_evidence_epoch,
+            "policy_epoch": self.policy_epoch,
+            "policy_sha256": self.policy_sha256,
+            "member_semantic_ids": list(self.member_semantic_ids),
+            "decisions": [_decision_manifest(item) for item in self.decisions],
+            "source_holds": [list(item) for item in self.source_holds],
+            "proposal_sha256": self.proposal_sha256,
+        }
+
+    @classmethod
+    def from_manifest(cls, payload: dict) -> "GeneratedGradeProposal":
+        try:
+            decisions = tuple(CandidateGradeDecision(
+                **{
+                    **item,
+                    "compiled_capability_ids": tuple(item["compiled_capability_ids"]),
+                    "source_anchor_ids": tuple(item["source_anchor_ids"]),
+                    "family_ids": tuple(item["family_ids"]),
+                    "prerequisite_ids": tuple(item["prerequisite_ids"]),
+                    "unmet_prerequisite_ids": tuple(item["unmet_prerequisite_ids"]),
+                    "required_semantic_ids": tuple(item["required_semantic_ids"]),
+                    "coverage_factors": tuple(item["coverage_factors"]),
+                    "source_evidence_sha256s": tuple(item["source_evidence_sha256s"]),
+                    "reason_codes": tuple(item["reason_codes"]),
+                    "cost_status": CostEvidenceKind(item["cost_status"]),
+                }
+            ) for item in payload["decisions"])
+            result = cls(
+                **{key: payload[key] for key in (
+                    "snapshot_sha256", "closure_sha256", "current_release_sha256",
+                    "learner_foot_sha256", "learner_evidence_epoch", "policy_epoch",
+                    "policy_sha256", "proposal_sha256", "schema")},
+                member_semantic_ids=tuple(payload["member_semantic_ids"]),
+                decisions=decisions,
+                source_holds=tuple(tuple(item) for item in payload["source_holds"]),
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("BAMF_GENERATED_GRADE_MANIFEST_INVALID") from exc
+        result.verify()
+        return result
+
+def _decision_manifest(item: CandidateGradeDecision) -> dict:
+    result = {field.name: getattr(item, field.name) for field in fields(item)}
+    result["cost_status"] = item.cost_status.value
+    for key in (
+        "compiled_capability_ids", "source_anchor_ids", "family_ids",
+        "prerequisite_ids", "unmet_prerequisite_ids",
+        "required_semantic_ids", "coverage_factors", "source_evidence_sha256s",
+        "reason_codes",
+    ):
+        result[key] = list(result[key])
+    return result
+
+def _sha(value: object) -> bool:
+    return (type(value) is str and len(value) == 64
+            and all(char in "0123456789abcdef" for char in value))
+
+def _canonical_ids(values: tuple[str, ...]) -> bool:
+    return (type(values) is tuple and values == tuple(sorted(set(values)))
+            and all(type(value) is str and value for value in values))
