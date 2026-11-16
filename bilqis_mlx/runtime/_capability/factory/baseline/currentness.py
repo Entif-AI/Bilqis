@@ -90,10 +90,10 @@ class BaselineCoverage:
                 or len(set(group_names)) != len(group_names)
                 or self.measured_denominator != len(self.measured_capabilities)
                 or self.total_capabilities != len(measured | unmeasured)
-                or sum(item[1] for item in self.group_denominators)
-                != self.measured_denominator
-                or sum(item[2] for item in self.group_denominators)
-                != self.total_capabilities
+                or sum(measured_count for _group, measured_count, _total
+                       in self.group_denominators) != self.measured_denominator
+                or sum(total_count for _group, _measured, total_count
+                       in self.group_denominators) != self.total_capabilities
                 or not _sha(self.epoch_sha256)
                 or any(not isinstance(group, str) or not group
                        or type(measured_count) is not int or type(total_count) is not int
