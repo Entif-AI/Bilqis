@@ -3611,3 +3611,104 @@ retention receipt so saved compute cannot be mistaken for acceptance evidence.
 The historical Teacher vNext shadow ladder remains separately governed and
 non-authorizing. This ADR does not activate its training-row stop recommendation.
 
+## ADR-146 | 2026-11-15 | Separate semantic availability, learner-relative teachability, and retained-evidence authority
+
+**Status:** Accepted by direct owner instruction on 2026-11-15 while decomposing
+parent architecture repair #1286.
+
+**Context:** The persistent BAMF-0.2 trainer had drifted across an authority
+boundary. The current executable Factory release could contain source-qualified
+capabilities that were technically admitted, while the live teacher path projected
+every program grade active and constructed offers across all current-release
+capabilities. That collapsed four distinct states into one: semantic/source
+existence, ABI/Factory admission, learner-relative teaching eligibility, and
+actually established retained competence. The resulting trainer could reach
+later-family work before the learner had completed a successful retained learning
+step. The same collapse also contaminated retention by allowing not-yet-established
+semantics to participate in regression comparisons as if they already owned
+retained competence.
+
+**Decision:** BAMF-0.2 MUST preserve four distinct authority frontiers and compose
+them in causal order:
+
+1. **Semantic/source frontier.** Source-qualified concepts, relations,
+   construction ingredients, rights, correction state, and prerequisite structure
+   may exist before the learner can use them.
+2. **ABI / Factory admission frontier.** A source-qualified semantic or capability
+   may be compiled into an admitted executable Factory release without thereby
+   becoming a lawful teaching target for the current learner.
+3. **Learner-relative learning frontier.** Teaching eligibility MUST be derived
+   from the current accepted learner plus the current admitted curriculum/admission
+   state. At minimum it must respect source-qualified prerequisite closure,
+   constituent readiness, accepted learning evidence, real carried debt,
+   source/rights/correction state, release identity, policy epoch, admission state,
+   and applicable resource bounds. C03/C06 may rank only within this lawful
+   frontier; salience, grade label, or release membership may not expand it.
+4. **Mastery / retained-evidence frontier.** Teaching, admission, and source
+   availability are not mastery. Only lawfully evaluated and accepted evidence
+   establishes retained performance that can constrain later candidates or unlock
+   successors.
+
+The persistent trainer MUST therefore implement the recursive causal loop:
+
+`source/SKOS -> source-qualified Factory programs -> prerequisite-aware A09 planning -> C07 staged/admitted successor -> learner-relative lawful frontier -> C03/C06 selection -> candidate training/evaluation -> C05 retention/evidence -> replan/expand`.
+
+A/B/C are initial data-defined content, not a terminal ontology and not a
+privileged scheduler state machine. Future source-attested semantics enter through
+the same Factory/admission/evidence machinery. Grade labels remain
+reporting/grouping metadata. If a future capability is independently ready, its
+letter cannot block it; if an earlier-letter capability lacks required
+prerequisites, its letter cannot make it teachable.
+
+**Baseline and regression composition with ADR-142:** ADR-142 already establishes
+the foundation rule that curriculum admission is not retention protection and that
+an untrained admitted capability has observation but no veto authority. This ADR
+extends that separation into the full learner-relative architecture without
+replacing ADR-142's foundation retention economics.
+
+Every learnable capability/semantic begins `UNMEASURED` under an exact evidence
+identity. A lawful probe may produce observation, but only the first accepted,
+retained measurement establishes the comparable protected baseline governed by
+ADR-142. Before that accepted baseline exists, regression against that semantic is
+undefined: **no baseline, no regression**. Random/untrained output, pre-admission
+output, rejected-candidate output, output under a different
+release/rubric/scope/policy epoch, or other non-comparable observations MUST NOT be
+treated as retained competence or as a regression comparator.
+
+Accordingly:
+
+- a new semantic cannot reject its own first candidate for "regressing" relative
+  to phantom parent performance;
+- unmeasured members cannot make a grade/group/school aggregate appear regressed by
+  comparing them against synthetic prior values;
+- aggregate evidence must represent unmeasured members explicitly as
+  partial/unmeasured until comparable accepted baselines exist;
+- baseline evidence must bind capability/semantic identity, accepted learner
+  generation, release, rubric/scope, and policy epoch sufficiently to make later
+  comparison meaningful;
+- subsequent regression checks may compare only against an accepted comparable
+  baseline/current retained measurement.
+
+This does **not** relax protection for already established competence. A first-ever
+target candidate may still be rejected for real damage to previously baselined
+protected capabilities, source/custody invalidity, non-finite execution, or another
+true invariant violation. Rejection telemetry must identify the established thing
+that regressed; it may not attribute regression to an unmeasured semantic.
+
+**Composition consequence:** Existing A08/A09/C03/C05/C06/C07/C13/C14/C15/C16
+contracts are not independent feature islands. The production trainer must compose
+them so A09/C07 admission and learner evidence control the recursive teaching
+boundary. Fixing a downstream B11 source-execution-authority defect without
+repairing this boundary would make the wrong architecture more effective and does
+not close #1286.
+
+**Migration posture:** This is a conformance repair, not a new research
+architecture. Existing historical evidence remains valid provenance. Guidance that
+equates release membership with active teaching scope is superseded by this ADR;
+guidance that treats unmeasured semantics as regression-protected competence is
+superseded by ADR-142 as composed here. Implementation must remain grade-neutral and
+data-defined; do not restore hard-coded A -> B -> C progression.
+
+**Durable owner:** GitHub parent #1286 owns the recursive decomposition,
+dependency graph, implementation children, integration proof, and live-trainer
+conformance closure for this decision.
