@@ -31,3 +31,18 @@ while applying them.
 **PASS / `NO_DRIFT`.** The implementation realizes the reviewed #1293 transition
 without a parallel planner, background admission loop, grade-specific progression,
 or C07-owned neural update.
+
+## Reviewed-unified integration sync
+
+Reviewed unified advanced to
+`596da2455e4e406ffb76cccf8e2c1d5e2a73f672` with #1291's
+learner-relative lawful teaching frontier. The merge was conflict-free and changed
+only the teacher-frontier owner and its tests.
+
+Post-sync verification passed:
+
+- accepted C07 flywheel and admission: 9/9;
+- persistent operator: 22/22;
+- lawful teaching frontier: 6/6.
+
+The integration changes do not alter the #1293 design verdict.
