@@ -36,7 +36,7 @@ def synthesize_generated_grade(
     evidence = {item.semantic_id: item for item in candidate_evidence}
     decisions = {
         identity: _decision(identity, rows, graph, order, evidence, policy)
-        for identity in sorted(rows)
+        for identity in sorted(evidence)
     }
     capacity = min(policy.max_members, snapshot.budget.max_candidates,
                    snapshot.budget.max_identity_rows)
@@ -131,7 +131,7 @@ def _validate_inputs(snapshot, closure, release, learner, candidate_evidence, po
     candidate_ids = tuple(sorted(set(closure.constituent_order)))
     evidence_ids = tuple(item.semantic_id for item in candidate_evidence)
     if (evidence_ids != tuple(sorted(set(evidence_ids)))
-            or set(evidence_ids) != set(candidate_ids)):
+            or not set(evidence_ids).issubset(candidate_ids)):
         _fail("BAMF_GENERATED_GRADE_EVIDENCE_CENSUS_INVALID")
 
 

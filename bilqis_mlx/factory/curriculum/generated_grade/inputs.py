@@ -8,6 +8,9 @@ from bilqis_mlx.factory.atlas_delta_scope import AtlasDeltaScopeHandoff
 from bilqis_mlx.factory.atlas_frontier import AtlasCoverageEpoch, AtlasLearnerEvidence, next_atlas_delta
 from bilqis_mlx.factory.atlas_frontier_progress import FrontierStatus, plan_frontier_progress
 from bilqis_mlx.factory.atlas_frontier_selection import frontier_target_metrics
+from bilqis_mlx.factory.atlas_frontier_closure import (
+    semantic_roots_for_mastered_capabilities,
+)
 from bilqis_mlx.factory.atlas_frontier_progress_validation import (
     credited_obligation_keys, current_obligations,
 )
@@ -93,33 +96,50 @@ def _realization(epoch, semantic_id, rows):
     return tuple(sorted(set(capabilities))), tuple(sorted(set(anchors)))
 
 
-def _measured_acquisition_cost(epoch, learner, plan, foot, capability_ids):
-    """Use accepted teaching receipts only when they bind an exact live capability."""
+def _measured_acquisition_cost(
+    epoch, learner, plan, foot, capability_ids, family_ids,
+):
+    """Estimate candidate cost from accepted completed same-family teaching history."""
     known = {item.capability_id for item in release_capabilities(epoch.current_release)}
     mastered = set(foot.mastered_capability_ids)
-    matched = tuple(
+    candidate_families = set(family_ids)
+    comparable: set[str] = {
         capability for capability in capability_ids
-        if capability in known and capability in mastered)
-    if not matched:
-        return None
-    obligation_ids = {
-        obligation.obligation_id
-        for capability in matched
-        for obligation in obligations_for_capability(
-            epoch.current_release, capability, plan=plan)
+        if capability in known and capability in mastered
     }
-    deltas = tuple(
-        receipt.optimizer_step_delta
-        for receipt in learner.ledger.interventions
-        if receipt.obligation_id in obligation_ids
-        and receipt.optimizer_step_delta is not None
-    )
-    if not deltas:
+    if not comparable:
+        for semantic_id in epoch.closure.constituent_order:
+            rows = tuple(row for row in epoch.closure.candidates
+                         if row.semantic_id == semantic_id)
+            if not candidate_families.intersection(row.family_id for row in rows):
+                continue
+            realized, _anchors = _realization(epoch, semantic_id, rows)
+            comparable.update(capability for capability in realized
+                              if capability in known and capability in mastered)
+    if not comparable:
         return None
+    costs = []
+    for capability in sorted(comparable):
+        obligation_ids = {
+            obligation.obligation_id
+            for obligation in obligations_for_capability(
+                epoch.current_release, capability, plan=plan)
+        }
+        deltas = tuple(
+            receipt.optimizer_step_delta
+            for receipt in learner.ledger.interventions
+            if receipt.obligation_id in obligation_ids
+            and receipt.optimizer_step_delta is not None
+        )
+        if deltas:
+            costs.append(sum(deltas))
+    if not costs:
+        return None
+    units = (sum(costs) + len(costs) - 1) // len(costs)
     return AcquisitionCostEvidence(
         CostEvidenceKind.MEASURED,
-        "accepted-teaching-optimizer-steps/v1",
-        sum(deltas),
+        "accepted-teaching-family-mean-ceil/v1",
+        units,
         None,
     )
 
@@ -132,8 +152,12 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
         families[row.semantic_id].add(row.family_id)
     metrics = {item.semantic_id: item for item in frontier_target_metrics(
         epoch.snapshot, epoch.closure)}
+    mastered_semantics = set(semantic_roots_for_mastered_capabilities(
+        epoch.current_release, foot.mastered_capability_ids))
     results = []
     for semantic_id in epoch.closure.constituent_order:
+        if semantic_id in mastered_semantics:
+            continue
         rows = tuple(item for item in epoch.closure.candidates
                      if item.semantic_id == semantic_id)
         capability_ids, anchors = _realization(epoch, semantic_id, rows)
@@ -148,7 +172,7 @@ def _development_evidence(epoch, foot, learner, plan) -> tuple[CandidateDevelopm
             if reason.code.startswith("PREREQUISITE_") and reason.dependency_id
         }
         measured_cost = _measured_acquisition_cost(
-            epoch, learner, plan, foot, capability_ids)
+            epoch, learner, plan, foot, capability_ids, family_ids)
         cost = measured_cost or AcquisitionCostEvidence(
             CostEvidenceKind.BOOTSTRAPPED,
             "a09-unmet-prerequisite-slope/v1",

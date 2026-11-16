@@ -2,6 +2,7 @@
 from dataclasses import replace
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 from bilqis_mlx.factory.generated_grade import (
     AcceptedLearnerFoot,
@@ -106,8 +107,28 @@ class GeneratedGradeAcceptedCostEvidenceTests(AutonomyFixture, unittest.TestCase
             _sha("accepted-cost-foot"))
         measured = _measured_acquisition_cost(
             SimpleNamespace(current_release=self.release),
-            SimpleNamespace(ledger=ledger), plan, foot, ("A.BASE",))
+            SimpleNamespace(ledger=ledger), plan, foot, ("A.BASE",), ("positive_identity",))
 
         self.assertIs(measured.status, CostEvidenceKind.MEASURED)
         self.assertEqual(measured.units, 3)
         self.assertIsNone(measured.transfer_savings)
+
+        historical = SimpleNamespace(
+            semantic_id="historical.same-family",
+            family_id="positive_identity",
+        )
+        epoch = SimpleNamespace(
+            current_release=self.release,
+            closure=SimpleNamespace(
+                constituent_order=(historical.semantic_id,),
+                candidates=(historical,),
+            ),
+        )
+        module = __import__(
+            _measured_acquisition_cost.__module__, fromlist=["_realization"])
+        with patch.object(module, "_realization", return_value=(("A.BASE",), ())):
+            comparable = _measured_acquisition_cost(
+                epoch, SimpleNamespace(ledger=ledger), plan, foot,
+                ("UNMASTERED.CANDIDATE",), ("positive_identity",))
+        self.assertIs(comparable.status, CostEvidenceKind.MEASURED)
+        self.assertEqual(comparable.units, 3)

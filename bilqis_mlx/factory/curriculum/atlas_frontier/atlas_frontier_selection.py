@@ -23,6 +23,9 @@ from .atlas_frontier_ranking import (
     _ranked_ready_targets, frontier_target_metrics,
 )
 
+DeferredClosure.__module__ = __name__
+FrontierDeltaSelection.__module__ = __name__
+
 
 def ranked_frontier_target(
     snapshot: CurriculumSnapshot, closure: FrontierClosure,

@@ -230,8 +230,12 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
         before = synthesize_generated_grade(
             snapshot, closure, release, _inputs(learner, evidence, policy))
         after_closure = _closure_with_bridge_mastered(closure)
+        after_learner = replace(learner, evidence_sha256=_sha("learner-after-bridge"))
+        after_evidence = tuple(
+            item for item in evidence if item.semantic_id != "skos:bridge")
         after = synthesize_generated_grade(
-            snapshot, after_closure, release, _inputs(learner, evidence, policy))
+            snapshot, after_closure, release,
+            _inputs(after_learner, after_evidence, policy))
 
         before_desc = next(
             item for item in before.decisions if item.semantic_id == "skos:descendant")
@@ -241,6 +245,9 @@ class GeneratedGradeSynthesisTests(unittest.TestCase):
         self.assertEqual((after_desc.effective_acquisition_units, after_desc.closure_acquisition_units), (2, 2))
         self.assertNotIn("skos:descendant", before.member_semantic_ids)
         self.assertIn("skos:descendant", after.member_semantic_ids)
+        self.assertNotIn("skos:bridge", after.member_semantic_ids)
+        self.assertNotIn("skos:bridge", tuple(
+            item.semantic_id for item in after.decisions))
         self.assertEqual(before.snapshot_sha256, after.snapshot_sha256)
         self.assertNotEqual(before.proposal_sha256, after.proposal_sha256)
 
