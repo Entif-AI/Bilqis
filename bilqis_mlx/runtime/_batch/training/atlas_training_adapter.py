@@ -52,7 +52,8 @@ def prepare_model_source_input(
         source_frontier: SourceFrontier, eligibility_policy: ContextPolicy,
         compiler_config: FrameCompilerConfig, atlas_selection,
         feature_artifact_path, semantic_context=None, released_manifest=None,
-        atlas_features: AtlasFeatures | None = None, prepared_inventory=None):
+        atlas_features: AtlasFeatures | None = None, prepared_inventory=None,
+        source_graph=None):
     """Compile source-owned model context once, excluding candidate generation."""
     if (not isinstance(row, dict) or row.get("capability") != capability
             or type(visible) is not tuple):
@@ -65,7 +66,9 @@ def prepare_model_source_input(
     _require_source_inventory(
         source_ast, source_context, row, atlas_selection, semantic_context,
         released_manifest, prepared_inventory=prepared_inventory)
-    _require_source_lineage(source_ast, frames, visible, source_context.graph)
+    _require_source_lineage(
+        source_ast, frames, visible,
+        source_context.graph if source_graph is None else source_graph)
     projection = None
     if frames:
         projection = project_context(

@@ -1,33 +1,21 @@
 """Re-derive admitted formal types from independent A01 and A03 source pins."""
 from dataclasses import replace
 
-from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 
 from ..atlas.snapshot import AtlasArtifactSelection, load_pinned_atlas_snapshot
-from ..frame_adapters.common import (
-    BOOLEAN_COMPOSITE_ADAPTER, BOOLEAN_CONNECTIVE_ADAPTER,
-    BOOLEAN_IDENTIFICATION_ADAPTER, FINITE_NUMERIC_ADAPTER, MICRO_PREDICATE_ADAPTER,
-    C13_EPISODE_ADAPTER,
-)
+from ..frame_adapters.registry import source_frame_strategy
 from ..frame_adapters.public_formal_sources import source_graph_for_adapter
 from ..frame_schema import FrameInstance, _formal_source_types
 from ..released_frame_schemas import lookup_source_pinned_frame_schema
 from .common import _factor_overflow
 
-_SOURCE_FAMILIES = (
-    (MICRO_PREDICATE_ADAPTER, 'micro'),
-    (BOOLEAN_CONNECTIVE_ADAPTER, 'boolean'),
-    (BOOLEAN_COMPOSITE_ADAPTER, 'boolean'),
-    (BOOLEAN_IDENTIFICATION_ADAPTER, 'boolean'),
-    (FINITE_NUMERIC_ADAPTER, 'numeric'),
-    (C13_EPISODE_ADAPTER, 'numeric'),
-)
-
-
 def source_family_for_adapter(adapter_id: str) -> str:
     """Return the A06-owned released-schema family for one source adapter."""
-    family = next((value for owner, value in _SOURCE_FAMILIES
-                   if owner == adapter_id), None)
+    try:
+        family = source_frame_strategy(adapter_id).source_family
+    except BilqisError:
+        family = None
     if family is None:
         ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID)
     return family

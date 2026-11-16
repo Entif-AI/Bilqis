@@ -14,7 +14,7 @@ from bilqis_mlx.runtime.b11_source_execution_authority import (
     _issue_prepared_b11_source_proof,
     require_b11_source_execution_authority_current,
 )
-from bilqis_mlx.semantics.atlas_features.formal import source_family_for_adapter
+from bilqis_mlx.semantics.frame_adapters.registry import source_frame_strategy
 from bilqis_mlx.semantics.context_eligibility import (
     ApprovedContextProjection, ContextPolicy, SourceFrontier, TaskScope,
     project_context,
@@ -117,7 +117,8 @@ def _prepare_source_row(source_context, authenticated, manifest,
         _invalid("FACTORY_TRAINING_CAPABILITY_MISMATCH")
     source_adapter = source_context.source_registry.resolve_owner(
         row.get("generator"))
-    source_graph = canonical_graph_for(row.get("generator"), source_context.source_root)
+    source_graph = canonical_graph_for(
+        row.get("generator"), source_context.source_root, row=row)
     task, frontier, policy = public_training_context(
         authenticated.features.semantic_release, capability, len(row.get("tokens", ())))
     if prequalified:
@@ -162,9 +163,9 @@ def _prepare_source_row(source_context, authenticated, manifest,
             frontier=frame_frontier, policy=policy)
         ast = replace(atom_ast, frames=frames)
         current = atom_config.frontier
-        config = FrameCompilerConfig(
+        config = (atom_config if manifest is None else FrameCompilerConfig(
             tuple(body.parse() for body in manifest.bodies), manifest.schema_map,
-            None, task, current, policy)
+            None, task, current, policy))
         approved = project_context(projection.envelopes, task, current, policy)
     else:
         atom_ast, atom_config = _public_formal_atom_context_from_witness(
@@ -265,9 +266,11 @@ def _prepare_factory_source_rows(source_context, authenticated, rows, *, capabil
     adapter = runtime_adapter_for_release(
         source_context.source_root, source_context.graph, source_context.release,
         source_context.source_registry, execution)
-    family = source_family_for_adapter(adapter.descriptor.adapter_id)
-    manifest = _load_pinned_released_frame_schemas_from_snapshot(
-        family, authenticated.selection, authenticated.snapshot).manifest
+    strategy = source_frame_strategy(adapter.descriptor.adapter_id)
+    manifest = (None if strategy.source_family is None else
+                _load_pinned_released_frame_schemas_from_snapshot(
+                    strategy.source_family, authenticated.selection,
+                    authenticated.snapshot).manifest)
     profile = (dict(execution.provider_parameters)
                if execution.provider_parameters else None)
     prequalified = source_authority is not None

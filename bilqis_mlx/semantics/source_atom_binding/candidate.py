@@ -20,6 +20,17 @@ def find_candidate(atom, witness, snapshot, graph, source_projection):
     tokens = graph["tokens"]
     if index >= len(tokens) or tokens[index] != atom.token:
         return AtomCandidate(index, reason_codes=("SOURCE_ATOM_ROW_TOKEN_MISMATCH",))
+    if source_projection is not None:
+        if (atom.index >= len(source_projection.semantic_ids)
+                or atom.index >= len(source_projection.abi_indices)
+                or atom.index >= len(source_projection.formal_signatures)):
+            return AtomCandidate(index, reason_codes=("SOURCE_ATOM_OWNER_PROJECTION_INVALID",))
+        return AtomCandidate(
+            index,
+            source_projection.semantic_ids[atom.index],
+            source_projection.abi_indices[atom.index],
+            (source_projection.formal_signatures[atom.index],),
+        )
     try:
         entry = snapshot.abi(index)
     except BilqisError:
@@ -29,7 +40,5 @@ def find_candidate(atom, witness, snapshot, graph, source_projection):
     concept = next((item for item in snapshot.concepts
                     if item.concept.semantic_id == entry.semantic_id), None)
     types = tuple(sorted(set(concept.concept.types))) if concept is not None else ()
-    if source_projection is not None:
-        types = (source_projection.formal_signatures[atom.index],)
     reasons = () if types else ("SOURCE_ATOM_TYPE_AUTHORITY_UNAVAILABLE",)
     return AtomCandidate(index, entry.semantic_id, entry.index, types, reasons)
