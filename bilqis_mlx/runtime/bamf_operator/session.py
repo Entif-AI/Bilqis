@@ -9,6 +9,7 @@ from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
 import time
+import json
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
@@ -149,6 +150,8 @@ def prepare_bamf_visit(
         progress=progress)
     if selection.status != "TEACHER_SELECTED":
         status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
+        _emit_progress(progress, "priority holds: " + json.dumps(
+            getattr(selection, "holds", ()), ensure_ascii=True))
         return BamfPreparedVisit(status, parent, selection=selection)
     rows = selection.offer.rows()
     _emit_progress(

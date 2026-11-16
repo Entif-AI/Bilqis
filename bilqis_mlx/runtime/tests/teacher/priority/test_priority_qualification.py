@@ -125,6 +125,7 @@ def test_planner_is_required_even_when_no_option_claims_an_unlock(qualification)
     with pytest.raises(BilqisError) as failure:
         qualification.requalify_priority(*args, now=10)
     assert failure.value.context['reason'] == 'BAMF_PRIORITY_PLANNING_INVALID'
+    assert failure.value.code == 'SCHOOL.BAMF_CURRICULUM.INVALID'
 
 def test_grade_renaming_keeps_capability_admission(qualification):
     program = N(grades=(N(id='renamed', capabilities=(N(id='cap'),)),))
@@ -142,7 +143,7 @@ def test_matching_selection_unlocks_and_unadmitted_capability(qualification):
         assert qualification.requalify_priority(*args, now=10).ranked.ordered == (item,)
         args[8].active_grades = ()
         result = qualification.requalify_priority(*args, now=10)
-    assert result.holds == (('one', 'CAPABILITY_NOT_ADMITTED'),)
+    assert result.holds == (('one', 'CAPABILITY_NOT_TEACHABLE'),)
 
 
 def test_priority_visit_reports_planning_verification_metrics(qualification):
@@ -154,3 +155,30 @@ def test_priority_visit_reports_planning_verification_metrics(qualification):
     assert observed[0].snapshots_rehashed == 0
     assert observed[0].historical_bytes_serialized == 0
     assert observed[0].receipt_history_lookups == 0
+
+
+@pytest.mark.parametrize(('missing', 'expected'), [
+    ('execution', 'CAPABILITY_NOT_ADMITTED'),
+    ('curriculum', 'CAPABILITY_NOT_ADMITTED'),
+    ('binding', 'SOURCE_OFFER_HELD'),
+    ('grade', 'CAPABILITY_NOT_TEACHABLE'),
+    ('duplicate_grade', 'CAPABILITY_NOT_TEACHABLE'),
+    ('offer', 'SOURCE_OFFER_MISSING'),
+])
+def test_hold_precedence_before_missing_offer(qualification, missing, expected):
+    args = list(inputs(qualification, (option('one'),), ()))
+    release = args[1].release
+    if missing == 'execution':
+        release.execution_plan.capability_map.clear()
+        release.source_bindings.by_capability.clear()
+    elif missing == 'curriculum':
+        release.curriculum.capability_map.clear()
+    elif missing == 'binding':
+        release.source_bindings.by_capability.clear()
+        args[8].active_grades = ()
+    elif missing == 'grade':
+        args[8].active_grades = ()
+    elif missing == 'duplicate_grade':
+        args[7].grades = args[7].grades * 2
+    result = qualification.requalify_priority(*args, now=10)
+    assert result.holds == (('one', expected),)

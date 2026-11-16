@@ -130,6 +130,12 @@ def _inspect(run_dir: Path) -> dict:
 
 
 def _print_status(result: dict) -> int:
+    from bilqis_mlx.errors.authority import authority_report
+    result = dict(result)
+    if result.get("admission_policy") == "atlas-release":
+        report = authority_report(result.get("result"), domain="admission")
+        if report is not None:
+            result["admission_label"] = report.title
     print(json.dumps(result, indent=2, sort_keys=True))
     return 0
 

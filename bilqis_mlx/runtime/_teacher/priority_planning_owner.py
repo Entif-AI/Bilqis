@@ -6,7 +6,7 @@ from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 def _emit_progress(progress, message):

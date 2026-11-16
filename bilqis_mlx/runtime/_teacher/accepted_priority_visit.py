@@ -32,7 +32,7 @@ from .accepted_teacher_custody import (
 from .priority_qualification import _grade, requalify_priority
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 

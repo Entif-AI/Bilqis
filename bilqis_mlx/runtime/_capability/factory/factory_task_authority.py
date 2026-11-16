@@ -11,6 +11,9 @@ from bilqis_mlx.runtime.atlas_model_contracts import BamfCompiledBatch
 from bilqis_mlx.runtime.source_execution import (
     SourceExecutionContext, source_content_digest,
 )
+from bilqis_mlx.runtime.b11_source_execution_authority import (
+    require_b11_source_owner_current,
+)
 from bilqis_mlx.semantics.cognitive_dag import TaskGoal
 from bilqis_mlx.semantics.cognitive_operators import OperatorBinding
 from bilqis_mlx.semantics.domains import contract_digest
@@ -134,6 +137,13 @@ def factory_task_authority(
         _invalid("BAMF_C04_FACTORY_TASK_AUTHORITY_REQUIRED")
     source_context.__post_init__()
     compiled_batch.__post_init__()
+    source_execution_authority = compiled_batch.source_execution_authority
+    if source_execution_authority is not None:
+        require_b11_source_owner_current(
+            source_execution_authority,
+            source_context.source_registry,
+            compiled_batch.sources[0],
+        )
     template = factory_task_template(source_context, compiled_batch)
     source_row_sha256 = source_content_digest((compiled_batch.sources[0].source_row,))
     generation_binding, release_sha256, training_sha256 = _generation_authority(

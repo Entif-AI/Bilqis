@@ -78,8 +78,18 @@ def _dispatch_bamf_resume(args, run_dir: Path, report, parent_graph=None):
                 parent_graph=parent_graph,
                 progress=progress)
         operator_report = asdict(result)
-        if operator_report.get("admission_status") is None and admission_status is not None:
+        used_initial_admission = (
+            operator_report.get("admission_status") is None
+            and admission_status is not None)
+        if used_initial_admission:
             operator_report["admission_status"] = admission_status
+            for field in ("admission_reason", "admission_advances"):
+                if field in report:
+                    operator_report[field] = report[field]
+        if operator_report.get("admission_status") is not None:
+            from bilqis_mlx.errors.authority import authority_label
+            operator_report["admission_label"] = authority_label(
+                operator_report["admission_status"], domain="admission")
         return True, _print_status(operator_report), None
     return True, _print_status(report), None
 

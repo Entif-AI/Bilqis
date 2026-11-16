@@ -112,6 +112,17 @@ def microbatch_compatible(
                 or item.active_semantic_rows != first.active_semantic_rows
                 or item.sources[0].selection != first.sources[0].selection):
             return False
+    source_authorities = tuple(
+        item.source_execution_authority for item in row_batches)
+    bound_source_authorities = tuple(
+        authority is not None for authority in source_authorities)
+    if any(bound_source_authorities):
+        if not all(bound_source_authorities):
+            return False
+        first_owner = source_authorities[0].source_owner_contract
+        if any(authority.source_owner_contract != first_owner
+               for authority in source_authorities[1:]):
+            return False
     if answer_plans is None and targets is None and masks is None:
         return True
     if answer_plans is None or targets is None or masks is None:

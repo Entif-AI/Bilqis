@@ -172,6 +172,7 @@ def _resume(args, requested_topology, *, include_parent_graph=False):
 
     run_dir = Path(args.run_dir).expanduser().resolve()
     request = None
+    flywheel = None
     if args.atlas_admission_scope is not None:
         if not args.admission_policy_explicit or args.admission_policy != "atlas-release":
             invalid("BAMF_ATLAS_SCOPE_REQUIRES_EXPLICIT_POLICY")
@@ -229,6 +230,10 @@ def _resume(args, requested_topology, *, include_parent_graph=False):
         source_prefetch_workers=args.source_prefetch_workers,
         manifest_sha256=manifest_sha256,
     )
+    if flywheel is not None:
+        report.update(
+            admission_reason=flywheel.reason,
+            admission_advances=flywheel.advances)
     return (report, parent_graph) if include_parent_graph else report
 
 
