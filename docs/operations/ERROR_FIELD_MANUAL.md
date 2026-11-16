@@ -1886,7 +1886,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2099** raw raises across **272** files. The baseline gate permits only reduction.
+Current production scan: **2095** raw raises across **271** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2365,9 +2365,6 @@ Current production scan: **2099** raw raises across **272** files. The baseline 
 | `CONSTRUCTION_TRANSFORMATION_INPUT_SCOPE_MISMATCH` | 1 | `bilqis_mlx/verification/construction_contracts.py` |
 | `CONSTRUCTION_UNSUPPORTED_OR_UNBOUND_TRANSFORMATION` | 1 | `bilqis_mlx/verification/construction_contracts.py` |
 | `CONSTRUCTION_UNSUPPORTED_TEMPLATE_ARGUMENT` | 1 | `bilqis_mlx/_release_views/curriculum_contracts.py` |
-| `CONTROL_PLANE_ACTIVE_ENDPOINT_PATH_UNSAFE` | 1 | `bilqis_mlx/control_plane/active_endpoint.py` |
-| `CONTROL_PLANE_ACTIVE_ENDPOINT_ROLE_INVALID` | 1 | `bilqis_mlx/control_plane/active_endpoint.py` |
-| `CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE` | 2 | `bilqis_mlx/control_plane/active_endpoint.py` |
 | `COPULAR_ALLOCATION_SEMANTIC_CONTRACT_DRIFT` | 1 | `bilqis_mlx/source_adapters/copular_curriculum.py` |
 | `COPULAR_CODEC_INCOMPLETE` | 1 | `bilqis_mlx/source_adapters/copular.py` |
 | `COPULAR_CODEC_INVALID_FUNCTION` | 1 | `bilqis_mlx/source_adapters/copular.py` |

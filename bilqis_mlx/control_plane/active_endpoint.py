@@ -10,10 +10,15 @@ import stat
 from uuid import uuid4
 
 from bilqis_mlx._data_plane.contracts import default_path as data_plane_path
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 
 
 SCHEMA = "bilqis.bamf.control-plane.active-endpoint/v1"
 _DIRECTORY = "active-control-planes"
+
+
+def _invalid(reason: str):
+    ErrorBus.raise_(SCHOOL.BAMF_CONTROL_PLANE.INVALID, reason=reason)
 
 
 @dataclass(frozen=True)
@@ -39,11 +44,11 @@ def _registry_root() -> Path:
 def _prepare_registry_root() -> Path:
     root = _registry_root()
     if root.is_symlink():
-        raise RuntimeError("CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE")
+        _invalid("CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE")
     root.mkdir(parents=True, exist_ok=True, mode=0o700)
     observed = root.stat(follow_symlinks=False)
     if not stat.S_ISDIR(observed.st_mode):
-        raise RuntimeError("CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE")
+        _invalid("CONTROL_PLANE_ACTIVE_ENDPOINT_ROOT_UNSAFE")
     os.chmod(root, 0o700)
     return root
 
@@ -108,7 +113,7 @@ def discover_active_endpoint(*, run_dir: Path | None = None) -> ActiveControlPla
 def advertise_active_endpoint(
         run_dir: Path, *, socket_path: Path | None = None, role: str = "operator"):
     if role not in {"operator", "service"}:
-        raise ValueError("CONTROL_PLANE_ACTIVE_ENDPOINT_ROLE_INVALID")
+        _invalid("CONTROL_PLANE_ACTIVE_ENDPOINT_ROLE_INVALID")
     run_dir = Path(run_dir).expanduser().resolve()
     socket_path = (default_socket_path(run_dir) if socket_path is None
                    else Path(socket_path).expanduser().resolve())
@@ -116,7 +121,7 @@ def advertise_active_endpoint(
     pid = os.getpid()
     target = root / f"{pid}-{role}.json"
     if target.is_symlink():
-        raise RuntimeError("CONTROL_PLANE_ACTIVE_ENDPOINT_PATH_UNSAFE")
+        _invalid("CONTROL_PLANE_ACTIVE_ENDPOINT_PATH_UNSAFE")
     payload = json.dumps({
         "schema": SCHEMA,
         "pid": pid,
