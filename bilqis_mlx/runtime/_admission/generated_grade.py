@@ -11,6 +11,7 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.generated_grade import GeneratedGradeProposal, synthesize_generated_grade
 from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
 from bilqis_mlx.factory.generated_grade.inputs import _compile_generated_grade_inputs
+from bilqis_mlx.runtime.bamf_bundle.publication import _fsync_directory
 
 from .atlas_admission import read_accepted_atlas_factory_release
 
@@ -63,7 +64,11 @@ def _proposal_path(run_dir: Path, proposal_sha256: str) -> Path:
 def _persist_issued_proposal(run_dir: Path, proposal: GeneratedGradeProposal) -> None:
     """Persist the #1320-issued proposal as immutable content-addressed custody."""
     target = _proposal_path(run_dir, proposal.proposal_sha256)
+    parent_existed = target.parent.exists()
     target.parent.mkdir(parents=True, exist_ok=True)
+    if not parent_existed:
+        _fsync_directory(target.parent)
+        _fsync_directory(Path(run_dir))
     payload = json.dumps(
         proposal.manifest(), sort_keys=True, separators=(",", ":"),
     ).encode("utf-8")
@@ -96,6 +101,7 @@ def _persist_issued_proposal(run_dir: Path, proposal: GeneratedGradeProposal) ->
                 )
     finally:
         temporary.unlink(missing_ok=True)
+        _fsync_directory(target.parent)
 
 
 def _read_issued_proposal(

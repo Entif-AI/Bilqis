@@ -141,6 +141,29 @@ class AcceptedGeneratedGradeDefinitionTests(unittest.TestCase):
             self.assertEqual(
                 _read_issued_proposal(run_dir, proposal.proposal_sha256), proposal)
 
+    def test_issued_proposal_fsyncs_new_custody_directory_and_entry(self):
+        release = __import__(
+            "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
+            fromlist=["_release"],
+        )._release()
+        capability = next(iter(release.curriculum.capability_map.values()))
+        _exact_release, proposal = _single_member_fixture(
+            release.semantic_catalog[0], capability.capability_id)
+        with TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            with patch(
+                "bilqis_mlx.runtime.generated_grade._fsync_directory",
+            ) as directory_sync:
+                _persist_issued_proposal(run_dir, proposal)
+
+            proposal_root = run_dir / "generated-grade-proposals"
+            self.assertGreaterEqual(
+                directory_sync.call_args_list.count(
+                    unittest.mock.call(proposal_root)),
+                2,
+            )
+            directory_sync.assert_any_call(run_dir)
+
     def test_admission_authority_persists_phase_one_proposal_before_binding(self):
         release = __import__(
             "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
