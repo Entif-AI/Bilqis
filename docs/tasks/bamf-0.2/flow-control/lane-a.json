@@ -1,10 +1,20 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "0891128bb330af2de44ef8c0aa0893cb4a16f6e7",
-  "updated_at": "2026-11-16T20:55:31Z",
+  "observed_unified": "39f46e07daf86ff8dba28819373820a0d67673f9",
+  "updated_at": "2026-11-16T23:37:59Z",
   "exception": null,
   "items": [
+    {
+      "issue": 1315,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "39f46e07daf86ff8dba28819373820a0d67673f9",
+      "head_sha_role": "exact reviewed unified base including merged #1314 active generated-grade authority before #1315 source mutation",
+      "summary": "#1315 constrains C03/C06 teaching priority to the lawful active GeneratedGradeDefinition frontier produced by #1314. Legality is decided before salience/novelty/learning-need ranking; future-grade semantics remain planning-visible but cannot become teaching offers, typed exclusion reasons remain observable, and existing teacher strategy is reused only among lawful same-frontier peers.",
+      "resume_trigger": "Run fresh pinned EGM review of the live #1315 legality contract, then trace and repair any priority/source path that can rank or execute outside LawfulTeachingFrontier without changing generated-grade membership or prerequisites.",
+      "preserved_branch": "codex/1315-lawful-frontier-priority-20261116"
+    },
     {
       "issue": 1314,
       "pr": 1349,
