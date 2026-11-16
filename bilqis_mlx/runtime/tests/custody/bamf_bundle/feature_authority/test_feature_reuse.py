@@ -3,6 +3,7 @@ from dataclasses import replace
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -80,13 +81,13 @@ class FeatureReuseTests(unittest.TestCase):
                 publish_bamf_generation(self.run, third_candidate, acceptance=binding)
         def replay_features(student, *args, **kwargs):
             if student.generation == 0:
-                return root_features
+                return SimpleNamespace(features=root_features)
             self.assertEqual(student.generation, 1)
             self.assertEqual(kwargs.get("predecessor"), root_features)
             self.assertEqual(successor_features.predecessor_digest, root_features.digest)
-            return successor_features
+            return SimpleNamespace(features=successor_features)
         with shape_patch(), patch.object(
-                feature_authority, "_authenticate_features",
+                feature_authority, "_authenticate_feature_materialization",
                 side_effect=replay_features):
             receipt = read_accepted_generation_feature_receipt(self.pointer)
         self.assertEqual(receipt.generation, 1)

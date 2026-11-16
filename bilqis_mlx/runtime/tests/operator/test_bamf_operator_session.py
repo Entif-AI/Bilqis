@@ -45,6 +45,40 @@ def _candidate_executor(transactions, case):
     return execute
 
 
+def _assert_horizon_result(
+        case, prepared, execute_candidate, bind_plan, bind_rows,
+        capture_factory, horizon, evaluate, decide, derive, context,
+        parent, cache, selection, transactions, evidence):
+    case.assertEqual(prepared.status, "ACCEPTED")
+    case.assertEqual(len(prepared.steps), 4)
+    case.assertEqual(prepared.step.transaction.update_steps, 4)
+    case.assertEqual(execute_candidate.call_count, 4)
+    bind_plan.assert_called_once_with(context, parent, cache)
+    bind_rows.assert_called_once_with(context, cache, "capability:horizon")
+    capture_factory.assert_called_once_with(
+        Path("/run"), selection, generation=1,
+        accepted_manifest_sha256="a" * 64,
+        candidate_attempt_ordinal=1, parent_optimizer_step=11)
+    horizon.assert_called_once_with(
+        Path("/run"), parent, cache, "capability:horizon", 16)
+    evaluate.assert_called_once_with(
+        context, transactions[-1], "atlas", "capability:horizon",
+        run_dir=Path("/run"))
+    decide.assert_called_once_with(evaluate.return_value)
+    event = derive.call_args.kwargs["delivery_events"][0]
+    case.assertIs(prepared.resource, event["resource"])
+    case.assertEqual(event["resource"]["optimizer_steps"], 4)
+    case.assertEqual(event["resource"]["wall_seconds"], 10.0)
+    case.assertEqual(event["visit_id"], "visit:horizon")
+    case.assertEqual(event["selected_policy_key"], "policy:horizon")
+    case.assertEqual(event["selected_option_id"], "option:horizon")
+    case.assertEqual(event["parent_generation"], 1)
+    case.assertEqual(event["accepted_manifest_sha256"], "a" * 64)
+    case.assertEqual(event["candidate_attempt_ordinal"], 1)
+    case.assertEqual(event["candidate_evidence"], evidence)
+    case.assertEqual(event["resource"]["evidence_file_fsyncs"], 1)
+
+
 class BamfOperatorRoutingTests(unittest.TestCase):
     def test_candidate_horizon_buffers_step_evidence_until_one_boundary_write(self):
         from bilqis_mlx.factory.teaching import content_digest
@@ -101,8 +135,11 @@ class BamfOperatorRoutingTests(unittest.TestCase):
             retained_state=SimpleNamespace(optimizer_step=11),
             optimizer_hyperparameters="hparams",
         )
-        context = SimpleNamespace(release=object())
         cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
+        context = SimpleNamespace(
+            release=object(),
+            _accepted_runtime_host=SimpleNamespace(_accepted_cache=cache),
+        )
         identity = SimpleNamespace(visit_id="visit:horizon", policy_key="policy:horizon")
         selection = SimpleNamespace(
             status="TEACHER_SELECTED",
@@ -132,6 +169,10 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 return_value=selection), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
                 return_value=cache), patch(
+                "bilqis_mlx.runtime.bamf_operator.session.bind_current_retention_protection_plan",
+                return_value="plan") as bind_plan, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.bind_current_retention_source_rows",
+                return_value="rows") as bind_rows, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
                 return_value=4) as horizon, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
@@ -156,31 +197,10 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 return_value=SimpleNamespace(used=123)):
             prepared = prepare_bamf_visit(Path("/run"), steps_per_visit=16)
 
-        self.assertEqual(prepared.status, "ACCEPTED")
-        self.assertEqual(len(prepared.steps), 4)
-        self.assertEqual(prepared.step.transaction.update_steps, 4)
-        self.assertEqual(execute_candidate.call_count, 4)
-        capture_factory.assert_called_once_with(
-            Path("/run"), selection, generation=1,
-            accepted_manifest_sha256="a" * 64,
-            candidate_attempt_ordinal=1, parent_optimizer_step=11)
-        horizon.assert_called_once_with(
-            Path("/run"), parent, cache, "capability:horizon", 16)
-        evaluate.assert_called_once_with(
-            context, transactions[-1], "atlas", "capability:horizon", run_dir=Path("/run"))
-        decide.assert_called_once_with(evaluate.return_value)
-        event = derive.call_args.kwargs["delivery_events"][0]
-        self.assertIs(prepared.resource, event["resource"])
-        self.assertEqual(event["resource"]["optimizer_steps"], 4)
-        self.assertEqual(event["resource"]["wall_seconds"], 10.0)
-        self.assertEqual(event["visit_id"], "visit:horizon")
-        self.assertEqual(event["selected_policy_key"], "policy:horizon")
-        self.assertEqual(event["selected_option_id"], "option:horizon")
-        self.assertEqual(event["parent_generation"], 1)
-        self.assertEqual(event["accepted_manifest_sha256"], "a" * 64)
-        self.assertEqual(event["candidate_attempt_ordinal"], 1)
-        self.assertEqual(event["candidate_evidence"], evidence)
-        self.assertEqual(event["resource"]["evidence_file_fsyncs"], 1)
+        _assert_horizon_result(
+            self, prepared, execute_candidate, bind_plan, bind_rows,
+            capture_factory, horizon, evaluate, decide, derive, context,
+            parent, cache, selection, transactions, evidence)
 
     def test_resource_observation_reports_semantic_materialization_counts(self):
         from bilqis_mlx.runtime.bamf_operator.session_support import _resource_observation

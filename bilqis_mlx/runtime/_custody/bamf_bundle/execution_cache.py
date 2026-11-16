@@ -49,6 +49,8 @@ class AcceptedExecutionCache:
     _execution_binding_lock: object = field(init=False, repr=False, compare=False)
     _candidate_identity_sha256: str | None = field(init=False, repr=False, compare=False)
     _currentness_transaction: object | None = field(init=False, repr=False, compare=False)
+    _retention_protection_plan: object | None = field(
+        init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
         _invalid("B13_EXECUTION_CACHE_CALLER_CONSTRUCTION_FORBIDDEN")
@@ -115,6 +117,8 @@ def _new_execution_cache(
         ("_execution_binding_lock", RLock()),
         ("_candidate_identity_sha256", None),
         ("_currentness_transaction", None),
+        ("_retention_protection_plan", None),
+        ("_retention_source_rows", {}),
     ):
         object.__setattr__(cache, name, value)
     cache.__post_init__()

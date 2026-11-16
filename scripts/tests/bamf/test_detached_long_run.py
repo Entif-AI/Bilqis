@@ -183,6 +183,38 @@ class DetachedLongRunTests(unittest.TestCase):
                 result["snapshot_sha256"], result["final_snapshot_sha256"])
             self.assertEqual((source / "subject.py").read_text(), "VALUE = 'before'\n")
 
+    def test_worker_allows_testmon_runtime_database(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source"
+            snapshot = root / "snapshot"
+            source.mkdir()
+            (source / "subject.py").write_text("VALUE = 'before'\n", encoding="utf-8")
+            snapshot_receipt = _snapshot_workdir(source, snapshot)
+            receipt = root / "receipt.json"
+            args = SimpleNamespace(
+                label="testmon-output-test",
+                workdir=snapshot,
+                source_workdir=source,
+                source_sha256=snapshot_receipt["source_sha256"],
+                snapshot_sha256=snapshot_receipt["snapshot_sha256"],
+                log=root / "run.log",
+                receipt=receipt,
+                pid_file=root / "pid",
+                no_notify=True,
+                command=[
+                    sys.executable, "-B", "-c",
+                    "from pathlib import Path; Path('.testmondata').write_bytes(b'cache')",
+                ],
+            )
+
+            self.assertEqual(_worker(args), 0)
+            result = json.loads(receipt.read_text(encoding="utf-8"))
+            self.assertEqual(result["status"], "PASS")
+            self.assertFalse(result["source_mutated"])
+            self.assertNotEqual(
+                result["snapshot_sha256"], result["final_snapshot_sha256"])
+
     def test_worker_fails_if_command_mutates_snapshot_source(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

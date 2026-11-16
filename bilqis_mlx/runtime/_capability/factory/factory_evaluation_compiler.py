@@ -113,6 +113,7 @@ def compile_factory_evaluation_batch(
     source_seed: int,
     source_each: int,
     _authenticated=None,
+    _release_prevalidated: bool = False,
 ) -> BamfCompiledBatch:
     """Produce B11 input without constructing or exposing evaluator gold."""
     if (type(source_context) is not SourceExecutionContext
@@ -124,18 +125,22 @@ def compile_factory_evaluation_batch(
             or type(source_each) is not int or source_each < 1
             or source_context.source_root is None):
         _invalid("BAMF_C05_EVALUATION_COMPILE_INPUT_INVALID")
-    source_context.release.verify()
-    source_context.release.verify_semantic_catalog(source_context.graph)
+    if type(_release_prevalidated) is not bool:
+        _invalid("BAMF_C05_EVALUATION_PREVALIDATION_INVALID")
+    if not _release_prevalidated:
+        source_context.release.verify()
+        source_context.release.verify_semantic_catalog(source_context.graph)
+    else:
+        source_context.require_accepted_runtime(source_context.run_dir)
     authenticated = (_authenticated if _authenticated is not None else
                      authenticate_bamf_execution_feature_context(
                          candidate, artifact_path, source_context.run_dir))
     authenticated.__post_init__()
-    execution = source_context.release.execution_plan.capability_map[
-        row["capability"]]
+    execution = source_context.execution_for(row["capability"])
     profile_parameters = (dict(execution.provider_parameters)
                           if execution.provider_parameters else None)
     source_graph = canonical_graph_for(
-        row.get("generator"), source_context.source_root, row=row)
+        row.get("generator"), source_context.source_root)
     task, frontier, policy = _evaluation_context(
         authenticated.features.semantic_release,
         row["capability"], len(row["tokens"]),
@@ -175,6 +180,7 @@ def compile_factory_evaluation_case(
     source_seed: int,
     source_each: int,
     authenticated=None,
+    release_prevalidated: bool = False,
 ) -> CompiledFactoryEvaluationCase:
     """Compile and lower one immutable evaluation case exactly once."""
     authenticated = (authenticated if authenticated is not None else
@@ -184,7 +190,8 @@ def compile_factory_evaluation_case(
     batch = compile_factory_evaluation_batch(
         source_context, candidate, artifact_path, row,
         source_seed=source_seed, source_each=source_each,
-        _authenticated=authenticated)
+        _authenticated=authenticated,
+        _release_prevalidated=release_prevalidated)
     task_template = factory_task_template(source_context, batch)
     config = batch.compiled.compiler_configs[0]
     compiler_sha256 = candidate.compiler_features.get("compiler_sha256")
@@ -215,146 +222,7 @@ def compile_factory_evaluation_case(
         batch.compiled.source_asts, batch.compiled.partial_forest_receipts,
         task_template, items, compiled_case_identity_digest(record))
 
-def _source_atom_row(
-    source_context: SourceExecutionContext,
-    authenticated,
-    row: dict,
-    *,
-    source_seed: int,
-    source_each: int,
-) -> SourceAtomRow:
-    execution = source_context.release.execution_plan.capability_map.get(
-        row.get("capability"))
-    if execution is None:
-        _invalid("BAMF_C05_COMPILED_CASE_SOURCE_CAPABILITY_MISSING")
-    profile_parameters = (dict(execution.provider_parameters)
-                          if execution.provider_parameters else None)
-    source_graph = canonical_graph_for(
-        row.get("generator"), source_context.source_root, row=row)
-    return SourceAtomRow(
-        authenticated.selection, row, source_graph,
-        Path(source_context.source_root), source_seed, source_each,
-        source_context.release.curriculum, profile_parameters)
-
-def compiled_case_matches_contract(
-    source_context: SourceExecutionContext,
-    candidate: BamfBundleCandidate,
-    artifact_path: str,
-    compiled_case: CompiledFactoryEvaluationCase,
-    row: dict,
-    *,
-    source_seed: int,
-    source_each: int,
-    authenticated=None,
-) -> bool:
-    """Check cold-cache reuse without recompiling or invoking the C04 lowerer."""
-    if type(compiled_case) is not CompiledFactoryEvaluationCase:
-        _invalid("BAMF_C05_COMPILED_CASE_REQUIRED")
-    compiled_case.__post_init__()
-    source_context.release.verify()
-    source_context.release.verify_semantic_catalog(source_context.graph)
-    authenticated = (authenticated if authenticated is not None else
-                     authenticate_bamf_execution_feature_context(
-                         candidate, artifact_path, source_context.run_dir))
-    authenticated.__post_init__()
-    identity = compiled_case.identity_record
-    compiler_sha256 = candidate.compiler_features.get("compiler_sha256")
-    expected_task, expected_frontier, expected_policy = _evaluation_context(
-        authenticated.features.semantic_release,
-        row.get("capability"), len(row.get("tokens", ())))
-    if (identity["factory_release_sha256"] != source_context.release.release_sha256
-            or identity["semantic_catalog_sha256"]
-            != source_context.release.semantic_catalog_sha256
-            or identity["semantic_release_sha256"]
-            != authenticated.features.semantic_release
-            or identity["source_artifact_sha256"]
-            != contract_digest(authenticated.selection.identity)
-            or identity["compiler_sha256"] != compiler_sha256
-            or identity["feature_schema_sha256"]
-            != contract_digest(authenticated.schema)
-            or identity["evaluator_policy_sha256"] != contract_digest((
-                expected_task, expected_frontier, expected_policy))):
-        return False
-    compiled = CompiledEncoderInput(
-        compiled_case.compiled_rows, compiled_case.compiler_configs,
-        authenticated.features, candidate.extents,
-        source_asts=compiled_case.source_asts,
-        partial_forest_receipts=compiled_case.partial_forest_receipts)
-    source = _source_atom_row(
-        source_context, authenticated, row,
-        source_seed=source_seed, source_each=source_each)
-    batch = BamfCompiledBatch(
-        compiled, (source,), authenticated.schema,
-        bind_candidate_active_semantic_rows(candidate, authenticated))
-    batch.__post_init__()
-    return factory_task_template_matches(
-        source_context, batch, compiled_case.task_template)
-
-
-def bind_factory_evaluation_case(
-    source_context: SourceExecutionContext,
-    candidate: BamfBundleCandidate,
-    artifact_path: str,
-    compiled_case: CompiledFactoryEvaluationCase,
-    row: dict,
-    *,
-    generation: str,
-    source_seed: int,
-    source_each: int,
-    authenticated=None,
-) -> tuple[BamfCompiledBatch, FactoryTaskAuthority]:
-    """Attach one immutable compilation to exact generation execution state."""
-    if type(compiled_case) is not CompiledFactoryEvaluationCase:
-        _invalid("BAMF_C05_COMPILED_CASE_REQUIRED")
-    compiled_case.__post_init__()
-    source_context.release.verify()
-    source_context.release.verify_semantic_catalog(source_context.graph)
-    authenticated = (authenticated if authenticated is not None else
-                     authenticate_bamf_execution_feature_context(
-                         candidate, artifact_path, source_context.run_dir))
-    authenticated.__post_init__()
-    identity = compiled_case.identity_record
-    compiler_sha256 = candidate.compiler_features.get("compiler_sha256")
-    if (identity["factory_release_sha256"] != source_context.release.release_sha256
-            or identity["semantic_catalog_sha256"]
-            != source_context.release.semantic_catalog_sha256
-            or identity["semantic_release_sha256"]
-            != authenticated.features.semantic_release
-            or identity["source_artifact_sha256"]
-            != contract_digest(authenticated.selection.identity)
-            or identity["compiler_sha256"] != compiler_sha256
-            or identity["feature_schema_sha256"]
-            != contract_digest(authenticated.schema)):
-        _invalid("BAMF_C05_COMPILED_CASE_CONTRACT_DRIFT")
-    config = compiled_case.compiler_configs[0]
-    if (identity["evaluator_policy_sha256"] != contract_digest((
-            config.task, config.frontier, config.policy))
-            or identity["compiled_frame_sha256"]
-            != compiled_frame_identity_digest(compiled_case.compiled_rows)):
-        _invalid("BAMF_C05_COMPILED_CASE_CONTRACT_DRIFT")
-    compiled = CompiledEncoderInput(
-        compiled_case.compiled_rows, compiled_case.compiler_configs,
-        authenticated.features, candidate.extents,
-        source_asts=compiled_case.source_asts,
-        partial_forest_receipts=compiled_case.partial_forest_receipts)
-    source = _source_atom_row(
-        source_context, authenticated, row,
-        source_seed=source_seed, source_each=source_each)
-    batch = BamfCompiledBatch(
-        compiled, (source,), authenticated.schema,
-        bind_candidate_active_semantic_rows(candidate, authenticated))
-    authority = rebind_factory_task_authority(
-        source_context, batch, compiled_case.task_template,
-        generation_binding=generation)
-    batch = BamfCompiledBatch(
-        batch.compiled, batch.sources, batch.feature_schema,
-        batch.active_semantic_rows, task_authority=authority)
-    source_context.register_compiled_batch(batch)
-    return batch, authority
-
-
 __all__ = (
-    "CompiledFactoryEvaluationCase", "bind_factory_evaluation_case",
-    "compiled_case_matches_contract",
-    "compile_factory_evaluation_batch", "compile_factory_evaluation_case",
+    "CompiledFactoryEvaluationCase", "compile_factory_evaluation_batch",
+    "compile_factory_evaluation_case",
 )
