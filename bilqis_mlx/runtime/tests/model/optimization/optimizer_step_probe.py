@@ -33,6 +33,7 @@ def realistic_step_report(leaf_count: int = 214) -> OptimizerStepReport:
     counts = {}
     gradients = {}
     masks = {}
+    authority = {}
     decay = {}
     for index in range(leaf_count):
         name = f"fixture.{index}"
@@ -47,6 +48,7 @@ def realistic_step_report(leaf_count: int = 214) -> OptimizerStepReport:
         gradients[name] = mx.full(value.shape, .01, dtype=mx.float32)
         masks[name] = (
             mx.array([True, False, True, False]) if rowwise else mx.array(True))
+        authority[name] = (False, (0, 2)) if rowwise else (True, ())
         decay[name] = index % 3 != 0
     parent = AdamWStateTree(parameters, first, second, counts)
     hp = AdamWHyperparameters(.001, (.9, .95), 1e-8, .01)
@@ -87,7 +89,8 @@ def realistic_step_report(leaf_count: int = 214) -> OptimizerStepReport:
           patch.object(optim, "AdamW", counted_optimizer)):
         _adamw_update(
             parent, gradients, masks, hp, decay=decay,
-            loss_bearing=True, max_norm=1.)
+            loss_bearing=True, max_norm=1.,
+            participation_authority=authority)
     return OptimizerStepReport(
         leaf_count, validation_calls, eval_calls, readbacks,
         optimizer_instances, time.perf_counter() - started)
