@@ -51,7 +51,7 @@ def _training_context(source_context, candidate, artifact_path, row, capability,
         source_context.source_root, source_context.graph, source_context.release,
         source_context.source_registry, execution)
     source_graph = canonical_graph_for(
-        row.get("generator"), source_context.source_root)
+        row.get("generator"), source_context.source_root, row=row)
     prefix_end = len(row["tokens"])
     task = TaskScope(
         "bamf-retention-trainer", "bamf-retention", "TRAINING",

@@ -71,7 +71,8 @@ class AcceptedFeatureHistoryTests(FeatureLineageCase):
                 return_value=binding), patch.object(
                 feature_authority, "parent_acceptance_anchor_from_manifest",
                 return_value="a" * 64), patch.object(
-                feature_authority, "_authenticate_features", return_value=root):
+                feature_authority, "_authenticate_feature_materialization",
+                return_value=SimpleNamespace(features=root)):
             current, current_binding, predecessor = feature_authority._accepted_feature_chain(
                 self.run, manifests[-1], students[manifests[-1]],
                 expected_acceptance_sha256="b" * 64)

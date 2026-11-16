@@ -19,13 +19,32 @@ def execute_horizon(
             selection, context, parent, horizon, workers=source_prefetch_workers,
             executor=source_prefetch_executor, metrics=metrics)
     prepare_evidence_root(run_dir)
-    capture = capture_cls(
-        run_dir, selection,
+    introductory = None
+    try:
+        from bilqis_mlx.learning.teacher_lineage import instruction_history
+        from bilqis_mlx.runtime.priority_rejection_replay import rejection_recency
+        projected_teacher = getattr(
+            getattr(getattr(selection, "visit", None), "projection", None),
+            "teacher_state", None)
+        history_state, seen = instruction_history(
+            projected_teacher if projected_teacher is not None else parent.teacher_state)
+        _, rejected = rejection_recency(run_dir, parent, cache)
+        capability = selection.offer.capability_id
+        introductory = (
+            False if capability in set(seen) | set(rejected)
+            else True if history_state == "COMPLETE"
+            else None)
+    except (AttributeError, TypeError, ValueError, KeyError):
+        introductory = None
+    capture_kwargs = dict(
         generation=cache.generation,
         accepted_manifest_sha256=cache.accepted_manifest_sha256,
         candidate_attempt_ordinal=candidate_attempt_ordinal,
         parent_optimizer_step=parent.retained_state.optimizer_step,
     )
+    if introductory is not None:
+        capture_kwargs["introductory"] = introductory
+    capture = capture_cls(run_dir, selection, **capture_kwargs)
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
         candidate_step_started_at = time.perf_counter()
@@ -100,6 +119,21 @@ def candidate_horizon_execution(
     )
 
 
+def _observe_retention_scope(observer, decision):
+    if observer is None:
+        return
+    fields = {
+        "retention_evaluated_capability_count": len(
+            getattr(decision, "evaluated_capability_ids", ())),
+        "retention_protection_plan_sha256": getattr(
+            decision, "retention_protection_plan_sha256", None),
+        "retention_broad_certification_trigger": getattr(
+            decision, "broad_certification_trigger", None),
+    }
+    stage = getattr(observer, "stage", None)
+    (stage if callable(stage) else observer.update)(**fields)
+
+
 def retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
@@ -117,10 +151,11 @@ def retention_result(
             **({"observer": lambda fields: observer.update(**fields)}
                if observer is not None else {}))
         decision = issue_decision(evaluation)
+        _observe_retention_scope(observer, decision)
         if not decision.accepted:
             from bilqis_mlx.errors.authority import authority_label
             emit_progress(progress, "retention decision: " + authority_label(
-                decision.reason, blocking_capability=getattr(
+                getattr(decision, "reason", None), blocking_capability=getattr(
                     getattr(evaluation, "decision", None), "blocking_capability", None),
                 blocking_scope=getattr(
                     getattr(evaluation, "decision", None), "blocking_scope", None)))
@@ -130,6 +165,21 @@ def retention_result(
     with measure_observed_phase_fn(observer, "evidence_finalization_wall_seconds"):
         candidate_evidence = capture.finalize(
             accepted=decision.accepted, decision=decision.to_record())
+    if observer is not None:
+        try:
+            methodology = getattr(capture, "learning_methodology", None)
+            if callable(methodology):
+                observer.update(learning_methodology=methodology())
+            from .evidence_projection import complete_visit_evidence
+            record = getattr(observer, "record", {})
+            current_visit = (record.get("visit_evidence")
+                             if isinstance(record, dict) else None) or {
+                "schema": "bilqis.bamf.visit-evidence/v1", "state": "PARTIAL"}
+            observer.update(visit_evidence=complete_visit_evidence(
+                run_dir, current_visit, candidate_evidence, decision))
+        except Exception:
+            # Projection is observation-only and must not gate C05/B13 completion.
+            pass
     resource = resource_observation(
         run_dir, tuple(steps),
         getattr(context, "_source_preparation_metrics", None),
@@ -141,32 +191,80 @@ def retention_result(
         "evidence_objects": candidate_evidence["persistence"]["evidence_objects"],
         "evidence_persistence_seconds": candidate_evidence["persistence"]["persistence_seconds"],
     })
-    successor = None
-    if decision.accepted:
-        successor = derive_successor(
-            run_dir, retained, selection.visit,
-            delivery_events=({
-                "event": "BAMF_C16_3_ACCEPTED",
-                "optimizer_step": retained.optimizer_step,
-                "parent_generation": cache.generation,
-                "accepted_manifest_sha256": cache.accepted_manifest_sha256,
-                "candidate_attempt_ordinal": rejection_journal_ordinal,
-                "capability": capability,
-                "visit_id": selection.visit.identity.visit_id,
-                "selected_policy_key": selection.visit.identity.policy_key,
-                "selected_option_id": selection.option_id,
-                "resource": resource,
-                "candidate_evidence": candidate_evidence,
-            },))
-        successor = bind_baseline_successor(evaluation, successor)
+    from bilqis_mlx.runtime.outcomes.issuance import build_outcome, credited_visit, carry_credit_to_successor
+    how_outcome = build_outcome(run_dir, selection, evaluation, decision, candidate_evidence)
+    successor, learning_health = _accepted_successor(
+        decision, run_dir, parent, selection, capability, cache, retained,
+        rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
+        derive_successor, bind_baseline_successor, evaluation,
+        credited_visit, carry_credit_to_successor)
     return prepared_visit_type(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
         retained=retained, capability=capability, successor=successor,
         identity_metrics=identity_metrics, resource=resource,
-        candidate_evidence=candidate_evidence,
+        candidate_evidence=candidate_evidence, how_outcome=how_outcome,
+        learning_health=learning_health,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)
+
+
+def _instruction_event(run_dir, parent, cache, capability):
+    try:
+        from bilqis_mlx.learning.teacher_lineage import instruction_history
+        from bilqis_mlx.runtime.priority_rejection_replay import rejection_recency
+        history_state, seen = instruction_history(parent.teacher_state)
+        _, rejected = rejection_recency(run_dir, parent, cache)
+        return {
+            "event": "BAMF_INSTRUCTION_HISTORY",
+            "schema": "bilqis.bamf.instruction-history/v1",
+            "state": history_state,
+            "capability_ids": sorted(set(seen) | set(rejected) | {capability}),
+        }
+    except (AttributeError, TypeError, ValueError, KeyError):
+        return {
+            "event": "BAMF_INSTRUCTION_HISTORY",
+            "schema": "bilqis.bamf.instruction-history/v1",
+            "state": "PARTIAL", "capability_ids": [capability],
+        }
+
+
+def _accepted_successor(
+        decision, run_dir, parent, selection, capability, cache, retained,
+        rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
+        derive_successor, bind_baseline_successor, evaluation,
+        credited_visit, carry_credit_to_successor):
+    if not decision.accepted:
+        return None, None
+    learned_visit = credited_visit(selection.visit, how_outcome)
+    instruction_event = _instruction_event(run_dir, parent, cache, capability)
+    learning_health = None
+    try:
+        from .learning_health_runtime import accepted_learning_health_state
+        health_state, learning_health = accepted_learning_health_state(
+            run_dir, parent, selection, candidate_evidence, decision, retained, capture)
+    except (AttributeError, TypeError, ValueError, KeyError):
+        health_state = None
+    events = ({
+        "event": "BAMF_C16_3_ACCEPTED",
+        "optimizer_step": retained.optimizer_step,
+        "parent_generation": cache.generation,
+        "accepted_manifest_sha256": cache.accepted_manifest_sha256,
+        "candidate_attempt_ordinal": rejection_journal_ordinal,
+        "capability": capability,
+        "visit_id": selection.visit.identity.visit_id,
+        "selected_policy_key": selection.visit.identity.policy_key,
+        "selected_option_id": selection.option_id,
+        "resource": resource, "candidate_evidence": candidate_evidence,
+        "how_outcome": how_outcome,
+    }, instruction_event)
+    successor = derive_successor(
+        run_dir, retained, learned_visit, delivery_events=events)
+    if health_state is not None:
+        from dataclasses import replace
+        successor = replace(successor, learning_health_state=health_state)
+    successor = carry_credit_to_successor(learned_visit, successor, parent)
+    return bind_baseline_successor(evaluation, successor), learning_health
 
 
 def operate(

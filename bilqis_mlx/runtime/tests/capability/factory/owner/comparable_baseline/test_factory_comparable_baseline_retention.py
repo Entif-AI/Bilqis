@@ -5,11 +5,15 @@ import unittest
 from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
 from bilqis_mlx.runtime.capability_retention import (
     EvidenceStage,
+    case_census_digest,
     evaluate_retention_candidate,
 )
 from bilqis_mlx.runtime.capability_retention_foundation import (
     FoundationRetentionPolicy,
     evaluate_foundation_fixed_school_candidate,
+)
+from bilqis_mlx.runtime.retention.local_evaluation import (
+    evaluate_foundation_local_candidate,
 )
 from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import (
     CANDIDATE,
@@ -36,9 +40,13 @@ def _coverage(measured):
     )
 
 
-def _foundation_inputs(*, protected_loss, measured):
+def _foundation_inputs(
+        *, protected_loss, measured, target_gain=True,
+        labels=("amber", "violet")):
     parent, candidate, target, base_policy, cohorts = _screen_inputs(
-        protected_loss=protected_loss)
+        protected_loss=protected_loss, labels=labels)
+    if not target_gain:
+        candidate = parent
     coverage = _coverage(measured)
     protected = coverage.protected_capabilities(target)
     policy = FoundationRetentionPolicy(
@@ -57,7 +65,60 @@ def _foundation_inputs(*, protected_loss, measured):
     return parent, candidate, target, policy, fixed
 
 
+def _local_foundation_inputs(*, protected_loss, measured):
+    parent, candidate, target, base_policy, cohorts = _screen_inputs(
+        protected_loss=protected_loss)
+    groups = base_policy.capability_groups[:2]
+    measured = tuple(item for item in ("target", "protected") if item in measured)
+    measured_set = set(measured)
+    coverage = BaselineCoverage(
+        measured,
+        tuple(item for item in ("target", "protected") if item not in measured_set),
+        (("amber", len(measured), 2),),
+        len(measured),
+        2,
+        "e" * 64,
+    )
+    cases = tuple(
+        case for case in cohorts[2].cases
+        if case.capability_id in {"target", "protected"})
+    policy = FoundationRetentionPolicy(
+        groups,
+        ("amber",),
+        (("protected", 1),) if "protected" in measured_set else (),
+        base_policy.probe_each,
+        case_census_digest(cases),
+        coverage,
+    )
+    fixed = replace(
+        cohorts[2],
+        cases=cases,
+        capability_groups=groups,
+        expected_case_digest=case_census_digest(cases),
+        evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION,
+        policy_sha256=policy.digest(),
+    )
+    return parent, candidate, target, policy, fixed
+
+
 class FactoryComparableBaselineRetentionTests(unittest.TestCase):
+    def test_first_zero_delta_target_measurement_establishes_baseline_candidate(self):
+        for target_group in ("amber", "Z"):
+            with self.subTest(target_group=target_group):
+                args = _foundation_inputs(
+                    protected_loss=0,
+                    measured=(),
+                    target_gain=False,
+                    labels=(target_group, "violet"),
+                )
+
+                decision = evaluate_foundation_fixed_school_candidate(
+                    *args, PARENT, CANDIDATE)
+
+                self.assertEqual(decision.status.value, "ELIGIBLE")
+                self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
+                self.assertEqual(decision.baseline_coverage.measured_denominator, 0)
+
     def test_first_target_measurement_ignores_unmeasured_peer_regressions(self):
         args = _foundation_inputs(protected_loss=12, measured=())
 
@@ -109,6 +170,34 @@ class FactoryComparableBaselineRetentionTests(unittest.TestCase):
         self.assertEqual(decision.status.value, "REJECT")
         self.assertEqual(decision.reason, "TARGET_BASELINE_REGRESSION")
         self.assertEqual(decision.blocking_capability, target)
+
+    def test_local_plan_reports_exact_evaluated_ids_and_protected_veto(self):
+        args = _local_foundation_inputs(
+            protected_loss=12, measured=("protected",))
+
+        decision = evaluate_foundation_local_candidate(
+            *args, PARENT, CANDIDATE,
+            retention_protection_plan_sha256="1" * 64,
+            evaluated_capability_ids=("target", "protected"))
+
+        self.assertEqual(decision.reason, "PROTECTED_CAPABILITY_REGRESSION")
+        self.assertEqual(decision.blocking_capability, "protected")
+        self.assertEqual(
+            decision.evaluated_capability_ids, ("target", "protected"))
+        self.assertEqual(
+            decision.retention_protection_plan_sha256, "1" * 64)
+
+    def test_local_plan_does_not_apply_whole_grade_aggregate_veto(self):
+        args = _local_foundation_inputs(
+            protected_loss=3, measured=("protected",))
+
+        decision = evaluate_foundation_local_candidate(
+            *args, PARENT, CANDIDATE,
+            retention_protection_plan_sha256="2" * 64,
+            evaluated_capability_ids=("target", "protected"))
+
+        self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
+        self.assertIsNone(decision.blocking_scope)
 
 
 if __name__ == "__main__":

@@ -51,7 +51,7 @@ def _public_formal_context_from_verified_row(
     span = SourceSpan(0, len(tokens))
     source_adapter = canonical_adapter(source_adapter, span)
     adapter_id = source_adapter.descriptor.adapter_id
-    _, graph = canonical_graph(source_root, graph, adapter_id, span)
+    _, graph = canonical_graph(source_root, graph, adapter_id, span, row=row)
     tree = _bind_verified_source_row(
         source_adapter, row, snapshot, graph=graph, source_span=span,
         causal_prefix_end=span.end)
@@ -84,7 +84,7 @@ def public_formal_context(
     span = SourceSpan(0, len(tokens))
     source_adapter = canonical_adapter(source_adapter, span)
     adapter_id = source_adapter.descriptor.adapter_id
-    root, graph = canonical_graph(source_root, graph, adapter_id, span)
+    root, graph = canonical_graph(source_root, graph, adapter_id, span, row=row)
     row = verify_draw(source_adapter, row, root, graph, span, source_seed,
                       source_each, source_profile_parameters, course)
     tree = bind_registered_source_row(

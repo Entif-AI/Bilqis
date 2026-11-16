@@ -6,7 +6,6 @@ retention, source, optimizer, or publication authority.
 from __future__ import annotations
 
 from contextlib import nullcontext
-from dataclasses import dataclass
 from pathlib import Path
 import time
 import json
@@ -26,7 +25,9 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
 )
 from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObservation
 from bilqis_mlx.runtime.factory_retention_owner import (
-    bind_factory_baseline_successor, evaluate_factory_retention_candidate,
+    bind_current_retention_protection_plan, bind_current_retention_source_rows,
+    bind_factory_baseline_successor,
+    evaluate_factory_retention_candidate,
 )
 from bilqis_mlx.runtime.foundation_teacher_owner import (
     derive_accepted_teacher_successor, select_foundation_priority_visit,
@@ -51,25 +52,12 @@ from ._session_execution import candidate_horizon_execution as _candidate_horizo
 from ._session_execution import execute_horizon as _execute_horizon_impl
 from ._session_execution import operate as _operate_impl
 from ._session_execution import retention_result as _retention_result_impl
+from ._session_visit import visit as _visit_impl
 
 _MAX_CANDIDATE_HORIZON = 16
 def _invalid(reason: str):
     ErrorBus.raise_(SCHOOL.BAMF_FIRST_STUDENT.INVALID, reason=reason)
-@dataclass(frozen=True)
-class BamfOperatorResult:
-    status: str
-    visits: int
-    accepted: int
-    rejected: int
-    generation: int
-    optimizer_step: int
-    source_prefetch_workers: int = 0
-    source_prefetch_wait_seconds: float = 0.0
-    source_prefetch_overlap_seconds: float = 0.0
-    source_prefetch_prepared_steps: int = 0
-    source_prefetch_serial_steps: int = 0
-    admission_status: str | None = None
-    admission_advances: int = 0
+from .session_support import BamfOperatorResult
 def _emit_progress(progress, message: str) -> None:
     if progress is not None:
         progress(message)
@@ -143,24 +131,48 @@ def prepare_bamf_visit(
     program = schedule_program_from_executable_release(context.release)
     accepted_host = getattr(context, "_accepted_runtime_host", None)
     host_cache = getattr(accepted_host, "_accepted_cache", None)
+    if host_cache is not None:
+        bind_current_retention_protection_plan(context, parent, host_cache)
     school = accepted_priority_school(
         parent, program,
         candidate_identity_sha256=getattr(
             host_cache, "_candidate_identity_sha256", None))
     _emit_progress(progress, "planning current candidate frontier and teacher priority")
+    planning_started = time.perf_counter()
     selection = select_foundation_priority_visit(
         run_dir, context, atlas_path, program=program, school=school,
         progress=progress)
+    planning_total = max(0.0, time.perf_counter() - planning_started)
+    source_materialization_wall_seconds = float(
+        getattr(selection, "source_materialization_wall_seconds", None) or 0.0)
+    if observer is not None:
+        observer.update(
+            planning_wall_seconds=max(
+                0.0, planning_total - source_materialization_wall_seconds),
+            source_materialization_wall_seconds=(
+                source_materialization_wall_seconds or None))
     if selection.status != "TEACHER_SELECTED":
         status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
         _emit_progress(progress, "priority holds: " + json.dumps(
             getattr(selection, "holds", ()), ensure_ascii=True))
         return BamfPreparedVisit(status, parent, selection=selection)
     rows = selection.offer.rows()
+    if observer is not None:
+        from .evidence_projection import (
+            selected_visit_evidence, unknown_generated_grade_evidence,
+        )
+        visit_evidence = selected_visit_evidence(selection)
+        observer.update(
+            visit_evidence=visit_evidence,
+            generated_grade_evidence=unknown_generated_grade_evidence(
+                visit_evidence.get("grade_id")),
+        )
     _emit_progress(
         progress,
         f"selected {selection.offer.capability_id} with {len(rows)} source rows")
     capability = selection.offer.capability_id
+    if host_cache is not None:
+        bind_current_retention_source_rows(context, host_cache, capability)
     horizon_state = _candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
@@ -177,55 +189,14 @@ def prepare_bamf_visit(
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
            source_prefetch_executor=None, source_prefetch_metrics=None, observer=None):
-    prepared = prepare_bamf_visit(
-        run_dir, steps_per_visit=steps_per_visit, progress=progress,
+    return _visit_impl(
+        run_dir, reserve_gib, steps_per_visit=steps_per_visit, progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
-        source_prefetch_metrics=source_prefetch_metrics,
-        **({"observer": observer} if observer is not None else {}))
-    if prepared.status in {"HELD", "ACTION_REQUIRED"}:
-        return prepared.status
-    parent = prepared.parent
-    selection = prepared.selection
-    step = prepared.step
-    decision = prepared.decision
-    retained = prepared.retained
-    capability = prepared.capability
-    if not decision.accepted:
-        record_bamf_rejection(run_dir, parent, {
-            "schema": "bilqis.bamf.c16.3-rejection/v2",
-            "rejection_attempt_ordinal": prepared.rejection_attempt_ordinal,
-            "rejection_journal_ordinal": prepared.rejection_journal_ordinal,
-            "visit_id": selection.visit.identity.visit_id,
-            "teacher_visit": selection.visit.identity.to_record(),
-            "selected_option_id": selection.option_id,
-            "selected_policy_key": selection.visit.identity.policy_key,
-            "candidate_optimizer_step": (
-                step.transaction.parent.optimizer_step + step.transaction.update_steps),
-            "retained_optimizer_step": parent.retained_state.optimizer_step,
-            "retention_reason": decision.reason,
-            "capability": capability,
-            "decision": decision.to_record(),
-            "resource": prepared.resource,
-            "candidate_evidence": prepared.candidate_evidence,
-        })
-        return "REJECTED"
-    successor = prepared.successor
-    if observer is not None:
-        observer.update(phase="PUBLISHING")
-    _emit_progress(progress, "publishing accepted successor checkpoint")
-    with measure_observed_phase(observer, "publishing_wall_seconds"):
-        accept_and_publish(
-            run_dir, successor, retained, decision=decision,
-            feature_sha256=successor.extents.factor_map_digest,
-            reserve_gib=reserve_gib,
-            training_authorities=step.transaction.training_authorities,
-            publication_observer=(
-                (lambda metrics: observer.update(**{
-                    "publication_" + key: value
-                    for key, value in metrics.to_record().items()}))
-                if observer is not None else None))
-    return "ACCEPTED"
+        source_prefetch_metrics=source_prefetch_metrics, observer=observer,
+        prepare_visit=prepare_bamf_visit, record_rejection=record_bamf_rejection,
+        accept_publish=accept_and_publish, load_generation=load_accepted_generation,
+        measure_phase=measure_observed_phase, emit_progress=_emit_progress)
 
 
 def _accepted_admission_reentry(

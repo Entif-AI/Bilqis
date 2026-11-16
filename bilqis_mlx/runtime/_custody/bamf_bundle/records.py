@@ -38,6 +38,7 @@ SIDECARS = MappingProxyType({
     "teacher_state": "teacher-state.json",
     "evaluation_contract": "evaluation-contract.json",
     "baseline_evidence": "baseline-evidence.json",
+    "learning_health_state": "learning-health-state.json",
     "step_proofs": "step-proofs.json",
     "run_identity": "run-identity.json",
     "outbox": "outbox.json",
@@ -65,6 +66,7 @@ class BamfBundleCandidate:
     outbox: tuple
     run_identity: object | None = None
     baseline_evidence: Mapping | None = None
+    learning_health_state: Mapping | None = None
 
 
 @dataclass(frozen=True)
@@ -198,7 +200,7 @@ def validate_transition(generation: int, transition: Mapping) -> None:
 def validate_sidecars(extents, provenance, records: Mapping):
     from bilqis_mlx.learning.atlas_engram import INITIAL_MOTIF_CAPACITY
     from bilqis_mlx.learning.atlas_plasticity import PlasticityPolicy
-    optional = {"run_identity", "baseline_evidence"}
+    optional = {"run_identity", "baseline_evidence", "learning_health_state"}
     required = set(SIDECARS) - optional
     if (not isinstance(records, Mapping)
             or not required <= set(records) <= set(SIDECARS)):
@@ -216,6 +218,9 @@ def validate_sidecars(extents, provenance, records: Mapping):
     if "baseline_evidence" in records:
         from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
         BaselineLedger.from_record(dict(records["baseline_evidence"]))
+    if "learning_health_state" in records:
+        from bilqis_mlx.diagnostics.learning_health import validate_learning_health_state
+        validate_learning_health_state(dict(records["learning_health_state"]))
     try:
         motif = snapshot_from_record(records["motif_allocation"])
         policy = PlasticityPolicy.from_record(records["plasticity_policy"])
@@ -271,6 +276,11 @@ def sidecar_records(candidate: BamfBundleCandidate) -> dict:
         from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
         baseline = BaselineLedger.from_record(dict(candidate.baseline_evidence))
         records["baseline_evidence"] = baseline.to_record()
+    if candidate.learning_health_state is not None:
+        from bilqis_mlx.diagnostics.learning_health import validate_learning_health_state
+        state = dict(candidate.learning_health_state)
+        validate_learning_health_state(state)
+        records["learning_health_state"] = state
     if candidate.run_identity is not None:
         from .genesis import BamfRunIdentity
         if type(candidate.run_identity) is not BamfRunIdentity:
@@ -294,4 +304,6 @@ def complete_student_from_candidate(candidate: BamfBundleCandidate) -> CompleteS
         dict(candidate.teacher_state), dict(candidate.evaluation_contract),
         dict(candidate.transition), tuple(records["outbox"]), candidate.run_identity,
         (dict(candidate.baseline_evidence)
-         if candidate.baseline_evidence is not None else None))
+         if candidate.baseline_evidence is not None else None),
+        (dict(candidate.learning_health_state)
+         if candidate.learning_health_state is not None else None))

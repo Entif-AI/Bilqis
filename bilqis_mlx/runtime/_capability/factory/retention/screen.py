@@ -1,4 +1,6 @@
 """Private Factory-owned C05 screening and baseline issuance."""
+from dataclasses import replace
+
 from bilqis_mlx.learning._atlas_candidate.identity_binding import (
     candidate_identity_binding_for_state, candidate_identity_for_canonical_consumer,
 )
@@ -28,22 +30,12 @@ from bilqis_mlx.runtime.baseline.currentness import (
     baseline_coverage,
 )
 from bilqis_mlx.runtime.factory_complete_solver import factory_complete_solver
-from bilqis_mlx.learning.retention_policy import MASTERY_DEBT_POWER
 from bilqis_mlx.semantics.domains import contract_digest
 
+from .local_screen import foundation_local_retention_screen
 from .policy import policy_and_cohorts
-
-
-def _policy_epoch_sha256(evidence_stage):
-    return contract_digest({
-        "schema": "bilqis.mlx.c05-retention-policy-epoch/v1",
-        "evidence_stage": evidence_stage.value,
-        "foundation_policy_schema": "bilqis.c05.foundation-retention-policy/v2",
-        "strict_policy_schema": "bilqis.c05.retention-policy/v2",
-        "probe_each": C05_PROBE_EACH,
-        "protected_reference_loss": C05_PROTECTED_REFERENCE_LOSS,
-        "mastery_debt_power": MASTERY_DEBT_POWER,
-    })
+from .protection_plan import BroadCertificationTrigger
+from .protection_plan_compiler import policy_epoch_sha256
 
 
 def _comparison_epoch(
@@ -62,7 +54,7 @@ def _comparison_epoch(
         release.semantic_catalog_sha256,
         rubric,
         scope,
-        _policy_epoch_sha256(evidence_stage),
+        policy_epoch_sha256(evidence_stage),
         release.execution_plan.projection_digests.source,
         cache.source_authority_registry_sha256,
         contract_digest(parent.correction_frontier),
@@ -72,10 +64,13 @@ def _comparison_epoch(
     )
 
 
-def foundation_retention_screen(
+def broad_foundation_retention_screen(
     source_context, parent, candidate_bundle, artifact_path, target_capability,
-    release, groups, training, fixed_instruments, cache, evidence_stage, *, observer=None,
+    release, groups, training, fixed_instruments, cache, evidence_stage, *,
+    broad_certification_trigger, observer=None,
 ):
+    if not isinstance(broad_certification_trigger, BroadCertificationTrigger):
+        _invalid("BAMF_C05_BROAD_CERTIFICATION_TRIGGER_REQUIRED")
     fixed_cases = tuple(item.case for item in fixed_instruments)
     ledger = BaselineLedger.from_optional_record(parent.baseline_evidence)
     epoch = _comparison_epoch(
@@ -105,13 +100,19 @@ def foundation_retention_screen(
         parent_solver, candidate_solver, target_capability, policy, fixed_cohort,
         parent_generation, candidate_generation, parent_assessment=parent_assessment,
         **({"observer": observer} if observer is not None else {}))
+    decision = replace(
+        decision,
+        evaluated_capability_ids=tuple(capability for capability, _group in groups),
+        broad_certification_trigger=broad_certification_trigger.value,
+    )
     return decision, parent, candidate_bundle, parent_assessment_cache, comparison
 
 
 def adaptive_retention_screen(
     source_context, parent, candidate_bundle, candidate_state, artifact_path,
     target_capability, target_group, lesson_capabilities, release, groups, training,
-    fixed_instruments, cache, evidence_stage, *, observer=None,
+    fixed_instruments, cache, evidence_stage, *, protected_capabilities=None,
+    retention_protection_plan_sha256=None, observer=None,
 ):
     candidate_sha256 = candidate_identity_for_canonical_consumer(candidate_state)
     fresh_seed = _owner_seed(release.release_sha256, cache, target_capability, candidate_sha256)
@@ -131,9 +132,13 @@ def adaptive_retention_screen(
     epoch = _comparison_epoch(
         release, groups, fixed_instruments, parent, cache, evidence_stage)
     coverage = baseline_coverage(ledger, epoch, groups)
+    protected = (
+        coverage.protected_capabilities(target_capability)
+        if protected_capabilities is None else tuple(protected_capabilities))
     policy, cohorts = policy_and_cohorts(
         release, groups, target_capability, target_group, training, target_instruments,
-        lesson_instruments, fixed_instruments, coverage, evidence_stage=evidence_stage)
+        lesson_instruments, fixed_instruments, coverage, protected,
+        evidence_stage=evidence_stage)
     all_instruments = tuple(dict(
         (item.case.case_id, item)
         for item in (*target_instruments, *lesson_instruments, *fixed_instruments)).values())
@@ -145,6 +150,12 @@ def adaptive_retention_screen(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
         parent_generation, candidate_generation,
         **({"observer": observer} if observer is not None else {}))
+    if retention_protection_plan_sha256 is not None:
+        decision = replace(
+            decision,
+            evaluated_capability_ids=tuple(capability for capability, _group in groups),
+            retention_protection_plan_sha256=retention_protection_plan_sha256,
+        )
     return decision, parent, candidate_bundle, cache, epoch.identity(target_capability)
 
 
@@ -182,13 +193,17 @@ def bind_factory_evaluation_issuer(raw_issue, evidence_stage):
             baseline_transition=baseline_transition, baseline_ledger=baseline)
 
     def foundation(*args, **kwargs):
-        return issue(foundation_retention_screen(
-            *args, evidence_stage=evidence_stage, **kwargs))
+        return issue(foundation_local_retention_screen(*args, **kwargs))
 
     def adaptive(*args, **kwargs):
         return issue(adaptive_retention_screen(
             *args, evidence_stage=evidence_stage, **kwargs))
-    return foundation, adaptive
+
+    def broad_foundation(*args, **kwargs):
+        return issue(broad_foundation_retention_screen(
+            *args, evidence_stage=evidence_stage, **kwargs))
+
+    return foundation, adaptive, broad_foundation
 
 
 def bind_factory_baseline_successor(evaluation, candidate):

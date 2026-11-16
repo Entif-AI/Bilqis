@@ -32,6 +32,7 @@ class SCHOOL:
     from .school_bamf import BAMF_WORKSTACK as BAMF_WORKSTACK
     from .school_bamf import QUALIFICATION as QUALIFICATION
     from .school_bamf import TEACHER_OBSERVATION as TEACHER_OBSERVATION
+    from .school_bamf import BAMF_LEARNING_HEALTH as BAMF_LEARNING_HEALTH
     from .school_bamf import MODEL_TOPOLOGY as MODEL_TOPOLOGY
     from .school_lifecycle import RESUME as RESUME
     from .school_lifecycle import SCHEDULE as SCHEDULE

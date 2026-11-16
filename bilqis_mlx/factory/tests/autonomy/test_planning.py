@@ -1,0 +1,158 @@
+from dataclasses import replace
+
+from bilqis_mlx.factory.autonomy import (
+    AutonomyActionKind,
+    EvidenceKind,
+    evidence_complete_capabilities,
+    initial_evidence_ledger,
+    next_action,
+    next_work,
+    obligations_for_capability,
+    record_evidence,
+)
+
+from .support import AutonomyFixture
+
+
+class AutonomyPlannerTests(AutonomyFixture):
+    def test_generation_axes_constrain_evidence_without_becoming_mastery_claims(self):
+        obligations = obligations_for_capability(self.release, "A.BASE")
+        self.assertEqual(len(obligations), 1)
+        self.assertEqual(obligations[0].kind, EvidenceKind.DIRECT)
+        self.assertEqual(
+            obligations[0].generation_axes,
+            ("source-valid", "balanced-gold", "fresh-seed"))
+
+    def test_planner_closes_roots_then_unlocks_composite(self):
+        ledger = initial_evidence_ledger(self.release)
+        first = next_work(self.release, ledger)
+        self.assertEqual(first.capability_id, "A.BASE")
+        self.assertEqual(first.obligation.kind, EvidenceKind.DIRECT)
+        self.assertEqual(
+            first.teaching_option_ids, ("source.direct/A.BASE", "fixture.transfer"))
+        ledger = self.close_current_capability(ledger)
+        self.assertEqual(
+            evidence_complete_capabilities(self.release, ledger), ("A.BASE",))
+        self.assertEqual(next_work(self.release, ledger).capability_id, "A.OTHER")
+        ledger = self.close_current_capability(ledger)
+        self.assertEqual(
+            evidence_complete_capabilities(self.release, ledger),
+            ("A.BASE", "A.OTHER"))
+        work = next_work(self.release, ledger)
+        self.assertEqual(work.capability_id, "A.COMPOSITE")
+        kinds = {
+            item.kind for item in obligations_for_capability(
+                self.release, "A.COMPOSITE")}
+        self.assertEqual(
+            kinds, {EvidenceKind.DIRECT, EvidenceKind.PREREQUISITE,
+                    EvidenceKind.COMPOSITION})
+
+    def test_next_work_is_deterministic_for_unchanged_ledger(self):
+        ledger = initial_evidence_ledger(self.release)
+        self.assertEqual(
+            next_work(self.release, ledger), next_work(self.release, ledger))
+
+    def test_explicit_current_context_excludes_stale_mastery(self):
+        ledger = initial_evidence_ledger(self.release)
+        first = next_work(self.release, ledger)
+        ledger = record_evidence(self.release, ledger, self.receipt(first.obligation))
+        self.assertEqual(
+            evidence_complete_capabilities(self.release, ledger), ("A.BASE",))
+        self.assertEqual(
+            evidence_complete_capabilities(
+                self.release, ledger,
+                current_checkpoint_sha256="f" * 64,
+                current_optimizer_step=999), ())
+        self.assertEqual(
+            next_work(
+                self.release, ledger, current_checkpoint_sha256="f" * 64,
+                current_optimizer_step=999).capability_id, "A.BASE")
+
+    def test_recording_with_explicit_context_rejects_another_checkpoint(self):
+        ledger = initial_evidence_ledger(self.release)
+        work = next_work(self.release, ledger)
+        with self.assertRaisesRegex(ValueError, "EVIDENCE_CURRENT_CHECKPOINT_MISMATCH"):
+            record_evidence(
+                self.release, ledger, self.receipt(work.obligation),
+                current_checkpoint_sha256="f" * 64, current_optimizer_step=1)
+
+    def test_explicit_current_context_does_not_reteach_a_stale_failure(self):
+        ledger = initial_evidence_ledger(self.release)
+        work = next_work(self.release, ledger)
+        ledger = record_evidence(
+            self.release, ledger, self.receipt(work.obligation, passed=False))
+        action = next_action(
+            self.release, ledger,
+            current_checkpoint_sha256="f" * 64, current_optimizer_step=999)
+        self.assertEqual(action.kind, AutonomyActionKind.LEARNING_EVIDENCE)
+        self.assertEqual(action.evidence_work.obligation, work.obligation)
+
+    def test_composition_evidence_is_required_for_evidence_complete_state(self):
+        ledger = initial_evidence_ledger(self.release)
+        ledger = self.close_current_capability(ledger)
+        ledger = self.close_current_capability(ledger)
+        composite = obligations_for_capability(self.release, "A.COMPOSITE")
+        missing = next(item for item in composite if item.kind is EvidenceKind.COMPOSITION)
+        for obligation in composite:
+            if obligation != missing:
+                ledger = record_evidence(
+                    self.release, ledger, self.receipt(obligation))
+        self.assertNotIn(
+            "A.COMPOSITE", evidence_complete_capabilities(self.release, ledger))
+        self.assertEqual(next_work(self.release, ledger).obligation, missing)
+        ledger = record_evidence(self.release, ledger, self.receipt(missing))
+        self.assertIn(
+            "A.COMPOSITE", evidence_complete_capabilities(self.release, ledger))
+
+    def test_failed_receipt_reopens_before_new_work(self):
+        ledger = initial_evidence_ledger(self.release)
+        obligation = next_work(self.release, ledger).obligation
+        ledger = record_evidence(self.release, ledger, self.receipt(obligation))
+        self.assertNotEqual(
+            next_work(self.release, ledger).obligation.obligation_id,
+            obligation.obligation_id)
+        ledger = record_evidence(
+            self.release, ledger, self.receipt(obligation, passed=False))
+        self.assertEqual(
+            next_work(self.release, ledger).obligation.obligation_id,
+            obligation.obligation_id)
+        self.assertNotIn(
+            "A.BASE", evidence_complete_capabilities(self.release, ledger))
+
+    def test_passing_receipt_must_meet_obligation_specimen_floor(self):
+        ledger = initial_evidence_ledger(self.release)
+        obligation = next_work(self.release, ledger).obligation
+        with self.assertRaisesRegex(ValueError, "INSUFFICIENT_EVIDENCE_SPECIMENS"):
+            record_evidence(
+                self.release, ledger,
+                self.receipt(
+                    obligation, specimen_count=obligation.minimum_specimens - 1))
+
+    def test_evidence_is_bound_to_exact_factory_release(self):
+        ledger = initial_evidence_ledger(self.release)
+        changed = replace(self.release, release_sha256="f" * 64)
+        with self.assertRaisesRegex(ValueError, "AUTONOMY_RELEASE_MISMATCH"):
+            next_work(changed, ledger)
+
+    def test_autonomous_loop_finishes_without_grade_specific_dispatch(self):
+        ledger = initial_evidence_ledger(self.release)
+        seen = []
+        for _ in range(40):
+            work = next_work(self.release, ledger)
+            if work is None:
+                break
+            seen.append((work.capability_id, work.obligation.kind))
+            ledger = record_evidence(
+                self.release, ledger, self.receipt(work.obligation))
+        else:
+            self.fail("autonomous evidence loop did not converge")
+        self.assertLess(
+            seen.index(("A.BASE", EvidenceKind.DIRECT)),
+            seen.index(("A.COMPOSITE", EvidenceKind.DIRECT)))
+        self.assertLess(
+            seen.index(("A.OTHER", EvidenceKind.DIRECT)),
+            seen.index(("A.COMPOSITE", EvidenceKind.DIRECT)))
+        self.assertEqual(
+            evidence_complete_capabilities(self.release, ledger),
+            tuple(item.capability_id for item in self.release.capabilities))
+        self.assertIsNone(next_work(self.release, ledger))

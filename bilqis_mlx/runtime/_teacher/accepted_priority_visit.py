@@ -30,6 +30,8 @@ from .accepted_teacher_custody import (
     _selection_projection,
 )
 from .priority_qualification import _grade, requalify_priority
+from bilqis_mlx.runtime.outcomes.replay import replay_rejected_outcomes
+from bilqis_mlx.runtime.outcomes.issuance import context_for_selection
 
 def _invalid(reason):
     ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
@@ -55,6 +57,8 @@ class PriorityVisitResult:
     visit: object | None
     _policy_json: str | None
     _metadata_json: str | None
+    _ranking_evidence_json: str | None
+    _source_materialization_wall_seconds: float | None
     lesson_grade: str | None
     holds: tuple
     _run_dir: str
@@ -71,23 +75,41 @@ class PriorityVisitResult:
     def metadata(self):
         return None if self._metadata_json is None else json.loads(self._metadata_json)
 
+    @property
+    def ranking_evidence(self):
+        return (None if self._ranking_evidence_json is None
+                else json.loads(self._ranking_evidence_json))
+
+    @property
+    def source_materialization_wall_seconds(self):
+        return self._source_materialization_wall_seconds
+
 
 def _issue_result(status, option_id, offer, visit, policy, metadata, grade, holds,
-                  run_dir, lawful_frontier=None):
+                  run_dir, lawful_frontier=None, ranking_evidence=None,
+                  source_materialization_wall_seconds=None):
     if status == 'TEACHER_SELECTED' and lawful_frontier is None:
         _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_REQUIRED')
     result = object.__new__(PriorityVisitResult)
     policy_json = None if policy is None else _json(policy)
     metadata_json = None if metadata is None else _json(metadata)
+    ranking_evidence_json = None if ranking_evidence is None else _json(ranking_evidence)
+    if (source_materialization_wall_seconds is not None
+            and (type(source_materialization_wall_seconds) not in (int, float)
+                 or not math.isfinite(source_materialization_wall_seconds)
+                 or source_materialization_wall_seconds < 0)):
+        _invalid('BAMF_PRIORITY_SOURCE_TIMING_INVALID')
     for name, value in (('status', status), ('option_id', option_id), ('offer', offer),
             ('visit', visit), ('_policy_json', policy_json), ('_metadata_json', metadata_json),
+            ('_ranking_evidence_json', ranking_evidence_json),
+            ('_source_materialization_wall_seconds', source_materialization_wall_seconds),
             ('lesson_grade', grade), ('holds', tuple(holds)), ('_run_dir', str(run_dir)),
             ('_lawful_frontier', lawful_frontier)):
         object.__setattr__(result, name, value)
     visit_digest = None if visit is None else _digest(_json(visit.identity.to_record()))
     _ISSUED[result] = (status, option_id, id(offer), id(visit), visit_digest,
                        None if policy_json is None else _digest(policy_json),
-                       metadata_json, grade, tuple(holds), str(run_dir),
+                       metadata_json, ranking_evidence_json, grade, tuple(holds), str(run_dir),
                        id(lawful_frontier))
     return result
 
@@ -98,8 +120,8 @@ def _require_issued(result):
     visit_digest = None if result.visit is None else _digest(_json(result.visit.identity.to_record()))
     actual = (result.status, result.option_id, id(result.offer), id(result.visit), visit_digest,
               None if result._policy_json is None else _digest(result._policy_json),
-              result._metadata_json, result.lesson_grade, result.holds, result._run_dir,
-              id(result._lawful_frontier))
+              result._metadata_json, result._ranking_evidence_json, result.lesson_grade,
+              result.holds, result._run_dir, id(result._lawful_frontier))
     if actual != _ISSUED[result]:
         _invalid('BAMF_PRIORITY_RESULT_DRIFT')
 
@@ -120,6 +142,52 @@ def accepted_priority_school(parent, program, *, candidate_identity_sha256=None)
         current_student=PriorityStudentIdentity(
             candidate_identity_sha256),
     )
+
+
+def _selected_priority_result(
+        run_dir, source_context, parent, cache, projection, epoch, teacher,
+        qualified, option, offer, school, engine, rng, learning_settings,
+        program, evidence, holds, lawful_frontier, total_capabilities,
+        plasticity_escape, priority_features,
+        source_materialization_wall_seconds):
+    capability = option.context.capability_id
+    grade = _grade(program, school, capability)
+    teacher = replay_rejected_outcomes(run_dir, parent, cache, teacher)
+    key, policy, metadata = select_visit_policy(
+        engine, teacher, capability, school, rng, learning_settings,
+        option.context.scope,
+        {'salience_evidence': evidence[option.stable_id],
+         'teacher_epoch_digest': contract_digest(epoch)},
+        grade, total_capabilities=total_capabilities,
+        plasticity_escape=plasticity_escape)
+    metadata = {**metadata, 'how_context': context_for_selection(
+        source_context.release, program, grade, school, option, teacher, metadata)}
+    selected_epoch = replace(
+        epoch, current_json=json.dumps(teacher, sort_keys=True, allow_nan=False))
+    selected = _selection_projection(projection, selected_epoch)
+    identity = derive_teacher_visit_identity(
+        selected.teacher_state,
+        run_identity_sha256=parent.run_identity.digest,
+        run_seed=parent.run_identity.run_seed,
+        generation=parent.generation,
+        accepted_manifest_sha256=cache.accepted_manifest_sha256,
+        capability_id=capability,
+        policy_key=key)
+    recorded = record_teacher_visit_identity(selected.teacher_state, identity)
+    ranking_evidence = {
+        **priority_features,
+        'dispatch_tier': int(dict(qualified.ranked.tiers)[option.stable_id]),
+        'eligible_since': option.eligible_since,
+        'downstream_unlocks': option.downstream_unlocks,
+        'stable_id': option.stable_id,
+    }
+    recorded = record_teacher_visit_authority(recorded, identity)
+    visit = _issue_bound_visit(recorded, identity)
+    return _issue_result(
+        'TEACHER_SELECTED', option.stable_id, offer, visit, policy,
+        metadata, grade, sorted(holds), run_dir, lawful_frontier,
+        ranking_evidence=ranking_evidence,
+        source_materialization_wall_seconds=source_materialization_wall_seconds)
 
 
 def select_accepted_priority_visit(
@@ -170,34 +238,27 @@ def select_accepted_priority_visit(
     by_id, evidence = dict(qualified.offers), dict(frontier.evidence)
     holds = list(qualified.holds)
     for option in qualified.ranked.ordered:
-        salience_priority_features(evidence[option.stable_id], option.context.capability_id,
-                                  option.context.scope, contract_digest(epoch))
+        priority_features = salience_priority_features(
+            evidence[option.stable_id], option.context.capability_id,
+            option.context.scope, contract_digest(epoch))
         if option.action_kind in (ActionKind.CORRECTION, ActionKind.PROCEDURE_REPAIR):
             return _issue_result('ACTION_REQUIRED', option.stable_id, None, None, None,
                                  None, None, sorted(holds), run_dir, lawful_frontier)
         offer = by_id[option.stable_id]
+        materialization_started = time.perf_counter()
         try:
             offer.require_current(source_context, parent)
         except ValueError:
             holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
             continue
-        capability = option.context.capability_id
-        grade = _grade(program, school, capability)
-        key, policy, metadata = select_visit_policy(
-            engine, teacher, capability, school, rng, learning_settings, option.context.scope,
-            {'salience_evidence': evidence[option.stable_id], 'teacher_epoch_digest': contract_digest(epoch)},
-            grade, total_capabilities=total_capabilities, plasticity_escape=plasticity_escape)
-        selected_epoch = replace(epoch, current_json=json.dumps(teacher, sort_keys=True, allow_nan=False))
-        selected = _selection_projection(projection, selected_epoch)
-        identity = derive_teacher_visit_identity(selected.teacher_state,
-            run_identity_sha256=parent.run_identity.digest, run_seed=parent.run_identity.run_seed,
-            generation=parent.generation, accepted_manifest_sha256=cache.accepted_manifest_sha256,
-            capability_id=capability, policy_key=key)
-        recorded = record_teacher_visit_identity(selected.teacher_state, identity)
-        recorded = record_teacher_visit_authority(recorded, identity)
-        visit = _issue_bound_visit(recorded, identity)
-        return _issue_result('TEACHER_SELECTED', option.stable_id, offer, visit, policy,
-                             metadata, grade, sorted(holds), run_dir, lawful_frontier)
+        source_materialization_wall_seconds = max(
+            0.0, time.perf_counter() - materialization_started)
+        return _selected_priority_result(
+            run_dir, source_context, parent, cache, projection, epoch, teacher,
+            qualified, option, offer, school, engine, rng, learning_settings,
+            program, evidence, holds, lawful_frontier, total_capabilities,
+            plasticity_escape, priority_features,
+            source_materialization_wall_seconds)
     return _issue_result('NO_ADMISSIBLE_TEACHING', None, None, None, None, None,
                          None, sorted(holds), run_dir, lawful_frontier)
 

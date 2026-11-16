@@ -57,7 +57,9 @@ from bilqis_mlx.runtime.bamf_bundle.genesis.preparation_authority import (
 from bilqis_mlx.runtime.factory_complete_solver import factory_evaluation_instrument
 from bilqis_mlx.runtime.factory_evaluation_compiler import compile_factory_evaluation_batch
 from bilqis_mlx.runtime.factory_retention_owner import (
-    _candidate_from_live_parent, evaluate_factory_retention_candidate,
+    _candidate_from_live_parent, bind_current_retention_protection_plan,
+    bind_current_retention_source_rows,
+    evaluate_factory_retention_candidate,
 )
 from bilqis_mlx.runtime.factory_task_authority import factory_task_authority
 from bilqis_mlx.runtime.model_topology_v2 import (
@@ -137,6 +139,10 @@ def _initialize_generation(run_dir, source_context, snapshot, artifact):
         graph=source_context.graph,
         source_root=source_context.source_root,
     )
+    bind_current_retention_protection_plan(
+        accepted_context, parent, cache)
+    bind_current_retention_source_rows(
+        accepted_context, cache, TARGET)
     return parent, cache, accepted_context
 
 

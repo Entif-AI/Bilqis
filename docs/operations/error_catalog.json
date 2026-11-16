@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 293,
-  "legacy_raw_raise_count": 2092,
+  "legacy_raw_file_count": 294,
+  "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -11749,6 +11749,20 @@
       "path": "bilqis_mlx/runtime/tests/projection/test_rosetta_observation.py"
     },
     {
+      "code_hint": "post-append",
+      "count": 1,
+      "exception": "RuntimeError",
+      "expression": "'post-append'",
+      "path": "bilqis_mlx/runtime/tests/teacher/outcomes/test_outcome_recovery.py"
+    },
+    {
+      "code_hint": "post-pointer",
+      "count": 1,
+      "exception": "RuntimeError",
+      "expression": "'post-pointer'",
+      "path": "bilqis_mlx/runtime/tests/teacher/outcomes/test_outcome_recovery.py"
+    },
+    {
       "code_hint": "C09 hold",
       "count": 1,
       "exception": "ValueError",
@@ -14166,6 +14180,20 @@
       "recovery_key": "errors.school.teacher_observation.duplicate_attempt.recovery",
       "self_heal_owner": null,
       "title": "Divergent duplicate teacher observation"
+    },
+    {
+      "code": "SCHOOL.BAMF_LEARNING_HEALTH.INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_learning_health.invalid.message",
+      "message_template": "Learning-health evidence is invalid: {reason}",
+      "next_action": "Preserve accepted custody and inspect the reported evidence identity; do not infer a replacement measurement.",
+      "operator_steps": [],
+      "owner": "diagnostics.learning_health",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_learning_health.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "BAMF learning-health evidence invalid"
     },
     {
       "code": "SCHOOL.MODEL_TOPOLOGY.INVALID",

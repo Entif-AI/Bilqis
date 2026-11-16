@@ -89,6 +89,43 @@ def _dataclass_schema(expected) -> dict:
         schema["allOf"] = _datavalue_constraints()
     if expected.__name__ == "StreamPosition":
         schema["allOf"] = _stream_position_constraints()
+    if expected.__name__ in {"LearningHealthScore", "LearningHealthCheckpoint"}:
+        properties["total"]["minimum"] = 1
+    if expected.__name__ == "LearningHealthEvidence":
+        properties["comparable_points"]["maximum"] = 64
+        properties["recent_checkpoints"]["maxItems"] = 3
+        properties["warnings"].update({"minItems": 5, "maxItems": 5})
+        properties["state"] = {"type": "string", "enum": ["MEASURED", "NOT_MEASURED"]}
+        properties["history_state"] = {
+            "type": "string",
+            "enum": ["VALID", "PARTIAL", "INVALID", "NOT_MEASURED"],
+        }
+        properties["distance_to_mastery_state"] = {
+            "type": "string", "enum": ["MEASURED", "NOT_MEASURED"],
+        }
+        properties["qualification_state"] = {
+            "type": "string", "const": "NOT_MEASURED",
+        }
+        properties["protected_regression_state"] = {
+            "type": "string",
+            "enum": ["NOT_MEASURED", "NOT_OBSERVED", "OBSERVED_REGRESSION"],
+        }
+        properties["certified_surface_regression_state"] = {
+            "type": "string",
+            "enum": ["NOT_MEASURED", "NOT_OBSERVED", "OBSERVED_REGRESSION"],
+        }
+        schema["allOf"] = [{
+            "if": {
+                "properties": {
+                    "distance_to_mastery_state": {"const": "NOT_MEASURED"},
+                },
+                "required": ["distance_to_mastery_state"],
+            },
+            "then": {"properties": {"distance_to_mastery": {"type": "null"}}},
+            "else": {"properties": {"distance_to_mastery": {
+                "type": "integer", "minimum": 0, "maximum": MAX_WIRE_INTEGER,
+            }}},
+        }]
     return schema
 
 

@@ -6,7 +6,101 @@ from unittest.mock import patch
 from bilqis_mlx.runtime.bamf_operator.session import _visit
 
 
+def _first_baseline_operator_case():
+    from bilqis_mlx.runtime.tests.capability.factory.owner.test_factory_retention_owner_adversarial import (
+        _evaluate_foundation_owner,
+        _foundation_owner_fixture,
+    )
+    from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
+        accepted_state,
+        candidate,
+        parent_state,
+    )
+
+    evaluation = _evaluate_foundation_owner(*_foundation_owner_fixture())
+    identity = evaluation.baseline_transition.measurement.comparison
+    fixture_parent_state = parent_state()
+    fixture_candidate_state = accepted_state(fixture_parent_state)
+    object.__setattr__(evaluation, "parent_state", fixture_parent_state)
+    object.__setattr__(evaluation, "candidate_state", fixture_candidate_state)
+    successor = candidate(
+        fixture_candidate_state,
+        generation=1,
+        parent="0" * 64,
+    )
+    parent = NS(
+        generation=0,
+        retained_state=NS(optimizer_step=0),
+        optimizer_hyperparameters=None,
+    )
+    selection = NS(
+        option_id="fixture-option",
+        visit=NS(identity=NS(visit_id="fixture-visit", policy_key="fixture-policy")),
+    )
+    step = NS(transaction=NS(training_authorities=()))
+    capture = NS(finalize=lambda **_kwargs: {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": 0,
+            "file_fsyncs": 0,
+            "directory_fsyncs": 0,
+            "evidence_objects": 0,
+            "persistence_seconds": 0.0,
+        },
+    })
+    cache = NS(generation=0, accepted_manifest_sha256="0" * 64)
+    return evaluation, identity, successor, parent, selection, step, capture, cache
+
+
+def _operate_first_baseline_case(case):
+    from contextlib import ExitStack
+    from tempfile import TemporaryDirectory
+    from bilqis_mlx.runtime.bamf_operator.session import _retention_result, operate_bamf
+
+    evaluation, identity, successor, parent, selection, step, capture, cache = case
+    published = []
+
+    def prepare(run_dir, *, observer=None, **_kwargs):
+        if observer is not None:
+            observer.bind_parent(parent)
+        return _retention_result(
+            run_dir, parent, NS(), "artifact", selection, identity.capability_id,
+            cache, (step,), capture, 1, 1, {}, None, observer)
+
+    def publish(_run_dir, bound_successor, *_args, **_kwargs):
+        published.append(bound_successor)
+
+    prefix = "bilqis_mlx.runtime.bamf_operator.session."
+    patches = (
+        ('bilqis_mlx.runtime.outcomes.issuance.build_outcome', {'return_value': {}}),
+        ('bilqis_mlx.runtime.outcomes.issuance.credited_visit', {'side_effect': lambda visit, outcome: visit}),
+        ('bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor', {'side_effect': lambda visit, successor, parent: successor}),
+        (prefix + "prepare_bamf_visit", {"side_effect": prepare}),
+        (prefix + "evaluate_factory_retention_candidate", {"return_value": evaluation}),
+        (prefix + "derive_accepted_teacher_successor", {"return_value": successor}),
+        (prefix + "_resource_observation", {"return_value": {}}),
+        (prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
+        ("bilqis_mlx.runtime.retention.screen.candidate_identity_for_canonical_consumer",
+         {"return_value": "d" * 64}),
+        (prefix + "accept_and_publish", {"side_effect": publish}),
+        (prefix + "load_accepted_generation", {"return_value": NS(
+            generation=1, retained_state=NS(optimizer_step=1))}),
+    )
+    with TemporaryDirectory() as tmp, ExitStack() as stack:
+        for target, kwargs in patches:
+            stack.enter_context(patch(target, **kwargs))
+        result = operate_bamf(
+            Path(tmp), minutes=1, max_visits=1, reserve_gib=0,
+            source_prefetch_workers=0)
+    return result, published
+
+
 class SessionObservationTests(unittest.TestCase):
+    def setUp(self):
+        patched = patch('bilqis_mlx.runtime.outcomes.issuance.build_outcome', return_value={})
+        patched.start()
+        self.addCleanup(patched.stop)
+
     def test_publication_before_accepted_and_failure_propagates(self):
         events = []
         observer = NS(update=lambda **v: events.append(v))
@@ -64,7 +158,12 @@ class SessionObservationTests(unittest.TestCase):
                 'bundle_tree_scans': 2,
             },
             'issue_factory_retention_decision': NS(
-                accepted=False, to_record=lambda: {'decision': 'REJECTED'}),
+                accepted=False,
+                reason='PROTECTED_CAPABILITY_REGRESSION',
+                evaluated_capability_ids=('cap', 'protected-cap'),
+                retention_protection_plan_sha256='f' * 64,
+                broad_certification_trigger=None,
+                to_record=lambda: {'decision': 'REJECTED'}),
         }
         from contextlib import ExitStack
         with ExitStack() as stack:
@@ -72,6 +171,9 @@ class SessionObservationTests(unittest.TestCase):
                 stack.enter_context(patch(prefix + name, return_value=value))
             stack.enter_context(patch(prefix + 'execute_accepted_priority_candidate', side_effect=steps))
             stack.enter_context(patch(prefix + 'evaluate_factory_retention_candidate', side_effect=assess))
+            stack.enter_context(patch(
+                'bilqis_mlx.runtime.bamf_operator.evidence_projection.complete_visit_evidence',
+                side_effect=RuntimeError('observation readback failed')))
             result = prepare_bamf_visit(Path('/tmp'), observer=observer)
         self.assertEqual(result.status, 'REJECTED')
         self.assertEqual([e.get('phase') for e in events if 'phase' in e],
@@ -82,6 +184,11 @@ class SessionObservationTests(unittest.TestCase):
             self.assertIn({'candidate_step': i, 'candidate_optimizer_step': 4 + i}, events)
         self.assertIn({'retention_completed': 1, 'retention_total': 2,
                        'retention_subject': 'cap', 'retention_role': 'parent'}, events)
+        self.assertIn({
+            'retention_evaluated_capability_count': 2,
+            'retention_protection_plan_sha256': 'f' * 64,
+            'retention_broad_certification_trigger': None,
+        }, events)
 
     def test_operator_publishes_terminal_only_after_publication(self):
         import json
@@ -112,6 +219,29 @@ class SessionObservationTests(unittest.TestCase):
             self.assertEqual(final['publication_write_bytes'], 4)
             self.assertEqual(final['publication_fsync_bytes'], 5)
 
+    def test_operate_bamf_carries_first_accepted_baseline_to_publication(self):
+        from bilqis_mlx.runtime.baseline.lifecycle import (
+            BaselineLedger,
+            BaselineLifecycleState,
+        )
+
+        case = _first_baseline_operator_case()
+        evaluation, identity = case[:2]
+        identity = evaluation.baseline_transition.measurement.comparison
+        self.assertIs(
+            evaluation.baseline_ledger.state_for(identity),
+            BaselineLifecycleState.BASELINE_ESTABLISHED,
+        )
+        result, published = _operate_first_baseline_case(case)
+
+        self.assertEqual((result.accepted, result.rejected), (1, 0))
+        self.assertEqual(len(published), 1)
+        ledger = BaselineLedger.from_optional_record(published[0].baseline_evidence)
+        self.assertIs(
+            ledger.state_for(identity),
+            BaselineLifecycleState.BASELINE_ESTABLISHED,
+        )
+
     def test_horizon_stops_after_real_motif_transition(self):
         from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon
         events = []
@@ -132,6 +262,39 @@ class SessionObservationTests(unittest.TestCase):
         self.assertEqual(execute.call_count, 2)
         self.assertEqual(events, [{'candidate_step': 1, 'candidate_optimizer_step': 8},
                                   {'candidate_step': 2, 'candidate_optimizer_step': 9}])
+
+    def test_horizon_uses_selected_teacher_projection_for_first_instruction(self):
+        from bilqis_mlx.runtime.bamf_operator.session import _execute_horizon
+        observer = NS(update=lambda **fields: None)
+        parent = NS(
+            teacher_state={"schema": "raw-genesis"},
+            retained_state=NS(optimizer_step=0),
+            optimizer_hyperparameters='hp',
+        )
+        selection = NS(
+            offer=NS(source_seed=1, capability_id='cap:first'),
+            visit=NS(
+                identity=NS(visit_id='v'),
+                projection=NS(teacher_state={"schema": "projected-c03"}),
+            ),
+        )
+        cache = NS(generation=0, accepted_manifest_sha256='a' * 64)
+        transaction = NS(parent=NS(optimizer_step=0), update_steps=1)
+        step = NS(transaction=transaction, realized_cost={})
+        prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
+        with patch(prefix + 'prepare_candidate_evidence_root'), patch(
+                prefix + '_Capture') as capture, patch(
+                prefix + 'FactoryDeliveryObservation'), patch(
+                prefix + 'execute_accepted_priority_candidate', return_value=step), patch(
+                'bilqis_mlx.learning.teacher_lineage.instruction_history',
+                return_value=('COMPLETE', ())) as history, patch(
+                'bilqis_mlx.runtime.priority_rejection_replay.rejection_recency',
+                return_value=(None, ())):
+            _execute_horizon(
+                Path('/tmp'), selection, NS(), parent, 'atlas', 'feature',
+                ({'id': 'row'},), 1, cache, 1, None, 0, None, None, observer)
+        history.assert_called_once_with(selection.visit.projection.teacher_state)
+        self.assertTrue(capture.call_args.kwargs['introductory'])
 
     def test_completed_step_projects_every_performance_field_without_authority_change(self):
         from bilqis_mlx.runtime.bamf_operator.performance import STEP_COST_FIELDS

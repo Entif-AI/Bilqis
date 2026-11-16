@@ -229,3 +229,56 @@ class TrainerObservationV3(TrainerObservationV2):
         ordinals = tuple(item.candidate_step for item in self.candidate_steps)
         require(ordinals == tuple(sorted(set(ordinals))),
                 'OBSERVATION_STEP_HISTORY_ORDER')
+
+
+from .trainer_evidence import (
+    DeferredGradeCandidate, GeneratedGradeEvidence, GeneratedGradeHold,
+    GeneratedGradeMemberEvidence, GradeSynthesisDimension, RetentionStageTiming,
+    VisitCapabilityScore, VisitEvidence, VisitRankingEvidence, VisitRoleCount,
+)
+
+from .trainer_evidence import LearningHealthEvidence
+
+@dataclass(frozen=True)
+class TrainerObservationV4(TrainerObservationV3):
+    SCHEMA = 'bilqis.bamf.mission-control.trainer-observation/v4'
+    planning_wall_seconds: float | None
+    source_materialization_wall_seconds: float | None
+    target_evaluation_wall_seconds: float | None
+    protected_retention_wall_seconds: float | None
+    broad_certification_wall_seconds: float | None
+    visit_evidence: VisitEvidence | None
+    generated_grade_evidence: GeneratedGradeEvidence | None
+    retention_stage_timings: tuple[RetentionStageTiming, ...]
+
+    def __post_init__(self):
+        super().__post_init__()
+        for value in (self.planning_wall_seconds, self.source_materialization_wall_seconds,
+                      self.target_evaluation_wall_seconds,
+                      self.protected_retention_wall_seconds,
+                      self.broad_certification_wall_seconds):
+            require(value is None or (type(value) in (int, float)
+                    and math.isfinite(value) and value >= 0),
+                    'OBSERVATION_VISIT_SECONDS')
+        require(self.visit_evidence is None or type(self.visit_evidence) is VisitEvidence,
+                'OBSERVATION_VISIT_EVIDENCE')
+        require(self.generated_grade_evidence is None
+                or type(self.generated_grade_evidence) is GeneratedGradeEvidence,
+                'OBSERVATION_GRADE_EVIDENCE')
+        require(all(type(item) is RetentionStageTiming
+                    for item in self.retention_stage_timings),
+                'OBSERVATION_RETENTION_TIMINGS')
+        require(len(self.retention_stage_timings) <= 256,
+                'OBSERVATION_RETENTION_TIMINGS_LIMIT')
+
+
+@dataclass(frozen=True)
+class TrainerObservationV5(TrainerObservationV4):
+    SCHEMA = 'bilqis.bamf.mission-control.trainer-observation/v5'
+    learning_health: LearningHealthEvidence | None
+
+    def __post_init__(self):
+        super().__post_init__()
+        require(self.learning_health is None
+                or type(self.learning_health) is LearningHealthEvidence,
+                'OBSERVATION_LEARNING_HEALTH')

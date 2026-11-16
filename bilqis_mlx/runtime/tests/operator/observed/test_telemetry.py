@@ -24,7 +24,7 @@ class TrainerObservationTests(unittest.TestCase):
                     obs.update(candidate_step=1)
                     obs.finish('HELD')
             data = json.loads((root / 'trainer-observed.json').read_text())
-            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v3')
+            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v5')
             self.assertEqual(len(data['visits']), 8)
             self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
             self.assertGreater(data['visits'][-1]['revision'], 3)
