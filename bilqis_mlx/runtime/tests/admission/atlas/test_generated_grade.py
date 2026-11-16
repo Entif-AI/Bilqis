@@ -2,6 +2,7 @@
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -10,6 +11,7 @@ from bilqis_mlx.factory.tests.curriculum.generated_grade.test_definition import 
     _single_member_fixture,
 )
 from bilqis_mlx.runtime.generated_grade import (
+    _issue_generated_grade_admission_authority,
     _persist_issued_proposal,
     _read_issued_proposal,
     seal_accepted_generated_grade,
@@ -138,6 +140,35 @@ class AcceptedGeneratedGradeDefinitionTests(unittest.TestCase):
             _persist_issued_proposal(run_dir, proposal)
             self.assertEqual(
                 _read_issued_proposal(run_dir, proposal.proposal_sha256), proposal)
+
+    def test_admission_authority_persists_phase_one_proposal_before_binding(self):
+        release = __import__(
+            "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
+            fromlist=["_release"],
+        )._release()
+        capability = next(iter(release.curriculum.capability_map.values()))
+        _exact_release, proposal = _single_member_fixture(
+            release.semantic_catalog[0], capability.capability_id)
+        handoff = SimpleNamespace(
+            receipt=SimpleNamespace(
+                predecessor_release=SimpleNamespace(
+                    release_sha256=proposal.current_release_sha256)),
+            proposal=SimpleNamespace(
+                proposal_sha256=proposal.a09_proposal_sha256),
+        )
+        with TemporaryDirectory() as directory:
+            run_dir = Path(directory)
+            supervisor = SimpleNamespace(run_dir=run_dir)
+            with patch(
+                "bilqis_mlx.runtime.generated_grade._recompute_accepted_generated_grade",
+                return_value=proposal,
+            ):
+                _issue_generated_grade_admission_authority(supervisor, handoff)
+
+            self.assertEqual(
+                _read_issued_proposal(run_dir, proposal.proposal_sha256),
+                proposal,
+            )
 
     def test_public_seal_has_no_staged_release_argument(self):
         import inspect

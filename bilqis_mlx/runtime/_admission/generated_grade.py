@@ -154,6 +154,13 @@ def _issue_generated_grade_admission_authority(
             SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
             reason="BAMF_GENERATED_GRADE_A09_PROPOSAL_MISMATCH",
         )
+    _persist_issued_proposal(supervisor.run_dir, proposal)
+    if _read_issued_proposal(
+            supervisor.run_dir, proposal.proposal_sha256) != proposal:
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_ACCEPTED_PROPOSAL_MISMATCH",
+        )
     return _mint_generated_grade_authority(proposal)
 
 

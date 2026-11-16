@@ -51,6 +51,7 @@ def _measured_cost_profile(
     known = {item.capability_id for item in release_capabilities(epoch.current_release)}
     mastered = set(foot.mastered_capability_ids)
     candidate_families = set(family_ids)
+    target_capabilities = set(capability_ids)
     comparable: set[str] = {
         capability for capability in capability_ids
         if capability in known and capability in mastered
@@ -68,6 +69,7 @@ def _measured_cost_profile(
         return None, None
     costs = []
     cost_rows = []
+    transfer_rows = []
     history_episodes = []
     for capability in sorted(comparable):
         obligation_ids = {
@@ -97,6 +99,8 @@ def _measured_cost_profile(
                 _mastery_before_intervention(
                     epoch, learner, plan, episode_start),
             ))
+            if capability in target_capabilities:
+                transfer_rows.append(cost_rows[-1])
             history_episodes.append((
                 episode_start.parent_optimizer_step,
                 episode_start.optimizer_step,
@@ -110,7 +114,7 @@ def _measured_cost_profile(
         CostEvidenceKind.MEASURED,
         "accepted-teaching-family-mean-ceil/v1",
         units,
-        _qualified_transfer_savings(cost_rows, prerequisite_capabilities),
+        _qualified_transfer_savings(transfer_rows, prerequisite_capabilities),
     )
     ordered_history = tuple(sorted(history_episodes))
     progress = (
