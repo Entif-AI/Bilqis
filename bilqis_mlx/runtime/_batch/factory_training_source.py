@@ -79,6 +79,7 @@ class _FactoryMotifPlanningInput:
 @dataclass(frozen=True)
 class _FactorySourceRow:
     row: dict
+    source_adapter: object
     source_id: str
     frames: tuple
     ast: object
@@ -109,24 +110,26 @@ class _PreparedB11SourceBinding:
             self.authority, self.prefix, self.config, self.source)
 
 
-def _prepare_source_row(source_context, authenticated, adapter, manifest,
+def _prepare_source_row(source_context, authenticated, manifest,
                         profile, row, *, capability, source_seed, source_each,
                         prequalified=False):
     if row.get("capability") != capability:
         _invalid("FACTORY_TRAINING_CAPABILITY_MISMATCH")
+    source_adapter = source_context.source_registry.resolve_owner(
+        row.get("generator"))
     source_graph = canonical_graph_for(row.get("generator"), source_context.source_root)
     task, frontier, policy = public_training_context(
         authenticated.features.semantic_release, capability, len(row.get("tokens", ())))
     if prequalified:
         projection, frame_frontier = _public_formal_context_from_verified_row(
-            adapter, row, authenticated.snapshot,
+            source_adapter, row, authenticated.snapshot,
             source_root=source_context.source_root, graph=source_graph,
             task_scope=task, source_frontier=frontier, policy=policy)
         source_witness, reason = _verified_source_row_witness(
-            row, expected_adapter_id=adapter.descriptor.adapter_id)
+            row, expected_adapter_id=source_adapter.descriptor.adapter_id)
     else:
         projection, frame_frontier = public_formal_context(
-            adapter, row, authenticated.snapshot,
+            source_adapter, row, authenticated.snapshot,
             source_root=source_context.source_root, graph=source_graph,
             task_scope=task, source_frontier=frontier, policy=policy,
             source_seed=source_seed, source_each=source_each,
@@ -170,9 +173,9 @@ def _prepare_source_row(source_context, authenticated, adapter, manifest,
             frontier=frontier, policy=policy)
         ast, approved, config, current = atom_ast, None, atom_config, atom_config.frontier
     return _FactorySourceRow(
-        row, source_id, frames, ast, approved, source_graph, config, task,
-        current, policy, source_inventory, projection, frame_frontier,
-        source_witness)
+        row, source_adapter, source_id, frames, ast, approved, source_graph,
+        config, task, current, policy, source_inventory, projection,
+        frame_frontier, source_witness)
 
 
 def _motif_planning_input(source_context, authenticated, adapter, profile, item, *,
@@ -187,7 +190,7 @@ def _motif_planning_input(source_context, authenticated, adapter, profile, item,
 
 
 def _prepare_b11_source_binding(
-        source_context, authenticated, adapter, profile, item, prefix, config, *,
+        source_context, authenticated, profile, item, prefix, config, *,
         source_seed, source_each):
     if item.b11_proof is None:
         _invalid("FACTORY_TRAINING_PREPARED_B11_PROOF_REQUIRED")
@@ -196,7 +199,7 @@ def _prepare_b11_source_binding(
         Path(source_context.source_root), source_seed, source_each,
         source_context.release.curriculum, profile)
     authority = _bind_prepared_b11_source_execution_authority(
-        prefix, config, source, adapter, authenticated.snapshot,
+        prefix, config, source, item.source_adapter, authenticated.snapshot,
         authenticated.features, item.b11_proof)
     prepared = _PreparedB11SourceBinding(prefix, config, source, authority)
     prepared.require_current()
@@ -204,7 +207,7 @@ def _prepare_b11_source_binding(
 
 
 def _bind_b11_rows(source_context, candidate, authenticated, training, source_rows,
-                   adapter, profile, *, source_seed, source_each, prepared_b11=None):
+                   profile, *, source_seed, source_each, prepared_b11=None):
     compiled_rows = []
     if prepared_b11 is not None and (
             type(prepared_b11) is not tuple
@@ -221,7 +224,7 @@ def _bind_b11_rows(source_context, candidate, authenticated, training, source_ro
             approved_config = authorize_public_formal_prefix(
                 item.ast, prefix, approved_config)
             prepared = _prepare_b11_source_binding(
-                source_context, authenticated, adapter, profile, item, prefix,
+                source_context, authenticated, profile, item, prefix,
                 approved_config, source_seed=source_seed, source_each=source_each)
         else:
             prepared = prepared_b11[index]
@@ -277,7 +280,7 @@ def _prepare_factory_source_rows(source_context, authenticated, rows, *, capabil
             _invalid("FACTORY_TRAINING_SOURCE_AUTHORITY_INVALID")
         source_context.require_bound_rows(rows, source_authority)
     source_rows = tuple(_prepare_source_row(
-        source_context, authenticated, adapter, manifest, profile, row,
+        source_context, authenticated, manifest, profile, row,
         capability=capability, source_seed=source_seed, source_each=source_each,
         prequalified=prequalified)
         for row in rows)

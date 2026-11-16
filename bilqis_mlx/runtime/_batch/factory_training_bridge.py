@@ -191,7 +191,7 @@ def prepare_factory_training_batch(
     elif type(authenticated) is not AuthenticatedGenerationFeatureContext:
         _invalid("FACTORY_TRAINING_SEMANTIC_CONTEXT_INVALID")
     authenticated.__post_init__()
-    (source_authority, adapter, manifest, profile, source_rows,
+    (source_authority, _adapter, manifest, profile, source_rows,
      prepared_model_sources, prepared_motif_inputs,
      prepared_b11_sources) = _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows,
@@ -203,12 +203,12 @@ def prepare_factory_training_batch(
         authenticated, manifest, prepared_model_sources)
     compiled_rows = _bind_b11_rows(
         source_context, candidate, authenticated, training, source_rows,
-        adapter, profile, source_seed=source_seed, source_each=source_each,
+        profile, source_seed=source_seed, source_each=source_each,
         prepared_b11=prepared_b11_sources)
     motif_inputs = (
         prepared_motif_inputs if prepared_motif_inputs is not None else
         tuple(_motif_planning_input(
-            source_context, authenticated, adapter, profile, item,
+            source_context, authenticated, item.source_adapter, profile, item,
             source_seed=source_seed, source_each=source_each)
             for item in source_rows))
     prepared = PreparedFactoryTrainingBatch(

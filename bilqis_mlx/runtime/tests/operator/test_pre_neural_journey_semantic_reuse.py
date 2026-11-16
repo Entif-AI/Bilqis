@@ -2,13 +2,17 @@
 import unittest
 from unittest.mock import patch
 
+from bilqis_mlx.factory.teaching import describe_delivered_teaching
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
 from bilqis_mlx.runtime.accepted_priority_visit import (
     accepted_priority_school, execute_accepted_priority_candidate,
 )
+from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.bamf_operator.session import _Capture, _execution_context, _step_seed
 from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObservation
+from bilqis_mlx.runtime.factory_training_bridge import prepare_factory_training_batch
 from bilqis_mlx.runtime.foundation_teacher_owner import select_foundation_priority_visit
+from bilqis_mlx.runtime.tests.batch.training.visit_provenance_support import visit_provenance
 
 from .pre_neural_journey_support import (
     PreNeuralJourneySupport, historical_school_release, journey_source,
@@ -17,6 +21,39 @@ from .pre_neural_journey_support import (
 
 
 class PreNeuralJourneySemanticReuseTests(PreNeuralJourneySupport, unittest.TestCase):
+    def test_historical_b_and_binds_b11_to_emitted_source_owner(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, feature_path = _execution_context(self.run)
+                rows = tuple(context.draw_rows(
+                    seed=12345, capability="B.AND", each=4))
+                execution = context.release.execution_plan.capability_map["B.AND"]
+                delivery = describe_delivered_teaching(
+                    context.release, "B.AND", execution.teaching_option_ids[0], rows)
+                generation = execution_generation_digest(
+                    parent.retained_state.optimizer.parameters,
+                    spec=parent.topology, extents=parent.extents)
+                prepared = prepare_factory_training_batch(
+                    context, parent, atlas_path, feature_path, rows, generation,
+                    capability="B.AND", delivery=delivery, requested_count=4,
+                    source_seed=12345, source_each=4, optimizer_step_seed=7,
+                    visit_provenance=visit_provenance("B.AND"),
+                    teacher_strategy={"policy": "b11-source-owner-regression"})
+
+        self.assertEqual(len(prepared.compiled_rows), 4)
+        for compiled in prepared.compiled_rows:
+            authority = compiled.source_execution_authority
+            self.assertEqual(
+                authority.source_adapter.descriptor.adapter_id,
+                "source.micro.boolean-connectives/v1")
+            self.assertEqual(
+                authority.source_handoff.source_adapter_id,
+                authority.source_adapter.descriptor.adapter_id)
+
     def test_candidate_preflight_reuses_planning_feature_context_without_reauthentication(self):
         self.current, self.parent_graph = historical_school_release()
         snapshot = portable_atlas_snapshot()

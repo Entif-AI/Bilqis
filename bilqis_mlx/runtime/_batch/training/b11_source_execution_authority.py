@@ -99,7 +99,7 @@ def _require_prepared_b11_source_proof(proof, source, source_adapter):
     if (proof.row_sha256 != source_content_digest((source.source_row,))
             or proof.source_authority.capability_id
             != source.source_row.get("capability")
-            or proof.source_authority.provider_id
+            or proof.source_witness.source_adapter_id
             != source_adapter.descriptor.adapter_id):
         _invalid("B11_SOURCE_EXECUTION_PREPARED_PROOF_DRIFT")
     return proof
