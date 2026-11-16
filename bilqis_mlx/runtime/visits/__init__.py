@@ -16,6 +16,7 @@ import bilqis_mlx.learning.championship_runtime as _learning_championship_runtim
 import bilqis_mlx.learning.learning_experiment as _learning_learning_experiment
 import bilqis_mlx.learning.lesson_guidance as _learning_lesson_guidance
 import bilqis_mlx.learning.plasticity_escape as _learning_plasticity_escape
+import bilqis_mlx.learning._retention.canary as _learning_retention_canary
 import bilqis_mlx.learning.stagnation_control as _learning_stagnation_control
 import bilqis_mlx.learning.student_ops as _learning_student_ops
 import bilqis_mlx.learning.teacher_feedback as _learning_teacher_feedback

@@ -3579,3 +3579,35 @@ This amendment is intentionally narrower than a general identity-reset rewrite:
 non-semantic holistic identity resets retain their current settled-ledger behavior
 unless separately changed by owner authority.
 
+## ADR-145 | 2026-11-15 | Calibrated retention canaries may reject early but never accept
+
+**Status:** Accepted by direct owner instruction on 2026-11-15 through issue #1278.
+
+**Problem:** Candidate retention already avoids some redundant inference by scoring
+the target first at the final retention boundary, but every candidate still spends
+its complete configured optimizer-step budget before that first authoritative
+retention check. The existing Teacher vNext 2/4/8/16 shadow ladder cannot simply be
+turned into a stop actuator because it measures training-row target performance,
+not the retention probe, and a candidate that looks weak at an intermediate rung
+may recover before its full budget.
+
+**Decision:** Add a separate retention-target canary channel over the same
+source-oracled target probe used by final retention. At the calibrated decision
+rung, the canary may stop spending further candidate optimizer steps only after its
+own bounded shadow history satisfies the existing multi-fidelity activation
+standard. Before qualification it remains shadow-only. An active stop is
+**reject-only**: the stopped candidate must still pass through the unchanged final
+target-first retention evaluator, which must independently confirm
+`NO_MEASURABLE_TARGET_GAIN` before rollback. A canary pass means only
+"continue"; it grants no retention, promotion, custody, graduation or
+championship authority.
+
+Every candidate that survives the canary to its configured horizon still executes
+the complete retention proof required by the active evidence regime. Protected,
+same-grade, fixed-grade, fragile-replay, frontier and whole-school gates are not
+weakened or replaced. Canary telemetry is recorded separately from the final
+retention receipt so saved compute cannot be mistaken for acceptance evidence.
+
+The historical Teacher vNext shadow ladder remains separately governed and
+non-authorizing. This ADR does not activate its training-row stop recommendation.
+

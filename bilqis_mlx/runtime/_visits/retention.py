@@ -8,16 +8,16 @@ def _score_candidate(d, s):
         s.after = d._learning_student_ops._train_score(
             s.mx, s.params, s.rows, s.receipt["config"], s.receipt["answer_ids"])
     s.attempted_step = int(s.optimizer.state["step"].item())
-    if s.attempted_step != s.step_before + s.candidate_steps:
+    if s.attempted_step != s.step_before + s.attempted_candidate_steps:
         raise ValueError("HUMAN_TRAINER_OPTIMIZER_STEP_DRIFT")
     s.candidate_gain = s.after - s.before
-    if s.shadow_rungs:
+    if s.shadow_rungs and s.attempted_candidate_steps == s.candidate_steps:
         s.shadow_probes.append((
             s.candidate_steps, d._learning_teacher_multifidelity.target_correct_delta(
                 s.before, s.after, len(s.rows))))
     s.realized_action = (
         d._learning_learning_experiment.realized_teacher_action(
-            s.policy, candidate_steps=s.candidate_steps, batch_size=s.batch_size,
+            s.policy, candidate_steps=s.attempted_candidate_steps, batch_size=s.batch_size,
             policy_controls=s.policy_control_receipts,
             guidance_applied_steps=s.confidence_applied_steps,
             enrichment_examples=s.enrichment_examples)
@@ -48,6 +48,8 @@ def _decide_candidate(d, s):
                     for r in s.probe_rows if r["capability"] in s.pair]),
                 fragile_replay=replay, plasticity_escape=s.plasticity_escape)
         s.outcome["qualification_stage"] = s.stage
+        d._learning_retention_canary.require_confirmed_reject(
+            s.retention_canary_probe, stage=s.stage, outcome=s.outcome)
         from bilqis_mlx.learning.matrix_strain import observe as observe_matrix_strain
         with d._runtime_timing_trace.trace_span("MATRIX_STRAIN", capability=s.cap):
             s.outcome["matrix_strain"] = observe_matrix_strain(

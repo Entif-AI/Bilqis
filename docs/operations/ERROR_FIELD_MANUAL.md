@@ -1886,7 +1886,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2094** raw raises across **282** files. The baseline gate permits only reduction.
+Current production scan: **2094** raw raises across **285** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -3218,43 +3218,43 @@ Current production scan: **2094** raw raises across **282** files. The baseline 
 | `JIT_CURRICULUM_PROPOSAL_SELECTION_INVALID` | 1 | `bilqis_mlx/factory/curriculum/jit_curriculum.py` |
 | `JIT_CURRICULUM_SOURCE_DEVELOPMENT_INVALID` | 1 | `bilqis_mlx/factory/curriculum/jit_curriculum.py` |
 | `JIT_CURRICULUM_STEP_INVALID` | 1 | `bilqis_mlx/factory/curriculum/jit_curriculum.py` |
-| `LEARNING_EXPERIMENT_ADAMW_DRIFT` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_DUPLICATE_ROW` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
+| `LEARNING_EXPERIMENT_ADAMW_DRIFT` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
+| `LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT` | 1 | `bilqis_mlx/learning/_learning_experiment_decision.py` |
+| `LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID` | 1 | `bilqis_mlx/learning/_learning_experiment_decision.py` |
+| `LEARNING_EXPERIMENT_DUPLICATE_ROW` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON` | 1 | `bilqis_mlx/learning/_learning_experiment_lessons.py` |
 | `LEARNING_EXPERIMENT_FIXED_GRADE_COHORT_INCOMPLETE` | 1 | `bilqis_mlx/runtime/_batch/fixed_frontier_evidence.py` |
 | `LEARNING_EXPERIMENT_FIXED_GRADE_COHORT_MISSING` | 1 | `bilqis_mlx/runtime/_batch/fixed_frontier_evidence.py` |
-| `LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
+| `LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
 | `LEARNING_EXPERIMENT_HISTORY_INVALID` | 1 | `bilqis_mlx/runtime/_custody/resume_metadata.py` |
-| `LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
+| `LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
 | `LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROMOTION` | 1 | `bilqis_mlx/runtime/_batch/candidate_evidence.py` |
-| `LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_OLD_POLICY` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_INVALID_SETTINGS` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
+| `LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
+| `LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY` | 1 | `bilqis_mlx/learning/_learning_experiment_decision.py` |
+| `LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_OLD_POLICY` | 1 | `bilqis_mlx/learning/_learning_experiment_lessons.py` |
+| `LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
+| `LEARNING_EXPERIMENT_INVALID_SETTINGS` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY` | 1 | `bilqis_mlx/learning/_learning_experiment_decision.py` |
+| `LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
 | `LEARNING_EXPERIMENT_POLICY_OWN_ADAMW_DRIFT` | 1 | `bilqis_mlx/runtime/_custody/resume_metadata.py` |
 | `LEARNING_EXPERIMENT_PROBE_SCOPE_INCOMPLETE` | 1 | `bilqis_mlx/runtime/_batch/candidate_evidence.py` |
-| `LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
+| `LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
+| `LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED` | 1 | `bilqis_mlx/learning/_learning_experiment_retention.py` |
 | `LEARNING_EXPERIMENT_PROTECTED_RESUME_REQUIRES_RETENTION` | 1 | `bilqis_mlx/runtime/operator_session/operator_preflight.py` |
 | `LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN` | 1 | `bilqis_mlx/runtime/_custody/experiment_runs.py` |
 | `LEARNING_EXPERIMENT_RESUME_REQUIRES_IDENTICAL_OPT_IN` | 3 | `bilqis_mlx/presentation/operator_cli/lifecycle.py`, `bilqis_mlx/runtime/_custody/resume_metadata.py` |
 | `LEARNING_EXPERIMENT_RETAINED_ADAMW_STEP_DRIFT` | 1 | `bilqis_mlx/runtime/_visits/retention.py` |
-| `LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
-| `LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE` | 1 | `bilqis_mlx/learning/learning_experiment.py` |
+| `LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
+| `LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
+| `LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE` | 1 | `bilqis_mlx/learning/_learning_experiment_feedback.py` |
 | `LEARNING_REPORT_REQUIRES_COMPLETE_SCORED_EXAM_EVENTS` | 1 | `bilqis_mlx/diagnostics/learning_report.py` |
 | `LESSON_DIAGNOSTIC_MISSING_INPUT` | 1 | `bilqis_mlx/diagnostics/teaching.py` |
 | `LESSON_EVIDENCE_DELIVERED_NOT_OFFERED` | 1 | `bilqis_mlx/diagnostics/teaching.py` |
@@ -3279,11 +3279,11 @@ Current production scan: **2094** raw raises across **282** files. The baseline 
 | `LIVE_GRADE_A_UNATTESTED_TOKENS_OR_CONTEXT` | 1 | `bilqis_mlx/_source_evidence/live_grade_a.py` |
 | `LIVE_GRADE_A_UNEXPECTED_PREDICATE_SCOPE` | 1 | `bilqis_mlx/_source_evidence/live_grade_a.py` |
 | `LIVE_GRADE_A_UNKNOWN_CAPABILITY` | 1 | `bilqis_mlx/_source_evidence/live_grade_a.py` |
-| `MATRIX_STRAIN_PARAMETER_SET_MISMATCH` | 1 | `bilqis_mlx/learning/_retention/matrix_strain.py` |
-| `MATRIX_STRAIN_REFERENCE_BLOB_CHANGED` | 1 | `bilqis_mlx/learning/_retention/matrix_strain.py` |
-| `MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/_retention/matrix_strain.py` |
-| `MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT` | 1 | `bilqis_mlx/learning/_retention/matrix_strain.py` |
-| `MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH` | 1 | `bilqis_mlx/learning/_retention/matrix_strain.py` |
+| `MATRIX_STRAIN_PARAMETER_SET_MISMATCH` | 1 | `bilqis_mlx/learning/_retention/matrix_strain/__init__.py` |
+| `MATRIX_STRAIN_REFERENCE_BLOB_CHANGED` | 1 | `bilqis_mlx/learning/_retention/matrix_strain/__init__.py` |
+| `MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/_retention/matrix_strain/__init__.py` |
+| `MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT` | 1 | `bilqis_mlx/learning/_retention/matrix_strain/__init__.py` |
+| `MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH` | 1 | `bilqis_mlx/learning/_retention/matrix_strain/__init__.py` |
 | `MENTOR_EPOCH_CHECKPOINT_POINTER_CONFLICT` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
 | `MENTOR_EPOCH_COMPLETE_PREVIOUS_BOUNDARY_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
 | `MENTOR_EPOCH_COMPLETE_PREVIOUS_GRADUATION_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
@@ -3766,9 +3766,9 @@ Current production scan: **2094** raw raises across **282** files. The baseline 
 | `VOCAB_TYPED_SIGNATURE_ARITY_MISMATCH` | 1 | `bilqis_mlx/_semantic_tools/vocabulary_growth.py` |
 | `WHOLE_STUDENT_CANDIDATES_NOT_COMPARABLE` | 1 | `bilqis_mlx/curriculum/scheduler.py` |
 | `WHOLE_STUDENT_CANDIDATE_POOL_EMPTY` | 1 | `bilqis_mlx/curriculum/scheduler.py` |
-| `WHOLE_STUDENT_PEAK_EMPTY_EXAM` | 1 | `bilqis_mlx/learning/_retention/whole_student_retention.py` |
-| `WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE` | 1 | `bilqis_mlx/learning/_retention/whole_student_retention.py` |
-| `WHOLE_STUDENT_PEAK_INVALID_SCORE` | 1 | `bilqis_mlx/learning/_retention/whole_student_retention.py` |
+| `WHOLE_STUDENT_PEAK_EMPTY_EXAM` | 1 | `bilqis_mlx/learning/_retention/whole_student_retention/__init__.py` |
+| `WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE` | 1 | `bilqis_mlx/learning/_retention/whole_student_retention/__init__.py` |
+| `WHOLE_STUDENT_PEAK_INVALID_SCORE` | 1 | `bilqis_mlx/learning/_retention/whole_student_retention/__init__.py` |
 | `WHOLE_STUDENT_PEAK_SCHEMA_DRIFT` | 1 | `bilqis_mlx/runtime/_custody/checkpoint_retention.py` |
 | `WHOLE_STUDENT_PEAK_SEED_ADAMW_DRIFT` | 1 | `bilqis_mlx/runtime/_custody/reconciliation.py` |
 | `_BINDING_DRIFT` | 1 | `bilqis_mlx/factory/model.py` |

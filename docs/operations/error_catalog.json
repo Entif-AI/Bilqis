@@ -1,5 +1,5 @@
 {
-  "legacy_raw_file_count": 282,
+  "legacy_raw_file_count": 285,
   "legacy_raw_raise_count": 2094,
   "legacy_raw_raise_groups": [
     {
@@ -7843,6 +7843,195 @@
       "path": "bilqis_mlx/learning/_epoch_championships/state.py"
     },
     {
+      "code_hint": "LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY'",
+      "path": "bilqis_mlx/learning/_learning_experiment_decision.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_ADAMW_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_ADAMW_DRIFT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_feedback.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON'",
+      "path": "bilqis_mlx/learning/_learning_experiment_lessons.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_OLD_POLICY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_OLD_POLICY'",
+      "path": "bilqis_mlx/learning/_learning_experiment_lessons.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_DUPLICATE_ROW",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_DUPLICATE_ROW'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_INVALID_SETTINGS",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_INVALID_SETTINGS'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
+      "code_hint": "LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED'",
+      "path": "bilqis_mlx/learning/_learning_experiment_retention.py"
+    },
+    {
       "code_hint": "HUMAN_TRAINER_INVALID_LESSON_BATCH_SIZE",
       "count": 1,
       "exception": "ValueError",
@@ -8008,35 +8197,35 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_PARAMETER_SET_MISMATCH'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_BLOB_CHANGED",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_BLOB_CHANGED'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_PARAMETER_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_REFERENCE_SEMANTIC_GRAPH_DRIFT'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH",
       "count": 1,
       "exception": "ValueError",
       "expression": "'MATRIX_STRAIN_TENSOR_SHAPE_OR_DTYPE_MISMATCH'",
-      "path": "bilqis_mlx/learning/_retention/matrix_strain.py"
+      "path": "bilqis_mlx/learning/_retention/matrix_strain/__init__.py"
     },
     {
       "code_hint": "PLASTICITY_MASTERY_DEBT_SCOPE_INVALID",
@@ -8064,21 +8253,21 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_EMPTY_EXAM'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_INCOMPLETE_SOURCE'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "WHOLE_STUDENT_PEAK_INVALID_SCORE",
       "count": 1,
       "exception": "ValueError",
       "expression": "'WHOLE_STUDENT_PEAK_INVALID_SCORE'",
-      "path": "bilqis_mlx/learning/_retention/whole_student_retention.py"
+      "path": "bilqis_mlx/learning/_retention/whole_student_retention/__init__.py"
     },
     {
       "code_hint": "CHAMPION_CONFIDENCE_TRAINING_GUIDANCE_INVALID",
@@ -8135,195 +8324,6 @@
       "exception": "ValueError",
       "expression": "'TEACHER_EMPTY_BALLOT'",
       "path": "bilqis_mlx/learning/_teaching/teacher_votes.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'LEARNING_EXPERIMENT_SCHEDULE_PROGRAM_REQUIRED'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_ADAMW_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_ADAMW_DRIFT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_CHANNEL_VERSION_DRIFT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_COHORT_DIGEST_INVALID'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_DUPLICATE_ROW",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_DUPLICATE_ROW'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_EMPTY_TYPED_LESSON'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_FULL_GRADE_PROBE_SCOPE_INVALID'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_PAIRED_COHORT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INCOMPLETE_SAME_GRADE_PROBE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_ACTIVE_GRADE_FRONTIER'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_CAUSAL_OUTCOME'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_SCORE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_FRONTIER_STATUS'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_COHORT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FIXED_GRADE_STATUS'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_FRAGILE_REPLAY'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_GRADE_COMPLETION_SCOPE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_OLD_POLICY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_OLD_POLICY'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_PAIRED_SCORE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_SELECTION_CREDIT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_INVALID_SETTINGS",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_INVALID_SETTINGS'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_MISSING_ACTIVE_CAPABILITY'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_PARAMETER_IDENTITY_DRIFT'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_PROBE_SELECTION_INVALID'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_PROTECTED_CAPABILITY_NOT_MEASURED'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_OPTIMIZER_STATE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_UNKNOWN_TARGET_GRADE'",
-      "path": "bilqis_mlx/learning/learning_experiment.py"
     },
     {
       "code_hint": "CHAMPION_CONFIDENCE_BUNDLE_DRIFT",
