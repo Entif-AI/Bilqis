@@ -90,7 +90,7 @@ class OptimizerCustodyTests(CausalTeacherExperimentTests):
                 if isinstance(value, dict):
                     return {key: copy_value(item)
                             for key, item in value.items()}
-                raise ValueError("UNKNOWN_STATE")
+                self.fail(f"UNKNOWN_STATE: {type(value).__name__}")
 
             copied = copy_value(parameters)
             copied_optimizer = optim.AdamW(
