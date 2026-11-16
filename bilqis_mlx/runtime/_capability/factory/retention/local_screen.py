@@ -128,12 +128,9 @@ def _local_coverage(target_coverage, target_plan, plan_sha256):
         }))
 
 
-def foundation_local_retention_screen(
+def _target_stage(
         source_context, parent, candidate_bundle, candidate_state, artifact_path,
-        release, plan, target_plan, training, cached_rows, cache, *,
-        observer=None):
-    """Resolve a fresh target pair before any protected candidate inference."""
-    groups = target_plan.evaluated_capability_groups
+        release, plan, target_plan, training, cached_rows, cache):
     target = target_plan.target_capability_id
     (reference_seed, reference_rows), protected_rows = _split_cached_rows(
         cached_rows, target_plan)
@@ -173,14 +170,22 @@ def foundation_local_retention_screen(
         target, target_policy, target_pair,
         retention_protection_plan_sha256=plan.digest)
     comparison = epoch.identity(target)
-    if decision is not None:
-        return decision, parent, candidate_bundle, None, comparison
+    return (
+        target, protected_rows, target_instruments, target_pair,
+        target_coverage, comparison, decision,
+    )
 
+
+def _protected_stage(
+        source_context, parent, candidate_bundle, artifact_path,
+        release, plan, target_plan, training, protected_rows, cache,
+        target_coverage):
     protected_instruments = _cached_instruments(
         source_context, candidate_bundle, artifact_path, protected_rows)
     protected_pair = parent_cache = None
     coverage = _local_coverage(target_coverage, target_plan, plan.digest)
     if protected_instruments:
+        groups = target_plan.evaluated_capability_groups
         protected_groups = tuple(
             pair for pair in groups if pair[0] in target_plan.protected_capability_ids)
         protected_coverage = _coverage_for_groups(coverage, protected_groups)
@@ -209,6 +214,28 @@ def foundation_local_retention_screen(
             evaluate_capabilities(
                 protected_candidate_solver, protected_cohort,
                 protected_candidate_generation))
+    return protected_pair, parent_cache, protected_instruments, coverage
+
+
+def foundation_local_retention_screen(
+        source_context, parent, candidate_bundle, candidate_state, artifact_path,
+        release, plan, target_plan, training, cached_rows, cache, *,
+        observer=None):
+    """Resolve a fresh target pair before any protected candidate inference."""
+    (
+        target, protected_rows, target_instruments, target_pair,
+        target_coverage, comparison, decision,
+    ) = _target_stage(
+        source_context, parent, candidate_bundle, candidate_state, artifact_path,
+        release, plan, target_plan, training, cached_rows, cache)
+    if decision is not None:
+        return decision, parent, candidate_bundle, None, comparison
+
+    protected_pair, parent_cache, protected_instruments, coverage = _protected_stage(
+        source_context, parent, candidate_bundle, artifact_path,
+        release, plan, target_plan, training, protected_rows, cache,
+        target_coverage)
+    groups = target_plan.evaluated_capability_groups
 
     all_instruments = (*target_instruments, *protected_instruments)
     policy = _policy(
