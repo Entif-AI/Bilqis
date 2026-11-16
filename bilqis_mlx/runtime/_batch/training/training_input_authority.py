@@ -89,21 +89,28 @@ def require_semantic_authority(
         atlas_features = rederive_training_authority(
             compiler_config, atlas_selection, feature_artifact_path)
     else:
-        from .factory_training_context import _require_materialized_manifest
-        manifest = _require_materialized_manifest(
-            semantic_context, released_manifest)
         if semantic_context.selection != atlas_selection:
             _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
         atlas_features = semantic_context.features
-        schemas, roles = dict(atlas_features.schema_map), dict(atlas_features.role_map)
-        canonical = tuple(body.parse() for body in manifest.bodies)
-        if (compiler_config.schema_map != manifest.schema_map
-                or compiler_config.schemas != canonical
-                or any(schema.schema_id not in schemas
-                       for schema in compiler_config.schemas)
-                or any(role.role_id not in roles
-                       for schema in compiler_config.schemas for role in schema.roles)):
-            _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
+        if released_manifest is None:
+            if (compiler_config.schemas
+                    or compiler_config.schema_map.entries
+                    or compiler_config.schema_map.semantic_release
+                    != task_scope.semantic_release):
+                _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
+        else:
+            from .factory_training_context import _require_materialized_manifest
+            manifest = _require_materialized_manifest(
+                semantic_context, released_manifest)
+            schemas, roles = dict(atlas_features.schema_map), dict(atlas_features.role_map)
+            canonical = tuple(body.parse() for body in manifest.bodies)
+            if (compiler_config.schema_map != manifest.schema_map
+                    or compiler_config.schemas != canonical
+                    or any(schema.schema_id not in schemas
+                           for schema in compiler_config.schemas)
+                    or any(role.role_id not in roles
+                           for schema in compiler_config.schemas for role in schema.roles)):
+                _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")
     if (type(atlas_features) is not AtlasFeatures
             or atlas_features.semantic_release != task_scope.semantic_release):
         _invalid("UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH")

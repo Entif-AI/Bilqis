@@ -127,15 +127,19 @@ def semantic_footprint(row):
     return (root,)
 
 
+def witness_obligation(row, obligation, **kw):
+    return (check(row, **kw)
+            and row.get('generator') == GENERATOR
+            and obligation.key in SPECS[row['capability']][1])
+
+
 def registered_adapter():
     return RegisteredSourceAdapter(SourceAdapter(ADAPTER_ID,
         GENERATOR,(ORACLE,),provider_implementation_digest(),
         variation_axes=('event-identity','before-state','after-state','fact-order','fresh-seed'),
         teaching_option_ids=(SEMANTIC_CONTRAST_OPTION,)),
         draw,check,
-        witness=lambda row,obligation,**kw: check(row,**kw) and
-            row.get('generator') == GENERATOR and
-            obligation.key in SPECS[row['capability']][1],
+        witness=witness_obligation,
         enrich=enrich_contrasts,
         semantic_footprint=semantic_footprint)
 
