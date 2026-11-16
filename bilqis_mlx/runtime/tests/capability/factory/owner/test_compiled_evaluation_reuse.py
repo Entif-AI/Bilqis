@@ -175,7 +175,13 @@ class CompiledEvaluationReuseTests(unittest.TestCase):
         candidate = SimpleNamespace(
             retained_state=SimpleNamespace(optimizer=SimpleNamespace(parameters={})))
         with (
-            patch.object(complete_solver, "_generation", side_effect=("8" * 64, "9" * 64)),
+            patch.object(
+                complete_solver, "_execution_binding",
+                side_effect=(
+                    SimpleNamespace(generation_digest="8" * 64),
+                    SimpleNamespace(generation_digest="9" * 64),
+                ),
+            ),
             patch.object(complete_solver, "authenticate_bamf_execution_feature_context",
                          return_value=Authenticated()) as authenticate,
             patch.object(complete_solver, "bind_factory_evaluation_case",

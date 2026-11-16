@@ -36,9 +36,13 @@ def _coverage(measured):
     )
 
 
-def _foundation_inputs(*, protected_loss, measured):
+def _foundation_inputs(
+        *, protected_loss, measured, target_gain=True,
+        labels=("amber", "violet")):
     parent, candidate, target, base_policy, cohorts = _screen_inputs(
-        protected_loss=protected_loss)
+        protected_loss=protected_loss, labels=labels)
+    if not target_gain:
+        candidate = parent
     coverage = _coverage(measured)
     protected = coverage.protected_capabilities(target)
     policy = FoundationRetentionPolicy(
@@ -58,6 +62,23 @@ def _foundation_inputs(*, protected_loss, measured):
 
 
 class FactoryComparableBaselineRetentionTests(unittest.TestCase):
+    def test_first_zero_delta_target_measurement_establishes_baseline_candidate(self):
+        for target_group in ("amber", "Z"):
+            with self.subTest(target_group=target_group):
+                args = _foundation_inputs(
+                    protected_loss=0,
+                    measured=(),
+                    target_gain=False,
+                    labels=(target_group, "violet"),
+                )
+
+                decision = evaluate_foundation_fixed_school_candidate(
+                    *args, PARENT, CANDIDATE)
+
+                self.assertEqual(decision.status.value, "ELIGIBLE")
+                self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
+                self.assertEqual(decision.baseline_coverage.measured_denominator, 0)
+
     def test_first_target_measurement_ignores_unmeasured_peer_regressions(self):
         args = _foundation_inputs(protected_loss=12, measured=())
 

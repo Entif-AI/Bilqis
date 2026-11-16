@@ -9,7 +9,11 @@ from bilqis_mlx.mission_control.contracts.model import (
     AuthorityClass, CoverageState, RecordMeta, is_time,
 )
 from bilqis_mlx.mission_control.contracts.trainer import (
-    TrainerObservation, TrainerObservationV2, TrainerObservationV3,
+    CandidateStepPerformance, DeferredGradeCandidate, GeneratedGradeEvidence,
+    GeneratedGradeHold, GeneratedGradeMemberEvidence, GradeSynthesisDimension,
+    RetentionStageTiming, TrainerObservation, TrainerObservationV2, TrainerObservationV3,
+    TrainerObservationV4, VisitCapabilityScore, VisitEvidence, VisitRankingEvidence,
+    VisitRoleCount,
 )
 
 
@@ -21,6 +25,7 @@ _SCHEMAS = frozenset({
     'bilqis.bamf.trainer-observed/v1',
     'bilqis.bamf.trainer-observed/v2',
     'bilqis.bamf.trainer-observed/v3',
+    'bilqis.bamf.trainer-observed/v4',
 })
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
@@ -31,6 +36,111 @@ _V2_ONLY = _V2_FIELDS - _FIELDS
 _V3_FIELDS = {field.name for field in fields(TrainerObservationV3)} - {
     'meta', 'posture', 'connection_state'}
 _V3_ONLY = _V3_FIELDS - _V2_FIELDS
+_V4_FIELDS = {field.name for field in fields(TrainerObservationV4)} - {
+    'meta', 'posture', 'connection_state'}
+_V4_ONLY = _V4_FIELDS - _V3_FIELDS
+
+
+def _score(record):
+    record = record or {'state': 'UNKNOWN'}
+    state = record.get('state', 'UNKNOWN')
+    return VisitCapabilityScore(
+        capability_id=record.get('capability_id'), state=state,
+        baseline=record.get('baseline') if state == 'MEASURED' else None,
+        before=record.get('before') if state == 'MEASURED' else None,
+        after=record.get('after') if state == 'MEASURED' else None,
+        total=record.get('total') if state == 'MEASURED' else None,
+        delta=record.get('delta') if state == 'MEASURED' else None,
+        loss_allowance=record.get('loss_allowance'))
+
+
+def _visit_evidence(record):
+    if record is None:
+        return None
+    ranking = record.get('ranking') or {}
+    coverage = record.get('baseline_coverage') or {}
+    return VisitEvidence(
+        state=record.get('state', 'PARTIAL'), grade_id=record.get('grade_id'),
+        grade_definition_id=record.get('grade_definition_id'),
+        grade_definition_version=record.get('grade_definition_version'),
+        capability_id=record.get('capability_id'),
+        semantic_ids=tuple(record.get('semantic_ids', ())),
+        prerequisites=tuple(record.get('prerequisites', ())),
+        semantic_prerequisites=tuple(record.get('semantic_prerequisites', ())),
+        constituents=tuple(record.get('constituents', ())),
+        lawful_frontier_sha256=record.get('lawful_frontier_sha256'),
+        a09_snapshot_sha256=record.get('a09_snapshot_sha256'),
+        a09_closure_sha256=record.get('a09_closure_sha256'),
+        ranking=VisitRankingEvidence(
+            policy_sha256=ranking.get('policy_digest'),
+            ordinals=tuple(ranking.get('ordinals', ())),
+            known=tuple(ranking.get('known', ())),
+            dispatch_tier=ranking.get('dispatch_tier'),
+            eligible_since=ranking.get('eligible_since'),
+            downstream_unlocks=ranking.get('downstream_unlocks'),
+            stable_id=ranking.get('stable_id')),
+        teacher_visit_id=record.get('teacher_visit_id'),
+        teacher_policy_key=record.get('teacher_policy_key'),
+        selected_option_id=record.get('selected_option_id'),
+        lesson_roles=tuple(VisitRoleCount(role=k, count=v)
+                           for k, v in sorted((record.get('lesson_roles') or {}).items())),
+        target=_score(record.get('target')),
+        affected_scope_state=record.get('affected_scope_state', 'UNKNOWN'),
+        affected=tuple(_score(item) for item in record.get('affected', ())),
+        protected_scope_state=record.get('protected_scope_state', 'UNKNOWN'),
+        protected=tuple(_score(item) for item in record.get('protected', ())),
+        retention_economics_state=record.get('retention_economics_state', 'UNKNOWN'),
+        retention_policy_sha256=record.get('retention_policy_sha256'),
+        threshold_refs=tuple(record.get('threshold_refs', ())),
+        budget_refs=tuple(record.get('budget_refs', ())),
+        probe_each=record.get('probe_each'),
+        baseline_measured_capabilities=tuple(coverage.get('measured_capabilities', ())),
+        baseline_unmeasured_capabilities=tuple(coverage.get('unmeasured_capabilities', ())),
+        baseline_epoch_sha256=coverage.get('epoch_sha256'),
+        decision=record.get('decision'), blocking_capability=record.get('blocking_capability'),
+        blocking_scope=record.get('blocking_scope'), reason=record.get('reason'),
+        human_reason=record.get('human_reason'),
+        candidate_evidence_sha256=record.get('candidate_evidence_sha256'),
+        candidate_evidence_file=record.get('candidate_evidence_file'))
+
+
+def _grade_evidence(record):
+    if record is None:
+        return None
+    return GeneratedGradeEvidence(
+        state=record.get('state', 'UNKNOWN'), grade_id=record.get('grade_id'),
+        proposal_id=record.get('proposal_id'), definition_id=record.get('definition_id'),
+        definition_version=record.get('definition_version'),
+        predecessor_definition_id=record.get('predecessor_definition_id'),
+        learner_evidence_epoch=record.get('learner_evidence_epoch'),
+        factory_release_sha256=record.get('factory_release_sha256'),
+        policy_epoch=record.get('policy_epoch'),
+        a08_provenance=tuple(record.get('a08_provenance', ())),
+        a09_provenance=tuple(record.get('a09_provenance', ())),
+        selected_semantic_ids=tuple(record.get('selected_semantic_ids', ())),
+        members=tuple(GeneratedGradeMemberEvidence(
+            semantic_id=item['semantic_id'],
+            developmental_cost_state=item.get('developmental_cost_state', 'UNKNOWN'),
+            a08_provenance=tuple(item.get('a08_provenance', ())),
+            a09_provenance=tuple(item.get('a09_provenance', ())),
+            acquisition_cost_ref=item.get('acquisition_cost_ref'))
+            for item in record.get('members', ())),
+        developmental_slope_state=record.get('developmental_slope_state', 'UNKNOWN'),
+        synthesis_dimensions=tuple(GradeSynthesisDimension(
+            dimension=item['dimension'], state=item.get('state', 'UNKNOWN'),
+            evidence_refs=tuple(item.get('evidence_refs', ())))
+            for item in record.get('synthesis_dimensions', ())),
+        representative_coverage=record.get('representative_coverage'),
+        downstream_unlocks=record.get('downstream_unlocks'),
+        constituent_rationale=record.get('constituent_rationale'),
+        required_bridges=tuple(record.get('required_bridges', ())),
+        deferred_candidates=tuple(DeferredGradeCandidate(
+            semantic_id=item['semantic_id'], reasons=tuple(item.get('reasons', ())))
+            for item in record.get('deferred_candidates', ())),
+        holds=tuple(GeneratedGradeHold(
+            code=item['code'], semantic_id=item.get('semantic_id'),
+            detail=item.get('detail')) for item in record.get('holds', ())),
+        predecessor_certification_receipt=record.get('predecessor_certification_receipt'))
 
 
 def process_exists(pid: int) -> bool:
@@ -67,19 +177,26 @@ def _record(row, runs, now_ms):
         source_refs=(f"trainer-observed:{row['observation_id']}",),
     )
     record_type = (
+        TrainerObservationV4 if _V4_ONLY <= set(row) else
         TrainerObservationV3 if _V3_ONLY <= set(row) else
         TrainerObservationV2 if _V2_ONLY <= set(row) else TrainerObservation)
     record_fields = (
+        _V4_FIELDS if record_type is TrainerObservationV4 else
         _V3_FIELDS if record_type is TrainerObservationV3 else
         _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS)
     values = {
         key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
         for key in record_fields
     }
-    if record_type is TrainerObservationV3:
-        from bilqis_mlx.mission_control.contracts.trainer import CandidateStepPerformance
+    if record_type in (TrainerObservationV3, TrainerObservationV4):
         values['candidate_steps'] = tuple(
             CandidateStepPerformance(**item) for item in values['candidate_steps'])
+    if record_type is TrainerObservationV4:
+        values['visit_evidence'] = _visit_evidence(values['visit_evidence'])
+        values['generated_grade_evidence'] = _grade_evidence(
+            values['generated_grade_evidence'])
+        values['retention_stage_timings'] = tuple(
+            RetentionStageTiming(**item) for item in values['retention_stage_timings'])
     return record_type(
         meta=meta, posture='OBSERVED', connection_state=state, **values)
 

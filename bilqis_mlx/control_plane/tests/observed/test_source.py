@@ -101,6 +101,44 @@ class ObservedSourceTests(unittest.TestCase):
         self.assertEqual(row.candidate_steps[0].candidate_step, 1)
         self.assertEqual(row.candidate_steps[0].b11_provider_draw_count, 16)
 
+    def test_v4_runtime_snapshot_projects_typed_visit_and_grade_evidence(self):
+        from bilqis_mlx.runtime.bamf_operator.evidence_projection import (
+            unknown_generated_grade_evidence,
+        )
+        row = visit(
+            **performance(), planning_wall_seconds=0.1,
+            source_materialization_wall_seconds=0.02,
+            target_evaluation_wall_seconds=0.2,
+            protected_retention_wall_seconds=0.3,
+            broad_certification_wall_seconds=None,
+            candidate_steps=[], retention_stage_timings=[{
+                'subject': 'Z.NOVEL', 'role': 'candidate', 'wall_seconds': 0.2}],
+            visit_evidence={
+                'schema': 'bilqis.bamf.visit-evidence/v1', 'state': 'PARTIAL',
+                'grade_id': 'Z', 'grade_definition_id': None,
+                'grade_definition_version': None, 'capability_id': 'Z.NOVEL',
+                'semantic_ids': ['sem:z'], 'prerequisites': ['Y.PREV'],
+                'semantic_prerequisites': ['sem:y'], 'constituents': ['Y.PREV'],
+                'lawful_frontier_sha256': '1' * 64, 'a09_snapshot_sha256': '2' * 64,
+                'a09_closure_sha256': '3' * 64, 'ranking': {},
+                'teacher_visit_id': 'visit-z', 'teacher_policy_key': 'how-z',
+                'selected_option_id': 'option-z', 'lesson_roles': {},
+                'target': {'state': 'NOT_MEASURED'}, 'protected': [],
+                'retention_policy_sha256': None, 'probe_each': None,
+                'baseline_coverage': None, 'decision': None,
+                'blocking_capability': None, 'blocking_scope': None,
+                'reason': None, 'human_reason': None,
+                'candidate_evidence_sha256': None, 'candidate_evidence_file': None},
+            generated_grade_evidence=unknown_generated_grade_evidence('Z'))
+        self.write(row, schema='bilqis.bamf.trainer-observed/v4')
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=True):
+            projected = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(projected.schema_version,
+                         'bilqis.bamf.mission-control.trainer-observation/v4')
+        self.assertEqual(projected.visit_evidence.grade_id, 'Z')
+        self.assertEqual(projected.generated_grade_evidence.state, 'UNKNOWN')
+        self.assertEqual(projected.retention_stage_timings[0].subject, 'Z.NOVEL')
+
     def test_millisecond_heartbeat_projects_unix_seconds_without_changing_liveness_age(self):
         heartbeat_ms = 1_763_218_800_123
         self.write(visit(observed_at=heartbeat_ms))

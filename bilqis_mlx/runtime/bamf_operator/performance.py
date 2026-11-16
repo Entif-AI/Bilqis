@@ -28,6 +28,11 @@ STEP_COST_FIELDS = (
 )
 
 VISIT_PERFORMANCE_FIELDS = (
+    "planning_wall_seconds",
+    "source_materialization_wall_seconds",
+    "target_evaluation_wall_seconds",
+    "protected_retention_wall_seconds",
+    "broad_certification_wall_seconds",
     "retention_wall_seconds",
     "evidence_finalization_wall_seconds",
     "publishing_wall_seconds",

@@ -3,16 +3,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from ..learning.retention_policy import _mastery_debt_utility
-from bilqis_mlx.runtime.bamf_operator.telemetry import emit
 from ..semantics.domains import contract_digest
 from .capability_evaluation import (
     Assessment, EvidenceKind, EvidenceStage, EvaluationCohort, _invalid, _names, _sha,
     case_census_digest, evaluate_capabilities,
 )
 from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
-from .capability_retention import (
-    AssessmentPair, Decision, DecisionStatus, RetentionPolicy,
+from .capability_retention import AssessmentPair, Decision, RetentionPolicy
+from .capability_retention_foundation_runtime import (
+    final_fixed_school_decision, observed_assessment, parent_case_index,
 )
 
 _PAIR_WIDTH = 2
@@ -204,14 +203,16 @@ def _final_fixed_school_decision(
         scores[capability] = {"before": before, "after": after, "total": total}
 
     target_delta = fixed_pair.delta(target_capability)
-    if target_delta < 0 and target_capability in measured_set:
+    target_measured = target_capability in measured_set
+    if target_delta < 0 and target_measured:
         return Decision(
             DecisionStatus.REJECT, "TARGET_BASELINE_REGRESSION",
             parent_generation, candidate_generation,
             evidence_digest(pair_digests, target_capability), policy.digest(),
             blocking_capability=target_capability,
             baseline_coverage=coverage)
-    if target_delta <= 0:
+    blocking_scope = None
+    if target_delta <= 0 and target_measured:
         reason = "NO_MEASURABLE_TARGET_GAIN"
     else:
         protected = tuple(references)
@@ -233,7 +234,6 @@ def _final_fixed_school_decision(
             reason = "FIXED_LESSON_GRADE_REGRESSION"
             blocking_scope = "fixed_group:" + target_group
         else:
-            blocking_scope = None
             for group in policy.protected_groups:
                 grade = tuple(capability for capability in measured
                               if census[capability] == group)
@@ -252,7 +252,7 @@ def _final_fixed_school_decision(
         else DecisionStatus.REJECT,
         reason, parent_generation, candidate_generation,
         evidence_digest(pair_digests, None), policy.digest(),
-        blocking_scope=(blocking_scope if target_delta > 0 else None),
+        blocking_scope=blocking_scope,
         baseline_coverage=coverage)
 
 
@@ -265,8 +265,9 @@ def _evaluate_fixed_school(
     groups = dict(fixed.capability_groups)
     completed = int(parent_assessment is None)
     total = len(capability_order) + completed
-    parent_by_case = _parent_case_index(
-        parent_solver, fixed, parent_generation, parent_assessment, observer, total)
+    parent_by_case = parent_case_index(
+        parent_solver, fixed, parent_generation, parent_assessment, observer, total,
+        evaluator=evaluate_capabilities)
     parent_results, candidate_results = {}, {}
     parent_contracts, candidate_contracts = {}, {}
     pair_digests = []
@@ -282,8 +283,9 @@ def _evaluate_fixed_school(
             tuple(parent_by_case[case.case_id][0] for case in cases),
             tuple(parent_by_case[case.case_id][1] for case in cases),
         )
-        candidate_assessment = _observed_assessment(
-            candidate_solver, cohort, candidate_generation, observer, completed, total, capability, "candidate")
+        candidate_assessment = observed_assessment(
+            candidate_solver, cohort, candidate_generation, observer, completed, total,
+            capability, "candidate", evaluator=evaluate_capabilities)
         completed += 1
         pair = AssessmentPair(parent_subset, candidate_assessment)
         pair_digests.append((parent_subset.digest(), candidate_assessment.digest()))
@@ -296,11 +298,11 @@ def _evaluate_fixed_school(
             candidate_results[case.case_id] = result
             candidate_contracts[case.case_id] = contract
 
-    return _final_fixed_school_decision(
+    return final_fixed_school_decision(
         target_capability, target_group, references, policy, fixed,
         parent_generation, candidate_generation,
         evidence_digest, pair_digests, parent_results, parent_contracts,
-        candidate_results, candidate_contracts)
+        candidate_results, candidate_contracts, observer=observer)
 
 
 def evaluate_foundation_retention_candidate(

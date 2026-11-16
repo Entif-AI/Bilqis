@@ -27,7 +27,7 @@ from .snapshots import (
 )
 
 
-from .trainer import TrainerObservation, TrainerObservationV2, TrainerObservationV3
+from .trainer import TrainerObservation, TrainerObservationV2, TrainerObservationV3, TrainerObservationV4
 from .dossier import CapabilityDossier
 
 
@@ -35,6 +35,7 @@ ALL_RECORD_TYPES = (
     TrainerObservation,
     TrainerObservationV2,
     TrainerObservationV3,
+    TrainerObservationV4,
     CapabilityDossier,
     RunContext,
     OperatorView,

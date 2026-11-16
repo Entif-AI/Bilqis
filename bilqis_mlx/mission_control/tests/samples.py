@@ -69,7 +69,7 @@ SEMANTIC_HELD_META = RecordMeta(
 
 from bilqis_mlx.mission_control.contracts.trainer import (
     CandidateStepPerformance, TrainerObservation, TrainerObservationV2,
-    TrainerObservationV3,
+    TrainerObservationV3, TrainerObservationV4,
 )
 
 SAMPLES = (
@@ -264,4 +264,21 @@ SAMPLES += (
             b11_atlas_reload_count=0, logical_rows=4, compiled_positions=32),),
     ),
 
+)
+
+SAMPLES += (
+    TrainerObservationV4(
+        meta=RecordMeta('observed:sample-v4', RUN, 120, 118, None,
+                        CoverageState.PARTIAL, AuthorityClass.MEASURED),
+        **{field.name: getattr(SAMPLES[-1], field.name)
+           for field in __import__('dataclasses').fields(TrainerObservationV3)
+           if field.name != 'meta'},
+        planning_wall_seconds=0.12,
+        source_materialization_wall_seconds=0.03,
+        target_evaluation_wall_seconds=0.2,
+        protected_retention_wall_seconds=0.4,
+        broad_certification_wall_seconds=None,
+        visit_evidence=None, generated_grade_evidence=None,
+        retention_stage_timings=(),
+    ),
 )
