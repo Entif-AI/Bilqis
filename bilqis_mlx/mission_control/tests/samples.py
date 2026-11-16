@@ -191,6 +191,7 @@ SAMPLES += (
         candidate_step=None, candidate_horizon=None, retention_completed=None,
         retention_total=None, retention_subject=None, retention_role=None,
         cpu_seconds=None, peak_rss_bytes=None, disk_free_bytes=None,
+        error_code=None, error_detail=None,
     ),
     TrainerObservationV2(
         meta=RecordMeta('observed:sample-v2', RUN, 120, 118, None,
@@ -202,6 +203,7 @@ SAMPLES += (
         retention_completed=None, retention_total=None,
         retention_subject=None, retention_role=None,
         cpu_seconds=0.1, peak_rss_bytes=4096, disk_free_bytes=100000,
+        error_code=None, error_detail=None,
         candidate_step_wall_seconds=0.9,
         pre_neural_source_compile_wall_seconds=0.1,
         currentness_binding_wall_seconds=0.01,

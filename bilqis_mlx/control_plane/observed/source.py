@@ -23,6 +23,7 @@ _SCHEMAS = frozenset({
 })
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
+_OPTIONAL_FIELDS = frozenset(('error_code', 'error_detail'))
 _V2_FIELDS = {field.name for field in fields(TrainerObservationV2)} - {
     'meta', 'posture', 'connection_state'}
 _V2_ONLY = _V2_FIELDS - _FIELDS
@@ -66,7 +67,8 @@ def _record(row, runs, now_ms):
     record_fields = _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS
     return record_type(
         meta=meta, posture='OBSERVED', connection_state=state,
-        **{key: row[key] for key in record_fields},
+        **{key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
+           for key in record_fields},
     )
 
 
