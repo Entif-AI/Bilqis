@@ -29,6 +29,9 @@ def execute_horizon(
     steps, candidate = [], None
     for ordinal in range(1, horizon + 1):
         candidate_step_started_at = time.perf_counter()
+        begin_step = getattr(observer, 'begin_step', None)
+        if callable(begin_step):
+            begin_step(ordinal, parent.retained_state.optimizer_step + ordinal)
         source_prepare_started = candidate_step_started_at
         source_rows = rows if source_lane is None else source_lane.rows(ordinal)
         source_prepare_wall_seconds = time.perf_counter() - source_prepare_started

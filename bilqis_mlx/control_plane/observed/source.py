@@ -9,7 +9,7 @@ from bilqis_mlx.mission_control.contracts.model import (
     AuthorityClass, CoverageState, RecordMeta, is_time,
 )
 from bilqis_mlx.mission_control.contracts.trainer import (
-    TrainerObservation, TrainerObservationV2,
+    TrainerObservation, TrainerObservationV2, TrainerObservationV3,
 )
 
 
@@ -20,6 +20,7 @@ MAX_FUTURE_SKEW_MS = 5_000
 _SCHEMAS = frozenset({
     'bilqis.bamf.trainer-observed/v1',
     'bilqis.bamf.trainer-observed/v2',
+    'bilqis.bamf.trainer-observed/v3',
 })
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
@@ -27,6 +28,9 @@ _OPTIONAL_FIELDS = frozenset(('error_code', 'error_detail'))
 _V2_FIELDS = {field.name for field in fields(TrainerObservationV2)} - {
     'meta', 'posture', 'connection_state'}
 _V2_ONLY = _V2_FIELDS - _FIELDS
+_V3_FIELDS = {field.name for field in fields(TrainerObservationV3)} - {
+    'meta', 'posture', 'connection_state'}
+_V3_ONLY = _V3_FIELDS - _V2_FIELDS
 
 
 def process_exists(pid: int) -> bool:
@@ -63,13 +67,21 @@ def _record(row, runs, now_ms):
         source_refs=(f"trainer-observed:{row['observation_id']}",),
     )
     record_type = (
+        TrainerObservationV3 if _V3_ONLY <= set(row) else
         TrainerObservationV2 if _V2_ONLY <= set(row) else TrainerObservation)
-    record_fields = _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS
+    record_fields = (
+        _V3_FIELDS if record_type is TrainerObservationV3 else
+        _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS)
+    values = {
+        key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
+        for key in record_fields
+    }
+    if record_type is TrainerObservationV3:
+        from bilqis_mlx.mission_control.contracts.trainer import CandidateStepPerformance
+        values['candidate_steps'] = tuple(
+            CandidateStepPerformance(**item) for item in values['candidate_steps'])
     return record_type(
-        meta=meta, posture='OBSERVED', connection_state=state,
-        **{key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
-           for key in record_fields},
-    )
+        meta=meta, posture='OBSERVED', connection_state=state, **values)
 
 
 def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObservation, ...]:

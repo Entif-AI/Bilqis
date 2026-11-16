@@ -84,6 +84,23 @@ class ObservedSourceTests(unittest.TestCase):
         self.assertEqual(row.c08_gradient_launches, 1)
         self.assertEqual(row.compiled_positions, 32)
 
+    def test_v3_snapshot_projects_bounded_step_history(self):
+        step = {key: value for key, value in performance().items()
+                if key not in {'retention_wall_seconds',
+                               'evidence_finalization_wall_seconds',
+                               'publishing_wall_seconds'}}
+        step.update(candidate_step=1, candidate_optimizer_step=8)
+        self.write(
+            visit(**performance(), candidate_steps=[step]),
+            schema='bilqis.bamf.trainer-observed/v3')
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=True):
+            row = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(row.schema_version,
+                         'bilqis.bamf.mission-control.trainer-observation/v3')
+        self.assertEqual(len(row.candidate_steps), 1)
+        self.assertEqual(row.candidate_steps[0].candidate_step, 1)
+        self.assertEqual(row.candidate_steps[0].b11_provider_draw_count, 16)
+
     def test_millisecond_heartbeat_projects_unix_seconds_without_changing_liveness_age(self):
         heartbeat_ms = 1_763_218_800_123
         self.write(visit(observed_at=heartbeat_ms))

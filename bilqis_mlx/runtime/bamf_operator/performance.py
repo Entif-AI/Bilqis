@@ -46,12 +46,16 @@ def observe_completed_step(observer, step, candidate) -> None:
             name: cost[name] for name in STEP_COST_FIELDS
             if isinstance(cost, dict) and name in cost
         }
-        observer.update(
+        payload = dict(
             candidate_step=candidate.update_steps,
             candidate_optimizer_step=candidate.parent.optimizer_step
             + candidate.update_steps,
-            **fields,
-        )
+            **fields)
+        complete_step = getattr(observer, "complete_step", None)
+        if callable(complete_step):
+            complete_step(**payload)
+        else:
+            observer.update(**payload)
     except Exception:
         pass
 
