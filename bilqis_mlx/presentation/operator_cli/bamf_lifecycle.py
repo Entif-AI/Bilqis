@@ -164,6 +164,7 @@ def _resume(args, requested_topology):
 
     run_dir = Path(args.run_dir).expanduser().resolve()
     request = None
+    flywheel = None
     if args.atlas_admission_scope is not None:
         if not args.admission_policy_explicit or args.admission_policy != "atlas-release":
             invalid("BAMF_ATLAS_SCOPE_REQUIRES_EXPLICIT_POLICY")
@@ -213,12 +214,15 @@ def _resume(args, requested_topology):
             identity = _validate_resume_overrides(args, student)
             atlas = _accepted_atlas(run_dir, identity)
 
-    return _report(
+    report = _report(
         result=result, run_identity=identity, topology=student.topology, atlas=atlas,
         policy=policy, hp=student.optimizer_hyperparameters,
         source_prefetch_workers=args.source_prefetch_workers,
         manifest_sha256=manifest_sha256,
     )
+    if flywheel is not None:
+        report.update(admission_reason=flywheel.reason, admission_advances=flywheel.advances)
+    return report
 
 
 def _cold_recovery(args, topology, atlas, hp):

@@ -79,7 +79,12 @@ def _dispatch_bamf_resume(args, run_dir: Path, report):
                 progress=progress)
         operator_report = asdict(result)
         if admission_status is not None:
+            from bilqis_mlx.errors.authority import authority_label
             operator_report["admission_status"] = admission_status
+            operator_report["admission_label"] = authority_label(admission_status, domain="admission")
+            for field in ("admission_reason", "admission_advances"):
+                if field in report:
+                    operator_report[field] = report[field]
         return True, _print_status(operator_report), None
     return True, _print_status(report), None
 

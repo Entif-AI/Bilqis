@@ -98,14 +98,16 @@ class ExamsProjection:
             if isinstance(decision, dict) and decision.get("grade") == g)
         withheld = tuple(cap for cap in event.get("withheld_capabilities", ())
                          if isinstance(cap, str))
+        partial = (" | PARTIAL EXAM | NOT_MEASURED: " + ", ".join(sorted(withheld))
+                   if withheld else "")
         if event.get("flash_scheduler_only") is True:
-            return f"FLASH SAMPLE {correct}/{total} | NO TITLES",champion
+            return f"FLASH SAMPLE {correct}/{total} | NO TITLES" + partial,champion
         if earned:
             detail = ", ".join(f"{cap} {caps[cap][0]}/{caps[cap][1]}"
                                for cap in earned if cap in caps)
             self.board.push("system", {"kind": "CHAMPION", "grade": g,
                 "detail": f"Titles moved: {detail} | step {step}"}, redraw=False)
-            return f"TITLE MOVED {len(earned)} | SAMPLE {correct}/{total}",champion
+            return f"TITLE MOVED {len(earned)} | SAMPLE {correct}/{total}" + partial,champion
         if live and isinstance(event.get("championship_epoch"), dict):
             settled = tuple(decision for decision in title_decisions
                             if decision.get("decision") == "TITLE_MATCH_ALREADY_SETTLED")
@@ -121,7 +123,10 @@ class ExamsProjection:
                 self.board.push("system", {"kind": "CHAMPION", "grade": g,
                     "detail": ("No title decision; withheld NOT_MEASURED: " +
                                ", ".join(sorted(withheld)) + f" | step {step}")}, redraw=False)
-            return label,champion
+            return label + partial,champion
+        if withheld:
+            return (f"PARTIAL EXAM | SAMPLE {correct}/{total} | NOT_MEASURED: " +
+                    ", ".join(sorted(withheld))), champion
         if champion and correct < total:
             return f"CURRENT REGRESSION | SAMPLE {correct}/{total}",champion
         if champion:

@@ -450,6 +450,15 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1197-rejection-continue-20261115",
       "head_sha_role": "exact #1197 semantic implementation, review repairs, repeated-rejection replay proof and CP07 compatibility head before this flow-control receipt commit"
+    },
+    {
+      "issue": 1295,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "d5e3b7c3a5cec07dea7b6c0ceb30436213ee8ca6",
+      "summary": "#1286.E operator error taxonomy and producer/presentation mapping; isolated serialized writer.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1295-operator-error-semantics-20261116"
     }
   ]
 }

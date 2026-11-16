@@ -20,7 +20,7 @@ from bilqis_mlx.source_adapters.atom_binding import (
 
 
 def _invalid(reason):
-    ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+    ErrorBus.Raise(SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID, reason=reason)
 
 
 def bind_source_handoff(compiled_row, config, source, snapshot):

@@ -6,7 +6,7 @@ from bilqis_mlx.learning.frame_embeddings.requests import FeatureRequest
 
 def _invalid():
     ErrorBus.Raise(
-        SCHOOL.MODEL_TOPOLOGY.INVALID,
+        SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID,
         reason="B11_SOURCE_EXECUTION_FEATURE_AUTHORITY_INVALID")
 
 
