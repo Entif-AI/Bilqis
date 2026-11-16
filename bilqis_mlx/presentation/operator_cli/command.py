@@ -59,14 +59,13 @@ def _reject_fresh_external_legacy_fallthrough(args, run_dir: Path) -> None:
         invalid("BAMF_OPERATOR_FRESH_EXTERNAL_RUN_REQUIRES_FOUNDATION_INPUTS")
 
 
-def _dispatch_bamf_resume(args, run_dir: Path, report):
+def _dispatch_bamf_resume(args, run_dir: Path, report, parent_graph=None):
     admission_status = _bamf_operator_admission_status(report)
     if (args.human_run and not args.dry_run
             and admission_status is not False):
         from dataclasses import asdict
         from bilqis_mlx.control_plane.active_endpoint import advertise_active_endpoint
         from bilqis_mlx.runtime.bamf_operator import operate_bamf
-
         def progress(message):
             print("BAMF TRAINER: " + message, file=sys.stderr, flush=True)
 
@@ -76,9 +75,10 @@ def _dispatch_bamf_resume(args, run_dir: Path, report):
                 max_visits=args.max_visits, steps_per_visit=args.steps_per_visit,
                 reserve_gib=args.reserve_gib,
                 source_prefetch_workers=args.source_prefetch_workers,
+                parent_graph=parent_graph,
                 progress=progress)
         operator_report = asdict(result)
-        if admission_status is not None:
+        if operator_report.get("admission_status") is None and admission_status is not None:
             operator_report["admission_status"] = admission_status
         return True, _print_status(operator_report), None
     return True, _print_status(report), None
@@ -131,9 +131,10 @@ def _bamf_or_topology(args):
              or args.bamf_v2_foundation_explicit)
     )
     if resume_v2_intent:
-        from .bamf_lifecycle import bamf_lifecycle
-        report = bamf_lifecycle(args, None)
-        return _dispatch_bamf_resume(args, run_dir, report)
+        from .bamf_lifecycle import _resume_runtime_context
+        report, parent_graph = _resume_runtime_context(args, None)
+        return _dispatch_bamf_resume(
+            args, run_dir, report, parent_graph=parent_graph)
 
     _reject_fresh_external_legacy_fallthrough(args, run_dir)
 

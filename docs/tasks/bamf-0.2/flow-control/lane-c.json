@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "d280a3e8d47efdba34e1262ffa59018d93f7c443",
-  "updated_at": "2026-11-15T09:19:59+00:00",
+  "observed_unified": "e6e327e60935e69c7ce70a031f6aae639fbbd745",
+  "updated_at": "2026-11-16T05:23:13+00:00",
   "exception": null,
   "items": [
     {
@@ -450,6 +450,15 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1197-rejection-continue-20261115",
       "head_sha_role": "exact #1197 semantic implementation, review repairs, repeated-rejection replay proof and CP07 compatibility head before this flow-control receipt commit"
+    },
+    {
+      "issue": 1293,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "e6e327e60935e69c7ce70a031f6aae639fbbd745",
+      "summary": "Issue #1293 is active on an isolated branch from reviewed unified e6e327e6. It owns the persistent BAMF runtime composition seam only: after an accepted retained visit, re-enter the existing accepted C07 flywheel under the lineage-bound foundation graph and persisted lease, preserve typed hold/fixed-point/evidence states, and require the next visit to cold-reconstruct accepted learner/release/semantic custody before any further neural execution. No background admission loop, duplicate planner, or live human learner mutation.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1293-c07-flywheel-reentry-20261115"
     }
   ]
 }

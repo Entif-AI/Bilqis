@@ -159,7 +159,15 @@ def _validate_resume_atlas_override(args, atlas):
             invalid("BAMF_OPERATOR_RESUME_ATLAS_MANIFEST_CONFLICT")
 
 
-def _resume(args, requested_topology):
+def _validated_resume_parent_graph(args, identity):
+    source, release, graph = source_foundation(args.source_run_dir)
+    from bilqis_mlx.runtime.state import _fingerprint
+    if _fingerprint(graph) != identity.semantic_graph_sha256:
+        invalid("BAMF_OPERATOR_RESUME_SOURCE_GRAPH_CONFLICT")
+    return source, release, graph
+
+
+def _resume(args, requested_topology, *, include_parent_graph=False):
     from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
 
     run_dir = Path(args.run_dir).expanduser().resolve()
@@ -179,6 +187,7 @@ def _resume(args, requested_topology):
     atlas = _accepted_atlas(run_dir, identity)
     identity = _validate_resume_overrides(args, student)
     _validate_resume_atlas_override(args, atlas)
+    parent_graph = None
 
     if request is not None:
         from bilqis_mlx.runtime.atlas_admission import enroll_accepted_atlas_lease_v2
@@ -205,20 +214,27 @@ def _resume(args, requested_topology):
             from bilqis_mlx.runtime.atlas_flywheel_runtime import (
                 run_accepted_atlas_flywheel,
             )
-            _source, _release, graph = source_foundation(args.source_run_dir)
+            _source, _release, parent_graph = _validated_resume_parent_graph(
+                args, identity)
             flywheel = run_accepted_atlas_flywheel(
-                run_dir, graph, reserve_gib=args.reserve_gib)
+                run_dir, parent_graph, reserve_gib=args.reserve_gib)
             result = flywheel.status.value
             student, manifest_sha256 = load_bamf_generation_authority(pointer)
             identity = _validate_resume_overrides(args, student)
             atlas = _accepted_atlas(run_dir, identity)
 
-    return _report(
+    report = _report(
         result=result, run_identity=identity, topology=student.topology, atlas=atlas,
         policy=policy, hp=student.optimizer_hyperparameters,
         source_prefetch_workers=args.source_prefetch_workers,
         manifest_sha256=manifest_sha256,
     )
+    return (report, parent_graph) if include_parent_graph else report
+
+
+def _resume_runtime_context(args, requested_topology):
+    """Return the public resume report plus its validated ephemeral parent graph."""
+    return _resume(args, requested_topology, include_parent_graph=True)
 
 
 def _cold_recovery(args, topology, atlas, hp):

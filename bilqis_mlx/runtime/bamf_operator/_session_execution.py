@@ -166,7 +166,7 @@ def operate(
         source_prefetch_workers, progress, max_horizon, worker_counts,
         invalid, metrics_type, source_pool_factory, null_context,
         operator_lock, visit_fn, observer_type, emit_progress,
-        monotonic, load_generation, result_type):
+        monotonic, load_generation, result_type, accepted_reentry=None):
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
             or max_visits < 0 or type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= max_horizon
@@ -177,6 +177,8 @@ def operate(
     run_dir = run_dir.resolve()
     deadline = monotonic() + minutes * 60
     visits = accepted = rejected = 0
+    admission_status = None
+    admission_advances = 0
     status = "TIME_LIMIT"
     metrics = metrics_type()
     source_pool = (
@@ -202,6 +204,14 @@ def operate(
                 rejected += 1
                 continue
             accepted += 1
+            if accepted_reentry is not None:
+                (
+                    admission_status, advances, stop_status,
+                ) = accepted_reentry(run_dir, reserve_gib, progress)
+                admission_advances += advances
+                if stop_status is not None:
+                    status = stop_status
+                    break
         else:
             status = "VISIT_LIMIT" if max_visits and visits >= max_visits else "TIME_LIMIT"
     current = load_generation(run_dir)
@@ -212,4 +222,6 @@ def operate(
         source_prefetch_wait_seconds=metrics.wait_seconds,
         source_prefetch_overlap_seconds=metrics.overlap_seconds,
         source_prefetch_prepared_steps=metrics.prepared_steps,
-        source_prefetch_serial_steps=metrics.serial_steps)
+        source_prefetch_serial_steps=metrics.serial_steps,
+        admission_status=admission_status,
+        admission_advances=admission_advances)
