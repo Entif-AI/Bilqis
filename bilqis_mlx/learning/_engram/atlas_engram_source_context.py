@@ -10,7 +10,7 @@ from bilqis_mlx.semantics.atlas.snapshot import (
 from bilqis_mlx.semantics.atlas_projection import FrozenAtlasSnapshot
 from bilqis_mlx.semantics.context_eligibility import (
     ApprovedContextProjection, ContextHold, ContextPolicy, SourceFrontier,
-    TaskScope,
+    TaskScope, project_context,
 )
 from bilqis_mlx.semantics.frame_adapters.common import (
     BOOLEAN_COMPOSITE_ADAPTER, BOOLEAN_CONNECTIVE_ADAPTER,
@@ -19,12 +19,15 @@ from bilqis_mlx.semantics.frame_adapters.common import (
 )
 from bilqis_mlx.semantics.frame_adapters.public_formal import public_formal_context
 from bilqis_mlx.semantics.frame_adapters.public_formal_grants import (
-    issue_source_schema_grants,
+    _issue_source_schema_grants_from_snapshot, issue_source_schema_grants,
 )
 from bilqis_mlx.semantics.frame_adapters.public_formal_schema_rights import (
     issue_source_schema_rights_authority, source_schema_rights_frontier,
 )
 from bilqis_mlx.semantics.frame_adapters.public_formal_sources import canonical_graph
+from bilqis_mlx.semantics.frame_adapters.public_formal_sources import (
+    _require_public_formal_projection_authority,
+)
 from bilqis_mlx.semantics.frame_schema import FrameInstance, validate_frame_bindings
 from bilqis_mlx.semantics.released_frame_schemas import (
     _load_pinned_released_frame_schemas_from_snapshot,
@@ -180,6 +183,74 @@ def qualify_source_motif_context(
         task_scope=task_scope,
         source_frontier=issued_frontier,
         policy=policy,
+    )
+    qualified = _qualified_motif_inputs(
+        projection, snapshot, source_adapter, atlas_selection, source_root, graph)
+    return projection, qualified, issued_frontier
+
+
+def qualify_prepared_source_motif_context(
+    source_adapter: RegisteredSourceAdapter,
+    projection: ApprovedContextProjection,
+    prepared_frontier: SourceFrontier,
+    atlas_selection: AtlasArtifactSelection,
+    *,
+    source_root: str | Path,
+    graph: dict,
+    task_scope: TaskScope,
+    source_frontier: SourceFrontier,
+    policy: ContextPolicy,
+    snapshot: FrozenAtlasSnapshot,
+) -> tuple[ApprovedContextProjection, tuple[MotifFrameInput, ...], SourceFrontier]:
+    """Rebind a source-owner projection without replaying its provider proof."""
+    if (not isinstance(source_adapter, RegisteredSourceAdapter)
+            or type(projection) is not ApprovedContextProjection
+            or type(atlas_selection) is not AtlasArtifactSelection
+            or type(snapshot) is not FrozenAtlasSnapshot
+            or type(task_scope) is not TaskScope
+            or type(prepared_frontier) is not SourceFrontier
+            or type(source_frontier) is not SourceFrontier
+            or type(policy) is not ContextPolicy
+            or (snapshot.release_sha256, snapshot.bundle_id,
+                snapshot.source_bundle_id) != (
+                    atlas_selection.release_sha256, atlas_selection.bundle_id,
+                    atlas_selection.source_bundle_id)
+            or snapshot.release_sha256 != task_scope.semantic_release):
+        _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_INVALID")
+    adapter_id = source_adapter.descriptor.adapter_id
+    _require_public_formal_projection_authority(projection, adapter_id)
+    rights_authority = issue_source_schema_rights_authority(atlas_selection)
+    owner_frontier = source_schema_rights_frontier(rights_authority)
+    if (prepared_frontier.rights_epoch != owner_frontier.rights_epoch
+            or prepared_frontier.correction_generation
+            != owner_frontier.correction_generation
+            or source_frontier.rights_epoch != owner_frontier.rights_epoch
+            or source_frontier.correction_generation
+            != owner_frontier.correction_generation):
+        _invalid("BAMF_MOTIF_SOURCE_AUTHORITY_STALE")
+    if policy.rights_epoch != owner_frontier.rights_epoch:
+        _invalid("BAMF_MOTIF_SOURCE_POLICY_STALE")
+    replayed = project_context(
+        projection.envelopes, task_scope, prepared_frontier, policy)
+    if type(replayed) is not ApprovedContextProjection or replayed != projection:
+        _invalid("BAMF_MOTIF_SOURCE_PREPARED_CONTEXT_DRIFT")
+    grants = {item.source_handle: item for item in source_frontier.grants}
+    for grant in prepared_frontier.grants:
+        prior = grants.get(grant.source_handle)
+        if prior is not None and prior != grant:
+            _invalid("BAMF_MOTIF_SOURCE_PREPARED_FRONTIER_DRIFT")
+        grants[grant.source_handle] = grant
+    source_frontier = SourceFrontier(
+        source_frontier.rights_epoch, source_frontier.correction_generation,
+        tuple(sorted(grants.values(), key=lambda item: item.source_handle)))
+    issued_frontier = _issue_source_schema_grants_from_snapshot(
+        projection,
+        source_adapter_id=adapter_id,
+        atlas_selection=atlas_selection,
+        task_scope=task_scope,
+        source_frontier=source_frontier,
+        policy=policy,
+        snapshot=snapshot,
     )
     qualified = _qualified_motif_inputs(
         projection, snapshot, source_adapter, atlas_selection, source_root, graph)

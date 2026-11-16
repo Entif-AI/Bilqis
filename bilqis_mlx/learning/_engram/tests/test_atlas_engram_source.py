@@ -13,6 +13,10 @@ from bilqis_mlx.learning.atlas_engram import MotifBudget
 from bilqis_mlx.learning.atlas_engram_source import (
     ApprovedMotifCandidate, prepare_source_qualified_motifs,
 )
+from bilqis_mlx.learning._engram.atlas_engram_source_context import (
+    qualify_prepared_source_motif_context, qualify_source_motif_context,
+)
+from bilqis_mlx.b11_observation import source_replay_observation
 from bilqis_mlx.learning.atlas_candidate import CandidateState, begin_candidate
 from bilqis_mlx.learning.atlas_plasticity import IdentityRowAge, PlasticityPolicy
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
@@ -170,6 +174,37 @@ class SourceQualifiedMotifTests(TestCase):
         projection, replayed_frontier = replayed
         self.assertEqual(projection.digest, candidate.approved_context_digest)
         self.assertEqual(replayed_frontier, frontier)
+
+    def test_prepared_motif_context_matches_cold_replay_without_provider_draw(self):
+        from bilqis_mlx.semantics.atlas.snapshot import load_pinned_atlas_snapshot
+        from bilqis_mlx.semantics.frame_adapters import public_formal_context
+        from bilqis_mlx.semantics.frame_adapters.public_formal_schema_rights import (
+            issue_source_schema_rights_authority, source_schema_rights_frontier,
+        )
+
+        (selection, source_root, graph, adapter, row, task, policy,
+         seed, each, profile) = self._case()
+        snapshot = load_pinned_atlas_snapshot(selection)
+        owner_frontier = source_schema_rights_frontier(
+            issue_source_schema_rights_authority(selection))
+        prepared_projection, prepared_frontier = public_formal_context(
+            adapter, row, snapshot, source_root=source_root, graph=graph,
+            task_scope=task, source_frontier=owner_frontier, policy=policy,
+            source_seed=seed, source_each=each,
+            source_profile_parameters=profile)
+        cold = qualify_source_motif_context(
+            adapter, row, selection, source_root=source_root, graph=graph,
+            task_scope=task, source_frontier=owner_frontier, policy=policy,
+            source_seed=seed, source_each=each,
+            source_profile_parameters=profile, snapshot=snapshot)
+        with source_replay_observation() as observed:
+            prepared = qualify_prepared_source_motif_context(
+                adapter, prepared_projection, prepared_frontier, selection,
+                source_root=source_root, graph=graph, task_scope=task,
+                source_frontier=owner_frontier, policy=policy, snapshot=snapshot)
+        self.assertEqual(prepared, cold)
+        self.assertEqual(observed, {
+            "provider_draws": 0, "provider_checks": 0, "atlas_reloads": 0})
 
     def test_source_replay_rejects_tampered_row_and_graph(self):
         selection, _, graph, _, row, *_ = self._case()

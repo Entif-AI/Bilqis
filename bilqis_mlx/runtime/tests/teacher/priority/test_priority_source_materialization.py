@@ -19,6 +19,9 @@ class _Owner:
     def require_row(self, *_args):
         self.requires += 1
 
+    def require_current(self):
+        self.requires += 1
+
 
 class _Registrar:
     def __init__(self):
@@ -34,6 +37,7 @@ def test_selected_source_ast_context_and_prefix_materialize_once_per_visit():
     model_sources = (SimpleNamespace(prefix=prefix),)
     source_rows = (SimpleNamespace(row=rows[0]),)
     feature_owner, packed_owner, source_owner = _Owner(), _Owner(), _Owner()
+    b11_source = _Owner()
     registrar = _Registrar()
     authenticated = SimpleNamespace(features="features")
     offer = SimpleNamespace(
@@ -54,7 +58,9 @@ def test_selected_source_ast_context_and_prefix_materialize_once_per_visit():
             "bilqis_mlx.runtime.factory_training_bridge._prepare_factory_source_rows",
             return_value=("adapter", "manifest", "profile", source_rows)) as prepare, patch(
                 "bilqis_mlx.runtime.priority_source_materialization._prepare_model_sources",
-                return_value=model_sources) as compile_sources, patch(
+                return_value=(model_sources, ("config",))) as compile_sources, patch(
+                    "bilqis_mlx.runtime.factory_training_bridge._prepare_b11_source_binding",
+                    return_value=b11_source) as prepare_b11, patch(
                     "bilqis_mlx.runtime.factory_training_bridge._motif_planning_input",
                     return_value="motif") as motif, patch(
                         "bilqis_mlx.runtime.priority_source_materialization._owners",
@@ -67,7 +73,9 @@ def test_selected_source_ast_context_and_prefix_materialize_once_per_visit():
     assert type(first) is PreparedPrioritySourceMaterialization
     assert second is first
     prepare.assert_called_once()
+    assert prepare.call_args.kwargs["source_authority"] is offer.source_authority
     compile_sources.assert_called_once()
+    prepare_b11.assert_called_once()
     motif.assert_called_once()
     assert context._source_preparation_metrics.source_context_builds == 1
     assert context._source_preparation_metrics.compiled_source_builds == 1
@@ -75,3 +83,4 @@ def test_selected_source_ast_context_and_prefix_materialize_once_per_visit():
     assert feature_owner.requires == 2
     assert packed_owner.requires == 2
     assert source_owner.requires == 2
+    assert b11_source.requires == 2

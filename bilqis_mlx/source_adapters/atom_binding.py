@@ -11,7 +11,7 @@ from ..semantics.source_atom_binding import (
 )
 from .school import live_source_registry
 from .atoms.authority import project_verified_row, require_canonical_graph
-from bilqis_mlx.b11_observation import note_provider_draw
+from bilqis_mlx.b11_observation import note_provider_check, note_provider_draw
 
 
 def _invalid(reason: str) -> None:
@@ -24,6 +24,56 @@ def _invalid(reason: str) -> None:
 
 def _text(value: object) -> bool:
     return isinstance(value, str) and bool(value)
+
+
+def _verified_source_row_witness(
+    row: object,
+    *,
+    expected_adapter_id: str | None = None,
+) -> tuple[SourceRowWitness | None, str | None]:
+    """Derive row identity after an upstream owner already proved draw/check."""
+    if (not isinstance(row, dict)
+            or not isinstance(row.get("tokens"), list)
+            or not row["tokens"]
+            or any(type(item) is not int or item < 0 for item in row["tokens"])
+            or not all(_text(row.get(name)) for name in (
+                "generator", "oracle", "capability"))):
+        return None, "SOURCE_ATOM_SOURCE_ROW_INVALID"
+    try:
+        canonical = live_source_registry().resolve_owner(row["generator"])
+    except (KeyError, TypeError, ValueError, BilqisError):
+        return None, "SOURCE_ATOM_SOURCE_ADAPTER_UNSUPPORTED"
+    if (expected_adapter_id is not None
+            and canonical.descriptor.adapter_id != expected_adapter_id):
+        return None, "SOURCE_ATOM_SOURCE_ADAPTER_UNSUPPORTED"
+    sense = row.get("source_sense_id")
+    if not _text(sense):
+        sense = "UNDECLARED_SOURCE_SENSE"
+    accepted_oracles = canonical.descriptor.accepted_oracle_ids
+    if row["oracle"] in accepted_oracles:
+        oracle_id = row["oracle"]
+    elif len(accepted_oracles) == 1:
+        oracle_id = accepted_oracles[0]
+    else:
+        return None, "SOURCE_ATOM_SOURCE_ROW_UNVERIFIED"
+    return SourceRowWitness(
+        canonical.descriptor.adapter_id,
+        canonical.descriptor.generator_id,
+        oracle_id,
+        row["capability"],
+        sense,
+        tuple(row["tokens"]),
+    ), None
+
+
+def _require_witness_matches_row(witness: SourceRowWitness, row: dict) -> None:
+    if type(witness) is not SourceRowWitness:
+        _invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_WITNESS_DRIFT")
+    witness.__post_init__()
+    derived, reason = _verified_source_row_witness(
+        row, expected_adapter_id=witness.source_adapter_id)
+    if derived != witness:
+        _invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_WITNESS_DRIFT:" + str(reason))
 
 
 def verify_source_row(
@@ -67,6 +117,7 @@ def verify_source_row(
     try:
         note_provider_draw()
         rows = canonical.draw(**draw_args)
+        note_provider_check()
         checked = canonical.check(
             row, source_root=Path(source_root), graph=graph, course=course)
     except (KeyError, OSError, TypeError, ValueError, BilqisError):
@@ -75,24 +126,30 @@ def verify_source_row(
             or not any(candidate == row for candidate in rows)
             or checked is not True):
         return None, "SOURCE_ATOM_SOURCE_ROW_UNVERIFIED"
-    sense = row.get("source_sense_id")
-    if not _text(sense):
-        sense = "UNDECLARED_SOURCE_SENSE"
-    accepted_oracles = canonical.descriptor.accepted_oracle_ids
-    if row["oracle"] in accepted_oracles:
-        oracle_id = row["oracle"]
-    elif len(accepted_oracles) == 1:
-        oracle_id = accepted_oracles[0]
-    else:
-        return None, "SOURCE_ATOM_SOURCE_ROW_UNVERIFIED"
-    return SourceRowWitness(
-        canonical.descriptor.adapter_id,
-        canonical.descriptor.generator_id,
-        oracle_id,
-        row["capability"],
-        sense,
-        tuple(row["tokens"]),
-    ), None
+    return _verified_source_row_witness(
+        row, expected_adapter_id=canonical.descriptor.adapter_id)
+
+
+def _build_source_atom_handoff_from_witness(
+    compiled: CompiledFrameBatch,
+    config: FrameCompilerConfig,
+    selection: AtlasArtifactSelection,
+    snapshot,
+    source_row: dict,
+    graph: dict,
+    witness: SourceRowWitness,
+    *,
+    source_root: str | Path,
+) -> SourceAtomHandoff:
+    if ((snapshot.release_sha256, snapshot.bundle_id, snapshot.source_bundle_id)
+          != (selection.release_sha256, selection.bundle_id,
+              selection.source_bundle_id)):
+        _invalid("BAMF_SOURCE_ATOM_SOURCE_DRIFT")
+    _require_witness_matches_row(witness, source_row)
+    graph = require_canonical_graph(source_row, graph, source_root)
+    source_projection = project_verified_row(source_row, graph, snapshot, witness)
+    return _resolve_visible_atoms(
+        compiled, config, snapshot, witness, graph, source_projection=source_projection)
 
 
 def _build_source_atom_handoff_from_snapshot(
@@ -123,9 +180,9 @@ def _build_source_atom_handoff_from_snapshot(
     )
     if witness is None:
         _invalid("BAMF_SOURCE_ATOM_SOURCE_ROW_HELD:" + str(reason))
-    source_projection = project_verified_row(source_row, graph, snapshot, witness)
-    return _resolve_visible_atoms(
-        compiled, config, snapshot, witness, graph, source_projection=source_projection)
+    return _build_source_atom_handoff_from_witness(
+        compiled, config, selection, snapshot, source_row, graph, witness,
+        source_root=source_root)
 
 
 def build_source_atom_handoff(
