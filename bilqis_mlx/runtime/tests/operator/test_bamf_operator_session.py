@@ -150,6 +150,8 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 return_value=decision) as decide, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
                 return_value=successor) as derive, patch(
+                "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
+                return_value=successor), patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
                 return_value=SimpleNamespace(used=123)):
             prepared = prepare_bamf_visit(Path("/run"), steps_per_visit=16)
@@ -268,7 +270,9 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                     "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
                     return_value=decision), patch(
                     "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
-                    return_value=successor) as derive:
+                    return_value=successor) as derive, patch(
+                    "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
+                    return_value=successor):
                 prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
         self.assertIs(prepared.successor, successor)
         event = derive.call_args.kwargs["delivery_events"][0]

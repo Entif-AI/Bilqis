@@ -15,6 +15,7 @@ from bilqis_mlx.learning.atlas_retention_decision import (
     CandidateRetentionDecision, issue_factory_retention_decision,
 )
 from bilqis_mlx.runtime.factory_retention_owner import evaluate_factory_package_import
+from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
 
 from .contracts import PackageBinding, PackageKind, digest_string, invalid, name, require
 from .records import CognitivePackage
@@ -110,6 +111,7 @@ class ScreenedDeltaCandidate:
     candidate: DisposableDeltaCandidate
     transaction: PackageImportTransaction
     decision: CandidateRetentionDecision
+    baseline_ledger: BaselineLedger
     _issuance: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -127,6 +129,7 @@ class ScreenedDeltaCandidate:
         require(type(self.decision) is CandidateRetentionDecision,
                 "invalid screened decision")
         self.decision.__post_init__()
+        require(type(self.baseline_ledger) is BaselineLedger, "invalid baseline ledger")
         require(self.decision.parent_generation
                 == candidate_identity_digest(self.transaction.parent)
                 and self.decision.candidate_generation
@@ -291,10 +294,11 @@ def _issue_candidate(parent_generation, package, binding, parent_tensors, tensor
     return candidate
 
 
-def _issue_screened(candidate, transaction, decision):
+def _issue_screened(candidate, transaction, decision, baseline_ledger=None):
+    baseline_ledger = baseline_ledger or BaselineLedger.empty()
     screened = object.__new__(ScreenedDeltaCandidate)
     for key, value in (("candidate", candidate), ("transaction", transaction),
-                       ("decision", decision),
+                       ("decision", decision), ("baseline_ledger", baseline_ledger),
                        ("_issuance", _SCREEN_ISSUER)):
         object.__setattr__(screened, key, value)
     screened.__post_init__()
@@ -346,4 +350,4 @@ def screen_delta_candidate(
         source_context, transaction, str(artifact_path), target_capability,
         run_dir=run_dir)
     decision = issue_factory_retention_decision(evaluation)
-    return _issue_screened(candidate, transaction, decision)
+    return _issue_screened(candidate, transaction, decision, evaluation.baseline_ledger)

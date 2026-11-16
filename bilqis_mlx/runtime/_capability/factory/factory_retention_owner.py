@@ -6,16 +6,14 @@ from pathlib import Path
 from bilqis_mlx.fixed_frontier import load_frontier_cohort
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
 from bilqis_mlx.learning.atlas_package_import import PackageImportTransaction
-from bilqis_mlx.learning._atlas_candidate.identity_binding import (
-    candidate_identity_binding_for_state, candidate_identity_for_canonical_consumer,
-)
+from bilqis_mlx.learning._atlas_candidate.identity_binding import candidate_identity_for_canonical_consumer
 from bilqis_mlx.runtime.bamf_bundle.admission import (
     bind_accepted_execution_cache, derive_successor_bundle,
     load_accepted_generation,
 )
 from bilqis_mlx.runtime.capability_retention import (
     EvidenceKind, EvidenceStage,
-    case_census_digest, evaluate_capabilities, evaluate_retention_candidate,
+    case_census_digest, evaluate_capabilities,
 )
 from bilqis_mlx.state_dag import read_current
 from bilqis_mlx.fixed_frontier import frontier_exam
@@ -26,14 +24,12 @@ from .capability_retention_foundation import (
 )
 from .factory_complete_solver import factory_complete_solver
 from .factory_fixed_school import _bamf_fixed_school_cohort
-from ._factory_retention_support import _earned_protected_capabilities
-from ._factory_parent_assessment_cache import (
-    factory_parent_assessment_identity,
-    use_parent_assessment,
-)
 from ._factory_identity_evaluation import (
     FactoryRetentionEvaluation, _raw_issue_owner_evaluation,
     _require_factory_evaluation,
+)
+from .retention.screen import (
+    bind_factory_baseline_successor, bind_factory_evaluation_issuer,
 )
 
 
@@ -75,116 +71,9 @@ def _fixed_school_instruments(
         seed=fixed.seed)
 
 
-def _foundation_retention_screen(
-    source_context, parent, candidate_bundle, artifact_path, target_capability,
-    release, groups, training, fixed_instruments, cache, *, observer=None,
-):
-    fixed_cases = tuple(item.case for item in fixed_instruments)
-    protected = _earned_protected_capabilities(parent, target_capability)
-    admitted = {capability for capability, _ in groups}
-    if not set(protected) <= admitted - {target_capability}:
-        _invalid("BAMF_C05_EARNED_PROTECTION_NOT_ADMITTED")
-    policy = FoundationRetentionPolicy(
-        groups, tuple(dict.fromkeys(group for _, group in groups)),
-        tuple((capability, C05_PROTECTED_REFERENCE_LOSS)
-              for capability in protected),
-        C05_PROBE_EACH, case_census_digest(fixed_cases))
-    fixed_cohort = _cohort(
-        EvidenceKind.FIXED_SCHOOL, fixed_instruments, groups,
-        release, policy, training, evidence_stage=CURRENT_EVIDENCE_STAGE)
-    parent_solver, parent_generation = factory_complete_solver(
-        source_context, parent, artifact_path, fixed_instruments)
-    parent_identity = factory_parent_assessment_identity(
-        source_context, parent, cache, fixed_cohort, parent_solver,
-        parent_generation)
-    parent_assessment, parent_assessment_cache = use_parent_assessment(
-        parent_identity, parent_solver, fixed_cohort, parent_generation,
-        scope=cache)
-    candidate_solver, candidate_generation = factory_complete_solver(
-        source_context, candidate_bundle, artifact_path, fixed_instruments)
-    decision = evaluate_foundation_fixed_school_candidate(
-        parent_solver, candidate_solver, target_capability, policy, fixed_cohort,
-        parent_generation, candidate_generation,
-        parent_assessment=parent_assessment, **({"observer": observer} if observer is not None else {}))
-    return decision, parent, candidate_bundle, parent_assessment_cache
-
-
-def _adaptive_retention_screen(
-    source_context, parent, candidate_bundle, candidate_state, artifact_path,
-    target_capability, target_group, lesson_capabilities, release, groups,
-    training, fixed_instruments, cache, *, observer=None,
-):
-    candidate_sha256 = candidate_identity_digest(candidate_state)
-    fresh_seed = _owner_seed(
-        release.release_sha256, cache, target_capability, candidate_sha256)
-    target_draw = _fresh_rows(
-        source_context, (target_capability,),
-        seed=fresh_seed + C05_FRESH_TARGET_SEED_OFFSET, training=training)
-    lesson_draw = _fresh_rows(
-        source_context, lesson_capabilities,
-        seed=fresh_seed + C05_FRESH_LESSON_SEED_OFFSET, training=training)
-    target_instruments = _instruments(
-        source_context, candidate_bundle, artifact_path, target_draw.rows,
-        seed=target_draw.seed, each=C05_PROBE_EACH)
-    lesson_instruments = _instruments(
-        source_context, candidate_bundle, artifact_path, lesson_draw.rows,
-        seed=lesson_draw.seed, each=C05_PROBE_EACH)
-    policy, cohorts = _policy_and_cohorts(
-        release, groups, target_capability, target_group, training,
-        target_instruments, lesson_instruments, fixed_instruments,
-        evidence_stage=CURRENT_EVIDENCE_STAGE)
-    all_instruments = tuple(dict(
-        (item.case.case_id, item)
-        for item in (*target_instruments, *lesson_instruments, *fixed_instruments)
-    ).values())
-    parent_solver, parent_generation = factory_complete_solver(
-        source_context, parent, artifact_path, all_instruments)
-    candidate_solver, candidate_generation = factory_complete_solver(
-        source_context, candidate_bundle, artifact_path, all_instruments)
-    decision = evaluate_retention_candidate(
-        parent_solver, candidate_solver, target_capability, policy,
-        cohorts, parent_generation, candidate_generation, **({"observer": observer} if observer is not None else {}))
-    return decision, parent, candidate_bundle
-
-
-def _bind_factory_evaluation_issuer(raw_issue):
-    """Bind issuance to the two Factory-owned screens without exporting a mint."""
-    def issue(result):
-        from bilqis_mlx.runtime.bamf_bundle.genesis.records import (
-            successor_candidate_identity_digest,
-        )
-        from bilqis_mlx.runtime.bamf_bundle.motif.transition import (
-            is_motif_allocation_transition,
-        )
-        decision, parent, candidate, cache = result
-        generation_authority = (
-            successor_candidate_identity_digest(candidate)
-            if is_motif_allocation_transition(getattr(candidate, "transition", {}))
-            else None)
-        return raw_issue(
-            decision,
-            candidate_identity_digest(parent.retained_state),
-            candidate_identity_digest(candidate.retained_state),
-            generation_authority,
-            cache,
-            parent_state=parent.retained_state,
-            candidate_state=candidate.retained_state,
-            parent_binding=candidate_identity_binding_for_state(parent.retained_state),
-            candidate_binding=candidate_identity_binding_for_state(
-                candidate.retained_state),
-        )
-
-    def foundation(*args, **kwargs):
-        return issue(_foundation_retention_screen(*args, **kwargs))
-
-    def adaptive(*args, **kwargs):
-        return issue(_adaptive_retention_screen(*args, **kwargs))
-
-    return foundation, adaptive
-
-
 _foundation_retention_evaluation, _adaptive_retention_evaluation = (
-    _bind_factory_evaluation_issuer(_raw_issue_owner_evaluation))
+    bind_factory_evaluation_issuer(
+        _raw_issue_owner_evaluation, CURRENT_EVIDENCE_STAGE))
 del _raw_issue_owner_evaluation
 
 
@@ -315,6 +204,7 @@ def evaluate_factory_package_import(
 
 
 __all__ = (
-    "FactoryRetentionEvaluation", "evaluate_factory_package_import",
+    "FactoryRetentionEvaluation", "bind_factory_baseline_successor",
+    "evaluate_factory_package_import",
     "evaluate_factory_retention_candidate",
 )

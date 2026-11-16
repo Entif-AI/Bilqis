@@ -39,21 +39,27 @@ def candidate_identity_digest(state) -> str:
 def _new_binding_owner():
     """Track live acceptance bindings by mint-owned object identity."""
     issued = {}
+    baseline_ledger_sha256 = {}
 
     def require(value):
         if issued.get(id(value)) is not value:
             _invalid()
         return value
 
-    def issue(values):
+    def issue(values, *, expected_baseline_ledger_sha256=None):
         binding = object.__new__(AcceptedCandidateBinding)
         for name, value in values:
             object.__setattr__(binding, name, value)
         issued[id(binding)] = binding
+        baseline_ledger_sha256[id(binding)] = expected_baseline_ledger_sha256
         binding.__post_init__()
         return binding
 
-    return require, issue
+    def issued_baseline_ledger_sha256(value):
+        require(value)
+        return baseline_ledger_sha256.get(id(value))
+
+    return require, issued_baseline_ledger_sha256, issue
 
 
 def _invalid() -> None:
@@ -215,7 +221,8 @@ class AcceptedCandidateBinding:
         return parse_accepted_candidate_binding(record)
 
 
-_require_issued_binding, _raw_issue_binding = _new_binding_owner()
+(_require_issued_binding, _issued_acceptance_baseline_ledger_sha256,
+ _raw_issue_binding) = _new_binding_owner()
 
 
 def _binding_schema(decision, generation_authority_sha256, teacher_state_sha256):
@@ -274,7 +281,7 @@ def _make_acceptance_minter(raw_issue):
     ) -> AcceptedCandidateBinding:
         """Bind a C05-approved decision to the exact B12 optimizer state."""
         from .atlas_retention_decision import (
-            _require_issued_decision,
+            _issued_decision_baseline_ledger_sha256, _require_issued_decision,
         )
 
         state_digest = candidate_identity_digest(state)
@@ -282,6 +289,7 @@ def _make_acceptance_minter(raw_issue):
             _invalid()
         _require_issued_decision(decision)
         decision.__post_init__()
+        baseline_ledger_sha256 = _issued_decision_baseline_ledger_sha256(decision)
         if (not decision.accepted or decision.candidate_generation != state_digest):
             _invalid()
         schema = _binding_schema(
@@ -321,7 +329,8 @@ def _make_acceptance_minter(raw_issue):
         else:
             values.append(("generation_authority_sha256", None))
         values.append(("schema_version", schema))
-        return raw_issue(tuple(values))
+        return raw_issue(
+            tuple(values), expected_baseline_ledger_sha256=baseline_ledger_sha256)
 
     return mint_acceptance_binding
 
