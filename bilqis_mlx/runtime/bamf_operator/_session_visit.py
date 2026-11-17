@@ -8,7 +8,8 @@ def visit(
         accept_publish, load_generation, measure_phase, emit_progress,
         record_cadence_attempt=None):
     prepared = prepare_visit(
-        run_dir, steps_per_visit=steps_per_visit, progress=progress,
+        run_dir, steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
+        progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics,

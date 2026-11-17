@@ -1,4 +1,4 @@
-"""Private execution helpers for the BAMF operator session coordinator."""
+"""Retention and session-loop helpers for the BAMF operator coordinator."""
 from __future__ import annotations
 
 import time

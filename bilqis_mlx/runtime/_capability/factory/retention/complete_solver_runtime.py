@@ -13,17 +13,21 @@ class _FactoryCompleteSolverBuilder:
         self, source_context, candidate, artifact_path, instruments, *,
         execution_binding, authenticate_context, bind_case, route_plan,
         scalar_proposer, proposal_from_output, batched_outputs, invalid,
+        parameters=None,
     ) -> None:
         self.source_context = source_context
         self.candidate = candidate
         self.artifact_path = artifact_path
-        self.execution_binding = execution_binding(candidate)
+        self.parameters = (
+            candidate.retained_state.optimizer.parameters
+            if parameters is None else parameters
+        )
+        self.execution_binding = execution_binding(candidate, self.parameters)
         self.generation = self.execution_binding.generation_digest
         self.by_goal = {item.case.goal.goal_id: item for item in instruments}
         if len(self.by_goal) != len(instruments):
             invalid("BAMF_C05_FACTORY_INSTRUMENT_GOAL_CONFLICT")
         self.contexts = {}
-        self.parameters = candidate.retained_state.optimizer.parameters
         self.telemetry = {
             "shared_backbone_launches": 0,
             "shared_backbone_rows": 0,
