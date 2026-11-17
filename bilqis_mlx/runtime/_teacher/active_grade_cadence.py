@@ -78,13 +78,8 @@ def _seed_boundary(run_dir, state, frontier, census, boundary):
     )
 
 
-def issue_active_grade_cadence(run_dir: Path, epoch, lawful_frontier):
-    """Issue the current #1333 subset; #1315 remains the legality owner."""
-    run_dir = Path(run_dir)
-    member_order = member_capabilities(lawful_frontier)
-    census = member_census_digest(lawful_frontier)
-    deficit_counts, deficit_digest = deficits(epoch, member_order)
-    attempts = _terminal_attempts(run_dir)
+def _restore_state(run_dir, lawful_frontier, member_order, census,
+                   deficit_digest, attempts):
     state = read_current_cadence(run_dir)
     context_changed = state is None or not context_matches(
         state, lawful_frontier, census)
@@ -138,6 +133,11 @@ def issue_active_grade_cadence(run_dir: Path, epoch, lawful_frontier):
                 cadence_epoch=state.cadence_epoch,
                 recovery_attempt_counts=dict(state.recovery_attempt_counts),
             )
+    return state
+
+
+def _issue_phase(run_dir, state, lawful_frontier, member_order, census,
+                 deficit_counts, deficit_digest):
     while True:
         ready_set = set(lawful_frontier.ready_capability_ids)
         ready = tuple(
@@ -191,6 +191,20 @@ def issue_active_grade_cadence(run_dir: Path, epoch, lawful_frontier):
                 _persist_boundary(run_dir, state)
             return _issue_cadence_authorization(
                 state, (), ActiveGradeCadenceDisposition.RECOVERY_EXHAUSTED)
+
+
+def issue_active_grade_cadence(run_dir: Path, epoch, lawful_frontier):
+    """Issue the current #1333 subset; #1315 remains the legality owner."""
+    run_dir = Path(run_dir)
+    member_order = member_capabilities(lawful_frontier)
+    census = member_census_digest(lawful_frontier)
+    deficit_counts, deficit_digest = deficits(epoch, member_order)
+    attempts = _terminal_attempts(run_dir)
+    state = _restore_state(
+        run_dir, lawful_frontier, member_order, census, deficit_digest, attempts)
+    return _issue_phase(
+        run_dir, state, lawful_frontier, member_order, census,
+        deficit_counts, deficit_digest)
 
 
 def record_active_grade_cadence_attempt(

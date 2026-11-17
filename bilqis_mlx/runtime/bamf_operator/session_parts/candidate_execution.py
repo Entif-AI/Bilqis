@@ -8,9 +8,10 @@ def _mentor_observation(
         adviser_pool, source_rows, enrichment_rows, selection, capture, optimizer_step,
         delivery_observation_cls):
     if adviser_pool is None:
-        return delivery_observation_cls(
+        observation = delivery_observation_cls(
             capture, optimizer_step, source_rows, selection.offer.source_seed,
             enrichment=enrichment_rows)
+        return observation, None
     from bilqis_mlx.runtime.championship_advisers import (
         championship_mentor_supervision,
     )

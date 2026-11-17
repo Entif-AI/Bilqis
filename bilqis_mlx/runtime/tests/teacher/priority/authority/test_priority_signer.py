@@ -52,24 +52,7 @@ def _cadence(*ready):
     )
 
 
-def test_host_signer_must_match_registered_owner_key_and_scope():
-    registry = _registry()
-    signer = HostSourceAuthoritySigner("owner:c06", "44" * 32, registry)
-    dependency = DependencyRef(DependencyKind.POLICY, "salience-policy:foundation")
-    payload = b"signed-c06-record"
-    signature = signer.sign(dependency, payload)
-    registry.verify_detached(signer.owner_id, dependency, signature, payload)
-
-    with pytest.raises(ValueError):
-        signer.sign(DependencyRef(DependencyKind.POLICY, "other-policy:foundation"), payload)
-    with pytest.raises(ValueError):
-        HostSourceAuthoritySigner("owner:c06", "55" * 32, registry).sign(
-            dependency, payload)
-
-
-def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only():
-    from bilqis_mlx.runtime import priority_authority as authority
-
+def _foundation_case():
     registry = _registry()
     signer = HostSourceAuthoritySigner("owner:c06", "44" * 32, registry)
     release = SimpleNamespace(
@@ -86,7 +69,6 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         correction_frontier={"rights_epoch": 0, "correction_generation": 0},
         retained_state=SimpleNamespace(optimizer_step=11),
     )
-
     planning_generation = object()
 
     def offer(_context, _parent, _path, *, capability, source_seed, source_each,
@@ -107,6 +89,32 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
         _correction_registry=registry)
     lawful = _lawful_frontier(
         planning_generation, "capability:alpha", "capability:beta")
+    return (
+        registry, signer, source_context, planning, parent,
+        planning_generation, offer, cache, lawful,
+    )
+
+
+def test_host_signer_must_match_registered_owner_key_and_scope():
+    registry = _registry()
+    signer = HostSourceAuthoritySigner("owner:c06", "44" * 32, registry)
+    dependency = DependencyRef(DependencyKind.POLICY, "salience-policy:foundation")
+    payload = b"signed-c06-record"
+    signature = signer.sign(dependency, payload)
+    registry.verify_detached(signer.owner_id, dependency, signature, payload)
+
+    with pytest.raises(ValueError):
+        signer.sign(DependencyRef(DependencyKind.POLICY, "other-policy:foundation"), payload)
+    with pytest.raises(ValueError):
+        HostSourceAuthoritySigner("owner:c06", "55" * 32, registry).sign(
+            dependency, payload)
+
+
+def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only():
+    from bilqis_mlx.runtime import priority_authority as authority
+
+    (registry, signer, source_context, planning, parent,
+     planning_generation, offer, cache, lawful) = _foundation_case()
     with patch(
         "bilqis_mlx.runtime.bamf_bundle.accepted_runtime._accepted_correction_registry",
         return_value=(cache, registry),

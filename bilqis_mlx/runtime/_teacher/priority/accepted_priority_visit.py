@@ -81,6 +81,60 @@ def _selected_priority_result(
         source_materialization_wall_seconds=source_materialization_wall_seconds)
 
 
+def _accepted_context(run_dir, source_context, school, lawful_frontier,
+                      accepted_parent, planning_generation):
+    if planning_generation is None:
+        parent, cache = _accepted_parent(Path(run_dir))
+        expected = candidate_identity_digest(parent.retained_state)
+    else:
+        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
+        parent = accepted_parent
+        cache, _authenticated = _require_planning_generation(
+            planning_generation, source_context, parent)
+        if getattr(lawful_frontier, '_planning_generation', None) is not planning_generation:
+            _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
+        expected = planning_generation.parent_candidate_identity_sha256
+    if getattr(getattr(school, 'current_student', None), 'sha256', None) != expected:
+        _invalid('BAMF_PRIORITY_STUDENT_DRIFT')
+    return parent, cache
+
+
+def _cadence_context(cadence_authorization, lawful_frontier):
+    if cadence_authorization is None:
+        return None, None
+    from bilqis_mlx.runtime.active_grade_cadence_contracts import (
+        ActiveGradeCadenceAuthorization,
+    )
+    if not isinstance(cadence_authorization, ActiveGradeCadenceAuthorization):
+        _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_INVALID')
+    cadence_ids = tuple(cadence_authorization.authorized_capability_ids)
+    if not set(cadence_ids) <= set(lawful_frontier.ready_capability_ids):
+        _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_DRIFT')
+    return cadence_ids, {'cadence': cadence_authorization.to_record()}
+
+
+def _empty_priority_result(run_dir, source_context, parent, frontier, history,
+                           lawful_frontier, cadence_authorization,
+                           cadence_ids, cadence_metadata):
+    from bilqis_mlx.runtime.lawful_teaching_frontier import (
+        require_bound_lawful_teaching_frontier,
+    )
+    require_bound_lawful_teaching_frontier(lawful_frontier, source_context, parent)
+    if (frontier is not None or history is not None
+            or (lawful_frontier.ready_capability_ids and cadence_ids is None)
+            or cadence_ids):
+        _invalid('BAMF_PRIORITY_EMPTY_AUTHORITY_DRIFT')
+    holds = sorted(
+        (item.capability_id, item.code.value) for item in lawful_frontier.exclusions)
+    if cadence_authorization is not None:
+        disposition = cadence_authorization.disposition.value
+        if disposition != 'TEACHING':
+            holds.append(('__active_grade__', 'CADENCE_' + disposition))
+    return _issue_result(
+        'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata, None,
+        holds, run_dir, lawful_frontier)
+
+
 def select_accepted_priority_visit(
         run_dir, source_context, frontier, history, planning, offers,
         engine, school, rng, learning_settings, *, program, now,
@@ -89,55 +143,15 @@ def select_accepted_priority_visit(
         total_capabilities=None, plasticity_escape=None,
         legacy_receipt=None, adaptation=None, prior_region=None,
         accepted_parent=None, planning_generation=None):
-    if planning_generation is None:
-        parent, cache = _accepted_parent(Path(run_dir))
-    else:
-        from bilqis_mlx.runtime.priority_source_offer import _require_planning_generation
-        parent = accepted_parent
-        cache, _authenticated = _require_planning_generation(
-            planning_generation, source_context, parent)
-        if getattr(lawful_frontier, '_planning_generation', None) is not planning_generation:
-            _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
-    expected_parent_identity = (
-        planning_generation.parent_candidate_identity_sha256
-        if planning_generation is not None
-        else candidate_identity_digest(parent.retained_state)
-    )
-    if getattr(getattr(school, 'current_student', None), 'sha256', None) != expected_parent_identity:
-        _invalid('BAMF_PRIORITY_STUDENT_DRIFT')
-    if cadence_authorization is not None:
-        from bilqis_mlx.runtime.active_grade_cadence_contracts import (
-            ActiveGradeCadenceAuthorization,
-        )
-        if not isinstance(cadence_authorization, ActiveGradeCadenceAuthorization):
-            _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_INVALID')
-        cadence_ids = tuple(cadence_authorization.authorized_capability_ids)
-        if not set(cadence_ids) <= set(lawful_frontier.ready_capability_ids):
-            _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_DRIFT')
-        cadence_metadata = {'cadence': cadence_authorization.to_record()}
-    else:
-        cadence_ids = None
-        cadence_metadata = None
+    parent, cache = _accepted_context(
+        run_dir, source_context, school, lawful_frontier,
+        accepted_parent, planning_generation)
+    cadence_ids, cadence_metadata = _cadence_context(
+        cadence_authorization, lawful_frontier)
     if not offers:
-        from bilqis_mlx.runtime.lawful_teaching_frontier import (
-            require_bound_lawful_teaching_frontier,
-        )
-        require_bound_lawful_teaching_frontier(
-            lawful_frontier, source_context, parent)
-        if (frontier is not None or history is not None
-                or (lawful_frontier.ready_capability_ids and cadence_ids is None)
-                or cadence_ids):
-            _invalid('BAMF_PRIORITY_EMPTY_AUTHORITY_DRIFT')
-        holds = sorted(
-            (item.capability_id, item.code.value)
-            for item in lawful_frontier.exclusions)
-        if cadence_authorization is not None:
-            disposition = cadence_authorization.disposition.value
-            if disposition != 'TEACHING':
-                holds.append(('__active_grade__', 'CADENCE_' + disposition))
-        return _issue_result(
-            'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata, None,
-            holds, run_dir, lawful_frontier)
+        return _empty_priority_result(
+            run_dir, source_context, parent, frontier, history, lawful_frontier,
+            cadence_authorization, cadence_ids, cadence_metadata)
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
     epoch = restore_teacher_lineage(projection.teacher_state)
