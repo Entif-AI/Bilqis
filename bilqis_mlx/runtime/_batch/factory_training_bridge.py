@@ -49,11 +49,18 @@ class PreparedFactoryTrainingBatch:
 
 
 
+def _target_source_count(rows, rehearsal_by_id):
+    return len(rows) - len(rehearsal_by_id)
+
+
 def _validated_training_request(
         source_context, candidate, delivered_rows, generation_binding, *,
         capability, delivery, requested_count, source_seed, source_each,
-        optimizer_step_seed, visit_provenance, teacher_strategy):
+        optimizer_step_seed, visit_provenance, teacher_strategy,
+        rehearsal_by_id=None):
     rows = tuple(delivered_rows) if isinstance(delivered_rows, (tuple, list)) else ()
+    rehearsal_by_id = {} if rehearsal_by_id is None else dict(rehearsal_by_id)
+    target_source_count = _target_source_count(rows, rehearsal_by_id)
     if (type(source_context) is not SourceExecutionContext
             or not isinstance(candidate, BamfBundleCandidate)
             or not rows or any(type(row) is not dict for row in rows)
@@ -61,7 +68,8 @@ def _validated_training_request(
             or not isinstance(delivery, DeliveredTeaching)
             or type(requested_count) is not int or requested_count < len(rows)
             or type(source_seed) is not int or source_seed < 0
-            or type(source_each) is not int or source_each != len(rows)
+            or type(source_each) is not int or source_each != target_source_count
+            or target_source_count < 1
             or type(optimizer_step_seed) is not int or optimizer_step_seed < 0
             or type(visit_provenance) is not BamfVisitProvenance
             or visit_provenance.capability_id != capability
@@ -208,7 +216,8 @@ def prepare_factory_training_batch(
         capability=capability, delivery=delivery, requested_count=requested_count,
         source_seed=source_seed, source_each=source_each,
         optimizer_step_seed=optimizer_step_seed,
-        visit_provenance=visit_provenance, teacher_strategy=teacher_strategy)
+        visit_provenance=visit_provenance, teacher_strategy=teacher_strategy,
+        rehearsal_by_id=rehearsal_by_id)
     authenticated = semantic_context
     if authenticated is None:
         authenticated = authenticate_bamf_execution_feature_context(

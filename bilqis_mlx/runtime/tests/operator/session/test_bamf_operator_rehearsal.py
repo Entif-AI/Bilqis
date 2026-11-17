@@ -6,6 +6,7 @@ import pytest
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.atlas_training_contracts import BamfDeliveryProvenance
+from bilqis_mlx.runtime.factory_training_bridge import _target_source_count
 from bilqis_mlx.runtime.bamf_operator.session_parts.rehearsal import (
     RehearsalPlan, RehearsalRows, compile_rehearsal_plan,
     materialize_rehearsal_rows,
@@ -150,4 +151,13 @@ def test_cross_capability_delivery_requires_explicit_rehearsal_role():
     with pytest.raises(BilqisError) as failure:
         _delivery_provenance("Z.C0", None)
     assert failure.value.context["reason"] == "VISIT_PROVENANCE_CAPABILITY_MISMATCH"
+
+
+def test_rehearsal_rows_do_not_inflate_target_source_batch_count():
+    rows = (
+        {"id": "target", "capability": "Z.C2"},
+        {"id": "prior", "capability": "Z.C0"},
+        {"id": "enrichment", "capability": "Z.C2"},
+    )
+    assert _target_source_count(rows, {"prior": "prior"}) == 2
 
