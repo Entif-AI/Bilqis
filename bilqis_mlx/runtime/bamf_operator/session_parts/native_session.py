@@ -207,6 +207,7 @@ def accepted_admission_reentry(
     emit_progress(
         progress, f"admission flywheel outcome: {result.status.value} after {result.advances} advance(s)")
     stop_status = {
+        AdmissionFlywheelStatus.FIXED_POINT: "FIXED_POINT",
         AdmissionFlywheelStatus.HELD: "ADMISSION_HOLD",
         AdmissionFlywheelStatus.LEASE_REQUIRED: "ADMISSION_LEASE_REQUIRED",
     }.get(result.status)

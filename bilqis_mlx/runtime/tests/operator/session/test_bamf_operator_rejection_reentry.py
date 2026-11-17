@@ -126,7 +126,7 @@ class BamfOperatorAdmissionReentryTests(unittest.TestCase):
             actual = _accepted_admission_reentry(
                 Path("/run"), {"tokens": []}, 100.0)
 
-        self.assertEqual(actual, ("FIXED_POINT", 0, None))
+        self.assertEqual(actual, ("FIXED_POINT", 0, "FIXED_POINT"))
 
 
 def _rejected_resource_fixture():

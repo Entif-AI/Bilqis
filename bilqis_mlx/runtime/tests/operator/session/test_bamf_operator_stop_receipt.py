@@ -64,6 +64,7 @@ class NativeRunStopReceiptTests(unittest.TestCase):
         cases = (
             ("TIME_LIMIT", True, "RESUME_ALLOWED", True),
             ("PRIORITY_HOLD", True, "RESUME_WHEN_WORK_AVAILABLE", True),
+            ("FIXED_POINT", True, "RESUME_WHEN_WORK_AVAILABLE", True),
             ("DISK_RESERVE_REACHED", False, "RESUME_AFTER_RESOURCE_RECOVERY", False),
             ("ADMISSION_LEASE_REQUIRED", False, "ACTION_REQUIRED", True),
         )
@@ -118,6 +119,43 @@ class NativeRunStopReceiptTests(unittest.TestCase):
         self.assertEqual(result.stop_receipt_sha256, "c" * 64)
         self.assertEqual(recorded.call_args.kwargs["resource_witness"], witness)
         self.assertEqual(recorded.call_args.kwargs["status"], "DISK_RESERVE_REACHED")
+
+    def test_admission_fixed_point_stops_before_next_visit_and_records_exact_cause(self):
+        current = SimpleNamespace(
+            generation=2, retained_state=SimpleNamespace(optimizer_step=5))
+        recorded = Mock(return_value="d" * 64)
+        observer = lambda *_args: nullcontext(SimpleNamespace(
+            finish=lambda _outcome: None))
+        with TemporaryDirectory() as temporary:
+            result = operate(
+                Path(temporary), minutes=1, max_visits=3, steps_per_visit=4,
+                reserve_gib=0.0, source_prefetch_workers=0, progress=None,
+                max_horizon=16, worker_counts=(0, 1, 2),
+                invalid=lambda reason: (_ for _ in ()).throw(ValueError(reason)),
+                metrics_type=lambda: SimpleNamespace(
+                    wait_seconds=0.0, overlap_seconds=0.0,
+                    prepared_steps=0, serial_steps=0),
+                source_pool_factory=lambda _workers: nullcontext(None),
+                null_context=nullcontext, operator_lock=lambda _run: nullcontext(),
+                visit_fn=Mock(return_value="ACCEPTED"), observer_type=observer,
+                emit_progress=lambda *_args: None,
+                monotonic=Mock(side_effect=(0.0, 0.0)),
+                load_generation=Mock(return_value=current),
+                result_type=__import__(
+                    "bilqis_mlx.runtime.bamf_operator.session_support",
+                    fromlist=["BamfOperatorResult"]).BamfOperatorResult,
+                accepted_reentry=Mock(return_value=("FIXED_POINT", 0, "FIXED_POINT")),
+                resource_snapshot=lambda _run, _reserve: {
+                    "free_bytes": 10, "reserve_bytes": 0,
+                    "estimated_write_bytes": 0, "sufficient": True,
+                }, record_stop=recorded,
+                elapsed_clock=Mock(side_effect=(5.0, 5.5)))
+
+        self.assertEqual(result.status, "FIXED_POINT")
+        self.assertEqual(result.visits, 1)
+        self.assertEqual(result.accepted, 1)
+        self.assertEqual(result.admission_status, "FIXED_POINT")
+        self.assertEqual(recorded.call_args.kwargs["status"], "FIXED_POINT")
 
     def test_error_termination_does_not_emit_normal_stop_receipt(self):
         recorded = Mock()
