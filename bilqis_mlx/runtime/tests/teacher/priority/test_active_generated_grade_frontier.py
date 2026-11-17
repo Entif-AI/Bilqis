@@ -14,7 +14,7 @@ from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import (
     LawfulTeachingExclusionCode,
     _issue_frontier,
 )
-from bilqis_mlx.runtime.tests.teacher.priority.test_lawful_teaching_frontier_projection import (
+from bilqis_mlx.runtime.tests.teacher.priority.authority.test_lawful_teaching_frontier_projection import (
     _closure,
     _plan,
     _release,
