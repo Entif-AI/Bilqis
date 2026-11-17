@@ -10,7 +10,7 @@ from bilqis_mlx.learning.capability_championship import (
 from bilqis_mlx.learning.capability_championship_state import (
     championship_epoch_identity, compact_championship_state,
     empty_championship_state, reset_championship_state,
-    validate_championship_state,
+    upgrade_championship_state, validate_championship_state,
 )
 from bilqis_mlx.runtime.capability_retention import Assessment, EvaluationCohort
 from bilqis_mlx.runtime.retention.championship_evidence import capability_championship_evidence
@@ -102,9 +102,14 @@ def bind_accepted_championship_successor(
     else:
         prior = dict(prior)
         validate_championship_state(prior)
+        prior = upgrade_championship_state(prior)
         epoch = (
             prior if prior["identity"] == identity
-            else reset_championship_state(prior, identity)
+            else reset_championship_state(
+                prior, identity,
+                source_manifest_sha256=cache.accepted_manifest_sha256,
+                source_generation=parent.generation,
+            )
         )
     capability_groups = _release_group_map(source_context)
     decision = getattr(evaluation, "decision", None)

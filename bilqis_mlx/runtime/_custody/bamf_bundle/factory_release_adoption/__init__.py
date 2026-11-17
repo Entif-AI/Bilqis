@@ -159,6 +159,7 @@ def derive_factory_release_adoption_candidate(
     *,
     parent_manifest_sha256,
     transition,
+    new_semantic_admission=False,
 ):
     """Derive generation N+1 while preserving every neural/teacher state owner."""
     from ..records import BamfBundleCandidate, CompleteStudent
@@ -166,6 +167,7 @@ def derive_factory_release_adoption_candidate(
     if (
         type(parent) is not CompleteStudent
         or not _hex(parent_manifest_sha256)
+        or type(new_semantic_admission) is not bool
     ):
         _invalid()
     transition = require_issued_factory_release_adoption_transition(transition)
@@ -187,11 +189,25 @@ def derive_factory_release_adoption_candidate(
     }
     championship_state = parent.championship_state
     if championship_state is not None:
-        from bilqis_mlx.learning.capability_championship_state import (
-            clear_active_championship_titles,
-        )
-        championship_state = clear_active_championship_titles(
-            dict(championship_state))
+        if new_semantic_admission:
+            from bilqis_mlx.learning.capability_championship_state import (
+                clear_championship_epoch,
+            )
+            championship_state = clear_championship_epoch(
+                dict(championship_state),
+                source_manifest_sha256=parent_manifest_sha256,
+                source_generation=parent.generation,
+            )
+        else:
+            from bilqis_mlx.learning.capability_championship_state import (
+                clear_active_championship_titles,
+            )
+            championship_state = clear_active_championship_titles(
+                dict(championship_state),
+                source_manifest_sha256=parent_manifest_sha256,
+                source_generation=parent.generation,
+                reason="FACTORY_RELEASE_ADOPTION",
+            )
     return BamfBundleCandidate(
         parent.run_id,
         parent.generation + 1,

@@ -3,8 +3,11 @@ import json
 from dataclasses import asdict, replace
 
 from bilqis_mlx.learning.capability_championship import assessment_exam
-from bilqis_mlx.learning.capability_championship_state import active_checkpoint_references
+from bilqis_mlx.learning.capability_championship_state import (
+    SCHEMA_V1 as CHAMPIONSHIP_SCHEMA_V1, active_checkpoint_references,
+)
 from bilqis_mlx.learning._epoch_championships.receipts import _role_receipt
+from bilqis_mlx.semantics.domains import contract_digest
 
 from bilqis_mlx.runtime.tests.operator.observed.capability_championship_support import (
     ADJUDICATION, CAPABILITY, GROUP, SIBLING, NativeChampionshipCase,
@@ -14,6 +17,31 @@ from bilqis_mlx.runtime.tests.operator.observed.capability_championship_support 
 
 
 class ChampionshipCompetitionTests(NativeChampionshipCase):
+    def test_same_identity_v1_cold_state_upgrades_before_new_settlement(self):
+        first = self.successor()
+        first_assessment, incumbent = measurement(
+            first, self.cohort, self.contexts, 20, "8" * 64)
+        titled = self.bind(self.parent, first, first_assessment, incumbent)
+        legacy = json.loads(json.dumps(titled.championship_state, sort_keys=True))
+        legacy["schema"] = CHAMPIONSHIP_SCHEMA_V1
+        legacy.pop("settlement_epoch_sha256")
+        legacy.pop("comparison_context_sha256")
+        legacy.pop("epoch_history")
+        resumed = replace(titled, championship_state=legacy)
+        challenger = self.successor(resumed, generation=2, manifest="b")
+        challenge_assessment, challenger_binding = measurement(
+            challenger, self.cohort, self.contexts, 20, "9" * 64)
+        transferred = self.bind(
+            resumed, challenger, challenge_assessment, challenger_binding,
+            incumbent=incumbent)
+        self.assertNotEqual(
+            transferred.championship_state["schema"], CHAMPIONSHIP_SCHEMA_V1)
+        self.assertTrue(transferred.championship_state["settled_matchups"])
+        settlement = next(iter(transferred.championship_state["settled_matchups"].values()))
+        self.assertEqual(
+            settlement["comparison_context_sha256"],
+            transferred.championship_state["comparison_context_sha256"])
+
     def test_native_takeover_runs_one_capability_local_same_group_fanout(self):
         self.context = source_context(include_sibling=True)
         first = self.successor()
@@ -89,3 +117,40 @@ class ChampionshipCompetitionTests(NativeChampionshipCase):
         self.assertEqual(winner["checkpoint"], asdict(challenger.checkpoint))
         self.assertNotEqual(winner["checkpoint"], role["checkpoint"])
         self.assertTrue(transferred.championship_state["settled_matchups"])
+        settlement = next(iter(transferred.championship_state["settled_matchups"].values()))
+        self.assertEqual(
+            settlement["settlement_epoch_sha256"],
+            transferred.championship_state["settlement_epoch_sha256"])
+        self.assertEqual(len(settlement["comparison_identity_sha256"]), 64)
+
+    def test_same_pair_is_suppressed_before_native_incumbent_replay(self):
+        first = self.successor()
+        first_assessment, incumbent = measurement(
+            first, self.cohort, self.contexts, 20, "8" * 64)
+        titled = self.bind(self.parent, first, first_assessment, incumbent)
+        challenger = self.successor(titled, generation=2, manifest="b")
+        challenge_assessment, challenger_binding = measurement(
+            challenger, self.cohort, self.contexts, 19, "9" * 64)
+        state = json.loads(json.dumps(titled.championship_state, sort_keys=True))
+        pair = sorted((incumbent.checkpoint.sha256, challenger_binding.checkpoint.sha256))
+        context = state["comparison_context_sha256"]
+        state["settled_matchups"][CAPABILITY + "|" + context + "|" + "|".join(pair)] = {
+            "capability": CAPABILITY,
+            "winner_sha256": incumbent.checkpoint.sha256,
+            "comparison_identity_sha256": contract_digest(state["identity"]),
+            "comparison_context_sha256": context,
+            "settlement_epoch_sha256": state["settlement_epoch_sha256"],
+        }
+        settled = replace(titled, championship_state=state)
+        before = json.loads(json.dumps(state, sort_keys=True))
+        with patch(
+                "bilqis_mlx.runtime.bamf_operator.championship."
+                "_require_factory_evaluation", side_effect=lambda value: value), patch(
+                ADJUDICATION + "_current_binding", return_value=challenger_binding), patch(
+                ADJUDICATION + "_incumbent_binding",
+                side_effect=AssertionError("settled pair must suppress incumbent replay")):
+            replay = bind_accepted_championship_successor(
+                Path("unused"), settled, self.cache, challenger, self.context,
+                "artifact", CAPABILITY, evaluation(self.cohort, challenge_assessment),
+                checkpoint_origin_group=GROUP)
+        self.assertEqual(replay.championship_state, before)

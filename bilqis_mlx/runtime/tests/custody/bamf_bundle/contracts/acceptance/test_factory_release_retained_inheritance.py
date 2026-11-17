@@ -102,7 +102,35 @@ class FactoryReleaseRetainedInheritanceTests(
         self.assertEqual(
             candidate.championship_state["settled_matchups"],
             parent.championship_state["settled_matchups"])
+        self.assertEqual(len(candidate.championship_state["epoch_history"]), 1)
+        history = candidate.championship_state["epoch_history"][0]
+        self.assertEqual(
+            history["source_manifest_sha256"], self._parent_pointer["manifest_sha256"])
+        self.assertEqual(history["source_generation"], parent.generation)
+        self.assertEqual(history["reason"], "FACTORY_RELEASE_ADOPTION")
         _issue_factory_release_admission_binding(candidate, parent, transition=transition)
+
+    def test_generated_grade_adoption_archives_and_clears_settlement_authority(self):
+        parent = self._titled_parent()
+        transition = _issue_factory_release_adoption_transition(
+            predecessor_factory_release_sha256=parent.run_identity.factory_release_sha256,
+            factory_release_sha256="2" * 64, handoff_sha256="3" * 64,
+            proposal_sha256="4" * 64, staged_candidate_sha256="5" * 64,
+            selection_receipt_sha256="6" * 64, lease_sha256="7" * 64,
+            source_approval_sha256="8" * 64)
+        candidate = derive_factory_release_adoption_candidate(
+            parent, parent_manifest_sha256=self._parent_pointer["manifest_sha256"],
+            transition=transition, new_semantic_admission=True)
+        self.assertEqual(candidate.championship_state["active_roles"], {})
+        self.assertEqual(candidate.championship_state["settled_matchups"], {})
+        self.assertEqual(len(candidate.championship_state["epoch_history"]), 1)
+        self.assertEqual(
+            candidate.championship_state["epoch_history"][0]["reason"],
+            "NEW_SEMANTIC_ADMISSION")
+        _issue_factory_release_admission_binding(
+            candidate, parent, transition=transition,
+            accepted_obligation_keys=(("semantic:event", "b" * 64),),
+            generated_grade_proposal_sha256="a" * 64)
 
     def test_later_retained_child_inherits_factory_release_authority(self):
         parent = self.parent()

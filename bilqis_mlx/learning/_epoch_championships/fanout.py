@@ -5,7 +5,7 @@ from bilqis_mlx.learning.mentor_epoch import _pointer
 
 from .qualification import _fanout_scores
 from .receipts import _resolve_title_match
-from .state import _pair_key, _settled_match
+from .state import _pair_key, _settled_match, _settlement_receipt_context
 
 
 def _advance_fanout(
@@ -60,10 +60,12 @@ def _advance_fanout(
             qualification_scope=(cap,), grade_caps=caps)
         roles[cap] = receipt
         updated["settled_matchups"][_pair_key(
-            cap, verdict["incumbent_sha256"], verdict["challenger_sha256"])] = {
+            cap, verdict["incumbent_sha256"], verdict["challenger_sha256"],
+            updated.get("comparison_context_sha256"))] = {
                 **verdict,
                 "group": group,
                 "qualification": "FANOUT_MATCH_OR_BEAT",
+                **_settlement_receipt_context(updated),
             }
         decisions.append({
             "group": group, **verdict,
