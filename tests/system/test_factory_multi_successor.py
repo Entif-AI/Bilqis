@@ -7,7 +7,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from tests.system.test_factory_grade_z import _rows, _check
+from tests.system.factory_grade_z.fixture import check as _check, rows as _rows
 from bilqis_mlx.curriculum import AnswerFamily, BINARY
 from bilqis_mlx.curriculum.scheduler import (
     Assessment, Score, assess, assessment_capabilities, start_new, visit,
@@ -141,7 +141,8 @@ class SyntheticMultiSuccessorProof(unittest.TestCase):
             "cohort_sha256": cohort_sha, "rubric_sha256": rubric,
             "cohort_rubric_sha256": rubric, "assessment_scope_sha256": scope_sha,
             "source_graph_sha256": _fingerprint(graph),
-            "source_oracle_sha256": "b" * 64, "challenge_grade": "H",
+            "source_oracle_sha256": "b" * 64, "challenge_group": "H",
+            "checkpoint_origin_group": "H", "challenge_grade": "H",
             "checkpoint_origin_grade": "H", "checkpoint": asdict(student),
             "scores": scores, "questions": questions, "correct_questions": questions,
         }
@@ -149,7 +150,7 @@ class SyntheticMultiSuccessorProof(unittest.TestCase):
             student=asdict(student), introduced_grade="H",
             source_graph_sha256=_fingerprint(graph), frontier={}, soups={})
         epoch, changed, _ = advance_epoch(
-            epoch, grades=grades, challenger_exam=exam, incumbent_exams={})
+            epoch, capability_groups=grades, challenger_exam=exam, incumbent_exams={})
         self.assertEqual(set(changed), set(grades["H"]))
         self.assertEqual(set(epoch["active_roles"]), set(grades["H"]))
         board = Dashboard(stream=io.StringIO(), redraw=False, tables=LETTER_TABLES,
