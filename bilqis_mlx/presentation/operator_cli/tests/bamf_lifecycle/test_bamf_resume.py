@@ -14,7 +14,7 @@ from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.atlas_flywheel import AdmissionFlywheelStatus
 from bilqis_mlx.runtime.tests.bamf_first_student._bamf_first_student_support import BamfFirstStudentCase
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
-    source_features, frozen_snapshot,
+    accepted_feature_source_patch,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactIdentity
@@ -41,10 +41,7 @@ class BamfResumeTests(BamfFirstStudentCase):
 
     @contextmanager
     def accepted_read_context(self):
-        with shape_patch(), patch.multiple(
-            "bilqis_mlx.runtime.bamf_bundle.feature_authority",
-            resolve_atlas_artifact_selection=lambda _: self.selection, load_pinned_atlas_snapshot=frozen_snapshot,
-            build_feature_manifest=lambda *_args: source_features()):
+        with shape_patch(), accepted_feature_source_patch():
             yield
 
     def test_resume_without_overrides_reads_saved_b13_identity_without_writes(self):

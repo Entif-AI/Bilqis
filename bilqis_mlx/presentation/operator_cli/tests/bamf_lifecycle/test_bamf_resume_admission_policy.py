@@ -7,7 +7,7 @@ from unittest.mock import patch
 from bilqis_mlx.cli import main
 from bilqis_mlx.runtime.tests.bamf_first_student._bamf_first_student_support import BamfFirstStudentCase
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
-    source_features,
+    accepted_feature_source_patch,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 
@@ -18,9 +18,7 @@ class BamfResumeAdmissionPolicyTests(BamfFirstStudentCase):
         self.preflight(target)
 
         output, errors = io.StringIO(), io.StringIO()
-        with shape_patch(), patch(
-                "bilqis_mlx.runtime.bamf_bundle.feature_authority._authenticate_features",
-                return_value=source_features()), patch(
+        with shape_patch(), accepted_feature_source_patch(), patch(
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle._saved_policy",
                 return_value="atlas-release"), redirect_stdout(output), redirect_stderr(errors):
             # C07 persistence/readback is independently proven in its owner suite;

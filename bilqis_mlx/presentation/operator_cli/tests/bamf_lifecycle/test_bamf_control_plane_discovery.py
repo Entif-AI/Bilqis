@@ -10,7 +10,7 @@ from bilqis_mlx.runtime.tests.bamf_first_student._bamf_first_student_support imp
     BamfFirstStudentCase,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
-    source_features,
+    accepted_feature_source_patch,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 
@@ -24,10 +24,7 @@ class BamfControlPlaneDiscoveryTests(BamfFirstStudentCase):
 
     @contextmanager
     def accepted_read_context(self):
-        with shape_patch(), patch(
-            "bilqis_mlx.runtime.bamf_bundle.feature_authority._authenticate_features",
-            return_value=source_features(),
-        ):
+        with shape_patch(), accepted_feature_source_patch():
             yield
 
     def test_human_resume_advertises_control_plane_target_during_operator_visit(self):

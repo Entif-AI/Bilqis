@@ -86,8 +86,10 @@ def _inspect(run_dir: Path) -> dict:
     bamf_pointer = run_dir / "bamf-state.json"
     if bamf_pointer.exists() or bamf_pointer.is_symlink():
         from bilqis_mlx.runtime.bamf_bundle import load_bamf_generation_authority
+        from bilqis_mlx.runtime.bamf_operator import read_latest_run_stop_receipt
         student, manifest_sha256 = load_bamf_generation_authority(bamf_pointer)
         teacher = student.teacher_state
+        stop_receipt = read_latest_run_stop_receipt(run_dir)
         return {
             "status": "BAMF_ACCEPTED_GENERATION_READ_ONLY",
             "run_id": student.run_id,
@@ -100,6 +102,7 @@ def _inspect(run_dir: Path) -> dict:
             "teacher_cursor": teacher.get("cursor"),
             "teacher_next_seed": teacher.get("next_seed"),
             "c03_lineage_active": "c03_lineage" in teacher,
+            "last_session_stop": stop_receipt,
             "neural_training_started_by_this_command": False,
             "run_dir": str(run_dir),
         }

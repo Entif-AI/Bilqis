@@ -34,6 +34,9 @@ from .source_prefetch import (
     NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
 from .evidence import CandidateEvidenceCapture as _Capture
+from .session_parts.stop_receipt import (
+    record_normal_stop_receipt, stop_resource_witness,
+)
 from ._session_execution import operate as _operate_impl
 from ._session_visit import visit as _visit_impl
 from .session_parts.native_session import (
@@ -173,6 +176,8 @@ def operate_bamf(
         visit_fn=_visit, observer_type=TrainerObservation,
         emit_progress=_emit_progress, monotonic=time.monotonic,
         load_generation=load_accepted_generation, result_type=BamfOperatorResult,
+        resource_snapshot=stop_resource_witness,
+        record_stop=record_normal_stop_receipt, elapsed_clock=time.perf_counter,
         before_visits=before_visits,
         bind_run_authority=(
             lambda current_run_dir:

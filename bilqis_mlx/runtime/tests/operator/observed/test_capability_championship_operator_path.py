@@ -114,6 +114,9 @@ class CapabilityChampionshipOperatorPathTests(unittest.TestCase):
                 (prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
                 (prefix + "accept_and_publish", {"side_effect": publish}),
                 (prefix + "load_accepted_generation", {"return_value": successor}),
+                (prefix + "record_normal_stop_receipt", {"return_value": None}),
+                ("bilqis_mlx.runtime.run_authority.binding.storage_root",
+                 {"return_value": Path(tmp).parent}),
                 ("bilqis_mlx.runtime.bamf_operator._championship_adjudication._current_binding",
                  {"return_value": binding}),
             ):
