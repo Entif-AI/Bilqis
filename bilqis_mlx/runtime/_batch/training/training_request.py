@@ -47,14 +47,17 @@ def require_compile_request(
         if row.get("id") in rehearsal_by_id
         and row.get("capability") != delivery_capability
     }
-    target_rows = tuple(
-        row for row in delivered_rows if row.get("id") not in cross_capability_ids)
-    source_context.require_bound_rows(target_rows, source_authority)
-    if set(rehearsal_authorities) != cross_capability_ids:
+    authority_bound_rehearsal_ids = set(rehearsal_authorities)
+    if (not authority_bound_rehearsal_ids <= set(rehearsal_by_id)
+            or not cross_capability_ids <= authority_bound_rehearsal_ids):
         _invalid("REHEARSAL_AUTHORITY_COVERAGE_INVALID")
+    target_rows = tuple(
+        row for row in delivered_rows
+        if row.get("id") not in authority_bound_rehearsal_ids)
+    source_context.require_bound_rows(target_rows, source_authority)
     for row in delivered_rows:
         identity = row.get("id")
-        if identity not in cross_capability_ids:
+        if identity not in authority_bound_rehearsal_ids:
             continue
         authority = rehearsal_authorities.get(identity)
         if (type(authority) is not SourceBatchAuthority

@@ -63,6 +63,25 @@ class AtlasTrainingAdapterTest(AtlasTrainingAdapterCase):
             batch.rows[1].provenance.source_family_id,
             support_authority.source_family_id)
 
+    def test_same_capability_preservation_keeps_its_own_source_authority(self):
+        target = self.context.draw_rows(seed=17, capability='Z.C0', each=1)
+        preservation, preservation_authority = self.context.draw_bound_rows(
+            seed=23, capability='Z.C0', each=1)
+        target_authority = self.context.bind_rows(
+            target, seed=17, capability='Z.C0', each=1)
+        rows = (*target, *preservation)
+        batch = self.compile(
+            rows, delivery_capability='Z.C0', source_authority=target_authority,
+            rehearsal_by_id={preservation[0]['id']: 'preservation'},
+            rehearsal_authorities={preservation[0]['id']: preservation_authority})
+
+        self.assertEqual(batch.rows[1].provenance.capability_id, 'Z.C0')
+        self.assertEqual(batch.rows[1].provenance.visit.capability_id, 'Z.C0')
+        self.assertEqual(batch.rows[1].provenance.rehearsal, 'preservation')
+        self.assertEqual(
+            batch.rows[1].provenance.source_family_id,
+            preservation_authority.source_family_id)
+
     def test_prepared_source_prefix_is_reused_while_step_provenance_changes(self):
         first = self.compile(self.rows, optimizer_step_seed=42)
         model = first.rows[0].model_input
