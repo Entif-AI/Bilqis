@@ -13,7 +13,8 @@ from pathlib import Path
 import uuid
 
 from bilqis_mlx.backup import digest_file
-from bilqis_mlx.data_plane import verify_file_digest
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH, verify_file_digest
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.disk import assert_headroom
 from .grade_soup import weighted_average
 from .championship_witnesses import championship_role_qualified
@@ -22,6 +23,10 @@ from .championship_witnesses import championship_role_qualified
 SCHEMA = "bilqis.mlx.frozen-generated-cohort-soup/v1"
 PARTITIONED_SCHEMA = "bilqis.mlx.partitioned-generated-cohort-soup/v1"
 POLICY_ID = "bilqis.bamf.generated-cohort-adviser-policy/v1"
+
+
+def _invalid(reason):
+    ErrorBus.raise_(SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID, reason=reason)
 
 
 def _digest(value) -> str:
@@ -42,12 +47,12 @@ def cohort_soup_recipe(championship_state: dict, cohort_id: str,
             or len(set(eligible)) != len(eligible)
             or not isinstance(roles, dict)
             or not isinstance(championship_epoch_sha256, str)
-            or len(championship_epoch_sha256) != 64
+            or len(championship_epoch_sha256) != SHA256_HEX_LENGTH
             or not isinstance(cohort_definition_sha256, str)
-            or len(cohort_definition_sha256) != 64
+            or len(cohort_definition_sha256) != SHA256_HEX_LENGTH
             or not isinstance(factory_release_sha256, str)
-            or len(factory_release_sha256) != 64):
-        raise ValueError("COHORT_SOUP_RECIPE_INPUT_INVALID")
+            or len(factory_release_sha256) != SHA256_HEX_LENGTH):
+        _invalid("COHORT_SOUP_RECIPE_INPUT_INVALID")
     chosen = []
     for capability in sorted(eligible):
         role = roles.get(capability)
@@ -59,8 +64,8 @@ def cohort_soup_recipe(championship_state: dict, cohort_id: str,
         pointer = role.get("checkpoint")
         if (not isinstance(pointer, dict)
                 or not isinstance(pointer.get("sha256"), str)
-                or len(pointer["sha256"]) != 64):
-            raise ValueError("COHORT_SOUP_ROLE_CHECKPOINT_INVALID")
+                or len(pointer["sha256"]) != SHA256_HEX_LENGTH):
+            _invalid("COHORT_SOUP_ROLE_CHECKPOINT_INVALID")
         chosen.append({
             "capability": capability,
             "checkpoint": dict(pointer),
@@ -94,20 +99,21 @@ def partitioned_recipes(full_recipe: dict,
                         member_custody: dict[str, dict]) -> tuple[dict, ...]:
     """Bind soup shards to exact accepted ancestry and compatible graphs."""
     if full_recipe.get("schema") != SCHEMA:
-        raise ValueError("COHORT_SOUP_RECIPE_SCHEMA_INVALID")
+        _invalid("COHORT_SOUP_RECIPE_SCHEMA_INVALID")
     groups: dict[str, list[dict]] = {}
     for member in full_recipe["members"]:
         sha256 = member["checkpoint"]["sha256"]
         custody = member_custody.get(sha256)
         if not isinstance(custody, dict):
-            raise ValueError("COHORT_SOUP_MEMBER_CUSTODY_INVALID")
+            _invalid("COHORT_SOUP_MEMBER_CUSTODY_INVALID")
         graph = custody.get("source_graph_sha256")
         manifest = custody.get("accepted_manifest_sha256")
-        if (not isinstance(graph, str) or len(graph) != 64
+        if (not isinstance(graph, str) or len(graph) != SHA256_HEX_LENGTH
                 or any(char not in "0123456789abcdef" for char in graph)
-                or not isinstance(manifest, str) or len(manifest) != 64
+                or not isinstance(manifest, str)
+                or len(manifest) != SHA256_HEX_LENGTH
                 or any(char not in "0123456789abcdef" for char in manifest)):
-            raise ValueError("COHORT_SOUP_GRAPH_IDENTITY_INVALID")
+            _invalid("COHORT_SOUP_GRAPH_IDENTITY_INVALID")
         groups.setdefault(graph, []).append({
             **member,
             "accepted_manifest_sha256": manifest,
@@ -132,13 +138,13 @@ def partitioned_recipes(full_recipe: dict,
         })
         result.append({**contract, "recipe_sha256": _digest(contract)})
     if sum(item["vote_count"] for item in result) != full_recipe["vote_count"]:
-        raise ValueError("COHORT_SOUP_PARTITION_VOTE_DRIFT")
+        _invalid("COHORT_SOUP_PARTITION_VOTE_DRIFT")
     return tuple(result)
 
 
 def _parameter_signature(weights: dict) -> str:
     if not isinstance(weights, dict) or not weights:
-        raise ValueError("COHORT_SOUP_WEIGHTS_REQUIRED")
+        _invalid("COHORT_SOUP_WEIGHTS_REQUIRED")
     return _digest(tuple(
         (name, tuple(int(value) for value in array.shape), str(array.dtype))
         for name, array in sorted(weights.items())
@@ -152,11 +158,11 @@ def save_frozen_cohort_soup(run_dir: Path, recipe: dict, weights: dict, *,
 
     if (recipe.get("schema") != SCHEMA or not recipe.get("recipe_sha256")
             or not weights or any(array.dtype != mx.float32 for array in weights.values())):
-        raise ValueError("COHORT_SOUP_FROZEN_INPUT_INVALID")
+        _invalid("COHORT_SOUP_FROZEN_INPUT_INVALID")
     run_dir = Path(run_dir)
     root = run_dir / "soups"
     if root.is_symlink() or (root.exists() and not root.is_dir()):
-        raise ValueError("COHORT_SOUP_UNSAFE_DIRECTORY")
+        _invalid("COHORT_SOUP_UNSAFE_DIRECTORY")
     filename = f"cohort-{recipe['recipe_sha256']}.safetensors"
     target = root / filename
     required = sum(value.size * value.itemsize for value in weights.values())
@@ -170,7 +176,7 @@ def save_frozen_cohort_soup(run_dir: Path, recipe: dict, weights: dict, *,
         saved = digest_file(temporary)
         if target.exists() or target.is_symlink():
             if target.is_symlink() or digest_file(target) != saved:
-                raise ValueError("COHORT_SOUP_EXISTING_ARTIFACT_DRIFT")
+                _invalid("COHORT_SOUP_EXISTING_ARTIFACT_DRIFT")
         else:
             os.replace(temporary, target)
             folder = os.open(root, os.O_RDONLY)
@@ -198,28 +204,28 @@ def verify_frozen_cohort_soup(run_dir: Path, snapshot: dict, *,
     import mlx.core as mx
 
     if snapshot.get("schema") != SCHEMA or not snapshot.get("recipe_sha256"):
-        raise ValueError("COHORT_SOUP_SNAPSHOT_INVALID")
+        _invalid("COHORT_SOUP_SNAPSHOT_INVALID")
     expected = f"soups/cohort-{snapshot['recipe_sha256']}.safetensors"
     if (snapshot.get("filename") != expected
             or not isinstance(snapshot.get("sha256"), str)
-            or len(snapshot["sha256"]) != 64):
-        raise ValueError("COHORT_SOUP_PATH_INVALID")
+            or len(snapshot["sha256"]) != SHA256_HEX_LENGTH):
+        _invalid("COHORT_SOUP_PATH_INVALID")
     path = Path(run_dir) / expected
     if path.parent.is_symlink() or path.is_symlink() or not path.is_file():
-        raise ValueError("COHORT_SOUP_SAVED_ARTIFACT_MISSING")
+        _invalid("COHORT_SOUP_SAVED_ARTIFACT_MISSING")
     if not verify_file_digest(path, snapshot["sha256"]):
-        raise ValueError("COHORT_SOUP_SAVED_ARTIFACT_CHANGED")
+        _invalid("COHORT_SOUP_SAVED_ARTIFACT_CHANGED")
     weights = mx.load(str(path))
     if (not weights or any(array.dtype != mx.float32 for array in weights.values())
             or _parameter_signature(weights) != snapshot.get("parameter_signature_sha256")):
-        raise ValueError("COHORT_SOUP_PARAMETER_GEOMETRY_DRIFT")
+        _invalid("COHORT_SOUP_PARAMETER_GEOMETRY_DRIFT")
     if expected_weights is not None:
         if (set(weights) != set(expected_weights)
                 or any(value.dtype != mx.float32 for value in expected_weights.values())
                 or any(tuple(weights[name].shape) != tuple(expected_weights[name].shape)
                        or not bool(mx.array_equal(weights[name], expected_weights[name]))
                        for name in weights)):
-            raise ValueError("COHORT_SOUP_TRUSTED_RECONSTRUCTION_DRIFT")
+            _invalid("COHORT_SOUP_TRUSTED_RECONSTRUCTION_DRIFT")
     return weights
 
 
@@ -227,19 +233,19 @@ def read_frozen_cohort_soup(run_dir: Path, recipe: dict, *,
                             expected_weights: dict | None = None) -> dict | None:
     """Read the immutable recipe receipt used for cold-resume verification."""
     if recipe.get("schema") != SCHEMA or not recipe.get("recipe_sha256"):
-        raise ValueError("COHORT_SOUP_READ_RECIPE_INVALID")
+        _invalid("COHORT_SOUP_READ_RECIPE_INVALID")
     path = Path(run_dir) / "soups" / f"cohort-{recipe['recipe_sha256']}.json"
     if not path.exists():
         return None
     if path.is_symlink() or not path.is_file():
-        raise ValueError("COHORT_SOUP_RECEIPT_UNSAFE")
+        _invalid("COHORT_SOUP_RECEIPT_UNSAFE")
     try:
         snapshot = json.loads(path.read_text())
     except (OSError, json.JSONDecodeError):
-        raise ValueError("COHORT_SOUP_RECEIPT_INVALID") from None
+        _invalid("COHORT_SOUP_RECEIPT_INVALID")
     for key, value in recipe.items():
         if snapshot.get(key) != value:
-            raise ValueError("COHORT_SOUP_RECEIPT_RECIPE_DRIFT")
+            _invalid("COHORT_SOUP_RECEIPT_RECIPE_DRIFT")
     verify_frozen_cohort_soup(
         run_dir, snapshot, expected_weights=expected_weights)
     return snapshot
@@ -255,7 +261,7 @@ def seal_frozen_cohort_soup(run_dir: Path, snapshot: dict) -> Path:
                      allow_nan=False).encode()
     if target.exists() or target.is_symlink():
         if target.is_symlink() or target.read_bytes() != raw:
-            raise ValueError("COHORT_SOUP_RECEIPT_DRIFT")
+            _invalid("COHORT_SOUP_RECEIPT_DRIFT")
         return target
     temporary = root / f".cohort-{uuid.uuid4().hex}.json"
     try:
@@ -281,7 +287,7 @@ def cohort_vote_count(snapshot: dict, target_cohort: str, cohort_count: int) -> 
             or type(cohort_count) is not int or cohort_count < 1
             or type(snapshot.get("vote_count")) is not int
             or snapshot["vote_count"] < 1):
-        raise ValueError("COHORT_SOUP_VOTE_SCOPE_INVALID")
+        _invalid("COHORT_SOUP_VOTE_SCOPE_INVALID")
     base = snapshot["vote_count"]
     return float(base if snapshot["cohort_id"] == target_cohort else base / cohort_count)
 

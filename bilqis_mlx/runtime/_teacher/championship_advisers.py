@@ -8,6 +8,7 @@ import math
 
 import mlx.core as mx
 
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning._championship.adviser_supervision import (
     MentorRowInfluence, issue_mentor_supervision, mentor_policy_binding,
@@ -83,7 +84,8 @@ def _accepted_weights(run_dir, parent, cache, roles):
             _invalid("BAMF_ADVISER_PARAMETER_GEOMETRY_DRIFT")
         graph_sha256 = dict(student.compiler_features).get(
             "factory_semantic_graph_sha256")
-        if (not isinstance(graph_sha256, str) or len(graph_sha256) != 64):
+        if (not isinstance(graph_sha256, str)
+                or len(graph_sha256) != SHA256_HEX_LENGTH):
             _invalid("BAMF_ADVISER_SOURCE_GRAPH_IDENTITY_INVALID")
         by_sha[sha256] = dict(student.retained_state.optimizer.parameters)
         custody_by_sha[sha256] = {

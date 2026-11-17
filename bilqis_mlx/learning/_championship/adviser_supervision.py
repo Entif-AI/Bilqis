@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 import hashlib
 import math
 
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning._championship.champion_confidence import MAX_INFLUENCE
 from bilqis_mlx.learning._teacher_strategy.population import effective_policy_key
 from bilqis_mlx.runtime.source_execution import source_content_digest
@@ -13,6 +15,10 @@ from bilqis_mlx.runtime.source_execution import source_content_digest
 SCHEMA = "bilqis.mlx.championship-mentor-supervision/v1"
 ROW_SCHEMA = "bilqis.mlx.championship-mentor-row/v1"
 _ISSUER = object()
+
+
+def _invalid(reason):
+    ErrorBus.raise_(SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID, reason=reason)
 
 
 def _text(value) -> bool:
@@ -35,7 +41,7 @@ class MentorRowInfluence:
         if (self.schema_version != ROW_SCHEMA
                 or not _text(self.row_id) or not _text(self.capability_id)
                 or not isinstance(self.source_row_sha256, str)
-                or len(self.source_row_sha256) != 64
+                or len(self.source_row_sha256) != SHA256_HEX_LENGTH
                 or not math.isfinite(self.influence)
                 or not 0.0 <= self.influence <= MAX_INFLUENCE + 1e-12
                 or type(self.direct_votes) is not int or self.direct_votes < 0
@@ -44,7 +50,7 @@ class MentorRowInfluence:
                 or type(self.soup_advisers) is not tuple
                 or any(not isinstance(item, dict) for item in
                        (*self.direct_advisers, *self.soup_advisers))):
-            raise ValueError("MENTOR_ROW_INFLUENCE_INVALID")
+            _invalid("MENTOR_ROW_INFLUENCE_INVALID")
 
     def to_record(self) -> dict:
         return {
@@ -75,19 +81,19 @@ class MentorSupervision:
     _issuance: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
-        raise ValueError("MENTOR_SUPERVISION_CALLER_CONSTRUCTION_FORBIDDEN")
+        _invalid("MENTOR_SUPERVISION_CALLER_CONSTRUCTION_FORBIDDEN")
 
     def __post_init__(self):
         row_ids = tuple(item.row_id for item in self.rows)
         if (getattr(self, "_issuance", None) is not _ISSUER
                 or self.schema_version != SCHEMA
                 or not isinstance(self.accepted_manifest_sha256, str)
-                or len(self.accepted_manifest_sha256) != 64
+                or len(self.accepted_manifest_sha256) != SHA256_HEX_LENGTH
                 or not isinstance(self.championship_epoch_sha256, str)
-                or len(self.championship_epoch_sha256) != 64
+                or len(self.championship_epoch_sha256) != SHA256_HEX_LENGTH
                 or not _text(self.teacher_policy)
                 or not isinstance(self.policy_binding_sha256, str)
-                or len(self.policy_binding_sha256) != 64
+                or len(self.policy_binding_sha256) != SHA256_HEX_LENGTH
                 or type(self.source_seed) is not int
                 or type(self.rows) is not tuple
                 or any(type(item) is not MentorRowInfluence for item in self.rows)
@@ -98,7 +104,7 @@ class MentorSupervision:
                 or self.logical_direct_votes < 0
                 or not math.isfinite(self.logical_soup_votes)
                 or self.logical_soup_votes < 0.0):
-            raise ValueError("MENTOR_SUPERVISION_INVALID")
+            _invalid("MENTOR_SUPERVISION_INVALID")
         for item in self.rows:
             item.__post_init__()
 
@@ -106,14 +112,14 @@ class MentorSupervision:
         """Bind the bounded scalar to the exact compiled source row."""
         sources = getattr(compiled, "sources", ())
         if type(sources) is not tuple or len(sources) != 1:
-            raise ValueError("MENTOR_SUPERVISION_COMPILED_ROW_REQUIRED")
+            _invalid("MENTOR_SUPERVISION_COMPILED_ROW_REQUIRED")
         row = sources[0].source_row
         if not isinstance(row, dict) or not _text(row.get("id")):
-            raise ValueError("MENTOR_SUPERVISION_SOURCE_ROW_INVALID")
+            _invalid("MENTOR_SUPERVISION_SOURCE_ROW_INVALID")
         digest = source_content_digest((row,))
         matches = tuple(item for item in self.rows if item.row_id == row["id"])
         if len(matches) != 1 or matches[0].source_row_sha256 != digest:
-            raise ValueError("MENTOR_SUPERVISION_SOURCE_ROW_DRIFT")
+            _invalid("MENTOR_SUPERVISION_SOURCE_ROW_DRIFT")
         return matches[0].influence
 
     def require_current(self, accepted_manifest_sha256: str,
@@ -124,11 +130,11 @@ class MentorSupervision:
                 or self.teacher_policy != teacher_policy
                 or self.policy_binding_sha256 != policy_binding_sha256
                 or self.source_seed != source_seed):
-            raise ValueError("MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+            _invalid("MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
 
     def require_evidence(self, mentors, guidance) -> None:
         if mentors != self.to_record() or guidance != self.guidance_record():
-            raise ValueError("MENTOR_SUPERVISION_EVIDENCE_DRIFT")
+            _invalid("MENTOR_SUPERVISION_EVIDENCE_DRIFT")
 
     def to_record(self) -> dict:
         return {
@@ -156,7 +162,7 @@ class MentorSupervision:
 
 def mentor_policy_binding(teacher_policy: str, teacher_strategy: dict) -> str:
     if not _text(teacher_policy) or not isinstance(teacher_strategy, dict):
-        raise ValueError("MENTOR_SUPERVISION_POLICY_BINDING_INVALID")
+        _invalid("MENTOR_SUPERVISION_POLICY_BINDING_INVALID")
     effective = effective_policy_key(teacher_strategy)
     raw = (
         "bilqis.mlx.championship-mentor-policy-binding/v1\0"

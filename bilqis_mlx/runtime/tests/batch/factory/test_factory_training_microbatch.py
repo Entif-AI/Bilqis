@@ -11,6 +11,7 @@ import bilqis_mlx.learning._engram.atlas_engram_source_context as motif_context_
 import bilqis_mlx.learning.atlas_engram_reads.source_owner as motif_read_impl
 import bilqis_mlx.learning.source_atoms.embedding as source_embedding_impl
 import bilqis_mlx.semantics.atlas_features.formal as formal_features_impl
+from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning._championship.adviser_supervision import (
     MentorRowInfluence, issue_mentor_supervision, mentor_policy_binding,
 )
@@ -88,20 +89,32 @@ class MentorDispatchContractTests(unittest.TestCase):
             logical_soup_votes=0.0)
         supervision.require_current(
             "d" * 64, "a" * 64, "test-policy", binding, 17)
-        with self.assertRaisesRegex(ValueError, "CURRENTNESS_DRIFT"):
+        with self.assertRaises(BilqisError) as caught:
             supervision.require_current(
                 "d" * 64, "c" * 64, "test-policy", binding, 17)
-        with self.assertRaisesRegex(ValueError, "CURRENTNESS_DRIFT"):
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+        with self.assertRaises(BilqisError) as caught:
             supervision.require_current(
                 "d" * 64, "a" * 64, "test-policy",
                 mentor_policy_binding("test-policy", {**strategy, "distill": 0.75}),
                 17)
-        with self.assertRaisesRegex(ValueError, "CURRENTNESS_DRIFT"):
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+        with self.assertRaises(BilqisError) as caught:
             supervision.require_current(
                 "e" * 64, "a" * 64, "test-policy", binding, 17)
-        with self.assertRaisesRegex(ValueError, "CURRENTNESS_DRIFT"):
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+        with self.assertRaises(BilqisError) as caught:
             supervision.require_current(
                 "d" * 64, "a" * 64, "test-policy", binding, 18)
+        self.assertEqual(
+            caught.exception.context["reason"],
+            "MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
         self.assertEqual(
             supervision.guidance_record(),
             {"schema": "bilqis.mlx.championship-guidance/v1",

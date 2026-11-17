@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import time
 
+from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.atlas_resources import MemoryBudget
 from bilqis_mlx.runtime.bamf_bundle import (
     AuthenticatedGenerationFeatureContext, CompleteStudent,
@@ -111,7 +112,7 @@ def _execute_prepared_candidate(
         try:
             mentor_supervision.require_evidence(
                 observation.mentors, observation.guidance)
-        except ValueError:
+        except BilqisError:
             _invalid("FACTORY_MENTOR_EVIDENCE_DRIFT")
     identity_before = candidate_identity_metrics_snapshot()
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
@@ -261,7 +262,7 @@ def _require_mentor_supervision_current(
         )
         mentor_supervision.require_evidence(
             observation.mentors, observation.guidance)
-    except ValueError:
+    except BilqisError:
         _invalid("FACTORY_MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
 
 

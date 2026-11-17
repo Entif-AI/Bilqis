@@ -5,6 +5,7 @@ import unittest
 
 import numpy as np
 
+from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning._championship.cohort_soup import (
     cohort_soup_recipe, cohort_vote_count, partitioned_recipes,
     read_frozen_cohort_soup, save_frozen_cohort_soup, seal_frozen_cohort_soup,
@@ -108,8 +109,11 @@ class GeneratedCohortSoupTests(unittest.TestCase):
                 [[1., 3.]])
             blob = root / snapshot["filename"]
             blob.write_bytes(blob.read_bytes() + b"corrupt")
-            with self.assertRaisesRegex(ValueError, "ARTIFACT_CHANGED"):
+            with self.assertRaises(BilqisError) as caught:
                 read_frozen_cohort_soup(root, plan)
+            self.assertEqual(
+                caught.exception.context["reason"],
+                "COHORT_SOUP_SAVED_ARTIFACT_CHANGED")
 
     def test_cold_receipt_cannot_authorize_coordinated_tensor_forgery(self):
         import json
@@ -137,10 +141,12 @@ class GeneratedCohortSoupTests(unittest.TestCase):
                 snapshot["parameter_signature_sha256"])
             receipt_path.write_text(
                 json.dumps(forged_snapshot, sort_keys=True, separators=(",", ":")))
-            with self.assertRaisesRegex(
-                    ValueError, "TRUSTED_RECONSTRUCTION_DRIFT"):
+            with self.assertRaises(BilqisError) as caught:
                 read_frozen_cohort_soup(
                     root, plan, expected_weights=trusted)
+            self.assertEqual(
+                caught.exception.context["reason"],
+                "COHORT_SOUP_TRUSTED_RECONSTRUCTION_DRIFT")
 
     def test_soup_averages_only_parameter_values(self):
         import mlx.core as mx

@@ -1,6 +1,7 @@
 """C08 execution of source-bound Factory rows as scalar or true MLX microbatches."""
 from __future__ import annotations
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.atlas_model import (
     bamf_microbatch_value_and_grad, bamf_value_and_grad, microbatch_compatible,
 )
@@ -31,7 +32,9 @@ def _mentor_multiplier(mentor_supervision, compiled):
         return 1.0
     from bilqis_mlx.learning._championship.adviser_supervision import MentorSupervision
     if type(mentor_supervision) is not MentorSupervision:
-        raise ValueError("FACTORY_MENTOR_SUPERVISION_TYPE_INVALID")
+        ErrorBus.raise_(
+            SCHOOL.BAMF_TRAINING_ADAPTER.INVALID,
+            reason="FACTORY_MENTOR_SUPERVISION_TYPE_INVALID")
     return 1.0 + mentor_supervision.influence_for(compiled)
 
 
