@@ -93,7 +93,9 @@ def _run_fixed_optimizer_steps(horizon: int, *, total_steps: int = 16):
                 "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
                 return_value=evaluation) as evaluate, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
-                return_value=decision) as certify:
+                return_value=decision) as certify, patch(
+                    "bilqis_mlx.runtime.outcomes.issuance.build_outcome",
+                    return_value={}):
             prepared = prepare_bamf_visit(Path("/tmp"), steps_per_visit=horizon)
         assert prepared.status == "REJECTED"
         assert prepared.step.transaction.update_steps == horizon

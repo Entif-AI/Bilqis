@@ -183,7 +183,7 @@ class LawfulTeachingProjectionTests(unittest.TestCase):
             ),
         )
         for capabilities, expected in cases:
-            with self.subTest(expected=expected):
+            with self.subTest(expected=expected.value):
                 active_id = capabilities[0].capability_id
                 exclusion = next(
                     item for item in _exclusions(release, capabilities)

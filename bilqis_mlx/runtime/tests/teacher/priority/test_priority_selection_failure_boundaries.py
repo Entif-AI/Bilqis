@@ -87,6 +87,7 @@ class Offer:
 def lawful():
     return SimpleNamespace(
         ready_capability_ids=("cap",),
+        exclusions=(),
         _planning_generation=SimpleNamespace(
             parent_candidate_identity_sha256="student-id"))
 
