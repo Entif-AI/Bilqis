@@ -22,7 +22,7 @@ from bilqis_mlx.runtime.tests.bamf_first_student._bamf_first_student_support imp
 from bilqis_mlx.runtime.tests.admission.atlas.test_atlas_admission import _REGISTRY
 from bilqis_mlx.runtime.tests.admission.atlas.lease.test_v2 import _lease_v2
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
-    genesis_feature_source_patch, source_features,
+    accepted_feature_source_patch, genesis_feature_source_patch,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 
@@ -77,9 +77,7 @@ class BamfAtlasReleaseCreateTests(BamfFirstStudentCase):
                 "bilqis_mlx.semantics.atlas.snapshot.resolve_atlas_artifact_selection",
                 return_value=self.selection), patch(
                 "bilqis_mlx.runtime.bamf_first_student.resolve_atlas_artifact_selection",
-                return_value=self.selection), patch(
-                "bilqis_mlx.runtime.bamf_bundle.feature_authority._authenticate_features",
-                return_value=source_features()), patch.object(
+                return_value=self.selection), accepted_feature_source_patch(), patch.object(
                 mlx_checkpoint, "assert_headroom"), patch(
                 "bilqis_mlx.runtime.bamf_bundle.codec.assert_headroom"), patch(
                 HOST_READER, return_value=_REGISTRY):
@@ -87,9 +85,7 @@ class BamfAtlasReleaseCreateTests(BamfFirstStudentCase):
 
     @contextmanager
     def c07_read_context(self):
-        with shape_patch(), patch(
-                "bilqis_mlx.runtime.bamf_bundle.feature_authority._authenticate_features",
-                return_value=source_features()), patch(
+        with shape_patch(), accepted_feature_source_patch(), patch(
                 HOST_READER, return_value=_REGISTRY):
             yield
 
