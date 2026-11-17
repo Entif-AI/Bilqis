@@ -103,7 +103,8 @@ def _emit_retention_scorecard(
 
 def evaluate_retention_candidate(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
-        parent_generation, candidate_generation, *, observer=None) -> Decision:
+        parent_generation, candidate_generation, *, observer=None,
+        plasticity_escape=None) -> Decision:
     """Run the authoritative C05 cohorts before deciding candidate retention."""
     required_kinds = (
         EvidenceKind.FRESH_TARGET, EvidenceKind.FRESH_LESSON,
@@ -140,7 +141,9 @@ def evaluate_retention_candidate(
     _emit_retention_scorecard(
         observer, target_capability, policy, next(iter(stages)),
         target_pair, fixed_school_pair)
-    return retain_candidate(parent_generation, candidate_generation, evidence)
+    return retain_candidate(
+        parent_generation, candidate_generation, evidence,
+        plasticity_escape=plasticity_escape)
 
 
 __all__ = ("evaluate_retention_candidate",)

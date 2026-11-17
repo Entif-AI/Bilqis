@@ -46,6 +46,9 @@ def validate_learning_health_state(record):
             _invalid("LEARNING_HEALTH_STATE_CAPABILITY_INVALID")
     for surface in record.get("certified_surfaces", []):
         _validate_certified_surface(surface)
+    if "plasticity_escape" in record:
+        from bilqis_mlx.runtime.plasticity_escape import PlasticityEscapeState
+        PlasticityEscapeState.from_record(record["plasticity_escape"])
     return record
 
 
