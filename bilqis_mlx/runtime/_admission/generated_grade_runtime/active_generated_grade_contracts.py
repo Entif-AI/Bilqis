@@ -33,7 +33,7 @@ def _sha(value: object) -> bool:
 
 def definition_record(definition: GeneratedGradeDefinition) -> dict:
     definition.verify()
-    return {
+    result = {
         "schema": definition.schema,
         "adopted_release_sha256": definition.adopted_release_sha256,
         "release_lineage_sha256s": list(definition.release_lineage_sha256s),
@@ -56,6 +56,10 @@ def definition_record(definition: GeneratedGradeDefinition) -> dict:
         ],
         "definition_sha256": definition.definition_sha256,
     }
+    if definition.predecessor_certification_sha256 is not None:
+        result["predecessor_certification_sha256"] = (
+            definition.predecessor_certification_sha256)
+    return result
 
 
 def definition_from_record(record: dict) -> GeneratedGradeDefinition:
@@ -81,6 +85,8 @@ def definition_from_record(record: dict) -> GeneratedGradeDefinition:
                 for item in record["members"]
             ),
             definition_sha256=record["definition_sha256"],
+            predecessor_certification_sha256=record.get(
+                "predecessor_certification_sha256"),
             schema=record["schema"],
         )
     except (KeyError, TypeError, ValueError):

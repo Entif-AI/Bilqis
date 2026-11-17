@@ -115,8 +115,9 @@ def _restore_state(run_dir, lawful_frontier, member_order, census,
         if state.phase is ActiveGradeCadencePhase.BOUNDARY:
             state = new_state(
                 run_dir, state, lawful_frontier,
-                phase=ActiveGradeCadencePhase.MAIN, phase_round=0,
-                phase_capability_ids=member_order,
+                phase=ActiveGradeCadencePhase.BOUNDARY,
+                phase_round=MAX_RECOVERY_ROUNDS + 1,
+                phase_capability_ids=(),
                 deficit_evidence_sha256=deficit_digest,
                 member_census_sha256=census,
                 cadence_epoch=state.cadence_epoch + 1,

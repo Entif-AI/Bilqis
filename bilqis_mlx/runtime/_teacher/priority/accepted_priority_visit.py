@@ -78,7 +78,8 @@ def _selected_priority_result(
         'TEACHER_SELECTED', option.stable_id, offer, visit, policy,
         metadata, grade, sorted(holds), run_dir, lawful_frontier,
         ranking_evidence=ranking_evidence,
-        source_materialization_wall_seconds=source_materialization_wall_seconds)
+        source_materialization_wall_seconds=source_materialization_wall_seconds,
+        cadence_authorization=cadence_authorization)
 
 
 def _accepted_context(run_dir, source_context, school, lawful_frontier,
@@ -132,7 +133,8 @@ def _empty_priority_result(run_dir, source_context, parent, frontier, history,
             holds.append(('__active_grade__', 'CADENCE_' + disposition))
     return _issue_result(
         'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata, None,
-        holds, run_dir, lawful_frontier)
+        holds, run_dir, lawful_frontier,
+        cadence_authorization=cadence_authorization)
 
 
 def select_accepted_priority_visit(
@@ -177,7 +179,8 @@ def select_accepted_priority_visit(
         if option.action_kind in (ActionKind.CORRECTION, ActionKind.PROCEDURE_REPAIR):
             return _issue_result(
                 'ACTION_REQUIRED', option.stable_id, None, None, None,
-                cadence_metadata, None, sorted(holds), run_dir, lawful_frontier)
+                cadence_metadata, None, sorted(holds), run_dir, lawful_frontier,
+                cadence_authorization=cadence_authorization)
         offer = by_id[option.stable_id]
         materialization_started = time.perf_counter()
         try:
@@ -198,5 +201,6 @@ def select_accepted_priority_visit(
             source_materialization_wall_seconds)
     return _issue_result(
         'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata,
-        None, sorted(holds), run_dir, lawful_frontier)
+        None, sorted(holds), run_dir, lawful_frontier,
+        cadence_authorization=cadence_authorization)
 

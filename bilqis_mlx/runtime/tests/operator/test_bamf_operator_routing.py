@@ -96,7 +96,7 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 return_value="school"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=held), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
+                "bilqis_mlx.runtime.bamf_operator.session._execute_selected_visit",
                 side_effect=AssertionError("optimizer candidate must not run")):
             self.assertEqual(_visit("/run", 0.0), "HELD")
 
@@ -152,22 +152,22 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 return_value="school"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.bind_accepted_execution_cache",
                 return_value=cache), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.rejection_attempt_ordinals",
                 return_value=(1, 1)), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.candidate_step_horizon",
                 return_value=1), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._Capture",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.prepare_candidate_evidence_root"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session._Capture",
                 return_value=capture), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.FactoryDeliveryObservation",
                 return_value="observation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.execute_accepted_priority_candidate",
                 return_value=step), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.evaluate_factory_retention_candidate",
                 return_value=evaluation), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.issue_factory_retention_decision",
                 return_value=decision), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.record_bamf_rejection") as rejection:
             self.assertEqual(_visit(Path("/tmp"), 0.0), "REJECTED")
@@ -246,22 +246,22 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                 return_value="school"), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
                 return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.bind_accepted_execution_cache",
                 return_value=cache), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.rejection_attempt_ordinals",
                 return_value=(1, 1)), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.candidate_step_horizon",
                 return_value=1), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._Capture",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.prepare_candidate_evidence_root"), patch(
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session._Capture",
                 return_value=capture), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.FactoryDeliveryObservation",
                 return_value="observation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.execute_accepted_priority_candidate",
                 side_effect=execute), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.evaluate_factory_retention_candidate",
                 return_value=evaluation), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.issue_factory_retention_decision",
                 return_value=decision), patch(
                 "bilqis_mlx.runtime.bamf_operator.session.record_bamf_rejection"):
             self.assertEqual(_visit(Path("/tmp"), 0.0), "REJECTED")

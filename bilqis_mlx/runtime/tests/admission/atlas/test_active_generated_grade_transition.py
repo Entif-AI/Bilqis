@@ -2,11 +2,18 @@
 from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 import unittest
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
+from bilqis_mlx.factory.generated_grade.definition import (
+    GENERATED_GRADE_DEFINITION_V2,
+)
+from bilqis_mlx.factory.generated_grade.proposal_contracts import (
+    GENERATED_GRADE_PROPOSAL_V2,
+)
 from bilqis_mlx.factory.tests.curriculum.generated_grade.test_definition import (
     _single_member_fixture,
 )
@@ -186,36 +193,83 @@ class ActiveGeneratedGradeTransitionTests(unittest.TestCase):
             self.assertTrue(
                 (commits / f"{cold.activation_sha256}.json").is_file())
 
-    def test_certification_transition_has_no_local_self_minting_path(self):
-        import bilqis_mlx.runtime.active_generated_grade as active_grade_module
+    def test_certification_transition_is_minted_by_1314_from_exact_live_1334_receipt(self):
         from bilqis_mlx.runtime.active_generated_grade import (
             activate_accepted_generated_grade,
             activate_certified_generated_grade,
         )
 
         proposal, definition = _fixture()
-        _release, successor_proposal = _single_member_fixture(
+        certification_sha = "c" * 64
+        _release, raw_successor = _single_member_fixture(
             "skos:future-z", "Z.FUTURE")
+        successor_draft = replace(
+            raw_successor,
+            predecessor_certification_sha256=certification_sha,
+            schema=GENERATED_GRADE_PROPOSAL_V2,
+            proposal_sha256="0" * 64,
+        )
+        successor_proposal = replace(
+            successor_draft,
+            proposal_sha256=successor_draft.expected_digest(),
+        )
         successor_definition = _successor_definition(
             definition, successor_proposal)
+        successor_definition = replace(
+            successor_definition,
+            predecessor_certification_sha256=certification_sha,
+            schema=GENERATED_GRADE_DEFINITION_V2,
+            definition_sha256="0" * 64,
+        )
+        successor_definition = replace(
+            successor_definition,
+            definition_sha256=successor_definition.expected_digest(),
+        )
         with TemporaryDirectory() as directory:
             root = Path(directory)
             patches = self._patches(
                 proposal, definition, second=successor_proposal,
                 second_definition=successor_definition)
             with patches[0], patches[1], patches[2], patches[3], patches[4], patches[5], patches[6]:
-                activate_accepted_generated_grade(root, proposal)
-                with self.assertRaises(BilqisError) as forged:
-                    activate_certified_generated_grade(
-                        root, successor_proposal, transition_authority=object())
-
-        self.assertEqual(
-            forged.exception.context.get("reason"),
-            "BAMF_ACTIVE_GENERATED_GRADE_CERTIFICATION_AUTHORITY_REQUIRED")
-        self.assertFalse(hasattr(
-            active_grade_module,
-            "_issue_certified_grade_transition_authority",
-        ))
+                predecessor = activate_accepted_generated_grade(root, proposal)
+                receipt = SimpleNamespace(
+                    receipt_sha256=certification_sha,
+                    predecessor_activation_sha256=predecessor.activation_sha256,
+                    predecessor_definition_sha256=definition.definition_sha256,
+                )
+                with patch(
+                    "bilqis_mlx.runtime.grade_certification."
+                    "require_current_accepted_certification_receipt",
+                    side_effect=AssertionError(
+                        "post-adoption #1314 must not require pre-adoption currentness"),
+                ), patch(
+                    "bilqis_mlx.runtime.grade_certification_custody."
+                    "certification_receipt_for_predecessor",
+                    return_value=receipt,
+                ), patch(
+                    "bilqis_mlx.runtime.active_generated_grade_certification."
+                    "_read_issued_proposal",
+                    return_value=successor_proposal,
+                ), patch(
+                    "bilqis_mlx.runtime.active_generated_grade_custody."
+                    "_accepted_bound_generated_grade_proposal",
+                    return_value=successor_proposal,
+                ):
+                    certified = activate_certified_generated_grade(
+                        root,
+                        certification_receipt_sha256=receipt.receipt_sha256)
+                    self.assertEqual(certified.transition_kind, "CERTIFICATION")
+                    self.assertEqual(
+                        certified.definition.predecessor_certification_sha256,
+                        receipt.receipt_sha256)
+                    self.assertNotEqual(
+                        certified.transition_receipt_sha256,
+                        receipt.receipt_sha256)
+                    cold = __import__(
+                        "bilqis_mlx.runtime.active_generated_grade",
+                        fromlist=["read_active_generated_grade"],
+                    ).read_active_generated_grade(root)
+                    self.assertEqual(cold, certified)
 
 
 if __name__ == "__main__":
