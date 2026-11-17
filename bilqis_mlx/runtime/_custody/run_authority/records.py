@@ -4,10 +4,15 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass, fields
 from typing import Mapping
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.bamf_bundle.records import canonical, sha
 
 RUN_AUTHORITY_SCHEMA = "bilqis.mlx.run-authority/v1"
 RUN_AUTHORITY_BINDING_SCHEMA = "bilqis.mlx.run-authority-binding/v1"
+
+
+def _invalid(reason: str) -> None:
+    ErrorBus.raise_(SCHOOL.BAMF_RUN_AUTHORITY.INVALID, reason=reason)
 
 
 def _hex(value: object) -> bool:
@@ -43,9 +48,9 @@ class RunAuthorityIdentity:
                 or (self.expires_at_unix_seconds is not None
                     and (type(self.expires_at_unix_seconds) is not int
                          or self.expires_at_unix_seconds < 0))):
-            raise ValueError("BAMF_RUN_AUTHORITY_IDENTITY_FIELDS_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_IDENTITY_FIELDS_INVALID")
         if self.resume_identity_sha256 != self._expected_resume_identity():
-            raise ValueError("BAMF_RUN_AUTHORITY_RESUME_IDENTITY_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_RESUME_IDENTITY_INVALID")
 
     def _resume_payload(self) -> dict:
         return {
@@ -91,10 +96,10 @@ class RunAuthorityIdentity:
         names = {field.name for field in fields(cls)}
         if (not isinstance(record, Mapping)
                 or set(record) != names | {"run_authority_sha256"}):
-            raise ValueError("BAMF_RUN_AUTHORITY_IDENTITY_RECORD_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_IDENTITY_RECORD_INVALID")
         value = cls(**{name: record[name] for name in names})
         if record["run_authority_sha256"] != value.digest:
-            raise ValueError("BAMF_RUN_AUTHORITY_IDENTITY_DIGEST_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_IDENTITY_DIGEST_INVALID")
         return value
 
 
@@ -113,7 +118,7 @@ class RunAuthorityBindingRecord:
                 or not _hex(self.run_identity_sha256)
                 or type(self.authority) is not RunAuthorityIdentity
                 or self.authority.run_id != self.run_id):
-            raise ValueError("BAMF_RUN_AUTHORITY_BINDING_FIELDS_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_BINDING_FIELDS_INVALID")
 
     @property
     def digest(self) -> str:
@@ -140,11 +145,11 @@ class RunAuthorityBindingRecord:
             "authority", "binding_sha256",
         }
         if not isinstance(record, Mapping) or set(record) != expected:
-            raise ValueError("BAMF_RUN_AUTHORITY_BINDING_RECORD_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_BINDING_RECORD_INVALID")
         value = cls(
             record["run_id"], record["run_identity_sha256"],
             RunAuthorityIdentity.from_record(record["authority"]),
             record["schema_version"])
         if record["binding_sha256"] != value.digest:
-            raise ValueError("BAMF_RUN_AUTHORITY_BINDING_DIGEST_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_BINDING_DIGEST_INVALID")
         return value

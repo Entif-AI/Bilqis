@@ -5,10 +5,15 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 import time
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.bamf_bundle.records import canonical, sha
 from bilqis_mlx.runtime.experiment_runs import ExperimentRunBudget, MAX_RUNS
 
 from .records import RunAuthorityIdentity
+
+
+def _invalid(reason: str) -> None:
+    ErrorBus.raise_(SCHOOL.BAMF_RUN_AUTHORITY.INVALID, reason=reason)
 
 
 class RunAuthority(ABC):
@@ -62,12 +67,12 @@ class ExperimentRunAuthority(RunAuthority):
                  owner_identity: str,
                  expires_at_unix_seconds: int | None = None) -> None:
         if not isinstance(owner, ExperimentRunBudget):
-            raise TypeError("BAMF_RUN_AUTHORITY_OWNER_INVALID")
+            _invalid("BAMF_RUN_AUTHORITY_OWNER_INVALID")
         self._owner = owner
         supplied = Path(run_dir).expanduser()
         self._owner_run_dir = owner.root / supplied.name
         if supplied.resolve() != self._owner_run_dir.resolve():
-            raise RuntimeError("BAMF_RUN_AUTHORITY_TARGET_DRIFT")
+            _invalid("BAMF_RUN_AUTHORITY_TARGET_DRIFT")
         self._run_dir = supplied.resolve()
         self._owner_identity = owner_identity
         self._expires_at = expires_at_unix_seconds
@@ -83,16 +88,16 @@ class ExperimentRunAuthority(RunAuthority):
                        now: float | None = None) -> RunAuthorityIdentity:
         target = Path(run_dir).expanduser().resolve()
         if target != self._run_dir or expected_run_id != self._identity.run_id:
-            raise RuntimeError("BAMF_RUN_AUTHORITY_TARGET_DRIFT")
+            _invalid("BAMF_RUN_AUTHORITY_TARGET_DRIFT")
         instant = time.time() if now is None else now
         if (self._expires_at is not None and instant >= self._expires_at):
-            raise RuntimeError("BAMF_RUN_AUTHORITY_EXPIRED")
+            _invalid("BAMF_RUN_AUTHORITY_EXPIRED")
         current = _identity(
             self._owner, self._owner_run_dir, expected_run_id,
             owner_identity=self._owner_identity,
             expires_at_unix_seconds=self._expires_at)
         if current.digest != self._identity.digest:
-            raise RuntimeError("BAMF_RUN_AUTHORITY_CUSTODY_DRIFT")
+            _invalid("BAMF_RUN_AUTHORITY_CUSTODY_DRIFT")
         return current
 
 

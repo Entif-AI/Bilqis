@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
+from bilqis_mlx.errors import BilqisError, SCHOOL
 from bilqis_mlx.runtime.experiment_runs import ExperimentRunBudget
 from bilqis_mlx.runtime.run_authority import (
     bind_native_run_authority,
@@ -55,8 +56,10 @@ class NativeRunAuthorityTests(unittest.TestCase):
     def test_expired_authority_fails_before_binding(self):
         authority = issue_experiment_run_authority(
             self.owner, self.run, self.run_id, expires_at_unix_seconds=10)
-        with self.assertRaisesRegex(RuntimeError, "BAMF_RUN_AUTHORITY_EXPIRED"):
+        with self.assertRaises(BilqisError) as caught:
             self._bind(authority, now=10)
+        self.assertIs(caught.exception.spec, SCHOOL.BAMF_RUN_AUTHORITY.INVALID)
+        self.assertEqual(caught.exception.context["reason"], "BAMF_RUN_AUTHORITY_EXPIRED")
 
     def test_collective_budget_exhaustion_fails_before_binding(self):
         owner = ExperimentRunBudget(self.root / "budget", max_bytes=128_000)
@@ -77,8 +80,11 @@ class NativeRunAuthorityTests(unittest.TestCase):
         changed = issue_experiment_run_authority(
             self.owner, self.run, self.run_id,
             owner_identity="experiment:other-owner")
-        with self.assertRaisesRegex(RuntimeError, "BAMF_RUN_AUTHORITY_RESUME_DRIFT"):
+        with self.assertRaises(BilqisError) as caught:
             self._bind(changed)
+        self.assertIs(caught.exception.spec, SCHOOL.BAMF_RUN_AUTHORITY.INVALID)
+        self.assertEqual(
+            caught.exception.context["reason"], "BAMF_RUN_AUTHORITY_RESUME_DRIFT")
 
 
 if __name__ == "__main__":

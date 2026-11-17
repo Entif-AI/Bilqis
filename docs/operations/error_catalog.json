@@ -13958,6 +13958,20 @@
       "title": "BAMF resource plan or gradient boundary invalid"
     },
     {
+      "code": "SCHOOL.BAMF_RUN_AUTHORITY.INVALID",
+      "disposition": "PRESERVE_AND_INSPECT",
+      "legacy_codes": [],
+      "message_key": "errors.school.bamf_run_authority.invalid.message",
+      "message_template": "Native BAMF run authority is invalid: {reason}",
+      "next_action": "Preserve the run and reconcile registered custody, exact run identity, budget policy, and the persisted authority binding before retrying.",
+      "operator_steps": [],
+      "owner": "runtime.run_authority",
+      "preserve_state": true,
+      "recovery_key": "errors.school.bamf_run_authority.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "BAMF run authority invalid"
+    },
+    {
       "code": "SCHOOL.BAMF_REVALIDATION.INVALID",
       "disposition": "PRESERVE_AND_INSPECT",
       "legacy_codes": [],
