@@ -5,11 +5,12 @@ import time
 
 
 def _mentor_observation(
-        adviser_pool, source_rows, selection, capture, optimizer_step,
+        adviser_pool, source_rows, enrichment_rows, selection, capture, optimizer_step,
         delivery_observation_cls):
     if adviser_pool is None:
         return delivery_observation_cls(
-            capture, optimizer_step, source_rows, selection.offer.source_seed), None
+            capture, optimizer_step, source_rows, selection.offer.source_seed,
+            enrichment=enrichment_rows)
     from bilqis_mlx.runtime.championship_advisers import (
         championship_mentor_supervision,
     )
@@ -18,7 +19,8 @@ def _mentor_observation(
         teacher_strategy=selection.policy)
     observation = delivery_observation_cls(
         capture, optimizer_step, source_rows, selection.offer.source_seed,
-        guidance=supervision.guidance_record(), mentors=supervision.to_record())
+        enrichment=enrichment_rows, guidance=supervision.guidance_record(),
+        mentors=supervision.to_record(), _mentor_supervision=supervision)
     return observation, supervision
 
 
@@ -70,10 +72,12 @@ def execute_horizon(
         if callable(begin_step):
             begin_step(ordinal, parent.retained_state.optimizer_step + ordinal)
         source_prepare_started = candidate_step_started_at
-        source_rows = rows if source_lane is None else source_lane.rows(ordinal)
+        lesson = None if source_lane is None else source_lane.lesson(ordinal)
+        source_rows = rows if lesson is None else lesson.direct
+        enrichment_rows = () if lesson is None else lesson.enrichment
         source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
         observation, mentor_supervision = _mentor_observation(
-            adviser_pool, source_rows, selection, capture,
+            adviser_pool, source_rows, enrichment_rows, selection, capture,
             parent.retained_state.optimizer_step + ordinal,
             delivery_observation_cls)
         emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
@@ -81,11 +85,11 @@ def execute_horizon(
             selection, context, atlas_path, feature_path,
             teacher_hparams=parent.optimizer_hyperparameters,
             observation=observation,
-            mentor_supervision=mentor_supervision,
             optimizer_step_seed=step_seed(selection.visit.identity.visit_id, ordinal),
             max_norm=1.0, candidate=candidate,
             finalize_candidate=(ordinal == horizon),
             prepared_source_rows=(source_rows if source_lane is not None else None),
+            prepared_enrichment_rows=enrichment_rows,
             candidate_step_started_at=candidate_step_started_at,
             source_prepare_wall_seconds=source_prepare_wall_seconds)
         candidate = step.transaction

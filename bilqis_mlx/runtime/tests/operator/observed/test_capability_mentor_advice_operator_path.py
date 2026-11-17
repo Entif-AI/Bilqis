@@ -98,7 +98,9 @@ class NativeChampionshipMentorAdviceTests(NativeChampionshipCase):
         self.assertEqual(
             observation.call_args.kwargs["guidance"],
             guidance_record)
-        self.assertIs(execute.call_args.kwargs["mentor_supervision"], mentor)
+        self.assertIs(
+            observation.call_args.kwargs["_mentor_supervision"], mentor)
+        self.assertNotIn("mentor_supervision", execute.call_args.kwargs)
 
     def _shared_checkpoint_parent(self):
         self.context = _runtime_context(self, group=self.GROUP if hasattr(self, "GROUP") else "factory-group-zeta")

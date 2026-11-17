@@ -13,12 +13,12 @@ from bilqis_mlx.learning._championship.cohort_soup import (
     verify_frozen_cohort_soup,
 )
 from bilqis_mlx.runtime.state import _fingerprint
-from tests.system.test_factory_grade_z import CAPABILITIES, _fixture
+from tests.system.factory_grade_z.fixture import CAPABILITIES, fixture
 
 
 def test_grade_z_forms_and_cold_consumes_generic_frozen_cohort_soup():
     mx.set_default_device(mx.cpu)
-    _registry, graph, release = _fixture()
+    _registry, graph, release = fixture()
     capability = CAPABILITIES[0]
     checkpoint_sha = "1" * 64
     state = {"active_roles": {capability: {

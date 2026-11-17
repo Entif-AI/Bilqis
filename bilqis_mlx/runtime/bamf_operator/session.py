@@ -117,6 +117,50 @@ def _retention_result(
         measure_observed_phase_fn=measure_observed_phase)
 
 
+def _execute_selected_visit(
+        run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
+        steps_per_visit, reserve_gib, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer):
+    rows = selection.offer.rows()
+    if observer is not None:
+        from .evidence_projection import (
+            selected_visit_evidence, unknown_generated_grade_evidence,
+        )
+        visit_evidence = selected_visit_evidence(selection)
+        observer.update(
+            visit_evidence=visit_evidence,
+            generated_grade_evidence=unknown_generated_grade_evidence(
+                visit_evidence.get("grade_id")),
+        )
+    _emit_progress(
+        progress,
+        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
+    capability = selection.offer.capability_id
+    if host_cache is not None:
+        bind_current_retention_source_rows(context, host_cache, capability)
+    adviser_cache = (
+        host_cache if host_cache is not None
+        else bind_accepted_execution_cache(run_dir))
+    from bilqis_mlx.runtime.championship_advisers import (
+        prepare_championship_adviser_pool,
+    )
+    adviser_pool = prepare_championship_adviser_pool(
+        run_dir, parent, context, atlas_path, adviser_cache,
+        reserve_gib=reserve_gib)
+    horizon_state = _candidate_horizon_execution(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool)
+    (
+        cache, steps, capture, rejection_journal_ordinal,
+        rejection_attempt_ordinal, identity_before,
+    ) = horizon_state
+    return _retention_result(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        identity_before, progress, observer)
+
+
 def prepare_bamf_visit(
         run_dir: Path, *, steps_per_visit: int = 16,
         reserve_gib: float = 100.0,
@@ -168,42 +212,10 @@ def prepare_bamf_visit(
         _emit_progress(progress, "priority holds: " + json.dumps(
             payload, sort_keys=True, ensure_ascii=True))
         return BamfPreparedVisit(status, parent, selection=selection)
-    rows = selection.offer.rows()
-    if observer is not None:
-        from .evidence_projection import (
-            selected_visit_evidence, unknown_generated_grade_evidence,
-        )
-        visit_evidence = selected_visit_evidence(selection)
-        observer.update(
-            visit_evidence=visit_evidence,
-            generated_grade_evidence=unknown_generated_grade_evidence(
-                visit_evidence.get("grade_id")),
-        )
-    _emit_progress(
-        progress,
-        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
-    capability = selection.offer.capability_id
-    if host_cache is not None:
-        bind_current_retention_source_rows(context, host_cache, capability)
-    adviser_cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
-    from bilqis_mlx.runtime.championship_advisers import (
-        prepare_championship_adviser_pool,
-    )
-    adviser_pool = prepare_championship_adviser_pool(
-        run_dir, parent, context, atlas_path, adviser_cache,
-        reserve_gib=reserve_gib)
-    horizon_state = _candidate_horizon_execution(
-        run_dir, parent, context, atlas_path, feature_path, selection, rows,
-        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool)
-    (
-        cache, steps, capture, rejection_journal_ordinal,
-        rejection_attempt_ordinal, identity_before,
-    ) = horizon_state
-    return _retention_result(
-        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
-        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
-        identity_before, progress, observer)
+    return _execute_selected_visit(
+        run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
+        steps_per_visit, reserve_gib, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer)
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,

@@ -310,6 +310,12 @@ def execute_factory_candidate_step(
             or type(capture_diagnostics) is not bool
             or type(finalize_candidate) is not bool):
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
+    observed_mentor_supervision = observation._mentor_supervision
+    if mentor_supervision is None:
+        mentor_supervision = observed_mentor_supervision
+    elif (observed_mentor_supervision is not None
+          and mentor_supervision is not observed_mentor_supervision):
+        _invalid("FACTORY_MENTOR_SUPERVISION_BINDING_DRIFT")
     (
         start, cache, generation, stage_metrics, prepared, supervision,
         semantic_context_materialized_in_step,
