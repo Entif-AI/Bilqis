@@ -153,7 +153,7 @@ def _selected_priority_result(
         run_dir, source_context, parent, cache, projection, epoch, teacher,
         qualified, option, offer, school, engine, rng, learning_settings,
         program, grade, evidence, holds, lawful_frontier, total_capabilities,
-        plasticity_escape, priority_features,
+        plasticity_escape, priority_features, cadence_authorization,
         source_materialization_wall_seconds):
     capability = option.context.capability_id
     teacher = replay_rejected_outcomes(run_dir, parent, cache, teacher)
@@ -166,6 +166,8 @@ def _selected_priority_result(
         plasticity_escape=plasticity_escape)
     metadata = {**metadata, 'how_context': context_for_selection(
         source_context.release, program, grade, school, option, teacher, metadata)}
+    if cadence_authorization is not None:
+        metadata = {**metadata, 'cadence': cadence_authorization.to_record()}
     selected_epoch = replace(
         epoch, current_json=json.dumps(teacher, sort_keys=True, allow_nan=False))
     selected = _selection_projection(projection, selected_epoch)
@@ -198,6 +200,7 @@ def select_accepted_priority_visit(
         run_dir, source_context, frontier, history, planning, offers,
         engine, school, rng, learning_settings, *, program, now,
         lawful_frontier,
+        cadence_authorization=None,
         total_capabilities=None, plasticity_escape=None,
         legacy_receipt=None, adaptation=None, prior_region=None,
         accepted_parent=None, planning_generation=None):
@@ -217,6 +220,19 @@ def select_accepted_priority_visit(
     )
     if getattr(getattr(school, 'current_student', None), 'sha256', None) != expected_parent_identity:
         _invalid('BAMF_PRIORITY_STUDENT_DRIFT')
+    if cadence_authorization is not None:
+        from bilqis_mlx.runtime.active_grade_cadence_contracts import (
+            ActiveGradeCadenceAuthorization,
+        )
+        if not isinstance(cadence_authorization, ActiveGradeCadenceAuthorization):
+            _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_INVALID')
+        cadence_ids = tuple(cadence_authorization.authorized_capability_ids)
+        if not set(cadence_ids) <= set(lawful_frontier.ready_capability_ids):
+            _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_DRIFT')
+        cadence_metadata = {'cadence': cadence_authorization.to_record()}
+    else:
+        cadence_ids = None
+        cadence_metadata = None
     if not offers:
         from bilqis_mlx.runtime.lawful_teaching_frontier import (
             require_bound_lawful_teaching_frontier,
@@ -224,13 +240,18 @@ def select_accepted_priority_visit(
         require_bound_lawful_teaching_frontier(
             lawful_frontier, source_context, parent)
         if (frontier is not None or history is not None
-                or lawful_frontier.ready_capability_ids):
+                or (lawful_frontier.ready_capability_ids and cadence_ids is None)
+                or cadence_ids):
             _invalid('BAMF_PRIORITY_EMPTY_AUTHORITY_DRIFT')
         holds = sorted(
             (item.capability_id, item.code.value)
             for item in lawful_frontier.exclusions)
+        if cadence_authorization is not None:
+            disposition = cadence_authorization.disposition.value
+            if disposition != 'TEACHING':
+                holds.append(('__active_grade__', 'CADENCE_' + disposition))
         return _issue_result(
-            'NO_ADMISSIBLE_TEACHING', None, None, None, None, None, None,
+            'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata, None,
             holds, run_dir, lawful_frontier)
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
@@ -242,6 +263,8 @@ def select_accepted_priority_visit(
                                    planning, offers, program, school, epoch, now=now,
                                    lawful_frontier=lawful_frontier,
                                    planning_generation=planning_generation)
+    if cadence_ids is not None and not set(dict(qualified.offers)) <= set(cadence_ids):
+        _invalid('BAMF_ACTIVE_GRADE_CADENCE_OFFER_DRIFT')
     by_id, evidence = dict(qualified.offers), dict(frontier.evidence)
     holds = [
         (item.capability_id, item.code.value)
@@ -253,8 +276,9 @@ def select_accepted_priority_visit(
             evidence[option.stable_id], option.context.capability_id,
             option.context.scope, contract_digest(epoch))
         if option.action_kind in (ActionKind.CORRECTION, ActionKind.PROCEDURE_REPAIR):
-            return _issue_result('ACTION_REQUIRED', option.stable_id, None, None, None,
-                                 None, None, sorted(holds), run_dir, lawful_frontier)
+            return _issue_result(
+                'ACTION_REQUIRED', option.stable_id, None, None, None,
+                cadence_metadata, None, sorted(holds), run_dir, lawful_frontier)
         offer = by_id[option.stable_id]
         materialization_started = time.perf_counter()
         try:
@@ -271,10 +295,11 @@ def select_accepted_priority_visit(
             run_dir, source_context, parent, cache, projection, epoch, teacher,
             qualified, option, offer, school, engine, rng, learning_settings,
             program, grade, evidence, holds, lawful_frontier, total_capabilities,
-            plasticity_escape, priority_features,
+            plasticity_escape, priority_features, cadence_authorization,
             source_materialization_wall_seconds)
-    return _issue_result('NO_ADMISSIBLE_TEACHING', None, None, None, None, None,
-                         None, sorted(holds), run_dir, lawful_frontier)
+    return _issue_result(
+        'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata,
+        None, sorted(holds), run_dir, lawful_frontier)
 
 
 def execute_accepted_priority_candidate(selection, source_context,

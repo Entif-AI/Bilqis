@@ -2,6 +2,7 @@
 import hashlib
 from functools import lru_cache
 from pathlib import Path
+from types import SimpleNamespace
 
 from bilqis_mlx.data_plane import data_plane
 from bilqis_mlx.errors import ErrorBus, SCHOOL
@@ -122,6 +123,16 @@ def current_rejections(run_dir, parent, cache):
     return _current_projection(run_dir, parent, cache).rows_view()
 
 
+def authenticated_rejection_event(event, parent, manifest_sha256):
+    """Validate one persisted C16.3 rejection against its accepted generation."""
+    cache = SimpleNamespace(
+        run_id=parent.run_id,
+        generation=parent.generation,
+        accepted_manifest_sha256=manifest_sha256,
+    )
+    return _validated_rejection(event, parent, cache) is not None
+
+
 def ordered_rejections(run_dir, parent, cache):
     """Rows whose cross-capability order is authenticated by journal ordinals."""
     return _current_projection(run_dir, parent, cache).ordered_rows_view()
@@ -168,7 +179,8 @@ def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps)
 
 
 __all__ = (
-    "candidate_step_horizon", "current_rejections", "ordered_rejections",
+    "authenticated_rejection_event", "candidate_step_horizon",
+    "current_rejections", "ordered_rejections",
     "rejection_attempt_ordinals",
     "rejection_pressure", "rejection_recency",
 )

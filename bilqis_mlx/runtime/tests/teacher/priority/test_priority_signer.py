@@ -45,6 +45,13 @@ def _lawful_frontier(planning_generation, *ready):
     )
 
 
+def _cadence(*ready):
+    return SimpleNamespace(
+        authorized_capability_ids=tuple(ready),
+        phase=SimpleNamespace(value="MAIN"),
+    )
+
+
 def test_host_signer_must_match_registered_owner_key_and_scope():
     registry = _registry()
     signer = HostSourceAuthoritySigner("owner:c06", "44" * 32, registry)
@@ -122,6 +129,9 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
     ), patch(
         "bilqis_mlx.runtime.lawful_teaching_frontier._issue_lawful_teaching_frontier_from_epoch",
         return_value=lawful,
+    ), patch(
+        "bilqis_mlx.runtime.active_grade_cadence.issue_active_grade_cadence",
+        return_value=_cadence("capability:alpha", "capability:beta"),
     ):
         issued = authority.issue_foundation_priority_authority(
             "/run", source_context, parent, {"epoch": 1}, "/atlas",
@@ -175,7 +185,9 @@ def test_all_held_frontier_issues_empty_priority_authority_without_source_rows()
             authority, "_priority_planning_from_epoch", return_value=planning), patch(
             "bilqis_mlx.runtime.lawful_teaching_frontier."
             "_issue_lawful_teaching_frontier_from_epoch",
-            return_value=lawful), patch.object(
+                return_value=lawful), patch(
+                "bilqis_mlx.runtime.active_grade_cadence.issue_active_grade_cadence",
+                return_value=_cadence()), patch.object(
             authority, "prepare_priority_source_offer") as prepare, patch(
             "bilqis_mlx.runtime.bamf_bundle._darwin_salience_signer."
             "read_host_system_source_authority_signer") as signer:
@@ -294,6 +306,9 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
         ), patch(
             "bilqis_mlx.runtime.lawful_teaching_frontier._issue_lawful_teaching_frontier_from_epoch",
             return_value=lawful,
+        ), patch(
+            "bilqis_mlx.runtime.active_grade_cadence.issue_active_grade_cadence",
+            return_value=_cadence("capability:alpha", "capability:beta"),
         ):
             first = authority.issue_foundation_priority_authority(
                 run_dir, source_context, parent, {"epoch": 1}, "/atlas",

@@ -270,6 +270,9 @@ def _accepted_successor(
         "selected_option_id": selection.option_id,
         "resource": resource, "candidate_evidence": candidate_evidence,
         "how_outcome": how_outcome,
+        **({"cadence": getattr(selection, "metadata", {}).get("cadence")}
+           if isinstance(getattr(selection, "metadata", None), dict)
+           and selection.metadata.get("cadence") is not None else {}),
     }, instruction_event)
     successor = derive_successor(
         run_dir, retained, learned_visit, delivery_events=events)
