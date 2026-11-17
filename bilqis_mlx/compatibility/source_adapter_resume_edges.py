@@ -27,7 +27,13 @@ SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES = (
         "boolean-identification-accepted-to-current",
         "source.micro.boolean-identification/v1",
         "6399dae052a289d46063df0e897e14f1392e2f1b99e90c2ae791fda9a8246743",
+        "811ed2ad7708e6a7ce3a72fb20d92ea8fcc1df51aae45afc01e711fea07d18c6",
+        "cohort-bound"),
+    SourceProviderResumeEdge(
+        "boolean-identification-pre-r15-to-current",
+        "source.micro.boolean-identification/v1",
         "1404c511d7b5eab19025726d5c4c98073250cc0c75cf37b185344da92060edee",
+        "811ed2ad7708e6a7ce3a72fb20d92ea8fcc1df51aae45afc01e711fea07d18c6",
         "cohort-bound"),
     SourceProviderResumeEdge(
         "numeric-accepted-to-current", "source.finite-numeric/v2",

@@ -18,6 +18,7 @@ class FragileSourcePolicyTests(unittest.TestCase):
         self.assertTrue(policy.verify_row(historical, historical["capability"]))
         self.assertFalse(policy.verify_row({**direct, "gold": "wrong"}, direct["capability"]))
         self.assertEqual(policy.pattern_counts("B.OR", _direct_u7c_replay_rows(), each=4),
-                         {(False, False): 2, (False, True): 1, (True, False): 1})
+                         {(False, False): 1, (False, True): 1,
+                          (True, False): 1, (True, True): 1})
         with self.assertRaisesRegex(ValueError, "FRAGILE_PRESERVATION_SOURCE_POLICY_UNKNOWN"):
             fragile_source_policy("unadmitted.source")

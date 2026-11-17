@@ -45,12 +45,14 @@ def require_compile_request(
             or not isinstance(delivery, DeliveredTeaching)
             or delivery_capability not in capabilities):
         _invalid("DELIVERY_RELEASE_INVALID")
+    specimen_ids = set(delivery.specimen_ids) if isinstance(delivery, DeliveredTeaching) else set()
+    option_rows = tuple(row for row in delivered_rows if row.get("id") in specimen_ids)
     try:
         expected = describe_delivered_teaching(
-            release, delivery_capability, delivery.option_id, delivered_rows)
+            release, delivery_capability, delivery.option_id, option_rows)
     except (ValueError, KeyError, TypeError):
         _invalid("DELIVERY_INVALID")
-    if delivery != expected or len(delivery.specimen_ids) != len(delivered_rows):
+    if delivery != expected or len(option_rows) != len(delivery.specimen_ids):
         _invalid("DELIVERY_CONTENT_MISMATCH")
     owner = capabilities[delivery_capability]
     if (source_authority.release_sha256 != release.release_sha256
@@ -99,7 +101,8 @@ def row_source_inputs(
             or (operation_id is not None
                 and (not isinstance(operation_id, str) or not operation_id))):
         _invalid("SOURCE_OR_OPERATION_INVALID")
-    if delivery.option_id == "source.direct/" + delivery_capability:
+    option_row = identity in set(delivery.specimen_ids)
+    if option_row and delivery.option_id == "source.direct/" + delivery_capability:
         if capability != delivery_capability:
             _invalid("DELIVERY_CAPABILITY_MISMATCH")
     elif (capability not in {delivery_capability, *owner.prerequisites}
