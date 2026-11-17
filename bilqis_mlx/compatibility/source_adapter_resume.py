@@ -18,8 +18,10 @@ _NUMERIC_IMPLEMENTATION = (
     "2758cf678e9d2a45f3f5a1b5edd85d5ae513e54506c0d98853b9402b91572754")
 _NUMERIC_MODULAR_IMPLEMENTATION = (
     "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d")
-_NUMERIC_CURRENT_IMPLEMENTATION = (
+_NUMERIC_PRE_R20_IMPLEMENTATION = (
     "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141")
+_NUMERIC_CURRENT_IMPLEMENTATION = (
+    "5ac7484e0f85c029c3ad53feea6af890371a20b694ebe383384361e86c20c9a7")
 _GRADE_A_ADAPTER_ID = "source.micro.predicates/v1"
 _GRADE_A_ACCEPTED_IMPLEMENTATION = (
     "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9")
@@ -86,7 +88,8 @@ def _numeric_modular_pair(admitted, current) -> bool:
     """Exact behavior-preserving school-owner extraction; no arbitrary drift."""
     if (admitted is None or admitted.adapter_id != _NUMERIC_ADAPTER_ID
             or admitted.implementation_sha256 not in (
-                _NUMERIC_IMPLEMENTATION, _NUMERIC_MODULAR_IMPLEMENTATION)
+                _NUMERIC_IMPLEMENTATION, _NUMERIC_MODULAR_IMPLEMENTATION,
+                _NUMERIC_PRE_R20_IMPLEMENTATION)
             or current.implementation_sha256 not in (
                 _NUMERIC_MODULAR_IMPLEMENTATION, _NUMERIC_CURRENT_IMPLEMENTATION)):
         return False
