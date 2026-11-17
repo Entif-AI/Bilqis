@@ -212,6 +212,18 @@ Message: A BAMF resource or optimizer-step contract is invalid: {reason}
 
 Recovery: Keep the retained candidate unchanged; reconcile the exact source rows, topology, budget and gradient receipt.
 
+### `SCHOOL.BAMF_RUN_AUTHORITY.INVALID`
+
+BAMF run authority invalid.
+
+Owner: `runtime.run_authority`
+Disposition: `PRESERVE_AND_INSPECT`
+Self-heal owner: `none`
+
+Message: Native BAMF run authority is invalid: {reason}
+
+Recovery: Preserve the run and reconcile registered custody, exact run identity, budget policy, and the persisted authority binding before retrying.
+
 ### `SCHOOL.BAMF_REVALIDATION.INVALID`
 
 BAMF correction dependency or revalidation invalid.

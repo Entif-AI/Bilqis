@@ -235,6 +235,8 @@ def test_native_operator_preserves_zero_one_two_worker_configuration(workers):
         yield executor
 
     with TemporaryDirectory() as temporary, patch(
+            "bilqis_mlx.runtime.run_authority.binding.storage_root",
+            return_value=Path(temporary).parent), patch(
             "bilqis_mlx.runtime.source_prefetch.source_prefetch_pool",
             side_effect=pool), patch(
             "bilqis_mlx.runtime.bamf_operator.session._visit",

@@ -98,3 +98,12 @@ def _experiment_budget(args):
         owner.create(target.name, required_bytes=600_000_000)
     owner.assert_within_budget()
     return owner
+
+
+def _bamf_run_authority(args, run_id: str):
+    """Adapt legacy experiment custody to the generic native BAMF authority type."""
+    owner = _experiment_budget(args)
+    if owner is None:
+        return None
+    from bilqis_mlx.runtime.run_authority import issue_experiment_run_authority
+    return issue_experiment_run_authority(owner, args.run_dir, run_id)

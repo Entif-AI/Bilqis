@@ -4,7 +4,8 @@ from __future__ import annotations
 def visit(
         run_dir, reserve_gib, *, steps_per_visit, progress,
         source_prefetch_workers, source_prefetch_executor,
-        source_prefetch_metrics, observer, prepare_visit, record_rejection,
+        source_prefetch_metrics, observer, run_authority_binding,
+        prepare_visit, record_rejection,
         accept_publish, load_generation, measure_phase, emit_progress):
     prepared = prepare_visit(
         run_dir, steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
@@ -41,6 +42,8 @@ def visit(
     if observer is not None:
         observer.update(phase="PUBLISHING")
     emit_progress(progress, "publishing accepted successor checkpoint")
+    if run_authority_binding is not None:
+        run_authority_binding.assert_current()
     with measure_phase(observer, "publishing_wall_seconds"):
         accept_publish(
             run_dir, successor, retained, decision=decision,

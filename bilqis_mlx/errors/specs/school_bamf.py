@@ -107,6 +107,17 @@ class BAMF_RESOURCES:
     )
 
 
+class BAMF_RUN_AUTHORITY:
+    INVALID = _spec(
+        ("SCHOOL", "BAMF_RUN_AUTHORITY", "INVALID"),
+        owner="runtime.run_authority",
+        title="BAMF run authority invalid",
+        message_template="Native BAMF run authority is invalid: {reason}",
+        disposition="PRESERVE_AND_INSPECT",
+        next_action="Preserve the run and reconcile registered custody, exact run identity, budget policy, and the persisted authority binding before retrying.",
+    )
+
+
 class BAMF_REVALIDATION:
     INVALID = _spec(
         ("SCHOOL", "BAMF_REVALIDATION", "INVALID"),
