@@ -118,6 +118,21 @@ class ProviderCompatibilityTests(unittest.TestCase):
             with self.subTest(changed=changed):
                 self.assertFalse(resume_adapter_compatible(prior, changed))
 
+    def test_pre_r13_descriptor_resumes_generation_without_retroactive_classifier_authority(self):
+        registry = live_source_registry()
+        current = registry.require(
+            "bilqis_mlx.numeric_curriculum.draw_numeric", C_ORACLE).descriptor
+        admitted = replace(
+            current,
+            implementation_sha256=
+                "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+            weakness_classifier_id=None,
+            weakness_classifier_sha256=None,
+        )
+        self.assertTrue(resume_adapter_compatible(admitted, current))
+        self.assertIsNone(admitted.weakness_classifier_id)
+        self.assertIsNone(admitted.weakness_classifier_sha256)
+
     def test_intermediate_numeric_provider_resumes_on_current_implementation(self):
         registry = live_source_registry()
         registered = registry.require(

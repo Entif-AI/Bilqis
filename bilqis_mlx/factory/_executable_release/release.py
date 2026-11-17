@@ -64,7 +64,8 @@ class ExecutableFactoryRelease:
             "execution_plan": _api.asdict(self.execution_plan),
             "semantic_catalog": self.semantic_catalog,
             "semantic_catalog_sha256": self.semantic_catalog_sha256,
-            "source_adapters": [_api.asdict(item) for item in self.source_adapters],
+            "source_adapters": [
+                _api._source_adapter_record(item) for item in self.source_adapters],
             "answer_modalities": [_api.asdict(item) for item in self.answer_modalities],
             "answer_heads": [_api.asdict(item) for item in self.answer_heads],
             "verification": _api.asdict(self.verification),

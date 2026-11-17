@@ -91,11 +91,16 @@ def _validated_rejection(event, parent, cache):
                 and (type(rejection_journal_ordinal) is not int
                      or rejection_journal_ordinal < 1))):
         _invalid("BAMF_PRIORITY_REJECTION_EVIDENCE_INVALID")
+    from bilqis_mlx.runtime.structural_weakness_replay import (
+        validate_rejection_weaknesses,
+    )
+    weaknesses = validate_rejection_weaknesses(evidence, receipt_sha256)
     return (
         receipt_sha256,
         (selected, visit_id, reason, receipt_sha256),
         rejection_attempt_ordinal,
         rejection_journal_ordinal,
+        weaknesses,
     )
 
 
@@ -154,6 +159,30 @@ def rejection_recency(run_dir, parent, cache):
     return _current_projection(run_dir, parent, cache).recency()
 
 
+def current_structural_weaknesses(
+        run_dir, parent, cache, source_context, selection, capability=None):
+    """Return deduplicated unresolved debt; downstream repair owns closure evidence."""
+    from bilqis_mlx.learning.teacher_lineage import restore_teacher_lineage
+    from bilqis_mlx.runtime.structural_weakness_replay import (
+        carried_structural_weaknesses, weakness_is_current,
+    )
+
+    projection = _current_projection(run_dir, parent, cache)
+    selected = capability or selection.visit.identity.capability_id
+    current = {}
+    teacher = restore_teacher_lineage(parent.teacher_state).teacher()
+    candidates = (
+        *carried_structural_weaknesses(teacher),
+        *projection.weaknesses_view(),
+    )
+    for item in candidates:
+        weakness = item["weakness"]
+        if (weakness["capability_id"] == selected
+                and weakness_is_current(item, source_context, selection)):
+            current[weakness["weakness_class"]["class_sha256"]] = item
+    return tuple(current[key] for key in sorted(current))
+
+
 def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps):
     """Project authenticated C16.3 rejection pressure into the teacher horizon rule.
 
@@ -182,6 +211,7 @@ def candidate_step_horizon(run_dir, parent, cache, capability, configured_steps)
 __all__ = (
     "authenticated_rejection_event", "candidate_step_horizon",
     "current_rejections", "ordered_rejections",
+    "current_structural_weaknesses",
     "rejection_attempt_ordinals",
     "rejection_pressure", "rejection_recency",
 )

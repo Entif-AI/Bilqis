@@ -59,6 +59,7 @@ class RejectionProjection:
 
     offset: int = 0
     rows: list[tuple[str, str, str, str]] = field(default_factory=list)
+    weakness_rows: list[dict] = field(default_factory=list)
     seen_receipts: set[str] = field(default_factory=set)
     capability_counts: dict[str, int] = field(default_factory=dict)
     reason_counts: dict[str, dict[str, int]] = field(default_factory=dict)
@@ -78,7 +79,10 @@ class RejectionProjection:
         plane,
         validate: Callable[
             [dict],
-            tuple[str, tuple[str, str, str, str], int | None, int | None] | None,
+            tuple[
+                str, tuple[str, str, str, str], int | None, int | None,
+                tuple[dict, ...],
+            ] | None,
         ],
         invalid: Callable[[str], None],
     ) -> RejectionRows:
@@ -137,7 +141,7 @@ class RejectionProjection:
             self._accept(item, invalid)
 
     def _accept(self, item, invalid):
-        receipt_sha256, row, ordinal, journal_ordinal = item
+        receipt_sha256, row, ordinal, journal_ordinal, *extra = item
         if receipt_sha256 in self.seen_receipts:
             return
         capability = row[0]
@@ -157,6 +161,8 @@ class RejectionProjection:
         if journal_ordinal is not None or len(self.legacy_capabilities) <= 1:
             self.last_positions[capability] = expected_global
         self.rows.append(row)
+        if extra:
+            self.weakness_rows.extend(extra[0])
 
     def _require_order(
             self, capability, journal_ordinal, ordinal, expected_global, count, invalid):
@@ -206,9 +212,14 @@ class RejectionProjection:
         with self.lock:
             return len(self.rows), dict(self.last_positions)
 
+    def weaknesses_view(self):
+        with self.lock:
+            return tuple(self.weakness_rows)
+
     def _reset(self, *, keep_hydrated=False):
         self.offset = 0
         self.rows.clear()
+        self.weakness_rows.clear()
         self.seen_receipts.clear()
         self.capability_counts.clear()
         self.reason_counts.clear()

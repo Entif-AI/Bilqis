@@ -38,6 +38,7 @@ def visit(
             "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
             "how_outcome": prepared.how_outcome,
+            "structural_weaknesses": list(prepared.structural_weaknesses),
             **({"cadence": cadence} if cadence is not None else {}),
         })
         if cadence is not None and record_cadence_attempt is not None:

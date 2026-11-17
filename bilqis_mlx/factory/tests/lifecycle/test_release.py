@@ -20,7 +20,7 @@ class FactoryReleaseTests(unittest.TestCase):
         release.verify()
         self.assertEqual(
             release.release_sha256,
-            "e288a8ec96ed9323fc1f0ed2cb30eabdd16deddf6c64ce5ae7306cf84fd37c28")
+            "8337cedd486511409d1476b9fe0d63e5715c4b40251b5977540ddd23788801a8")
         self.assertEqual(tuple(item.capability_id for item in release.capabilities),
                          tuple(cap.id for cap in self.course.grades[0].capabilities))
         self.assertEqual({plan.assessment_class for plan in release.assessments},

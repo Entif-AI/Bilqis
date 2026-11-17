@@ -123,6 +123,8 @@ class SourceAdapter:
     variation_axes: tuple[str, ...] = ("source-valid", "balanced-gold", "fresh-seed")
     teaching_option_ids: tuple[str, ...] = ()
     profile_dimensions: tuple[tuple[str, tuple[str, ...]], ...] = ()
+    weakness_classifier_id: str | None = None
+    weakness_classifier_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if (not self.adapter_id or not self.generator_id or
@@ -155,6 +157,24 @@ class SourceAdapter:
                     any(not isinstance(value, str) or not value for value in values)
                     for name, values in self.profile_dimensions)):
             raise ValueError("FACTORY_SOURCE_ADAPTER_PROFILE_DIMENSIONS_INVALID")
+        if ((self.weakness_classifier_id is None)
+                != (self.weakness_classifier_sha256 is None)
+                or (self.weakness_classifier_id is not None
+                    and (not isinstance(self.weakness_classifier_id, str)
+                         or not self.weakness_classifier_id))):
+            from bilqis_mlx.errors import ErrorBus, FACTORY
+            ErrorBus.Raise(
+                FACTORY.WEAKNESS.INVALID,
+                reason="FACTORY_SOURCE_ADAPTER_WEAKNESS_CLASSIFIER_INVALID")
+        if (self.weakness_classifier_sha256 is not None
+                and (len(self.weakness_classifier_sha256)
+                     != len(self.implementation_sha256)
+                     or any(char not in "0123456789abcdef"
+                            for char in self.weakness_classifier_sha256))):
+            from bilqis_mlx.errors import ErrorBus, FACTORY
+            ErrorBus.Raise(
+                FACTORY.WEAKNESS.INVALID,
+                reason="FACTORY_SOURCE_ADAPTER_WEAKNESS_CLASSIFIER_DIGEST_INVALID")
 
     @property
     def cohort_generator(self) -> str:
