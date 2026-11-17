@@ -53,10 +53,14 @@ class FactoryEvaluationInstrument:
             _invalid("BAMF_C05_FACTORY_INSTRUMENT_INVALID")
 
 
-def _execution_binding(candidate: BamfBundleCandidate):
+def _execution_binding(candidate: BamfBundleCandidate, parameters=None):
     if not isinstance(candidate, BamfBundleCandidate):
         _invalid("BAMF_C05_CANDIDATE_REQUIRED")
-    return issue_execution_generation_binding(candidate.retained_state.optimizer.parameters,
+    parameters = (
+        candidate.retained_state.optimizer.parameters
+        if parameters is None else parameters
+    )
+    return issue_execution_generation_binding(parameters,
         spec=candidate.topology, extents=candidate.extents)
 
 
@@ -224,8 +228,16 @@ def factory_complete_solver(
     candidate: BamfBundleCandidate,
     artifact_path: str,
     instruments: tuple[FactoryEvaluationInstrument, ...],
+    *,
+    parameters=None,
 ) -> tuple[CompleteSolver, str]:
-    """Bind every case to the exact candidate parameters and real B11 proposer."""
+    """Bind cases to one semantic candidate and one explicit read-only weight view.
+
+    ``parameters`` exists for teacher-only frozen advisers.  It changes only the
+    B11 inference weights and generation binding; source, feature, Factory and
+    answer authority still come from ``candidate``.  No optimizer moments or
+    continuation authority are consumed by this seam.
+    """
     if (not instruments or any(type(item) is not FactoryEvaluationInstrument
                                for item in instruments)):
         _invalid("BAMF_C05_FACTORY_INSTRUMENTS_REQUIRED")
@@ -237,7 +249,7 @@ def factory_complete_solver(
         route_plan=task_goal_route_plan,
         scalar_proposer=b11_task_goal_proposer,
         proposal_from_output=proposal_from_task_goal_output,
-        batched_outputs=batched_factory_outputs,
+        batched_outputs=batched_factory_outputs, parameters=parameters,
         invalid=_invalid)
 
 

@@ -266,6 +266,7 @@ def select_accepted_priority_visit(
 def execute_accepted_priority_candidate(selection, source_context,
         atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
         optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
+        mentor_supervision=None,
         capture_diagnostics=False, candidate=None, finalize_candidate=True,
         prepared_source_rows=None, candidate_step_started_at=None,
         source_prepare_wall_seconds=0.0):
@@ -282,6 +283,23 @@ def execute_accepted_priority_candidate(selection, source_context,
     refresh_accepted_currentness(
         planning_generation._accepted_currentness, planning_generation._parent)
     parent, cache = selection.offer.require_current_parent(source_context)
+    if mentor_supervision is not None:
+        from bilqis_mlx.learning._championship.adviser_supervision import (
+            MentorSupervision, mentor_policy_binding,
+        )
+        from bilqis_mlx.learning._championship.cohort_soup import POLICY_ID
+        if type(mentor_supervision) is not MentorSupervision:
+            _invalid("BAMF_PRIORITY_MENTOR_SUPERVISION_INVALID")
+        championship_state = getattr(parent, "championship_state", None)
+        if not isinstance(championship_state, dict):
+            _invalid("BAMF_PRIORITY_MENTOR_CHAMPIONSHIP_STATE_REQUIRED")
+        mentor_supervision.require_current(
+            cache.accepted_manifest_sha256,
+            contract_digest(championship_state["identity"]),
+            POLICY_ID,
+            mentor_policy_binding(POLICY_ID, selection.policy),
+            selection.offer.source_seed,
+        )
     lawful_frontier = selection._lawful_frontier
     if (lawful_frontier is None
             or getattr(lawful_frontier, '_planning_generation', None)
@@ -320,6 +338,12 @@ def execute_accepted_priority_candidate(selection, source_context,
                                             execution.teaching_option_ids[0], rows)
     provenance = BamfVisitProvenance.from_c03_record(selection.visit.identity.to_record())
     observation = replace(observation, option_rows=rows, seed=offer.source_seed)
+    if mentor_supervision is not None:
+        try:
+            mentor_supervision.require_evidence(
+                observation.mentors, observation.guidance)
+        except ValueError:
+            _invalid("BAMF_PRIORITY_MENTOR_EVIDENCE_DRIFT")
     caller_pre_neural_wall_seconds = (
         float(source_prepare_wall_seconds)
         + time.perf_counter() - caller_pre_neural_started)
@@ -330,6 +354,7 @@ def execute_accepted_priority_candidate(selection, source_context,
         visit_provenance=provenance, teacher_strategy=policy, teacher_hparams=hparams,
         max_norm=max_norm, observation=observation, memory_budget=memory_budget,
         salience_provider=salience_provider,
+        mentor_supervision=mentor_supervision,
         capture_diagnostics=capture_diagnostics, candidate=candidate,
         finalize_candidate=finalize_candidate,
         currentness_transaction=planning_generation._accepted_currentness,

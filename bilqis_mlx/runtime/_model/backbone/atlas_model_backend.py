@@ -40,12 +40,13 @@ class Backend:
 
     def value_and_grad(
             self, params, compiled_batch, answer_plan, targets, mask, cache=None, *,
-            salience_supervision=None):
+            salience_supervision=None, source_loss_multiplier: float = 1.0):
         from .atlas_model_training import _bamf_value_and_grad_impl
 
         return _bamf_value_and_grad_impl(
             self, params, compiled_batch, answer_plan, targets, mask, cache,
-            salience_supervision=salience_supervision)
+            salience_supervision=salience_supervision,
+            source_loss_multiplier=source_loss_multiplier)
 
     def microbatch_value_and_grad(
             self, params, row_batches, answer_plans, targets, masks, cache=None, *,

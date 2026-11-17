@@ -48,8 +48,10 @@ from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
 from .source_prefetch import (
     CandidateSourceLane, NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
-from ._session_execution import candidate_horizon_execution as _candidate_horizon_execution_impl
-from ._session_execution import execute_horizon as _execute_horizon_impl
+from ._session_candidate_execution import (
+    candidate_horizon_execution as _candidate_horizon_execution_impl,
+)
+from ._session_candidate_execution import execute_horizon as _execute_horizon_impl
 from ._session_execution import operate as _operate_impl
 from ._session_execution import retention_result as _retention_result_impl
 from ._session_visit import visit as _visit_impl
@@ -65,12 +67,13 @@ def _emit_progress(progress, message: str) -> None:
 def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_path,
                      rows, horizon, cache, candidate_attempt_ordinal, progress,
                      source_prefetch_workers,
-                     source_prefetch_executor, source_prefetch_metrics, observer):
+                     source_prefetch_executor, source_prefetch_metrics, observer,
+                     adviser_pool=None):
     return _execute_horizon_impl(
         run_dir, selection, context, parent, atlas_path, feature_path,
         rows, horizon, cache, candidate_attempt_ordinal, progress,
         source_prefetch_workers, source_prefetch_executor,
-        source_prefetch_metrics, observer,
+        source_prefetch_metrics, observer, adviser_pool,
         source_lane_cls=CandidateSourceLane, source_metrics_cls=SourcePrefetchMetrics,
         prepare_evidence_root=prepare_candidate_evidence_root, capture_cls=_Capture,
         delivery_observation_cls=FactoryDeliveryObservation,
@@ -82,11 +85,11 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
 def _candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer):
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool):
     return _candidate_horizon_execution_impl(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer,
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
         bind_cache=bind_accepted_execution_cache, horizon_for=candidate_step_horizon,
         rejection_ordinals=rejection_attempt_ordinals,
         execute_horizon_fn=_execute_horizon, currentness_metrics_fn=currentness_metrics,
@@ -114,6 +117,7 @@ def _retention_result(
 
 def prepare_bamf_visit(
         run_dir: Path, *, steps_per_visit: int = 16,
+        reserve_gib: float = 100.0,
         progress=None, source_prefetch_workers: int = 0,
         source_prefetch_executor=None,
         source_prefetch_metrics: SourcePrefetchMetrics | None = None, observer=None) -> BamfPreparedVisit:
@@ -173,10 +177,17 @@ def prepare_bamf_visit(
     capability = selection.offer.capability_id
     if host_cache is not None:
         bind_current_retention_source_rows(context, host_cache, capability)
+    adviser_cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
+    from bilqis_mlx.runtime.championship_advisers import (
+        prepare_championship_adviser_pool,
+    )
+    adviser_pool = prepare_championship_adviser_pool(
+        run_dir, parent, context, atlas_path, adviser_cache,
+        reserve_gib=reserve_gib)
     horizon_state = _candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer)
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool)
     (
         cache, steps, capture, rejection_journal_ordinal,
         rejection_attempt_ordinal, identity_before,

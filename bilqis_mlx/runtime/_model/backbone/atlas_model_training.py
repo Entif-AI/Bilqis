@@ -102,7 +102,8 @@ def loss_bearing_bamf(
     output,
     targets: tuple[DecisionOutput, ...],
     mask,
-    *, salience_supervision=None, validate_finite=True,
+    *, salience_supervision=None, source_loss_multiplier: float = 1.0,
+    validate_finite=True,
 ) -> BamfLossExecution:
     """Bind a nonempty B10 supervised loss to the exact live B11 forward."""
     record = _FORWARD_ISSUANCE.require(output)
@@ -119,7 +120,13 @@ def loss_bearing_bamf(
     executed = {item.decision_id for item in output.decisions}
     if not required or not required.issubset(executed):
         _invalid("B11_LOSS_TARGET_NOT_EXECUTED")
+    from bilqis_mlx.learning._championship.champion_confidence import MAX_INFLUENCE
+    if (type(source_loss_multiplier) not in (int, float)
+            or not 1.0 <= float(source_loss_multiplier) <= 1.0 + MAX_INFLUENCE):
+        _invalid("BAMF_MENTOR_SOURCE_LOSS_MULTIPLIER_INVALID")
     loss = answer_loss(output, targets, mask)
+    if float(source_loss_multiplier) != 1.0:
+        loss = replace(loss, total=loss.total * float(source_loss_multiplier))
     heads, dependencies, artifact_nodes = (), (), ()
     if salience_supervision is not None:
         from .salience_training import SalienceSupervision
@@ -164,7 +171,7 @@ def _gradient_execution_rebinder(params, cache, *, spec, extents, generation):
 
 def _gradient_preflight(
         backend, params, compiled_batch, answer_plan, targets, mask, cache,
-        salience_supervision):
+        salience_supervision, source_loss_multiplier):
     started = time.perf_counter()
     _require_finite_tensor_tree(params, "B11_PARAMETER_NONFINITE")
     rebind_execution = _gradient_execution_rebinder(
@@ -180,7 +187,8 @@ def _gradient_preflight(
             refinement_training=True, execution_binding=preflight_binding,
             decoder_trace=False)
     preflight_execution = loss_bearing_bamf(
-        preflight_output, targets, mask, salience_supervision=salience_supervision)
+        preflight_output, targets, mask, salience_supervision=salience_supervision,
+        source_loss_multiplier=source_loss_multiplier)
     return (
         rebind_execution, preflight_output, preflight_execution,
         time.perf_counter() - started,
@@ -226,7 +234,7 @@ def _bamf_value_and_grad_impl(
     targets: tuple[DecisionOutput, ...],
     mask,
     cache=None,
-    *, salience_supervision=None,
+    *, salience_supervision=None, source_loss_multiplier: float = 1.0,
 ) -> BamfGradientExecution:
     """Run one exact forward/loss/gradient dispatch with one execution identity."""
     if salience_supervision is not None:
@@ -240,7 +248,7 @@ def _bamf_value_and_grad_impl(
             preflight_wall_seconds,
         ) = _gradient_preflight(
             backend, params, compiled_batch, answer_plan, targets, mask, cache,
-            salience_supervision)
+            salience_supervision, source_loss_multiplier)
         holder = {}
 
         def objective(current):
@@ -260,6 +268,7 @@ def _bamf_value_and_grad_impl(
                 execution = loss_bearing_bamf(
                     output, targets, mask,
                     salience_supervision=salience_supervision,
+                    source_loss_multiplier=source_loss_multiplier,
                     validate_finite=False)
                 holder["execution"] = execution
                 return execution.loss.total
@@ -289,12 +298,13 @@ def bamf_value_and_grad(
     targets: tuple[DecisionOutput, ...],
     mask,
     cache=None,
-    *, salience_supervision=None,
+    *, salience_supervision=None, source_loss_multiplier: float = 1.0,
 ) -> BamfGradientExecution:
     """Public gradient entrypoint through the same backend as direct inference."""
     return model_backend(ModelTopologySpecV2()).value_and_grad(
         params, compiled_batch, answer_plan, targets, mask, cache,
-        salience_supervision=salience_supervision)
+        salience_supervision=salience_supervision,
+        source_loss_multiplier=source_loss_multiplier)
 
 
 __all__ = ("loss_bearing_bamf", "bamf_value_and_grad")
