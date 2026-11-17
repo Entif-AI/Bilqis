@@ -46,7 +46,7 @@ def _activation_is_accepted_ancestor(
     return _custody._activation_is_accepted_ancestor(run_dir, active)
 
 
-def read_active_generated_grade(run_dir: Path) -> ActiveGeneratedGrade:
+def read_active_generated_grade(run_dir: Path, *, repair: bool = True) -> ActiveGeneratedGrade:
     root = Path(run_dir)
     active = _custody._read_stored_active(root)
     if active is None:
@@ -58,7 +58,8 @@ def read_active_generated_grade(run_dir: Path) -> ActiveGeneratedGrade:
         require_correction_transition_authority(root, active)
     _reconcile_accepted_generated_grade(root, active, proposal)
     # Heal only after every accepted-ancestry and transition check succeeds.
-    _custody._persist_commit(root, active)
+    if repair:
+        _custody._persist_commit(root, active)
     return active
 
 

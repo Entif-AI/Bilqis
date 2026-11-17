@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from bilqis_mlx.generated_assessment import EXECUTABLE_COHORT_SCHEMA
@@ -10,6 +11,7 @@ from bilqis_mlx.runtime.bamf_bundle.admission import (
     bind_accepted_execution_cache,
     load_accepted_generation,
 )
+from bilqis_mlx.runtime.bamf_bundle.publication import inspect_accepted_generation
 from bilqis_mlx.runtime.capability_evaluation import _invalid
 
 from ._factory_fixed_school_contract import (
@@ -27,12 +29,49 @@ def _accepted_parent(source_context, run_dir: Path, expected_parent_manifest_sha
     parent = load_accepted_generation(run_dir)
     cache = bind_accepted_execution_cache(run_dir)
     custody = parent.retained_state.custody
-    if (custody is None or parent.run_id != cache.run_id
+    inspection = inspect_accepted_generation(run_dir / "bamf-state.json")
+    if (inspection.factory_release_sha256 != source_context.release.release_sha256
+            or inspection.generation_manifest_sha256 != cache.accepted_manifest_sha256
+            or parent.run_identity is None
+            or inspection.run_identity_sha256 != parent.run_identity.digest
+            or custody is None or parent.run_id != cache.run_id
             or parent.generation != cache.generation
             or custody.manifest_sha256 != cache.accepted_manifest_sha256
             or cache.accepted_manifest_sha256 != expected_parent_manifest_sha256):
         _invalid("BAMF_C05_FIXED_SCHOOL_ACCEPTED_PARENT_DRIFT")
     return parent, cache
+
+
+def _founding_scope_context(source_context, run_dir, parent):
+    """Bind fixed-school custody to the founding release, through verified edges."""
+    identity = parent.run_identity
+    if identity is None:
+        _invalid("BAMF_C05_BAMF_RUN_IDENTITY_REQUIRED")
+    founding_sha = identity.factory_release_sha256
+    current = source_context.release
+    if current.release_sha256 == founding_sha:
+        return source_context
+
+    from bilqis_mlx.factory.profile_expansion import verify_profile_expansion
+    from bilqis_mlx.runtime.admission import _read_executable_factory_release_artifact
+
+    seen = {current.release_sha256}
+    try:
+        while current.release_sha256 != founding_sha:
+            predecessor_sha = current.predecessor_release_sha256
+            if not predecessor_sha or predecessor_sha in seen:
+                raise ValueError("missing or cyclic release ancestry")
+            predecessor = _read_executable_factory_release_artifact(run_dir, {
+                "factory_release_sha256": predecessor_sha,
+                "factory_release_file": f"factory-releases/{predecessor_sha}.json",
+            })
+            verify_profile_expansion(predecessor, current)
+            seen.add(predecessor_sha)
+            current = predecessor
+    except (OSError, ValueError, TypeError, KeyError) as exc:
+        _invalid("BAMF_C05_FIXED_SCHOOL_FOUNDING_RELEASE_INVALID")
+        raise AssertionError from exc
+    return replace(source_context, release=current)
 
 
 def _trusted_school(
@@ -116,17 +155,18 @@ def _bamf_fixed_school_cohort(
         with fixed_school_lock(root_fd):
             parent, cache = _accepted_parent(
                 source_context, run_dir, expected_parent_manifest_sha256)
-            capabilities, contract, source_identity = scope(source_context, parent)
+            founding_context = _founding_scope_context(source_context, run_dir, parent)
+            capabilities, contract, source_identity = scope(founding_context, parent)
             source_manifest = {"manifest_sha256": source_identity}
             trusted = load_fixed_school_trust(parent.run_identity.digest)
             if trusted is None:
                 school = _materialize_school(
-                    root_fd, source_manifest, source_context, parent, cache,
+                    root_fd, source_manifest, founding_context, parent, cache,
                     capabilities, contract, source_identity)
             else:
                 school = _trusted_school(
                     root_fd, trusted.receipt_raw, trusted.cohort_raw,
-                    source_manifest, source_context, parent, capabilities,
+                    source_manifest, founding_context, parent, capabilities,
                     contract, source_identity)
             _accepted_parent(source_context, run_dir, expected_parent_manifest_sha256)
             return school

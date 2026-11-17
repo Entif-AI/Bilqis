@@ -280,7 +280,7 @@ def operate(
         source_prefetch_workers, progress, max_horizon, worker_counts,
         invalid, metrics_type, source_pool_factory, null_context,
         operator_lock, visit_fn, observer_type, emit_progress,
-        monotonic, load_generation, result_type, accepted_reentry=None):
+        monotonic, load_generation, result_type, accepted_reentry=None, before_visits=None):
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
             or max_visits < 0 or type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= max_horizon
@@ -299,6 +299,8 @@ def operate(
         source_pool_factory(source_prefetch_workers)
         if source_prefetch_workers else null_context(None))
     with source_pool as source_prefetch_executor, operator_lock(run_dir):
+        if before_visits is not None:
+            before_visits(run_dir)
         while monotonic() < deadline and (not max_visits or visits < max_visits):
             emit_progress(progress, f"starting visit {visits + 1}")
             with observer_type(run_dir, visits + 1) as observer:

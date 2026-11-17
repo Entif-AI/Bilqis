@@ -4,6 +4,7 @@ from __future__ import annotations
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 
 from ..factory_release_adoption import (
+    PROFILE_EXPANSION_KIND, PROFILE_EXPANSION_SCHEMA, PROFILE_DIGEST_FIELDS,
     FACTORY_RELEASE_ADOPTION_EVENT,
     FACTORY_RELEASE_ADOPTION_EVENT_SCHEMA,
     FACTORY_RELEASE_ADOPTION_KIND,
@@ -16,6 +17,7 @@ from .admission_binding import (
     FACTORY_RELEASE_ADMISSION_SCHEMA_V1,
     FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
     FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+    FACTORY_RELEASE_ADMISSION_SCHEMA_V4,
     FACTORY_RELEASE_ADMISSION_SCHEMAS,
     FactoryReleaseAdmissionBinding,
     ParsedFactoryReleaseAdmissionBinding,
@@ -95,7 +97,10 @@ def _owner_event(candidate) -> dict:
     if type(candidate.outbox) is not tuple or len(candidate.outbox) != 1:
         _invalid()
     event = candidate.outbox[0]
-    if (not isinstance(event, dict) or set(event) != _EVENT_FIELDS
+    profile = candidate.transition.get("kind") == PROFILE_EXPANSION_KIND
+    fields = (("event", "schema", "run_id", "generation", "optimizer_step",
+               *PROFILE_DIGEST_FIELDS, "transition_sha256") if profile else _EVENT_FIELDS)
+    if (not isinstance(event, dict) or set(event) != set(fields)
             or event.get("event") != FACTORY_RELEASE_ADOPTION_EVENT
             or event.get("schema") != FACTORY_RELEASE_ADOPTION_EVENT_SCHEMA
             or "event_id" in event):
@@ -110,6 +115,8 @@ def _issue_factory_release_admission_binding(
 ) -> FactoryReleaseAdmissionBinding:
     transition = require_issued_factory_release_adoption_transition(transition)
     event = _owner_event(candidate)
+    profile = transition.kind == PROFILE_EXPANSION_KIND
+    provenance = (*PROFILE_DIGEST_FIELDS, "transition_sha256") if profile else _PROVENANCE_FIELDS
     if (type(candidate) is not BamfBundleCandidate
             or type(parent) is not CompleteStudent
             or not _same_inert_state(parent, candidate)
@@ -120,13 +127,17 @@ def _issue_factory_release_admission_binding(
             or event["generation"] != candidate.generation
             or event["optimizer_step"] != candidate.retained_state.optimizer_step
             or any(event[name] != getattr(transition, name)
-                   for name in _PROVENANCE_FIELDS if name != "transition_sha256")
+                   for name in provenance if name != "transition_sha256")
             or event["transition_sha256"] != transition.digest):
         _invalid()
     obligation_keys = tuple(sorted(set(accepted_obligation_keys)))
     if obligation_keys and not _valid_obligation_keys(obligation_keys):
         _invalid()
+    if profile and (candidate.parent_manifest_sha256 != transition.parent_manifest_sha256
+                    or generated_grade_proposal_sha256 is not None):
+        _invalid()
     schema_version = (
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V4 if profile else
         FACTORY_RELEASE_ADMISSION_SCHEMA_V3
         if generated_grade_proposal_sha256 is not None
         else FACTORY_RELEASE_ADMISSION_SCHEMA_V2
@@ -141,9 +152,10 @@ def _issue_factory_release_admission_binding(
         optimizer_step=candidate.retained_state.optimizer_step,
         lease_sha256=transition.lease_sha256,
         source_approval_sha256=transition.source_approval_sha256,
-        handoff_sha256=transition.handoff_sha256,
-        proposal_sha256=transition.proposal_sha256,
-        selection_receipt_sha256=transition.selection_receipt_sha256,
+        **({name: getattr(transition, name) for name in (
+            "profile_sha256", "parent_manifest_sha256", "profile_transition_sha256")}
+           if profile else {name: getattr(transition, name) for name in (
+            "handoff_sha256", "proposal_sha256", "selection_receipt_sha256")}),
         predecessor_factory_release_sha256=transition.predecessor_factory_release_sha256,
         factory_release_sha256=transition.factory_release_sha256,
         transition_sha256=transition.digest,
@@ -160,7 +172,11 @@ def require_factory_release_admission_binding(
     transition = require_issued_factory_release_adoption_transition(
         candidate.transition)
     event = _owner_event(candidate)
+    provenance = ((*PROFILE_DIGEST_FIELDS, "transition_sha256")
+                  if transition.kind == PROFILE_EXPANSION_KIND else _PROVENANCE_FIELDS)
     if (value.run_id != candidate.run_id
+            or (transition.kind == PROFILE_EXPANSION_KIND
+                and candidate.parent_manifest_sha256 != transition.parent_manifest_sha256)
             or value.generation != candidate.generation
             or value.candidate_identity_sha256
             != candidate_identity_digest(candidate.retained_state)
@@ -169,7 +185,7 @@ def require_factory_release_admission_binding(
             or value.transition_sha256 != transition.digest
             or value.adoption_event_sha256 != sha(canonical(event))
             or any(event[name] != getattr(value, name)
-                   for name in _PROVENANCE_FIELDS)
+                   for name in provenance)
             or event["run_id"] != value.run_id
             or event["generation"] != value.generation
             or event["optimizer_step"] != value.optimizer_step):
@@ -193,8 +209,15 @@ def validate_parsed_factory_release_admission_binding(
             != candidate_identity_digest(student.retained_state)):
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_DRIFT")
     transition = dict(student.transition)
-    if (transition.get("schema") != FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA
-            or transition.get("kind") != FACTORY_RELEASE_ADOPTION_KIND):
+    profile = binding.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V4
+    if profile and binding.parent_manifest_sha256 != student.parent_manifest_sha256:
+        _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_DRIFT")
+    provenance = (*PROFILE_DIGEST_FIELDS, "transition_sha256") if profile else _PROVENANCE_FIELDS
+    event_fields = (("event", "schema", "run_id", "generation", "optimizer_step",
+                     *PROFILE_DIGEST_FIELDS, "transition_sha256") if profile else _EVENT_FIELDS)
+    if ((transition.get("schema"), transition.get("kind")) !=
+            ((PROFILE_EXPANSION_SCHEMA, PROFILE_EXPANSION_KIND) if profile else
+             (FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA, FACTORY_RELEASE_ADOPTION_KIND))):
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_INVALID")
     transition_sha256 = sha(canonical(transition))
     if transition_sha256 != binding.transition_sha256:
@@ -207,7 +230,7 @@ def validate_parsed_factory_release_admission_binding(
     if len(student.outbox) != 1 or len(events) != 1:
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_INVALID")
     stored = events[0]
-    if set(stored) != _EVENT_FIELDS | {"event_id"}:
+    if set(stored) != set(event_fields) | {"event_id"}:
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_INVALID")
     owner_event = {key: value for key, value in stored.items() if key != "event_id"}
     from bilqis_mlx.runtime.checkpoint_outbox import (
@@ -223,7 +246,7 @@ def validate_parsed_factory_release_admission_binding(
             or owner_event["optimizer_step"] != binding.optimizer_step
             or owner_event["transition_sha256"] != transition_sha256):
         _invalid("BAMF_FACTORY_RELEASE_ADMISSION_BINDING_DRIFT")
-    for name in _PROVENANCE_FIELDS:
+    for name in provenance:
         expected_value = transition_sha256 if name == "transition_sha256" else transition[name]
         if (getattr(binding, name) != expected_value
                 or owner_event[name] != expected_value):
@@ -235,6 +258,7 @@ __all__ = (
     "FACTORY_RELEASE_ADMISSION_SCHEMA_V1",
     "FACTORY_RELEASE_ADMISSION_SCHEMA_V2",
     "FACTORY_RELEASE_ADMISSION_SCHEMA_V3",
+    "FACTORY_RELEASE_ADMISSION_SCHEMA_V4",
     "FACTORY_RELEASE_ADMISSION_SCHEMAS",
     "FactoryReleaseAdmissionBinding",
     "ParsedFactoryReleaseAdmissionBinding",

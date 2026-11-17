@@ -125,6 +125,65 @@ class BamfFactoryFixedSchoolTests(BamfFirstStudentCase):
                 context, target, expected_parent_manifest_sha256=cache.accepted_manifest_sha256)
         self.assertEqual(second, first)
 
+    def test_c05_reuses_founding_school_after_profile_successor(self):
+        from dataclasses import replace
+        from bilqis_mlx.errors.model import BilqisError
+        from bilqis_mlx.factory.executable_release import compile_successor_profile_release
+        from bilqis_mlx.factory.execution import CurriculumProfile, GradeProfile
+        from bilqis_mlx.factory.tests.test_executable_release import _answers
+        from bilqis_mlx.factory.tests.test_execution_plan import _synthetic_registry
+        from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
+        from bilqis_mlx.runtime.admission import _persist_executable_factory_release
+        from bilqis_mlx.runtime.bamf_bundle.admission import bind_accepted_execution_cache
+        import bilqis_mlx.runtime.factory_fixed_school as owner
+
+        target = self.root / "c05-profile-successor"
+        self.preflight(target)
+        registry, answers = _synthetic_registry(), _answers()
+        with patch("bilqis_mlx.source_adapters.school.live_source_registry", return_value=registry), \
+                patch("bilqis_mlx.factory.live_answers.live_answer_registry", return_value=answers), \
+                shape_patch():
+            context = AcceptedRuntimeHost(target).source_context(graph=self.graph, source_root=None)
+            cache = bind_accepted_execution_cache(target)
+            first = owner._bamf_fixed_school_cohort(
+                context, target, expected_parent_manifest_sha256=cache.accepted_manifest_sha256)
+            parent, cache = owner._accepted_parent(context, target, cache.accepted_manifest_sha256)
+            successor = compile_successor_profile_release(
+                self.release, CurriculumProfile.full(), registry, answers,
+                source_root=None, graph=self.graph, verification_seed=17)
+            middle_path = target / _persist_executable_factory_release(target, successor)
+            latest = compile_successor_profile_release(
+                successor, CurriculumProfile.full(), registry, answers,
+                source_root=None, graph=self.graph, verification_seed=17)
+            current = replace(context, release=latest)
+            receipt_path = target / "c05-fixed-school" / f"{parent.run_identity.digest}.json"
+            receipt_before = receipt_path.read_bytes()
+            with patch.object(owner, "_accepted_parent", return_value=(parent, cache)), \
+                    patch.object(owner, "_draw_executable_scope_cohort", side_effect=AssertionError("redraw")):
+                second = owner._bamf_fixed_school_cohort(
+                    current, target, expected_parent_manifest_sha256=cache.accepted_manifest_sha256)
+            self.assertEqual(first, second)
+            self.assertEqual(receipt_path.read_bytes(), receipt_before)
+            narrowed = compile_successor_profile_release(
+                self.release, CurriculumProfile(
+                    "narrow", (GradeProfile("Z", ("Z.C0",)),)), registry, answers,
+                source_root=None, graph=self.graph, verification_seed=17)
+            with patch.object(owner, "_accepted_parent", return_value=(parent, cache)):
+                with self.assertRaises(BilqisError) as incompatible:
+                    owner._bamf_fixed_school_cohort(
+                        replace(context, release=narrowed), target,
+                        expected_parent_manifest_sha256=cache.accepted_manifest_sha256)
+            self.assertEqual(incompatible.exception.context["reason"],
+                             "BAMF_C05_FIXED_SCHOOL_FOUNDING_RELEASE_INVALID")
+            middle_path.unlink()
+            with patch.object(owner, "_accepted_parent", return_value=(parent, cache)):
+                with self.assertRaises(BilqisError) as failure:
+                    owner._bamf_fixed_school_cohort(
+                        current, target, expected_parent_manifest_sha256=cache.accepted_manifest_sha256)
+            self.assertEqual(failure.exception.context["reason"],
+                             "BAMF_C05_FIXED_SCHOOL_FOUNDING_RELEASE_INVALID")
+            self.assertEqual(receipt_path.read_bytes(), receipt_before)
+
     def test_c05_bamf_fixed_school_recovers_interrupted_projection_without_redraw(self):
         target = self.root / "c05-native-fixed-school-interrupted-projection"
         self.preflight(target)

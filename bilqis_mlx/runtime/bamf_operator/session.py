@@ -263,10 +263,15 @@ def operate_bamf(
     reserve_gib: float = 100.0,
     source_prefetch_workers: int = 2,
     parent_graph: dict | None = None,
+    profile_release=None,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
     from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
+    def before_visits(root):
+        if profile_release is not None:
+            from bilqis_mlx.runtime._release_adoption.native_profile import adopt_profile_release
+            adopt_profile_release(root, profile_release, reserve_gib=reserve_gib)
     return _operate_impl(
         Path(run_dir), minutes=minutes, max_visits=max_visits,
         steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
@@ -278,6 +283,7 @@ def operate_bamf(
         visit_fn=_visit, observer_type=TrainerObservation,
         emit_progress=_emit_progress, monotonic=time.monotonic,
         load_generation=load_accepted_generation, result_type=BamfOperatorResult,
+        before_visits=before_visits,
         accepted_reentry=(
             None if parent_graph is None else
             lambda current_run_dir, current_reserve_gib, current_progress:
