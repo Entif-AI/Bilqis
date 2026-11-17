@@ -2,6 +2,7 @@
 from unittest.mock import patch
 
 from bilqis_mlx.factory.teaching import describe_delivered_teaching
+import bilqis_mlx.runtime.source_batch_authority as source_batch_authority
 from bilqis_mlx.runtime.factory_training_bridge import prepare_factory_training_batch
 from bilqis_mlx.runtime.tests.batch.training.visit_provenance_support import (
     visit_provenance,
@@ -20,9 +21,7 @@ class FactoryTrainingEnrichmentTests(FactoryTrainingBridgeFixture):
         teaching = describe_delivered_teaching(
             self.context.release, capability, execution.teaching_option_ids[0], direct)
 
-        with patch(
-                "bilqis_mlx.runtime._source.source_batch_authority.optional_teaching_rows",
-                return_value=extra):
+        with patch.object(source_batch_authority, "optional_teaching_rows", return_value=extra):
             prepared = prepare_factory_training_batch(
                 self.context, self.candidate, str(self.artifact),
                 self.feature_receipt.path, delivered, self.generation,
