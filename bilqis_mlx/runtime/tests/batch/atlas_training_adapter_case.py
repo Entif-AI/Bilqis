@@ -73,8 +73,9 @@ class AtlasTrainingAdapterCase(unittest.TestCase):
                 source_authority=None, rehearsal_by_id=None,
                 rehearsal_authorities=None):
         context = source_context or self.context
-        option_rows = tuple(
-            row for row in rows if row.get('capability') == delivery_capability)
+        option_rows = (
+            tuple(row for row in rows if row.get('capability') == delivery_capability)
+            if rehearsal_by_id else tuple(rows))
         delivery = delivery_override or describe_delivered_teaching(
             context.release, delivery_capability,
             'source.direct/' + delivery_capability, option_rows)
