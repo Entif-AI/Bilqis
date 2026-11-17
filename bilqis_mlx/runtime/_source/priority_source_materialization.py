@@ -68,7 +68,8 @@ def _prepare_model_sources(source_context, authenticated, manifest, source_rows)
             task_scope=item.task, source_frontier=item.frontier,
             eligibility_policy=item.policy, compiler_config=item.config,
             atlas_selection=authenticated.selection, feature_artifact_path=None,
-            semantic_context=authenticated, released_manifest=manifest,
+            semantic_context=authenticated,
+            released_manifest=getattr(item, "manifest", manifest),
             atlas_features=atlas_features,
             prepared_inventory=item.source_inventory,
             source_graph=item.source_graph)
@@ -145,14 +146,17 @@ def prepare_priority_source_materialization(
     b11_sources = tuple(
         _prepare_b11_source_binding(
             source_context, authenticated, profile, item,
-            model.prefix, config, source_seed=offer.source_seed,
-            source_each=offer.source_each)
+            model.prefix, config,
+            source_seed=getattr(item, "source_seed", offer.source_seed),
+            source_each=getattr(item, "source_each", offer.source_each))
         for item, model, config in zip(source_rows, model_sources, b11_configs)
     )
     prefixes = tuple(item.prefix for item in model_sources)
     motif_inputs = tuple(_motif_planning_input(
-        source_context, authenticated, item.source_adapter, profile, item,
-        source_seed=offer.source_seed, source_each=offer.source_each)
+        source_context, authenticated, item.source_adapter,
+        getattr(item, "profile", profile), item,
+        source_seed=getattr(item, "source_seed", offer.source_seed),
+        source_each=getattr(item, "source_each", offer.source_each))
         for item in source_rows)
     source_context._source_preparation_metrics.compiled_source_builds += 1
     feature_owner, packed_owner, source_owner = _owners(

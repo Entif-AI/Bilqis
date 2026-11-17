@@ -26,6 +26,7 @@ from ..evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_e
 from ..performance import measure_observed_phase, observe_completed_step
 from ..session_support import BamfPreparedVisit, _resource_observation, _step_seed
 from ..source_prefetch import CandidateSourceLane, SourcePrefetchMetrics
+from .rehearsal import compile_rehearsal_plan
 from .candidate_execution import (
     candidate_horizon_execution as _candidate_horizon_execution_impl,
     execute_horizon as _execute_horizon_impl,
@@ -93,7 +94,7 @@ def execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
         cache, candidate_attempt_ordinal, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
-        *, emit_progress, invalid):
+        *, emit_progress, invalid, rehearsal_plan=None):
     return _execute_horizon_impl(
         run_dir, selection, context, parent, atlas_path, feature_path,
         rows, horizon, cache, candidate_attempt_ordinal, progress,
@@ -104,7 +105,8 @@ def execute_horizon(
         delivery_observation_cls=FactoryDeliveryObservation,
         execute_candidate=execute_accepted_priority_candidate, step_seed=_step_seed,
         emit_progress=emit_progress, invalid=invalid,
-        observe_completed_step_fn=observe_completed_step)
+        observe_completed_step_fn=observe_completed_step,
+        rehearsal_plan=rehearsal_plan)
 
 
 def candidate_horizon_execution(
@@ -112,6 +114,11 @@ def candidate_horizon_execution(
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
         *, emit_progress, invalid):
+    cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
+    from bilqis_mlx.runtime.bamf_bundle.execution_cache import AcceptedExecutionCache
+    rehearsal_plan = (
+        compile_rehearsal_plan(run_dir, parent, cache, context, selection)
+        if type(cache) is AcceptedExecutionCache else None)
     return _candidate_horizon_execution_impl(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
@@ -119,7 +126,8 @@ def candidate_horizon_execution(
         bind_cache=bind_accepted_execution_cache, horizon_for=candidate_step_horizon,
         rejection_ordinals=rejection_attempt_ordinals,
         execute_horizon_fn=lambda *args, **kwargs: execute_horizon(
-            *args, **kwargs, emit_progress=emit_progress, invalid=invalid),
+            *args, **kwargs, emit_progress=emit_progress, invalid=invalid,
+            rehearsal_plan=rehearsal_plan),
         currentness_metrics_fn=currentness_metrics, emit_progress=emit_progress,
         identity_snapshot=candidate_identity_metrics_snapshot)
 
@@ -160,15 +168,15 @@ def execute_selected_visit(
     emit_progress(
         progress, f"selected {selection.offer.capability_id} with {len(rows)} source rows")
     capability = selection.offer.capability_id
+    adviser_cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
     if host_cache is not None:
         bind_current_retention_source_rows(context, host_cache, capability)
-    adviser_cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
     from bilqis_mlx.runtime.championship_advisers import prepare_championship_adviser_pool
     adviser_pool = prepare_championship_adviser_pool(
         run_dir, parent, context, atlas_path, adviser_cache, reserve_gib=reserve_gib)
     horizon_state = candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
-        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        capability, adviser_cache, steps_per_visit, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
         emit_progress=emit_progress, invalid=invalid)
     cache, steps, capture, journal_ordinal, attempt_ordinal, identity_before = horizon_state

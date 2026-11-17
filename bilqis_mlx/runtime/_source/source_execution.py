@@ -228,7 +228,6 @@ class SourceExecutionContext:
         return _bind_delivery_rows(
             self, rows, seed=seed, capability=capability, direct_each=direct_each)
 
-
 __all__ = (
     "SourceBatchAuthority", "SourceExecutionContext", "SourcePreparationMetrics",
     "source_content_digest",

@@ -80,6 +80,10 @@ class _FactoryMotifPlanningInput:
 class _FactorySourceRow:
     row: dict
     source_adapter: object
+    manifest: object
+    profile: object
+    source_seed: int
+    source_each: int
     source_id: str
     frames: tuple
     ast: object
@@ -174,7 +178,8 @@ def _prepare_source_row(source_context, authenticated, manifest,
             frontier=frontier, policy=policy)
         ast, approved, config, current = atom_ast, None, atom_config, atom_config.frontier
     return _FactorySourceRow(
-        row, source_adapter, source_id, frames, ast, approved, source_graph,
+        row, source_adapter, manifest, profile, source_seed, source_each,
+        source_id, frames, ast, approved, source_graph,
         config, task, current, policy, source_inventory, projection,
         frame_frontier, source_witness)
 
@@ -225,8 +230,9 @@ def _bind_b11_rows(source_context, candidate, authenticated, training, source_ro
             approved_config = authorize_public_formal_prefix(
                 item.ast, prefix, approved_config)
             prepared = _prepare_b11_source_binding(
-                source_context, authenticated, profile, item, prefix,
-                approved_config, source_seed=source_seed, source_each=source_each)
+                source_context, authenticated, item.profile, item, prefix,
+                approved_config, source_seed=item.source_seed,
+                source_each=item.source_each)
         else:
             prepared = prepared_b11[index]
             if prepared.prefix is not prefix:
@@ -260,7 +266,9 @@ def _bind_b11_rows(source_context, candidate, authenticated, training, source_ro
 
 
 def _prepare_factory_source_rows(source_context, authenticated, rows, *, capability,
-                                 source_seed, source_each, source_authority=None):
+                                 source_seed, source_each, source_authority=None,
+                                 source_authorities_by_id=None,
+                                 source_bindings_by_id=None):
     """Prepare the same source-owned AST and eligibility inputs for C02 or an offer."""
     execution = source_context.release.execution_plan.capability_map[capability]
     adapter = runtime_adapter_for_release(
@@ -273,25 +281,54 @@ def _prepare_factory_source_rows(source_context, authenticated, rows, *, capabil
                     authenticated.snapshot).manifest)
     profile = (dict(execution.provider_parameters)
                if execution.provider_parameters else None)
-    prequalified = source_authority is not None
-    if prequalified:
+    source_authorities_by_id = source_authorities_by_id or {}
+    source_bindings_by_id = source_bindings_by_id or {}
+    target_rows = tuple(
+        row for row in rows if row.get("id") not in source_authorities_by_id)
+    prequalified = source_authority is not None or bool(source_authorities_by_id)
+    if source_authority is not None:
         if (type(source_authority) is not SourceBatchAuthority
                 or source_authority.capability_id != capability
                 or source_authority.seed != source_seed
                 or source_authority.each != source_each
                 or source_authority.provider_id != adapter.descriptor.adapter_id):
             _invalid("FACTORY_TRAINING_SOURCE_AUTHORITY_INVALID")
-        source_context.require_bound_rows(rows, source_authority)
-    source_rows = tuple(_prepare_source_row(
-        source_context, authenticated, manifest, profile, row,
-        capability=capability, source_seed=source_seed, source_each=source_each,
-        prequalified=prequalified)
-        for row in rows)
+        source_context.require_bound_rows(target_rows, source_authority)
+    source_rows = []
+    for row in rows:
+        row_capability = row.get("capability")
+        row_execution = source_context.release.execution_plan.capability_map.get(row_capability)
+        if row_execution is None:
+            _invalid("FACTORY_TRAINING_CAPABILITY_MISMATCH")
+        row_adapter = runtime_adapter_for_release(
+            source_context.source_root, source_context.graph, source_context.release,
+            source_context.source_registry, row_execution)
+        row_strategy = source_frame_strategy(row_adapter.descriptor.adapter_id)
+        row_manifest = (None if row_strategy.source_family is None else
+                        _load_pinned_released_frame_schemas_from_snapshot(
+                            row_strategy.source_family, authenticated.selection,
+                            authenticated.snapshot).manifest)
+        row_profile = (dict(row_execution.provider_parameters)
+                       if row_execution.provider_parameters else None)
+        row_binding = source_bindings_by_id.get(row.get("id"), {})
+        row_seed = row_binding.get("seed", source_seed)
+        row_each = row_binding.get("each", source_each)
+        rehearsal_authority = source_authorities_by_id.get(row.get("id"))
+        row_authority = rehearsal_authority or source_authority
+        if rehearsal_authority is not None:
+            source_context.require_bound_rows((row,), row_authority)
+        source_rows.append(_prepare_source_row(
+            source_context, authenticated, row_manifest, row_profile, row,
+            capability=row_capability, source_seed=row_seed, source_each=row_each,
+            prequalified=row_authority is not None))
+    source_rows = tuple(source_rows)
     if prequalified:
         source_rows = tuple(replace(
             item,
             b11_proof=_issue_prepared_b11_source_proof(
-                source_context, rows, source_authority, item.row,
+                source_context,
+                ((item.row,) if item.row["id"] in source_authorities_by_id else target_rows),
+                source_authorities_by_id.get(item.row["id"], source_authority), item.row,
                 item.source_witness, item.formal_projection,
                 item.formal_frontier)) for item in source_rows)
     return adapter, manifest, profile, source_rows

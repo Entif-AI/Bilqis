@@ -20,6 +20,7 @@ def require_compile_request(
         delivery_capability: str, delivery_release_sha256: str,
         teacher_strategy: dict, requested_count: int, optimizer_step_seed: int,
         source_authority: SourceBatchAuthority, rehearsal_by_id: dict,
+        rehearsal_authorities: dict | None,
         visible_ends: dict, source_ast_for: Callable, answer_plan_for: Callable,
         frames_for_ast: Callable, task_scope, source_frontier,
         eligibility_policy, generation_binding: str, sealed_holdout_ids) -> tuple:
@@ -40,7 +41,29 @@ def require_compile_request(
     source_context.release.verify_semantic_catalog(source_context.graph)
     release = source_context.release
     capabilities = release.execution_plan.capability_map
-    source_context.require_bound_rows(delivered_rows, source_authority)
+    rehearsal_authorities = rehearsal_authorities or {}
+    cross_capability_ids = {
+        row.get("id") for row in delivered_rows
+        if row.get("id") in rehearsal_by_id
+        and row.get("capability") != delivery_capability
+    }
+    authority_bound_rehearsal_ids = set(rehearsal_authorities)
+    if (not authority_bound_rehearsal_ids <= set(rehearsal_by_id)
+            or not cross_capability_ids <= authority_bound_rehearsal_ids):
+        _invalid("REHEARSAL_AUTHORITY_COVERAGE_INVALID")
+    target_rows = tuple(
+        row for row in delivered_rows
+        if row.get("id") not in authority_bound_rehearsal_ids)
+    source_context.require_bound_rows(target_rows, source_authority)
+    for row in delivered_rows:
+        identity = row.get("id")
+        if identity not in authority_bound_rehearsal_ids:
+            continue
+        authority = rehearsal_authorities.get(identity)
+        if (type(authority) is not SourceBatchAuthority
+                or authority.capability_id != row.get("capability")):
+            _invalid("REHEARSAL_AUTHORITY_INVALID")
+        source_context.require_bound_rows((row,), authority)
     if (delivery_release_sha256 != release.release_sha256
             or not isinstance(delivery, DeliveredTeaching)
             or delivery_capability not in capabilities):
@@ -60,8 +83,8 @@ def require_compile_request(
             or source_authority.provider_id != owner.provider_id
             or source_authority.provider_implementation_sha256
             != owner.provider_implementation_sha256
-            or source_authority.content_sha256 != source_content_digest(delivered_rows)
-            or source_authority.each != len(delivered_rows)):
+            or source_authority.content_sha256 != source_content_digest(target_rows)
+            or source_authority.each != len(target_rows)):
         _invalid("TRAINING_SOURCE_AUTHORITY_MISMATCH")
     if (type(requested_count) is not int
             or requested_count < len(delivered_rows)
@@ -82,6 +105,7 @@ def row_source_inputs(
         row, row_index: int, *, capabilities, owner, delivery,
         delivery_capability: str, source_context: SourceExecutionContext,
         source_authority: SourceBatchAuthority, rehearsal_by_id: dict,
+        rehearsal_authorities: dict,
         visible_ends: dict, sealed_holdout_ids) -> tuple:
     if not isinstance(row, dict):
         _invalid("ROW_INVALID")
@@ -92,8 +116,12 @@ def row_source_inputs(
     if identity in sealed_holdout_ids:
         _invalid("SEALED_HOLDOUT_IN_TRAINING")
     source_id, operation_id = row.get("source_id"), row.get("operation_id")
-    family = source_authority.source_family_id
-    episode = source_authority.episode_ids[row_index]
+    rehearsal = rehearsal_by_id.get(identity)
+    row_authority = rehearsal_authorities.get(identity, source_authority)
+    family = row_authority.source_family_id
+    episode = row.get("episode_id")
+    if not isinstance(episode, str) or not episode:
+        episode = row["id"]
     if operation_id is None and isinstance(row.get("record"), dict):
         operation_id = row["record"].get("operator")
     if ((source_id is not None
@@ -105,12 +133,14 @@ def row_source_inputs(
     if option_row and delivery.option_id == "source.direct/" + delivery_capability:
         if capability != delivery_capability:
             _invalid("DELIVERY_CAPABILITY_MISMATCH")
+    elif rehearsal is not None:
+        if rehearsal not in {"prior", "preservation", "retention_support"}:
+            _invalid("DELIVERY_CAPABILITY_MISMATCH")
     elif (capability not in {delivery_capability, *owner.prerequisites}
           or capabilities[capability].provider_id != owner.provider_id
           or capabilities[capability].provider_implementation_sha256
           != owner.provider_implementation_sha256):
         _invalid("DELIVERY_CAPABILITY_MISMATCH")
-    rehearsal = rehearsal_by_id.get(identity)
     if rehearsal is not None and not isinstance(rehearsal, str):
         _invalid("REHEARSAL_INVALID")
     tokens = row.get("tokens")
