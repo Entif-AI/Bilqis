@@ -113,6 +113,25 @@ def _require_semantic_authority(
         semantic_context, released_manifest)
 
 
+def _batch_row_contexts(
+        row_count, prepared_model_sources, released_manifest, compiler_config,
+        task_scope, source_frontier, eligibility_policy):
+    prepared = _prepared_sources(prepared_model_sources, row_count)
+    manifests = (
+        released_manifest
+        if isinstance(released_manifest, tuple) and len(released_manifest) == row_count
+        else (released_manifest,) * row_count)
+    configs = _row_contexts(
+        compiler_config, FrameCompilerConfig, row_count,
+        'UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH')
+    tasks = _row_contexts(task_scope, TaskScope, row_count, 'CONTEXT_AUTHORITY_REQUIRED')
+    frontiers = _row_contexts(
+        source_frontier, SourceFrontier, row_count, 'CONTEXT_AUTHORITY_REQUIRED')
+    policies = _row_contexts(
+        eligibility_policy, ContextPolicy, row_count, 'CONTEXT_AUTHORITY_REQUIRED')
+    return prepared, manifests, configs, tasks, frontiers, policies
+
+
 def compile_training_batch(delivered_rows, source_context: SourceExecutionContext,
                            topology, *, delivery: DeliveredTeaching, delivery_capability: str,
                            delivery_release_sha256: str, teacher_strategy: dict, requested_count: int,
@@ -144,21 +163,10 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
         eligibility_policy=eligibility_policy, generation_binding=generation_binding,
         sealed_holdout_ids=sealed_holdout_ids)
     row_count = len(delivered_rows)
-    prepared_model_sources = _prepared_sources(prepared_model_sources, row_count)
-    released_manifests = (
-        released_manifest
-        if (isinstance(released_manifest, tuple)
-            and len(released_manifest) == row_count)
-        else (released_manifest,) * row_count)
-    compiler_configs = _row_contexts(
-        compiler_config, FrameCompilerConfig, row_count,
-        'UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH')
-    task_scopes = _row_contexts(
-        task_scope, TaskScope, row_count, 'CONTEXT_AUTHORITY_REQUIRED')
-    source_frontiers = _row_contexts(
-        source_frontier, SourceFrontier, row_count, 'CONTEXT_AUTHORITY_REQUIRED')
-    eligibility_policies = _row_contexts(
-        eligibility_policy, ContextPolicy, row_count, 'CONTEXT_AUTHORITY_REQUIRED')
+    (prepared_model_sources, released_manifests, compiler_configs, task_scopes,
+     source_frontiers, eligibility_policies) = _batch_row_contexts(
+        row_count, prepared_model_sources, released_manifest, compiler_config,
+        task_scope, source_frontier, eligibility_policy)
     atlas_features = None
     heads = {head.kind: head for head in release.answer_heads}
     result = []

@@ -31,6 +31,19 @@ def _mentor_observation(
     return observation, supervision
 
 
+def _lesson_for_step(source_lane, rows, ordinal):
+    lesson = None if source_lane is None else source_lane.lesson(ordinal)
+    if lesson is None:
+        from bilqis_mlx.runtime.bamf_operator.source_prefetch import CandidateLessonRows
+        lesson = CandidateLessonRows(tuple(rows))
+    rehearsal_rows = (
+        *tuple(getattr(lesson, "prior", ())),
+        *tuple(getattr(lesson, "preservation", ())),
+        *tuple(getattr(lesson, "retention_support", ())),
+    )
+    return lesson, lesson.direct, lesson.enrichment, rehearsal_rows
+
+
 def execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path,
         rows, horizon, cache, candidate_attempt_ordinal, progress,
@@ -80,16 +93,8 @@ def execute_horizon(
         if callable(begin_step):
             begin_step(ordinal, parent.retained_state.optimizer_step + ordinal)
         source_prepare_started = candidate_step_started_at
-        lesson = None if source_lane is None else source_lane.lesson(ordinal)
-        if lesson is None:
-            from bilqis_mlx.runtime.bamf_operator.source_prefetch import CandidateLessonRows
-            lesson = CandidateLessonRows(tuple(rows))
-        source_rows = lesson.direct
-        enrichment_rows = lesson.enrichment
-        prior_rows = tuple(getattr(lesson, "prior", ()))
-        preservation_rows = tuple(getattr(lesson, "preservation", ()))
-        retention_support_rows = tuple(getattr(lesson, "retention_support", ()))
-        rehearsal_rows = (*prior_rows, *preservation_rows, *retention_support_rows)
+        lesson, source_rows, enrichment_rows, rehearsal_rows = _lesson_for_step(
+            source_lane, rows, ordinal)
         source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
         observation, mentor_supervision = _mentor_observation(
             adviser_pool, source_rows, lesson, selection, capture,
