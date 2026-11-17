@@ -48,11 +48,12 @@ def event_payload_digest(event: dict) -> str:
                      ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
-def _read_event_tail(ledger: Path, start: int) -> tuple[list[tuple[str, str]], int]:
+def _read_event_tail(ledger: Path, start: int) -> tuple[list[tuple], int]:
     observed = []
     with ledger.open("rb") as stream:
         stream.seek(start)
         while line := stream.readline():
+            line_start = stream.tell() - len(line)
             if not line.endswith(b"\n"):
                 raise ValueError(_error(DataPlaneError.EVENT_LEDGER_TRUNCATED, ledger))
             try:
@@ -61,12 +62,14 @@ def _read_event_tail(ledger: Path, start: int) -> tuple[list[tuple[str, str]], i
                 raise ValueError(_error(
                     DataPlaneError.EVENT_LEDGER_JSON_INVALID, ledger)) from exc
             event_id = item.get("event_id") if isinstance(item, dict) else None
-            if event_id is None:
-                continue
-            if (not isinstance(event_id, str) or
-                    len(event_id) != SHA256_HEX_LENGTH):
-                continue
-            observed.append((event_id, event_payload_digest(item)))
+            digest = None
+            if (isinstance(event_id, str)
+                    and len(event_id) == SHA256_HEX_LENGTH):
+                digest = event_payload_digest(item)
+            payload = json.dumps(
+                item, sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False).encode("utf-8")
+            observed.append((event_id, digest, line_start, stream.tell(), payload))
         return observed, stream.tell()
 
 def default_path() -> Path:

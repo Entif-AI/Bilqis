@@ -113,6 +113,28 @@ class DataPlaneStoreMixin:
             conflicted INTEGER NOT NULL,
             PRIMARY KEY(run_dir, event_id)
         ) WITHOUT ROWID;
+        CREATE TABLE IF NOT EXISTS event_stream(
+            run_dir TEXT NOT NULL,
+            sequence INTEGER NOT NULL,
+            start_byte INTEGER NOT NULL,
+            end_byte INTEGER NOT NULL,
+            event_id TEXT,
+            payload_sha256 TEXT,
+            payload BLOB NOT NULL,
+            PRIMARY KEY(run_dir, sequence)
+        ) WITHOUT ROWID;
+        CREATE INDEX IF NOT EXISTS event_stream_byte_frontier
+        ON event_stream(run_dir,end_byte);
+        CREATE TABLE IF NOT EXISTS event_projections(
+            run_dir TEXT NOT NULL,
+            projection_key TEXT NOT NULL,
+            schema_version TEXT NOT NULL,
+            st_dev INTEGER NOT NULL,
+            st_ino INTEGER NOT NULL,
+            indexed_bytes INTEGER NOT NULL,
+            payload BLOB NOT NULL,
+            PRIMARY KEY(run_dir,projection_key,schema_version)
+        ) WITHOUT ROWID;
         CREATE TABLE IF NOT EXISTS bamf_genesis_trust(
             run_id TEXT PRIMARY KEY,
             generation INTEGER NOT NULL CHECK(generation = 0),

@@ -100,7 +100,6 @@ def _validated_rejection(event, parent, cache):
 
 
 def _current_projection(run_dir, parent, cache):
-    journal = Path(run_dir) / "events.jsonl"
     path_key = str(Path(run_dir).absolute())
     identity = (
         path_key,
@@ -111,7 +110,9 @@ def _current_projection(run_dir, parent, cache):
     )
     projection = _projection(identity)
     projection.refresh(
-        journal,
+        Path(run_dir),
+        "|".join(str(value) for value in identity[1:]),
+        data_plane(),
         lambda event: _validated_rejection(event, parent, cache),
         _invalid,
     )
