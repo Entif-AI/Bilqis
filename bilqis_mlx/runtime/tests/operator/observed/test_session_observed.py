@@ -87,6 +87,9 @@ def _operate_first_baseline_case(case):
             generation=1, retained_state=NS(optimizer_step=1))}),
     )
     with TemporaryDirectory() as tmp, ExitStack() as stack:
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.run_authority.binding.storage_root",
+            return_value=Path(tmp).parent))
         for target, kwargs in patches:
             stack.enter_context(patch(target, **kwargs))
         result = operate_bamf(

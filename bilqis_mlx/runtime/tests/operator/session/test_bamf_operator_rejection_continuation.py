@@ -3,7 +3,7 @@ from contextlib import nullcontext
 from dataclasses import replace
 import json
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, gettempdir
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -25,6 +25,10 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
 
 
 class BamfOperatorRejectionContinuationTests(unittest.TestCase):
+    def setUp(self):
+        self.run_storage = patch("bilqis_mlx.runtime.run_authority.binding.storage_root", return_value=Path(gettempdir()))
+        self.run_storage.start()
+        self.addCleanup(self.run_storage.stop)
     @staticmethod
     def _current():
         return SimpleNamespace(

@@ -291,7 +291,8 @@ def operate(
         source_prefetch_workers, progress, max_horizon, worker_counts,
         invalid, metrics_type, source_pool_factory, null_context,
         operator_lock, visit_fn, observer_type, emit_progress,
-        monotonic, load_generation, result_type, accepted_reentry=None):
+        monotonic, load_generation, result_type, accepted_reentry=None,
+        bind_run_authority=None):
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
             or max_visits < 0 or type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= max_horizon
@@ -300,6 +301,8 @@ def operate(
             or reserve_gib < 0):
         invalid("BAMF_OPERATOR_SESSION_BOUNDS_INVALID")
     run_dir = run_dir.resolve()
+    run_authority_binding = (
+        bind_run_authority(run_dir) if bind_run_authority is not None else None)
     deadline = monotonic() + minutes * 60
     visits = accepted = rejected = 0
     admission_status = None
@@ -311,6 +314,8 @@ def operate(
         if source_prefetch_workers else null_context(None))
     with source_pool as source_prefetch_executor, operator_lock(run_dir):
         while monotonic() < deadline and (not max_visits or visits < max_visits):
+            if run_authority_binding is not None:
+                run_authority_binding.assert_current()
             emit_progress(progress, f"starting visit {visits + 1}")
             with observer_type(run_dir, visits + 1) as observer:
                 outcome = visit_fn(
@@ -318,7 +323,8 @@ def operate(
                     progress=progress,
                     source_prefetch_workers=source_prefetch_workers,
                     source_prefetch_executor=source_prefetch_executor,
-                    source_prefetch_metrics=metrics, observer=observer)
+                    source_prefetch_metrics=metrics, observer=observer,
+                    run_authority_binding=run_authority_binding)
                 observer.finish(outcome)
             emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
             if outcome in {"HELD", "ACTION_REQUIRED"}:
@@ -330,6 +336,8 @@ def operate(
                 continue
             accepted += 1
             if accepted_reentry is not None:
+                if run_authority_binding is not None:
+                    run_authority_binding.assert_current()
                 (
                     admission_status, advances, stop_status,
                 ) = accepted_reentry(run_dir, reserve_gib, progress)
