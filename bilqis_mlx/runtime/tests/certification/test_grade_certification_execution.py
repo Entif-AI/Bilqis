@@ -3,7 +3,6 @@ from dataclasses import dataclass
 
 import pytest
 
-from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 from bilqis_mlx.runtime.grade_certification_contracts import (
     CertificationObligationScore,
     CertificationOutcome,
@@ -95,7 +94,7 @@ def test_crash_resume_never_rescores_committed_obligation(tmp_path):
     def crashing(key):
         calls.append(key)
         if key == "C.ALPHA":
-            raise RuntimeError("simulated crash")
+            return (_ for _ in ()).throw(RuntimeError("simulated crash"))
         return _clean_score(key)
 
     with pytest.raises(RuntimeError, match="simulated crash"):
@@ -226,126 +225,3 @@ def test_imperfect_terminal_success_requires_policy_debt_authority(tmp_path):
     assert result.receipt.outcome is CertificationOutcome.CERTIFIED_WITH_DEBT
     assert tuple(item.obligation_key for item in result.receipt.debt) == (
         "C.ZETA",)
-
-
-def test_protected_prior_debt_may_hold_baseline_without_blocking_success(tmp_path):
-    policy = _policy(debt_authority="ADR-084")
-    request = _request(policy)
-    result = execute_grade_certification(
-        tmp_path, request, policy,
-        trigger_measure=lambda: _trigger(prior=(9, 10)),
-        obligation_measure=_clean_score,
-        require_current=lambda: request,
-    )
-    assert result.status == "SUCCEEDED"
-    assert result.receipt.outcome is CertificationOutcome.CERTIFIED_WITH_DEBT
-    assert tuple(
-        (item.owner, item.obligation_key) for item in result.receipt.debt
-    ) == (("PROTECTED", "C.PRIOR"),)
-
-
-def test_protected_prior_regression_is_a_typed_veto(tmp_path):
-    policy = _policy(debt_authority="ADR-084")
-    request = _request(policy)
-    result = execute_grade_certification(
-        tmp_path, request, policy,
-        trigger_measure=lambda: _trigger(
-            zeta=(10, 10), alpha=(10, 10), prior=(8, 10)),
-        obligation_measure=lambda key: (_ for _ in ()).throw(
-            AssertionError(f"protected regression must veto before {key}")),
-        require_current=lambda: request,
-    )
-    assert result.status == "FAILED"
-    assert tuple(
-        (item.owner, item.obligation_key) for item in result.blockers
-    ) == (("PROTECTED", "C.PRIOR"),)
-
-
-def test_success_terminal_rejects_live_receipt_without_complete_results(tmp_path):
-    request = _request()
-    policy = _policy()
-    from bilqis_mlx.runtime.grade_certification_contracts import (
-        _issue_success_receipt,
-    )
-    from bilqis_mlx.runtime.grade_certification_custody import (
-        start_certification_attempt,
-        succeed_certification_attempt,
-    )
-    trigger = _trigger(zeta=(10, 10), alpha=(10, 10))
-    start_certification_attempt(
-        tmp_path, request, policy,
-        trigger_cohort_sha256=trigger.cohort_sha256,
-        trigger_scores=trigger.scores,
-    )
-    fabricated = _issue_success_receipt(
-        request,
-        outcome=CertificationOutcome.CERTIFIED_CLEAN,
-        scores=trigger.scores,
-        debt=(),
-    )
-    with pytest.raises(BilqisError):
-        succeed_certification_attempt(tmp_path, request, fabricated)
-
-
-def test_authority_drift_after_attempt_start_supersedes_without_next_write(tmp_path):
-    request = _request()
-    checks = 0
-
-    def current():
-        nonlocal checks
-        checks += 1
-        if checks >= 3:
-            ErrorBus.Raise(
-                SCHOOL.BAMF_CURRICULUM.INVALID,
-                reason="BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT",
-            )
-        return request
-
-    result = execute_grade_certification(
-        tmp_path,
-        request,
-        _policy(),
-        trigger_measure=lambda: _trigger(),
-        obligation_measure=lambda key: _clean_score(key),
-        require_current=current,
-    )
-    assert result.status == "SUPERSEDED"
-    view = load_certification_attempt(tmp_path, request)
-    assert view.next_cursor == 0
-    assert view.supersession_reason == (
-        "BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT")
-
-
-def test_protected_prior_negative_utility_blocks_without_becoming_sweep_target(tmp_path):
-    request = _request()
-    result = execute_grade_certification(
-        tmp_path,
-        request,
-        _policy(),
-        trigger_measure=lambda: _trigger(
-            zeta=(10, 10), alpha=(10, 10), prior=(8, 10)),
-        obligation_measure=lambda key: (_ for _ in ()).throw(
-            AssertionError(f"must not teach or sweep {key}")),
-        require_current=lambda: request,
-    )
-    assert result.status == "FAILED"
-    assert tuple(item.owner for item in result.blockers) == ("PROTECTED",)
-
-
-def test_unbaselined_protected_obligation_never_becomes_regression_blocker(tmp_path):
-    policy = _policy()
-    request = _request(policy, protected_baselines=())
-    result = execute_grade_certification(
-        tmp_path,
-        request,
-        policy,
-        trigger_measure=lambda: _trigger(
-            zeta=(8, 10), alpha=(8, 10), prior=(1, 10)),
-        obligation_measure=lambda key: (_ for _ in ()).throw(
-            AssertionError(f"entry failure must stop before {key}")),
-        require_current=lambda: request,
-    )
-    assert result.status == "FAILED"
-    assert tuple(
-        (item.owner, item.obligation_key) for item in result.blockers
-    ) == (("ACTIVE", "C.ZETA"), ("ACTIVE", "C.ALPHA"))

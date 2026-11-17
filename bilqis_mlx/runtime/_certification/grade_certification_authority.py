@@ -84,15 +84,13 @@ def _accepted_snapshot(run_dir: Path):
     }
 
 
-def protected_components(
-        run_dir: Path, active, active_obligations: tuple[str, ...], release,
-        policy: GradeCertificationPolicy, *, load_receipt=load_certification_receipt,
-        load_request=load_certification_request,
-) -> tuple[tuple[str, ...], tuple[CertificationObligationScore, ...]]:
-    """Return prior-certified obligations and only lawfully comparable baselines."""
+def _protected_evidence(
+        run_dir: Path, active, active_obligations: tuple[str, ...], *,
+        load_receipt=load_certification_receipt,
+        load_request=load_certification_request):
     receipt_sha = active.definition.predecessor_certification_sha256
     if receipt_sha is None:
-        return (), ()
+        return (), (), None
     receipt = load_receipt(run_dir, receipt_sha)
     predecessor = load_request(run_dir, receipt.attempt_sha256)
     active_keys = set(active_obligations)
@@ -107,13 +105,37 @@ def protected_components(
     protected = tuple(item.obligation_key for item in ordered)
     if not set(protected) <= set(predecessor.assessment_capabilities):
         _invalid("BAMF_GRADE_CERTIFICATION_PROTECTED_PROVENANCE_DRIFT")
+    return protected, tuple(ordered), predecessor
+
+
+def _comparable_baselines(ordered, predecessor, release, policy, scope):
+    if predecessor is None or scope is None:
+        return ()
     comparable = (
         predecessor.factory_release_sha256 == release.release_sha256
         and predecessor.semantic_catalog_sha256 == release.semantic_catalog_sha256
         and predecessor.policy_epoch == policy.policy_epoch
         and predecessor.policy_sha256 == policy.policy_sha256
-    )
-    return protected, tuple(ordered) if comparable else ()
+        and predecessor.assessment_capabilities == scope.capabilities
+        and predecessor.assessment_rubric_sha256 == scope.rubric_sha256
+        and predecessor.assessment_source_sha256 == scope.source_sha256
+        and predecessor.assessment_generator_version == scope.generator_version
+        and predecessor.semantic_catalog_sha256 == scope.semantic_catalog_sha256)
+    return ordered if comparable else ()
+
+
+def protected_components(
+        run_dir: Path, active, active_obligations: tuple[str, ...], release,
+        policy: GradeCertificationPolicy, *, scope=None,
+        load_receipt=load_certification_receipt,
+        load_request=load_certification_request,
+) -> tuple[tuple[str, ...], tuple[CertificationObligationScore, ...]]:
+    """Return prior obligations and baselines only under exact measurement identity."""
+    protected, ordered, predecessor = _protected_evidence(
+        run_dir, active, active_obligations,
+        load_receipt=load_receipt, load_request=load_request)
+    return protected, _comparable_baselines(
+        ordered, predecessor, release, policy, scope)
 
 
 def request_values(request: GradeCertificationRequest) -> dict:
@@ -163,13 +185,15 @@ def current_components(run_dir: Path, policy: GradeCertificationPolicy):
     learner_evidence_epoch = state.epoch.snapshot.qualification_epoch
     active_obligations = tuple(
         member.capability_id for member in active.definition.members)
-    protected, protected_baselines = protected_components(
-        Path(run_dir), active, active_obligations, release, policy)
+    protected, ordered, predecessor = _protected_evidence(
+        Path(run_dir), active, active_obligations)
     requested_scope = tuple(dict.fromkeys((*active_obligations, *protected)))
     try:
         scope = assessment_scope_contract(release, requested_scope)
     except (TypeError, ValueError):
         _invalid("BAMF_GRADE_CERTIFICATION_ASSESSMENT_SCOPE_DRIFT")
+    protected_baselines = _comparable_baselines(
+        ordered, predecessor, release, policy, scope)
     policy.verify()
     return (
         active, accepted, release, active_obligations, protected,

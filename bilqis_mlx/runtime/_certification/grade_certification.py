@@ -9,7 +9,7 @@ from .grade_certification_contracts import (
     _issue_certification_request, _issue_success_receipt,
     require_accepted_certification_receipt)
 from .grade_certification_custody import (
-    load_certification_attempt, load_certification_receipt,
+    inspect_certification_attempt, load_certification_receipt,
     load_certification_request)
 from .grade_certification_authority import (
     _selected_progression_policy_sha256,
@@ -27,9 +27,11 @@ def selected_grade_certification_policy(run_dir: Path) -> GradeCertificationPoli
         _selected_progression_policy_sha256(Path(run_dir)))
 
 
-def _protected_components(run_dir, active, active_obligations, release, policy):
+def _protected_components(
+        run_dir, active, active_obligations, release, policy, *, scope=None):
     return _protected_components_impl(
         run_dir, active, active_obligations, release, policy,
+        scope=scope,
         load_receipt=load_certification_receipt, load_request=load_certification_request)
 
 
@@ -176,7 +178,7 @@ def require_current_accepted_certification_receipt(
     parsed_receipt = load_certification_receipt(root, receipt_sha256)
     parsed_request = load_certification_request(
         root, parsed_receipt.attempt_sha256)
-    view = load_certification_attempt(root, parsed_request)
+    view = inspect_certification_attempt(root, parsed_request)
     if (
         view.status != "SUCCEEDED"
         or view.receipt_sha256 != receipt_sha256

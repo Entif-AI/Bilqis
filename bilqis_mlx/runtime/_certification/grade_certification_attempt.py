@@ -131,9 +131,11 @@ def _terminal(run_dir, request):
     return record
 
 
-def load_certification_attempt(
+def _load_certification_attempt(
     run_dir: Path,
     request: GradeCertificationRequest,
+    *,
+    update_pointer: bool,
 ) -> CertificationAttemptView:
     payload, policy, trigger = _load_attempt_header(run_dir, request)
     committed, committed_cohorts = _committed(run_dir, request)
@@ -154,13 +156,28 @@ def load_certification_attempt(
     if pointer_path.exists() or pointer_path.is_symlink():
         current = _read(
             pointer_path, "BAMF_GRADE_CERTIFICATION_POINTER_INVALID")
-    if current != expected:
+    if update_pointer and current != expected:
         _write_pointer(
             run_dir, request, status=status, next_cursor=next_cursor)
     return CertificationAttemptView(
         request, policy, payload["trigger_cohort_sha256"], trigger,
         committed, committed_cohorts, next_cursor, status, blockers,
         receipt_sha256, supersession_reason)
+
+
+def load_certification_attempt(
+    run_dir: Path,
+    request: GradeCertificationRequest,
+) -> CertificationAttemptView:
+    return _load_certification_attempt(run_dir, request, update_pointer=True)
+
+
+def inspect_certification_attempt(
+    run_dir: Path,
+    request: GradeCertificationRequest,
+) -> CertificationAttemptView:
+    """Verify historical attempt custody without mutating the live pointer."""
+    return _load_certification_attempt(run_dir, request, update_pointer=False)
 
 
 def commit_certification_result(

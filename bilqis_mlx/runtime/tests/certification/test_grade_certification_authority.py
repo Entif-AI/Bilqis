@@ -62,6 +62,9 @@ def test_prior_certified_obligations_survive_when_regression_baseline_is_not_com
     )
     predecessor = SimpleNamespace(
         assessment_capabilities=("C.PRIOR", "C.NOW"),
+        assessment_rubric_sha256="4" * 64,
+        assessment_source_sha256="5" * 64,
+        assessment_generator_version="generator/v2",
         factory_release_sha256="1" * 64,
         semantic_catalog_sha256="2" * 64,
         policy_epoch=policy.policy_epoch,
@@ -71,6 +74,10 @@ def test_prior_certified_obligations_survive_when_regression_baseline_is_not_com
         release_sha256="3" * 64,
         semantic_catalog_sha256="2" * 64,
     )
+    scope = SimpleNamespace(
+        capabilities=("C.NOW", "C.PRIOR"), rubric_sha256="4" * 64,
+        source_sha256="5" * 64, generator_version="generator/v2",
+        semantic_catalog_sha256="2" * 64)
     with (
         patch(
             "bilqis_mlx.runtime.grade_certification.load_certification_receipt",
@@ -82,7 +89,7 @@ def test_prior_certified_obligations_survive_when_regression_baseline_is_not_com
         ),
     ):
         protected, baselines = _protected_components(
-            "/unused", active, ("C.NOW",), release, policy)
+            "/unused", active, ("C.NOW",), release, policy, scope=scope)
     assert protected == ("C.PRIOR",)
     assert baselines == ()
 
@@ -97,6 +104,9 @@ def test_comparable_prior_certified_obligation_becomes_quadratic_baseline():
     )
     predecessor = SimpleNamespace(
         assessment_capabilities=("C.PRIOR",),
+        assessment_rubric_sha256="4" * 64,
+        assessment_source_sha256="5" * 64,
+        assessment_generator_version="generator/v2",
         factory_release_sha256="1" * 64,
         semantic_catalog_sha256="2" * 64,
         policy_epoch=policy.policy_epoch,
@@ -106,6 +116,10 @@ def test_comparable_prior_certified_obligation_becomes_quadratic_baseline():
         release_sha256="1" * 64,
         semantic_catalog_sha256="2" * 64,
     )
+    scope = SimpleNamespace(
+        capabilities=("C.PRIOR",), rubric_sha256="4" * 64,
+        source_sha256="5" * 64, generator_version="generator/v2",
+        semantic_catalog_sha256="2" * 64)
     with (
         patch(
             "bilqis_mlx.runtime.grade_certification.load_certification_receipt",
@@ -117,10 +131,46 @@ def test_comparable_prior_certified_obligation_becomes_quadratic_baseline():
         ),
     ):
         protected, baselines = _protected_components(
-            "/unused", active, (), release, policy)
+            "/unused", active, (), release, policy, scope=scope)
     assert protected == ("C.PRIOR",)
     assert baselines == (
         CertificationObligationScore("PROTECTED", "C.PRIOR", 9, 10),)
+
+
+def test_noncomparable_assessment_identity_never_becomes_regression_baseline():
+    policy = _policy()
+    active = SimpleNamespace(definition=SimpleNamespace(
+        predecessor_certification_sha256="a" * 64))
+    receipt = SimpleNamespace(
+        attempt_sha256="b" * 64,
+        scores=(CertificationObligationScore("ACTIVE", "C.PRIOR", 9, 10),))
+    predecessor = SimpleNamespace(
+        assessment_capabilities=("C.PRIOR",),
+        assessment_rubric_sha256="4" * 64,
+        assessment_source_sha256="5" * 64,
+        assessment_generator_version="generator/v2",
+        factory_release_sha256="1" * 64,
+        semantic_catalog_sha256="2" * 64,
+        policy_epoch=policy.policy_epoch,
+        policy_sha256=policy.policy_sha256)
+    release = SimpleNamespace(
+        release_sha256="1" * 64, semantic_catalog_sha256="2" * 64)
+    drifted_scope = SimpleNamespace(
+        capabilities=("C.PRIOR",), rubric_sha256="6" * 64,
+        source_sha256="5" * 64, generator_version="generator/v2",
+        semantic_catalog_sha256="2" * 64)
+    with (
+        patch(
+            "bilqis_mlx.runtime.grade_certification.load_certification_receipt",
+            return_value=receipt),
+        patch(
+            "bilqis_mlx.runtime.grade_certification.load_certification_request",
+            return_value=predecessor),
+    ):
+        protected, baselines = _protected_components(
+            "/unused", active, (), release, policy, scope=drifted_scope)
+    assert protected == ("C.PRIOR",)
+    assert baselines == ()
 
 
 def _components(request):

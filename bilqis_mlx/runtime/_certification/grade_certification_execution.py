@@ -20,6 +20,7 @@ from .grade_certification_custody import (
     fail_certification_attempt,
     load_certification_attempt,
     load_certification_receipt,
+    load_certification_request,
     policy_continuation_eligible,
     policy_entry_eligible,
     retry_certification_eligible,
@@ -27,6 +28,7 @@ from .grade_certification_custody import (
     succeed_certification_attempt,
     supersede_certification_attempt,
 )
+from .grade_certification_custody_common import _root
 from .grade_certification_policy import protected_regression_eligible
 
 
@@ -157,13 +159,40 @@ def _current_or_supersede(
         return current, None
     except BilqisError as error:
         reason = error.context.get("reason")
-        reason = (
-            reason if isinstance(reason, str) and reason
-            else "BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT"
-        )
+        superseding_reasons = {
+            "BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT",
+            "BAMF_GRADE_CERTIFICATION_POLICY_SELECTION_DRIFT",
+            "BAMF_GRADE_CERTIFICATION_REQUEST_REISSUE_DRIFT",
+        }
+        if reason not in superseding_reasons:
+            raise
         view = supersede_certification_attempt(
             run_dir, request, reason=reason)
         return None, _terminal_result(run_dir, view)
+
+
+def _supersede_stale_running_attempts(root, request) -> None:
+    attempts = _root(root) / "attempts"
+    if not attempts.exists():
+        return
+    if attempts.is_symlink() or not attempts.is_dir():
+        _invalid("BAMF_GRADE_CERTIFICATION_CUSTODY_UNSAFE")
+    for path in sorted(attempts.iterdir(), key=lambda item: item.name):
+        if path.is_symlink() or not path.is_dir():
+            _invalid("BAMF_GRADE_CERTIFICATION_CUSTODY_UNSAFE")
+        if path.name == request.attempt_sha256:
+            continue
+        terminal = path / "terminal.json"
+        if terminal.is_symlink():
+            _invalid("BAMF_GRADE_CERTIFICATION_CUSTODY_UNSAFE")
+        if terminal.exists():
+            continue
+        stale_request = load_certification_request(root, path.name)
+        stale = load_certification_attempt(root, stale_request)
+        if stale.status == "RUNNING":
+            supersede_certification_attempt(
+                root, stale_request,
+                reason="BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT")
 
 
 def _start_or_resume(
@@ -171,6 +200,7 @@ def _start_or_resume(
     if _attempt_path(root, request).is_file():
         return load_certification_attempt(root, request)
     require_current()
+    _supersede_stale_running_attempts(root, request)
     trigger = trigger_measure()
     if not _trigger_matches_request(request, trigger):
         _invalid("BAMF_GRADE_CERTIFICATION_TRIGGER_SCOPE_INVALID")

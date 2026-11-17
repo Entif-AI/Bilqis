@@ -9,7 +9,9 @@ from .grade_certification_contracts import (
     parse_certification_receipt, require_accepted_certification_receipt,
     _request_from_record,
 )
-from .grade_certification_attempt import load_certification_attempt
+from .grade_certification_attempt import (
+    inspect_certification_attempt, load_certification_attempt,
+)
 from .grade_certification_attempt_types import _attempt_dir
 from .grade_certification_custody_common import (
     ATTEMPT_SCHEMA, TERMINAL_SCHEMA, _immutable, _invalid, _read, _root,
@@ -108,7 +110,7 @@ def certification_receipts_for_predecessor(
         ):
             continue
         request = load_certification_request(run_dir, receipt.attempt_sha256)
-        view = load_certification_attempt(run_dir, request)
+        view = inspect_certification_attempt(run_dir, request)
         if (
             view.status != "SUCCEEDED"
             or view.receipt_sha256 != receipt.receipt_sha256
@@ -134,7 +136,7 @@ def certification_receipt_for_predecessor(
         ):
             return None
         request = load_certification_request(run_dir, receipt.attempt_sha256)
-        view = load_certification_attempt(run_dir, request)
+        view = inspect_certification_attempt(run_dir, request)
         if (
             view.status != "SUCCEEDED"
             or view.receipt_sha256 != receipt.receipt_sha256
