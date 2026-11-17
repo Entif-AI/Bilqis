@@ -214,7 +214,7 @@ def candidate_work_disposition(parent: Assessment, capability: str) -> WorkDispo
             else WorkDisposition.OPTIMIZER_CANDIDATE)
 
 
-def retain_candidate(parent, candidate, paired_assessment) -> Decision:
+def retain_candidate(parent, candidate, paired_assessment, *, plasticity_escape=None) -> Decision:
     """Apply the versioned decision law owned by the evidence stage."""
     if not isinstance(paired_assessment, PairedRetentionEvidence):
         _invalid("BAMF_RETENTION_EVIDENCE_INVALID")
@@ -227,7 +227,8 @@ def retain_candidate(parent, candidate, paired_assessment) -> Decision:
         from .capability_retention_foundation import retain_foundation_candidate
         return retain_foundation_candidate(parent, candidate, paired_assessment)
     from .capability_retention_strict import retain_candidate as _strict_retain_candidate
-    return _strict_retain_candidate(parent, candidate, paired_assessment)
+    return _strict_retain_candidate(
+        parent, candidate, paired_assessment, plasticity_escape=plasticity_escape)
 
 
 def evaluate_retention_candidate(parent_solver, candidate_solver, target_capability, policy, cohorts,

@@ -15,12 +15,13 @@ from .protection_plan import (
 
 def policy_epoch_sha256(evidence_stage) -> str:
     from bilqis_mlx.learning.retention_policy import (
-        MASTERY_DEBT_POWER, decision_law_for_stage, stage_retention_policy,
+        MASTERY_DEBT_POWER, RetentionDecisionLaw, decision_law_for_stage,
+        stage_retention_policy,
     )
     from .._factory_retention_support import (
         C05_PROBE_EACH, C05_PROTECTED_REFERENCE_LOSS,
     )
-    return contract_digest({
+    payload = {
         "schema": "bilqis.mlx.c05-retention-policy-epoch/v2",
         "evidence_stage": evidence_stage.value,
         "stage_policy_schema": stage_retention_policy().schema_version,
@@ -30,7 +31,23 @@ def policy_epoch_sha256(evidence_stage) -> str:
         "probe_each": C05_PROBE_EACH,
         "protected_reference_loss": C05_PROTECTED_REFERENCE_LOSS,
         "mastery_debt_power": MASTERY_DEBT_POWER,
-    })
+    }
+    if decision_law_for_stage(evidence_stage) is RetentionDecisionLaw.STRICT_PROPORTIONAL:
+        from bilqis_mlx.runtime.plasticity_escape import (
+            FRONTIER_STARVATION_ATTEMPTS, HARD_DEBT_LIMIT,
+            ORDINARY_STARVATION_ATTEMPTS, RELEASE_THRESHOLD, REPAIR_THRESHOLD,
+            SCHOOL_DROUGHT_ATTEMPTS,
+        )
+        payload["plasticity_escape"] = {
+            "schema": "bilqis.c05.plasticity-escape-policy/v1",
+            "ordinary_starvation_attempts": ORDINARY_STARVATION_ATTEMPTS,
+            "frontier_starvation_attempts": FRONTIER_STARVATION_ATTEMPTS,
+            "school_drought_attempts": SCHOOL_DROUGHT_ATTEMPTS,
+            "repair_threshold": REPAIR_THRESHOLD,
+            "hard_debt_limit": HARD_DEBT_LIMIT,
+            "release_threshold": RELEASE_THRESHOLD,
+        }
+    return contract_digest(payload)
 
 
 def _scope_sha256(release, groups) -> str:

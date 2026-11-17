@@ -34,6 +34,7 @@ from .retention.screen import (
 from .retention.protection_plan import BroadCertificationTrigger
 from .retention.protection_plan_compiler import (
     bind_retention_protection_plan,
+    policy_epoch_sha256,
     require_retention_protection_plan,
 )
 from bilqis_mlx.semantics.domains import contract_digest
@@ -187,7 +188,7 @@ def evaluate_factory_retention_candidate(
     artifact_path: str,
     target_capability: str,
     *,
-    run_dir: Path, observer=None,
+    run_dir: Path, observer=None, plasticity_escape=None,
 ):
     """Run C05 with no caller-selected solver, cohort, policy or coverage map."""
     if (type(candidate) is not CandidateTransaction
@@ -225,7 +226,34 @@ def evaluate_factory_retention_candidate(
         training, instruments, cache,
         protected_capabilities=target_plan.protected_capability_ids,
         retention_protection_plan_sha256=plan.digest,
+        plasticity_escape=plasticity_escape,
         **({"observer": observer} if observer is not None else {}))
+
+
+def derive_current_plasticity_escape_state(parent, selection, release):
+    """Derive exceptional state from accepted/replayed evidence only in strict C05."""
+    if CURRENT_EVIDENCE_STAGE is not EvidenceStage.STRICT_GENERALIZATION:
+        return None
+    from bilqis_mlx.runtime.plasticity_escape import derive_plasticity_escape_state
+    context = getattr(selection, "metadata", {}).get("how_context")
+    visit = getattr(selection, "visit", None)
+    projection = getattr(visit, "projection", None)
+    teacher_state = getattr(projection, "teacher_state", None)
+    if not isinstance(context, dict):
+        _invalid("BAMF_PLASTICITY_HOW_CONTEXT_REQUIRED")
+    grades = tuple(release.execution_plan.grades)
+    if not grades:
+        _invalid("BAMF_PLASTICITY_ACTIVE_GRADE_REQUIRED")
+    return derive_plasticity_escape_state(
+        teacher_state,
+        getattr(parent, "learning_health_state", None),
+        target_capability_id=selection.offer.capability_id,
+        target_group_id=context["grade"],
+        frontier_group_id=grades[-1].grade_id,
+        phase=context["phase"],
+        curriculum_scope=context["curriculum_scope"],
+        policy_epoch_sha256=policy_epoch_sha256(CURRENT_EVIDENCE_STAGE),
+    )
 
 
 def evaluate_factory_package_import(
@@ -282,6 +310,7 @@ __all__ = (
     "FactoryRetentionEvaluation", "bind_current_retention_protection_plan",
     "bind_current_retention_source_rows",
     "bind_factory_baseline_successor",
+    "derive_current_plasticity_escape_state",
     "evaluate_factory_package_import",
     "evaluate_factory_retention_candidate",
 )

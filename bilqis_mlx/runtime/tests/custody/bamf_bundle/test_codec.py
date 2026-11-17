@@ -31,6 +31,10 @@ from bilqis_mlx.runtime.baseline.lifecycle import (
     BaselineComparisonIdentity, BaselineLedger, BaselineLifecycleState,
     _issue_factory_baseline_transition, apply_factory_baseline_transition,
 )
+from bilqis_mlx.runtime.plasticity_escape import (
+    CertifiedSurfaceDebt, CertifiedSurfaceId, PlasticityActivationReason,
+    PlasticityEscapeState,
+)
 
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
     NAME, accepted_state, candidate, next_accepted_step, parent_state,
@@ -138,10 +142,18 @@ class BamfBundleCodecTests(unittest.TestCase):
             "rubric_sha256": "3" * 64, "source_sha256": "4" * 64,
             "target": {"state": "MEASURED", "before": 2, "after": 4, "total": 5},
         }, accepted=True)
+        surface = CertifiedSurfaceId(
+            "certification:future-surface", "future:capability",
+            "5" * 64, "6" * 64, "3" * 64, "7" * 64, "4" * 64, "2" * 64)
+        plasticity = PlasticityEscapeState(
+            "7" * 64, "future:capability", True,
+            (PlasticityActivationReason.LOCAL_STARVATION,), 32, 24,
+            (CertifiedSurfaceDebt(surface, 3, 5, 5),), (), 17)
         state = {
             "schema": STATE_SCHEMA, "coverage_state": "PARTIAL",
             "by_capability": {"future:capability": health},
             "certified_surfaces": [],
+            "plasticity_escape": plasticity.to_record(),
         }
         source = replace(
             candidate(parent_state(), generation=1, parent="a" * 64),
