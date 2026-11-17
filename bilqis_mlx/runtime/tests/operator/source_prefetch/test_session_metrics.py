@@ -81,7 +81,15 @@ def test_retention_threads_source_metrics_into_resource_observation():
                             "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
                             return_value=successor), patch(
                                 "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
-                                return_value=successor):
+                                return_value=successor), patch(
+                                    "bilqis_mlx.runtime.bamf_operator.championship.bind_accepted_championship_successor",
+                                    return_value=successor), patch(
+                                    "bilqis_mlx.runtime.outcomes.issuance.build_outcome",
+                                    return_value={}), patch(
+                                        "bilqis_mlx.runtime.outcomes.issuance.credited_visit",
+                                        side_effect=lambda visit, outcome: visit), patch(
+                                            "bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor",
+                                            side_effect=lambda visit, next_successor, parent: next_successor):
         prepared = _retention_result(
             Path("/run"), object(), context, "atlas", selection, "capability:metrics",
             cache, (step,), capture, 1, 1, {}, None, None)

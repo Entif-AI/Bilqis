@@ -153,8 +153,14 @@ def prepare_bamf_visit(
                 source_materialization_wall_seconds or None))
     if selection.status != "TEACHER_SELECTED":
         status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
+        payload = {
+            "holds": getattr(selection, "holds", ()),
+            "exclusions": [
+                item.to_record() for item in getattr(selection, "exclusions", ())
+            ],
+        }
         _emit_progress(progress, "priority holds: " + json.dumps(
-            getattr(selection, "holds", ()), ensure_ascii=True))
+            payload, sort_keys=True, ensure_ascii=True))
         return BamfPreparedVisit(status, parent, selection=selection)
     rows = selection.offer.rows()
     if observer is not None:

@@ -25,6 +25,12 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
 
 
 class FoundationTeacherOwnerTests(unittest.TestCase):
+    def test_caller_chosen_direct_selector_is_not_a_production_surface(self):
+        owner_module = __import__(
+            select_foundation_priority_visit.__module__, fromlist=["*"])
+        self.assertFalse(hasattr(owner_module, "select_foundation_teacher_visit"))
+        self.assertIn("select_foundation_priority_visit", owner_module.__all__)
+
     def test_priority_authority_uses_bootstrapped_teacher_state_not_raw_genesis_sidecar(self):
         owner_module = __import__(
             select_foundation_priority_visit.__module__, fromlist=["*"])
