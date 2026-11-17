@@ -48,10 +48,10 @@ from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
 from .source_prefetch import (
     CandidateSourceLane, NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
-from ._session_candidate_execution import (
+from .session_parts.candidate_execution import (
     candidate_horizon_execution as _candidate_horizon_execution_impl,
 )
-from ._session_candidate_execution import execute_horizon as _execute_horizon_impl
+from .session_parts.candidate_execution import execute_horizon as _execute_horizon_impl
 from ._session_execution import operate as _operate_impl
 from ._session_execution import retention_result as _retention_result_impl
 from ._session_visit import visit as _visit_impl

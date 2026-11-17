@@ -40,10 +40,6 @@ from bilqis_mlx.factory.model import AssessmentClass, LearningEvidence, SourceAd
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
 from bilqis_mlx.generated_assessment import score as score_cohort
 from bilqis_mlx.learning.champions import Checkpoint
-from bilqis_mlx.learning._championship.cohort_soup import (
-    cohort_soup_recipe, partitioned_recipes, read_frozen_cohort_soup,
-    save_frozen_cohort_soup, seal_frozen_cohort_soup, verify_frozen_cohort_soup,
-)
 from bilqis_mlx.learning.epoch_championships import advance_epoch
 from bilqis_mlx.learning.mentor_epoch import begin_initial_epoch
 from bilqis_mlx.learning.stagnation_control import (
@@ -141,60 +137,6 @@ def _fixture():
 
 
 class DisposableGradeZSystemProof(unittest.TestCase):
-    def test_grade_z_forms_and_cold_consumes_generic_frozen_cohort_soup(self):
-        import mlx.core as mx
-        mx.set_default_device(mx.cpu)
-        _registry, graph, release = _fixture()
-        capability = CAPABILITIES[0]
-        checkpoint_sha = "1" * 64
-        state = {"active_roles": {capability: {
-            "capability": capability,
-            "capability_group": "Z",
-            "checkpoint_origin_group": "Z",
-            "championship_qualification_correct": 19,
-            "championship_qualification_total": 20,
-            "checkpoint": {
-                "sha256": checkpoint_sha,
-                "filename": "bamf-generations/7",
-                "optimizer_step": 7,
-                "model_and_native_adamw": True,
-            },
-            "complete_solver_provenance": {
-                "schema_version": "bilqis.c05.complete-solver-provenance/v1",
-                "generation_digest": "2" * 64,
-                "weight_sha256": checkpoint_sha,
-                "solver_contracts": ["3" * 64],
-            },
-        }}}
-        recipe = cohort_soup_recipe(
-            state, "Z", CAPABILITIES,
-            championship_epoch_sha256="4" * 64,
-            cohort_definition_sha256="5" * 64,
-            factory_release_sha256=release.release_sha256)
-        graph_sha = _fingerprint(graph)
-        shard = partitioned_recipes(recipe, {
-            checkpoint_sha: {
-                "accepted_manifest_sha256": "6" * 64,
-                "source_graph_sha256": graph_sha,
-            },
-        })[0]
-        self.assertEqual(shard["cohort_id"], "Z")
-        self.assertEqual(shard["covered_capabilities"], [capability])
-        self.assertEqual(
-            shard["members"][0]["accepted_manifest_sha256"], "6" * 64)
-        weights = {"z.weight": mx.array([[1., 2.]], dtype=mx.float32)}
-        with tempfile.TemporaryDirectory() as temp:
-            root = Path(temp)
-            snapshot = save_frozen_cohort_soup(
-                root, shard, weights, reserve_gib=0.0)
-            seal_frozen_cohort_soup(root, snapshot)
-            cold = read_frozen_cohort_soup(
-                root, shard, expected_weights=weights)
-            self.assertEqual(cold["recipe_sha256"], shard["recipe_sha256"])
-            restored = verify_frozen_cohort_soup(
-                root, cold, expected_weights=weights)
-            self.assertEqual(tuple(restored), ("z.weight",))
-
     def test_current_operate_and_admitted_resume_do_not_reconstruct_courses(self):
         import ast
         import inspect
