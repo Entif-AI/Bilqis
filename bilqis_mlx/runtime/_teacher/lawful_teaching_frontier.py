@@ -11,6 +11,8 @@ from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import (
     LawfulTeachingFrontier,
     LawfulTeachingCapability,
     LawfulTeachingDisposition,
+    LawfulTeachingExclusion,
+    LawfulTeachingExclusionCode,
     LawfulTeachingHold,
     _is_issued,
     _issue_frontier,
@@ -20,6 +22,7 @@ from bilqis_mlx.runtime.lawful_teaching_frontier_projection import (
     _active_member_projection,
     _capabilities,
     _evidence_digest,
+    _exclusions,
 )
 
 
@@ -125,6 +128,7 @@ def _issue_lawful_teaching_frontier_from_epoch(
         active_grade_members=active_grade_members,
         active_grade_state=_active_grade_state(capabilities, planning_status),
         capabilities=capabilities,
+        exclusions=_exclusions(epoch.current_release, capabilities),
         _source_context=source_context,
         _parent=parent,
         _planning_generation=planning_generation,
@@ -234,6 +238,8 @@ __all__ = (
     "ActiveGeneratedGradeState",
     "LawfulTeachingCapability",
     "LawfulTeachingDisposition",
+    "LawfulTeachingExclusion",
+    "LawfulTeachingExclusionCode",
     "LawfulTeachingFrontier",
     "LawfulTeachingHold",
     "issue_lawful_teaching_frontier",

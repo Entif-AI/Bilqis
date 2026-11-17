@@ -150,3 +150,15 @@ class PriorityTeacherTests(unittest.TestCase):
             Settings(), program=program)
         self.assertEqual(result.status, "TEACHER_SELECTED")
         self.assertEqual(result.lesson_grade, "selected-grade")
+
+    def test_grade_z_requires_no_priority_legality_branch(self):
+        epoch, frontier, history, _school, evidence = _fixture()
+        program = schedule_program(("Z", (evidence.scope.capability_id,)))
+        school = PrioritySchoolContext(
+            program.digest(), ("not-Z",),
+            PriorityStudentIdentity(epoch.student_sha256))
+        result = choose_priority_teaching(
+            frontier, history, epoch, engine, school, random.Random(12),
+            Settings(), program=program)
+        self.assertEqual(result.status, "TEACHER_SELECTED")
+        self.assertEqual(result.lesson_grade, "Z")

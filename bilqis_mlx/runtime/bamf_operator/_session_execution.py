@@ -142,15 +142,22 @@ def retention_result(
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
         identity_before, progress, observer, *, evaluate_candidate,
         issue_decision, identity_delta, resource_observation,
-        derive_successor, bind_baseline_successor, prepared_visit_type, emit_progress,
-        measure_observed_phase_fn):
+        derive_successor, bind_baseline_successor,
+        prepared_visit_type, emit_progress,
+        measure_observed_phase_fn, derive_plasticity_escape=None):
     step = steps[-1]
     if observer is not None:
         observer.update(phase="RETENTION")
     emit_progress(progress, "evaluating retention evidence")
     with measure_observed_phase_fn(observer, "retention_wall_seconds"):
+        release = getattr(context, "release", None)
+        plasticity_escape = (
+            derive_plasticity_escape(parent, selection, release)
+            if derive_plasticity_escape is not None and release is not None else None)
         evaluation = evaluate_candidate(
             context, step.transaction, atlas_path, capability, run_dir=run_dir,
+            **({"plasticity_escape": plasticity_escape}
+               if plasticity_escape is not None else {}),
             **({"observer": lambda fields: observer.update(**fields)}
                if observer is not None else {}))
         decision = issue_decision(evaluation)
@@ -201,7 +208,7 @@ def retention_result(
         cache, retained,
         rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
         derive_successor, bind_baseline_successor, evaluation,
-        credited_visit, carry_credit_to_successor)
+        credited_visit, carry_credit_to_successor, plasticity_escape)
     return prepared_visit_type(
         "ACCEPTED" if decision.accepted else "REJECTED", parent,
         selection=selection, step=step, steps=tuple(steps), decision=decision,
@@ -238,7 +245,7 @@ def _accepted_successor(
         cache, retained,
         rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
         derive_successor, bind_baseline_successor, evaluation,
-        credited_visit, carry_credit_to_successor):
+        credited_visit, carry_credit_to_successor, plasticity_escape):
     if not decision.accepted:
         return None, None
     learned_visit = credited_visit(selection.visit, how_outcome)
@@ -247,7 +254,8 @@ def _accepted_successor(
     try:
         from .learning_health_runtime import accepted_learning_health_state
         health_state, learning_health = accepted_learning_health_state(
-            run_dir, parent, selection, candidate_evidence, decision, retained, capture)
+            run_dir, parent, selection, candidate_evidence, decision, retained, capture,
+            plasticity_escape=plasticity_escape)
     except (AttributeError, TypeError, ValueError, KeyError):
         health_state = None
     events = ({

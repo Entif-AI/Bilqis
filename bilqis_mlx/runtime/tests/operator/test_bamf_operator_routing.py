@@ -30,6 +30,15 @@ def _assert_rejected_resource(case, resource):
 
 
 class BamfOperatorRoutingContinuationTests(unittest.TestCase):
+    def setUp(self):
+        for name, behavior in (
+                ('build_outcome', {'return_value': {'schema': 'routing-fixture'}}),
+                ('credited_visit', {'side_effect': lambda visit, outcome: visit}),
+                ('carry_credit_to_successor', {'side_effect': lambda visit, successor, parent: successor})):
+            patched = patch('bilqis_mlx.runtime.outcomes.issuance.' + name, **behavior)
+            patched.start()
+            self.addCleanup(patched.stop)
+
     def test_priority_hold_never_counts_as_a_neural_visit(self):
         with TemporaryDirectory() as temporary:
             current = SimpleNamespace(

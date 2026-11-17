@@ -39,8 +39,9 @@ def _source_context(*capability_ids):
             execution_plan=SimpleNamespace(capabilities=capabilities)))
 
 
-def _frontier(*ready):
-    return SimpleNamespace(ready_capability_ids=tuple(ready))
+def _frontier(*ready, exclusions=()):
+    return SimpleNamespace(
+        ready_capability_ids=tuple(ready), exclusions=tuple(exclusions))
 
 
 def _offer(_context, _parent, _path, *, capability, source_seed, source_each,
@@ -84,6 +85,24 @@ def test_frontier_reissue_alone_expands_offer_set_without_grade_logic():
 
     assert tuple(item[0] for item in first) == ("cap:alpha",)
     assert tuple(item[0] for item in second) == ("cap:alpha", "cap:beta")
+
+
+def test_a09_planning_generation_cannot_expand_offers_without_frontier_reissue():
+    context = _source_context("cap:beta", "cap:alpha")
+    generations = (object(), object())
+    with patch.object(
+            authority, "prepare_priority_source_offer",
+            side_effect=_offer):
+        results = tuple(authority._priority_offers(
+            context, object(), "/atlas", 17, generation,
+            _frontier(
+                "cap:alpha",
+                exclusions=(("cap:beta", "FUTURE_GENERATED_GRADE"),),
+            ))[1]
+            for generation in generations)
+
+    assert tuple(tuple(item[0] for item in offers) for offers in results) == (
+        ("cap:alpha",), ("cap:alpha",))
 
 
 def test_frontier_ready_identity_must_exist_in_current_release():

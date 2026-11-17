@@ -173,36 +173,6 @@ def accepted_teacher_trajectory(visit: BoundTeacherVisit) -> TeacherTrajectoryAd
     return result
 
 
-def select_foundation_teacher_visit(
-        run_dir, school, learning_settings, teacher_curriculum_scope,
-        previsit_diagnostics, *, capability_id: str, lesson_grade: str,
-        total_capabilities=None, plasticity_escape=None):
-    """Select one production visit from accepted C03 state, never caller RNG."""
-    from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
-    from bilqis_mlx.runtime.accepted_teacher_custody import (
-        select_accepted_teacher_visit,
-    )
-
-    parent = load_accepted_generation(run_dir)
-    state = parent.teacher_state
-    if type(state.get("next_seed")) is not int or state["next_seed"] < 0:
-        invalid("TEACHER_SUCCESSOR_SELECTION_STATE_INVALID")
-    bootstrap = {}
-    if "c03_lineage" not in state:
-        owned = foundation_teacher_bootstrap()
-        bootstrap = {
-            "legacy_receipt": owned.legacy_receipt,
-            "adaptation": owned.adaptation,
-            "prior_region": owned.prior_region,
-        }
-    return select_accepted_teacher_visit(
-        run_dir, historical_teacher_policy, school,
-        random.Random(state["next_seed"]), learning_settings,
-        teacher_curriculum_scope, previsit_diagnostics, lesson_grade,
-        capability_id=capability_id, total_capabilities=total_capabilities,
-        plasticity_escape=plasticity_escape, **bootstrap)
-
-
 def derive_accepted_teacher_successor(
         run_dir, retained_state, visit: BoundTeacherVisit, *,
         delivery_events: tuple):
@@ -233,5 +203,4 @@ __all__ = (
     "TRAJECTORY_SCHEMA", "accepted_teacher_trajectory",
     "current_foundation_teacher_projection", "derive_accepted_teacher_successor",
     "foundation_teacher_bootstrap", "select_foundation_priority_visit",
-    "select_foundation_teacher_visit",
 )
