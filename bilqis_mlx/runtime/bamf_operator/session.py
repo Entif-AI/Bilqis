@@ -223,12 +223,14 @@ def prepare_bamf_visit(
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
-           source_prefetch_executor=None, source_prefetch_metrics=None, observer=None):
+           source_prefetch_executor=None, source_prefetch_metrics=None, observer=None,
+           run_authority_binding=None):
     return _visit_impl(
         run_dir, reserve_gib, steps_per_visit=steps_per_visit, progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics, observer=observer,
+        run_authority_binding=run_authority_binding,
         prepare_visit=prepare_bamf_visit, record_rejection=record_bamf_rejection,
         accept_publish=accept_and_publish, load_generation=load_accepted_generation,
         measure_phase=measure_observed_phase, emit_progress=_emit_progress,
@@ -299,9 +301,11 @@ def operate_bamf(
     reserve_gib: float = 100.0,
     source_prefetch_workers: int = 2,
     parent_graph: dict | None = None,
+    run_authority=None,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
+    from bilqis_mlx.runtime.run_authority import bind_native_run_authority
     from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
     return _operate_impl(
         Path(run_dir), minutes=minutes, max_visits=max_visits,
@@ -314,6 +318,9 @@ def operate_bamf(
         visit_fn=_visit, observer_type=TrainerObservation,
         emit_progress=_emit_progress, monotonic=time.monotonic,
         load_generation=load_accepted_generation, result_type=BamfOperatorResult,
+        bind_run_authority=(
+            lambda current_run_dir:
+            bind_native_run_authority(current_run_dir, run_authority)),
         accepted_reentry=(
             None if parent_graph is None else
             lambda current_run_dir, current_reserve_gib, current_progress:

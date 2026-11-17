@@ -95,7 +95,8 @@ def assessment_exam(assessment, binding, *, challenge_group):
 
 
 def fresh_title_match(role, incumbent, challenger, current_cohort, *, resolve_cohort,
-                      settled_matchups, challenge_group, allow_legacy_role=False):
+                      settled_matchups, challenge_group, allow_legacy_role=False,
+                      comparison_context_sha256=None):
     """Produce fresh current/battery evidence; native engine alone settles titles."""
     if (not isinstance(role, dict) or not isinstance(incumbent, ReplayBinding)
             or not isinstance(challenger, ReplayBinding)
@@ -113,7 +114,8 @@ def fresh_title_match(role, incumbent, challenger, current_cohort, *, resolve_co
         _invalid("BAMF_CHAMPIONSHIP_INCUMBENT_GENERATION_DRIFT")
     if (incumbent.checkpoint.sha256 == challenger.checkpoint.sha256
             or _pair_key(role["capability"], incumbent.checkpoint.sha256,
-                         challenger.checkpoint.sha256) in settled_matchups):
+                         challenger.checkpoint.sha256,
+                         comparison_context_sha256) in settled_matchups):
         _invalid("BAMF_CHAMPIONSHIP_WEIGHT_PAIR_ALREADY_SETTLED")
     parent = incumbent.measure(current_cohort)
     candidate = challenger.measure(current_cohort)

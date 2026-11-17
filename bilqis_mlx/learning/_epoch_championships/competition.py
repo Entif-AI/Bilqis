@@ -13,7 +13,10 @@ from .qualification import (
     _initial_title_threshold_met, _primary_qualification,
 )
 from .receipts import _resolve_title_match, _role_receipt
-from .state import _group_caps, _pair_key, _sanitize_role_groups, _settled_match
+from .state import (
+    _group_caps, _pair_key, _sanitize_role_groups, _settled_match,
+    _settlement_receipt_context,
+)
 from .fanout import _advance_fanout
 
 
@@ -106,10 +109,12 @@ def _resolve_primary_matches(
             qualification_scope=(cap,), grade_caps=caps)
         roles[cap] = receipt
         updated["settled_matchups"][_pair_key(
-            cap, verdict["incumbent_sha256"], verdict["challenger_sha256"])] = {
+            cap, verdict["incumbent_sha256"], verdict["challenger_sha256"],
+            updated.get("comparison_context_sha256"))] = {
                 **verdict,
                 "group": group,
                 "qualification": qualification,
+                **_settlement_receipt_context(updated),
             }
         decisions.append({
             "group": group, **verdict, "qualification": qualification})

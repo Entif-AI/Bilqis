@@ -44,3 +44,51 @@ class FactoryReleasePublicationTests(GenerationAcceptanceFixture, unittest.TestC
         self.assertEqual(cold.extents.digest, parent.extents.digest)
         self.assertEqual(cold.transition["kind"], "FACTORY_RELEASE_ADOPTION")
         self.assertEqual(cold.transition["factory_release_sha256"], "2" * 64)
+
+    def test_generated_grade_semantic_admission_publishes_with_empty_settlement_authority(self):
+        from bilqis_mlx.learning.capability_championship_state import (
+            championship_epoch_identity, compact_championship_state,
+        )
+        parent = self.parent()
+        identity = championship_epoch_identity(
+            factory_release_sha256="1" * 64, semantic_catalog_sha256="2" * 64,
+            curriculum_sha256="3" * 64,
+            capability_groups=(("future:capability", "future:group"),),
+            fixed_cohort_sha256="4" * 64, rubric_sha256="5" * 64,
+            scope_sha256="6" * 64, source_sha256="7" * 64,
+            policy_sha256="8" * 64, topology_sha256=parent.topology.digest,
+            extents_sha256=parent.extents.digest, semantic_abi=parent.semantic_abi)
+        parent = replace(parent, championship_state=compact_championship_state({
+            "active_roles": {},
+            "settled_matchups": {
+                "future:capability|" + "9" * 64 + "|" + "a" * 64: {
+                    "capability": "future:capability", "winner_sha256": "9" * 64,
+                },
+            },
+        }, identity))
+        transition = _issue_factory_release_adoption_transition(
+            predecessor_factory_release_sha256=parent.run_identity.factory_release_sha256,
+            factory_release_sha256="2" * 64, handoff_sha256="3" * 64,
+            proposal_sha256="4" * 64, staged_candidate_sha256="5" * 64,
+            selection_receipt_sha256="6" * 64, lease_sha256="7" * 64,
+            source_approval_sha256="8" * 64)
+        candidate = derive_factory_release_adoption_candidate(
+            parent, parent_manifest_sha256=self._parent_pointer["manifest_sha256"],
+            transition=transition, new_semantic_admission=True)
+        binding = _issue_factory_release_admission_binding(
+            candidate, parent, transition=transition,
+            accepted_obligation_keys=(("semantic:event", "b" * 64),),
+            generated_grade_proposal_sha256="a" * 64)
+        from bilqis_mlx.runtime.bamf_bundle.publication.authority import (
+            validate_parent_transition,
+        )
+        validated = validate_parent_transition(
+            self.run, self._parent_pointer, candidate,
+            load_bundle=lambda *_args, **_kwargs: parent,
+            reconcile=lambda *_args, **_kwargs: None,
+            parent=parent, factory_release_new_semantic_admission=True)
+        self.assertIs(validated, parent)
+        self.assertEqual(candidate.championship_state["settled_matchups"], {})
+        self.assertEqual(
+            candidate.championship_state["epoch_history"][-1]["reason"],
+            "NEW_SEMANTIC_ADMISSION")

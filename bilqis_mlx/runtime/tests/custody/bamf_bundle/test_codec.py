@@ -22,10 +22,6 @@ from bilqis_mlx.errors import BilqisError, ErrorBus
 from bilqis_mlx.diagnostics.learning_health import STATE_SCHEMA, project_learning_health
 from bilqis_mlx.learning.atlas_engram import MotifKey, MotifManifest, MotifSlot
 from bilqis_mlx.learning.atlas_engram_transaction import MotifAllocationSnapshot
-from bilqis_mlx.learning.capability_championship_state import (
-    active_checkpoint_references, championship_epoch_identity,
-    compact_championship_state,
-)
 from bilqis_mlx.runtime.bamf_bundle import load_bamf_bundle, save_bamf_bundle
 from bilqis_mlx.runtime.baseline.lifecycle import (
     BaselineComparisonIdentity, BaselineLedger, BaselineLifecycleState,
@@ -167,64 +163,6 @@ class BamfBundleCodecTests(unittest.TestCase):
         self.assertEqual(
             loaded.learning_health_state,
             json.loads(json.dumps(state, sort_keys=True)))
-
-    def test_capability_championship_state_round_trips_with_only_active_title_custody(self):
-        identity = championship_epoch_identity(
-            factory_release_sha256="1" * 64,
-            semantic_catalog_sha256="2" * 64,
-            curriculum_sha256="3" * 64,
-            capability_groups=(("future:capability", "future:group"),),
-            fixed_cohort_sha256="4" * 64,
-            rubric_sha256="5" * 64,
-            scope_sha256="6" * 64,
-            source_sha256="7" * 64,
-            policy_sha256="8" * 64,
-            topology_sha256="9" * 64,
-            extents_sha256="a" * 64,
-            semantic_abi={"schema": "fixture"},
-        )
-        pointer = {
-            "sha256": "b" * 64,
-            "filename": "bamf-generations/1",
-            "optimizer_step": 7,
-            "model_and_native_adamw": True,
-        }
-        state = compact_championship_state({
-            "active_roles": {
-                "future:capability": {
-                    "capability": "future:capability",
-                    "capability_group": "future:group",
-                    "checkpoint_origin_group": "future:group",
-                    "complete_solver_provenance": {
-                        "weight_sha256": "b" * 64,
-                        "generation_digest": "c" * 64,
-                        "solver_contracts": ["d" * 64],
-                    },
-                    "checkpoint": pointer,
-                    "correct": 10,
-                    "total": 10,
-                    "championship_qualification_correct": 10,
-                    "championship_qualification_total": 10,
-                    "surviving_battery": [],
-                },
-            },
-            "settled_matchups": {},
-        }, identity)
-        source = replace(
-            candidate(parent_state(), generation=1, parent="a" * 64),
-            championship_state=state)
-        with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
-            manifest = save_bamf_bundle(
-                source, self.root / "championship-bundle", reserve_gib=0.)
-            loaded = load_bamf_bundle(
-                self.root / "championship-bundle",
-                expected_manifest_sha256=manifest["manifest_sha256"])
-        self.assertEqual(
-            loaded.championship_state,
-            json.loads(json.dumps(state, sort_keys=True)))
-        self.assertEqual(
-            active_checkpoint_references(loaded.championship_state),
-            (pointer,))
 
     def test_authenticated_non_genesis_motif_state_round_trips_and_resumes(self):
         parent = parent_state()

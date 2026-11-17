@@ -43,7 +43,7 @@ def _run(prepared, order):
     return visit(
         "/run", 0.0, steps_per_visit=1, progress=None,
         source_prefetch_workers=0, source_prefetch_executor=None,
-        source_prefetch_metrics=None, observer=None,
+        source_prefetch_metrics=None, observer=None, run_authority_binding=None,
         prepare_visit=lambda *_args, **_kwargs: prepared,
         record_rejection=lambda *_args, **_kwargs: order.append("rejection"),
         accept_publish=lambda *_args, **_kwargs: order.append("publication"),
