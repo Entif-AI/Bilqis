@@ -1,18 +1,18 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "39f46e07daf86ff8dba28819373820a0d67673f9",
-  "updated_at": "2026-11-16T23:37:59Z",
+  "observed_unified": "749f1f37af958282c545473c67b2fd2acd184352",
+  "updated_at": "2026-11-17T01:25:57Z",
   "exception": null,
   "items": [
     {
       "issue": 1315,
       "pr": null,
-      "state": "ACTIVE",
-      "head_sha": "39f46e07daf86ff8dba28819373820a0d67673f9",
-      "head_sha_role": "exact reviewed unified base including merged #1314 active generated-grade authority before #1315 source mutation",
-      "summary": "#1315 constrains C03/C06 teaching priority to the lawful active GeneratedGradeDefinition frontier produced by #1314. Legality is decided before salience/novelty/learning-need ranking; future-grade semantics remain planning-visible but cannot become teaching offers, typed exclusion reasons remain observable, and existing teacher strategy is reused only among lawful same-frontier peers.",
-      "resume_trigger": "Run fresh pinned EGM review of the live #1315 legality contract, then trace and repair any priority/source path that can rank or execute outside LawfulTeachingFrontier without changing generated-grade membership or prerequisites.",
+      "state": "READY",
+      "head_sha": "d5d0cede83457b5e552735a358918a9c53b0bb6c",
+      "head_sha_role": "exact semantic/test/Goldfish/detached-leaf proof head before final flow-control and PR bookkeeping",
+      "summary": "#1315 lawful-priority semantics are READY for human review at exact proof head d5d0cede on reviewed unified 749f1f37. C03/C06 may rank and teach only exact active generated-grade capability/semantic members after #1314; future-grade and otherwise non-ready members remain observable through typed canonical exclusions but cannot reach teacher policy or candidate execution. Currentness is global, remediation does not bypass lawful membership, A09 remains non-authoritative, the direct production custody selector is retired/test-only, and an already-lawful selected target with missing or ambiguous schedule/roster HOW metadata now fails explicitly before policy/context issuance while preserving recoverable SOURCE_OFFER_HELD precedence. Post-base affected ring: 86 passed + 4 subtests; structure/governance/smell/error-control/diff gates green; fresh Design and Codebase closure reviews are 0 Blockers / 0 Majors / 0 Nits; snapshot-isolated verify:leaf PASS with source_mutated=false after installing the repository-locked Node dependencies inside the ignored snapshot dependency boundary. Human merge remains external authority.",
+      "resume_trigger": "Open the normal human-review PR against codex/bamf-unified-base-20261028, verify hosted checks at the final bookkeeping head, then await human review/merge. Do not self-merge.",
       "preserved_branch": "codex/1315-lawful-frontier-priority-20261116"
     },
     {
