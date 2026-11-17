@@ -4,7 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from bilqis_mlx.learning._atlas_candidate.identity_binding import CandidateIdentityBinding
-from bilqis_mlx.runtime.capability_retention import Decision
+from bilqis_mlx.runtime.capability_retention import (
+    Assessment, Decision, EvaluationCohort,
+)
 
 from .capability_evaluation import _invalid
 from ._factory_parent_assessment_cache import ParentAssessmentCacheReceipt
@@ -27,7 +29,8 @@ def _new_factory_evaluation_owner():
               candidate_generation_authority_sha256,
               parent_assessment_cache=None, *, parent_state=None, candidate_state=None,
               parent_binding=None, candidate_binding=None,
-              baseline_transition=None, baseline_ledger=None):
+              baseline_transition=None, baseline_ledger=None,
+              championship_cohort=None, championship_assessment=None):
         item = object.__new__(FactoryRetentionEvaluation)
         for name, value in (
             ("decision", decision),
@@ -42,6 +45,8 @@ def _new_factory_evaluation_owner():
             ("candidate_binding", candidate_binding),
             ("baseline_transition", baseline_transition),
             ("baseline_ledger", baseline_ledger),
+            ("championship_cohort", championship_cohort),
+            ("championship_assessment", championship_assessment),
         ):
             object.__setattr__(item, name, value)
         issued[id(item)] = item
@@ -65,6 +70,8 @@ class FactoryRetentionEvaluation:
     candidate_binding: CandidateIdentityBinding | None
     baseline_transition: FactoryBaselineTransition | None
     baseline_ledger: BaselineLedger
+    championship_cohort: EvaluationCohort | None
+    championship_assessment: Assessment | None
 
     def __init__(self, *args, **kwargs):
         _invalid("BAMF_C05_FACTORY_EVALUATION_CALLER_CONSTRUCTION_FORBIDDEN")
@@ -92,6 +99,14 @@ class FactoryRetentionEvaluation:
                          or self.candidate_binding.digest != self.candidate_candidate_sha256
                          or self.candidate_binding.state_ref() is not self.candidate_state))
                 or type(self.baseline_ledger) is not BaselineLedger
+                or (self.championship_cohort is not None
+                    and type(self.championship_cohort) is not EvaluationCohort)
+                or (self.championship_assessment is not None
+                    and (type(self.championship_assessment) is not Assessment
+                         or self.championship_cohort is None
+                         or self.championship_assessment.cohort != self.championship_cohort
+                         or self.championship_assessment.generation_digest
+                         != self.decision.candidate_generation))
                 or (self.baseline_transition is not None
                     and type(self.baseline_transition) is not FactoryBaselineTransition)):
             _invalid("BAMF_C05_FACTORY_EVALUATION_INVALID")

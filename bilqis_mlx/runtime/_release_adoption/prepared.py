@@ -149,6 +149,7 @@ def _commit_prepared_successor(
             "student_sha256": school.current_student.sha256,
             "optimizer_step": school.current_student.optimizer_step,
             "numeric_maximum": record.get("numeric_maximum"),
+            "provider_dimensions": record.get("provider_dimensions", []),
             "actual_neural_updates": 0,
         }
     record = _runtime_checkpoints._persist(

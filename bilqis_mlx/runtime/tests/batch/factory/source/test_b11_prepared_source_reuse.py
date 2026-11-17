@@ -15,6 +15,7 @@ from bilqis_mlx.runtime.b11_source_execution_binding import (
     bind_prepared_motif_context, bind_prepared_source_handoff,
 )
 from bilqis_mlx.semantics.context_eligibility import SourceFrontier, TaskScope
+from bilqis_mlx.semantics.frame_adapters import MICRO_PREDICATE_ADAPTER
 
 
 def test_prepared_source_handoff_never_enters_cold_replay_builder():
@@ -60,8 +61,12 @@ def test_prepared_motif_context_never_enters_public_formal_replay():
 
 
 def test_prepared_b11_authority_rejects_current_schema_rights_drift():
-    authority = SimpleNamespace(motif_frontier=SourceFrontier(1, 1, ()))
+    authority = SimpleNamespace(
+        motif_frontier=SourceFrontier(1, 1, ()),
+        source_adapter=SimpleNamespace(
+            descriptor=SimpleNamespace(adapter_id=MICRO_PREDICATE_ADAPTER)))
     source = SimpleNamespace(selection="selection")
+    config = SimpleNamespace(frontier=SourceFrontier(1, 1, ()))
     with patch(
             "bilqis_mlx.runtime.b11_source_execution_authority."
             "require_b11_source_execution_authority",
@@ -72,7 +77,7 @@ def test_prepared_b11_authority_rejects_current_schema_rights_drift():
                     rights_epoch=2, correction_generation=1)):
         with pytest.raises(BilqisError):
             require_b11_source_execution_authority_current(
-                authority, "compiled", "config", source)
+                authority, "compiled", config, source)
 
 
 def test_caller_cannot_select_prepared_mode_on_public_b11_binder():

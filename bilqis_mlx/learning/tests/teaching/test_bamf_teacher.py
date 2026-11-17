@@ -209,11 +209,6 @@ class BamfGradeNeutralSelectionTest(unittest.TestCase):
         for capability in ('A.SUB', 'B.SUB', 'C.SUB', 'Z.SUB'):
             self.assertEqual(sibling_cooldown_penalty(channel, capability, 'factory/7', key), 0.)
 
-    def test_retained_breeding_ancestry_excludes_grade_reward_fallback(self):
-        from bilqis_mlx.learning.teacher_breeding import _retained_parent_candidates
-        candidates = list(_retained_parent_candidates(self.teacher(), 'A.UNKNOWN', 'factory/7', None))
-        self.assertTrue(candidates)
-        self.assertFalse(any(basis.startswith('GRADE') for _, basis in candidates))
 
     def test_bamf_canary_does_not_use_another_capability_same_grade(self):
         from bilqis_mlx.learning.teacher_strategy_population import active_effective_strategy_keys

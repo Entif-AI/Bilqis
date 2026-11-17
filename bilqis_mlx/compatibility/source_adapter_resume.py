@@ -18,8 +18,10 @@ _NUMERIC_IMPLEMENTATION = (
     "2758cf678e9d2a45f3f5a1b5edd85d5ae513e54506c0d98853b9402b91572754")
 _NUMERIC_MODULAR_IMPLEMENTATION = (
     "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d")
-_NUMERIC_CURRENT_IMPLEMENTATION = (
+_NUMERIC_PRE_R20_IMPLEMENTATION = (
     "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141")
+_NUMERIC_CURRENT_IMPLEMENTATION = (
+    "788978ebb80d2349f6aa91e994f45d2ce32c154040f5ab5b17d8502a8d6dfa10")
 _GRADE_A_ADAPTER_ID = "source.micro.predicates/v1"
 _GRADE_A_ACCEPTED_IMPLEMENTATION = (
     "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9")
@@ -37,13 +39,35 @@ _GRADE_A_1324082_VARIATION_AXES = (
 _BOOLEAN_IDENTIFICATION_ADAPTER_ID = "source.micro.boolean-identification/v1"
 _BOOLEAN_IDENTIFICATION_ACCEPTED_IMPLEMENTATION = (
     "6399dae052a289d46063df0e897e14f1392e2f1b99e90c2ae791fda9a8246743")
-_BOOLEAN_IDENTIFICATION_CURRENT_IMPLEMENTATION = (
+_BOOLEAN_IDENTIFICATION_PRE_R15_IMPLEMENTATION = (
     "1404c511d7b5eab19025726d5c4c98073250cc0c75cf37b185344da92060edee")
+_BOOLEAN_IDENTIFICATION_CURRENT_IMPLEMENTATION = (
+    "811ed2ad7708e6a7ce3a72fb20d92ea8fcc1df51aae45afc01e711fea07d18c6")
 _NUMERIC_STAIRCASE_RELEASE = "bilqis.mlx.numeric-staircase/20261017-v1"
 _PRE_ADR106_NUMERIC_STAIRCASE_DIGEST = (
     "ec3b5338fc1604a6250a847ee99eae09956b5a5bb269a63f3ac8372205133e74")
 _ADR106_NUMERIC_STAIRCASE_DIGEST = (
     "9faf5dd6183657c91753394c0bfa6376849c47594f7e9eb4cb4e5f86c008b235")
+
+
+def _without_weakness_classifier(descriptor):
+    if descriptor is None:
+        return None
+    return replace(
+        descriptor, weakness_classifier_id=None,
+        weakness_classifier_sha256=None)
+
+
+def _weakness_classifier_metadata_pair(admitted, current) -> bool:
+    """Older releases may resume generation without gaining classifier authority."""
+    return (
+        admitted is not None
+        and admitted.weakness_classifier_id is None
+        and admitted.weakness_classifier_sha256 is None
+        and current.weakness_classifier_id is not None
+        and current.weakness_classifier_sha256 is not None
+        and _without_weakness_classifier(current) == admitted
+    )
 
 
 def _numeric_adr106_pair(admitted, current) -> bool:
@@ -84,12 +108,17 @@ def _numeric_modular_pair(admitted, current) -> bool:
     """Exact behavior-preserving school-owner extraction; no arbitrary drift."""
     if (admitted is None or admitted.adapter_id != _NUMERIC_ADAPTER_ID
             or admitted.implementation_sha256 not in (
-                _NUMERIC_IMPLEMENTATION, _NUMERIC_MODULAR_IMPLEMENTATION)
+                _NUMERIC_IMPLEMENTATION, _NUMERIC_MODULAR_IMPLEMENTATION,
+                _NUMERIC_PRE_R20_IMPLEMENTATION)
             or current.implementation_sha256 not in (
                 _NUMERIC_MODULAR_IMPLEMENTATION, _NUMERIC_CURRENT_IMPLEMENTATION)):
         return False
     migrated = replace(admitted, implementation_sha256=current.implementation_sha256)
-    return migrated == current or _numeric_adr106_pair(migrated, current)
+    return (
+        migrated == current
+        or _weakness_classifier_metadata_pair(migrated, current)
+        or _numeric_adr106_pair(migrated, current)
+    )
 
 
 def _cohort_bound_implementation_pair(
@@ -106,11 +135,12 @@ def _cohort_bound_implementation_pair(
         (release, current_sha256 if digest == admitted_sha256 else digest)
         for release, digest in admitted.cohort_releases
     )
-    return replace(
+    migrated = replace(
         admitted,
         implementation_sha256=current_sha256,
         cohort_releases=migrated_cohorts,
-    ) == current
+    )
+    return migrated == current or _weakness_classifier_metadata_pair(migrated, current)
 
 
 def _accepted_school_provider_pair(admitted, current) -> bool:
@@ -127,6 +157,12 @@ def _accepted_school_provider_pair(admitted, current) -> bool:
             admitted, current,
             adapter_id=_BOOLEAN_IDENTIFICATION_ADAPTER_ID,
             admitted_sha256=_BOOLEAN_IDENTIFICATION_ACCEPTED_IMPLEMENTATION,
+            current_sha256=_BOOLEAN_IDENTIFICATION_CURRENT_IMPLEMENTATION,
+        )
+        or _cohort_bound_implementation_pair(
+            admitted, current,
+            adapter_id=_BOOLEAN_IDENTIFICATION_ADAPTER_ID,
+            admitted_sha256=_BOOLEAN_IDENTIFICATION_PRE_R15_IMPLEMENTATION,
             current_sha256=_BOOLEAN_IDENTIFICATION_CURRENT_IMPLEMENTATION,
         )
     )
@@ -172,6 +208,8 @@ def resume_adapter_compatible(admitted, current) -> bool:
     """Return true only for explicitly proven historical descriptor migrations."""
     if admitted is None or current is None:
         return False
+    if _weakness_classifier_metadata_pair(admitted, current):
+        return True
     matches = tuple(
         edge for edge in SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES
         if (edge.adapter_id == admitted.adapter_id == current.adapter_id

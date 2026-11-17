@@ -62,6 +62,17 @@ def sync_event_ledger(run_dir: Path) -> dict:
 def event_observations(run_dir: Path, event_ids) -> dict:
     return data_plane().event_observations(run_dir, event_ids)
 
+def indexed_event_tail(run_dir: Path, after_byte: int = 0) -> dict:
+    return data_plane().indexed_event_tail(run_dir, after_byte)
+
+def event_projection_state(run_dir: Path, projection_key: str, schema_version: str):
+    return data_plane().event_projection_state(run_dir, projection_key, schema_version)
+
+def remember_event_projection(run_dir: Path, projection_key: str, schema_version: str,
+                              ledger_identity, indexed_bytes: int, payload: dict) -> None:
+    data_plane().remember_event_projection(
+        run_dir, projection_key, schema_version, ledger_identity, indexed_bytes, payload)
+
 from ._data_plane.custody import live_grade_soups, referenced_custody_files, dedupe_bundle_payloads
 from ._data_plane.cli import main
 

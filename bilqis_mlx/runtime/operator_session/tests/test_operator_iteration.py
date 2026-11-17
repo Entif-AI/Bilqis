@@ -87,7 +87,7 @@ class IterationTest(TestCase):
         school = SimpleNamespace(stage="MAIN", grade="A")
         calls = []
         adoption = SimpleNamespace(
-            _advance_numeric_profile=lambda *a, **k: (receipt, "course", "release", "schedule"),
+            _advance_provider_dimensions=lambda *a, **k: (receipt, "course", "release", "schedule"),
             _auto_adopt_known_grade_boundary=lambda *a, **k: ("params", "optimizer", "graph", receipt, "course", False),
             _schedule_for_receipt=lambda *a: "schedule")
         session = SimpleNamespace(session_stop_reason=lambda **kw: calls.append(kw) or (None if len(calls) == 1 else "TIME_LIMIT"))

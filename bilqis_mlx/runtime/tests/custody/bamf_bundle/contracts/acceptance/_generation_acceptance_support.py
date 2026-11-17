@@ -55,12 +55,16 @@ class GenerationAcceptanceFixture:
         self.temporary = TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.run = self.root / "run"
+        self.run_storage = patch(
+            "bilqis_mlx.runtime.run_authority.binding.storage_root", return_value=self.root)
+        self.run_storage.start()
         self.environment = patch.dict(
             os.environ, {"BILQIS_DATA_PLANE": str(self.root / "plane.sqlite3")})
         self.environment.start()
 
     def tearDown(self):
         self.environment.stop()
+        self.run_storage.stop()
         self.temporary.cleanup()
 
     def publish(self, source, **kwargs):

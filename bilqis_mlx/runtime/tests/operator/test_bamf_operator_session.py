@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import ExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -10,7 +11,8 @@ from unittest.mock import patch
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.bamf_operator.session import (
-    _execution_context, _visit, operate_bamf, prepare_bamf_visit,
+    _adopt_and_activate_certified_successor, _execution_context, _visit,
+    operate_bamf, prepare_bamf_visit,
 )
 
 
@@ -23,6 +25,70 @@ def _evidence_receipt(bytes_written, evidence_objects, seconds):
             "persistence_seconds": seconds,
         },
     }
+
+
+def _prepare_native_resource_visit(temporary):
+    parent = SimpleNamespace(
+        retained_state=SimpleNamespace(optimizer_step=11),
+        optimizer_hyperparameters="hparams")
+    context = SimpleNamespace(release=object())
+    identity = SimpleNamespace(visit_id="visit:resource", policy_key="policy:resource")
+    selection = SimpleNamespace(
+        status="TEACHER_SELECTED", option_id="option:resource",
+        visit=SimpleNamespace(identity=identity),
+        offer=SimpleNamespace(
+            capability_id="capability:resource", source_seed=17,
+            rows=lambda: ({"id": "row:resource"},)))
+    cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
+    transaction = SimpleNamespace(
+        parent=SimpleNamespace(optimizer_step=11), update_steps=1,
+        training_authorities=("authority",))
+    step = SimpleNamespace(
+        transaction=transaction,
+        realized_cost={
+            "wall_seconds": 30.0, "optimizer_steps": 1,
+            "c08_memory_budget_bytes": 64 * 1024 ** 3})
+    decision = SimpleNamespace(
+        accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
+    retained = SimpleNamespace(optimizer_step=12)
+    successor = object()
+    evidence = _evidence_receipt(300, 4, 0.005)
+    capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
+    patches = (
+        ("_execution_context", {"return_value": (parent, context, "atlas", "feature")}),
+        ("schedule_program_from_executable_release", {"return_value": "program"}),
+        ("accepted_priority_school", {"return_value": "school"}),
+        ("select_foundation_priority_visit", {"return_value": selection}),
+        ("bind_accepted_execution_cache", {"return_value": cache}),
+        ("candidate_step_horizon", {"return_value": 1}),
+        ("rejection_attempt_ordinals", {"return_value": (1, 1)}),
+        ("_Capture", {"return_value": capture}),
+        ("FactoryDeliveryObservation", {"return_value": "observation"}),
+        ("execute_accepted_priority_candidate", {"return_value": step}),
+        ("evaluate_factory_retention_candidate", {"return_value": SimpleNamespace(
+            candidate_state=retained, parent_state=parent.retained_state)}),
+        ("issue_factory_retention_decision", {"return_value": decision}),
+        ("derive_accepted_teacher_successor", {"return_value": successor}),
+        ("bind_factory_baseline_successor", {"return_value": successor}),
+    )
+    session_names = {
+        "_execution_context", "schedule_program_from_executable_release",
+        "accepted_priority_school", "select_foundation_priority_visit",
+    }
+    with ExitStack() as stack:
+        handles = {}
+        for name, kwargs in patches:
+            owner = (
+                "bilqis_mlx.runtime.bamf_operator.session."
+                if name in session_names else
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session."
+            )
+            handles[name] = stack.enter_context(patch(owner + name, **kwargs))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.bamf_operator.championship."
+            "bind_accepted_championship_successor", return_value=successor))
+        prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
+    return prepared, successor, handles["derive_accepted_teacher_successor"], evidence
 
 
 def _candidate_executor(transactions, case):
@@ -45,7 +111,78 @@ def _candidate_executor(transactions, case):
     return execute
 
 
+def _assert_horizon_result(
+        case, prepared, execute_candidate, bind_plan, bind_rows,
+        capture_factory, horizon, evaluate, decide, derive, context,
+        parent, cache, selection, transactions, evidence):
+    case.assertEqual(prepared.status, "ACCEPTED")
+    case.assertEqual(len(prepared.steps), 4)
+    case.assertEqual(prepared.step.transaction.update_steps, 4)
+    case.assertEqual(execute_candidate.call_count, 4)
+    bind_plan.assert_called_once_with(context, parent, cache)
+    bind_rows.assert_called_once_with(context, cache, "capability:horizon")
+    capture_factory.assert_called_once_with(
+        Path("/run"), selection, generation=1,
+        accepted_manifest_sha256="a" * 64,
+        candidate_attempt_ordinal=1, parent_optimizer_step=11)
+    horizon.assert_called_once_with(
+        Path("/run"), parent, cache, "capability:horizon", 16)
+    evaluate.assert_called_once_with(
+        context, transactions[-1], "atlas", "capability:horizon",
+        run_dir=Path("/run"))
+    decide.assert_called_once_with(evaluate.return_value)
+    event = derive.call_args.kwargs["delivery_events"][0]
+    case.assertIs(prepared.resource, event["resource"])
+    case.assertEqual(event["resource"]["optimizer_steps"], 4)
+    case.assertEqual(event["resource"]["wall_seconds"], 10.0)
+    case.assertEqual(event["visit_id"], "visit:horizon")
+    case.assertEqual(event["selected_policy_key"], "policy:horizon")
+    case.assertEqual(event["selected_option_id"], "option:horizon")
+    case.assertEqual(event["parent_generation"], 1)
+    case.assertEqual(event["accepted_manifest_sha256"], "a" * 64)
+    case.assertEqual(event["candidate_attempt_ordinal"], 1)
+    case.assertEqual(event["candidate_evidence"], evidence)
+    case.assertEqual(event["resource"]["evidence_file_fsyncs"], 1)
+
+
 class BamfOperatorRoutingTests(unittest.TestCase):
+    def test_certified_successor_adopts_through_c07_before_1314_activation(self):
+        context = SimpleNamespace(graph={"accepted": "graph"})
+        with patch(
+            "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
+            return_value=SimpleNamespace(advances=1),
+        ) as adopt, patch(
+            "bilqis_mlx.runtime.active_generated_grade."
+            "activate_certified_generated_grade",
+        ) as activate:
+            advanced = _adopt_and_activate_certified_successor(
+                Path("/run"), context,
+                certification_receipt_sha256="c" * 64,
+                reserve_gib=32.0,
+            )
+        self.assertTrue(advanced)
+        adopt.assert_called_once_with(
+            Path("/run"), context.graph, reserve_gib=32.0, max_advances=1)
+        activate.assert_called_once_with(
+            Path("/run"), certification_receipt_sha256="c" * 64)
+
+    def test_certified_successor_does_not_activate_without_c07_advance(self):
+        context = SimpleNamespace(graph={})
+        with patch(
+            "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
+            return_value=SimpleNamespace(advances=0),
+        ), patch(
+            "bilqis_mlx.runtime.active_generated_grade."
+            "activate_certified_generated_grade",
+        ) as activate:
+            advanced = _adopt_and_activate_certified_successor(
+                Path("/run"), context,
+                certification_receipt_sha256="c" * 64,
+                reserve_gib=32.0,
+            )
+        self.assertFalse(advanced)
+        activate.assert_not_called()
+
     def test_candidate_horizon_buffers_step_evidence_until_one_boundary_write(self):
         from bilqis_mlx.factory.teaching import content_digest
         from bilqis_mlx.runtime.bamf_operator.evidence import (
@@ -95,226 +232,3 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                         },
                     )
                 self.assertEqual(fsync.call_count, 0)
-
-    def test_prepare_visit_accumulates_horizon_before_one_retention_decision(self):
-        parent = SimpleNamespace(
-            retained_state=SimpleNamespace(optimizer_step=11),
-            optimizer_hyperparameters="hparams",
-        )
-        context = SimpleNamespace(release=object())
-        cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
-        identity = SimpleNamespace(visit_id="visit:horizon", policy_key="policy:horizon")
-        selection = SimpleNamespace(
-            status="TEACHER_SELECTED",
-            option_id="option:horizon",
-            visit=SimpleNamespace(identity=identity),
-            offer=SimpleNamespace(
-                capability_id="capability:horizon", source_seed=17,
-                rows=lambda: ({"id": "row:horizon"},),
-            ),
-        )
-        transactions = []
-        execute = _candidate_executor(transactions, self)
-        decision = SimpleNamespace(
-            accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
-        retained = SimpleNamespace(optimizer_step=15)
-        successor = object()
-        evidence = _evidence_receipt(900, 6, 0.01)
-        capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
-        with patch(
-                "bilqis_mlx.runtime.bamf_operator.session._execution_context",
-                return_value=(parent, context, "atlas", "feature")), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
-                return_value="program"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
-                return_value="school"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
-                return_value=selection), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                return_value=cache), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
-                return_value=4) as horizon, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
-                return_value=(1, 1)), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.prepare_candidate_evidence_root"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                return_value=capture) as capture_factory, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
-                return_value="observation"), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
-                side_effect=execute) as execute_candidate, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                return_value=SimpleNamespace(
-                    candidate_state=retained, parent_state=parent.retained_state)) as evaluate, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
-                return_value=decision) as decide, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
-                return_value=successor) as derive, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
-                return_value=successor), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
-                return_value=SimpleNamespace(used=123)):
-            prepared = prepare_bamf_visit(Path("/run"), steps_per_visit=16)
-
-        self.assertEqual(prepared.status, "ACCEPTED")
-        self.assertEqual(len(prepared.steps), 4)
-        self.assertEqual(prepared.step.transaction.update_steps, 4)
-        self.assertEqual(execute_candidate.call_count, 4)
-        capture_factory.assert_called_once_with(
-            Path("/run"), selection, generation=1,
-            accepted_manifest_sha256="a" * 64,
-            candidate_attempt_ordinal=1, parent_optimizer_step=11)
-        horizon.assert_called_once_with(
-            Path("/run"), parent, cache, "capability:horizon", 16)
-        evaluate.assert_called_once_with(
-            context, transactions[-1], "atlas", "capability:horizon", run_dir=Path("/run"))
-        decide.assert_called_once_with(evaluate.return_value)
-        event = derive.call_args.kwargs["delivery_events"][0]
-        self.assertIs(prepared.resource, event["resource"])
-        self.assertEqual(event["resource"]["optimizer_steps"], 4)
-        self.assertEqual(event["resource"]["wall_seconds"], 10.0)
-        self.assertEqual(event["visit_id"], "visit:horizon")
-        self.assertEqual(event["selected_policy_key"], "policy:horizon")
-        self.assertEqual(event["selected_option_id"], "option:horizon")
-        self.assertEqual(event["parent_generation"], 1)
-        self.assertEqual(event["accepted_manifest_sha256"], "a" * 64)
-        self.assertEqual(event["candidate_attempt_ordinal"], 1)
-        self.assertEqual(event["candidate_evidence"], evidence)
-        self.assertEqual(event["resource"]["evidence_file_fsyncs"], 1)
-
-    def test_resource_observation_reports_semantic_materialization_counts(self):
-        from bilqis_mlx.runtime.bamf_operator.session_support import _resource_observation
-
-        cost = {
-            "wall_seconds": 1.0,
-            "optimizer_steps": 1,
-            "candidate_optimizer_steps": 1,
-            "c08_memory_budget_bytes": 64 * 1024 ** 3,
-            "atlas_reload_count": 0,
-            "feature_manifest_rebuild_count": 0,
-            "visit_atlas_reload_count": 1,
-            "visit_feature_manifest_rebuild_count": 1,
-        }
-        step = SimpleNamespace(
-            transaction=SimpleNamespace(update_steps=1), realized_cost=cost)
-        with patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
-                return_value=SimpleNamespace(used=123)):
-            resource = _resource_observation(Path("/run"), step)
-        self.assertEqual(resource["atlas_reload_count"], 0)
-        self.assertEqual(resource["feature_manifest_rebuild_count"], 0)
-        self.assertEqual(resource["visit_atlas_reload_count"], 1)
-        self.assertEqual(resource["visit_feature_manifest_rebuild_count"], 1)
-
-    def test_accepted_visit_persists_native_resource_observation(self):
-        with TemporaryDirectory() as temporary:
-            parent = SimpleNamespace(
-                retained_state=SimpleNamespace(optimizer_step=11),
-                optimizer_hyperparameters="hparams",
-            )
-            context = SimpleNamespace(release=object())
-            identity = SimpleNamespace(visit_id="visit:resource", policy_key="policy:resource")
-            selection = SimpleNamespace(
-                status="TEACHER_SELECTED",
-                option_id="option:resource",
-                visit=SimpleNamespace(identity=identity),
-                offer=SimpleNamespace(
-                    capability_id="capability:resource", source_seed=17,
-                    rows=lambda: ({"id": "row:resource"},),
-                ),
-            )
-            cache = SimpleNamespace(
-                generation=1, accepted_manifest_sha256="a" * 64)
-            transaction = SimpleNamespace(
-                parent=SimpleNamespace(optimizer_step=11), update_steps=1,
-                training_authorities=("authority",),
-            )
-            step = SimpleNamespace(
-                transaction=transaction,
-                realized_cost={
-                    "wall_seconds": 30.0,
-                    "optimizer_steps": 1,
-                    "c08_memory_budget_bytes": 64 * 1024 ** 3,
-                },
-            )
-            decision = SimpleNamespace(
-                accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
-            retained = SimpleNamespace(optimizer_step=12)
-            successor = object()
-            evidence = _evidence_receipt(300, 4, 0.005)
-            capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
-            with patch(
-                    "bilqis_mlx.runtime.bamf_operator.session._execution_context",
-                    return_value=(parent, context, "atlas", "feature")), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
-                    return_value="program"), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
-                    return_value="school"), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
-                    return_value=selection), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                    return_value=cache), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
-                    return_value=1), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
-                    return_value=(1, 1)), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                    return_value=capture), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
-                    return_value="observation"), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
-                    return_value=step), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                    return_value=SimpleNamespace(
-                        candidate_state=retained, parent_state=parent.retained_state)), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
-                    return_value=decision), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
-                    return_value=successor) as derive, patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
-                    return_value=successor):
-                prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
-        self.assertIs(prepared.successor, successor)
-        event = derive.call_args.kwargs["delivery_events"][0]
-        self.assertEqual(event["event"], "BAMF_C16_3_ACCEPTED")
-        resource = event["resource"]
-        self.assertEqual(resource["schema"], "bilqis.bamf.c16.3-resource-observation/v2")
-        self.assertEqual(resource["candidate_identity_full_computations"], 0)
-        self.assertEqual(resource["candidate_identity_numerical_bytes_hashed"], 0)
-        self.assertEqual(resource["memory_budget_bytes"], 64 * 1024 ** 3)
-        self.assertGreater(resource["disk_used_bytes"], 0)
-        self.assertEqual(resource["optimizer_steps"], 1)
-        self.assertEqual(resource["wall_seconds"], 30.0)
-        self.assertEqual(resource["evidence_bytes_written"], 300)
-        self.assertEqual(resource["evidence_file_fsyncs"], 1)
-        self.assertEqual(resource["evidence_directory_fsyncs"], 1)
-        self.assertEqual(resource["evidence_objects"], 4)
-        self.assertEqual(resource["evidence_persistence_seconds"], 0.005)
-        self.assertEqual(event["candidate_evidence"], evidence)
-
-    def test_execution_context_uses_accepted_release_without_requiring_c07_lease(self):
-        parent = object()
-        context = SimpleNamespace()
-        host = SimpleNamespace(source_context=lambda **_kwargs: context)
-        authenticated = SimpleNamespace(
-            features="features", construction_predecessor="predecessor",
-            selection=SimpleNamespace(path="/atlas"))
-        feature = SimpleNamespace(path="/feature")
-        with patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.load_accepted_generation",
-                return_value=parent), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.AcceptedRuntimeHost",
-                return_value=host), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.authenticate_bamf_execution_feature_context",
-                return_value=authenticated), patch(
-                "bilqis_mlx.runtime.bamf_operator.session_support.persist_feature_manifest",
-                return_value=feature):
-            self.assertEqual(
-                _execution_context(Path("/run")),
-                (parent, context, "/atlas", "/feature"))
-        self.assertIs(context._accepted_feature_context, authenticated)
-
-
-
-if __name__ == "__main__":
-    unittest.main()

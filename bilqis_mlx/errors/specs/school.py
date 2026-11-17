@@ -26,12 +26,14 @@ class SCHOOL:
     from .school_bamf import BAMF_SOLVER as BAMF_SOLVER
     from .school_bamf import BAMF_AKASHA as BAMF_AKASHA
     from .school_bamf import BAMF_RESOURCES as BAMF_RESOURCES
+    from .school_bamf import BAMF_RUN_AUTHORITY as BAMF_RUN_AUTHORITY
     from .school_bamf import BAMF_REVALIDATION as BAMF_REVALIDATION
     from .school_bamf import BAMF_TEACHER as BAMF_TEACHER
     from .school_bamf import BAMF_TRAINING_ADAPTER as BAMF_TRAINING_ADAPTER
     from .school_bamf import BAMF_WORKSTACK as BAMF_WORKSTACK
     from .school_bamf import QUALIFICATION as QUALIFICATION
     from .school_bamf import TEACHER_OBSERVATION as TEACHER_OBSERVATION
+    from .school_bamf import BAMF_LEARNING_HEALTH as BAMF_LEARNING_HEALTH
     from .school_bamf import MODEL_TOPOLOGY as MODEL_TOPOLOGY
     from .school_lifecycle import RESUME as RESUME
     from .school_lifecycle import SCHEDULE as SCHEDULE

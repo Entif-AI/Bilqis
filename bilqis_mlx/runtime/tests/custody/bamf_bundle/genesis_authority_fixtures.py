@@ -12,6 +12,7 @@ from bilqis_mlx.runtime.bamf_bundle import (
     issue_initial_factory_foundation_authority,
     issue_initial_foundation_feature_authority,
 )
+import bilqis_mlx.runtime.bamf_bundle.feature_authority as feature_authority
 from bilqis_mlx.runtime.bamf_bundle.genesis import foundation as genesis_foundation
 from bilqis_mlx.runtime.state import _fingerprint
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactSelection
@@ -64,6 +65,21 @@ def genesis_feature_source_patch(features: AtlasFeatures | None = None):
         yield
 
 
+@contextmanager
+def accepted_feature_source_patch(features: AtlasFeatures | None = None):
+    """Replay one synthetic accepted Atlas source through the real replay logic."""
+    features = source_features() if features is None else features
+    selection = AtlasArtifactSelection(
+        "/fixture/atlas", features.atlas_bundle_id,
+        features.semantic_release, features.source_bundle_id)
+    with patch.multiple(
+            feature_authority,
+            resolve_atlas_artifact_selection=lambda _identity: selection,
+            load_pinned_atlas_snapshot=frozen_snapshot,
+            build_feature_manifest=lambda *_args: features):
+        yield
+
+
 def issue_feature_authority(features: AtlasFeatures | None = None):
     features = source_features() if features is None else features
     selection = AtlasArtifactSelection(
@@ -91,6 +107,7 @@ def issue_factory_authority(release, graph, origin):
 
 __all__ = (
     "ACTIVE_SET", "ATLAS_BUNDLE", "ATLAS_RELEASE", "SOURCE_BUNDLE",
-    "frozen_snapshot", "genesis_feature_source_patch", "issue_factory_authority",
+    "accepted_feature_source_patch", "frozen_snapshot",
+    "genesis_feature_source_patch", "issue_factory_authority",
     "issue_feature_authority", "source_features",
 )

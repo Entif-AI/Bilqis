@@ -27,7 +27,6 @@ class Projection(N):
     pass
 
 class Offer:
-    capability_id = 'cap'
     source_family_id = 'family'
     source_binding_digest = 'binding'
     release_sha256 = 'release'
@@ -35,9 +34,11 @@ class Offer:
     generation_binding = 'generation'
     source_seed = 1
     source_each = 1
-    source_authority = N(capability_id='cap', source_family_id='family', seed=1, each=1)
-    def __init__(self, held=False):
+    def __init__(self, held=False, capability_id='cap'):
         self.held = held
+        self.capability_id = capability_id
+        self.source_authority = N(
+            capability_id=capability_id, source_family_id='family', seed=1, each=1)
     def require_current(self, context, parent):
         if self.held:
             raise ValueError('held')
@@ -48,8 +49,13 @@ def qualification():
     def rank(options, evidence, snapshot):
         if any(item.stable_id == 'forged' for item in options):
             raise ValueError('signature')
-        return N(ordered=options, held=())
-    action = N(TEACHING='teach', EXPLORATION='explore')
+        return N(
+            ordered=tuple(sorted(
+                options, key=lambda item: item.priority, reverse=True)),
+            held=())
+    action = N(
+        TEACHING='teach', EXPLORATION='explore',
+        CORRECTION='correction', PROCEDURE_REPAIR='repair')
     owners = {
         'bilqis_mlx.factory.atlas_frontier_selection': mod(FrontierDeltaSelection=Selection, validate_frontier_selection=lambda *a: None),
         'bilqis_mlx.factory.atlas_frontier_selection_validation': mod(TargetDeltaProjection=Projection, validate_closure_structure=lambda *a: None),
@@ -81,10 +87,17 @@ def inputs(q, options, offers):
         input_snapshot_sha256='snapshot', proposal_selection_sha256=None)
     closure = Closure(verify=lambda: None, snapshot_sha256='snapshot')
     planning = q.PriorityPlanningInput(progress, closure, None, None)
-    release = N(release_sha256='release', execution_plan=N(capability_map={'cap': 1}),
-                curriculum=N(capability_map={'cap': 1}), source_bindings=N(by_capability={'cap': 'source-binding'}))
+    capability_ids = {option.context.capability_id for option in options}
+    release = N(
+        release_sha256='release',
+        execution_plan=N(capability_map={item: 1 for item in capability_ids}),
+        curriculum=N(capability_map={item: 1 for item in capability_ids}),
+        source_bindings=N(by_capability={
+            item: 'source-binding' for item in capability_ids}),
+    )
     source = N(release=release, require_accepted_runtime=lambda run: None)
-    program = N(digest=lambda: 'course', grades=(N(id='grade', capabilities=(N(id='cap'),)),))
+    program = N(digest=lambda: 'course', grades=(N(
+        id='grade', capabilities=tuple(N(id=item) for item in sorted(capability_ids))),))
     school = N(course_digest='course', active_grades=('grade',))
     evidence = []
     for o in options:
@@ -96,15 +109,22 @@ def inputs(q, options, offers):
     return ('/run', source, object(), frontier, object(), planning, offers, program, school, object())
 
 
-def option(name, unlocks=0):
-    return N(stable_id=name, action_kind='teach', downstream_unlocks=unlocks,
-             context=N(capability_id='cap', semantic_release='release', generation_digest='generation',
+def option(name, unlocks=0, *, action_kind='teach', capability_id='cap', priority=0):
+    return N(stable_id=name, action_kind=action_kind, downstream_unlocks=unlocks,
+             priority=priority,
+             context=N(capability_id=capability_id, semantic_release='release', generation_digest='generation',
                        teacher_epoch_digest='epoch', source_binding_digest='binding', source_family_id='family'))
 
 
-def lawful(*capabilities):
+def lawful(*capabilities, exclusions=()):
     ready = ('cap',) if not capabilities else tuple(capabilities)
-    return N(ready_capability_ids=ready, _planning_generation=None)
+    return N(
+        ready_capability_ids=ready, exclusions=tuple(exclusions),
+        _planning_generation=None)
+
+
+def exclusion(capability='cap', code='FUTURE_GENERATED_GRADE'):
+    return N(capability_id=capability, code=N(value=code))
 
 
 def test_hold_only_affected_offer_and_retain_lower_priority(qualification):
@@ -178,8 +198,6 @@ def test_priority_visit_reports_planning_verification_metrics(qualification):
     ('execution', 'CAPABILITY_NOT_ADMITTED'),
     ('curriculum', 'CAPABILITY_NOT_ADMITTED'),
     ('binding', 'SOURCE_OFFER_HELD'),
-    ('grade', 'CAPABILITY_NOT_TEACHABLE'),
-    ('duplicate_grade', 'CAPABILITY_NOT_TEACHABLE'),
     ('offer', 'SOURCE_OFFER_MISSING'),
 ])
 def test_hold_precedence_before_missing_offer(qualification, missing, expected):
@@ -192,27 +210,84 @@ def test_hold_precedence_before_missing_offer(qualification, missing, expected):
         release.curriculum.capability_map.clear()
     elif missing == 'binding':
         release.source_bindings.by_capability.clear()
-    elif missing == 'grade':
-        args[7].grades = ()
-    elif missing == 'duplicate_grade':
-        args[7].grades = args[7].grades * 2
     result = qualification.requalify_priority(
         *args, now=10, lawful_frontier=lawful())
     assert result.holds == (('one', expected),)
 
 
+@pytest.mark.parametrize('grades', [(), (N(id='a', capabilities=(N(id='cap'),)),) * 2])
+def test_schedule_grade_does_not_decide_what_is_lawful(qualification, grades):
+    args = list(inputs(
+        qualification, (option('one'),), (('one', Offer()),)))
+    args[7].grades = grades
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=lawful())
+    assert result.ranked.ordered == (args[3].options[0],)
+    assert result.holds == ()
+
+
 def test_salience_cannot_revive_option_held_by_lawful_frontier(qualification):
     args = inputs(qualification, (option('one'),), ())
-    held = N(ready_capability_ids=(), _planning_generation=None)
+    held = lawful('other', exclusions=(exclusion(),))
     result = qualification.requalify_priority(
         *args, now=10, lawful_frontier=held)
     assert result.ranked.ordered == ()
-    assert result.holds == (('one', 'LEARNER_FRONTIER_HELD'),)
+    assert result.holds == (('one', 'FUTURE_GENERATED_GRADE'),)
+
+
+def test_higher_priority_future_grade_never_reaches_ranking(qualification):
+    future = option('future', capability_id='future', priority=100)
+    active = option('active', capability_id='active', priority=1)
+    args = inputs(
+        qualification, (future, active),
+        (('active', Offer(capability_id='active')),),
+    )
+    result = qualification.requalify_priority(
+        *args, now=10,
+        lawful_frontier=lawful(
+            'active', exclusions=(exclusion('future'),)))
+    assert result.ranked.ordered == (active,)
+    assert result.holds == (('future', 'FUTURE_GENERATED_GRADE'),)
+
+
+def test_priority_still_orders_two_lawful_same_frontier_peers(qualification):
+    low = option('low', capability_id='low', priority=1)
+    high = option('high', capability_id='high', priority=100)
+    args = inputs(
+        qualification, (low, high),
+        (
+            ('low', Offer(capability_id='low')),
+            ('high', Offer(capability_id='high')),
+        ),
+    )
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=lawful('low', 'high'))
+    assert result.ranked.ordered == (high, low)
+    assert result.holds == ()
+
+
+def test_out_of_grade_remediation_is_held_before_ranking(qualification):
+    args = inputs(
+        qualification, (option('repair', action_kind='repair'),), ())
+    held = lawful('other', exclusions=(exclusion(),))
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=held)
+    assert result.ranked.ordered == ()
+    assert result.holds == (('repair', 'FUTURE_GENERATED_GRADE'),)
+
+
+def test_in_grade_remediation_remains_rankable_without_source_offer(qualification):
+    item = option('repair', action_kind='repair')
+    args = inputs(qualification, (item,), ())
+    result = qualification.requalify_priority(
+        *args, now=10, lawful_frontier=lawful())
+    assert result.ranked.ordered == (item,)
+    assert result.holds == ()
 
 
 def test_offer_enumeration_outside_lawful_frontier_fails_closed(qualification):
     args = inputs(qualification, (option('one'),), (('one', Offer()),))
-    held = N(ready_capability_ids=(), _planning_generation=None)
+    held = lawful('other', exclusions=(exclusion(),))
     with pytest.raises(BilqisError) as failure:
         qualification.requalify_priority(
             *args, now=10, lawful_frontier=held)

@@ -176,7 +176,7 @@ from bilqis_mlx.learning.championship_runtime import (
     _fresh_battery_results,
     _fresh_title_match,
     _fresh_fanout_screen,
-    _advance_exam_championship_grade,
+    _advance_exam_championship_group,
     _advance_exam_championships,
 )
 from bilqis_mlx.learning.lesson_guidance import (

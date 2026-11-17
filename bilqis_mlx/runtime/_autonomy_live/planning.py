@@ -6,13 +6,6 @@ from dataclasses import replace
 from pathlib import Path
 
 from ...curriculum_compiler import compile_ast
-from ...curriculum.scheduler import (
-    SchoolState,
-    assessment_capabilities,
-    next_capability,
-    verify_state,
-    visit,
-)
 from ...factory.autonomy import (
     AutonomyPlan,
     CurriculumWorkItem,
@@ -149,6 +142,7 @@ def scheduled_teaching_matches(
     school: SchoolState, capability_id: str,
 ) -> bool:
     """Never target optimizer work outside the scheduler's legal queue head."""
+    from ...curriculum.scheduler import next_capability
     return next_capability(school) == capability_id
 
 
@@ -156,6 +150,7 @@ def reroute_failed_teaching(
     release: FactoryRelease, school: SchoolState, capability_id: str,
 ) -> SchoolState:
     """Neural-inertly put a still-legal failed proof back at queue head."""
+    from ...curriculum.scheduler import assessment_capabilities, verify_state
     from ...factory.schedule import schedule_program_from_executable_release
     program = (release.course if isinstance(release, FactoryRelease) else
                schedule_program_from_executable_release(release))
@@ -174,6 +169,7 @@ def advance_if_scheduled_evidence_complete(
     school: SchoolState, capability_id: str,
 ) -> SchoolState:
     """Treat complete evidence as a zero-update scheduled visit when aligned."""
+    from ...curriculum.scheduler import visit
     if not scheduled_teaching_matches(school, capability_id):
         return school
     if capability_id not in set(

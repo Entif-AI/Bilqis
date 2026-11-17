@@ -16,6 +16,11 @@ from ..factory.curriculum_definition import CapabilitySpec, CapabilitySourceBind
 from ..factory.executable_release import compile_executable_factory_release
 from ..factory.execution import CurriculumProfile
 from ..semantics.core import Apply, Operation, Signature, literal
+from ..semantics.frame_adapters.common import _adapter_fail, _source_id
+from ..semantics.frame_adapters.registry import (
+    ReleasedFrameAdapter, register_source_frame_strategy,
+)
+from ..semantics.frame_schema import FrameTree, SourceSpan, atomic_fallback, validate_frame_tree
 from ..factory.verification import (
     EVENT_FRAME_ORACLE as ORACLE, event_frame_answer as independent_answer,
 )
@@ -43,6 +48,63 @@ _BALANCE_MODULUS = 2
 
 
 TRUE, FALSE = 'cogal.value.true', 'cogal.value.false'
+
+
+def _source_frame_graph(row=None):
+    """Return the prerequisite-closed canonical graph for one event source row."""
+    from ..live_grade_c import registry_graph
+
+    capability = row.get('capability') if isinstance(row, dict) else None
+    if capability not in SOURCE_SPECS:
+        _adapter_fail(
+            'FRAME_EVENT_CAPABILITY_REQUIRED', ADAPTER_ID,
+            SourceSpan(0, 0), '<source-row>')
+    closure = []
+    seen = set()
+
+    def include(item):
+        if item in seen:
+            return
+        spec = SOURCE_SPECS.get(item)
+        if spec is None:
+            return
+        for prerequisite in spec.prerequisites:
+            include(prerequisite)
+        seen.add(item)
+        closure.append(item)
+
+    include(capability)
+    return ROOT / 'vendor/legacy-v16', projected_graph(
+        registry_graph(), tuple(closure))
+
+
+def _source_frame_atlas_semantic(row):
+    capability = row.get('capability') if isinstance(row, dict) else None
+    if capability not in SOURCE_SPECS:
+        _adapter_fail(
+            'FRAME_EVENT_CAPABILITY_REQUIRED', ADAPTER_ID,
+            SourceSpan(0, 0), '<source-row>')
+    return atlas_semantic_id(capability)
+
+
+def _bind_source_frame_row(
+    row, snapshot, graph, *, adapter_id, span, causal_prefix_end,
+):
+    del snapshot, graph
+    record = row.get('record')
+    if (not isinstance(record, dict) or record.get('task') != DIALECT
+            or record.get('capability') not in SOURCE_SPECS):
+        _adapter_fail('FRAME_EVENT_RECORD_INVALID', adapter_id, span, '<source-row>')
+    atomic = atomic_fallback(
+        record, source_instance_id=_source_id(row, adapter_id, span),
+        structural_path=(), source_span=span, parent_occurrence_id=None,
+        causal_prefix_end=causal_prefix_end)
+    return validate_frame_tree(FrameTree(atomic))
+
+
+_FRAME_STRATEGY = register_source_frame_strategy(ReleasedFrameAdapter(
+    ADAPTER_ID, _bind_source_frame_row, None, _source_frame_graph,
+    _source_frame_atlas_semantic))
 
 
 def expression(graph, capability, before, after):
@@ -127,15 +189,19 @@ def semantic_footprint(row):
     return (root,)
 
 
+def witness_obligation(row, obligation, **kw):
+    return (check(row, **kw)
+            and row.get('generator') == GENERATOR
+            and obligation.key in SPECS[row['capability']][1])
+
+
 def registered_adapter():
     return RegisteredSourceAdapter(SourceAdapter(ADAPTER_ID,
         GENERATOR,(ORACLE,),provider_implementation_digest(),
         variation_axes=('event-identity','before-state','after-state','fact-order','fresh-seed'),
         teaching_option_ids=(SEMANTIC_CONTRAST_OPTION,)),
         draw,check,
-        witness=lambda row,obligation,**kw: check(row,**kw) and
-            row.get('generator') == GENERATOR and
-            obligation.key in SPECS[row['capability']][1],
+        witness=witness_obligation,
         enrich=enrich_contrasts,
         semantic_footprint=semantic_footprint)
 

@@ -205,6 +205,41 @@ class FactoryTrainingExecutionTests(FactoryTrainingBridgeFixture):
                 store_sidecar(run_dir, rows[0])["sha256"])
             self.assertEqual(payload["controls"]["realized_cost"]["optimizer_steps"], 1)
 
+    def test_factory_rejects_mentor_evidence_without_supervision_before_training(self):
+        rows, delivery = draw(self, "B.IDBOOLOPS", 37117, 1)
+        with TemporaryDirectory() as run_dir_value:
+            run_dir = Path(run_dir_value)
+            publish(self, run_dir)
+            source_context = self.accepted_source_context(run_dir)
+            parent = load_accepted_generation(run_dir)
+            _, base_observation = observation(
+                run_dir, "B.IDBOOLOPS", rows, 37117)
+            forged = replace(
+                base_observation,
+                mentors={"schema": "bilqis.mlx.championship-mentor-supervision/v1"},
+                guidance={
+                    "schema": "bilqis.mlx.championship-guidance/v1",
+                    "rows": [],
+                },
+            )
+            with patch(
+                    "bilqis_mlx.runtime._batch.factory_candidate_training."
+                    "_execute_prepared_candidate") as execute, self.assertRaises(
+                        BilqisError) as caught:
+                execute_factory_candidate_step(
+                    run_dir, source_context, parent, str(self.artifact),
+                    self.feature_receipt.path, rows,
+                    capability="B.IDBOOLOPS", delivery=delivery,
+                    requested_count=2, source_seed=37117, source_each=1,
+                    optimizer_step_seed=18,
+                    visit_provenance=visit_provenance("B.IDBOOLOPS"),
+                    teacher_strategy={"policy": "mentor-evidence-negative"},
+                    teacher_hparams=HP, max_norm=1.0, observation=forged)
+            self.assertEqual(
+                caught.exception.context["reason"],
+                "FACTORY_MENTOR_EVIDENCE_WITHOUT_SUPERVISION")
+            execute.assert_not_called()
+
     def test_candidate_continuation_executes_second_step_from_speculative_weights(self):
         rows, delivery = draw(self, "B.IDBOOLOPS", 37119, 1)
         with TemporaryDirectory() as run_dir_value:

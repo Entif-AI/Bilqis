@@ -5,7 +5,7 @@ import json
 import pickle
 import unittest
 
-from bilqis_mlx.errors import CATALOG, ErrorBus, SCHOOL, SOURCE
+from bilqis_mlx.errors import CATALOG, ErrorBus, FACTORY, SCHOOL, SOURCE
 from bilqis_mlx.errors.catalog import BY_CODE, BY_LEGACY_CODE
 
 
@@ -13,13 +13,20 @@ class CatalogTests(unittest.TestCase):
     def test_frozen_catalog_order_and_complete_contracts(self):
         payload = json.dumps([asdict(spec) for spec in CATALOG[:123]],
                              sort_keys=True, separators=(",", ":"))
-        self.assertEqual(len(CATALOG), 146)
+        self.assertEqual(len(CATALOG), 150)
         self.assertEqual(hashlib.sha256(payload.encode()).hexdigest(),
-                         "753528902fed2b4d2ddd844ad07e8494b2dc7746f2dcc61f8cd4fd39a0b704cc")
-        self.assertEqual(len(BY_CODE), 146)
+                         "9b478a5ff7cf3017613f5d8b271c3476ba335b1a0df7b0c42784e9427ef1ec56")
+        self.assertEqual(len(BY_CODE), 150)
+        self.assertIs(CATALOG[-2], FACTORY.PROFILE_EXPANSION.INVALID)
+        self.assertIs(CATALOG[-1], FACTORY.WEAKNESS.INVALID)
+        self.assertIs(BY_CODE["FACTORY.PROFILE_EXPANSION.INVALID"],
+                      FACTORY.PROFILE_EXPANSION.INVALID)
+        self.assertEqual(FACTORY.PROFILE_EXPANSION.INVALID.legacy_codes, ())
+        self.assertIs(BY_CODE["FACTORY.WEAKNESS.INVALID"], FACTORY.WEAKNESS.INVALID)
+        self.assertEqual(FACTORY.WEAKNESS.INVALID.legacy_codes, ())
         self.assertIs(BY_CODE["SCHOOL.STATE.COURSE_DIGEST_MISMATCH"],
                       SCHOOL.STATE.COURSE_DIGEST_MISMATCH)
-        self.assertIs(CATALOG[132], SCHOOL.BAMF_PACKAGE.INVALID)
+        self.assertIs(CATALOG[134], SCHOOL.BAMF_PACKAGE.INVALID)
         self.assertEqual(
             BY_CODE["SCHOOL.BAMF_FIRST_STUDENT.INVALID"].owner,
             "runtime.bamf_first_student")

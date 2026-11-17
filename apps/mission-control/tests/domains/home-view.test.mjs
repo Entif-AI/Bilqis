@@ -42,7 +42,7 @@ test("Home uses the governed five-state band and target overview regions", () =>
   assert.match(markup, /class="home-school-table-wrap"[^>]*tabindex="0"[^>]*data-test-id="home-school-scroll"/);
   assert.match(markup, /Observed · provisional/);
   assert.match(markup, /Accepted capability snapshot/);
-  assert.equal(model.learningStatus, "IMPROVING");
+  assert.equal(model.learningStatus, "REGRESSION");
 });
 
 test("Home health is collapsed detail and operator-significant work values remain complete", () => {

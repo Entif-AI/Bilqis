@@ -278,7 +278,9 @@ class BamfColdResumeContinuationTests(unittest.TestCase):
         bundle = stale_run / pointer["bundle"]
         manifest = json.loads((bundle / "manifest.json").read_text())
         self.assertEqual(
-            set(manifest["sidecars"]), set(SIDECARS) - {"baseline_evidence"})
+            set(manifest["sidecars"]),
+            set(SIDECARS) - {
+                "baseline_evidence", "learning_health_state", "championship_state"})
         self.assertNotIn("baseline_evidence", manifest["sidecars"])
         self.assertFalse(any(
             "cache" in binding["filename"]

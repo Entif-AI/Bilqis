@@ -69,6 +69,8 @@ class FactoryDeliveryObservation:
     controls: dict = field(default_factory=dict)
     prior: tuple = ()
     mentors: object = None
+    _mentor_supervision: object = field(
+        default=None, repr=False, compare=False)
 
     def __post_init__(self):
         capture = self.capture

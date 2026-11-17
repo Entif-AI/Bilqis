@@ -5,7 +5,8 @@ import unittest
 from unittest.mock import Mock, patch
 
 from bilqis_mlx.learning.atlas_retention_decision import (
-    _issued_decision_baseline_ledger_sha256, decide_candidate_retention,
+    CandidateRetentionDecision, _issued_decision_baseline_ledger_sha256,
+    decide_candidate_retention,
     issue_factory_retention_decision,
 )
 import bilqis_mlx.learning.atlas_acceptance as acceptance_owner
@@ -13,12 +14,13 @@ from bilqis_mlx.learning.atlas_acceptance import mint_acceptance_binding
 from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
 import bilqis_mlx.runtime.factory_retention_owner as owner
 import bilqis_mlx.runtime.retention.screen as owner_screen
+import bilqis_mlx.runtime.retention.local_screen as local_screen
 from bilqis_mlx.runtime.factory_retention_owner import (
     FactoryRetentionEvaluation, _cohort, evaluate_factory_retention_candidate,
 )
-from bilqis_mlx.runtime._factory_parent_assessment_cache import ParentAssessmentCacheReceipt
 from bilqis_mlx.runtime.tests.capability.capability_retention_helpers import _screen_inputs
 from bilqis_mlx.runtime.capability_retention import Decision, DecisionStatus
+from bilqis_mlx.runtime.baseline.lifecycle import BaselineLifecycleState
 from bilqis_mlx.runtime.tests.capability.factory.retention.diagnostics.factory_retention_fixed_diagnostic import (
     _optimizer_delta_summary,
 )
@@ -43,7 +45,9 @@ def _foundation_owner_fixture():
                 grade_id="B", assessment_blueprint_sha256="c" * 64),),
             curriculum_sha256="d" * 64,
             profile_id="factory-c05-adversarial",
-            projection_digests=SimpleNamespace(source="e" * 64),
+            projection_digests=SimpleNamespace(
+                roster="e" * 64, assessment="f" * 64,
+                coverage="0" * 64, source="1" * 64),
         ),
     )
     source = SimpleNamespace(
@@ -56,18 +60,46 @@ def _foundation_owner_fixture():
         SimpleNamespace(delivery_capability=target, release_sha256=release_sha),
     ))
     fixed = SimpleNamespace(rows=({"id": "fixed"},), seed=7)
-    fresh = Mock(side_effect=AssertionError(
-        "foundation acceptance constructed measure-only fresh rows"))
+    fresh = Mock(return_value=SimpleNamespace(
+        seed=13, rows=({"id": "fresh", "capability": target},)))
     policy_factory = Mock(return_value=object())
     decision = Decision(
         DecisionStatus.ELIGIBLE, "PAIRED_SCREEN_WITHIN_BUDGET",
-        "a" * 64, "b" * 64, "c" * 64, "d" * 64)
+        "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+        evaluated_capability_ids=(target,),
+        retention_protection_plan_sha256="3" * 64)
     return source, candidate, target, fixed, fresh, policy_factory, decision
 
 
+def _foundation_retention_plan(target):
+    target_plan = SimpleNamespace(
+        target_capability_id=target,
+        target_grade_id="B",
+        protected_capability_ids=(),
+        evaluated_capability_ids=(target,),
+        evaluated_capability_groups=((target, "B"),),
+        evaluation_scope_sha256="1" * 64,
+        comparison_scope_sha256="2" * 64,
+    )
+    plan = SimpleNamespace(
+        digest="3" * 64, rubric_sha256="4" * 64,
+        policy_epoch_sha256="5" * 64, source_sha256="6" * 64,
+        established_capability_ids=(),
+        evidence_stage=owner.CURRENT_EVIDENCE_STAGE.value,
+        for_target=lambda capability: target_plan if capability == target else None,
+    )
+    instrument = SimpleNamespace(
+        case=SimpleNamespace(capability_id=target, case_id="fixture-case"))
+    return plan, target_plan, instrument
+
+
 def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
-                               policy_factory, decision):
+                               policy_factory, decision, *,
+                               championship_cohort=None,
+                               championship_assessment=None,
+                               target_gate_decision=None):
     release_sha = source.release.release_sha256
+    plan, target_plan, instrument = _foundation_retention_plan(target)
     with patch(
             "bilqis_mlx.runtime.bamf_bundle.genesis.records."
             "successor_candidate_identity_digest", return_value="f" * 64), \
@@ -89,18 +121,23 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                             "kind": "MOTIF_ALLOCATION",
                         }),
                     object(), SimpleNamespace(
+                        run_id="fixture-run",
                         accepted_manifest_sha256="0" * 64,
                         source_authority_registry_sha256=None))),
+                require_current_retention_source_rows=Mock(
+                    return_value=(plan, target_plan, ((target, 7, ({"id": "row"},)),))),
                 candidate_identity_digest=Mock(return_value="d" * 64),
                 _owner_seed=Mock(return_value=11),
                 read_current=Mock(return_value={"factory_release_sha256": release_sha}),
                 frontier_exam=Mock(return_value={"factory_release_sha256": release_sha}),
                 load_frontier_cohort=Mock(return_value=fixed),
-                _fresh_rows=fresh,
-                _instruments=Mock(return_value=(SimpleNamespace(case=SimpleNamespace()),)),
             ), patch.multiple(
-                owner_screen,
+                local_screen,
                 case_census_digest=Mock(return_value="e" * 64),
+                candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
+                _owner_seed=Mock(return_value=11),
+                _fresh_rows=fresh,
+                _instruments=Mock(return_value=(instrument,)),
                 _cohort=Mock(return_value=SimpleNamespace(
                     rubric_sha256="1" * 64, scope_sha256="2" * 64,
                     policy_sha256="3" * 64, source_sha256="4" * 64,
@@ -108,17 +145,14 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 FoundationRetentionPolicy=policy_factory,
                 factory_complete_solver=Mock(side_effect=(
                     (object(), "b" * 64), (object(), "c" * 64))),
-                factory_parent_assessment_identity=Mock(return_value=SimpleNamespace(
-                    factory_release_sha256="5" * 64,
-                    semantic_catalog_sha256="6" * 64,
-                    source_authority_registry_sha256=None,
-                    correction_frontier_sha256="7" * 64,
-                    evaluation_contract_sha256="8" * 64,
-                    fixed_cohort_sha256="9" * 64)),
-                use_parent_assessment=Mock(return_value=(
-                    object(),
-                    ParentAssessmentCacheReceipt("1" * 64, "2" * 64, "3" * 64, False))),
-                evaluate_foundation_fixed_school_candidate=Mock(return_value=decision),
+                evaluate_capabilities=Mock(return_value=object()),
+                AssessmentPair=Mock(return_value=object()),
+                evaluate_target_gate=Mock(return_value=target_gate_decision),
+                finalize_target_first_local_candidate=Mock(return_value=decision),
+                capability_championship_evidence=Mock(return_value=(
+                    championship_cohort, championship_assessment)),
+            ), patch.multiple(
+                owner_screen,
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
                 candidate_identity_binding_for_state=Mock(return_value=None)):
         return evaluate_factory_retention_candidate(
@@ -150,7 +184,7 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(summary["readout"]["changed_parameters"], 1)
         self.assertEqual(summary["readout"]["zero_gradient_changed_parameters"], 0)
 
-    def test_foundation_owner_does_not_construct_measure_only_fresh_cohorts(self):
+    def test_foundation_owner_draws_only_the_fresh_target_before_local_protection(self):
         fixture = _foundation_owner_fixture()
         source, candidate, target, _, fresh, policy_factory, _ = fixture
         result = _evaluate_foundation_owner(*fixture)
@@ -161,14 +195,24 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertTrue(issued.accepted)
         self.assertEqual(issued.parent_generation, "d" * 64)
         self.assertEqual(issued.candidate_generation, "d" * 64)
-        self.assertEqual(result.parent_assessment_cache.assessment_sha256, "2" * 64)
+        self.assertIsNone(result.parent_assessment_cache)
         self.assertEqual(result.candidate_generation_authority_sha256, "f" * 64)
         self.assertEqual(
             _issued_decision_baseline_ledger_sha256(issued),
             result.baseline_ledger.digest)
+        self.assertEqual(issued.evaluated_capability_ids, (target,))
         self.assertEqual(
-            policy_factory.call_args.args[2], (),
-            "a virgin accepted parent must not fabricate protected capability baselines")
+            issued.retention_protection_plan_sha256, "3" * 64)
+        cold = CandidateRetentionDecision.from_record(issued.to_record())
+        self.assertEqual(cold.fields["evaluated_capability_ids"], (target,))
+        self.assertEqual(
+            cold.fields["retention_protection_plan_sha256"], "3" * 64)
+        self.assertIsNotNone(result.baseline_transition)
+        self.assertIs(
+            result.baseline_ledger.state_for(result.baseline_transition.measurement.comparison),
+            BaselineLifecycleState.BASELINE_ESTABLISHED,
+        )
+        self.assertTrue(all(call.args[2] == () for call in policy_factory.call_args_list))
         retained = SimpleNamespace(optimizer_step=1, step_proofs=())
         with patch.object(acceptance_owner, "candidate_identity_digest",
                           return_value="d" * 64):
@@ -178,7 +222,26 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
         self.assertEqual(
             acceptance_owner._issued_acceptance_baseline_ledger_sha256(bound),
             result.baseline_ledger.digest)
-        fresh.assert_not_called()
+        fresh.assert_called_once()
+        self.assertEqual(fresh.call_args.args[1], (target,))
+
+    def test_target_first_rejection_issues_c05_authority_without_championship_evidence(self):
+        fixture = _foundation_owner_fixture()
+        rejection = Decision(
+            DecisionStatus.REJECT, "NO_MEASURABLE_TARGET_GAIN",
+            "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+            evaluated_capability_ids=(fixture[2],),
+            retention_protection_plan_sha256="3" * 64)
+        result = _evaluate_foundation_owner(
+            *fixture, target_gate_decision=rejection)
+
+        self.assertIsInstance(result, FactoryRetentionEvaluation)
+        result.__post_init__()
+        issued = issue_factory_retention_decision(result)
+        self.assertFalse(issued.accepted)
+        self.assertEqual(issued.reason, "NO_MEASURABLE_TARGET_GAIN")
+        self.assertIsNone(result.championship_cohort)
+        self.assertIsNone(result.championship_assessment)
 
     def test_caller_cannot_construct_evaluation_authority(self):
         with self.assertRaises(Exception):

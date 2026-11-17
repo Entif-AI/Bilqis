@@ -27,21 +27,27 @@ SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES = (
         "boolean-identification-accepted-to-current",
         "source.micro.boolean-identification/v1",
         "6399dae052a289d46063df0e897e14f1392e2f1b99e90c2ae791fda9a8246743",
+        "811ed2ad7708e6a7ce3a72fb20d92ea8fcc1df51aae45afc01e711fea07d18c6",
+        "cohort-bound"),
+    SourceProviderResumeEdge(
+        "boolean-identification-pre-r15-to-current",
+        "source.micro.boolean-identification/v1",
         "1404c511d7b5eab19025726d5c4c98073250cc0c75cf37b185344da92060edee",
+        "811ed2ad7708e6a7ce3a72fb20d92ea8fcc1df51aae45afc01e711fea07d18c6",
         "cohort-bound"),
     SourceProviderResumeEdge(
         "numeric-accepted-to-current", "source.finite-numeric/v2",
         "2758cf678e9d2a45f3f5a1b5edd85d5ae513e54506c0d98853b9402b91572754",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "788978ebb80d2349f6aa91e994f45d2ce32c154040f5ab5b17d8502a8d6dfa10",
         "numeric-modular"),
     SourceProviderResumeEdge(
         "numeric-modular-to-current", "source.finite-numeric/v2",
         "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "788978ebb80d2349f6aa91e994f45d2ce32c154040f5ab5b17d8502a8d6dfa10",
         "numeric-modular"),
     SourceProviderResumeEdge(
-        "numeric-current-adr106-cohort-repair", "source.finite-numeric/v2",
+        "numeric-pre-r20-to-current", "source.finite-numeric/v2",
         "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
-        "numeric-adr106"),
+        "788978ebb80d2349f6aa91e994f45d2ce32c154040f5ab5b17d8502a8d6dfa10",
+        "numeric-modular"),
 )

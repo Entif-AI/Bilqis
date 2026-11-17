@@ -94,6 +94,18 @@ def structural_signature(row: dict) -> tuple:
             universe)
 
 
+def classify_boolean_connective_weakness(row: dict) -> dict:
+    """Provider-owned ADR-091 class for direct Boolean connective structure."""
+    capability, truth_pattern, operand_kinds, universe = structural_signature(row)
+    del capability
+    return {
+        "family": "boolean-connective",
+        "truth_pattern": list(truth_pattern),
+        "operand_kinds": list(operand_kinds),
+        "universe": universe,
+    }
+
+
 
 def _fragile_row_pattern(row):
     raw = row.get("operand_truths")

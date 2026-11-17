@@ -9,7 +9,7 @@ from bilqis_mlx.cli import main
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.runtime.tests.bamf_first_student._bamf_first_student_support import BamfFirstStudentCase
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
-    genesis_feature_source_patch, source_features,
+    accepted_feature_source_patch, genesis_feature_source_patch,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 
@@ -51,10 +51,7 @@ class BamfCreateResumeCase(BamfFirstStudentCase):
 
     @contextmanager
     def accepted_read_context(self):
-        with shape_patch(), patch(
-            "bilqis_mlx.runtime.bamf_bundle.feature_authority._authenticate_features",
-            return_value=source_features(),
-        ):
+        with shape_patch(), accepted_feature_source_patch():
             yield
 
     @contextmanager

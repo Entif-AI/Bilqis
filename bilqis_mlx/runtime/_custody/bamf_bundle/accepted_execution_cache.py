@@ -229,17 +229,22 @@ def _make_execution_cache_runtime():
     def bind(run_dir: Path, *, metrics=None):
         run_dir = Path(run_dir).resolve()
         key = str(run_dir)
-        hydration = current_hydration(run_dir, metrics=metrics)
-        registry = _accepted_source_authority_registry(run_dir, hydration.student)
-        with lock:
-            retained = executions.get(key)
-            if (retained is not None
-                    and retained.hydration is hydration):
-                _require_execution_entry(retained, registry)
+        with _pointer_lock(run_dir):
+            pointer = _read_pointer(run_dir / "bamf-state.json")
+            hydration = _current_hydration_locked(
+                lock, hydrations, executions, run_dir, key, pointer,
+                metrics=metrics)
+            registry = _accepted_source_authority_registry(
+                run_dir, hydration.student)
+            with lock:
+                retained = executions.get(key)
+                if (retained is not None
+                        and retained.hydration is hydration):
+                    _require_execution_entry(retained, registry)
+                    return retained.cache
+                retained = _new_execution_entry(run_dir, hydration, registry)
+                executions[key] = retained
                 return retained.cache
-            retained = _new_execution_entry(run_dir, hydration, registry)
-            executions[key] = retained
-            return retained.cache
 
     def require(cache):
         key = getattr(cache, "_run_dir", None)
@@ -247,6 +252,11 @@ def _make_execution_cache_runtime():
             invalid("B13_EXECUTION_CACHE_REQUIRED")
         run_dir = Path(key).resolve()
         hydration = current_hydration(run_dir)
+        if (getattr(cache, "accepted_manifest_sha256", None)
+                != hydration.manifest_sha256
+                or getattr(cache, "run_id", None) != hydration.student.run_id
+                or getattr(cache, "generation", None) != hydration.student.generation):
+            invalid("B13_EXECUTION_CACHE_STALE")
         registry = _current_registry(run_dir, hydration)
         with lock:
             retained = executions.get(str(run_dir))

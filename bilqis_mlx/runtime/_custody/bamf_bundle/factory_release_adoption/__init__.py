@@ -27,6 +27,14 @@ _DIGEST_FIELDS = (
     "source_approval_sha256",
 )
 _FIELDS = ("schema", "kind", "invalidate_derived_caches") + _DIGEST_FIELDS
+PROFILE_EXPANSION_SCHEMA = "bilqis.mlx.bamf-generation-transition/v4"
+PROFILE_EXPANSION_KIND = "PROFILE_EXPANSION"
+PROFILE_DIGEST_FIELDS = (
+    "predecessor_factory_release_sha256", "factory_release_sha256",
+    "profile_sha256", "parent_manifest_sha256", "lease_sha256",
+    "source_approval_sha256", "profile_transition_sha256",
+)
+_PROFILE_FIELDS = ("schema", "kind", "invalidate_derived_caches") + PROFILE_DIGEST_FIELDS
 _ISSUER = object()
 
 
@@ -51,12 +59,15 @@ class FactoryReleaseAdoptionTransition(Mapping):
 
     predecessor_factory_release_sha256: str
     factory_release_sha256: str
-    handoff_sha256: str
-    proposal_sha256: str
-    staged_candidate_sha256: str
-    selection_receipt_sha256: str
     lease_sha256: str
     source_approval_sha256: str
+    handoff_sha256: str | None = None
+    proposal_sha256: str | None = None
+    staged_candidate_sha256: str | None = None
+    selection_receipt_sha256: str | None = None
+    profile_sha256: str | None = None
+    parent_manifest_sha256: str | None = None
+    profile_transition_sha256: str | None = None
     schema: str = FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA
     kind: str = FACTORY_RELEASE_ADOPTION_KIND
     invalidate_derived_caches: bool = False
@@ -71,18 +82,18 @@ class FactoryReleaseAdoptionTransition(Mapping):
         validate_factory_release_adoption_transition(self)
 
     def __iter__(self):
-        return iter(_FIELDS)
+        return iter(_PROFILE_FIELDS if self.kind == PROFILE_EXPANSION_KIND else _FIELDS)
 
     def __len__(self):
-        return len(_FIELDS)
+        return len(_PROFILE_FIELDS if self.kind == PROFILE_EXPANSION_KIND else _FIELDS)
 
     def __getitem__(self, key):
-        if key not in _FIELDS:
+        if key not in (_PROFILE_FIELDS if self.kind == PROFILE_EXPANSION_KIND else _FIELDS):
             raise KeyError(key)
         return getattr(self, key)
 
     def to_record(self) -> dict:
-        return {name: getattr(self, name) for name in _FIELDS}
+        return {name: getattr(self, name) for name in self}
 
     @property
     def digest(self) -> str:
@@ -93,20 +104,22 @@ class FactoryReleaseAdoptionTransition(Mapping):
 def is_factory_release_adoption_transition(value) -> bool:
     return (
         isinstance(value, Mapping)
-        and value.get("schema") == FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA
-        and value.get("kind") == FACTORY_RELEASE_ADOPTION_KIND
+        and (value.get("schema"), value.get("kind")) in {
+            (FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA, FACTORY_RELEASE_ADOPTION_KIND),
+            (PROFILE_EXPANSION_SCHEMA, PROFILE_EXPANSION_KIND),
+        }
     )
 
 
 def validate_factory_release_adoption_transition(value) -> None:
-    if (
-        not isinstance(value, Mapping)
-        or set(value) != set(_FIELDS)
-        or value.get("schema") != FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA
-        or value.get("kind") != FACTORY_RELEASE_ADOPTION_KIND
-        or value.get("invalidate_derived_caches") is not False
-        or any(not _hex(value.get(name)) for name in _DIGEST_FIELDS)
-    ):
+    if not is_factory_release_adoption_transition(value):
+        _invalid()
+    profile = value.get("kind") == PROFILE_EXPANSION_KIND
+    fields = _PROFILE_FIELDS if profile else _FIELDS
+    digests = PROFILE_DIGEST_FIELDS if profile else _DIGEST_FIELDS
+    if (set(value) != set(fields)
+            or value.get("invalidate_derived_caches") is not False
+            or any(not _hex(value.get(name)) for name in digests)):
         _invalid()
 
 
@@ -154,11 +167,31 @@ def _issue_factory_release_adoption_transition(
     return transition
 
 
+def _issue_profile_expansion_transition(
+        *, predecessor_factory_release_sha256, factory_release_sha256,
+        profile_sha256, parent_manifest_sha256, lease_sha256,
+        source_approval_sha256, profile_transition_sha256):
+    values = dict(
+        predecessor_factory_release_sha256=predecessor_factory_release_sha256,
+        factory_release_sha256=factory_release_sha256, profile_sha256=profile_sha256,
+        parent_manifest_sha256=parent_manifest_sha256, lease_sha256=lease_sha256,
+        source_approval_sha256=source_approval_sha256,
+        profile_transition_sha256=profile_transition_sha256)
+    transition = object.__new__(FactoryReleaseAdoptionTransition)
+    for name, value in (*values.items(), ("schema", PROFILE_EXPANSION_SCHEMA),
+                        ("kind", PROFILE_EXPANSION_KIND),
+                        ("invalidate_derived_caches", False), ("_issuance", _ISSUER)):
+        object.__setattr__(transition, name, value)
+    transition.__post_init__()
+    return transition
+
+
 def derive_factory_release_adoption_candidate(
     parent,
     *,
     parent_manifest_sha256,
     transition,
+    new_semantic_admission=False,
 ):
     """Derive generation N+1 while preserving every neural/teacher state owner."""
     from ..records import BamfBundleCandidate, CompleteStudent
@@ -166,9 +199,13 @@ def derive_factory_release_adoption_candidate(
     if (
         type(parent) is not CompleteStudent
         or not _hex(parent_manifest_sha256)
+        or type(new_semantic_admission) is not bool
     ):
         _invalid()
     transition = require_issued_factory_release_adoption_transition(transition)
+    if (transition.kind == PROFILE_EXPANSION_KIND
+            and transition.parent_manifest_sha256 != parent_manifest_sha256):
+        _invalid()
     event = {
         "event": FACTORY_RELEASE_ADOPTION_EVENT,
         "schema": FACTORY_RELEASE_ADOPTION_EVENT_SCHEMA,
@@ -178,13 +215,36 @@ def derive_factory_release_adoption_candidate(
         "predecessor_factory_release_sha256":
             transition.predecessor_factory_release_sha256,
         "factory_release_sha256": transition.factory_release_sha256,
-        "handoff_sha256": transition.handoff_sha256,
-        "proposal_sha256": transition.proposal_sha256,
-        "selection_receipt_sha256": transition.selection_receipt_sha256,
         "lease_sha256": transition.lease_sha256,
         "source_approval_sha256": transition.source_approval_sha256,
         "transition_sha256": transition.digest,
     }
+    if transition.kind == PROFILE_EXPANSION_KIND:
+        event.update({name: getattr(transition, name) for name in PROFILE_DIGEST_FIELDS})
+    else:
+        event.update({name: getattr(transition, name) for name in (
+            "handoff_sha256", "proposal_sha256", "selection_receipt_sha256")})
+    championship_state = parent.championship_state
+    if championship_state is not None:
+        if new_semantic_admission:
+            from bilqis_mlx.learning.capability_championship_state import (
+                clear_championship_epoch,
+            )
+            championship_state = clear_championship_epoch(
+                dict(championship_state),
+                source_manifest_sha256=parent_manifest_sha256,
+                source_generation=parent.generation,
+            )
+        else:
+            from bilqis_mlx.learning.capability_championship_state import (
+                clear_active_championship_titles,
+            )
+            championship_state = clear_active_championship_titles(
+                dict(championship_state),
+                source_manifest_sha256=parent_manifest_sha256,
+                source_generation=parent.generation,
+                reason="FACTORY_RELEASE_ADOPTION",
+            )
     return BamfBundleCandidate(
         parent.run_id,
         parent.generation + 1,
@@ -204,4 +264,6 @@ def derive_factory_release_adoption_candidate(
         (event,),
         parent.run_identity,
         parent.baseline_evidence,
+        parent.learning_health_state,
+        championship_state,
     )

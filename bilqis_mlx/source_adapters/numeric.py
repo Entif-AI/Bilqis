@@ -142,3 +142,42 @@ def check_numeric(row, *, graph, **_):
 def semantic_footprint(row: dict) -> tuple[str, ...]:
     """Canonical query roots, excluding representation and equality wrappers."""
     return tuple(dict.fromkeys(inspect_record(row["record"]).rooted_operators))
+
+
+def _witness_geometry(value):
+    if isinstance(value, dict):
+        return {str(key): _witness_geometry(item)
+                for key, item in sorted(value.items())}
+    if isinstance(value, list):
+        if value and all(isinstance(item, list) for item in value):
+            return {
+                "kind": "groups",
+                "count": len(value),
+                "sizes": [len(item) for item in value],
+            }
+        return {"kind": "sequence", "count": len(value)}
+    if isinstance(value, str):
+        return value
+    if value is None or type(value) is bool:
+        return value
+    return type(value).__name__
+
+
+def classify_numeric_weakness(row: dict) -> dict:
+    """ADR-091 finite-numeric class: answer, operation shape, witness geometry."""
+    if not isinstance(row, dict) or not isinstance(row.get("witness"), dict):
+        from bilqis_mlx.errors import ErrorBus, FACTORY
+        ErrorBus.Raise(
+            FACTORY.WEAKNESS.INVALID,
+            reason="FACTORY_NUMERIC_WEAKNESS_ROW_INVALID")
+    shape = inspect_record(row["record"])
+    return {
+        "family": "finite-numeric",
+        "answer_kind": row.get("answer_kind"),
+        "gold": row.get("gold"),
+        "root": shape.root,
+        "rooted_operators": list(shape.rooted_operators),
+        "semantic_operations": shape.semantic_operations,
+        "operator_depth": shape.operator_depth,
+        "witness_geometry": _witness_geometry(row["witness"]),
+    }

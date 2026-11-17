@@ -470,6 +470,26 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1295-operator-error-semantics-20261116",
       "head_sha_role": "Code/test head before documentation and turn-in metadata; pinned EGM design and independent scoped implementation/drift review reconciled."
+    },
+    {
+      "issue": 1332,
+      "pr": 1348,
+      "state": "TURNED_IN",
+      "head_sha": "0b72a38b50a286a7a35a0b4c3339e36aec5c577a",
+      "summary": "R10 turned in as PR #1348 against unified; local scoped proof and independent review green. Hosted checks and human review/merge remain. No actual learner updates.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1332-how-policy-outcomes-20261116",
+      "head_sha_role": "Executable integration head consuming unified0891128; subsequent receipt metadata only."
+    },
+    {
+      "issue": 1337,
+      "pr": 1356,
+      "state": "TURNED_IN",
+      "head_sha": "1dfc46026fcd221bbc44d25100b0ab5546ada7ab",
+      "summary": "R15 turned in as PR #1356 after consuming reviewed unified 749f1f37. Provider-owned Boolean minimum-row sampling now preserves the complete legal operand-pattern census, while native BAMF transports Factory-issued optional teaching enrichment generically with direct/enrichment role identity intact. Exact integrated M3 witness: 64 passed, 7 skipped, 20 subtests; merge-reconciliation proof: 7 passed, 8 subtests. No grade/Boolean runtime branch, legacy enrichment CLI resurrection, learner mutation, force push or merge authority.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1337-truth-pattern-enrichment-20261116",
+      "head_sha_role": "Exact executable integration head consuming reviewed unified 749f1f37; subsequent flow-control and issue/PR receipt changes are metadata only."
     }
   ]
 }

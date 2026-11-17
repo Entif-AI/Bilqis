@@ -101,6 +101,174 @@ class ObservedSourceTests(unittest.TestCase):
         self.assertEqual(row.candidate_steps[0].candidate_step, 1)
         self.assertEqual(row.candidate_steps[0].b11_provider_draw_count, 16)
 
+    def test_v4_runtime_snapshot_projects_typed_visit_and_grade_evidence(self):
+        from bilqis_mlx.runtime.bamf_operator.evidence_projection import (
+            unknown_generated_grade_evidence,
+        )
+        row = visit(
+            **performance(), planning_wall_seconds=0.1,
+            source_materialization_wall_seconds=0.02,
+            target_evaluation_wall_seconds=0.2,
+            protected_retention_wall_seconds=0.3,
+            broad_certification_wall_seconds=None,
+            candidate_steps=[], retention_stage_timings=[{
+                'subject': 'Z.NOVEL', 'role': 'candidate', 'wall_seconds': 0.2}],
+            visit_evidence={
+                'schema': 'bilqis.bamf.visit-evidence/v1', 'state': 'PARTIAL',
+                'grade_id': 'Z', 'grade_definition_id': None,
+                'grade_definition_version': None, 'capability_id': 'Z.NOVEL',
+                'semantic_ids': ['sem:z'], 'prerequisites': ['Y.PREV'],
+                'semantic_prerequisites': ['sem:y'], 'constituents': ['Y.PREV'],
+                'lawful_frontier_sha256': '1' * 64, 'a09_snapshot_sha256': '2' * 64,
+                'a09_closure_sha256': '3' * 64, 'ranking': {},
+                'teacher_visit_id': 'visit-z', 'teacher_policy_key': 'how-z',
+                'selected_option_id': 'option-z', 'lesson_roles': {},
+                'target': {'state': 'NOT_MEASURED'}, 'protected': [],
+                'retention_policy_sha256': None, 'probe_each': None,
+                'baseline_coverage': None, 'decision': None,
+                'blocking_capability': None, 'blocking_scope': None,
+                'reason': None, 'human_reason': None,
+                'candidate_evidence_sha256': None, 'candidate_evidence_file': None},
+            generated_grade_evidence=unknown_generated_grade_evidence('Z'))
+        self.write(row, schema='bilqis.bamf.trainer-observed/v4')
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists', return_value=True):
+            projected = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(projected.schema_version,
+                         'bilqis.bamf.mission-control.trainer-observation/v4')
+        self.assertEqual(projected.visit_evidence.grade_id, 'Z')
+        self.assertEqual(projected.generated_grade_evidence.state, 'UNKNOWN')
+        self.assertEqual(projected.retention_stage_timings[0].subject, 'Z.NOVEL')
+
+    def test_v5_learning_health_survives_cold_read_without_grade_letter_assumptions(self):
+        from bilqis_mlx.diagnostics.learning_health import project_learning_health
+        visit_evidence = {
+            'capability_id': 'novel.successor', 'grade_id': 'future:grade',
+            'grade_definition_id': 'definition:9',
+            'grade_definition_version': 'v9',
+            'retention_policy_sha256': 'a' * 64,
+            'fixed_cohort_sha256': 'b' * 64, 'rubric_sha256': 'c' * 64,
+            'source_sha256': 'd' * 64,
+            'target': {'state': 'MEASURED', 'before': 2, 'after': 4, 'total': 5},
+            'protected': [],
+        }
+        health = project_learning_health(visit_evidence, accepted=True)
+        row = visit(**performance(), candidate_steps=[], planning_wall_seconds=None,
+                    source_materialization_wall_seconds=None,
+                    target_evaluation_wall_seconds=None,
+                    protected_retention_wall_seconds=None,
+                    broad_certification_wall_seconds=None,
+                    visit_evidence=None, generated_grade_evidence=None,
+                    retention_stage_timings=[], learning_health=health)
+        self.write(row, schema='bilqis.bamf.trainer-observed/v5')
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(observed.schema_version,
+                         'bilqis.bamf.mission-control.trainer-observation/v5')
+        self.assertEqual(observed.learning_health.grade_id, 'future:grade')
+        self.assertEqual(observed.learning_health.latest.correct, 4)
+        self.assertEqual(observed.learning_health.qualification_state,
+                         'NOT_MEASURED')
+
+    def test_v5_current_visit_reads_last_accepted_summary_from_bounded_run_map(self):
+        from bilqis_mlx.diagnostics.learning_health import project_learning_health
+        health = project_learning_health({
+            'capability_id': 'A.IDENTITY', 'grade_id': 'Z:future',
+            'retention_policy_sha256': 'a' * 64,
+            'fixed_cohort_sha256': 'b' * 64,
+            'rubric_sha256': 'c' * 64, 'source_sha256': 'd' * 64,
+            'target': {'state': 'MEASURED', 'before': 2, 'after': 4, 'total': 5},
+        }, accepted=True)
+        row = visit(
+            **performance(), candidate_steps=[], planning_wall_seconds=None,
+            source_materialization_wall_seconds=None,
+            target_evaluation_wall_seconds=None,
+            protected_retention_wall_seconds=None,
+            broad_certification_wall_seconds=None,
+            visit_evidence=None, generated_grade_evidence=None,
+            retention_stage_timings=[], learning_health=None)
+        (self.root / 'trainer-observed.json').write_text(json.dumps({
+            'schema': 'bilqis.bamf.trainer-observed/v5',
+            'visits': [row],
+        }))
+        (self.root / 'bamf-state.json').write_text(json.dumps({
+            'run_id': RUN.run_id,
+            'manifest_sha256': RUN.generation_manifest_sha256,
+        }))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True), patch(
+            'bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation',
+            return_value=object()), patch(
+            'bilqis_mlx.runtime.bamf_operator.learning_health_runtime.accepted_learning_health_from_parent',
+            return_value={'A.IDENTITY': health}):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)[0]
+        self.assertEqual(observed.learning_health.latest.correct, 4)
+
+    def test_malformed_optional_health_never_hides_valid_current_observation(self):
+        row = visit(**performance(), candidate_steps=[],
+                    planning_wall_seconds=None,
+                    source_materialization_wall_seconds=None,
+                    target_evaluation_wall_seconds=None,
+                    protected_retention_wall_seconds=None,
+                    broad_certification_wall_seconds=None,
+                    visit_evidence=None, generated_grade_evidence=None,
+                    retention_stage_timings=[], learning_health=None)
+        (self.root / 'trainer-observed.json').write_text(json.dumps({
+            'schema': 'bilqis.bamf.trainer-observed/v5',
+            'visits': [row],
+        }))
+        (self.root / 'bamf-state.json').write_text(json.dumps({
+            'run_id': RUN.run_id,
+            'manifest_sha256': RUN.generation_manifest_sha256,
+        }))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True), patch(
+            'bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation',
+            return_value=object()), patch(
+            'bilqis_mlx.runtime.bamf_operator.learning_health_runtime.accepted_learning_health_from_parent',
+            return_value={'A.IDENTITY': {'schema': 'invalid'}}):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)
+        self.assertEqual(len(observed), 1)
+        self.assertIsNone(observed[0].learning_health)
+
+    def test_prior_visits_do_not_inherit_current_run_health(self):
+        from bilqis_mlx.diagnostics.learning_health import project_learning_health
+        health = project_learning_health({
+            'capability_id': 'A.IDENTITY', 'grade_id': 'Z:future',
+            'retention_policy_sha256': 'a' * 64,
+            'fixed_cohort_sha256': 'b' * 64,
+            'rubric_sha256': 'c' * 64, 'source_sha256': 'd' * 64,
+            'target': {'state': 'MEASURED', 'before': 2, 'after': 4, 'total': 5},
+        }, accepted=True)
+        fields = dict(**performance(), candidate_steps=[],
+                      planning_wall_seconds=None,
+                      source_materialization_wall_seconds=None,
+                      target_evaluation_wall_seconds=None,
+                      protected_retention_wall_seconds=None,
+                      broad_certification_wall_seconds=None,
+                      visit_evidence=None, generated_grade_evidence=None,
+                      retention_stage_timings=[], learning_health=None)
+        old = visit(**fields, observation_id='older', revision=1)
+        new = visit(**fields, observation_id='current', revision=2)
+        (self.root / 'trainer-observed.json').write_text(json.dumps({
+            'schema': 'bilqis.bamf.trainer-observed/v5',
+            'visits': [old, new],
+        }))
+        (self.root / 'bamf-state.json').write_text(json.dumps({
+            'run_id': RUN.run_id,
+            'manifest_sha256': RUN.generation_manifest_sha256,
+        }))
+        with patch('bilqis_mlx.control_plane.observed.source.process_exists',
+                   return_value=True), patch(
+            'bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation',
+            return_value=object()), patch(
+            'bilqis_mlx.runtime.bamf_operator.learning_health_runtime.accepted_learning_health_from_parent',
+            return_value={'A.IDENTITY': health}):
+            observed = observed_records(self.root, (RUN,), now_ms=101000)
+        self.assertEqual(len(observed), 2)
+        self.assertIsNone(observed[0].learning_health)
+        self.assertEqual(observed[1].learning_health.latest.correct, 4)
+
     def test_millisecond_heartbeat_projects_unix_seconds_without_changing_liveness_age(self):
         heartbeat_ms = 1_763_218_800_123
         self.write(visit(observed_at=heartbeat_ms))

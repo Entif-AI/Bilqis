@@ -50,6 +50,24 @@ def _verify_release_providers(release: ExecutableFactoryRelease) -> None:
             _api._ReleaseError.PROVIDER_DRIFT,
         )
         provider.validate_profile_parameters(execution.provider_parameters)
+    policy_keys = set()
+    for policy in release.provider_dimension_policies:
+        key = (policy.provider_id, policy.dimension_id)
+        provider = providers.get(policy.provider_id)
+        _api._require(
+            key not in policy_keys and provider is not None,
+            _api._ReleaseError.PROVIDER_DRIFT,
+        )
+        policy_keys.add(key)
+        dimensions = dict(provider.profile_dimensions)
+        domain = dimensions.get(policy.parameter_name)
+        _api._require(
+            domain is not None and
+            set(policy.progression_values) <= set(domain) and
+            policy.progression_values == tuple(
+                value for value in domain if value in policy.progression_values),
+            _api._ReleaseError.PROVIDER_DRIFT,
+        )
 
 
 def _verify_release_answers(
@@ -85,7 +103,9 @@ def _verify_release_evidence(release: ExecutableFactoryRelease) -> None:
         verification.execution_plan_sha256 == release.execution_plan.digest() and
         verification.source_binding_sha256 == release.source_bindings.digest() and
         verification.provider_descriptors_sha256 ==
-            _api._digest([_api.asdict(item) for item in release.source_adapters]) and
+            _api._digest([
+                _api._source_adapter_record(item)
+                for item in release.source_adapters]) and
         verification.answer_modalities_sha256 ==
             _api._digest([_api.asdict(item) for item in release.answer_modalities]) and
         verification.answer_heads_sha256 ==

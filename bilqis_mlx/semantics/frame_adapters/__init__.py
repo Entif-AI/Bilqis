@@ -49,6 +49,8 @@ from .registry import (
     ReleasedFrameAdapter,
     released_frame_adapter_ids,
     released_frame_adapter,
+    source_frame_strategy,
+    source_graph_for_adapter,
     bind_registered_source_row,
 )
 from .public_formal import (

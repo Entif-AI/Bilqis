@@ -40,6 +40,9 @@ def compile_executable_factory_release(
     answer_heads = _api._answer_head_bindings(plan, graph, answer_registry)
     source_adapters = _api._provider_descriptors(
         plan, source_bindings, source_registry)
+    provider_dimension_policies = tuple(
+        policy for descriptor in source_adapters
+        for policy in source_registry.dimension_policies(descriptor.adapter_id))
     semantic_catalog = tuple(
         graph.get("tokens") if isinstance(graph, dict) else ())
     _api._require(
@@ -71,6 +74,7 @@ def compile_executable_factory_release(
         transition=transition,
         release_sha256="0" * 64,
         semantic_graph_sha256=semantic_graph_sha256,
+        provider_dimension_policies=provider_dimension_policies,
     )
     release = _api.replace(release, release_sha256=release.expected_digest())
     release.verify()

@@ -164,11 +164,14 @@ def read_accepted_atlas_factory_release(run_dir):
 def _accepted_atlas_obligation_state(run_dir):
     """Recover cumulative accepted obligation identity through B13 ancestry."""
     from bilqis_mlx.runtime.bamf_bundle.atlas_admission import (
-        ATLAS_ADMISSION_SCHEMA_V2, ParsedAtlasAdmissionBinding,
+        ATLAS_ADMISSION_SCHEMA_V2, ATLAS_ADMISSION_SCHEMA_V3,
+        ParsedAtlasAdmissionBinding,
     )
     from bilqis_mlx.runtime.bamf_bundle.codec import load_bamf_bundle
     from bilqis_mlx.runtime.bamf_bundle.factory_release.admission import (
         FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V4,
         ParsedFactoryReleaseAdmissionBinding,
     )
     from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import (
@@ -191,14 +194,18 @@ def _accepted_atlas_obligation_state(run_dir):
             root, manifest_sha256, student,
             expected_acceptance_sha256=acceptance_sha256)
         if (isinstance(binding, ParsedAtlasAdmissionBinding)
-                and binding.schema_version == ATLAS_ADMISSION_SCHEMA_V2):
+                and binding.schema_version in {
+                    ATLAS_ADMISSION_SCHEMA_V2, ATLAS_ADMISSION_SCHEMA_V3}):
             return (
                 current_release.release_sha256,
                 current_acceptance,
                 binding.selected_obligation_keys,
             )
         if (isinstance(binding, ParsedFactoryReleaseAdmissionBinding)
-                and binding.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V2):
+                and binding.schema_version in {
+                    FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+                    FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+                    FACTORY_RELEASE_ADMISSION_SCHEMA_V4}):
             return (
                 current_release.release_sha256,
                 current_acceptance,

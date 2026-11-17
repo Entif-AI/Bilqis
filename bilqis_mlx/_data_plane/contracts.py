@@ -38,6 +38,8 @@ class DataPlaneError(str, Enum):
     EVENT_LEDGER_UNSAFE = "DATA_PLANE_EVENT_LEDGER_UNSAFE"
     EVENT_LEDGER_TRUNCATED = "DATA_PLANE_EVENT_LEDGER_TRUNCATED"
     EVENT_LEDGER_JSON_INVALID = "DATA_PLANE_EVENT_LEDGER_JSON_INVALID"
+    EVENT_CURSOR_INVALID = "DATA_PLANE_EVENT_CURSOR_INVALID"
+    EVENT_PROJECTION_FRONTIER_DRIFT = "DATA_PLANE_EVENT_PROJECTION_FRONTIER_DRIFT"
     SOUP_CUSTODY_MAP_DRIFT = "GRADE_SOUP_CUSTODY_MAP_DRIFT"
 
 def _error(code: DataPlaneError, detail=None) -> str:
@@ -48,11 +50,12 @@ def event_payload_digest(event: dict) -> str:
                      ensure_ascii=False).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
-def _read_event_tail(ledger: Path, start: int) -> tuple[list[tuple[str, str]], int]:
+def _read_event_tail(ledger: Path, start: int) -> tuple[list[tuple], int]:
     observed = []
     with ledger.open("rb") as stream:
         stream.seek(start)
         while line := stream.readline():
+            line_start = stream.tell() - len(line)
             if not line.endswith(b"\n"):
                 raise ValueError(_error(DataPlaneError.EVENT_LEDGER_TRUNCATED, ledger))
             try:
@@ -61,12 +64,14 @@ def _read_event_tail(ledger: Path, start: int) -> tuple[list[tuple[str, str]], i
                 raise ValueError(_error(
                     DataPlaneError.EVENT_LEDGER_JSON_INVALID, ledger)) from exc
             event_id = item.get("event_id") if isinstance(item, dict) else None
-            if event_id is None:
-                continue
-            if (not isinstance(event_id, str) or
-                    len(event_id) != SHA256_HEX_LENGTH):
-                continue
-            observed.append((event_id, event_payload_digest(item)))
+            digest = None
+            if (isinstance(event_id, str)
+                    and len(event_id) == SHA256_HEX_LENGTH):
+                digest = event_payload_digest(item)
+            payload = json.dumps(
+                item, sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False).encode("utf-8")
+            observed.append((event_id, digest, line_start, stream.tell(), payload))
         return observed, stream.tell()
 
 def default_path() -> Path:

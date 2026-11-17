@@ -1,8 +1,5 @@
 """Evaluator-side complete-solver measurements and advisory paired eligibility."""
 from __future__ import annotations
-
-from bilqis_mlx.runtime.bamf_operator.telemetry import emit
-
 from dataclasses import dataclass, field
 from enum import Enum
 import re
@@ -15,14 +12,13 @@ from ..semantics.domains import contract_digest
 from .cognitive_solver import (
     CapabilityResult, GenerationBinding, SolveBudget, SolveContext, solve_task,
 )
-
 from .capability_evaluation import (
-    _invalid, _sha, _names, EvidenceKind, EvidenceStage, EvaluationCase, case_census_digest,
-    EvaluationCohort, CompleteSolver, _answer_identity, Assessment, evaluate_capabilities,
+    _invalid, _sha, _names, EvidenceKind, EvidenceStage, EvaluationCase,
+    EvaluationCohort, CompleteSolver, case_census_digest, evaluate_capabilities,
+    _answer_identity, Assessment,
 )
+from .capability_retention_validation import valid_blocking_score_budget
 from bilqis_mlx.runtime.baseline.currentness import BaselineCoverage
-
-
 @dataclass(frozen=True)
 class AssessmentPair:
     parent: Assessment
@@ -141,11 +137,9 @@ class DecisionStatus(str, Enum):
     ELIGIBLE = "ELIGIBLE"
     REJECT = "REJECT"
 
-
 class WorkDisposition(str, Enum):
     REHEARSE_OR_ADVANCE = "REHEARSE_OR_ADVANCE"
     OPTIMIZER_CANDIDATE = "OPTIMIZER_CANDIDATE"
-
 
 @dataclass(frozen=True)
 class Decision:
@@ -158,7 +152,12 @@ class Decision:
     blocking_capability: str | None = None
     blocking_scope: str | None = None
     baseline_coverage: BaselineCoverage | None = None
-    schema_version: str = "bilqis.c05.retention-decision/v2"
+    outcome_scores: tuple[tuple[str, int, int, int], ...] = ()
+    evaluated_capability_ids: tuple[str, ...] = ()
+    retention_protection_plan_sha256: str | None = None
+    broad_certification_trigger: str | None = None
+    blocking_score_budget: tuple[str, int, int, int, int] | None = None
+    schema_version: str = "bilqis.c05.retention-decision/v3"
 
     def __post_init__(self):
         if (not isinstance(self.status, DecisionStatus)
@@ -174,7 +173,18 @@ class Decision:
                          or not self.blocking_scope))
                 or (self.baseline_coverage is not None
                     and type(self.baseline_coverage) is not BaselineCoverage)
-                or self.schema_version != "bilqis.c05.retention-decision/v2"):
+                or not isinstance(self.evaluated_capability_ids, tuple)
+                or any(not isinstance(item, str) or not item
+                       for item in self.evaluated_capability_ids)
+                or len(set(self.evaluated_capability_ids))
+                != len(self.evaluated_capability_ids)
+                or (self.retention_protection_plan_sha256 is not None
+                    and not _sha(self.retention_protection_plan_sha256))
+                or (self.broad_certification_trigger is not None
+                    and (not isinstance(self.broad_certification_trigger, str)
+                         or not self.broad_certification_trigger))
+                or not valid_blocking_score_budget(self.blocking_score_budget)
+                or self.schema_version != "bilqis.c05.retention-decision/v3"):
             _invalid("BAMF_RETENTION_DECISION_INVALID")
 
 
@@ -186,14 +196,12 @@ class ConfigurationOutcome:
     optimizer_steps: int = field(default=0, init=False)
     schema_version: str = field(default="bilqis.c05.configuration-outcome/v1", init=False)
 
-
 def configuration_outcome(pair: AssessmentPair) -> ConfigurationOutcome:
     if not isinstance(pair, AssessmentPair):
         _invalid("BAMF_CONFIGURATION_ASSESSMENT_REQUIRED")
     return ConfigurationOutcome(
         pair.parent.digest(), pair.candidate.digest(),
         sum(pair.delta(capability) for capability, _ in pair.parent.cohort.capability_groups))
-
 
 def candidate_work_disposition(parent: Assessment, capability: str) -> WorkDisposition:
     if not isinstance(parent, Assessment):
@@ -206,57 +214,27 @@ def candidate_work_disposition(parent: Assessment, capability: str) -> WorkDispo
             else WorkDisposition.OPTIMIZER_CANDIDATE)
 
 
-def retain_candidate(parent, candidate, paired_assessment) -> Decision:
-    """Return strict paired eligibility evidence; foundation dispatch lives below."""
-    from .capability_retention_strict import retain_candidate as _strict_retain_candidate
-    return _strict_retain_candidate(parent, candidate, paired_assessment)
-
-
-def evaluate_retention_candidate(
-        parent_solver, candidate_solver, target_capability, policy, cohorts,
-        parent_generation, candidate_generation, *, observer=None) -> Decision:
-    """Run the authoritative C05 cohorts before deciding candidate retention.
-
-    This is the owner-run screen from #744. Accepting a caller-built
-    PairedRetentionEvidence would let a caller retarget its generation digests.
-    """
-    required_kinds = (
-        EvidenceKind.FRESH_TARGET, EvidenceKind.FRESH_LESSON,
-        EvidenceKind.FIXED_SCHOOL,
+def retain_candidate(parent, candidate, paired_assessment, *, plasticity_escape=None) -> Decision:
+    """Apply the versioned decision law owned by the evidence stage."""
+    if not isinstance(paired_assessment, PairedRetentionEvidence):
+        _invalid("BAMF_RETENTION_EVIDENCE_INVALID")
+    from ..learning.retention_policy import (
+        RetentionDecisionLaw, decision_law_for_stage,
     )
-    if (not isinstance(parent_solver, CompleteSolver)
-            or not isinstance(candidate_solver, CompleteSolver)
-            or not isinstance(policy, RetentionPolicy)
-            or not isinstance(target_capability, str) or not target_capability
-            or not isinstance(cohorts, tuple)
-            or not all(isinstance(cohort, EvaluationCohort) for cohort in cohorts)
-            or tuple(cohort.kind for cohort in cohorts) != required_kinds):
-        _invalid("BAMF_RETENTION_SCREEN_INPUT_INVALID")
-    stages = {cohort.evidence_stage for cohort in cohorts}
-    if len(stages) != 1:
-        _invalid("BAMF_RETENTION_EVIDENCE_STAGE_DRIFT")
-    if next(iter(stages)) is EvidenceStage.FOUNDATION_ACQUISITION:
-        from .capability_retention_foundation import evaluate_foundation_retention_candidate
-        return evaluate_foundation_retention_candidate(
-            parent_solver, candidate_solver, target_capability, policy, cohorts,
-            parent_generation, candidate_generation,
-            **({"observer": observer} if observer is not None else {}))
+    stage = paired_assessment.target.parent.cohort.evidence_stage
+    law = decision_law_for_stage(stage)
+    if law is RetentionDecisionLaw.FOUNDATION_MASTERY_DEBT:
+        from .capability_retention_foundation import retain_foundation_candidate
+        return retain_foundation_candidate(parent, candidate, paired_assessment)
+    from .capability_retention_strict import retain_candidate as _strict_retain_candidate
+    return _strict_retain_candidate(
+        parent, candidate, paired_assessment, plasticity_escape=plasticity_escape)
 
-    pairs = []
-    completed, total = 0, 2 * len(cohorts)
-    for cohort in cohorts:
-        assessments = []
-        for role, solver, generation in (("parent", parent_solver, parent_generation),
-                                         ("candidate", candidate_solver, candidate_generation)):
-            emit(observer, retention_completed=completed, retention_total=total,
-                 retention_subject=cohort.kind.value, retention_role=role)
-            assessments.append(evaluate_capabilities(solver, cohort, generation))
-            completed += 1
-            emit(observer, retention_completed=completed, retention_total=total,
-                 retention_subject=cohort.kind.value, retention_role=role)
-        pairs.append(AssessmentPair(*assessments))
-    target_pair, fresh_lesson_pair, fixed_school_pair = pairs
-    evidence = PairedRetentionEvidence(
-        target_capability, policy,
-        target_pair, fresh_lesson_pair, fixed_school_pair)
-    return retain_candidate(parent_generation, candidate_generation, evidence)
+
+def evaluate_retention_candidate(parent_solver, candidate_solver, target_capability, policy, cohorts,
+        parent_generation, candidate_generation, *, observer=None) -> Decision:
+    """Delegate owner-run cohort acquisition to its bounded execution module."""
+    from .capability_retention_evaluation import evaluate_retention_candidate as evaluate
+    return evaluate(parent_solver, candidate_solver, target_capability, policy, cohorts,
+        parent_generation, candidate_generation,
+        **({"observer": observer} if observer is not None else {}))

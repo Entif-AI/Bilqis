@@ -65,9 +65,14 @@ class BamfDeliveryProvenance:
     immediate_dependencies: tuple[DependencyRef, ...] = ()
 
     def __post_init__(self) -> None:
-        if (type(self.visit) is not BamfVisitProvenance
-                or self.visit.capability_id != self.capability_id):
+        if type(self.visit) is not BamfVisitProvenance:
             _invalid("VISIT_PROVENANCE_CAPABILITY_MISMATCH")
+        rehearsal_roles = {"prior", "preservation", "retention_support"}
+        if (self.visit.capability_id != self.capability_id
+                and self.rehearsal not in rehearsal_roles):
+            _invalid("VISIT_PROVENANCE_CAPABILITY_MISMATCH")
+        if self.rehearsal is not None and self.rehearsal not in rehearsal_roles:
+            _invalid("DELIVERY_PROVENANCE_REHEARSAL_INVALID")
         if (type(self.immediate_dependencies) is not tuple
                 or any(not isinstance(item, DependencyRef)
                        for item in self.immediate_dependencies)

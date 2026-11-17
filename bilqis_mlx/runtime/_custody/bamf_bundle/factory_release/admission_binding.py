@@ -11,10 +11,16 @@ FACTORY_RELEASE_ADMISSION_SCHEMA_V1 = (
     "bilqis.mlx.bamf-factory-release-admission-binding/v1")
 FACTORY_RELEASE_ADMISSION_SCHEMA_V2 = (
     "bilqis.mlx.bamf-factory-release-admission-binding/v2")
-FACTORY_RELEASE_ADMISSION_SCHEMA = FACTORY_RELEASE_ADMISSION_SCHEMA_V2
+FACTORY_RELEASE_ADMISSION_SCHEMA_V3 = (
+    "bilqis.mlx.bamf-factory-release-admission-binding/v3")
+FACTORY_RELEASE_ADMISSION_SCHEMA_V4 = (
+    "bilqis.mlx.bamf-factory-release-admission-binding/v4")
+FACTORY_RELEASE_ADMISSION_SCHEMA = FACTORY_RELEASE_ADMISSION_SCHEMA_V3
 FACTORY_RELEASE_ADMISSION_SCHEMAS = frozenset({
     FACTORY_RELEASE_ADMISSION_SCHEMA_V1,
     FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+    FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+    FACTORY_RELEASE_ADMISSION_SCHEMA_V4,
 })
 _SHA256_HEX_LENGTH = 64
 _OBLIGATION_KEY_PARTS = 2
@@ -29,6 +35,18 @@ _FIELDS_V1 = (
 )
 _FIELDS_V2 = (
     *_FIELDS_V1[:-1], "accepted_obligation_keys", "schema_version",
+)
+_FIELDS_V3 = (
+    *_FIELDS_V2[:-1], "generated_grade_proposal_sha256", "schema_version",
+)
+
+_FIELDS_V4 = (
+    "run_id", "generation", "candidate_identity_sha256",
+    "parent_candidate_identity_sha256", "feature_sha256", "optimizer_step",
+    "predecessor_factory_release_sha256", "factory_release_sha256", "profile_sha256",
+    "parent_manifest_sha256", "lease_sha256", "source_approval_sha256",
+    "profile_transition_sha256", "transition_sha256", "adoption_event_sha256",
+    "accepted_obligation_keys", "schema_version",
 )
 
 
@@ -61,14 +79,18 @@ class FactoryReleaseAdmissionBinding:
     optimizer_step: int
     lease_sha256: str
     source_approval_sha256: str
-    handoff_sha256: str
-    proposal_sha256: str
-    selection_receipt_sha256: str
     predecessor_factory_release_sha256: str
     factory_release_sha256: str
     transition_sha256: str
     adoption_event_sha256: str
+    handoff_sha256: str | None = None
+    proposal_sha256: str | None = None
+    selection_receipt_sha256: str | None = None
+    profile_sha256: str | None = None
+    parent_manifest_sha256: str | None = None
+    profile_transition_sha256: str | None = None
     accepted_obligation_keys: tuple[tuple[str, str], ...] = ()
+    generated_grade_proposal_sha256: str | None = None
     schema_version: str = FACTORY_RELEASE_ADMISSION_SCHEMA_V1
     _issuance: object = field(init=False, default=None, repr=False, compare=False)
 
@@ -78,7 +100,7 @@ class FactoryReleaseAdmissionBinding:
                 or type(self.generation) is not int or self.generation < 1
                 or type(self.optimizer_step) is not int or self.optimizer_step < 0
                 or self.schema_version not in FACTORY_RELEASE_ADMISSION_SCHEMAS
-                or any(not _hex(getattr(self, name)) for name in _FIELDS_V1
+                or any(not _hex(getattr(self, name)) for name in (_FIELDS_V4 if self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V4 else _FIELDS_V1)
                        if name.endswith("_sha256"))
                 or (self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V1
                     and self.accepted_obligation_keys)
@@ -86,9 +108,20 @@ class FactoryReleaseAdmissionBinding:
                     and (not _valid_obligation_keys(self.accepted_obligation_keys)
                          or not self.accepted_obligation_keys))):
             _invalid()
+        if (self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V4
+                and not _valid_obligation_keys(self.accepted_obligation_keys)):
+            _invalid()
+        if (self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+                and (not _valid_obligation_keys(self.accepted_obligation_keys)
+                     or not self.accepted_obligation_keys
+                     or not _hex(self.generated_grade_proposal_sha256))):
+            _invalid()
 
     def _public_record(self) -> dict:
-        fields = (_FIELDS_V2
+        fields = (_FIELDS_V4 if self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V4
+                  else _FIELDS_V3
+                  if self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+                  else _FIELDS_V2
                   if self.schema_version == FACTORY_RELEASE_ADMISSION_SCHEMA_V2
                   else _FIELDS_V1)
         return {name: getattr(self, name) for name in fields}
@@ -105,13 +138,18 @@ class FactoryReleaseAdmissionBinding:
         if not isinstance(record, Mapping):
             _invalid()
         schema = record.get("schema_version")
-        fields = (_FIELDS_V2 if schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V2
+        fields = (_FIELDS_V4 if schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V4
+                  else _FIELDS_V3 if schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+                  else _FIELDS_V2 if schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V2
                   else _FIELDS_V1
                   if schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V1 else ())
         if not fields or set(record) != set(fields) | {"binding_sha256"}:
             _invalid()
         payload = {name: record[name] for name in fields}
-        if schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V2:
+        if schema in {
+                FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
+                FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+                FACTORY_RELEASE_ADMISSION_SCHEMA_V4}:
             raw_keys = payload["accepted_obligation_keys"]
             if not isinstance(raw_keys, (list, tuple)):
                 _invalid()
@@ -123,11 +161,17 @@ class FactoryReleaseAdmissionBinding:
                 or type(payload["generation"]) is not int or payload["generation"] < 1
                 or type(payload["optimizer_step"]) is not int
                 or payload["optimizer_step"] < 0
-                or any(not _hex(payload[name]) for name in _FIELDS_V1
+                or any(not _hex(payload[name]) for name in fields
                        if name.endswith("_sha256"))
+                or (schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V4
+                    and not _valid_obligation_keys(payload["accepted_obligation_keys"]))
                 or (schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V2
                     and (not _valid_obligation_keys(payload["accepted_obligation_keys"])
                          or not payload["accepted_obligation_keys"]))
+                or (schema == FACTORY_RELEASE_ADMISSION_SCHEMA_V3
+                    and (not _valid_obligation_keys(payload["accepted_obligation_keys"])
+                         or not payload["accepted_obligation_keys"]
+                         or not _hex(payload["generated_grade_proposal_sha256"])))
                 or record["binding_sha256"] != sha(canonical(payload))):
             _invalid()
         return ParsedFactoryReleaseAdmissionBinding(payload)

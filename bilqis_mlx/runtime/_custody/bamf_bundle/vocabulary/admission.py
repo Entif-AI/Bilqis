@@ -11,6 +11,7 @@ import numpy as np
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.atlas_candidate import issue_parameter_extension_state
 from bilqis_mlx.learning.atlas_plasticity import IdentityRowAge, PlasticityPolicy
+from bilqis_mlx.learning.capability_championship_state import clear_championship_epoch
 from bilqis_mlx.runtime.atlas_optimizer import AdamWStateTree
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.semantics.atlas.snapshot import (
@@ -263,6 +264,13 @@ def _stage_vocabulary_extension_from_accepted(
             f"bank:{index}" for index in range(
                 prepared.bank_candidate.extents.semantic_bank_count)],
     })
+    championship_state = parent.championship_state
+    if championship_state is not None:
+        championship_state = clear_championship_epoch(
+            dict(championship_state),
+            source_manifest_sha256=parent_manifest,
+            source_generation=parent.generation,
+        )
     candidate = BamfBundleCandidate(
         parent.run_id, parent.generation + 1, parent_manifest,
         parent.implementation_sha256, parent.topology,
@@ -273,7 +281,8 @@ def _stage_vocabulary_extension_from_accepted(
         dict(parent.evaluation_contract),
         {"schema": "bilqis.mlx.bamf-generation-transition/v1",
          "kind": "PARAMETER_EXTENSION", "invalidate_derived_caches": True},
-        (event,), parent.run_identity, parent.baseline_evidence)
+        (event,), parent.run_identity, parent.baseline_evidence,
+        parent.learning_health_state, championship_state)
     return _issue_a02_staged_vocabulary_extension(candidate, receipt)
 
 

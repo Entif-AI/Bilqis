@@ -11,7 +11,25 @@ from bilqis_mlx.runtime.jit_adoption import (
 from bilqis_mlx.runtime.atlas_lease_contracts import _invalid
 
 
-def _accepted_parameter_extension_retry_once_v2(current, handoff, native_staged, lease):
+def _generated_grade_digest(authority, handoff):
+    if authority is None:
+        return None
+    from bilqis_mlx.runtime.generated_grade import (
+        _require_generated_grade_authority,
+    )
+    authority = _require_generated_grade_authority(authority)
+    if (
+        authority.predecessor_factory_release_sha256
+        != handoff.receipt.predecessor_release.release_sha256
+        or authority.a09_proposal_sha256 != handoff.proposal.proposal_sha256
+    ):
+        _invalid("BAMF_GENERATED_GRADE_ACCEPTED_AUTHORITY_DRIFT")
+    return authority.proposal_sha256
+
+
+def _accepted_parameter_extension_retry_once_v2(
+        current, handoff, native_staged, lease, *,
+        generated_grade_authority=None):
     """Authenticate one exact historical v2 A02 child before live-parent verification."""
     from bilqis_mlx.runtime.atlas_admission import (
         _accepted_run_lease_identity,
@@ -26,7 +44,8 @@ def _accepted_parameter_extension_retry_once_v2(current, handoff, native_staged,
         accepted_binding_for_manifest,
     )
     from bilqis_mlx.runtime.bamf_bundle.atlas_admission import (
-        ATLAS_ADMISSION_SCHEMA_V2, ParsedAtlasAdmissionBinding,
+        ATLAS_ADMISSION_SCHEMA_V2, ATLAS_ADMISSION_SCHEMA_V3,
+        ParsedAtlasAdmissionBinding,
     )
     from bilqis_mlx.factory.atlas_frontier_progress_validation import requested_keys
 
@@ -61,10 +80,19 @@ def _accepted_parameter_extension_retry_once_v2(current, handoff, native_staged,
             expected_acceptance_sha256=pointer["acceptance_sha256"])
         expected_keys = set(requested_keys((handoff.receipt,)))
         if (isinstance(binding, ParsedAtlasAdmissionBinding)
-                and binding.schema_version == ATLAS_ADMISSION_SCHEMA_V2
+                and binding.schema_version in {
+                    ATLAS_ADMISSION_SCHEMA_V2, ATLAS_ADMISSION_SCHEMA_V3}
                 and (binding.selection_receipt_sha256
                      != handoff.receipt.receipt_sha256
                      or not expected_keys.issubset(binding.selected_obligation_keys))):
+            _invalid("BAMF_ATLAS_NATIVE_RETRY_DRIFT")
+        expected_generated_grade = _generated_grade_digest(
+            generated_grade_authority, handoff)
+        if expected_generated_grade is not None and (
+                not isinstance(binding, ParsedAtlasAdmissionBinding)
+                or binding.schema_version != ATLAS_ADMISSION_SCHEMA_V3
+                or binding.generated_grade_proposal_sha256
+                   != expected_generated_grade):
             _invalid("BAMF_ATLAS_NATIVE_RETRY_DRIFT")
         cold = read_accepted_atlas_factory_release(current.run_dir)
         if cold.release_sha256 != handoff.staged_candidate.successor.release_sha256:
@@ -84,7 +112,9 @@ def _accepted_parameter_extension_retry_once_v2(current, handoff, native_staged,
     return None
 
 
-def accepted_parameter_extension_retry_v2(current, handoff, native_staged, lease):
+def accepted_parameter_extension_retry_v2(
+        current, handoff, native_staged, lease, *,
+        generated_grade_authority=None):
     """Classify against one stable accepted-generation snapshot, retrying once."""
     from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import accepted_generation
 
@@ -98,8 +128,13 @@ def accepted_parameter_extension_retry_v2(current, handoff, native_staged, lease
     for attempt in range(2):
         before, _student = accepted_generation(current.run_dir / "bamf-state.json")
         try:
-            result = _accepted_parameter_extension_retry_once_v2(
-                current, handoff, native_staged, lease)
+            if generated_grade_authority is None:
+                result = _accepted_parameter_extension_retry_once_v2(
+                    current, handoff, native_staged, lease)
+            else:
+                result = _accepted_parameter_extension_retry_once_v2(
+                    current, handoff, native_staged, lease,
+                    generated_grade_authority=generated_grade_authority)
         except BilqisError:
             after, _student = accepted_generation(current.run_dir / "bamf-state.json")
             if identity(after) == identity(before):
@@ -118,7 +153,7 @@ def accepted_parameter_extension_retry_v2(current, handoff, native_staged, lease
 
 def _revalidate_parameter_publication(
         runtime, selected, native_staged, atlas_lease, source_authority,
-        *, current, checkpoint, handoff):
+        *, current, checkpoint, handoff, generated_grade_authority=None):
     from bilqis_mlx.runtime.atlas_flywheel_runtime_context import (
         atlas_admission_checkpoint,
     )
@@ -160,7 +195,8 @@ def _revalidate_parameter_publication(
             selected.successor, live_source_registry(), live_answer_registry())
     except BilqisError:
         raced = accepted_parameter_extension_retry_v2(
-            current, handoff, native_staged, atlas_lease)
+            current, handoff, native_staged, atlas_lease,
+            generated_grade_authority=generated_grade_authority)
         if raced is not None:
             return raced, None, None
         raise
@@ -177,7 +213,8 @@ def _revalidate_parameter_publication(
 
 def publish_native_staged_candidate_v2(
         runtime, selected, proposal, native_staged, atlas_lease,
-        source_authority, *, current, checkpoint, handoff):
+        source_authority, *, current, checkpoint, handoff,
+        generated_grade_authority=None):
     """Publish the exact A02 state using only the persisted v2 lease store."""
     from bilqis_mlx.runtime.atlas_admission import (
         _hold_current_atlas_lease_v2_publication,
@@ -186,12 +223,14 @@ def publish_native_staged_candidate_v2(
         return _publish_native_staged_candidate_v2_locked(
             runtime, selected, proposal, native_staged, atlas_lease,
             source_authority, current=current, checkpoint=checkpoint,
-            handoff=handoff)
+            handoff=handoff,
+            generated_grade_authority=generated_grade_authority)
 
 
 def _publish_native_staged_candidate_v2_locked(
         runtime, selected, proposal, native_staged, atlas_lease,
-        source_authority, *, current, checkpoint, handoff):
+        source_authority, *, current, checkpoint, handoff,
+        generated_grade_authority=None):
     """Publish A02 state while human v2 lease renewal is excluded."""
     from . import admission as runtime_admission
     from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_factory_release
@@ -211,12 +250,14 @@ def _publish_native_staged_candidate_v2_locked(
     candidate = native_staged.candidate
     staging_receipt = native_staged.receipt
     retry = accepted_parameter_extension_retry_v2(
-        current, handoff, native_staged, atlas_lease)
+        current, handoff, native_staged, atlas_lease,
+        generated_grade_authority=generated_grade_authority)
     if retry is not None:
         return retry
     raced, candidate, parent = _revalidate_parameter_publication(
         runtime, selected, native_staged, atlas_lease, source_authority,
-        current=current, checkpoint=checkpoint, handoff=handoff)
+        current=current, checkpoint=checkpoint, handoff=handoff,
+        generated_grade_authority=generated_grade_authority)
     if raced is not None:
         return raced
     from bilqis_mlx.factory.candidate_realizations import admitted_candidate_graph
@@ -248,6 +289,10 @@ def _publish_native_staged_candidate_v2_locked(
         parent_feature_receipt_sha256=staging_receipt.parent_feature_receipt_sha256,
         selection_receipt_sha256=handoff.receipt.receipt_sha256,
         selected_obligation_keys=accepted_obligation_keys,
+        predecessor_factory_release_sha256=
+            handoff.receipt.predecessor_release.release_sha256,
+        generated_grade_proposal_sha256=_generated_grade_digest(
+            generated_grade_authority, handoff),
     )
     pointer = publish_atlas_admission_generation(
         runtime.run_dir, candidate, admission=binding,

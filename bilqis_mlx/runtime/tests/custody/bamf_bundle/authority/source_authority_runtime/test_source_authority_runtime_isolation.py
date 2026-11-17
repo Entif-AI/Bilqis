@@ -143,7 +143,7 @@ class SourceAuthorityRuntimeCustodyTests(unittest.TestCase):
                 require_source_authority_runtime(authority, current_cache)
 
     def test_cache_install_cannot_race_past_accepted_pointer_advance(self):
-        from bilqis_mlx.runtime.bamf_bundle import accepted_runtime
+        from bilqis_mlx.runtime.bamf_bundle import accepted_execution_cache
 
         _source, pointer = self.publish()
         with shape_patch():
@@ -161,7 +161,7 @@ class SourceAuthorityRuntimeCustodyTests(unittest.TestCase):
         )
         entered = Event()
         release = Event()
-        original = accepted_runtime._accepted_source_authority_registry
+        original = accepted_execution_cache._accepted_source_authority_registry
 
         def paused_registry(run_dir, student):
             registry = original(run_dir, student)
@@ -171,7 +171,7 @@ class SourceAuthorityRuntimeCustodyTests(unittest.TestCase):
 
         with shape_patch(), patch.object(
                 mlx_checkpoint, "assert_headroom"), patch.object(
-                accepted_runtime, "_accepted_source_authority_registry",
+                accepted_execution_cache, "_accepted_source_authority_registry",
                 side_effect=paused_registry), ThreadPoolExecutor(max_workers=1) as pool:
             bind_future = pool.submit(bind_accepted_execution_cache, self.run)
             self.assertTrue(entered.wait(5))
