@@ -26,7 +26,7 @@ class FactoryTrainingEnrichmentTests(FactoryTrainingBridgeFixture):
                 self.context, self.candidate, str(self.artifact),
                 self.feature_receipt.path, delivered, self.generation,
                 capability=capability, delivery=teaching, requested_count=3,
-                source_seed=seed, source_each=2, optimizer_step_seed=7,
+                source_seed=seed, source_each=3, optimizer_step_seed=7,
                 visit_provenance=visit_provenance(capability),
                 teacher_strategy={"policy": "enrichment-conformance"})
 
