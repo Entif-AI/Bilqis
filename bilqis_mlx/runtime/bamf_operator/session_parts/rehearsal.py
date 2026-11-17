@@ -5,10 +5,15 @@ from dataclasses import dataclass
 import hashlib
 from pathlib import Path
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory._model.weakness import WeaknessClassId, classify_weakness
 from bilqis_mlx.runtime.factory_retention_owner import require_current_retention_plan
 from bilqis_mlx.runtime.priority_rejection_replay import current_structural_weaknesses
 from bilqis_mlx.semantics.domains import contract_digest
+
+
+def _invalid(reason: str):
+    ErrorBus.raise_(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
 
 @dataclass(frozen=True)
@@ -62,11 +67,11 @@ def compile_rehearsal_plan(run_dir, parent, cache, source_context, selection) ->
         cache, source_context.release, capability)
     execution = source_context.release.execution_plan.capability_map[capability]
     if target.target_grade_id != execution.grade_id:
-        raise ValueError("BAMF_REHEARSAL_GRADE_AUTHORITY_DRIFT")
+        _invalid("BAMF_REHEARSAL_GRADE_AUTHORITY_DRIFT")
     from bilqis_mlx.runtime.active_generated_grade import read_active_generated_grade
     active = read_active_generated_grade(Path(run_dir), repair=False)
     if capability not in active.member_capability_ids:
-        raise ValueError("BAMF_REHEARSAL_TARGET_OUTSIDE_ACTIVE_GRADE")
+        _invalid("BAMF_REHEARSAL_TARGET_OUTSIDE_ACTIVE_GRADE")
     from bilqis_mlx.runtime.retention.protection_plan import ProtectionReason
     prior_reasons = {ProtectionReason.PREREQUISITE, ProtectionReason.CONSTITUENT}
     prior = tuple(sorted({
@@ -112,7 +117,7 @@ def _binding(source_context, row, authority, *, role, capability, seed, each):
         episode = row["id"]
     if (authority.capability_id != capability or authority.seed != seed
             or authority.each != each or authority.source_family_id != family):
-        raise ValueError("BAMF_REHEARSAL_SOURCE_AUTHORITY_DRIFT")
+        _invalid("BAMF_REHEARSAL_SOURCE_AUTHORITY_DRIFT")
     return {
         "row_id": row["id"], "role": role, "capability": capability,
         "seed": seed, "each": each, "source_family_id": family,
@@ -126,7 +131,7 @@ def _draw_one(source_context, plan, role, capability, ordinal):
         seed=seed, capability=capability, each=1)
     rows = tuple(rows)
     if len(rows) != 1 or rows[0].get("capability") != capability:
-        raise ValueError("BAMF_REHEARSAL_SOURCE_DRAW_INVALID")
+        _invalid("BAMF_REHEARSAL_SOURCE_DRAW_INVALID")
     return rows[0], _binding(
         source_context, rows[0], authority, role=role, capability=capability,
         seed=seed, each=1), authority
@@ -164,7 +169,7 @@ def materialize_rehearsal_rows(source_context, plan: RehearsalPlan, ordinal: int
                     match, match_authority, match_seed = row, authority, seed
                     break
             if match is None or match_authority is None or match_seed is None:
-                raise ValueError("BAMF_REHEARSAL_WEAKNESS_SPECIMEN_UNAVAILABLE")
+                _invalid("BAMF_REHEARSAL_WEAKNESS_SPECIMEN_UNAVAILABLE")
             preservation.append(match)
             bindings.append(_binding(
                 source_context, match, match_authority, role="preservation",
@@ -174,11 +179,11 @@ def materialize_rehearsal_rows(source_context, plan: RehearsalPlan, ordinal: int
         prior, tuple(preservation), support, tuple(bindings), tuple(authorities))
     ids = [row["id"] for row in (*rows.prior, *rows.preservation, *rows.retention_support)]
     if len(ids) != len(set(ids)):
-        raise ValueError("BAMF_REHEARSAL_ROW_ID_COLLISION")
+        _invalid("BAMF_REHEARSAL_ROW_ID_COLLISION")
     if set(ids) != set(rows.bindings_by_id):
-        raise ValueError("BAMF_REHEARSAL_BINDING_COVERAGE_INVALID")
+        _invalid("BAMF_REHEARSAL_BINDING_COVERAGE_INVALID")
     if set(ids) != set(rows.authorities_by_id):
-        raise ValueError("BAMF_REHEARSAL_AUTHORITY_COVERAGE_INVALID")
+        _invalid("BAMF_REHEARSAL_AUTHORITY_COVERAGE_INVALID")
     return rows
 
 
