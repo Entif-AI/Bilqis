@@ -92,8 +92,8 @@ class FactoryPackageImportOwnerTests(unittest.TestCase):
                 ]),
                 factory_parent_assessment_identity=Mock(return_value="identity"),
                 use_parent_assessment=Mock(return_value=("assessment", "cache")),
-                evaluate_foundation_fixed_school_candidate=Mock(
-                    return_value=decision),
+                evaluate_foundation_fixed_school_candidate_with_evidence=Mock(
+                    return_value=(decision, None)),
         ):
             result = retention_screen.broad_foundation_retention_screen(
                 object(), parent, object(), "artifact", "TARGET",
