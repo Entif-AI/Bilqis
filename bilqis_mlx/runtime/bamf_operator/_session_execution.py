@@ -197,7 +197,8 @@ def retention_result(
     from bilqis_mlx.runtime.outcomes.issuance import build_outcome, credited_visit, carry_credit_to_successor
     how_outcome = build_outcome(run_dir, selection, evaluation, decision, candidate_evidence)
     successor, learning_health = _accepted_successor(
-        decision, run_dir, parent, selection, capability, cache, retained,
+        decision, run_dir, parent, context, atlas_path, selection, capability,
+        cache, retained,
         rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
         derive_successor, bind_baseline_successor, evaluation,
         credited_visit, carry_credit_to_successor)
@@ -233,7 +234,8 @@ def _instruction_event(run_dir, parent, cache, capability):
 
 
 def _accepted_successor(
-        decision, run_dir, parent, selection, capability, cache, retained,
+        decision, run_dir, parent, context, atlas_path, selection, capability,
+        cache, retained,
         rejection_journal_ordinal, resource, candidate_evidence, capture, how_outcome,
         derive_successor, bind_baseline_successor, evaluation,
         credited_visit, carry_credit_to_successor):
@@ -267,7 +269,13 @@ def _accepted_successor(
         from dataclasses import replace
         successor = replace(successor, learning_health_state=health_state)
     successor = carry_credit_to_successor(learned_visit, successor, parent)
-    return bind_baseline_successor(evaluation, successor), learning_health
+    successor = bind_baseline_successor(evaluation, successor)
+    from .championship import bind_accepted_championship_successor
+    successor = bind_accepted_championship_successor(
+        run_dir, parent, cache, successor, context, atlas_path,
+        capability, evaluation,
+        checkpoint_origin_group=getattr(selection, "lesson_grade", None))
+    return successor, learning_health
 
 
 def operate(

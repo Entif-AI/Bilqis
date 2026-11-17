@@ -45,7 +45,9 @@ def _foundation_owner_fixture():
                 grade_id="B", assessment_blueprint_sha256="c" * 64),),
             curriculum_sha256="d" * 64,
             profile_id="factory-c05-adversarial",
-            projection_digests=SimpleNamespace(source="e" * 64),
+            projection_digests=SimpleNamespace(
+                roster="e" * 64, assessment="f" * 64,
+                coverage="0" * 64, source="1" * 64),
         ),
     )
     source = SimpleNamespace(
@@ -69,9 +71,7 @@ def _foundation_owner_fixture():
     return source, candidate, target, fixed, fresh, policy_factory, decision
 
 
-def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
-                               policy_factory, decision):
-    release_sha = source.release.release_sha256
+def _foundation_retention_plan(target):
     target_plan = SimpleNamespace(
         target_capability_id=target,
         target_grade_id="B",
@@ -82,16 +82,24 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
         comparison_scope_sha256="2" * 64,
     )
     plan = SimpleNamespace(
-        digest="3" * 64,
-        rubric_sha256="4" * 64,
-        policy_epoch_sha256="5" * 64,
-        source_sha256="6" * 64,
+        digest="3" * 64, rubric_sha256="4" * 64,
+        policy_epoch_sha256="5" * 64, source_sha256="6" * 64,
         established_capability_ids=(),
         evidence_stage=owner.CURRENT_EVIDENCE_STAGE.value,
         for_target=lambda capability: target_plan if capability == target else None,
     )
     instrument = SimpleNamespace(
         case=SimpleNamespace(capability_id=target, case_id="fixture-case"))
+    return plan, target_plan, instrument
+
+
+def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
+                               policy_factory, decision, *,
+                               championship_cohort=None,
+                               championship_assessment=None,
+                               target_gate_decision=None):
+    release_sha = source.release.release_sha256
+    plan, target_plan, instrument = _foundation_retention_plan(target)
     with patch(
             "bilqis_mlx.runtime.bamf_bundle.genesis.records."
             "successor_candidate_identity_digest", return_value="f" * 64), \
@@ -139,8 +147,10 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                     (object(), "b" * 64), (object(), "c" * 64))),
                 evaluate_capabilities=Mock(return_value=object()),
                 AssessmentPair=Mock(return_value=object()),
-                evaluate_target_gate=Mock(return_value=None),
+                evaluate_target_gate=Mock(return_value=target_gate_decision),
                 finalize_target_first_local_candidate=Mock(return_value=decision),
+                capability_championship_evidence=Mock(return_value=(
+                    championship_cohort, championship_assessment)),
             ), patch.multiple(
                 owner_screen,
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
@@ -214,6 +224,24 @@ class FactoryRetentionOwnerAdversarialTests(unittest.TestCase):
             result.baseline_ledger.digest)
         fresh.assert_called_once()
         self.assertEqual(fresh.call_args.args[1], (target,))
+
+    def test_target_first_rejection_issues_c05_authority_without_championship_evidence(self):
+        fixture = _foundation_owner_fixture()
+        rejection = Decision(
+            DecisionStatus.REJECT, "NO_MEASURABLE_TARGET_GAIN",
+            "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+            evaluated_capability_ids=(fixture[2],),
+            retention_protection_plan_sha256="3" * 64)
+        result = _evaluate_foundation_owner(
+            *fixture, target_gate_decision=rejection)
+
+        self.assertIsInstance(result, FactoryRetentionEvaluation)
+        result.__post_init__()
+        issued = issue_factory_retention_decision(result)
+        self.assertFalse(issued.accepted)
+        self.assertEqual(issued.reason, "NO_MEASURABLE_TARGET_GAIN")
+        self.assertIsNone(result.championship_cohort)
+        self.assertIsNone(result.championship_assessment)
 
     def test_caller_cannot_construct_evaluation_authority(self):
         with self.assertRaises(Exception):

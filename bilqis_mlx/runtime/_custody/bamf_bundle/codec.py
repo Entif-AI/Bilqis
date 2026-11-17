@@ -159,7 +159,10 @@ def validate_bamf_bundle_custody(
     except (ValueError, json.JSONDecodeError, KeyError, TypeError):
         invalid(DataPlaneError.BUNDLE_PAYLOAD_DRIFT)
     recorded = set(manifest.get("sidecars", {}))
-    optional = {"run_identity", "baseline_evidence", "learning_health_state"}
+    optional = {
+        "run_identity", "baseline_evidence", "learning_health_state",
+        "championship_state",
+    }
     if manifest["schema"] == BAMF_BUNDLE_SCHEMA:
         optional.add("step_proofs")
     required = set(SIDECARS) - optional
@@ -275,7 +278,8 @@ def load_bamf_bundle(root: Path, *, expected_manifest_sha256: str | None = None)
         parts.records["evaluation_contract"], manifest["transition"],
         tuple(parts.records["outbox"]), parts.run_identity,
         parts.records.get("baseline_evidence"),
-        parts.records.get("learning_health_state"))
+        parts.records.get("learning_health_state"),
+        parts.records.get("championship_state"))
     if student.run_identity is not None and student.generation == 0:
         from bilqis_mlx.learning._atlas_candidate.identity_binding import (
             bind_candidate_identity_or_fallback,

@@ -48,6 +48,10 @@ class SourceExecutionContext:
         compare=False)
     _execution_by_capability: object | None = field(
         default=None, init=False, repr=False, compare=False)
+    _projection_by_capability: object | None = field(
+        default=None, init=False, repr=False, compare=False)
+    _verification_by_capability: object | None = field(
+        default=None, init=False, repr=False, compare=False)
 
     @classmethod
     def from_admitted_release(
@@ -96,6 +100,13 @@ class SourceExecutionContext:
         object.__setattr__(
             self, "_execution_by_capability",
             MappingProxyType(execution_by_capability))
+        object.__setattr__(self, "_projection_by_capability", MappingProxyType({
+            item.capability_id: item
+            for item in self.release.execution_plan.capability_projection_digests
+        }))
+        object.__setattr__(self, "_verification_by_capability", MappingProxyType({
+            item.capability_id: item for item in self.release.verification.capabilities
+        }))
         bindings = self.release.source_bindings.by_capability
         for capability in execution_by_capability.values():
             binding = bindings[capability.capability_id]
@@ -112,6 +123,16 @@ class SourceExecutionContext:
         if execution is None:
             _invalid_source_batch("FACTORY_EXECUTION_GENERATION_UNKNOWN_CAPABILITY")
         return execution
+
+    def assessment_projection_for(self, capability_id: str):
+        """Return preindexed assessment/source projection metadata for one capability."""
+        self.execution_for(capability_id)
+        return self._projection_by_capability[capability_id]
+
+    def verification_for(self, capability_id: str):
+        """Return preindexed source verification metadata for one capability."""
+        self.execution_for(capability_id)
+        return self._verification_by_capability[capability_id]
 
     def register_compiled_batch(self, batch) -> None:
         if self.run_dir is None:
