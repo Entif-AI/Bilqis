@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis_Regal_Banner.png">
-    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis_Regal_Banner.png" alt="Bilqis Neuro-Symbolic AI Model: Prepaying Semantics is Cheaper">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/architecture/assets/Bilqis_Regal_Banner.png">
+    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/architecture/assets/Bilqis_Regal_Banner.png" alt="Bilqis Neuro-Symbolic AI Model: Prepaying Semantics is Cheaper">
   </picture>
 </p>
 
@@ -17,8 +17,8 @@ If you want to run the software rather than study its architecture, start with t
 
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis%20Mission%20Control%20Dashboard.png">
-    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Model Forensics Dashboard, displaying an active neurosymbolic training run.">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/architecture/mission-control-design/Bilqis%20Mission%20Control%20Dashboard.png">
+    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/architecture/mission-control-design/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Model Forensics Dashboard, displaying an active neurosymbolic training run.">
   </picture>
 </p>
 
