@@ -17,6 +17,55 @@ from bilqis_mlx.runtime.tests.admission.atlas.adoption.atlas_adoption_executor_s
 
 
 class FactoryReleaseAdoptionTransitionTests(unittest.TestCase):
+    def test_profile_transition_binds_parent_and_round_trips_without_a09(self):
+        from bilqis_mlx.runtime.bamf_bundle.factory_release_adoption import (
+            _issue_profile_expansion_transition,
+        )
+        from bilqis_mlx.runtime.bamf_bundle.factory_release.admission import (
+            _issue_factory_release_admission_binding,
+            FactoryReleaseAdmissionBinding,
+        )
+        helper = object.__new__(AtlasAdoptionExecutorFixture)
+        parent, _ = AtlasAdoptionExecutorFixture._native_parent_and_candidate(helper)
+        transition = _issue_profile_expansion_transition(
+            predecessor_factory_release_sha256='1' * 64,
+            factory_release_sha256='2' * 64, profile_sha256='3' * 64,
+            parent_manifest_sha256='a' * 64, lease_sha256='4' * 64,
+            source_approval_sha256='5' * 64, profile_transition_sha256='6' * 64)
+        candidate = derive_factory_release_adoption_candidate(
+            parent, parent_manifest_sha256='a' * 64, transition=transition)
+        binding = _issue_factory_release_admission_binding(
+            candidate, parent, transition=transition)
+        parsed = FactoryReleaseAdmissionBinding.from_record(binding.to_record())
+        from dataclasses import asdict
+        self.assertEqual(asdict(binding)['handoff_sha256'], None)
+        self.assertEqual(asdict(transition)['profile_sha256'], '3' * 64)
+        self.assertIn('PROFILE_EXPANSION', repr(transition))
+        self.assertIn('FactoryReleaseAdmissionBinding', repr(binding))
+        other = _issue_profile_expansion_transition(
+            predecessor_factory_release_sha256='1' * 64,
+            factory_release_sha256='2' * 64, profile_sha256='f' * 64,
+            parent_manifest_sha256='a' * 64, lease_sha256='4' * 64,
+            source_approval_sha256='5' * 64, profile_transition_sha256='6' * 64)
+        self.assertNotEqual(transition, other)
+        self.assertEqual(parsed.digest, binding.digest)
+        self.assertEqual(parsed.accepted_obligation_keys, ())
+        self.assertNotIn('handoff_sha256', binding.to_record())
+        self.assertNotIn('proposal_sha256', candidate.outbox[0])
+        self.assertIs(candidate.retained_state, parent.retained_state)
+        for field in ('profile_sha256', 'parent_manifest_sha256', 'lease_sha256'):
+            record = binding.to_record()
+            record.pop(field)
+            with self.assertRaises(BilqisError):
+                FactoryReleaseAdmissionBinding.from_record(record)
+        record = binding.to_record()
+        record['handoff_sha256'] = 'f' * 64
+        with self.assertRaises(BilqisError):
+            FactoryReleaseAdmissionBinding.from_record(record)
+        with self.assertRaises(BilqisError):
+            derive_factory_release_adoption_candidate(
+                parent, parent_manifest_sha256='b' * 64, transition=transition)
+
     @staticmethod
     def _transition():
         return _issue_factory_release_adoption_transition(

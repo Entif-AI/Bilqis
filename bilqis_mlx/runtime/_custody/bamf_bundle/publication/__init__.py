@@ -123,11 +123,13 @@ def publish_atlas_admission_generation(
 def publish_factory_release_adoption_generation(
         run_dir: Path, candidate: BamfBundleCandidate, *,
         admission: FactoryReleaseAdmissionBinding,
-        reserve_gib: float = 100.0) -> dict:
+        reserve_gib: float = 100.0,
+        expected_active_grade_activation_sha256: str | None = None) -> dict:
     """Publish one neural-inert Factory-release successor through B13 custody."""
     admitted = require_factory_release_admission_binding(candidate, admission)
     return _publish_authorized_generation(
-        run_dir, candidate, admitted, reserve_gib=reserve_gib)
+        run_dir, candidate, admitted, reserve_gib=reserve_gib,
+        expected_active_grade_activation_sha256=expected_active_grade_activation_sha256)
 def _authorize_publication_candidate(
         run_dir: Path, candidate: BamfBundleCandidate, authority):
     """Validate generation-specific authority before entering shared publication."""
@@ -204,7 +206,8 @@ def _install_publication_target(stage, target, digest, published_student):
 
 def _publish_authorized_generation(
         run_dir: Path, candidate: BamfBundleCandidate, authority, *,
-        reserve_gib: float, parent_witness=None) -> dict:
+        reserve_gib: float, parent_witness=None,
+        expected_active_grade_activation_sha256=None) -> dict:
     """Shared crash-safe transaction after generation-specific authority validates."""
     authority, prepared, existing = _authorize_publication_candidate(
         run_dir, candidate, authority)
@@ -226,6 +229,14 @@ def _publish_authorized_generation(
             if candidate.generation == 0 else _publication_pointer_lock)
         with pointer_lock(run_dir):
             current = _read_pointer(pointer_path)
+            if expected_active_grade_activation_sha256 is not None:
+                from bilqis_mlx.runtime.active_generated_grade_custody import (
+                    _read_stored_active,
+                )
+                active = _read_stored_active(run_dir)
+                if (active is None or active.activation_sha256 !=
+                        expected_active_grade_activation_sha256):
+                    invalid("BAMF_PROFILE_ACTIVE_GRADE_MEMBERSHIP_DRIFT")
             if current is not None and current["generation"] == candidate.generation:
                 return _reconcile_already_pointed_retry(
                     run_dir, current, candidate, authority, prepared, digest, stage,

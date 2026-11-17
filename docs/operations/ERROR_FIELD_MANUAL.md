@@ -2001,6 +2001,18 @@ Message: C07 no ready delta: {reason}
 
 Recovery: Inspect current coverage and obligations; replan only after source, evidence or admission state changes.
 
+### `FACTORY.PROFILE_EXPANSION.INVALID`
+
+Factory profile expansion invalid.
+
+Owner: `factory.profile_expansion`
+Disposition: `CORRECT_INPUT_OR_STATE`
+Self-heal owner: `none`
+
+Message: Factory profile expansion invalid: {reason}
+
+Recovery: Preserve the accepted Factory release and correct the requested profile or its source and semantic authorities before retrying.
+
 ## Operational signals and blockers
 
 These terms are not exceptions. They describe a controlled stop, handoff, or gate.

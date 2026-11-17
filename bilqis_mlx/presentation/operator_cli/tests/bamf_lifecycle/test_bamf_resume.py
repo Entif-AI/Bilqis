@@ -14,7 +14,7 @@ from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.atlas_flywheel import AdmissionFlywheelStatus
 from bilqis_mlx.runtime.tests.bamf_first_student._bamf_first_student_support import BamfFirstStudentCase
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.genesis_authority_fixtures import (
-    source_features,
+    source_features, frozen_snapshot,
 )
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import shape_patch
 from bilqis_mlx.semantics.atlas.snapshot import AtlasArtifactIdentity
@@ -41,10 +41,10 @@ class BamfResumeTests(BamfFirstStudentCase):
 
     @contextmanager
     def accepted_read_context(self):
-        with shape_patch(), patch(
-            "bilqis_mlx.runtime.bamf_bundle.feature_authority._authenticate_features",
-            return_value=source_features(),
-        ):
+        with shape_patch(), patch.multiple(
+            "bilqis_mlx.runtime.bamf_bundle.feature_authority",
+            resolve_atlas_artifact_selection=lambda _: self.selection, load_pinned_atlas_snapshot=frozen_snapshot,
+            build_feature_manifest=lambda *_args: source_features()):
             yield
 
     def test_resume_without_overrides_reads_saved_b13_identity_without_writes(self):
@@ -151,7 +151,7 @@ class BamfResumeTests(BamfFirstStudentCase):
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle._saved_policy",
                 return_value="atlas-release"), patch(
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle.source_foundation",
-                return_value=(None, None, {"fixture": "accepted-source-graph"})), patch(
+                return_value=(None, None, self.graph)), patch(
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
                 return_value=SimpleNamespace(
                     status=AdmissionFlywheelStatus.WAITING_FOR_EVIDENCE,
@@ -189,7 +189,7 @@ class BamfResumeTests(BamfFirstStudentCase):
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle._saved_policy",
                 return_value="atlas-release"), patch(
                 "bilqis_mlx.presentation.operator_cli.bamf_lifecycle.source_foundation",
-                return_value=(None, None, {"fixture": "accepted-source-graph"})), patch(
+                return_value=(None, None, self.graph)), patch(
                 "bilqis_mlx.runtime.atlas_flywheel_runtime.run_accepted_atlas_flywheel",
                 return_value=SimpleNamespace(
                     status=AdmissionFlywheelStatus.HELD,
