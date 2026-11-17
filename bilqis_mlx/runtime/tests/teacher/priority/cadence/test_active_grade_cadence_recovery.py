@@ -149,3 +149,30 @@ def test_custody_heals_stale_pointer_and_ignores_writer_temp(tmp_path):
     healed = read_current_cadence(tmp_path)
     assert healed.cadence_sha256 == tip.cadence_sha256
     assert healed.attempted_capability_ids == ("A",)
+
+
+def test_boundary_rebuild_ignores_orphaned_writer_temp(tmp_path):
+    rows = tuple(_capability(item) for item in ("A", "B", "C", "D"))
+    frontier = _frontier(rows)
+    epoch = _epoch({"A": 3, "B": 2, "C": 1, "D": 1})
+    history = []
+    with _obligation_patch(epoch):
+        for _round in range(3):
+            issued = issue_active_grade_cadence(tmp_path, epoch, frontier)
+            for capability in issued.authorized_capability_ids:
+                current = issue_active_grade_cadence(tmp_path, epoch, frontier)
+                history.append((current.to_record(), capability))
+                _record_attempt(tmp_path, current, capability)
+        exhausted = issue_active_grade_cadence(tmp_path, epoch, frontier)
+        assert exhausted.phase is ActiveGradeCadencePhase.BOUNDARY
+        boundaries = tmp_path / "active-grade-cadence-boundaries"
+        receipt = next(boundaries.glob("*.json"))
+        orphan = boundaries / ("." + receipt.name + "." + "f" * 32 + ".tmp")
+        orphan.write_text("partial", encoding="utf-8")
+        shutil.rmtree(tmp_path / "active-grade-cadence")
+        with patch(
+                "bilqis_mlx.runtime.active_grade_cadence_replay."
+                "authenticated_cadence_attempts", return_value=tuple(history)):
+            rebuilt = issue_active_grade_cadence(tmp_path, epoch, frontier)
+    assert rebuilt.phase is ActiveGradeCadencePhase.BOUNDARY
+    assert rebuilt.disposition.value == "RECOVERY_EXHAUSTED"

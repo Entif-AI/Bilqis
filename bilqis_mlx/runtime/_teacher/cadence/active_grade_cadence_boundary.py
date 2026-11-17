@@ -39,6 +39,27 @@ def _root(run_dir: Path) -> Path:
     return root
 
 
+def _writer_temp(path: Path) -> bool:
+    parts = path.name.rsplit(".", 2)
+    if len(parts) != 3 or parts[2] != "tmp":
+        return False
+    base, nonce, _suffix = parts
+    if (len(nonce) != 32
+            or any(char not in "0123456789abcdef" for char in nonce)
+            or not base.startswith(".")
+            or not base.endswith(".json")):
+        return False
+    stem = base[1:-5]
+    epoch, separator, digest = stem.partition("-")
+    return (
+        separator == "-"
+        and len(epoch) == 8
+        and epoch.isdigit()
+        and len(digest) == 64
+        and all(char in "0123456789abcdef" for char in digest)
+    )
+
+
 def _persist_boundary(run_dir: Path, state) -> dict:
     if (not _is_issued_cadence_state(state)
             or state.phase is not ActiveGradeCadencePhase.BOUNDARY):
@@ -70,7 +91,11 @@ def _latest_boundary(run_dir: Path, frontier, member_census_sha256) -> dict | No
         return None
     candidates = []
     for path in root.iterdir():
-        if path.is_symlink() or not path.is_file() or path.suffix != ".json":
+        if path.is_symlink() or not path.is_file():
+            _invalid("BAMF_ACTIVE_GRADE_CADENCE_BOUNDARY_CUSTODY_UNSAFE")
+        if _writer_temp(path):
+            continue
+        if path.suffix != ".json":
             _invalid("BAMF_ACTIVE_GRADE_CADENCE_BOUNDARY_CUSTODY_UNSAFE")
         try:
             record = json.loads(path.read_text(encoding="utf-8"))
