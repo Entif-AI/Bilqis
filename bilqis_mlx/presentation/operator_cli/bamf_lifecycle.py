@@ -217,12 +217,13 @@ def _resume(args, requested_topology, *, include_parent_graph=False):
             )
             _source, _release, parent_graph = _validated_resume_parent_graph(
                 args, identity)
-            flywheel = run_accepted_atlas_flywheel(
-                run_dir, parent_graph, reserve_gib=args.reserve_gib)
-            result = flywheel.status.value
-            student, manifest_sha256 = load_bamf_generation_authority(pointer)
-            identity = _validate_resume_overrides(args, student)
-            atlas = _accepted_atlas(run_dir, identity)
+            if getattr(args, "factory_profile_release", None) is None:
+                flywheel = run_accepted_atlas_flywheel(
+                    run_dir, parent_graph, reserve_gib=args.reserve_gib)
+                result = flywheel.status.value
+                student, manifest_sha256 = load_bamf_generation_authority(pointer)
+                identity = _validate_resume_overrides(args, student)
+                atlas = _accepted_atlas(run_dir, identity)
 
     report = _report(
         result=result, run_identity=identity, topology=student.topology, atlas=atlas,

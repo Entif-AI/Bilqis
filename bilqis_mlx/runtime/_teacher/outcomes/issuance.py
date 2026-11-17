@@ -170,6 +170,9 @@ def carry_credit_to_successor(visit, successor, parent):
     channel['student_policy_epoch'] = teacher['causal_experiment']['student_policy_epoch']
     teacher['causal_experiment'] = channel
     teacher['grade_stats'] = deepcopy(credited['grade_stats'])
+    if 'structural_weaknesses' in credited:
+        teacher['structural_weaknesses'] = deepcopy(
+            credited['structural_weaknesses'])
     projection = TeacherCustodyProjection(successor.teacher_state,
         successor.provenance.teacher_identity, successor.provenance.teacher_epoch)
     updated = _selection_projection(projection, replace(

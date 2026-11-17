@@ -164,13 +164,15 @@ def measure_factory_foundation_progress(
     parent = load_accepted_generation(run_dir)
     cache = bind_accepted_execution_cache(run_dir)
     release = source_context.release
-    groups = tuple(
-        (item.capability_id, item.grade_id)
-        for item in release.execution_plan.capabilities)
     fixed = _fixed_school_instruments(
         source_context, parent, artifact_path, run_dir, release,
         parent=parent, cache=cache)
     cases = tuple(item.case for item in fixed)
+    measured = {case.capability_id for case in cases}
+    groups = tuple(
+        (item.capability_id, item.grade_id)
+        for item in release.execution_plan.capabilities
+        if item.capability_id in measured)
     policy = FoundationRetentionPolicy(
         groups, tuple(dict.fromkeys(group for _, group in groups)), (),
         C05_PROBE_EACH, case_census_digest(cases))
@@ -289,6 +291,9 @@ def evaluate_factory_package_import(
     fixed_instruments = _fixed_school_instruments(
         source_context, candidate_bundle, artifact_path, run_dir, release,
         parent=parent, cache=cache)
+
+    if {(item.case.capability_id, item.case.group_id) for item in fixed_instruments} != set(groups):
+        _invalid("BAMF_C05_FIXED_SCHOOL_COVERAGE_INCOMPLETE")
 
     if CURRENT_EVIDENCE_STAGE is EvidenceStage.FOUNDATION_ACQUISITION:
         return _broad_foundation_retention_evaluation(

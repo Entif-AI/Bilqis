@@ -1,6 +1,6 @@
 {
   "legacy_raw_file_count": 294,
-  "legacy_raw_raise_count": 2082,
+  "legacy_raw_raise_count": 2080,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -8865,20 +8865,6 @@
       "path": "bilqis_mlx/profiles/catalog.py"
     },
     {
-      "code_hint": "FACTORY_NUMERIC_SCOPE_DOMAIN_INCONSISTENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_NUMERIC_SCOPE_DOMAIN_INCONSISTENT'",
-      "path": "bilqis_mlx/profiles/catalog.py"
-    },
-    {
-      "code_hint": "FACTORY_NUMERIC_SCOPE_DOMAIN_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_NUMERIC_SCOPE_DOMAIN_INVALID'",
-      "path": "bilqis_mlx/profiles/catalog.py"
-    },
-    {
       "code_hint": "FACTORY_NUMERIC_SCOPE_MAXIMUM_INVALID",
       "count": 1,
       "exception": "ValueError",
@@ -16008,6 +15994,34 @@
       "recovery_key": "errors.school.bamf_admission.fixed_point.recovery",
       "self_heal_owner": null,
       "title": "C07 no ready delta"
+    },
+    {
+      "code": "FACTORY.PROFILE_EXPANSION.INVALID",
+      "disposition": "CORRECT_INPUT_OR_STATE",
+      "legacy_codes": [],
+      "message_key": "errors.factory.profile_expansion.invalid.message",
+      "message_template": "Factory profile expansion invalid: {reason}",
+      "next_action": "Preserve the accepted Factory release and correct the requested profile or its source and semantic authorities before retrying.",
+      "operator_steps": [],
+      "owner": "factory.profile_expansion",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.profile_expansion.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory profile expansion invalid"
+    },
+    {
+      "code": "FACTORY.WEAKNESS.INVALID",
+      "disposition": "CORRECT_INPUT_OR_STATE",
+      "legacy_codes": [],
+      "message_key": "errors.factory.weakness.invalid.message",
+      "message_template": "Factory structural weakness contract invalid: {reason}",
+      "next_action": "Restore the provider-declared weakness classifier, exact source context, and fresh-equivalent construction contract before retrying.",
+      "operator_steps": [],
+      "owner": "factory.weakness",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.weakness.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory structural weakness contract invalid"
     }
   ]
 }

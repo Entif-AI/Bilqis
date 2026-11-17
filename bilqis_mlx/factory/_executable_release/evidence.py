@@ -105,7 +105,7 @@ def _verification_receipt(
         execution_plan_sha256=plan.digest(),
         source_binding_sha256=bindings.digest(),
         provider_descriptors_sha256=_api._digest(
-            [_api.asdict(item) for item in descriptors]),
+            [_api._source_adapter_record(item) for item in descriptors]),
         answer_modalities_sha256=_api._digest(
             [_api.asdict(item) for item in answer_modalities]),
         semantic_catalog_sha256=_api._digest(tuple(names)),

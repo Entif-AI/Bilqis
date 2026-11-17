@@ -9,7 +9,9 @@ from __future__ import annotations
 from ._model import (
     AdmissionReceipt, AssessmentClass, AssessmentPlan, CapabilityDefinition,
     ConstructionProgram, CoveragePlan, FactoryRelease, GradeDefinition,
-    LearningEvidence, SemanticRelease, SourceAdapter, TeachingOption,
+    LearningEvidence, ProviderDimensionError, ProviderDimensionPolicy, SemanticRelease,
+    SourceAdapter,
+    TeachingOption,
     assessment_plans,
 )
 
@@ -18,7 +20,9 @@ from ._model import (
 for _record in (
     AdmissionReceipt, AssessmentClass, AssessmentPlan, CapabilityDefinition,
     ConstructionProgram, CoveragePlan, FactoryRelease, GradeDefinition,
-    LearningEvidence, SemanticRelease, SourceAdapter, TeachingOption,
+    LearningEvidence, ProviderDimensionError, ProviderDimensionPolicy, SemanticRelease,
+    SourceAdapter,
+    TeachingOption,
 ):
     _record.__module__ = __name__
 
@@ -30,6 +34,7 @@ __all__ = [
     "AdmissionReceipt", "AssessmentClass", "AssessmentPlan",
     "CapabilityDefinition", "ConstructionProgram", "CoveragePlan",
     "FactoryRelease", "GradeDefinition", "LearningEvidence",
-    "SemanticRelease", "SourceAdapter", "TeachingOption",
+    "ProviderDimensionError", "ProviderDimensionPolicy", "SemanticRelease",
+    "SourceAdapter", "TeachingOption",
     "assessment_plans",
 ]

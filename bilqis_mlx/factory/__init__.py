@@ -18,6 +18,8 @@ __path__.extend(
 )
 del _PACKAGE_ROOT, _Path
 
+from ._model import weakness as weakness
+
 from .autonomy import (
     AutonomyAction,
     AutonomyActionKind,
@@ -236,4 +238,5 @@ __all__ = (
     "DevelopmentalFrontierItem",
     "DevelopmentalReleasePlan",
     "bind_developmental_release",
+    "weakness",
 )

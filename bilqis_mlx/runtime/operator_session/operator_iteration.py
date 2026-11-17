@@ -60,7 +60,7 @@ def prepare_operator_iteration(*, experiment_budget, run_dir, receipt, course_a,
     if experiment_budget is not None:
         experiment_budget.assert_can_allocate(600_000_000)
     receipt, course, executable_release, schedule_program = (
-        _runtime_release_adoption._advance_numeric_profile(
+        _runtime_release_adoption._advance_provider_dimensions(
             run_dir, receipt, course_a, source_root, graph, course,
             executable_release, schedule_program, numeric_staircase=numeric_staircase))
     params, optimizer, graph, receipt, course, adopted_boundary = (

@@ -54,6 +54,32 @@ def semantic_footprint(row: dict) -> tuple[str, ...]:
     return tuple(dict.fromkeys(shape.rooted_operators))
 
 
+def classify_boolean_expression_weakness(row: dict) -> dict:
+    """Describe composite/inverse Boolean structure without generated row identity."""
+    record = row.get("record")
+    if not isinstance(record, dict):
+        from bilqis_mlx.errors import ErrorBus, FACTORY
+        ErrorBus.Raise(
+            FACTORY.WEAKNESS.INVALID,
+            reason="FACTORY_BOOLEAN_WEAKNESS_RECORD_INVALID")
+    if row.get("capability") == B_IDBOOLOPS_CAPABILITY:
+        from ...boolean_identification_oracle import evaluate
+        root = "cogal.operator." + evaluate(record, row["capability"])
+        shape = inspect_boolean_identification(record, root)
+        family = "boolean-identification"
+    else:
+        shape = inspect_source_query(record.get("query"))
+        family = "boolean-composite"
+    return {
+        "family": family,
+        "root": shape.root,
+        "rooted_operators": list(shape.rooted_operators),
+        "semantic_operations": shape.semantic_operations,
+        "operator_depth": shape.operator_depth,
+        "answer_kind": row.get("answer_kind", "binary"),
+    }
+
+
 def draw_b(*, source_root, graph, course, capability, seed, each):
     del course
     rows = draw_connectives(source_root, graph, seed=seed,

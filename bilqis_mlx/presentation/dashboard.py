@@ -116,6 +116,8 @@ def _initialize_board(board: Dashboard, run_dir: Path, state, school, active,
         "last_run_status": state.get("result", "NOT_STARTED") if state else "NOT_STARTED",
     }, redraw=False)
     board.state["numeric_maximum"] = displayed_numeric_maximum(state)
+    board.state["provider_dimensions"] = list(
+        (state or {}).get("provider_dimensions", ()))
     board.school_telemetry = SchoolTelemetry(
         board, active_grades=active, champions=school.get("champions"))
     return step, phase

@@ -41,19 +41,20 @@ assert "source.micro.boolean-minimal/v1" not in {
     cap.provider_id
     for cap in numeric_release.execution_plan.capabilities}
 
-next_numeric = next_numeric_scope_profile(numeric_release)
-assert next_numeric is not None
-next_numeric_course = legacy_course_for_profile(
-    grade_a, source, next_numeric)
-numeric_five = compile_successor_profile_release(
+numeric_state = provider_dimension_state(numeric_release, "numeric-root")
+assert (numeric_state.value, numeric_state.terminal) == ("4", False)
+numeric_step = compile_provider_dimension_successor(
     numeric_release,
-    next_numeric,
+    "numeric-root",
     registry,
     answers,
     source_root=source,
     graph=numeric_transition.graph,
     verification_seed=2026101906)
-assert numeric_four.transition.semantic_geometry == "UNCHANGED"
+assert numeric_step is not None
+assert (numeric_step.previous.value, numeric_step.current.value) == ("4", "5")
+numeric_five = numeric_step.release
+assert numeric_five.transition.semantic_geometry == "UNCHANGED"
 assert answer_heads_from_executable_release(
     numeric_five, numeric_transition.graph
 )["numeric_active"]["values"] == ["0", "1", "2", "3", "4", "5"]

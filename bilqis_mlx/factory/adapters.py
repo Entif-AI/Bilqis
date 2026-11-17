@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from typing import Callable
 
 from .autonomy import SupplementalEvidenceSpec
-from .model import SourceAdapter
+from .model import ProviderDimensionError, ProviderDimensionPolicy, SourceAdapter
 
 _DEPENDENCY_SCOPE_DRIFT = "FACTORY_EVIDENCE_DEPENDENCY_SCOPE_DRIFT"
 
@@ -21,6 +21,7 @@ Check = Callable[..., bool]
 Witness = Callable[..., bool]
 Dependencies = Callable[..., tuple[SupplementalEvidenceSpec, ...]]
 SemanticFootprint = Callable[[dict], tuple[str, ...]]
+WeaknessClassifier = Callable[[dict], object]
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,8 @@ class RegisteredSourceAdapter:
     witness: Witness | None = None
     dependencies: Dependencies | None = None
     semantic_footprint: SemanticFootprint | None = None
+    weakness_classifier: WeaknessClassifier | None = None
+    dimension_policies: tuple[ProviderDimensionPolicy, ...] = ()
 
 
 def validate_instructional_constituents(row, *, curriculum, plan,
@@ -74,12 +77,40 @@ class SourceAdapterRegistry:
                 (adapter.dependencies is not None and
                  not callable(adapter.dependencies)) or
                 (adapter.semantic_footprint is not None and
-                 not callable(adapter.semantic_footprint))):
+                 not callable(adapter.semantic_footprint)) or
+                ((adapter.descriptor.weakness_classifier_id is None)
+                 != (adapter.weakness_classifier is None)) or
+                (adapter.weakness_classifier is not None
+                 and not callable(adapter.weakness_classifier))):
             raise ValueError("FACTORY_SOURCE_CONSTRUCTOR_AND_CHECKER_REQUIRED")
+        policies = adapter.dimension_policies
+        if (len({item.dimension_id for item in policies}) != len(policies) or
+                any(not isinstance(item, ProviderDimensionPolicy) or
+                    item.provider_id != adapter.descriptor.adapter_id
+                    for item in policies)):
+            raise ValueError(ProviderDimensionError.POLICY_BINDING_INVALID.value)
+        dimensions = dict(adapter.descriptor.profile_dimensions)
+        for policy in policies:
+            domain = dimensions.get(policy.parameter_name)
+            if (domain is None or
+                    not set(policy.progression_values) <= set(domain) or
+                    policy.progression_values != tuple(
+                        value for value in domain if value in policy.progression_values)):
+                raise ValueError(ProviderDimensionError.DOMAIN_INVALID.value)
         key = adapter.descriptor.generator_id
         if key in self._by_generator:
             raise ValueError("FACTORY_DUPLICATE_GENERATOR_ADAPTER:" + key)
         self._by_generator[key] = adapter
+
+    def dimension_policies(self, provider_id: str) -> tuple[ProviderDimensionPolicy, ...]:
+        matches = tuple(
+            adapter.dimension_policies for adapter in self._by_generator.values()
+            if adapter.descriptor.adapter_id == provider_id)
+        if not matches:
+            return ()
+        if len(matches) != 1:
+            raise ValueError(ProviderDimensionError.PROVIDER_AMBIGUOUS.value)
+        return matches[0]
 
     @staticmethod
     def _missing(generator_id: str):
