@@ -483,13 +483,13 @@
     },
     {
       "issue": 1337,
-      "pr": null,
-      "state": "ACTIVE",
-      "head_sha": "f6cd2d708c8f61625b703a6433cf00a5475deeb1",
-      "summary": "R15 is active on an isolated branch from reviewed unified f6cd2d70. Scope is bounded to provider-owned legal Boolean operand-pattern completeness plus generic Factory-released optional teaching enrichment through native BAMF candidate delivery/evidence. No grade/Boolean runtime branch, legacy enrichment CLI resurrection, live learner mutation, or merge authority is introduced.",
+      "pr": 1356,
+      "state": "TURNED_IN",
+      "head_sha": "1dfc46026fcd221bbc44d25100b0ab5546ada7ab",
+      "summary": "R15 turned in as PR #1356 after consuming reviewed unified 749f1f37. Provider-owned Boolean minimum-row sampling now preserves the complete legal operand-pattern census, while native BAMF transports Factory-issued optional teaching enrichment generically with direct/enrichment role identity intact. Exact integrated M3 witness: 64 passed, 7 skipped, 20 subtests; merge-reconciliation proof: 7 passed, 8 subtests. No grade/Boolean runtime branch, legacy enrichment CLI resurrection, learner mutation, force push or merge authority.",
       "resume_trigger": null,
       "preserved_branch": "codex/1337-truth-pattern-enrichment-20261116",
-      "head_sha_role": "Reviewed-unified branch point before the active #1337 implementation; semantic implementation remains uncommitted while owner and governance proof is in progress."
+      "head_sha_role": "Exact executable integration head consuming reviewed unified 749f1f37; subsequent flow-control and issue/PR receipt changes are metadata only."
     }
   ]
 }
