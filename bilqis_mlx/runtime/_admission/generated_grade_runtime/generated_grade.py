@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from dataclasses import dataclass
 
-from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 from bilqis_mlx.factory.generated_grade import GeneratedGradeProposal, synthesize_generated_grade
 from bilqis_mlx.factory.generated_grade.definition import _seal_generated_grade
 from bilqis_mlx.factory.generated_grade.inputs import _compile_generated_grade_inputs
@@ -73,6 +73,57 @@ def _require_generated_grade_authority(
     return value
 
 
+def _predecessor_certification_sha256(run_dir: Path) -> str | None:
+    """Require current #1334 success before synthesizing past an active grade."""
+    from . import active_generated_grade_custody as active_custody
+    active = active_custody._read_stored_active(Path(run_dir))
+    if active is None:
+        return None
+    from bilqis_mlx.runtime.grade_certification_custody import (
+        certification_receipts_for_predecessor,
+    )
+    receipts = certification_receipts_for_predecessor(
+        Path(run_dir),
+        activation_sha256=active.activation_sha256,
+        definition_sha256=active.definition.definition_sha256,
+    )
+    if not receipts:
+        return None
+    from bilqis_mlx.runtime.grade_certification import (
+        require_current_accepted_certification_receipt,
+    )
+    current = []
+    for receipt in receipts:
+        try:
+            live = require_current_accepted_certification_receipt(
+                Path(run_dir), receipt.receipt_sha256)
+        except BilqisError as failure:
+            if failure.context.get("reason") in {
+                "BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT",
+                "BAMF_GRADE_CERTIFICATION_POLICY_SELECTION_DRIFT",
+            }:
+                continue
+            raise
+        if (
+            live.predecessor_activation_sha256 != active.activation_sha256
+            or live.predecessor_definition_sha256
+               != active.definition.definition_sha256
+        ):
+            ErrorBus.raise_(
+                SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+                reason="BAMF_GENERATED_GRADE_PREDECESSOR_CERTIFICATION_DRIFT",
+            )
+        current.append(live)
+    if not current:
+        return None
+    if len(current) != 1:
+        ErrorBus.raise_(
+            SCHOOL.BAMF_ATLAS_ADMISSION.INVALID,
+            reason="BAMF_GENERATED_GRADE_PREDECESSOR_CERTIFICATION_AMBIGUOUS",
+        )
+    return current[0].receipt_sha256
+
+
 def _recompute_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
     """Derive one proposal from custody-reloaded A09/C07 state without persisting."""
     from .atlas_flywheel_runtime import AcceptedAtlasFlywheelSupervisor
@@ -82,8 +133,11 @@ def _recompute_accepted_generated_grade(supervisor) -> GeneratedGradeProposal:
             reason="BAMF_GENERATED_GRADE_ACCEPTED_SUPERVISOR_REQUIRED",
         )
     state = supervisor.load_state()
+    predecessor_certification_sha256 = _predecessor_certification_sha256(
+        supervisor.run_dir)
     inputs = _compile_generated_grade_inputs(
-        state.epoch, state.learner_evidence, state.plan)
+        state.epoch, state.learner_evidence, state.plan,
+        predecessor_certification_sha256=predecessor_certification_sha256)
     proposal = synthesize_generated_grade(
         state.epoch.snapshot, state.epoch.closure,
         state.epoch.current_release, inputs)

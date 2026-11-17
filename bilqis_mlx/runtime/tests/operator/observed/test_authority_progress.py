@@ -35,7 +35,7 @@ def test_held_priority_reports_full_frontier_exclusions_without_execution(
          patch(owner + 'schedule_program_from_executable_release', return_value=object()), \
          patch(owner + 'accepted_priority_school', return_value=object()), \
          patch(owner + 'select_foundation_priority_visit', return_value=selection), \
-         patch(owner + '_candidate_horizon_execution') as execute:
+         patch(owner + '_execute_selected_visit') as execute:
         result = prepare_bamf_visit(Path('/unused'), progress=messages.append)
     assert result.status == selection_status
     payload = {

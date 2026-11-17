@@ -91,6 +91,7 @@ class NumericEntryProfileTests(unittest.TestCase):
         from unittest.mock import Mock
         from bilqis_mlx.factory.executable_release import ExecutableFactoryRelease
         from bilqis_mlx.factory.execution import CurriculumProfile, GradeProfile
+        from bilqis_mlx.factory.model import ProviderDimensionPolicy, SourceAdapter
         from bilqis_mlx.profiles.catalog import next_numeric_scope_profile
 
         numeric_ids = ('C.COUNT', 'C.NUMBER', 'C.SUCCESSOR', 'C.ADD',
@@ -104,13 +105,31 @@ class NumericEntryProfileTests(unittest.TestCase):
             grades=(SimpleNamespace(grade_id='A'), SimpleNamespace(grade_id='B'),
                     SimpleNamespace(grade_id='C')),
             capabilities=(SimpleNamespace(
-                grade_id='C', answer_families=(SimpleNamespace(
+                capability_id='C.COUNT', grade_id='C', provider_id='source.finite-numeric/v2',
+                provider_parameters=(('numbers', tuple(str(i) for i in range(5))),),
+                answer_families=(SimpleNamespace(
                     kind='numeric_active', values=tuple(str(i) for i in range(5))),)),))
+        release.source_adapters = (SourceAdapter(
+            'source.finite-numeric/v2', 'fixture.numeric/v1', ('fixture.oracle/v1',),
+            'd' * 64,
+            profile_dimensions=(('numbers', tuple(str(i) for i in range(11))),)),)
+        release.provider_dimension_policies = (ProviderDimensionPolicy(
+            provider_id='source.finite-numeric/v2', dimension_id='numeric-root',
+            parameter_name='numbers', progression_values=tuple(str(i) for i in range(4, 11)),
+            selection_mode='CANONICAL_PREFIX', step_mode='ADJACENT',
+            advance_trigger='DEVELOPMENTAL_BOUNDARY', terminal_value='10',
+            source_constraint='SAME_PROVIDER_BINDING',
+            admission_constraint='EXISTING_CAPABILITY_PROFILE',
+            telemetry_projection='INTROOT', answer_family_kind='numeric_active',
+            changes_source_projection=True, changes_assessment_scope=True,
+            changes_answer_domain=True),)
         release.curriculum = SimpleNamespace(grades=(
             SimpleNamespace(grade_id='A', capabilities=()),
             SimpleNamespace(grade_id='B', capabilities=()),
             SimpleNamespace(grade_id='C', capabilities=tuple(
-                SimpleNamespace(capability_id=cap) for cap in numeric_ids)),))
+                SimpleNamespace(capability_id=cap) for cap in numeric_ids)),),
+            capability_map={'C.COUNT': SimpleNamespace(answer_families=(
+                SimpleNamespace(kind='numeric_active'),))})
 
         next_profile = next_numeric_scope_profile(release, final_maximum=10)
         self.assertTrue(next_profile.profile_id.endswith('/numeric-0-5'))
@@ -120,7 +139,9 @@ class NumericEntryProfileTests(unittest.TestCase):
             ('0', '1', '2', '3', '4', '5'))
 
         release.execution_plan.capabilities = (SimpleNamespace(
-            grade_id='C', answer_families=(SimpleNamespace(
+            capability_id='C.COUNT', grade_id='C', provider_id='source.finite-numeric/v2',
+            provider_parameters=(('numbers', tuple(str(i) for i in range(11))),),
+            answer_families=(SimpleNamespace(
                 kind='numeric_active', values=tuple(str(i) for i in range(11))),)),)
         self.assertIsNone(next_numeric_scope_profile(release, final_maximum=10))
 

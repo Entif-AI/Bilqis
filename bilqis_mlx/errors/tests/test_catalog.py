@@ -13,14 +13,17 @@ class CatalogTests(unittest.TestCase):
     def test_frozen_catalog_order_and_complete_contracts(self):
         payload = json.dumps([asdict(spec) for spec in CATALOG[:123]],
                              sort_keys=True, separators=(",", ":"))
-        self.assertEqual(len(CATALOG), 149)
+        self.assertEqual(len(CATALOG), 150)
         self.assertEqual(hashlib.sha256(payload.encode()).hexdigest(),
                          "9b478a5ff7cf3017613f5d8b271c3476ba335b1a0df7b0c42784e9427ef1ec56")
-        self.assertEqual(len(BY_CODE), 149)
-        self.assertIs(CATALOG[-1], FACTORY.PROFILE_EXPANSION.INVALID)
+        self.assertEqual(len(BY_CODE), 150)
+        self.assertIs(CATALOG[-2], FACTORY.PROFILE_EXPANSION.INVALID)
+        self.assertIs(CATALOG[-1], FACTORY.WEAKNESS.INVALID)
         self.assertIs(BY_CODE["FACTORY.PROFILE_EXPANSION.INVALID"],
                       FACTORY.PROFILE_EXPANSION.INVALID)
         self.assertEqual(FACTORY.PROFILE_EXPANSION.INVALID.legacy_codes, ())
+        self.assertIs(BY_CODE["FACTORY.WEAKNESS.INVALID"], FACTORY.WEAKNESS.INVALID)
+        self.assertEqual(FACTORY.WEAKNESS.INVALID.legacy_codes, ())
         self.assertIs(BY_CODE["SCHOOL.STATE.COURSE_DIGEST_MISMATCH"],
                       SCHOOL.STATE.COURSE_DIGEST_MISMATCH)
         self.assertIs(CATALOG[134], SCHOOL.BAMF_PACKAGE.INVALID)

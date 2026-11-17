@@ -2013,6 +2013,18 @@ Message: Factory profile expansion invalid: {reason}
 
 Recovery: Preserve the accepted Factory release and correct the requested profile or its source and semantic authorities before retrying.
 
+### `FACTORY.WEAKNESS.INVALID`
+
+Factory structural weakness contract invalid.
+
+Owner: `factory.weakness`
+Disposition: `CORRECT_INPUT_OR_STATE`
+Self-heal owner: `none`
+
+Message: Factory structural weakness contract invalid: {reason}
+
+Recovery: Restore the provider-declared weakness classifier, exact source context, and fresh-equivalent construction contract before retrying.
+
 ## Operational signals and blockers
 
 These terms are not exceptions. They describe a controlled stop, handoff, or gate.
@@ -2078,7 +2090,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2082** raw raises across **294** files. The baseline gate permits only reduction.
+Current production scan: **2080** raw raises across **294** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2894,8 +2906,6 @@ Current production scan: **2082** raw raises across **294** files. The baseline 
 | `FACTORY_NUMERIC_PROFILE_INVALID` | 1 | `bilqis_mlx/profiles/school.py` |
 | `FACTORY_NUMERIC_PROFILE_PARAMETER_UNKNOWN` | 1 | `bilqis_mlx/source_adapters/_school/numeric.py` |
 | `FACTORY_NUMERIC_SCOPE_ADVANCE_INVALID` | 1 | `bilqis_mlx/profiles/catalog.py` |
-| `FACTORY_NUMERIC_SCOPE_DOMAIN_INCONSISTENT` | 1 | `bilqis_mlx/profiles/catalog.py` |
-| `FACTORY_NUMERIC_SCOPE_DOMAIN_INVALID` | 1 | `bilqis_mlx/profiles/catalog.py` |
 | `FACTORY_NUMERIC_SCOPE_MAXIMUM_INVALID` | 1 | `bilqis_mlx/profiles/catalog.py` |
 | `FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID` | 1 | `bilqis_mlx/factory/execution.py` |
 | `FACTORY_PLAN_LINEAGE_CURRICULUM_DRIFT` | 1 | `bilqis_mlx/factory/_execution/lineage.py` |

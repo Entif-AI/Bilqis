@@ -24,6 +24,55 @@ from bilqis_mlx.runtime.tests.capability.factory.owner import test_factory_reten
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures import selection_teacher
 
 
+def _structural_weakness_evidence(evidence):
+    from bilqis_mlx.factory import weakness as weakness_contract
+    from bilqis_mlx.runtime import structural_weakness_replay as weakness_replay
+
+    outcome = evidence["how_outcome"]
+    how = outcome["context"]
+    context = {
+        "schema": weakness_replay.CONTEXT_SCHEMA,
+        "capability_id": evidence["capability"],
+        "grade_id": how["grade"],
+        "curriculum_scope": how["curriculum_scope"],
+        "grade_definition_sha256": how["grade_definition_sha256"],
+        "source_binding_sha256": how["source_binding_sha256"],
+        "factory_release_sha256": how["factory_release_sha256"],
+        "rubric_sha256": how["rubric_sha256"],
+        "active_grade_activation_sha256": "1" * 64,
+        "active_grade_definition_sha256": "2" * 64,
+        "policy_epoch": 3,
+        "rights_epoch": 4,
+        "correction_generation": 5,
+        "source_authority_registry_sha256": "6" * 64,
+    }
+    context["context_sha256"] = weakness_replay._digest(context)
+    weakness_class = {
+        "schema": weakness_contract.SCHEMA,
+        "capability_id": evidence["capability"],
+        "provider_id": "fixture",
+        "provider_implementation_sha256": "f" * 64,
+        "classifier_id": "fixture.weakness/v1",
+        "classifier_sha256": "7" * 64,
+        "signature": {"family": "fixture"},
+    }
+    weakness_class["class_sha256"] = weakness_replay._digest(weakness_class)
+    weakness = {
+        "schema": weakness_replay.EVIDENCE_SCHEMA,
+        "state": "UNRESOLVED",
+        "freshness": "FRESH_EQUIVALENT_REQUIRED",
+        "capability_id": evidence["capability"],
+        "weakness_class": weakness_class,
+        "context": context,
+        "candidate_evidence_sha256":
+            evidence["candidate_evidence"]["object"]["sha256"],
+        "outcome_sha256": outcome["outcome_sha256"],
+        "retention_reason": evidence["retention_reason"],
+    }
+    weakness["weakness_evidence_sha256"] = weakness_replay._digest(weakness)
+    return weakness
+
+
 class NativeRejectionOutcomeTests(NativeSourceFixture, unittest.TestCase):
     def fixture(self, *, accepted=False):
         parent = self.parent()
@@ -83,6 +132,7 @@ class NativeRejectionOutcomeTests(NativeSourceFixture, unittest.TestCase):
     def test_committed_rejection_replays_exactly_once_after_cold_reload(self):
         from bilqis_mlx.runtime.outcomes import replay
         parent, teacher, cache, evidence = self.fixture()
+        evidence["structural_weaknesses"] = [_structural_weakness_evidence(evidence)]
         pointer = (self.run / 'bamf-state.json').read_bytes()
         step = parent.retained_state.optimizer_step
         retained_before = retained_digest(parent.retained_state)
@@ -94,6 +144,7 @@ class NativeRejectionOutcomeTests(NativeSourceFixture, unittest.TestCase):
         projection._projection.cache_clear()
         cold = importlib.reload(replay).replay_rejected_outcomes(self.run, parent, cache, teacher)
         self.assertEqual(hot, cold)
+        self.assertEqual(len(hot["structural_weaknesses"]["classes"]), 1)
         input_path = self.root / 'cold-teacher-input.json'
         output_path = self.root / 'cold-teacher-output.json'
         input_path.write_text(json.dumps(teacher))

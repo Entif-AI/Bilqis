@@ -15,7 +15,10 @@ def visit(
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics,
         **({"observer": observer} if observer is not None else {}))
-    if prepared.status in {"HELD", "ACTION_REQUIRED"}:
+    if prepared.status in {
+        "HELD", "ACTION_REQUIRED", "GRADE_TRANSITIONED",
+        "CERTIFICATION_FAILED", "CERTIFICATION_SUPERSEDED",
+    }:
         return prepared.status
     parent, selection = prepared.parent, prepared.selection
     step, decision, retained = prepared.step, prepared.decision, prepared.retained
@@ -38,6 +41,7 @@ def visit(
             "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
             "how_outcome": prepared.how_outcome,
+            "structural_weaknesses": list(prepared.structural_weaknesses),
             **({"cadence": cadence} if cadence is not None else {}),
         })
         if cadence is not None and record_cadence_attempt is not None:

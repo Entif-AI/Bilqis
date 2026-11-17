@@ -16,6 +16,18 @@ class FACTORY:
                 "profile or its source and semantic authorities before retrying."),
         )
 
+    class WEAKNESS:
+        INVALID = _spec(
+            ("FACTORY", "WEAKNESS", "INVALID"),
+            owner="factory.weakness",
+            title="Factory structural weakness contract invalid",
+            message_template="Factory structural weakness contract invalid: {reason}",
+            disposition="CORRECT_INPUT_OR_STATE",
+            next_action=(
+                "Restore the provider-declared weakness classifier, exact source "
+                "context, and fresh-equivalent construction contract before retrying."),
+        )
+
     class SOURCE_ADAPTER:
         COMPATIBILITY_INVALID = _spec(
             ("FACTORY", "SOURCE_ADAPTER", "COMPATIBILITY_INVALID"),

@@ -9,6 +9,10 @@ from .evidence_contracts import (
 )
 
 _INPUT_ISSUER = object()
+GENERATED_GRADE_INPUTS_V1 = "bilqis.generated-grade-inputs/v1"
+GENERATED_GRADE_INPUTS_V2 = "bilqis.generated-grade-inputs/v2"
+GENERATED_GRADE_PROPOSAL_V1 = "bilqis.generated-grade-proposal/v1"
+GENERATED_GRADE_PROPOSAL_V2 = "bilqis.generated-grade-proposal/v2"
 
 
 @dataclass(frozen=True)
@@ -21,7 +25,8 @@ class GeneratedGradeInputs:
     a09_handoff_sha256: str | None
     a09_proposal_sha256: str | None
     input_sha256: str
-    schema: str = "bilqis.generated-grade-inputs/v1"
+    predecessor_certification_sha256: str | None = None
+    schema: str = GENERATED_GRADE_INPUTS_V1
     _issuance: object = field(init=False, default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -39,11 +44,16 @@ class GeneratedGradeInputs:
                 or (self.a09_proposal_sha256 is not None
                     and not _sha(self.a09_proposal_sha256))
                 or not _sha(self.input_sha256)
-                or self.schema != "bilqis.generated-grade-inputs/v1"):
+                or self.schema not in {
+                    GENERATED_GRADE_INPUTS_V1, GENERATED_GRADE_INPUTS_V2}
+                or (self.schema == GENERATED_GRADE_INPUTS_V1
+                    and self.predecessor_certification_sha256 is not None)
+                or (self.schema == GENERATED_GRADE_INPUTS_V2
+                    and not _sha(self.predecessor_certification_sha256))):
             _fail("BAMF_GENERATED_GRADE_INPUT_AUTHORITY_INVALID")
 
     def expected_digest(self) -> str:
-        return hashlib.sha256(_bytes({
+        payload = {
             "learner": self.learner,
             "candidate_evidence": self.candidate_evidence,
             "policy": self.policy,
@@ -52,11 +62,16 @@ class GeneratedGradeInputs:
             "a09_handoff_sha256": self.a09_handoff_sha256,
             "a09_proposal_sha256": self.a09_proposal_sha256,
             "schema": self.schema,
-        })).hexdigest()
+        }
+        if self.schema == GENERATED_GRADE_INPUTS_V2:
+            payload["predecessor_certification_sha256"] = (
+                self.predecessor_certification_sha256)
+        return hashlib.sha256(_bytes(payload)).hexdigest()
 
 
 def _issue_inputs(**values) -> GeneratedGradeInputs:
     draft = object.__new__(GeneratedGradeInputs)
+    values.setdefault("predecessor_certification_sha256", None)
     for name, value in (*values.items(), ("_issuance", _INPUT_ISSUER)):
         object.__setattr__(draft, name, value)
     draft.__post_init__()
@@ -82,16 +97,24 @@ class GeneratedGradeProposal:
     decisions: tuple[CandidateGradeDecision, ...]
     source_holds: tuple[tuple[str, str, str], ...]
     proposal_sha256: str
-    schema: str = "bilqis.generated-grade-proposal/v1"
+    predecessor_certification_sha256: str | None = None
+    schema: str = GENERATED_GRADE_PROPOSAL_V1
 
     def expected_digest(self) -> str:
-        return hashlib.sha256(_bytes({
+        payload = {
             field.name: getattr(self, field.name)
-            for field in fields(self) if field.name != "proposal_sha256"
-        })).hexdigest()
+            for field in fields(self)
+            if field.name not in {
+                "proposal_sha256", "predecessor_certification_sha256"}
+        }
+        if self.schema == GENERATED_GRADE_PROPOSAL_V2:
+            payload["predecessor_certification_sha256"] = (
+                self.predecessor_certification_sha256)
+        return hashlib.sha256(_bytes(payload)).hexdigest()
 
     def verify(self) -> None:
-        if (self.schema != "bilqis.generated-grade-proposal/v1"
+        if (self.schema not in {
+                    GENERATED_GRADE_PROPOSAL_V1, GENERATED_GRADE_PROPOSAL_V2}
                 or not all(_sha(value) for value in (
                     self.snapshot_sha256, self.closure_sha256,
                     self.current_release_sha256, self.learner_foot_sha256,
@@ -104,6 +127,10 @@ class GeneratedGradeProposal:
                     and not _sha(self.a09_handoff_sha256))
                 or (self.a09_proposal_sha256 is not None
                     and not _sha(self.a09_proposal_sha256))
+                or (self.schema == GENERATED_GRADE_PROPOSAL_V1
+                    and self.predecessor_certification_sha256 is not None)
+                or (self.schema == GENERATED_GRADE_PROPOSAL_V2
+                    and not _sha(self.predecessor_certification_sha256))
                 or self.member_semantic_ids != tuple(dict.fromkeys(self.member_semantic_ids))
                 or self.decisions != tuple(sorted(self.decisions, key=lambda item: item.semantic_id))
                 or self.source_holds != tuple(sorted(set(self.source_holds)))
@@ -111,7 +138,7 @@ class GeneratedGradeProposal:
             _fail("BAMF_GENERATED_GRADE_PROPOSAL_INVALID")
 
     def manifest(self) -> dict:
-        return {
+        result = {
             "schema": self.schema,
             "snapshot_sha256": self.snapshot_sha256,
             "closure_sha256": self.closure_sha256,
@@ -130,10 +157,35 @@ class GeneratedGradeProposal:
             "source_holds": [list(item) for item in self.source_holds],
             "proposal_sha256": self.proposal_sha256,
         }
+        if self.schema == GENERATED_GRADE_PROPOSAL_V2:
+            result["predecessor_certification_sha256"] = (
+                self.predecessor_certification_sha256)
+        return result
 
     @classmethod
     def from_manifest(cls, payload: dict) -> "GeneratedGradeProposal":
         try:
+            if not isinstance(payload, dict):
+                raise TypeError
+            base_keys = {
+                "schema", "snapshot_sha256", "closure_sha256",
+                "current_release_sha256", "learner_foot_sha256",
+                "learner_evidence_epoch", "policy_epoch", "policy_sha256",
+                "input_sha256", "a09_progress_sha256", "a09_status",
+                "a09_handoff_sha256", "a09_proposal_sha256",
+                "member_semantic_ids", "decisions", "source_holds",
+                "proposal_sha256",
+            }
+            schema = payload["schema"]
+            expected_keys = (
+                base_keys
+                if schema == GENERATED_GRADE_PROPOSAL_V1 else
+                base_keys | {"predecessor_certification_sha256"}
+                if schema == GENERATED_GRADE_PROPOSAL_V2 else
+                set()
+            )
+            if not expected_keys or set(payload) != expected_keys:
+                raise ValueError
             decisions = tuple(CandidateGradeDecision(
                 **{
                     **item,
@@ -166,6 +218,9 @@ class GeneratedGradeProposal:
                 member_semantic_ids=tuple(payload["member_semantic_ids"]),
                 decisions=decisions,
                 source_holds=tuple(tuple(item) for item in payload["source_holds"]),
+                predecessor_certification_sha256=(
+                    None if schema == GENERATED_GRADE_PROPOSAL_V1
+                    else payload["predecessor_certification_sha256"]),
             )
         except (KeyError, TypeError, ValueError) as exc:
             _fail("BAMF_GENERATED_GRADE_MANIFEST_INVALID")

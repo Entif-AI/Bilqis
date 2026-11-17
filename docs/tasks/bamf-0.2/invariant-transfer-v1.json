@@ -81,7 +81,7 @@
       "bamf_owner": {"path": "bilqis_mlx/learning/_retention/_atlas_candidate/transaction.py"},
       "successor_evidence": [
         {"kind": "independent_authority", "path": "bilqis_mlx/learning/_retention/tests/test_atlas_candidate.py", "test": "test_rejection_returns_exact_parent_with_all_custody"},
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/session/test_bamf_operator_rejection_continuation.py", "test": "test_real_rejections_replay_and_accumulate_without_parent_drift"}
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/session/test_bamf_operator_rejection_reentry.py", "test": "test_real_rejections_replay_and_accumulate_without_parent_drift"}
       ]
     },
     {

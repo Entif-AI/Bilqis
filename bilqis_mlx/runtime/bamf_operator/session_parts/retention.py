@@ -17,6 +17,20 @@ def _observe_retention_scope(observer, decision):
     (stage if callable(stage) else observer.update)(**fields)
 
 
+def _rejected_structural_weaknesses(
+        run_dir, context, selection, candidate_evidence, decision, how_outcome):
+    from bilqis_mlx.runtime.source_execution import SourceExecutionContext
+    if not isinstance(context, SourceExecutionContext):
+        return ()
+    from bilqis_mlx.runtime.structural_weakness_replay import (
+        derive_rejected_weaknesses,
+    )
+    return derive_rejected_weaknesses(
+        run_dir, context, selection, candidate_evidence,
+        rejection_reason=decision.reason,
+        outcome_sha256=how_outcome["outcome_sha256"])
+
+
 def retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
         capture, rejection_journal_ordinal, rejection_attempt_ordinal,
@@ -71,8 +85,7 @@ def retention_result(
             # Projection is observation-only and must not gate C05/B13 completion.
             pass
     resource = resource_observation(
-        run_dir, tuple(steps),
-        getattr(context, "_source_preparation_metrics", None),
+        run_dir, tuple(steps), getattr(context, "_source_preparation_metrics", None),
         identity_metrics=identity_metrics)
     resource.update({
         "evidence_bytes_written": candidate_evidence["persistence"]["bytes_written"],
@@ -85,6 +98,8 @@ def retention_result(
         build_outcome, carry_credit_to_successor, credited_visit,
     )
     how_outcome = build_outcome(run_dir, selection, evaluation, decision, candidate_evidence)
+    structural_weaknesses = (() if decision.accepted else _rejected_structural_weaknesses(
+        run_dir, context, selection, candidate_evidence, decision, how_outcome))
     successor, learning_health = _accepted_successor(
         decision, run_dir, parent, context, atlas_path, selection, capability,
         cache, retained,
@@ -97,6 +112,7 @@ def retention_result(
         retained=retained, capability=capability, successor=successor,
         identity_metrics=identity_metrics, resource=resource,
         candidate_evidence=candidate_evidence, how_outcome=how_outcome,
+        structural_weaknesses=structural_weaknesses,
         learning_health=learning_health,
         rejection_journal_ordinal=rejection_journal_ordinal,
         rejection_attempt_ordinal=rejection_attempt_ordinal)

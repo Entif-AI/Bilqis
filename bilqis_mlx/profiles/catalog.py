@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from functools import cache
 
 from ..factory.executable_release import ExecutableFactoryRelease
+from ..factory.model import ProviderDimensionError
 from ..factory.execution import (
     CapabilityProfile,
     CurriculumProfile,
@@ -32,8 +33,15 @@ class CatalogProfileTransition:
 
 
 def numeric_scope_bounds() -> tuple[int, int]:
-    from ..numeric_staircase import INITIAL_MAXIMUM, FINAL_MAXIMUM
-    return INITIAL_MAXIMUM, FINAL_MAXIMUM
+    from ..source_adapters.school import live_source_registry
+    policies = live_source_registry().dimension_policies("source.finite-numeric/v2")
+    if len(policies) != 1 or policies[0].dimension_id != "numeric-root":
+        raise ValueError(ProviderDimensionError.POLICY_REQUIRED.value)
+    values = policies[0].progression_values
+    try:
+        return int(values[0]), int(values[-1])
+    except (TypeError, ValueError) as exc:
+        raise ValueError(ProviderDimensionError.POLICY_INVALID.value) from exc
 
 
 def displayed_numeric_maximum(state: dict | None):
@@ -100,12 +108,12 @@ def numeric_entry_transition(
         grade.grade_id
         for grade in release.curriculum.grades[next_index + 1:])
     profile = with_disabled_future_grades(profile, future)
-    from ..numeric_staircase import FINAL_MAXIMUM
+    _, final_maximum = numeric_scope_bounds()
     return CatalogProfileTransition(
         profile=profile,
         graph=expanded_graph(graph),
         numeric_scope_final_maximum=(
-            FINAL_MAXIMUM if maximum < FINAL_MAXIMUM else None),
+            final_maximum if maximum < final_maximum else None),
     )
 
 
@@ -118,8 +126,9 @@ def _validate_numeric_scope_target(
         release.verify()
     active_grade_missing = (
         is_release and require_active_grade and not release.execution_plan.grades)
+    _, terminal = numeric_scope_bounds()
     if (not is_release or type(maximum) is not int or
-            not 1 <= maximum <= 10 or active_grade_missing):
+            not 1 <= maximum <= terminal or active_grade_missing):
         raise ValueError("FACTORY_NUMERIC_SCOPE_ADVANCE_INVALID")
 
 
@@ -165,34 +174,27 @@ def next_numeric_scope_profile(
         release: ExecutableFactoryRelease, *, final_maximum: int | None = None
         ) -> CurriculumProfile | None:
     """Return the next bounded numeric-domain profile, preserving other grades."""
-    from ..numeric_staircase import FINAL_MAXIMUM
     if final_maximum is None:
-        final_maximum = FINAL_MAXIMUM
+        final_maximum = numeric_scope_bounds()[1]
     _validate_numeric_scope_target(
         release, final_maximum, require_active_grade=False)
-    if not release.execution_plan.grades:
+    from ..factory.provider_dimensions import (
+        next_provider_dimension_profile, provider_dimension_state)
+    try:
+        state = provider_dimension_state(release, "numeric-root")
+    except ValueError:
         return None
-    active_grade = release.execution_plan.grades[-1]
-    executions = tuple(
-        capability for capability in release.execution_plan.capabilities
-        if capability.grade_id == active_grade.grade_id)
-    domains = {
-        family.values
-        for capability in executions
-        for family in capability.answer_families
-        if family.kind == "numeric_active"
-    }
-    if not domains:
+    if int(state.value) >= final_maximum:
         return None
-    if len(domains) != 1:
-        raise ValueError("FACTORY_NUMERIC_SCOPE_DOMAIN_INCONSISTENT")
-    values = next(iter(domains))
-    if values != tuple(str(index) for index in range(len(values))):
-        raise ValueError("FACTORY_NUMERIC_SCOPE_DOMAIN_INVALID")
-    maximum = len(values) - 1
-    if maximum >= final_maximum:
+    profile = next_provider_dimension_profile(release, "numeric-root")
+    if profile is None:
         return None
-    return numeric_scope_profile(release, maximum + 1)
+    next_value = int(profile.profile_id.rsplit("/", 1)[-1])
+    if next_value > final_maximum:
+        return None
+    return CurriculumProfile(
+        f"{release.profile.profile_id.rsplit('/numeric-0-', 1)[0]}"
+        f"/numeric-0-{next_value}", profile.grades)
 
 
 @cache

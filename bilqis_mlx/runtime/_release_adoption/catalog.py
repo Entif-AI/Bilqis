@@ -10,6 +10,7 @@ import bilqis_mlx.compatibility.executable_projection as _compatibility_executab
 import bilqis_mlx.curriculum.scheduler as _curriculum_scheduler
 import bilqis_mlx.factory.executable_release as _factory_executable_release
 import bilqis_mlx.factory.live_answers as _factory_live_answers
+import bilqis_mlx.factory.provider_dimensions as _factory_provider_dimensions
 import bilqis_mlx.factory.schedule as _factory_schedule
 import bilqis_mlx.learning.championship_identity as _learning_championship_identity
 import bilqis_mlx.profiles.catalog as _profiles_catalog
@@ -91,6 +92,7 @@ def _catalog_adoption_receipt(
     graph_sha = _runtime_state._fingerprint(transition.graph)
     heads = _factory_executable_release.answer_heads_from_executable_release(successor, transition.graph)
     numeric_values = heads.get("numeric_active", {}).get("values")
+    dimensions = _factory_provider_dimensions.provider_dimension_telemetry(successor)
     updated = {
         **receipt,
         "curriculum_mode": compatibility_course.version,
@@ -112,6 +114,7 @@ def _catalog_adoption_receipt(
             len(numeric_values) - 1 if numeric_values is not None else
             receipt.get("numeric_maximum")),
         "numeric_scope_final_maximum": transition.numeric_scope_final_maximum,
+        "provider_dimensions": list(dimensions),
         "mentor_epoch": epoch,
         "championship_epoch_history": history,
         "last_exam": None,
@@ -133,6 +136,7 @@ def _catalog_adoption_event(
         "student_sha256": pointer.sha256,
         "optimizer_step": pointer.optimizer_step,
         "numeric_maximum": record.get("numeric_maximum"),
+        "provider_dimensions": record.get("provider_dimensions", []),
         "factory_release_sha256": successor.release_sha256,
         "actual_neural_updates": 0,
     }

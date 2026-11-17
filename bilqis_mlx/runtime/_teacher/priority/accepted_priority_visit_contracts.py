@@ -39,6 +39,7 @@ class PriorityVisitResult:
     holds: tuple
     _run_dir: str
     _lawful_frontier: object = field(repr=False, compare=False)
+    _cadence_authorization: object = field(repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
         _invalid('BAMF_PRIORITY_RESULT_CALLER_CONSTRUCTION_FORBIDDEN')
@@ -68,7 +69,8 @@ class PriorityVisitResult:
 
 def _issue_result(status, option_id, offer, visit, policy, metadata, grade, holds,
                   run_dir, lawful_frontier=None, ranking_evidence=None,
-                  source_materialization_wall_seconds=None):
+                  source_materialization_wall_seconds=None,
+                  cadence_authorization=None):
     if status == 'TEACHER_SELECTED' and lawful_frontier is None:
         _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_REQUIRED')
     result = object.__new__(PriorityVisitResult)
@@ -86,14 +88,15 @@ def _issue_result(status, option_id, offer, visit, policy, metadata, grade, hold
             ('_ranking_evidence_json', ranking_evidence_json),
             ('_source_materialization_wall_seconds', source_materialization_wall_seconds),
             ('lesson_grade', grade), ('holds', tuple(holds)), ('_run_dir', str(run_dir)),
-            ('_lawful_frontier', lawful_frontier)):
+            ('_lawful_frontier', lawful_frontier),
+            ('_cadence_authorization', cadence_authorization)):
         object.__setattr__(result, name, value)
     visit_digest = None if visit is None else _digest(_json(visit.identity.to_record()))
     _ISSUED[result] = (
         status, option_id, id(offer), id(visit), visit_digest,
         None if policy_json is None else _digest(policy_json),
         metadata_json, ranking_evidence_json, grade, tuple(holds), str(run_dir),
-        id(lawful_frontier))
+        id(lawful_frontier), id(cadence_authorization))
     return result
 
 
@@ -106,8 +109,38 @@ def _require_issued(result):
         None if result._policy_json is None else _digest(result._policy_json),
         result._metadata_json, result._ranking_evidence_json, result.lesson_grade,
         result.holds, result._run_dir, id(result._lawful_frontier))
+    actual = (*actual, id(result._cadence_authorization))
     if actual != _ISSUED[result]:
         _invalid('BAMF_PRIORITY_RESULT_DRIFT')
+
+
+def require_priority_cadence_authorization(result):
+    _require_issued(result)
+    authorization = result._cadence_authorization
+    if authorization is None:
+        return None
+    from bilqis_mlx.runtime.active_grade_cadence_contracts import (
+        ActiveGradeCadenceAuthorization,
+    )
+    if type(authorization) is not ActiveGradeCadenceAuthorization:
+        _invalid('BAMF_ACTIVE_GRADE_CADENCE_AUTHORITY_INVALID')
+    authorization.verify()
+    return authorization
+
+
+def require_priority_lawful_frontier(result):
+    """Return only the live frontier retained by one issued priority result."""
+    _require_issued(result)
+    frontier = result._lawful_frontier
+    if frontier is None:
+        _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_REQUIRED')
+    from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import (
+        LawfulTeachingFrontier,
+        _is_issued,
+    )
+    if type(frontier) is not LawfulTeachingFrontier or not _is_issued(frontier):
+        _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_INVALID')
+    return frontier
 
 
 def accepted_priority_school(parent, program, *, candidate_identity_sha256=None):
@@ -127,4 +160,8 @@ def accepted_priority_school(parent, program, *, candidate_identity_sha256=None)
     )
 
 
-__all__ = ("PriorityVisitResult", "accepted_priority_school")
+__all__ = (
+    "PriorityVisitResult", "accepted_priority_school",
+    "require_priority_cadence_authorization",
+    "require_priority_lawful_frontier",
+)
