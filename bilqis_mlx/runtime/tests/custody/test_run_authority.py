@@ -53,6 +53,12 @@ class NativeRunAuthorityTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "EXPERIMENT_RUN_UNREGISTERED_PATH"):
             issue_experiment_run_authority(self.owner, rogue, self.run_id)
 
+    def test_normal_run_without_issue_authority_is_not_location_scoped(self):
+        with TemporaryDirectory() as external_directory:
+            external = Path(external_directory) / "aspirant"
+            external.mkdir()
+            self.assertIsNone(bind_native_run_authority(external, None))
+
     def test_expired_authority_fails_before_binding(self):
         authority = issue_experiment_run_authority(
             self.owner, self.run, self.run_id, expires_at_unix_seconds=10)
