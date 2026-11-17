@@ -142,6 +142,33 @@ def _advance_numeric_profile(run_dir, receipt, grade_a_course, source_root, grap
         adopt_executable_profile=_adopt_executable_profile)
 
 
+def _advance_provider_dimensions(
+        run_dir, receipt, grade_a_course, source_root, graph,
+        course, release, program, *, numeric_staircase):
+    """Generic provider progression with numeric-only migration kept at the edge."""
+    receipt, course, release, program = _numeric._reconcile_legacy_numeric_profile(
+        run_dir, receipt, grade_a_course, source_root, graph,
+        course, release, program, numeric_staircase=numeric_staircase,
+        adopt_executable_profile=_adopt_executable_profile)
+    if receipt.get("qualification") is not None:
+        return receipt, course, release, program
+    final_scope = receipt.get("numeric_scope_final_maximum")
+    current = _runtime_admission._require_executable_factory_admission(
+        run_dir, receipt, graph)
+    if final_scope is not None:
+        try:
+            from bilqis_mlx.factory.provider_dimensions import provider_dimension_state
+            numeric = provider_dimension_state(current, "numeric-root")
+        except ValueError:
+            numeric = None
+        if numeric is not None and int(numeric.value) >= final_scope:
+            return receipt, course, release, program
+    return _numeric._advance_provider_dimensions(
+        run_dir, receipt, grade_a_course, source_root, graph,
+        course, release, program,
+        adopt_executable_profile=_adopt_executable_profile)
+
+
 def _auto_adopt_known_grade_boundary(
         mx, run_dir, receipt, course, grade_a_course, source_root, manifest,
         parameters, optimizer, graph, *, reserve_gib, full_grade_b,

@@ -12,7 +12,7 @@ from ..live_grade_b import _u7c_pattern_counts
 
 from ..factory.adapters import RegisteredSourceAdapter, SourceAdapterRegistry
 from ..factory.autonomy import SupplementalEvidenceSpec
-from ..factory.model import SourceAdapter
+from ..factory.model import ProviderDimensionPolicy, SourceAdapter
 from ..curriculum import BOOLEAN_OPERATORS
 from ._school.numeric import check_numeric, semantic_footprint as numeric_semantic_footprint
 from .structure import inspect_boolean_identification, inspect_source_query
@@ -63,7 +63,12 @@ from ..live_grade_c import (GENERATOR as C_COHORT_GENERATOR, RELEASE as C_RELEAS
 from ..numeric_curriculum import ORACLE as C_ORACLE, draw_numeric
 
 
-from ..numeric_staircase import RELEASE as STAIRCASE_RELEASE, constructor_digest as staircase_digest
+from ..numeric_staircase import (
+    FINAL_MAXIMUM as NUMERIC_FINAL_MAXIMUM,
+    INITIAL_MAXIMUM as NUMERIC_INITIAL_MAXIMUM,
+    RELEASE as STAIRCASE_RELEASE,
+    constructor_digest as staircase_digest,
+)
 
 from ..boolean_association import (
     VERSION as BOOLEAN_ASSOCIATION_OPTION,
@@ -178,7 +183,26 @@ def live_source_registry() -> SourceAdapterRegistry:
             cohort_releases=((C_RELEASE, c_digest()),
                              (STAIRCASE_RELEASE, staircase_digest()))), draw_c, check_numeric,
             witness=witness_numeric_obligation,
-            semantic_footprint=numeric_semantic_footprint),
+            semantic_footprint=numeric_semantic_footprint,
+            dimension_policies=(ProviderDimensionPolicy(
+                provider_id="source.finite-numeric/v2",
+                dimension_id="numeric-root",
+                parameter_name="numbers",
+                progression_values=tuple(
+                    str(value) for value in range(
+                        NUMERIC_INITIAL_MAXIMUM, NUMERIC_FINAL_MAXIMUM + 1)),
+                selection_mode="CANONICAL_PREFIX",
+                step_mode="ADJACENT",
+                advance_trigger="DEVELOPMENTAL_BOUNDARY",
+                terminal_value=str(NUMERIC_FINAL_MAXIMUM),
+                source_constraint="SAME_PROVIDER_BINDING",
+                admission_constraint="EXISTING_CAPABILITY_PROFILE",
+                telemetry_projection="INTROOT",
+                answer_family_kind="numeric_active",
+                changes_source_projection=True,
+                changes_assessment_scope=True,
+                changes_answer_domain=True,
+            ),)),
         copular_adapter(),
         event_adapter(),
         event_intro_adapter(),

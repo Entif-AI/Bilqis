@@ -1,11 +1,11 @@
 """Immutable release artifact and manifest contract."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from ..answers import AnswerModality
 from ..curriculum_definition import CurriculumDefinition, SourceBindingSet
 from ..execution import CurriculumDelta, CurriculumProfile, ExecutionPlan
-from ..model import SourceAdapter
+from ..model import ProviderDimensionPolicy, SourceAdapter
 from .primitives import AnswerHeadBinding, ExecutableVerificationReceipt
 
 from .. import executable_release as _api
@@ -30,6 +30,9 @@ class ExecutableFactoryRelease:
     transition: CurriculumDelta | None
     release_sha256: str
     semantic_graph_sha256: str | None = None
+    provider_dimension_policies: tuple[ProviderDimensionPolicy, ...] = ()
+    _provider_dimension_policy_wire: bool = field(
+        default=True, compare=False, repr=False)
 
     def __post_init__(self) -> None:
         if self.semantic_graph_sha256 is not None:
@@ -72,6 +75,9 @@ class ExecutableFactoryRelease:
 
         if self.semantic_graph_sha256 is not None:
             payload["semantic_graph_sha256"] = self.semantic_graph_sha256
+        if self._provider_dimension_policy_wire:
+            payload["provider_dimension_policies"] = [
+                _api.asdict(item) for item in self.provider_dimension_policies]
         return payload
 
     def expected_digest(self) -> str:
@@ -148,6 +154,10 @@ class ExecutableFactoryRelease:
             profile = _api._decode_profile(payload["profile"])
             plan = _api._decode_plan(payload["execution_plan"])
             verification = _api._decode_verification(payload["verification"])
+            policy_wire = "provider_dimension_policies" in payload
+            policies = tuple(
+                _api.ProviderDimensionPolicy(**_api._tuples(item))
+                for item in payload.get("provider_dimension_policies", ()))
             transition = (
                 None if payload["transition"] is None
                 else _api.CurriculumDelta(**_api._tuples(payload["transition"])))
@@ -172,6 +182,8 @@ class ExecutableFactoryRelease:
                 transition=transition,
                 release_sha256=release_sha256,
                 semantic_graph_sha256=payload.get("semantic_graph_sha256"),
+                provider_dimension_policies=policies,
+                _provider_dimension_policy_wire=policy_wire,
             )
         except (KeyError, TypeError, AttributeError) as exc:
             raise ValueError("FACTORY_EXECUTABLE_RELEASE_MANIFEST_INVALID") from exc
