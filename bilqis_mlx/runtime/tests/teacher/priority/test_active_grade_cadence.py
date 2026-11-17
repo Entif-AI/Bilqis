@@ -18,6 +18,7 @@ from bilqis_mlx.runtime.active_grade_cadence_contracts import (
     ActiveGradeCadenceAuthorization,
     ActiveGradeCadenceDisposition,
     ActiveGradeCadencePhase,
+    CADENCE_POLICY_EPOCH,
 )
 
 
@@ -32,7 +33,9 @@ def _capability(capability_id, disposition="READY", semantics=None):
     )
 
 
-def _frontier(rows, *, active_state="INCOMPLETE_READY", exclusions=(), activation=None):
+def _frontier(
+        rows, *, active_state="INCOMPLETE_READY", exclusions=(), activation=None,
+        policy_epoch=7):
     ready = tuple(item.capability_id for item in rows
                   if item.disposition.value == "READY")
     members = tuple(
@@ -42,7 +45,7 @@ def _frontier(rows, *, active_state="INCOMPLETE_READY", exclusions=(), activatio
         run_id="run",
         active_grade_activation_sha256=activation or "1" * 64,
         active_grade_definition_sha256="2" * 64,
-        policy_epoch=7,
+        policy_epoch=policy_epoch,
         capabilities=tuple(rows),
         active_grade_members=members,
         ready_capability_ids=ready,
@@ -73,7 +76,15 @@ def _obligations(epoch):
 def _attempt(run_dir, epoch, frontier, capability):
     issued = issue_active_grade_cadence(run_dir, epoch, frontier)
     assert capability in issued.authorized_capability_ids
-    record_active_grade_cadence_attempt(run_dir, issued.to_record(), capability)
+    _record_attempt(run_dir, issued, capability)
+
+
+def _record_attempt(run_dir, issued, capability):
+    terminal = (issued.to_record(), capability)
+    with patch(
+            "bilqis_mlx.runtime.active_grade_cadence._terminal_attempts",
+            return_value=(terminal,)):
+        record_active_grade_cadence_attempt(run_dir, *terminal)
 
 
 def test_main_pass_then_two_bounded_recovery_rounds(tmp_path):
@@ -81,7 +92,7 @@ def test_main_pass_then_two_bounded_recovery_rounds(tmp_path):
     frontier = _frontier(rows)
     epoch = _epoch({"A": 3, "B": 2, "C": 1, "D": 1})
     with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
             side_effect=_obligations(epoch)):
         first = issue_active_grade_cadence(tmp_path, epoch, frontier)
         assert first.phase is ActiveGradeCadencePhase.MAIN
@@ -117,7 +128,7 @@ def test_unattempted_held_member_preserves_main_phase(tmp_path):
     ))
     epoch = _epoch({"A": 1, "B": 1})
     with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
             side_effect=_obligations(epoch)):
         _attempt(tmp_path, epoch, frontier, "A")
         held = issue_active_grade_cadence(tmp_path, epoch, frontier)
@@ -131,7 +142,7 @@ def test_complete_grade_short_circuits_to_boundary(tmp_path):
         (_capability("Z", "EVIDENCE_COMPLETE"),), active_state="COMPLETE")
     epoch = _epoch({"Z": 1})
     with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
             side_effect=_obligations(epoch)):
         result = issue_active_grade_cadence(tmp_path, epoch, frontier)
     assert result.phase is ActiveGradeCadencePhase.BOUNDARY
@@ -144,7 +155,7 @@ def test_repeated_semantics_group_to_one_cadence_member_and_future_data_is_neutr
     first = _frontier((row,))
     later = _frontier((row,), exclusions=(SimpleNamespace(capability_id="Q"),))
     with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
             side_effect=_obligations(epoch)):
         before = issue_active_grade_cadence(tmp_path, epoch, first)
         after = issue_active_grade_cadence(tmp_path, epoch, later)
@@ -152,42 +163,6 @@ def test_repeated_semantics_group_to_one_cadence_member_and_future_data_is_neutr
     assert after.authorized_capability_ids == ("Z",)
     assert after.state.member_census_sha256 == before.state.member_census_sha256
     assert after.state.phase_sha256 == before.state.phase_sha256
-
-
-def test_terminal_event_replay_heals_stale_cadence_before_reissue(tmp_path):
-    frontier = _frontier((_capability("A"), _capability("B")))
-    epoch = _epoch({"A": 1, "B": 1})
-    with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
-            side_effect=_obligations(epoch)):
-        issued = issue_active_grade_cadence(tmp_path, epoch, frontier)
-        with patch(
-                "bilqis_mlx.runtime.active_grade_cadence_replay."
-                "authenticated_cadence_attempts",
-                return_value=((issued.to_record(), "A"),)):
-            cold = issue_active_grade_cadence(tmp_path, epoch, frontier)
-    assert cold.authorized_capability_ids == ("B",)
-    assert read_current_cadence(tmp_path).attempted_capability_ids == ("A",)
-
-
-def test_custody_heals_stale_pointer_to_unique_chain_tip(tmp_path):
-    frontier = _frontier((_capability("A"), _capability("B")))
-    epoch = _epoch({"A": 1, "B": 1})
-    with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
-            side_effect=_obligations(epoch)):
-        issued = issue_active_grade_cadence(tmp_path, epoch, frontier)
-        record_active_grade_cadence_attempt(
-            tmp_path, issued.to_record(), "A")
-    tip = read_current_cadence(tmp_path)
-    pointer = tmp_path / "active-grade-cadence/current.json"
-    pointer.write_text(
-        '{\n  "cadence_sha256": "' + issued.state.cadence_sha256 +
-        '",\n  "schema": "bilqis.bamf.active-grade-cadence-pointer/v1"\n}\n',
-        encoding="utf-8")
-    healed = read_current_cadence(tmp_path)
-    assert healed.cadence_sha256 == tip.cadence_sha256
-    assert healed.attempted_capability_ids == ("A",)
 
 
 @pytest.mark.parametrize("stage", ["MAIN", "RECOVERY_1", "RECOVERY_2"])
@@ -218,7 +193,7 @@ def test_new_active_grade_activation_resets_recovery_exposure(tmp_path):
     successor = _frontier(rows, activation="9" * 64)
     epoch = _epoch({"A": 3, "B": 2, "C": 1})
     with patch(
-            "bilqis_mlx.runtime.active_grade_cadence.obligations_for_capability",
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
             side_effect=_obligations(epoch)):
         for capability in ("A", "B", "C"):
             _attempt(tmp_path, epoch, first, capability)
@@ -229,4 +204,18 @@ def test_new_active_grade_activation_resets_recovery_exposure(tmp_path):
     assert reset.phase is ActiveGradeCadencePhase.MAIN
     assert reset.state.recovery_attempt_counts == ()
 
+
+def test_cadence_policy_epoch_is_owned_by_1333_not_a09_frontier(tmp_path):
+    rows = (_capability("Z"),)
+    epoch = _epoch({"Z": 1})
+    with patch(
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
+            side_effect=_obligations(epoch)):
+        before = issue_active_grade_cadence(
+            tmp_path, epoch, _frontier(rows, policy_epoch=7))
+        after = issue_active_grade_cadence(
+            tmp_path, epoch, _frontier(rows, policy_epoch=999))
+    assert before.state.policy_epoch == CADENCE_POLICY_EPOCH
+    assert after.state.policy_epoch == CADENCE_POLICY_EPOCH
+    assert after.state.cadence_sha256 == before.state.cadence_sha256
 

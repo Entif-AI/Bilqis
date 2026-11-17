@@ -12,6 +12,7 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 CADENCE_SCHEMA = "bilqis.bamf.active-grade-cadence/v1"
 CADENCE_POINTER_SCHEMA = "bilqis.bamf.active-grade-cadence-pointer/v1"
 CADENCE_AUTHORIZATION_SCHEMA = "bilqis.bamf.active-grade-cadence-authorization/v1"
+CADENCE_POLICY_EPOCH = 1
 RECOVERY_WIDTH = 3
 MAX_RECOVERY_ROUNDS = 2
 _ISSUER = object()
@@ -55,6 +56,7 @@ class ActiveGradeCadenceState:
     active_grade_activation_sha256: str
     active_grade_definition_sha256: str
     policy_epoch: int
+    cadence_epoch: int
     member_census_sha256: str
     phase: ActiveGradeCadencePhase
     phase_round: int
@@ -79,6 +81,7 @@ class ActiveGradeCadenceState:
             "active_grade_activation_sha256": self.active_grade_activation_sha256,
             "active_grade_definition_sha256": self.active_grade_definition_sha256,
             "policy_epoch": self.policy_epoch,
+            "cadence_epoch": self.cadence_epoch,
             "member_census_sha256": self.member_census_sha256,
             "phase": self.phase.value,
             "phase_round": self.phase_round,
@@ -109,6 +112,7 @@ class ActiveGradeCadenceState:
                     self.deficit_evidence_sha256,
                     self.cadence_sha256))
                 or type(self.policy_epoch) is not int or self.policy_epoch < 0
+                or type(self.cadence_epoch) is not int or self.cadence_epoch < 0
                 or not isinstance(self.phase, ActiveGradeCadencePhase)
                 or self.phase_round not in set(range(MAX_RECOVERY_ROUNDS + 2))
                 or (self.phase is ActiveGradeCadencePhase.MAIN and self.phase_round != 0)
@@ -129,7 +133,7 @@ class ActiveGradeCadenceState:
             _invalid("BAMF_ACTIVE_GRADE_CADENCE_INVALID")
 
 
-def issue_cadence_state(**values) -> ActiveGradeCadenceState:
+def _issue_cadence_state(**values) -> ActiveGradeCadenceState:
     state = object.__new__(ActiveGradeCadenceState)
     for name, value in values.items():
         object.__setattr__(state, name, value)
@@ -141,11 +145,19 @@ def issue_cadence_state(**values) -> ActiveGradeCadenceState:
     return state
 
 
+def _is_issued_cadence_state(state) -> bool:
+    if (type(state) is not ActiveGradeCadenceState
+            or getattr(state, "_issuance", None) is not _ISSUER):
+        return False
+    state.verify()
+    return True
+
+
 def cadence_state_from_record(record: dict) -> ActiveGradeCadenceState:
     expected = {
         "schema", "run_id", "revision", "predecessor_sha256",
         "active_grade_activation_sha256", "active_grade_definition_sha256",
-        "policy_epoch", "member_census_sha256", "phase", "phase_round",
+        "policy_epoch", "cadence_epoch", "member_census_sha256", "phase", "phase_round",
         "phase_sha256", "phase_capability_ids", "attempted_capability_ids",
         "deficit_evidence_sha256", "recovery_attempt_counts", "cadence_sha256",
     }
@@ -156,7 +168,7 @@ def cadence_state_from_record(record: dict) -> ActiveGradeCadenceState:
                                                            "phase_capability_ids",
                                                            "attempted_capability_ids",
                                                            "recovery_attempt_counts"}}
-        state = issue_cadence_state(
+        state = _issue_cadence_state(
             **values,
             phase=ActiveGradeCadencePhase(record["phase"]),
             phase_capability_ids=tuple(record["phase_capability_ids"]),
@@ -204,6 +216,7 @@ class ActiveGradeCadenceAuthorization:
         self.verify()
         return {
             "schema": CADENCE_AUTHORIZATION_SCHEMA,
+            "run_id": self.state.run_id,
             "phase": self.state.phase.value,
             "phase_round": self.state.phase_round,
             "phase_sha256": self.state.phase_sha256,
@@ -213,12 +226,17 @@ class ActiveGradeCadenceAuthorization:
             "member_census_sha256": self.state.member_census_sha256,
             "deficit_evidence_sha256": self.state.deficit_evidence_sha256,
             "policy_epoch": self.state.policy_epoch,
+            "cadence_epoch": self.state.cadence_epoch,
+            "phase_capability_ids": list(self.state.phase_capability_ids),
+            "recovery_attempt_counts": [
+                list(item) for item in self.state.recovery_attempt_counts
+            ],
             "authorized_capability_ids": list(self.authorized_capability_ids),
             "disposition": self.disposition.value,
         }
 
 
-def issue_cadence_authorization(
+def _issue_cadence_authorization(
         state: ActiveGradeCadenceState,
         authorized_capability_ids: tuple[str, ...],
         disposition: ActiveGradeCadenceDisposition) -> ActiveGradeCadenceAuthorization:
@@ -235,7 +253,7 @@ __all__ = (
     "ActiveGradeCadenceAuthorization", "ActiveGradeCadenceDisposition",
     "ActiveGradeCadencePhase",
     "ActiveGradeCadenceState", "CADENCE_AUTHORIZATION_SCHEMA",
-    "CADENCE_POINTER_SCHEMA", "CADENCE_SCHEMA", "MAX_RECOVERY_ROUNDS",
-    "RECOVERY_WIDTH", "cadence_state_from_record", "issue_cadence_authorization",
-    "issue_cadence_state",
+    "CADENCE_POINTER_SCHEMA", "CADENCE_POLICY_EPOCH", "CADENCE_SCHEMA",
+    "MAX_RECOVERY_ROUNDS",
+    "RECOVERY_WIDTH", "cadence_state_from_record",
 )

@@ -55,6 +55,20 @@ def _write_pointer(run_dir: Path, cadence_sha256: str) -> None:
     )
 
 
+def _writer_temp(path: Path) -> bool:
+    parts = path.name.split(".")
+    return (
+        len(parts) == 5
+        and parts[0] == ""
+        and len(parts[1]) == 64
+        and all(char in "0123456789abcdef" for char in parts[1])
+        and parts[2] == "json"
+        and len(parts[3]) == 32
+        and all(char in "0123456789abcdef" for char in parts[3])
+        and parts[4] == "tmp"
+    )
+
+
 def persist_cadence_state(run_dir: Path, state: ActiveGradeCadenceState) -> None:
     states = _states_root(run_dir)
     states.mkdir(parents=True, exist_ok=True)
@@ -73,8 +87,10 @@ def _state_chain_tip(run_dir: Path) -> ActiveGradeCadenceState | None:
     if not states_root.exists():
         return None
     entries = tuple(states_root.iterdir())
-    if any(item.is_symlink() or not item.is_file() or item.suffix != ".json"
-           for item in entries):
+    if any(item.is_symlink() or not item.is_file() for item in entries):
+        _invalid("BAMF_ACTIVE_GRADE_CADENCE_CUSTODY_UNSAFE")
+    entries = tuple(item for item in entries if not _writer_temp(item))
+    if any(item.suffix != ".json" for item in entries):
         _invalid("BAMF_ACTIVE_GRADE_CADENCE_CUSTODY_UNSAFE")
     if not entries:
         return None
