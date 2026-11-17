@@ -8,6 +8,10 @@ from bilqis_mlx.factory.atlas_frontier_contracts import _bytes, _fail
 from bilqis_mlx.factory.executable_release import ExecutableFactoryRelease
 
 from .contracts import GeneratedGradeProposal
+from .proposal_contracts import GENERATED_GRADE_PROPOSAL_V2
+
+GENERATED_GRADE_DEFINITION_V1 = "bilqis.generated-grade-definition/v1"
+GENERATED_GRADE_DEFINITION_V2 = "bilqis.generated-grade-definition/v2"
 
 
 @dataclass(frozen=True)
@@ -32,17 +36,24 @@ class GeneratedGradeDefinition:
     policy_sha256: str
     members: tuple[GeneratedGradeMember, ...]
     definition_sha256: str
-    schema: str = "bilqis.generated-grade-definition/v1"
+    predecessor_certification_sha256: str | None = None
+    schema: str = GENERATED_GRADE_DEFINITION_V1
 
     @property
     def member_semantic_ids(self) -> tuple[str, ...]:
         return tuple(item.semantic_id for item in self.members)
 
     def expected_digest(self) -> str:
-        return hashlib.sha256(_bytes({
+        payload = {
             field.name: getattr(self, field.name)
-            for field in fields(self) if field.name != "definition_sha256"
-        })).hexdigest()
+            for field in fields(self)
+            if field.name not in {
+                "definition_sha256", "predecessor_certification_sha256"}
+        }
+        if self.schema == GENERATED_GRADE_DEFINITION_V2:
+            payload["predecessor_certification_sha256"] = (
+                self.predecessor_certification_sha256)
+        return hashlib.sha256(_bytes(payload)).hexdigest()
 
     def verify(self) -> None:
         digests = (
@@ -50,7 +61,8 @@ class GeneratedGradeDefinition:
             self.proposal_sha256, self.learner_foot_sha256,
             self.policy_sha256, self.definition_sha256,
         )
-        if (self.schema != "bilqis.generated-grade-definition/v1"
+        if (self.schema not in {
+                    GENERATED_GRADE_DEFINITION_V1, GENERATED_GRADE_DEFINITION_V2}
                 or any(not _sha(value) for value in digests)
                 or not self.release_lineage_sha256s
                 or any(not _sha(value) for value in self.release_lineage_sha256s)
@@ -58,6 +70,10 @@ class GeneratedGradeDefinition:
                 or not self.members
                 or self.members != tuple(self.members)
                 or len({item.semantic_id for item in self.members}) != len(self.members)
+                or (self.schema == GENERATED_GRADE_DEFINITION_V1
+                    and self.predecessor_certification_sha256 is not None)
+                or (self.schema == GENERATED_GRADE_DEFINITION_V2
+                    and not _sha(self.predecessor_certification_sha256))
                 or self.definition_sha256 != self.expected_digest()):
             _fail("BAMF_GENERATED_GRADE_DEFINITION_INVALID")
 
@@ -127,6 +143,12 @@ def _seal_generated_grade(
         proposal.policy_sha256,
         tuple(members),
         "0" * 64,
+        predecessor_certification_sha256=(
+            proposal.predecessor_certification_sha256),
+        schema=(
+            GENERATED_GRADE_DEFINITION_V2
+            if proposal.schema == GENERATED_GRADE_PROPOSAL_V2
+            else GENERATED_GRADE_DEFINITION_V1),
     )
     result = replace(provisional, definition_sha256=provisional.expected_digest())
     result.verify()

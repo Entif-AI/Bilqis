@@ -90,7 +90,7 @@ def test_projection_rebuild_inside_recovery_preserves_round_and_exposure(tmp_pat
     assert dict(rebuilt.state.recovery_attempt_counts) == expected_exposure
 
 
-def test_new_evidence_epoch_ignores_old_recovery_history_on_projection_rebuild(tmp_path):
+def test_new_evidence_epoch_reauthenticates_boundary_without_reopening_cadence(tmp_path):
     rows = tuple(_capability(item) for item in ("A", "B", "C", "D"))
     frontier = _frontier(rows)
     first_epoch = _epoch({"A": 3, "B": 2, "C": 1, "D": 1})
@@ -108,15 +108,20 @@ def test_new_evidence_epoch_ignores_old_recovery_history_on_projection_rebuild(t
     second_epoch.checkpoint = type(first_epoch.checkpoint)(
         sha256="8" * 64, optimizer_step=12)
     with _obligation_patch(second_epoch):
-        reopened = issue_active_grade_cadence(tmp_path, second_epoch, frontier)
-        assert reopened.phase is ActiveGradeCadencePhase.MAIN
+        refreshed = issue_active_grade_cadence(tmp_path, second_epoch, frontier)
+        assert refreshed.phase is ActiveGradeCadencePhase.BOUNDARY
+        assert refreshed.disposition.value == "RECOVERY_EXHAUSTED"
+        assert refreshed.state.cadence_epoch == exhausted.state.cadence_epoch + 1
+        assert refreshed.state.deficit_evidence_sha256 != (
+            exhausted.state.deficit_evidence_sha256)
         shutil.rmtree(tmp_path / "active-grade-cadence")
         with patch(
                 "bilqis_mlx.runtime.active_grade_cadence_replay."
                 "authenticated_cadence_attempts", return_value=tuple(history)):
             rebuilt = issue_active_grade_cadence(tmp_path, second_epoch, frontier)
-    assert rebuilt.phase is ActiveGradeCadencePhase.MAIN
-    assert rebuilt.authorized_capability_ids == ("A", "B", "C", "D")
+    assert rebuilt.phase is ActiveGradeCadencePhase.BOUNDARY
+    assert rebuilt.disposition.value == "RECOVERY_EXHAUSTED"
+    assert rebuilt.authorized_capability_ids == ()
 
 
 def test_projection_writer_refuses_attempt_without_authenticated_terminal_custody(tmp_path):

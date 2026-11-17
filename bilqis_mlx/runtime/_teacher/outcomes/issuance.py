@@ -75,7 +75,7 @@ def selection_context(release, program, grade, phase, scope, diagnostics, capabi
 
 
 def build_outcome(run_dir, selection, evaluation, decision, candidate_evidence):
-    from bilqis_mlx.runtime.accepted_priority_visit import _require_issued
+    from bilqis_mlx.runtime.accepted_priority_visit_contracts import _require_issued
     from bilqis_mlx.runtime.factory_retention_owner import _require_factory_evaluation
     from bilqis_mlx.learning.atlas_retention_decision import _require_issued_decision
     from bilqis_mlx.runtime.bamf_operator.evidence_validation import read_candidate_horizon_evidence

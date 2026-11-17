@@ -6,14 +6,16 @@ from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
-from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 from bilqis_mlx.factory.tests.curriculum.generated_grade.test_definition import (
     _single_member_fixture,
 )
 from bilqis_mlx.runtime.generated_grade import (
     _issue_generated_grade_admission_authority,
+    _predecessor_certification_sha256,
     _persist_issued_proposal,
     _read_issued_proposal,
+    _recompute_accepted_generated_grade,
     seal_accepted_generated_grade,
 )
 
@@ -162,3 +164,89 @@ class AcceptedGeneratedGradeDefinitionTests(unittest.TestCase):
             tuple(inspect.signature(seal_accepted_generated_grade).parameters),
             ("run_dir", "proposal"),
         )
+
+    def test_successor_recompute_binds_exact_current_predecessor_certification(self):
+        from bilqis_mlx.runtime.atlas_flywheel_runtime import (
+            AcceptedAtlasFlywheelSupervisor,
+        )
+        release = __import__(
+            "bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier_selection",
+            fromlist=["_release"],
+        )._release()
+        capability = next(iter(release.curriculum.capability_map.values()))
+        _exact_release, proposal = _single_member_fixture(
+            release.semantic_catalog[0], capability.capability_id)
+        supervisor = AcceptedAtlasFlywheelSupervisor(Path("/accepted-run"), None)
+        epoch = SimpleNamespace(
+            snapshot=object(), closure=object(), current_release=object())
+        state = SimpleNamespace(epoch=epoch, learner_evidence=object(), plan=object())
+        with patch.object(
+            AcceptedAtlasFlywheelSupervisor, "load_state", return_value=state,
+        ), patch(
+            "bilqis_mlx.runtime.generated_grade._predecessor_certification_sha256",
+            return_value="c" * 64,
+        ), patch(
+            "bilqis_mlx.runtime.generated_grade._compile_generated_grade_inputs",
+            return_value=object(),
+        ) as compile_inputs, patch(
+            "bilqis_mlx.runtime.generated_grade.synthesize_generated_grade",
+            return_value=proposal,
+        ):
+            self.assertEqual(
+                _recompute_accepted_generated_grade(supervisor), proposal)
+        compile_inputs.assert_called_once_with(
+            state.epoch, state.learner_evidence, state.plan,
+            predecessor_certification_sha256="c" * 64)
+
+    def test_active_predecessor_without_success_certification_stays_non_authorizing(self):
+        active = SimpleNamespace(
+            activation_sha256="a" * 64,
+            definition=SimpleNamespace(definition_sha256="b" * 64),
+        )
+        with patch(
+            "bilqis_mlx.runtime.active_generated_grade_custody._read_stored_active",
+            return_value=active,
+        ), patch(
+            "bilqis_mlx.runtime.grade_certification_custody."
+            "certification_receipts_for_predecessor",
+            return_value=(),
+        ):
+            self.assertIsNone(
+                _predecessor_certification_sha256(Path("/accepted-run")))
+
+    def test_successor_synthesis_selects_only_current_predecessor_receipt(self):
+        active = SimpleNamespace(
+            activation_sha256="a" * 64,
+            definition=SimpleNamespace(definition_sha256="b" * 64),
+        )
+        stale = SimpleNamespace(receipt_sha256="c" * 64)
+        current = SimpleNamespace(receipt_sha256="d" * 64)
+
+        def require_current(_run_dir, receipt_sha256):
+            if receipt_sha256 == stale.receipt_sha256:
+                ErrorBus.Raise(
+                    SCHOOL.BAMF_CURRICULUM.INVALID,
+                    reason="BAMF_GRADE_CERTIFICATION_CURRENTNESS_DRIFT",
+                )
+            return SimpleNamespace(
+                receipt_sha256=current.receipt_sha256,
+                predecessor_activation_sha256=active.activation_sha256,
+                predecessor_definition_sha256=active.definition.definition_sha256,
+            )
+
+        with patch(
+            "bilqis_mlx.runtime.active_generated_grade_custody._read_stored_active",
+            return_value=active,
+        ), patch(
+            "bilqis_mlx.runtime.grade_certification_custody."
+            "certification_receipts_for_predecessor",
+            return_value=(stale, current),
+        ), patch(
+            "bilqis_mlx.runtime.grade_certification."
+            "require_current_accepted_certification_receipt",
+            side_effect=require_current,
+        ):
+            self.assertEqual(
+                _predecessor_certification_sha256(Path("/accepted-run")),
+                current.receipt_sha256,
+            )

@@ -8,6 +8,7 @@ from bilqis_mlx.factory.atlas_frontier_progress_validation import credited_oblig
 from bilqis_mlx.factory.autonomy import AutonomyPlan, evidence_complete_capabilities
 from bilqis_mlx.factory.atlas_frontier_contracts import _bytes, _fail
 from .contracts import AcceptedLearnerFoot, GeneratedGradeInputs, GeneratedGradePolicy, _issue_inputs
+from .proposal_contracts import GENERATED_GRADE_INPUTS_V1, GENERATED_GRADE_INPUTS_V2
 from .cost_inputs import _measured_acquisition_cost, _measured_cost_profile
 from .development_inputs import _development_evidence
 
@@ -59,6 +60,8 @@ def _compile_generated_grade_inputs(
     epoch: AtlasCoverageEpoch,
     learner: AtlasLearnerEvidence,
     plan: AutonomyPlan,
+    *,
+    predecessor_certification_sha256: str | None = None,
 ) -> GeneratedGradeInputs:
     """Internal issuer; production callers enter through accepted runtime custody."""
     if (type(epoch) is not AtlasCoverageEpoch or type(learner) is not AtlasLearnerEvidence
@@ -82,17 +85,25 @@ def _compile_generated_grade_inputs(
     progress, status, handoff_sha256, a09_proposal_sha256 = _a09_receipt(
         epoch, learner, plan)
     progress_sha256 = progress.progress_sha256 if progress is not None else None
+    schema = (
+        GENERATED_GRADE_INPUTS_V2
+        if predecessor_certification_sha256 is not None
+        else GENERATED_GRADE_INPUTS_V1)
     common = dict(
         learner=foot, candidate_evidence=evidence, policy=policy,
         a09_progress_sha256=progress_sha256, a09_status=status,
         a09_handoff_sha256=handoff_sha256,
         a09_proposal_sha256=(a09_proposal_sha256 if handoff_sha256 else None),
-        schema="bilqis.generated-grade-inputs/v1")
-    expected = hashlib.sha256(_bytes({
+        predecessor_certification_sha256=predecessor_certification_sha256,
+        schema=schema)
+    payload = {
         "learner": foot, "candidate_evidence": evidence, "policy": policy,
         "a09_progress_sha256": progress_sha256, "a09_status": status,
         "a09_handoff_sha256": handoff_sha256,
         "a09_proposal_sha256": (a09_proposal_sha256 if handoff_sha256 else None),
-        "schema": "bilqis.generated-grade-inputs/v1",
-    })).hexdigest()
+        "schema": schema,
+    }
+    if predecessor_certification_sha256 is not None:
+        payload["predecessor_certification_sha256"] = predecessor_certification_sha256
+    expected = hashlib.sha256(_bytes(payload)).hexdigest()
     return _issue_inputs(**common, input_sha256=expected)

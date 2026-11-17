@@ -46,10 +46,20 @@ def operate(
                     run_authority_binding=run_authority_binding)
                 observer.finish(outcome)
             emit_progress(progress, f"visit {visits + 1} outcome: {outcome}")
-            if outcome in {"HELD", "ACTION_REQUIRED"}:
-                status = "PRIORITY_HOLD" if outcome == "HELD" else "ACTION_REQUIRED"
+            if outcome in {
+                "HELD", "ACTION_REQUIRED",
+                "CERTIFICATION_FAILED", "CERTIFICATION_SUPERSEDED",
+            }:
+                status = {
+                    "HELD": "PRIORITY_HOLD",
+                    "ACTION_REQUIRED": "ACTION_REQUIRED",
+                    "CERTIFICATION_FAILED": "CERTIFICATION_FAILED",
+                    "CERTIFICATION_SUPERSEDED": "CERTIFICATION_SUPERSEDED",
+                }[outcome]
                 break
             visits += 1
+            if outcome == "GRADE_TRANSITIONED":
+                continue
             if outcome == "REJECTED":
                 rejected += 1
                 continue
