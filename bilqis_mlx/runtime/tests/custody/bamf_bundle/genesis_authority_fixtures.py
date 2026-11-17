@@ -12,7 +12,6 @@ from bilqis_mlx.runtime.bamf_bundle import (
     issue_initial_factory_foundation_authority,
     issue_initial_foundation_feature_authority,
 )
-from bilqis_mlx.runtime.bamf_bundle.feature.replay_support import FeatureMaterialization
 import bilqis_mlx.runtime.bamf_bundle.feature_authority as feature_authority
 from bilqis_mlx.runtime.bamf_bundle.genesis import foundation as genesis_foundation
 from bilqis_mlx.runtime.state import _fingerprint
@@ -68,18 +67,16 @@ def genesis_feature_source_patch(features: AtlasFeatures | None = None):
 
 @contextmanager
 def accepted_feature_source_patch(features: AtlasFeatures | None = None):
-    """Replay one synthetic accepted Atlas source without production pin lookup."""
+    """Replay one synthetic accepted Atlas source through the real replay logic."""
     features = source_features() if features is None else features
     selection = AtlasArtifactSelection(
         "/fixture/atlas", features.atlas_bundle_id,
         features.semantic_release, features.source_bundle_id)
-    materialization = FeatureMaterialization(
-        selection, frozen_snapshot(selection), feature_schema(), features)
-    with patch.object(
-            feature_authority, "_authenticate_features",
-            return_value=features), patch.object(
-            feature_authority, "_authenticate_feature_materialization",
-            return_value=materialization):
+    with patch.multiple(
+            feature_authority,
+            resolve_atlas_artifact_selection=lambda _identity: selection,
+            load_pinned_atlas_snapshot=frozen_snapshot,
+            build_feature_manifest=lambda *_args: features):
         yield
 
 

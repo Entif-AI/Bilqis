@@ -61,6 +61,10 @@ def _reject_fresh_external_legacy_fallthrough(args, run_dir: Path) -> None:
 
 def _dispatch_bamf_resume(
         args, run_dir: Path, report, parent_graph=None, run_authority=None):
+    profile_release = getattr(args, "factory_profile_release", None)
+    if profile_release is not None:
+        from bilqis_mlx.runtime._release_adoption.native_profile import preview_profile_release
+        report = {**report, "profile_expansion": preview_profile_release(run_dir, profile_release)}
     admission_status = _bamf_operator_admission_status(report)
     if (args.human_run and not args.dry_run
             and admission_status is not False):
@@ -77,6 +81,7 @@ def _dispatch_bamf_resume(
                 reserve_gib=args.reserve_gib,
                 source_prefetch_workers=args.source_prefetch_workers,
                 parent_graph=parent_graph,
+                **({"profile_release": profile_release} if profile_release is not None else {}),
                 run_authority=run_authority,
                 progress=progress)
         operator_report = asdict(result)
@@ -100,6 +105,10 @@ def _bamf_or_topology(args):
     """Route BAMF v2 before legacy training while preserving C07 early failure."""
     run_dir = Path(args.run_dir).expanduser()
     bamf_pointer = run_dir / "bamf-state.json"
+    if getattr(args, "factory_profile_release", None) is not None and (
+            not args.resume or not bamf_pointer.is_file()):
+        from .bamf_lifecycle_inputs import invalid
+        invalid("BAMF_PROFILE_NATIVE_RESUME_REQUIRED")
     # A topology path is shared historical syntax.  It becomes BAMF-v2 intent
     # only after the file has actually loaded as ModelTopologySpecV2.  The
     # seven parser-owned foundation flags, by contrast, are v2-only and must

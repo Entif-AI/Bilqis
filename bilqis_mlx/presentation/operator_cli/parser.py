@@ -44,6 +44,8 @@ def _add_bamf_foundation_args(parser) -> None:
                         help='Accepted source learner used to derive a fresh BAMF foundation.')
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--factory-profile-release", type=Path,
+                        help="Exact compiled profile successor to adopt on native BAMF resume.")
     parser.add_argument("--model-topology", type=Path,
                         help="Versioned ModelTopologySpec JSON; resume must match saved topology.")
     parser.add_argument("--run-id", type=str, action=_FoundationExplicitStore,

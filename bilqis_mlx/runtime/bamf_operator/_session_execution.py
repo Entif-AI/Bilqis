@@ -11,8 +11,8 @@ def operate(
         invalid, metrics_type, source_pool_factory, null_context,
         operator_lock, visit_fn, observer_type, emit_progress,
         monotonic, load_generation, result_type, accepted_reentry=None,
-        bind_run_authority=None, resource_snapshot=None, record_stop=None,
-        elapsed_clock=None):
+        bind_run_authority=None, before_visits=None, resource_snapshot=None,
+        record_stop=None, elapsed_clock=None):
     if (type(minutes) is not int or minutes < 1 or type(max_visits) is not int
             or max_visits < 0 or type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= max_horizon
@@ -35,6 +35,10 @@ def operate(
         source_pool_factory(source_prefetch_workers)
         if source_prefetch_workers else null_context(None))
     with source_pool as source_prefetch_executor, operator_lock(run_dir):
+        if run_authority_binding is not None:
+            run_authority_binding.assert_current()
+        if before_visits is not None:
+            before_visits(run_dir)
         while monotonic() < deadline and (not max_visits or visits < max_visits):
             if run_authority_binding is not None:
                 run_authority_binding.assert_current()

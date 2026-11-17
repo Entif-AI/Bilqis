@@ -4,6 +4,18 @@ from __future__ import annotations
 from .base import _spec
 
 class FACTORY:
+    class PROFILE_EXPANSION:
+        INVALID = _spec(
+            ("FACTORY", "PROFILE_EXPANSION", "INVALID"),
+            owner="factory.profile_expansion",
+            title="Factory profile expansion invalid",
+            message_template="Factory profile expansion invalid: {reason}",
+            disposition="CORRECT_INPUT_OR_STATE",
+            next_action=(
+                "Preserve the accepted Factory release and correct the requested "
+                "profile or its source and semantic authorities before retrying."),
+        )
+
     class SOURCE_ADAPTER:
         COMPATIBILITY_INVALID = _spec(
             ("FACTORY", "SOURCE_ADAPTER", "COMPATIBILITY_INVALID"),

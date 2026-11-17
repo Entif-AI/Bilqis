@@ -1,8 +1,6 @@
 """Append-only cursor for one authenticated rejection projection."""
 from __future__ import annotations
 
-import json
-import os
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -10,9 +8,10 @@ from threading import Lock
 from typing import Callable
 
 from .priority_rejection_journal import (
-    _TAINTED, _TRUSTED, _UNTRACKED, baseline_journal_state,
+    _DIVERGED, _TAINTED, _UNTRACKED, baseline_journal_state,
     journal_state_status,
 )
+from .priority_rejection_projection_state import SCHEMA, encode, restore
 
 
 class RejectionRows(Sequence):
@@ -68,11 +67,15 @@ class RejectionProjection:
     legacy_capabilities: set[str] = field(default_factory=set)
     global_order_started: bool = False
     global_order_start: int | None = None
+    ledger_identity: tuple[int, int] | None = None
+    hydrated: bool = False
     lock: Lock = field(default_factory=Lock, repr=False)
 
     def refresh(
         self,
-        journal: Path,
+        run_dir: Path,
+        projection_key: str,
+        plane,
         validate: Callable[
             [dict],
             tuple[str, tuple[str, str, str, str], int | None, int | None] | None,
@@ -80,77 +83,52 @@ class RejectionProjection:
         invalid: Callable[[str], None],
     ) -> RejectionRows:
         with self.lock:
-            return self._refresh(journal, validate, invalid)
+            return self._refresh(run_dir, projection_key, plane, validate, invalid)
 
-    def _refresh(self, journal, validate, invalid):
+    def _refresh(self, run_dir, projection_key, plane, validate, invalid):
+        journal = Path(run_dir) / "events.jsonl"
         if not journal.exists():
             if self.offset or self.rows:
-                invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
+                self._reset()
+            plane.sync_event_ledger(run_dir)
             return self.rows_view()
         if journal.is_symlink() or not journal.is_file():
             invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        payload = self._journal_delta(journal, invalid)
-        if payload is None:
-            return self.rows_view()
-        after, raw_lines = payload
-        self._ingest(raw_lines, validate, invalid)
-        self.offset = after.st_size
-        if not baseline_journal_state(journal, after):
+        before = journal.stat()
+        status = journal_state_status(journal, before)
+        if status in (_DIVERGED, _TAINTED):
+            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
+        if status == _UNTRACKED and not baseline_journal_state(journal, before):
+            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
+        if not self.hydrated:
+            state = plane.event_projection_state(run_dir, projection_key, SCHEMA)
+            if state is not None and restore(self, state["payload"]):
+                self.offset = state["indexed_bytes"]
+                self.ledger_identity = state["ledger_identity"]
+            self.hydrated = True
+        payload = plane.indexed_event_tail(run_dir, self.offset)
+        identity = payload["ledger_identity"]
+        if payload["rebuilt"] or (
+                self.ledger_identity is not None and identity != self.ledger_identity):
+            self._reset(keep_hydrated=True)
+            payload = plane.indexed_event_tail(run_dir, 0)
+            identity = payload["ledger_identity"]
+        self._ingest(payload["events"], validate, invalid)
+        self.offset = payload["indexed_bytes"]
+        self.ledger_identity = identity
+        if identity is not None:
+            plane.remember_event_projection(
+                run_dir, projection_key, SCHEMA, identity, self.offset, encode(self))
+        after = journal.stat()
+        after_status = journal_state_status(journal, after)
+        if after_status == _UNTRACKED:
+            baseline_journal_state(journal, after)
+        elif after_status in (_DIVERGED, _TAINTED):
             invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
         return self.rows_view()
 
-    def _journal_delta(self, journal, invalid):
-        with journal.open("rb") as stream:
-            before = os.fstat(stream.fileno())
-            status = journal_state_status(journal, before)
-            if self._prepare_cursor(journal, before, status, invalid):
-                return None
-            stream.seek(self.offset)
-            delta = stream.read()
-            after = os.fstat(stream.fileno())
-        if not self._stable_read(before, after, len(delta)):
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        if delta and not delta.endswith(b"\n"):
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        try:
-            raw_lines = delta.decode("utf-8").splitlines()
-        except UnicodeDecodeError:
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-            return None
-        return after, raw_lines
-
-    def _prepare_cursor(self, journal, before, status, invalid):
-        if self.offset and status == _UNTRACKED:
-            self._reset()
-        elif self.offset and status != _TRUSTED:
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        if before.st_size < self.offset:
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        if before.st_size != self.offset:
-            return False
-        if status == _TAINTED:
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        if not self.offset and not baseline_journal_state(journal, before):
-            invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-        return True
-
-    def _stable_read(self, before, after, delta_size):
-        return (
-            after.st_dev == before.st_dev
-            and after.st_ino == before.st_ino
-            and after.st_size == before.st_size
-            and after.st_mtime_ns == before.st_mtime_ns
-            and after.st_ctime_ns == before.st_ctime_ns
-            and delta_size == after.st_size - self.offset
-        )
-
-    def _ingest(self, raw_lines, validate, invalid):
-        for raw in raw_lines:
-            try:
-                event = json.loads(raw)
-            except json.JSONDecodeError:
-                invalid("BAMF_PRIORITY_REJECTION_JOURNAL_INVALID")
-                continue
+    def _ingest(self, events, validate, invalid):
+        for event in events:
             if not isinstance(event, dict):
                 continue
             item = validate(event)
@@ -228,7 +206,7 @@ class RejectionProjection:
         with self.lock:
             return len(self.rows), dict(self.last_positions)
 
-    def _reset(self):
+    def _reset(self, *, keep_hydrated=False):
         self.offset = 0
         self.rows.clear()
         self.seen_receipts.clear()
@@ -239,6 +217,8 @@ class RejectionProjection:
         self.legacy_capabilities.clear()
         self.global_order_started = False
         self.global_order_start = None
+        self.ledger_identity = None
+        self.hydrated = keep_hydrated
 
 
 __all__ = ("RejectionProjection", "RejectionRows")

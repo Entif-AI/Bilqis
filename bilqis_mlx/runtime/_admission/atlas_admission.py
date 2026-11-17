@@ -171,6 +171,7 @@ def _accepted_atlas_obligation_state(run_dir):
     from bilqis_mlx.runtime.bamf_bundle.factory_release.admission import (
         FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
         FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+        FACTORY_RELEASE_ADMISSION_SCHEMA_V4,
         ParsedFactoryReleaseAdmissionBinding,
     )
     from bilqis_mlx.runtime.bamf_bundle.feature.acceptance import (
@@ -203,7 +204,8 @@ def _accepted_atlas_obligation_state(run_dir):
         if (isinstance(binding, ParsedFactoryReleaseAdmissionBinding)
                 and binding.schema_version in {
                     FACTORY_RELEASE_ADMISSION_SCHEMA_V2,
-                    FACTORY_RELEASE_ADMISSION_SCHEMA_V3}):
+                    FACTORY_RELEASE_ADMISSION_SCHEMA_V3,
+                    FACTORY_RELEASE_ADMISSION_SCHEMA_V4}):
             return (
                 current_release.release_sha256,
                 current_acceptance,

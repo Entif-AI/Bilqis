@@ -16008,6 +16008,20 @@
       "recovery_key": "errors.school.bamf_admission.fixed_point.recovery",
       "self_heal_owner": null,
       "title": "C07 no ready delta"
+    },
+    {
+      "code": "FACTORY.PROFILE_EXPANSION.INVALID",
+      "disposition": "CORRECT_INPUT_OR_STATE",
+      "legacy_codes": [],
+      "message_key": "errors.factory.profile_expansion.invalid.message",
+      "message_template": "Factory profile expansion invalid: {reason}",
+      "next_action": "Preserve the accepted Factory release and correct the requested profile or its source and semantic authorities before retrying.",
+      "operator_steps": [],
+      "owner": "factory.profile_expansion",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.profile_expansion.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory profile expansion invalid"
     }
   ]
 }
