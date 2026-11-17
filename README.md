@@ -1,11 +1,11 @@
-# Bilqis: A Novel Neuro-Symbolic AI Model Trained at Compositional Learning via a Semantic Pasigraphy Substrate
-
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png">
-    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/codex/bamf-unified-base-20261028/docs/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Model Forensics Dashboard, displaying an active neurosymbolic training run.">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis_Regal_Banner.png">
+    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis_Regal_Banner.png" alt="Bilqis Neuro-Symbolic AI Model: Prepaying Semantics is Cheaper">
   </picture>
 </p>
+
+# Bilqis: A Novel Neuro-Symbolic AI Model Trained at Compositional Learning via a Semantic Pasigraphy Substrate
 
 <p>Read the research paper behind this work here: <br /><a href="https://entif.ai/tags/research/2026/09/11/prepaying-semantics/" target="_blank">Prepaying Semantics is Cheaper</a></p>
 
@@ -14,6 +14,13 @@ Bilqis MLX is an Apple Silicon-native cognitive learner and training system buil
 The current system is the **BAMF-0.2 owner-operated alpha**. It is designed to learn source-qualified capabilities while preserving accepted knowledge and exact optimizer lineage. The repository is public; model weights, optimizer state, source-authority material, and live run data are not stored in Git.
 
 If you want to run the software rather than study its architecture, start with the [setup and operator guide](docs/operations/OPERATOR_GUIDE.md).
+
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis%20Mission%20Control%20Dashboard.png">
+    <img src="https://raw.githubusercontent.com/Entif-AI/Bilqis-MLX/refs/heads/main/docs/Bilqis%20Mission%20Control%20Dashboard.png" alt="Bilqis Model Forensics Dashboard, displaying an active neurosymbolic training run.">
+  </picture>
+</p>
 
 ## What is in this repository
 
