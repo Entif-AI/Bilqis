@@ -6,7 +6,7 @@ import pytest
 
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.atlas_training_contracts import BamfDeliveryProvenance
-from bilqis_mlx.runtime.bamf_operator.rehearsal import (
+from bilqis_mlx.runtime.bamf_operator.session_parts.rehearsal import (
     RehearsalPlan, RehearsalRows, compile_rehearsal_plan,
     materialize_rehearsal_rows,
 )
@@ -49,9 +49,9 @@ def test_plan_is_grade_neutral_and_partitions_authorized_relationships():
         },
     }
     with patch(
-            "bilqis_mlx.runtime.bamf_operator.rehearsal.require_current_retention_plan",
+            "bilqis_mlx.runtime.bamf_operator.session_parts.rehearsal.require_current_retention_plan",
             return_value=(protection, target)), patch(
-            "bilqis_mlx.runtime.bamf_operator.rehearsal.current_structural_weaknesses",
+            "bilqis_mlx.runtime.bamf_operator.session_parts.rehearsal.current_structural_weaknesses",
             return_value=({"weakness": weakness},)), patch(
             "bilqis_mlx.runtime.active_generated_grade.read_active_generated_grade",
             return_value=active):

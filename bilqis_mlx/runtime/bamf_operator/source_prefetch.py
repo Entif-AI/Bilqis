@@ -18,7 +18,7 @@ from bilqis_mlx.runtime.source_prefetch import (
     thaw_source_packet,
 )
 from bilqis_mlx.semantics.domains import contract_digest
-from .rehearsal import materialize_rehearsal_rows
+from .session_parts.rehearsal import materialize_rehearsal_rows
 
 
 REQUEST_SCHEMA = "bilqis.bamf.native-source-prefetch-request/v1"

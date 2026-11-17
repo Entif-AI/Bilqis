@@ -26,7 +26,7 @@ from ..evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_e
 from ..performance import measure_observed_phase, observe_completed_step
 from ..session_support import BamfPreparedVisit, _resource_observation, _step_seed
 from ..source_prefetch import CandidateSourceLane, SourcePrefetchMetrics
-from ..rehearsal import compile_rehearsal_plan
+from .rehearsal import compile_rehearsal_plan
 from .candidate_execution import (
     candidate_horizon_execution as _candidate_horizon_execution_impl,
     execute_horizon as _execute_horizon_impl,
