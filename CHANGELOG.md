@@ -2,6 +2,14 @@
 
 All new releases use [Semantic Versioning](https://semver.org/) and Conventional Commit subjects. Dates refer to the tagged source release, not to any claim that a neural student has qualified new capabilities.
 
+## [1.2.1](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.0...v1.2.1) (2026-11-17)
+
+
+### Bug Fixes
+
+* **docs:** relocate README assets ([4ab98b9](https://github.com/Entif-AI/Bilqis-MLX/commit/4ab98b999f046a3cde4543bddff1112f3f9c0ee5))
+* **docs:** relocate README assets ([#1378](https://github.com/Entif-AI/Bilqis-MLX/issues/1378)) ([4d470fa](https://github.com/Entif-AI/Bilqis-MLX/commit/4d470fa20820060142cd6dee745c4d28c6786f90))
+
 ## [1.2.0](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.1.0...v1.2.0) (2026-11-16)
 
 
