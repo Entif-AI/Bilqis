@@ -183,11 +183,13 @@ class ExecutableFactoryReleaseTests(ReleaseTestSupport):
 
         payload = json.loads(json.dumps(self.compile().manifest()))
         payload.pop("semantic_graph_sha256", None)
+        payload.pop("provider_dimension_policies", None)
         historical_sha = "c37d62403c00e87b0cdd648764f5967eee9a58860941ddca694371f2544cf956"
         self.assertEqual(_digest(payload), historical_sha)
         restored = ExecutableFactoryRelease.from_manifest(payload, historical_sha)
         self.assertIsNone(restored.semantic_graph_sha256)
         self.assertNotIn("semantic_graph_sha256", restored.manifest())
+        self.assertNotIn("provider_dimension_policies", restored.manifest())
         self.assertEqual(json.loads(json.dumps(restored.manifest())), payload)
         self.assertEqual(restored.expected_digest(), historical_sha)
 

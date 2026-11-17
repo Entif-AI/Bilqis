@@ -28,7 +28,7 @@ from .execution import (
     compile_execution_plan, diff_execution_plans,
 )
 from .generation import draw_execution_rows
-from .model import SourceAdapter
+from .model import ProviderDimensionPolicy, SourceAdapter
 
 
 SCHEMA = "bilqis.mlx.factory-release/v2"
