@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import time
 
+from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.atlas_resources import MemoryBudget
 from bilqis_mlx.runtime.bamf_bundle import (
     AuthenticatedGenerationFeatureContext, CompleteStudent,
@@ -33,6 +34,12 @@ from .factory_candidate_components import (
     _frame_stats, _invalid, _reporting_diagnostics, _resource_plan,
     _stage_retained_motifs,
 )
+from .factory_candidate_cost import realized_candidate_cost
+
+
+def _realized_candidate_cost(*args, **kwargs):
+    """Compatibility seam for the reporting contract after structural extraction."""
+    return realized_candidate_cost(*args, **kwargs, invalid=_invalid)
 
 
 def _prepared_feature_context(prepared, semantic_context):
@@ -46,14 +53,15 @@ def _prepared_feature_context(prepared, semantic_context):
 def _execute_training_and_admission(
         run_dir, source_context, parent, prepared, feature_context, generation, cache,
         resource_plan, teacher_hparams, max_norm, candidate, currentness_transaction,
-        salience_supervision):
+        salience_supervision, mentor_supervision):
     parameters = dict((parent.retained_state.optimizer if candidate is None
                        else candidate.optimizer).parameters)
     if len(prepared.compiled_rows) == 1:
         gradient, authority, targets = execute_factory_training_row(
             parameters, prepared.compiled_rows[0], source_context,
             feature_context.snapshot, generation, cache,
-            salience_supervision=salience_supervision)
+            salience_supervision=salience_supervision,
+            mentor_supervision=mentor_supervision)
         authorities, target_rows = (authority,), (targets,)
         optimizer_started = time.perf_counter()
         transaction = admit_uninterrupted_candidate_step(
@@ -67,7 +75,8 @@ def _execute_training_and_admission(
         gradient, authorities, target_rows = execute_factory_logical_batch(
             parameters, prepared, source_context, feature_context.snapshot,
             generation, cache, resource_plan,
-            salience_supervision=salience_supervision)
+            salience_supervision=salience_supervision,
+            mentor_supervision=mentor_supervision)
         optimizer_started = time.perf_counter()
         transaction = admit_uninterrupted_candidate_step(
             Path(run_dir), parent, loss_bearing_target=True,
@@ -88,85 +97,23 @@ def _execute_training_and_admission(
     )
 
 
-def _realized_candidate_cost(
-        start, candidate_step_started_at, loss_total, prepared,
-        resource_plan, memory_budget, transaction,
-        feature_context, semantic_context_materialized_in_step, c08_metrics,
-        stage_metrics, gradient):
-    gradient_launches, vectorized_microbatches, materialization_barriers, \
-        scalar_fallback_rows, logical_batch_wall_seconds = c08_metrics
-    b11 = getattr(gradient, "_performance_observation", {})
-    if not isinstance(b11, dict):
-        b11 = {}
-    step_atlas_reloads = (
-        feature_context.atlas_reload_count
-        if semantic_context_materialized_in_step else 0)
-    step_feature_rebuilds = (
-        feature_context.feature_manifest_rebuild_count
-        if semantic_context_materialized_in_step else 0)
-    bound_source_authorities = sum(
-        compiled.source_execution_authority is not None
-        for compiled in prepared.compiled_rows)
-    cold_requalification_rows = (
-        len(prepared.compiled_rows) - bound_source_authorities)
-    if cold_requalification_rows:
-        _invalid("FACTORY_CANDIDATE_SOURCE_EXECUTION_AUTHORITY_MISSING")
-    elapsed = time.perf_counter() - start
-    return {
-        "wall_seconds": elapsed,
-        "candidate_step_wall_seconds": (
-            time.perf_counter() - candidate_step_started_at),
-        "pre_neural_source_compile_wall_seconds": stage_metrics[
-            "pre_neural_source_compile_wall_seconds"],
-        "currentness_binding_wall_seconds": stage_metrics[
-            "currentness_binding_wall_seconds"],
-        "b11_preflight_wall_seconds": float(
-            b11.get("b11_preflight_wall_seconds", 0.0)),
-        "b11_autodiff_wall_seconds": float(
-            b11.get("b11_autodiff_wall_seconds", 0.0)),
-        "optimizer_admission_wall_seconds": stage_metrics[
-            "optimizer_admission_wall_seconds"],
-        "motif_staging_wall_seconds": stage_metrics[
-            "motif_staging_wall_seconds"],
-        "candidate_terminal_step": stage_metrics["candidate_terminal_step"],
-        "b11_provider_draw_count": int(b11.get("b11_provider_draw_count", 0)),
-        "b11_atlas_reload_count": int(b11.get("b11_atlas_reload_count", 0)),
-        "logical_rows": len(prepared.compiled_rows),
-        "compiled_positions": sum(
-            len(item.compiled.compiled.rows[0].positions)
-            for item in prepared.compiled_rows),
-        "loss_total": float(loss_total.item()),
-        "c08_estimated_peak_bytes": resource_plan.estimated_peak_bytes,
-        "c08_memory_budget_bytes": memory_budget.allocation_bytes,
-        "c08_gradient_launches": gradient_launches,
-        "c08_vectorized_microbatches": vectorized_microbatches,
-        "c08_materialization_barriers": materialization_barriers,
-        "c08_scalar_fallback_rows": scalar_fallback_rows,
-        "c08_logical_batch_wall_seconds": logical_batch_wall_seconds,
-        "c08_rows_per_gradient_launch": (
-            len(prepared.compiled_rows) / gradient_launches),
-        "optimizer_steps": 1,
-        "candidate_optimizer_steps": transaction.update_steps,
-        "atlas_reload_count": step_atlas_reloads,
-        "feature_manifest_rebuild_count": step_feature_rebuilds,
-        "visit_atlas_reload_count": feature_context.atlas_reload_count,
-        "visit_feature_manifest_rebuild_count": (
-            feature_context.feature_manifest_rebuild_count),
-        "b11_source_authority_bound_rows": bound_source_authorities,
-        "b11_source_cold_requalification_rows": cold_requalification_rows,
-    }
-
-
 def _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows, *,
         capability, teacher_hparams, max_norm, observation, memory_budget,
         cache, generation, prepared, start, capture_diagnostics,
         salience_supervision=None, candidate=None, currentness_transaction=None,
+        mentor_supervision=None,
         semantic_context=None,
         semantic_context_materialized_in_step=False,
         stage_metrics=None,
         finalize_candidate=True) -> FactoryCandidateStep:
     stage_metrics = dict(stage_metrics or {})
+    if mentor_supervision is not None:
+        try:
+            mentor_supervision.require_evidence(
+                observation.mentors, observation.guidance)
+        except BilqisError:
+            _invalid("FACTORY_MENTOR_EVIDENCE_DRIFT")
     identity_before = candidate_identity_metrics_snapshot()
     resource_plan, memory_budget = _resource_plan(prepared, parent, memory_budget)
     feature_context = _prepared_feature_context(prepared, semantic_context)
@@ -176,7 +123,7 @@ def _execute_prepared_candidate(
     ) = _execute_training_and_admission(
         run_dir, source_context, parent, prepared, feature_context, generation, cache,
         resource_plan, teacher_hparams, max_norm, candidate,
-        currentness_transaction, salience_supervision)
+        currentness_transaction, salience_supervision, mentor_supervision)
     stage_metrics["optimizer_admission_wall_seconds"] = optimizer_wall_seconds
     motif_started = time.perf_counter()
     if finalize_candidate:
@@ -285,6 +232,40 @@ def _prepare_candidate_step_inputs(
     )
 
 
+def _require_mentor_supervision_current(
+        mentor_supervision, observation, parent, cache, teacher_strategy,
+        source_seed):
+    if mentor_supervision is None:
+        if (observation.mentors is not None
+                or (isinstance(observation.guidance, dict)
+                    and observation.guidance.get("schema")
+                    == "bilqis.mlx.championship-guidance/v1")):
+            _invalid("FACTORY_MENTOR_EVIDENCE_WITHOUT_SUPERVISION")
+        return
+    from bilqis_mlx.learning._championship.adviser_supervision import (
+        MentorSupervision, mentor_policy_binding,
+    )
+    from bilqis_mlx.learning._championship.cohort_soup import POLICY_ID
+    from bilqis_mlx.semantics.domains import contract_digest
+    if type(mentor_supervision) is not MentorSupervision:
+        _invalid("FACTORY_MENTOR_SUPERVISION_INVALID")
+    championship_state = getattr(parent, "championship_state", None)
+    if not isinstance(championship_state, dict):
+        _invalid("FACTORY_MENTOR_CHAMPIONSHIP_STATE_REQUIRED")
+    try:
+        mentor_supervision.require_current(
+            cache.accepted_manifest_sha256,
+            contract_digest(championship_state["identity"]),
+            POLICY_ID,
+            mentor_policy_binding(POLICY_ID, teacher_strategy),
+            source_seed,
+        )
+        mentor_supervision.require_evidence(
+            observation.mentors, observation.guidance)
+    except BilqisError:
+        _invalid("FACTORY_MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+
+
 def execute_factory_candidate_step(
     run_dir: Path,
     source_context,
@@ -308,6 +289,7 @@ def execute_factory_candidate_step(
     memory_budget: MemoryBudget | None = None,
     capture_diagnostics: bool = False,
     salience_provider=None,
+    mentor_supervision=None,
     candidate=None,
     finalize_candidate: bool = True,
     currentness_transaction=None,
@@ -328,6 +310,12 @@ def execute_factory_candidate_step(
             or type(capture_diagnostics) is not bool
             or type(finalize_candidate) is not bool):
         _invalid("FACTORY_CANDIDATE_STEP_INPUT_INVALID")
+    observed_mentor_supervision = observation._mentor_supervision
+    if mentor_supervision is None:
+        mentor_supervision = observed_mentor_supervision
+    elif (observed_mentor_supervision is not None
+          and mentor_supervision is not observed_mentor_supervision):
+        _invalid("FACTORY_MENTOR_SUPERVISION_BINDING_DRIFT")
     (
         start, cache, generation, stage_metrics, prepared, supervision,
         semantic_context_materialized_in_step,
@@ -339,13 +327,17 @@ def execute_factory_candidate_step(
         candidate_step_started_at, currentness_binding_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds, semantic_context,
         prepared_source)
+    _require_mentor_supervision_current(
+        mentor_supervision, observation, parent, cache, teacher_strategy,
+        source_seed)
     return _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows,
         capability=capability, teacher_hparams=teacher_hparams,
         max_norm=max_norm, observation=observation, memory_budget=memory_budget,
         cache=cache, generation=generation, prepared=prepared, start=start,
         capture_diagnostics=capture_diagnostics,
-        salience_supervision=supervision, candidate=candidate,
+        salience_supervision=supervision, mentor_supervision=mentor_supervision,
+        candidate=candidate,
         currentness_transaction=currentness_transaction,
         finalize_candidate=finalize_candidate, semantic_context=semantic_context,
         semantic_context_materialized_in_step=semantic_context_materialized_in_step,
