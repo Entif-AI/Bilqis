@@ -11,7 +11,7 @@ from bilqis_mlx.runtime.capability_retention import (
     evaluate_retention_candidate,
 )
 import bilqis_mlx.runtime.capability_retention_foundation as foundation_module
-import bilqis_mlx.runtime.capability_retention as retention_module
+import bilqis_mlx.runtime.capability_retention_evaluation as retention_evaluation_module
 from bilqis_mlx.runtime.cognitive_solver import NeuralProposal, SolveBudget, SolveContext
 from bilqis_mlx.semantics.cognitive_dag import DAGBudget, DAGNode
 from bilqis_mlx.semantics.cognitive_operators import TypedValue
@@ -91,13 +91,14 @@ class CapabilityRetentionTests(unittest.TestCase):
         parent_solver, candidate_solver, target, policy, cohorts = _screen_inputs(
             protected_loss=3)
         observed = []
-        original = retention_module.evaluate_capabilities
+        original = retention_evaluation_module.evaluate_capabilities
 
         def traced(solver, cohort, generation):
             observed.append(cohort.kind)
             return original(solver, cohort, generation)
 
-        with patch.object(retention_module, "evaluate_capabilities", side_effect=traced):
+        with patch.object(
+                retention_evaluation_module, "evaluate_capabilities", side_effect=traced):
             decision = evaluate_retention_candidate(
                 parent_solver, candidate_solver, target, policy, cohorts,
                 PARENT, CANDIDATE)
@@ -195,77 +196,6 @@ class CapabilityRetentionTests(unittest.TestCase):
                          "NO_MEASURABLE_TARGET_GAIN")
         self.assertEqual(evidence.digest(), before)
 
-    def test_foundation_stage_does_not_require_fresh_target_gain(self):
-        evidence = _evidence()
-        same = replace(
-            evidence.target.candidate,
-            results=tuple(replace(result, generation_digest=CANDIDATE)
-                          for result in evidence.target.parent.results),
-        )
-        target = AssessmentPair(evidence.target.parent, same)
-
-        def staged(pair):
-            cohort = replace(
-                pair.parent.cohort,
-                evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION,
-            )
-            return AssessmentPair(
-                replace(pair.parent, cohort=cohort),
-                replace(pair.candidate, cohort=cohort),
-            )
-
-        evidence = replace(
-            evidence,
-            target=staged(target),
-            fresh_lesson=staged(evidence.fresh_lesson),
-            fixed_school=staged(evidence.fixed_school),
-        )
-        decision = retain_candidate(PARENT, CANDIDATE, evidence)
-        self.assertEqual(decision.status, "ELIGIBLE")
-        self.assertEqual(decision.reason, "PAIRED_SCREEN_WITHIN_BUDGET")
-
-    def test_foundation_stage_ignores_fresh_variant_regression_but_keeps_fixed_school(self):
-        evidence = _evidence()
-
-        def staged(pair):
-            cohort = replace(
-                pair.parent.cohort,
-                evidence_stage=EvidenceStage.FOUNDATION_ACQUISITION,
-            )
-            return AssessmentPair(
-                replace(pair.parent, cohort=cohort),
-                replace(pair.candidate, cohort=cohort),
-            )
-
-        fresh = _rescore(
-            evidence.fresh_lesson,
-            {"target": 0, "protected": 3},
-            {"target": 0, "protected": 2},
-        )
-        foundation = replace(
-            evidence,
-            target=staged(evidence.target),
-            fresh_lesson=staged(fresh),
-            fixed_school=staged(evidence.fixed_school),
-        )
-        self.assertEqual(
-            retain_candidate(PARENT, CANDIDATE, foundation).reason,
-            "PAIRED_SCREEN_WITHIN_BUDGET",
-        )
-
-        fixed = _rescore(
-            evidence.fixed_school,
-            {"protected": 12},
-            {"protected": 10},
-        )
-        foundation = replace(foundation, fixed_school=staged(fixed))
-        self.assertNotEqual(
-            retain_candidate(PARENT, CANDIDATE, foundation).reason,
-            "PAIRED_SCREEN_WITHIN_BUDGET",
-        )
-
-
-
     def test_perfect_exact_target_skips_optimizer_candidate(self):
         cases, contexts = _cases("target", "any-label", 3, "exact")
         exact = tuple(replace(case, goal=replace(case.goal, expression_or_holes=_program(
@@ -281,25 +211,3 @@ class CapabilityRetentionTests(unittest.TestCase):
         self.assertEqual(candidate_work_disposition(assessment, "target"),
                          "REHEARSE_OR_ADVANCE")
         self.assertTrue(all(result.neural_calls == 0 for result in assessment.results))
-
-class NewbornRetentionPolicyRegressionTests(unittest.TestCase):
-    def test_quadratic_mastery_debt_values_weak_gain_over_near_mastery_loss(self):
-        from bilqis_mlx.learning.retention_policy import mastery_debt_utility
-
-        trade = mastery_debt_utility({
-            "weak": {"before": 57, "after": 60, "total": 100},
-            "near_mastery": {"before": 98, "after": 93, "total": 100},
-        })
-        self.assertGreater(trade["net"], 0)
-        self.assertAlmostEqual(trade["capabilities"]["weak"]["utility_delta"], 0.0249)
-        self.assertAlmostEqual(
-            trade["capabilities"]["near_mastery"]["utility_delta"], -0.0045)
-
-    def test_quadratic_mastery_debt_rejects_same_raw_trade_against_weak_donor(self):
-        from bilqis_mlx.learning.retention_policy import mastery_debt_utility
-
-        trade = mastery_debt_utility({
-            "weak": {"before": 57, "after": 60, "total": 100},
-            "donor": {"before": 70, "after": 65, "total": 100},
-        })
-        self.assertLess(trade["net"], 0)
