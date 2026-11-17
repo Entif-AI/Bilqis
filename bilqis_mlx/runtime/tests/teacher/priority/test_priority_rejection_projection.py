@@ -11,19 +11,45 @@ from types import SimpleNamespace
 import pytest
 
 from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.data_plane import DataPlane
 from bilqis_mlx.runtime import checkpoint_outbox, checkpoints
 from bilqis_mlx.runtime import priority_rejection_replay as rejection_replay
 from bilqis_mlx.runtime.bamf_bundle.records import canonical
 
 
 class CountingPlane:
-    def __init__(self):
+    def __init__(self, root):
         self.objects = {}
         self.gets = 0
+        self.event_path = root / "events.sqlite3"
+        self.events = DataPlane(self.event_path)
+        self.tails = []
+
+    def restart_events(self):
+        self.events.close()
+        self.events = DataPlane(self.event_path)
 
     def get_object(self, digest):
         self.gets += 1
         return self.objects[digest]
+
+    def sync_event_ledger(self, run_dir):
+        return self.events.sync_event_ledger(run_dir)
+
+    def indexed_event_tail(self, run_dir, after_byte=0):
+        result = self.events.indexed_event_tail(run_dir, after_byte)
+        self.tails.append(result)
+        return result
+
+    def event_projection_state(self, run_dir, projection_key, schema_version):
+        return self.events.event_projection_state(run_dir, projection_key, schema_version)
+
+    def remember_event_projection(
+            self, run_dir, projection_key, schema_version, ledger_identity,
+            indexed_bytes, payload):
+        return self.events.remember_event_projection(
+            run_dir, projection_key, schema_version, ledger_identity,
+            indexed_bytes, payload)
 
 
 def _parent():
@@ -99,7 +125,7 @@ def _record(run_dir: Path, event):
 
 
 def test_rejection_projection_validates_only_newly_appended_events(monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
@@ -113,7 +139,7 @@ def test_rejection_projection_validates_only_newly_appended_events(monkeypatch, 
 
 
 def test_cold_rebuild_matches_hot_projection(monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
@@ -128,9 +154,47 @@ def test_cold_rebuild_matches_hot_projection(monkeypatch, tmp_path):
     assert cold == hot
 
 
+def test_cold_restart_reuses_persisted_projection_and_scans_only_new_tail(
+        monkeypatch, tmp_path):
+    plane = CountingPlane(tmp_path)
+    monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
+    parent, cache = _parent(), _cache()
+    for ordinal in range(1, 17):
+        _record(tmp_path, _rejection(plane, ordinal, journal_ordinal=ordinal))
+
+    hot = rejection_replay.current_rejections(tmp_path, parent, cache)
+    assert len(hot) == 16
+    first_frontier = plane.tails[-1]["indexed_bytes"]
+    gets_after_hot = plane.gets
+
+    plane.restart_events()
+    cold_module = importlib.reload(rejection_replay)
+    monkeypatch.setattr(cold_module, "data_plane", lambda: plane)
+    cold = cold_module.current_rejections(tmp_path, parent, cache)
+
+    assert cold == hot
+    assert plane.tails[-1]["scanned_bytes"] == 0
+    assert plane.tails[-1]["event_count"] == 0
+    assert plane.gets == gets_after_hot
+
+    next_event = _rejection(plane, 1, capability="Z.FUTURE", journal_ordinal=17)
+    _record(tmp_path, next_event)
+    new_bytes = (tmp_path / "events.jsonl").stat().st_size - first_frontier
+    plane.restart_events()
+    cold_module = importlib.reload(cold_module)
+    monkeypatch.setattr(cold_module, "data_plane", lambda: plane)
+    resumed = cold_module.current_rejections(tmp_path, parent, cache)
+
+    assert len(resumed) == 17
+    assert resumed[-1][0] == "Z.FUTURE"
+    assert plane.tails[-1]["scanned_bytes"] == new_bytes
+    assert plane.tails[-1]["event_count"] == 1
+    assert plane.gets == gets_after_hot + 2
+
+
 def test_cold_resume_legacy_cross_capability_prefix_preserves_pressure_without_fake_recency(
         monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
     _append(journal, _rejection(
@@ -170,7 +234,7 @@ def test_cold_resume_legacy_cross_capability_prefix_preserves_pressure_without_f
 
 
 def test_authenticated_rejection_ordinals_fail_closed_when_reordered(monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
@@ -186,7 +250,7 @@ def test_authenticated_rejection_ordinals_fail_closed_when_reordered(monkeypatch
 
 
 def test_cross_capability_authenticated_global_order_is_global(monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
@@ -204,7 +268,7 @@ def test_cross_capability_authenticated_global_order_is_global(monkeypatch, tmp_
 
 
 def test_generation_change_rebuilds_only_the_new_generation_projection(monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent = _parent()
@@ -225,7 +289,7 @@ def test_generation_change_rebuilds_only_the_new_generation_projection(monkeypat
 
 def test_hydrated_projection_fails_closed_if_verified_journal_prefix_is_rewritten(
         monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
@@ -253,7 +317,7 @@ def test_hydrated_projection_fails_closed_if_verified_journal_prefix_is_rewritte
 
 def test_hydrated_projection_rejects_old_prefix_rewrite_followed_by_append(
         monkeypatch, tmp_path):
-    plane = CountingPlane()
+    plane = CountingPlane(tmp_path)
     monkeypatch.setattr(rejection_replay, "data_plane", lambda: plane)
     journal = tmp_path / "events.jsonl"
     parent, cache = _parent(), _cache()
