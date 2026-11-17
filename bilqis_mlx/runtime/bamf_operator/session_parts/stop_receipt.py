@@ -11,6 +11,7 @@ from bilqis_mlx.runtime import disk as runtime_disk
 
 RUN_STOP_SCHEMA = "bilqis.bamf.run-stop/v1"
 RUN_STOP_EVENT = "BAMF_RUN_STOPPED"
+RUN_STOP_RECEIPT_INVALID = "BAMF_RUN_STOP_RECEIPT_INVALID"
 
 
 def _canonical(value: dict) -> str:
@@ -70,7 +71,7 @@ def record_normal_stop_receipt(
     if (not isinstance(status, str) or not status
             or not isinstance(resource_witness, dict)
             or type(resource_witness.get("sufficient")) is not bool):
-        raise ValueError("BAMF_RUN_STOP_RECEIPT_INVALID")
+        raise ValueError(RUN_STOP_RECEIPT_INVALID)
     safe_resume, disposition = _resume_state(status)
     body = {
         "schema": RUN_STOP_SCHEMA,
@@ -130,7 +131,7 @@ def read_latest_run_stop_receipt(run_dir: Path) -> dict | None:
             continue
         receipt = event.get("run_stop_receipt")
         if not isinstance(receipt, dict) or receipt.get("schema") != RUN_STOP_SCHEMA:
-            raise ValueError("BAMF_RUN_STOP_RECEIPT_INVALID")
+            raise ValueError(RUN_STOP_RECEIPT_INVALID)
         expected = receipt.get("receipt_sha256")
         body = {key: value for key, value in receipt.items()
                 if key != "receipt_sha256"}
