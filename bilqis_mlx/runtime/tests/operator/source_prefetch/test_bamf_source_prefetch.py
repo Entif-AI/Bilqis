@@ -24,12 +24,14 @@ from bilqis_mlx.runtime.source_prefetch import (
     SCHEMA,
     freeze_source_packet,
     source_prefetch_pool,
+    thaw_source_packet,
 )
 from bilqis_mlx.semantics.domains import contract_digest
 
 
 def _fixture(capability="capability:prefetch", *, visit="visit:prefetch"):
     rows = ({"id": capability, "capability": capability, "gold": "TRUE"},)
+    source_binding = {"capability": capability, "provider": "fixture"}
     offer = SimpleNamespace(
         accepted_manifest_sha256="a" * 64,
         generation_binding="b" * 64,
@@ -38,7 +40,7 @@ def _fixture(capability="capability:prefetch", *, visit="visit:prefetch"):
         source_seed=17,
         source_each=1,
         source_family_id="family:" + capability,
-        source_binding_digest="d" * 64,
+        source_binding_digest=contract_digest(source_binding),
         source_authority=SimpleNamespace(
             content_sha256=source_content_digest(rows)),
         rows=lambda: rows,
@@ -48,20 +50,22 @@ def _fixture(capability="capability:prefetch", *, visit="visit:prefetch"):
             identity=SimpleNamespace(visit_id=visit)))
     context = SimpleNamespace(
         source_root=Path("/source"), graph={"tokens": []},
-        release=SimpleNamespace(release_sha256="c" * 64))
+        release=SimpleNamespace(
+            release_sha256="c" * 64,
+            source_bindings=SimpleNamespace(by_capability={capability: source_binding})))
     parent = SimpleNamespace(retained_state=SimpleNamespace(optimizer_step=41))
     return selection, context, parent
 
 
-def _packet(request):
+def _packet(request, enrichment=()):
     return freeze_source_packet({
         "schema": SCHEMA,
         "identity": request["identity"],
-        "fresh": [{"id": request["capability"], "gold": "TRUE"}],
+        "fresh": list(request["source_rows"]),
         "prior": [],
         "preservation": [],
         "retention_support": [],
-        "teaching_enrichment_rows": [],
+        "teaching_enrichment_rows": list(enrichment),
     })
 
 
@@ -84,6 +88,28 @@ def test_candidate_identity_binds_visit_step_and_source_authority_without_mutabl
     with pytest.raises(BilqisError) as failure:
         prepare_priority_source_packet(contaminated)
     assert failure.value.context["reason"] == "BAMF_SOURCE_PREFETCH_REQUEST_INVALID"
+
+
+def test_native_packet_carries_issued_factory_teaching_enrichment():
+    selection, context, parent = _fixture("Z.C0")
+    enrichment = ({"id": "z-enrichment", "capability": "Z.C0", "gold": "TRUE"},)
+    request = priority_source_request(
+        selection, context, parent, 1, enrichment_rows=enrichment)
+    payload = thaw_source_packet(prepare_priority_source_packet(request))
+
+    assert payload["teaching_enrichment_rows"] == list(enrichment)
+
+
+def test_native_packet_rejects_enrichment_drift_before_delivery():
+    selection, context, parent = _fixture("Z.C0")
+    enrichment = ({"id": "z-enrichment", "capability": "Z.C0", "gold": "TRUE"},)
+    request = priority_source_request(
+        selection, context, parent, 1, enrichment_rows=enrichment)
+    request["teaching_enrichment_rows"] = [
+        {"id": "drift", "capability": "Z.C0", "gold": "TRUE"}]
+    with pytest.raises(BilqisError) as failure:
+        prepare_priority_source_packet(request)
+    assert failure.value.context["reason"] == "BAMF_SOURCE_PREFETCH_ENRICHMENT_DRIFT"
 
 
 def test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_rows():
@@ -125,6 +151,23 @@ def test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_
     assert serial_metrics.serial_steps == 2
     assert prefetch_metrics.submitted_steps == 2
     assert prefetch_metrics.prepared_steps == 2
+
+
+def test_source_lane_keeps_factory_enrichment_role_separate_from_direct_rows():
+    selection, context, parent = _fixture("Z.C0")
+    enrichment = ({"id": "z-extra", "capability": "Z.C0", "gold": "TRUE"},)
+
+    with patch(
+            "bilqis_mlx.runtime.bamf_operator.source_prefetch.prepare_priority_source_packet",
+            side_effect=lambda request: _packet(request, enrichment)):
+        lane = CandidateSourceLane(
+            selection, context, parent, 1, workers=0, executor=None,
+            metrics=SourcePrefetchMetrics())
+        lesson = lane.lesson(1)
+
+    assert lesson.direct == selection.offer.rows()
+    assert lesson.enrichment == enrichment
+    assert lesson.delivered == (*selection.offer.rows(), *enrichment)
 
 
 def test_wrong_step_or_candidate_packet_fails_before_candidate_use():

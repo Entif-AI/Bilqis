@@ -480,6 +480,16 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1332-how-policy-outcomes-20261116",
       "head_sha_role": "Executable integration head consuming unified0891128; subsequent receipt metadata only."
+    },
+    {
+      "issue": 1337,
+      "pr": null,
+      "state": "ACTIVE",
+      "head_sha": "f6cd2d708c8f61625b703a6433cf00a5475deeb1",
+      "summary": "R15 is active on an isolated branch from reviewed unified f6cd2d70. Scope is bounded to provider-owned legal Boolean operand-pattern completeness plus generic Factory-released optional teaching enrichment through native BAMF candidate delivery/evidence. No grade/Boolean runtime branch, legacy enrichment CLI resurrection, live learner mutation, or merge authority is introduced.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1337-truth-pattern-enrichment-20261116",
+      "head_sha_role": "Reviewed-unified branch point before the active #1337 implementation; semantic implementation remains uncommitted while owner and governance proof is in progress."
     }
   ]
 }

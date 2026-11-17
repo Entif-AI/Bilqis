@@ -23,7 +23,7 @@
       "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
       "successor_evidence": [
         {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_reuse.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
-        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_rows"}
+        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_bamf_source_prefetch.py", "test": "test_serial_and_prefetched_lanes_consume_the_same_exact_packet_identity_and_rows"}
       ]
     },
     {
@@ -81,7 +81,7 @@
       "bamf_owner": {"path": "bilqis_mlx/learning/_retention/_atlas_candidate/transaction.py"},
       "successor_evidence": [
         {"kind": "independent_authority", "path": "bilqis_mlx/learning/_retention/tests/test_atlas_candidate.py", "test": "test_rejection_returns_exact_parent_with_all_custody"},
-        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_operator_rejection_continuation.py", "test": "test_real_rejections_replay_and_accumulate_without_parent_drift"}
+        {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/session/test_bamf_operator_rejection_continuation.py", "test": "test_real_rejections_replay_and_accumulate_without_parent_drift"}
       ]
     },
     {
@@ -138,7 +138,7 @@
       "bamf_owner": {"path": "bilqis_mlx/runtime/bamf_operator/source_prefetch.py"},
       "successor_evidence": [
         {"kind": "independent_authority", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_reuse.py", "test": "test_spawned_native_prefetch_preserves_real_a_identity_source_content"},
-        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/test_bamf_source_prefetch.py", "test": "test_native_operator_preserves_zero_one_two_worker_configuration"}
+        {"kind": "self_consistency", "path": "bilqis_mlx/runtime/tests/operator/source_prefetch/test_bamf_source_prefetch.py", "test": "test_native_operator_preserves_zero_one_two_worker_configuration"}
       ]
     },
     {

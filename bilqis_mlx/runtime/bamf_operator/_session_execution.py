@@ -52,11 +52,13 @@ def execute_horizon(
         if callable(begin_step):
             begin_step(ordinal, parent.retained_state.optimizer_step + ordinal)
         source_prepare_started = candidate_step_started_at
-        source_rows = rows if source_lane is None else source_lane.rows(ordinal)
+        lesson = None if source_lane is None else source_lane.lesson(ordinal)
+        source_rows = rows if lesson is None else lesson.direct
+        enrichment_rows = () if lesson is None else lesson.enrichment
         source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
         observation = delivery_observation_cls(
             capture, parent.retained_state.optimizer_step + ordinal,
-            source_rows, selection.offer.source_seed)
+            source_rows, selection.offer.source_seed, enrichment=enrichment_rows)
         emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
         step = execute_candidate(
             selection, context, atlas_path, feature_path,
@@ -66,6 +68,7 @@ def execute_horizon(
             max_norm=1.0, candidate=candidate,
             finalize_candidate=(ordinal == horizon),
             prepared_source_rows=(source_rows if source_lane is not None else None),
+            prepared_enrichment_rows=enrichment_rows,
             candidate_step_started_at=candidate_step_started_at,
             source_prepare_wall_seconds=source_prepare_wall_seconds)
         candidate = step.transaction

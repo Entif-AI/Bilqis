@@ -267,7 +267,8 @@ def execute_accepted_priority_candidate(selection, source_context,
         atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
         optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
         capture_diagnostics=False, candidate=None, finalize_candidate=True,
-        prepared_source_rows=None, candidate_step_started_at=None,
+        prepared_source_rows=None, prepared_enrichment_rows=(),
+        candidate_step_started_at=None,
         source_prepare_wall_seconds=0.0):
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
@@ -314,19 +315,23 @@ def execute_accepted_priority_candidate(selection, source_context,
     hparams = replace(teacher_hparams, learning_rate=float(lr))
     offer = selection.offer
     rows = offer.rows() if prepared_source_rows is None else tuple(prepared_source_rows)
+    enrichment = tuple(prepared_enrichment_rows)
+    delivered_rows = (*rows, *enrichment)
     capability = offer.capability_id
     execution = source_context.release.execution_plan.capability_map[capability]
     delivery = describe_delivered_teaching(source_context.release, capability,
                                             execution.teaching_option_ids[0], rows)
     provenance = BamfVisitProvenance.from_c03_record(selection.visit.identity.to_record())
-    observation = replace(observation, option_rows=rows, seed=offer.source_seed)
+    observation = replace(
+        observation, option_rows=rows, seed=offer.source_seed,
+        **({"enrichment": enrichment} if enrichment else {}))
     caller_pre_neural_wall_seconds = (
         float(source_prepare_wall_seconds)
         + time.perf_counter() - caller_pre_neural_started)
     return execute_factory_candidate_step(Path(selection._run_dir), source_context, parent,
-        atlas_artifact_path, feature_artifact_path, rows, capability=capability,
-        delivery=delivery, requested_count=len(rows), source_seed=offer.source_seed,
-        source_each=offer.source_each, optimizer_step_seed=optimizer_step_seed,
+        atlas_artifact_path, feature_artifact_path, delivered_rows, capability=capability,
+        delivery=delivery, requested_count=len(delivered_rows), source_seed=offer.source_seed,
+        source_each=len(delivered_rows), optimizer_step_seed=optimizer_step_seed,
         visit_provenance=provenance, teacher_strategy=policy, teacher_hparams=hparams,
         max_norm=max_norm, observation=observation, memory_budget=memory_budget,
         salience_provider=salience_provider,
@@ -337,4 +342,4 @@ def execute_accepted_priority_candidate(selection, source_context,
         currentness_binding_wall_seconds=currentness_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds=caller_pre_neural_wall_seconds,
         semantic_context=semantic_context,
-        prepared_source=prepared_source)
+        prepared_source=(prepared_source if not enrichment else None))

@@ -17,7 +17,7 @@ from bilqis_mlx.runtime.source_prefetch import (
 )
 from bilqis_mlx.semantics.domains import contract_digest
 
-from ..test_bamf_source_prefetch import _fixture
+from .test_bamf_source_prefetch import _fixture
 
 
 @pytest.mark.parametrize("capability", [
@@ -92,6 +92,36 @@ def test_native_worker_transports_issued_content_without_redrawing_provider():
             "bilqis_mlx.runtime.bamf_operator.source_prefetch.prepare_priority_source_packet",
             return_value=packet):
         assert lane.rows(1) == tuple(rows)
+
+
+def test_future_grade_factory_enrichment_reaches_native_lesson_without_runtime_branch():
+    from bilqis_mlx.factory.tests.lifecycle.test_teaching import closed_source_fixture
+    from bilqis_mlx.factory.teaching import optional_teaching_rows
+
+    _course, graph, sources, answers, release = closed_source_fixture()
+    context = SourceExecutionContext(release, graph, None, sources, answers)
+    capability, seed = "Z.C0", 17
+    rows, authority = context.draw_bound_rows(
+        seed=seed, capability=capability, each=1)
+    selection, _fixture_context, parent = _fixture(capability)
+    selection.offer.release_sha256 = release.release_sha256
+    selection.offer.source_seed = seed
+    selection.offer.source_family_id = authority.source_family_id
+    selection.offer.source_authority = authority
+    selection.offer.rows = lambda: tuple(rows)
+    selection.offer.source_binding_digest = contract_digest(
+        release.source_bindings.by_capability[capability])
+
+    lesson = CandidateSourceLane(
+        selection, context, parent, 1, workers=0, executor=None,
+        metrics=SourcePrefetchMetrics()).lesson(1)
+
+    expected = optional_teaching_rows(
+        None, graph, release, sources, capability=capability, seed=seed, enabled=True)
+    assert lesson.direct == tuple(rows)
+    assert lesson.enrichment == expected
+    assert len(lesson.enrichment) == 1
+    assert lesson.delivered == (*rows, *expected)
 
 
 def test_sixteen_step_horizon_reuses_one_source_draw_and_one_content_identity():
