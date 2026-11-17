@@ -54,6 +54,9 @@ from .session_parts.candidate_execution import (
     candidate_horizon_execution as _candidate_horizon_execution_impl,
 )
 from .session_parts.candidate_execution import execute_horizon as _execute_horizon_impl
+from .session_parts.stop_receipt import (
+    record_normal_stop_receipt, stop_resource_witness,
+)
 from ._session_execution import operate as _operate_impl
 from ._session_execution import retention_result as _retention_result_impl
 from ._session_visit import visit as _visit_impl
@@ -318,6 +321,8 @@ def operate_bamf(
         visit_fn=_visit, observer_type=TrainerObservation,
         emit_progress=_emit_progress, monotonic=time.monotonic,
         load_generation=load_accepted_generation, result_type=BamfOperatorResult,
+        resource_snapshot=stop_resource_witness,
+        record_stop=record_normal_stop_receipt, elapsed_clock=time.perf_counter,
         bind_run_authority=(
             lambda current_run_dir:
             bind_native_run_authority(current_run_dir, run_authority)),

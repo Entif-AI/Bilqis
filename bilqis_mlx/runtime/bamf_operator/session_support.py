@@ -58,6 +58,8 @@ class BamfOperatorResult:
     source_prefetch_serial_steps: int = 0
     admission_status: str | None = None
     admission_advances: int = 0
+    elapsed_seconds: float = 0.0
+    stop_receipt_sha256: str | None = None
 
 
 def _execution_context(run_dir: Path, *, currentness_metrics=None):
