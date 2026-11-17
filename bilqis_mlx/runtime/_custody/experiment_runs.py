@@ -341,14 +341,14 @@ class ExperimentRunBudget:
 
 def require_training_run(run_dir: Path, local_runs: Path, *,
                          issue_budget: ExperimentRunBudget | None = None) -> None:
-    """Require local isolation or verified issue-owned experimental custody."""
-    if issue_budget is not None:
-        if not isinstance(issue_budget, ExperimentRunBudget):
-            raise TypeError("EXPERIMENT_BUDGET_GUARD_INVALID")
-        issue_budget.register(Path(run_dir).expanduser())
-        issue_budget.assert_within_budget()
+    """Enforce custody only for explicitly issue-owned learning experiments.
+
+    ``local_runs`` is retained for call-site compatibility with the historical
+    checkout-local guard. Ordinary operator runs are not location-scoped.
+    """
+    if issue_budget is None:
         return
-    target = Path(run_dir).expanduser().resolve()
-    isolated_root = Path(local_runs).resolve()
-    if target == isolated_root or isolated_root not in target.parents:
-        raise ValueError("LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN")
+    if not isinstance(issue_budget, ExperimentRunBudget):
+        raise TypeError("EXPERIMENT_BUDGET_GUARD_INVALID")
+    issue_budget.register(Path(run_dir).expanduser())
+    issue_budget.assert_within_budget()

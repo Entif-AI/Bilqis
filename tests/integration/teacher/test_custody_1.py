@@ -73,14 +73,15 @@ class CustodyTests(TeacherFixture, unittest.TestCase):
             storage._publish_boundary(self.fixture.root, protected, (), ())
         self.assertIn(pointer["filename"], retired.call_args.args[1])
 
-    def test_experimental_operator_refuses_active_or_external_run_dir_before_gpu(self):
-        # operate is never entered by tests: this must fail at its first
-        # read-only pathname guard, before source loading or optimizer setup.
+    def test_retained_operator_external_run_is_not_rejected_by_pathname_custody(self):
+        # Ordinary retained operation may live outside the checkout. The first
+        # downstream source-preparation boundary proves pathname custody did not
+        # block the run before normal operator preflight completed.
         from unittest.mock import patch
         with patch('bilqis_mlx.runtime.session.prepare_source',
                           side_effect=AssertionError("SOURCE_SHOULD_NOT_BE_LOADED")):
             with self.assertRaisesRegex(
-                    ValueError, "LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN"):
+                    AssertionError, "SOURCE_SHOULD_NOT_BE_LOADED"):
                 storage.operate(
                     self.fixture.root, fixtures.SOURCE, fixtures.PARENT,
                     self.fixture.fixture.manifest, retention_enabled=True)

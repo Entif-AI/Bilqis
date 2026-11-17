@@ -43,11 +43,10 @@ def validate_operator_preflight(*, run_dir, minutes, steps_per_visit, max_visits
         raise ValueError("AUTONOMOUS_CURRICULUM_REQUIRES_RETENTION")
     if autonomous_curriculum and flash_mode:
         raise ValueError("AUTONOMOUS_CURRICULUM_INCOMPATIBLE_WITH_FLASH_MODE")
-    if retention_enabled or experiment_budget is not None:
+    if experiment_budget is not None:
         experiment_runs.require_training_run(
             run_dir, paths.REPO_ROOT / "runs",
             issue_budget=experiment_budget)
-    if experiment_budget is not None:
         experiment_budget.assert_can_allocate(600_000_000)
     if boolean_association_bridge:
         saved_path = _pathlib.Path(run_dir).expanduser().resolve() / "state.json"

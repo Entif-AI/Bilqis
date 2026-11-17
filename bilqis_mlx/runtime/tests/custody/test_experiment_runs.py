@@ -11,8 +11,12 @@ class ExperimentRunBudgetTests(unittest.TestCase):
         owner = self.budget()
         run = owner.create("primary")
         require_training_run(run, self.base / "code-checkout/runs", issue_budget=owner)
-        with self.assertRaisesRegex(ValueError, "ISOLATED_WORKTREE_RUN"):
-            require_training_run(run, self.base / "code-checkout/runs")
+        require_training_run(run, self.base / "code-checkout/runs")
+
+    def test_normal_operator_run_is_not_location_scoped_without_issue_budget(self):
+        external = self.base / "durable-runs" / "aspirant"
+        external.mkdir(parents=True)
+        require_training_run(external, self.base / "code-checkout/runs")
 
     def test_external_historical_run_and_anonymous_guards_cannot_claim_issue_custody(self):
         owner = self.budget()

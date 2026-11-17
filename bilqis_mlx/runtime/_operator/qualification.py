@@ -41,9 +41,7 @@ def preflight(manifest, arm, expected_digest, *, root):
         'aggregation': 'ARITHMETIC_MEAN_OF_CAPABILITY_ACCURACIES',
         'acquisition': 'STRICTLY_GREATER', 'post_acquisition': 'GREATER_OR_EQUAL'}, 'PROFICIENCY_RULE')
     require(prepared.manifest['policy']['value']['retention_settings'] == _settings(), 'RETENTION_POLICY')
-    from .experiment_runs import require_training_run
     from .disk import headroom_snapshot
-    require_training_run(Path(prepared.arm['run_dir']), Path(root)/'runs')
     disk = headroom_snapshot(Path(root), required_bytes=prepared.manifest['budget']['checkpoint_estimate_bytes'],
         reserve_gib=prepared.manifest['policy']['value']['reserve_gib'])
     require(disk['sufficient'], 'DISK_RESERVE')
