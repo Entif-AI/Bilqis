@@ -36,6 +36,7 @@ from bilqis_mlx.runtime.foundation_teacher_owner import (
 from bilqis_mlx.runtime.priority_rejection_replay import (
     candidate_step_horizon, rejection_attempt_ordinals,
 )
+from bilqis_mlx.runtime.active_grade_cadence import record_active_grade_cadence_attempt
 from .evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root
 from .locking import bamf_operator_lock
 from .performance import measure_observed_phase, observe_completed_step
@@ -208,6 +209,9 @@ def prepare_bamf_visit(
             "exclusions": [
                 item.to_record() for item in getattr(selection, "exclusions", ())
             ],
+            **({"cadence": (getattr(selection, "metadata", None) or {}).get("cadence")}
+               if (getattr(selection, "metadata", None) or {}).get("cadence") is not None
+               else {}),
         }
         _emit_progress(progress, "priority holds: " + json.dumps(
             payload, sort_keys=True, ensure_ascii=True))
@@ -229,7 +233,8 @@ def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
         run_authority_binding=run_authority_binding,
         prepare_visit=prepare_bamf_visit, record_rejection=record_bamf_rejection,
         accept_publish=accept_and_publish, load_generation=load_accepted_generation,
-        measure_phase=measure_observed_phase, emit_progress=_emit_progress)
+        measure_phase=measure_observed_phase, emit_progress=_emit_progress,
+        record_cadence_attempt=record_active_grade_cadence_attempt)
 
 
 def _accepted_admission_reentry(

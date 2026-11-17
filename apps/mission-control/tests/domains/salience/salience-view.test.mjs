@@ -151,7 +151,7 @@ test("routing rationale matches executable tier and sort semantics", () => {
 
 test("novelty missing and negative mappings match executable C06 authority", () => {
   const source = fs.readFileSync(
-    path.join(repoRoot, "bilqis_mlx/runtime/_teacher/priority_authority.py"),
+    path.join(repoRoot, "bilqis_mlx/runtime/_teacher/priority/priority_authority.py"),
     "utf8",
   );
   assert.equal(source.includes("(NoveltyState.EXPECTED_MISSING, Ordinal.CRITICAL)"), true);

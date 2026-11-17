@@ -84,7 +84,7 @@ def priority():
         'bilqis_mlx.runtime.priority_qualification': module(_grade=None, requalify_priority=None),
     }
     name = 'bilqis_mlx.runtime.priority_execution_portable_test'
-    path = Path(__file__).resolve().parents[3] / '_teacher/accepted_priority_visit.py'
+    path = Path(__file__).resolve().parents[3] / '_teacher/priority/accepted_priority_visit.py'
     spec = spec_from_file_location(name, path)
     loaded = module_from_spec(spec)
     with patch.dict(sys.modules, {**owners, name: loaded}):
@@ -127,18 +127,27 @@ def lawful(*capabilities):
         _planning_generation=Offer._planning_generation,
     )
 
+
+def _candidate_owner(priority):
+    return sys.modules[priority.execute_accepted_priority_candidate.__module__]
+
+
+def _contracts_owner(priority):
+    return sys.modules[priority.accepted_priority_school.__module__]
+
 def test_execution_owns_rows_policy_and_teacher_rate(priority):
+    candidate = _candidate_owner(priority)
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     selected = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), Visit(identity),
         {'lr': 0.25, 'nested': {'x': 1}}, {}, 'g', (), '/run', lawful())
     selected.policy['nested']['x'] = 99
     release = SimpleNamespace(execution_plan=SimpleNamespace(capability_map={
         'cap': SimpleNamespace(teaching_option_ids=('instruction',))}))
-    with patch.object(priority, '_accepted_parent', return_value=('parent', 'cache')), \
-         patch.object(priority, '_require_current_visit'), \
-         patch.object(priority.BamfVisitProvenance, 'from_c03_record', return_value='provenance'), \
-         patch.object(priority, 'describe_delivered_teaching', return_value='delivery'), \
-         patch.object(priority, 'execute_factory_candidate_step', return_value='step') as execute:
+    with patch.object(candidate, 'AdamWHyperparameters', HParams), \
+         patch.object(candidate, '_require_current_visit'), \
+         patch.object(candidate.BamfVisitProvenance, 'from_c03_record', return_value='provenance'), \
+         patch.object(candidate, 'describe_delivered_teaching', return_value='delivery'), \
+         patch.object(candidate, 'execute_factory_candidate_step', return_value='step') as execute:
         assert priority.execute_accepted_priority_candidate(selected, SimpleNamespace(release=release), 'atlas', 'features',
             teacher_hparams=HParams(0.01, (0.8, 0.9), 1e-8, 0.2), observation=Observation(({'id': 'old'},), 0),
             optimizer_step_seed=3, max_norm=1, capture_diagnostics=True) == 'step'
@@ -152,17 +161,17 @@ def test_execution_owns_rows_policy_and_teacher_rate(priority):
 
 
 def test_execution_reuses_authenticated_planning_parent(priority):
+    candidate = _candidate_owner(priority)
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     selected = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), Visit(identity),
         {'lr': 0.25}, {}, 'g', (), '/run', lawful())
     release = SimpleNamespace(execution_plan=SimpleNamespace(capability_map={
         'cap': SimpleNamespace(teaching_option_ids=('instruction',))}))
-    with patch.object(priority, '_accepted_parent',
-                      side_effect=AssertionError('must not reload accepted parent')), \
-         patch.object(priority, '_require_current_visit') as require_visit, \
-         patch.object(priority.BamfVisitProvenance, 'from_c03_record', return_value='provenance'), \
-         patch.object(priority, 'describe_delivered_teaching', return_value='delivery'), \
-         patch.object(priority, 'execute_factory_candidate_step', return_value='step') as execute:
+    with patch.object(candidate, 'AdamWHyperparameters', HParams), \
+         patch.object(candidate, '_require_current_visit') as require_visit, \
+         patch.object(candidate.BamfVisitProvenance, 'from_c03_record', return_value='provenance'), \
+         patch.object(candidate, 'describe_delivered_teaching', return_value='delivery'), \
+         patch.object(candidate, 'execute_factory_candidate_step', return_value='step') as execute:
         assert priority.execute_accepted_priority_candidate(
             selected, SimpleNamespace(release=release), 'atlas', 'features',
             teacher_hparams=HParams(0.01, (0.8, 0.9), 1e-8, 0.2),
@@ -182,10 +191,13 @@ def test_execution_reuses_authenticated_planning_parent(priority):
 
 
 def test_accepted_priority_school_derives_all_admitted_grades_and_student(priority):
+    contracts = _contracts_owner(priority)
     program = ScheduleProgramStub(
         (SimpleNamespace(id='violet'), SimpleNamespace(id='amber')))
     parent = SimpleNamespace(retained_state='student')
-    with patch.object(priority, 'candidate_identity_digest', return_value='student-id'):
+    with patch.object(contracts, 'candidate_identity_digest', return_value='student-id'), \
+         patch.object(contracts, 'PrioritySchoolContext', PrioritySchoolContextStub), \
+         patch.object(contracts, 'PriorityStudentIdentity', PriorityStudentIdentityStub):
         school = priority.accepted_priority_school(parent, program)
     assert school.course_digest == 'course'
     assert school.active_grades == ('violet', 'amber')
@@ -193,28 +205,28 @@ def test_accepted_priority_school_derives_all_admitted_grades_and_student(priori
     assert school.stage == 'MAIN'
 
 def test_issuer_and_rate_are_required(priority):
+    candidate = _candidate_owner(priority)
     with pytest.raises(ValueError):
         priority.PriorityVisitResult()
     visit = Visit(SimpleNamespace(to_record=lambda: {'visit': 1}))
     selection = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), visit,
         {'lr': True}, {}, 'g', (), '/run', lawful())
-    with patch.object(priority, '_accepted_parent', return_value=('parent', 'cache')), \
-         patch.object(priority, '_require_current_visit'):
+    with patch.object(candidate, '_require_current_visit'):
         with pytest.raises(ValueError):
             priority.execute_accepted_priority_candidate(selection, object(), 'a', 'b',
                 teacher_hparams=HParams(0.1, (0.9, 0.99), 1e-8, 0),
                 observation=object(), optimizer_step_seed=1, max_norm=1)
 
 def test_stale_offer_rejects_candidate_without_call(priority):
+    candidate = _candidate_owner(priority)
     class Stale(Offer):
         def require_current(self, context, parent):
             raise ValueError('C09 hold')
     visit = Visit(SimpleNamespace(to_record=lambda: {'visit': 1}))
     selection = priority._issue_result('TEACHER_SELECTED', 'o', Stale(), visit,
         {'lr': 0.1}, {}, 'g', (), '/run', lawful())
-    with patch.object(priority, '_accepted_parent', return_value=('parent', 'cache')), \
-         patch.object(priority, '_require_current_visit'), \
-         patch.object(priority, 'execute_factory_candidate_step') as execute:
+    with patch.object(candidate, '_require_current_visit'), \
+         patch.object(candidate, 'execute_factory_candidate_step') as execute:
         with pytest.raises(ValueError, match='C09 hold'):
             priority.execute_accepted_priority_candidate(selection, object(), 'a', 'b',
                 teacher_hparams=HParams(0.1, (0.9, 0.99), 1e-8, 0),
@@ -224,7 +236,5 @@ def test_stale_offer_rejects_candidate_without_call(priority):
 def test_non_teaching_result_does_not_execute(priority):
     result = priority._issue_result('ACTION_REQUIRED', 'repair', None, None,
                                     None, None, None, (), '/run')
-    with patch.object(priority, '_accepted_parent') as parent:
-        assert priority.execute_accepted_priority_candidate(result, None, 'a', 'b',
-            teacher_hparams=None, observation=None, optimizer_step_seed=0, max_norm=1) is result
-        parent.assert_not_called()
+    assert priority.execute_accepted_priority_candidate(result, None, 'a', 'b',
+        teacher_hparams=None, observation=None, optimizer_step_seed=0, max_norm=1) is result

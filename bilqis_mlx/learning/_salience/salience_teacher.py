@@ -56,7 +56,7 @@ class PrioritySchoolContext:
                 or any(not _name(grade) for grade in self.active_grades)
                 or len(set(self.active_grades)) != len(self.active_grades)
                 or not isinstance(self.current_student, PriorityStudentIdentity)
-                or self.stage != "MAIN"):
+                or self.stage not in {"MAIN", "RECOVERY_1", "RECOVERY_2"}):
             _invalid("BAMF_PRIORITY_SCHOOL_CONTEXT_INVALID")
 
 

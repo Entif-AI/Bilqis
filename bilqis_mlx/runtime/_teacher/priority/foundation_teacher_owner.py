@@ -1,7 +1,7 @@
 """C16.3 production owner for the first BAMF C03 bootstrap and trajectory."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import random
 
 from bilqis_mlx.compatibility.legacy_trainer_authority import live_authority
@@ -125,6 +125,8 @@ def select_foundation_priority_visit(
     authority = issue_foundation_priority_authority(
         run_dir, source_context, parent, epoch, atlas_artifact_path,
         teacher_state=projection.teacher_state, progress=progress)
+    if authority.cadence.phase.value in {"MAIN", "RECOVERY_1", "RECOVERY_2"}:
+        school = replace(school, stage=authority.cadence.phase.value)
     bootstrap = {"legacy_receipt": None, "adaptation": None, "prior_region": None}
     if "c03_lineage" not in parent.teacher_state:
         owned = foundation_teacher_bootstrap()
@@ -142,6 +144,7 @@ def select_foundation_priority_visit(
         random.Random(parent.teacher_state["next_seed"]), Settings(),
         program=program, now=authority.now,
         lawful_frontier=authority.lawful_frontier,
+        cadence_authorization=authority.cadence,
         total_capabilities=len(source_context.release.execution_plan.capabilities),
         accepted_parent=parent, planning_generation=authority.planning_generation,
         **bootstrap)
