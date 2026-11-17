@@ -175,7 +175,7 @@ def _exclusions(release, capabilities) -> tuple[LawfulTeachingExclusion, ...]:
             continue
         code = codes.get(item.disposition)
         if code is None:
-            _invalid("BAMF_LEARNER_FRONTIER_EXCLUSION_INVALID")
+            _invalid("BAMF_LEARNER_FRONTIER_INVALID")
         result.append(LawfulTeachingExclusion(
             item.capability_id, item.semantic_ids, code, item.holds))
     execution_map = release.execution_plan.capability_map

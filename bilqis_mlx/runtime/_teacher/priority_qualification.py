@@ -156,7 +156,7 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
         for item in lawful_frontier.exclusions
     }
     if len(exclusions) != len(lawful_frontier.exclusions):
-        _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_EXCLUSION_DRIFT')
+        _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
     for option in frontier.options:
         cap, context = option.context.capability_id, option.context
         if (cap not in release.execution_plan.capability_map
@@ -166,7 +166,7 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
         if cap not in lawful_ids:
             exclusion = exclusions.get(cap)
             if exclusion is None:
-                _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_EXCLUSION_MISSING')
+                _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
             holds.append((option.stable_id, exclusion))
             continue
         if option.action_kind in (ActionKind.CORRECTION, ActionKind.PROCEDURE_REPAIR):

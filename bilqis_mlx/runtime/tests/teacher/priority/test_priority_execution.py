@@ -114,6 +114,11 @@ class Offer:
         return self.materialized
 
 
+class HeldOffer(Offer):
+    def require_current(self, context, parent):
+        raise ValueError('held')
+
+
 def lawful(*capabilities):
     ready = ('cap',) if not capabilities else tuple(capabilities)
     return SimpleNamespace(

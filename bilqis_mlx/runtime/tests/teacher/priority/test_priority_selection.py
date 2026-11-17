@@ -9,6 +9,7 @@ import pytest
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.tests.teacher.priority.test_priority_execution import (
     HParams,
+    HeldOffer,
     Offer,
     Visit,
     lawful,
@@ -17,16 +18,14 @@ from bilqis_mlx.runtime.tests.teacher.priority.test_priority_execution import (
 
 
 def test_preselection_hold_never_calls_policy(priority):
-    class Stale(Offer):
-        def require_current(self, context, parent):
-            raise ValueError('held')
+    stale = HeldOffer()
     option = SimpleNamespace(stable_id='o', action_kind=3, eligible_since=7,
         downstream_unlocks=2, context=SimpleNamespace(capability_id='cap', scope='scope'))
     frontier = SimpleNamespace(evidence=(('o', 'evidence'),))
     parent = SimpleNamespace(retained_state='student')
     school = SimpleNamespace(stage='MAIN', current_student=SimpleNamespace(sha256='student-id'))
     qualified = SimpleNamespace(ranked=SimpleNamespace(ordered=(option,)),
-                                offers=(('o', Stale()),), holds=())
+                                offers=(('o', stale),), holds=())
     with patch.object(priority, '_accepted_parent', return_value=(parent, object())), \
          patch.object(priority, '_c03_projection', return_value=SimpleNamespace(teacher_state={})), \
          patch.object(priority, 'restore_teacher_lineage', return_value='epoch'), \
