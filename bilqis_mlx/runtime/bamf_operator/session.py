@@ -33,6 +33,7 @@ from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import VisitCurrentn
 from .source_prefetch import (
     NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
+from .evidence import CandidateEvidenceCapture as _Capture
 from .session_parts.stop_receipt import (
     record_normal_stop_receipt, stop_resource_witness,
 )
