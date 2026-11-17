@@ -160,6 +160,7 @@ class ActiveGeneratedGrade:
     def verify(self) -> None:
         self.definition.verify()
         initial = self.transition_kind == "INITIAL"
+        bootstrap = self.transition_kind == "BOOTSTRAP"
         successor = self.transition_kind in {"CORRECTION", "CERTIFICATION"}
         if (
             self.schema != ACTIVE_GRADE_SCHEMA
@@ -179,13 +180,19 @@ class ActiveGeneratedGrade:
                 and not _sha(self.a09_proposal_sha256))
             or self.generated_grade_id != self.definition.definition_sha256
             or self.proposal_sha256 != self.definition.proposal_sha256
-            or initial == successor
+            or sum((initial, bootstrap, successor)) != 1
             or (initial and any(value is not None for value in (
                 self.predecessor_activation_sha256,
                 self.predecessor_definition_sha256,
                 self.transition_receipt_sha256,
                 self.transition_reason,
             )))
+            or (bootstrap and (
+                self.predecessor_activation_sha256 is not None
+                or self.predecessor_definition_sha256 is not None
+                or not _sha(self.transition_receipt_sha256)
+                or self.transition_reason != "DATA_DEFINED_INITIAL_GRADE_BOOTSTRAP"
+            ))
             or (successor and (
                 not _sha(self.predecessor_activation_sha256)
                 or not _sha(self.predecessor_definition_sha256)

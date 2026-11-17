@@ -117,7 +117,8 @@ def _recoverable_initial_orphan(
     active: ActiveGeneratedGrade,
 ) -> bool:
     """Recognize bytes durably staged before the first pointer write crashed."""
-    if active.transition_kind != "INITIAL" or _committed_history_exists(run_dir):
+    if (active.transition_kind not in {"INITIAL", "BOOTSTRAP"}
+            or _committed_history_exists(run_dir)):
         return False
     _root, definitions, activations = _roots(run_dir)
     if not activations.exists():
@@ -160,15 +161,31 @@ def _read_stored_active(run_dir: Path) -> ActiveGeneratedGrade | None:
     if (active.activation_sha256 != record["activation_sha256"]
             or active.definition.definition_sha256 != record["definition_sha256"]):
         _fail("BAMF_ACTIVE_GENERATED_GRADE_POINTER_DRIFT")
-    proposal = _read_issued_proposal(run_dir, active.proposal_sha256)
-    if (proposal.snapshot_sha256 != active.a09_snapshot_sha256
-            or proposal.closure_sha256 != active.a09_closure_sha256
-            or proposal.a09_proposal_sha256 != active.a09_proposal_sha256
-            or proposal.proposal_sha256 != active.definition.proposal_sha256
-            or proposal.learner_foot_sha256 != active.definition.learner_foot_sha256
-            or proposal.policy_sha256 != active.definition.policy_sha256
-            or proposal.policy_epoch != active.definition.policy_epoch):
-        _fail("BAMF_ACTIVE_GENERATED_GRADE_PROVENANCE_DRIFT")
+    if active.transition_kind == "BOOTSTRAP":
+        from .initial_grade_bootstrap import read_initial_grade_bootstrap
+        proposal = read_initial_grade_bootstrap(run_dir, active.proposal_sha256)
+        if (proposal.a09_snapshot_sha256 != active.a09_snapshot_sha256
+                or proposal.a09_closure_sha256 != active.a09_closure_sha256
+                or active.a09_proposal_sha256 is not None
+                or proposal.proposal_sha256 != active.definition.proposal_sha256
+                or proposal.learner_foot_sha256
+                   != active.definition.learner_foot_sha256
+                or proposal.policy_sha256 != active.definition.policy_sha256
+                or proposal.policy_epoch != active.definition.policy_epoch
+                or proposal.current_release_sha256
+                   != active.definition.adopted_release_sha256):
+            _fail("BAMF_ACTIVE_GENERATED_GRADE_PROVENANCE_DRIFT")
+    else:
+        proposal = _read_issued_proposal(run_dir, active.proposal_sha256)
+        if (proposal.snapshot_sha256 != active.a09_snapshot_sha256
+                or proposal.closure_sha256 != active.a09_closure_sha256
+                or proposal.a09_proposal_sha256 != active.a09_proposal_sha256
+                or proposal.proposal_sha256 != active.definition.proposal_sha256
+                or proposal.learner_foot_sha256
+                   != active.definition.learner_foot_sha256
+                or proposal.policy_sha256 != active.definition.policy_sha256
+                or proposal.policy_epoch != active.definition.policy_epoch):
+            _fail("BAMF_ACTIVE_GENERATED_GRADE_PROVENANCE_DRIFT")
     return active
 
 
