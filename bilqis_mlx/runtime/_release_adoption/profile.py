@@ -10,6 +10,7 @@ import bilqis_mlx.compatibility.executable_projection as _compatibility_executab
 import bilqis_mlx.curriculum.scheduler as _curriculum_scheduler
 import bilqis_mlx.factory.executable_release as _factory_executable_release
 import bilqis_mlx.factory.live_answers as _factory_live_answers
+import bilqis_mlx.factory.provider_dimensions as _factory_provider_dimensions
 import bilqis_mlx.factory.schedule as _factory_schedule
 import bilqis_mlx.learning.championship_identity as _learning_championship_identity
 import bilqis_mlx.profiles.catalog as _profiles_catalog
@@ -83,6 +84,7 @@ def _profile_adoption_receipt(
         graph, *, invalidate_assessment_evidence=False):
     heads = _factory_executable_release.answer_heads_from_executable_release(successor, graph)
     numeric_values = heads.get("numeric_active", {}).get("values")
+    dimensions = _factory_provider_dimensions.provider_dimension_telemetry(successor)
     candidate = {
         **receipt,
         "curriculum_mode": compatibility_course.version,
@@ -95,6 +97,7 @@ def _profile_adoption_receipt(
         "championship_school_identity": identity,
         "mentor_epoch": epoch,
         "championship_epoch_history": history,
+        "provider_dimensions": list(dimensions),
         "last_exam": (
             None if revised_grade is not None or invalidate_assessment_evidence
             else receipt.get("last_exam")),
@@ -172,6 +175,7 @@ def _adopt_executable_profile(
         "student_sha256": school.current_student.sha256,
         "optimizer_step": school.current_student.optimizer_step,
         "numeric_maximum": record.get("numeric_maximum"),
+        "provider_dimensions": record.get("provider_dimensions", []),
         "actual_neural_updates": 0,
     }
     record = _runtime_checkpoints._persist(

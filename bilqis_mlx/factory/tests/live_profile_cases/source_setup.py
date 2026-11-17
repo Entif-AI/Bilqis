@@ -32,6 +32,9 @@ from bilqis_mlx.factory.executable_release import (
 from bilqis_mlx.factory.generation import (
     draw_executable_release_rows, draw_execution_rows,
 )
+from bilqis_mlx.factory.provider_dimensions import (
+    compile_provider_dimension_successor, provider_dimension_state,
+)
 from bilqis_mlx.factory.live_releases import (
     boolean_successor, initial_course, minimal_boolean_successor,
 )
@@ -40,9 +43,7 @@ from bilqis_mlx.grade_a_release import accepted_grade_a
 from bilqis_mlx.live_grade_c import registry_graph
 from bilqis_mlx.semantics.abi import HISTORICAL_PREFIX_SIZE
 from bilqis_mlx.source_adapters.school import live_source_registry
-from bilqis_mlx.profiles.catalog import (
-    next_numeric_scope_profile, numeric_entry_transition,
-)
+from bilqis_mlx.profiles.catalog import numeric_entry_transition
 from bilqis_mlx.typed_answer_training import prepare_typed_batches
 
 root = Path.cwd()

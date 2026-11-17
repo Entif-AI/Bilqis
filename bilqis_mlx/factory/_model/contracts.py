@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+import re
 
 def _sha256(value: str, code: str) -> str:
     if (not isinstance(value, str) or len(value) != 64 or
@@ -18,6 +19,34 @@ class AssessmentClass(str, Enum):
     ROUTINE = "ROUTINE"
     PROMOTION = "PROMOTION"
     GENERALIZATION = "GENERALIZATION"
+
+
+class ProviderDimensionError(str, Enum):
+    POLICY_INVALID = "FACTORY_PROVIDER_DIMENSION_POLICY_INVALID"
+    SELECTION_MODE_INVALID = "FACTORY_PROVIDER_DIMENSION_SELECTION_MODE_INVALID"
+    TRIGGER_INVALID = "FACTORY_PROVIDER_DIMENSION_TRIGGER_INVALID"
+    ANSWER_FAMILY_INVALID = "FACTORY_PROVIDER_DIMENSION_ANSWER_FAMILY_INVALID"
+    CHANGE_FLAGS_INVALID = "FACTORY_PROVIDER_DIMENSION_CHANGE_FLAGS_INVALID"
+    ANSWER_CHANGE_INVALID = "FACTORY_PROVIDER_DIMENSION_ANSWER_CHANGE_INVALID"
+    POLICY_BINDING_INVALID = "FACTORY_PROVIDER_DIMENSION_POLICY_BINDING_INVALID"
+    DOMAIN_INVALID = "FACTORY_PROVIDER_DIMENSION_DOMAIN_INVALID"
+    PROVIDER_AMBIGUOUS = "FACTORY_PROVIDER_DIMENSION_PROVIDER_AMBIGUOUS"
+    POLICY_REQUIRED = "FACTORY_PROVIDER_DIMENSION_POLICY_REQUIRED"
+    PROVIDER_REQUIRED = "FACTORY_PROVIDER_DIMENSION_PROVIDER_REQUIRED"
+    VALUE_OUTSIDE_DOMAIN = "FACTORY_PROVIDER_DIMENSION_VALUE_OUTSIDE_DOMAIN"
+    SELECTION_EMPTY = "FACTORY_PROVIDER_DIMENSION_SELECTION_EMPTY"
+    SELECTION_DRIFT = "FACTORY_PROVIDER_DIMENSION_SELECTION_DRIFT"
+    PROGRESS_STATE_INVALID = "FACTORY_PROVIDER_DIMENSION_PROGRESS_STATE_INVALID"
+    ANSWER_STATE_DRIFT = "FACTORY_PROVIDER_DIMENSION_ANSWER_STATE_DRIFT"
+    RELEASE_REQUIRED = "FACTORY_PROVIDER_DIMENSION_RELEASE_REQUIRED"
+    EXECUTION_REQUIRED = "FACTORY_PROVIDER_DIMENSION_EXECUTION_REQUIRED"
+    EXECUTION_DRIFT = "FACTORY_PROVIDER_DIMENSION_EXECUTION_DRIFT"
+    GEOMETRY_OWNER_REQUIRED = "FACTORY_PROVIDER_DIMENSION_GEOMETRY_OWNER_REQUIRED"
+    POLICY_DRIFT = "FACTORY_PROVIDER_DIMENSION_POLICY_DRIFT"
+    MEMBERSHIP_OWNER_REQUIRED = "FACTORY_PROVIDER_DIMENSION_MEMBERSHIP_OWNER_REQUIRED"
+    SUCCESSOR_DRIFT = "FACTORY_PROVIDER_DIMENSION_SUCCESSOR_DRIFT"
+    PROJECTION_DRIFT = "FACTORY_PROVIDER_DIMENSION_PROJECTION_DRIFT"
+    AUTO_POLICY_AMBIGUOUS = "FACTORY_PROVIDER_DIMENSION_AUTO_POLICY_AMBIGUOUS"
 
 
 @dataclass(frozen=True)
@@ -169,6 +198,60 @@ class SourceAdapter:
                 raise ValueError(
                     "FACTORY_PROFILE_PROVIDER_VALUES_NOT_CANONICAL_SUBSET:"
                     + self.adapter_id + ":" + name)
+
+
+@dataclass(frozen=True)
+class ProviderDimensionPolicy:
+    """Provider-owned progression contract for one already-admitted dimension."""
+
+    provider_id: str
+    dimension_id: str
+    parameter_name: str
+    progression_values: tuple[str, ...]
+    selection_mode: str
+    step_mode: str
+    advance_trigger: str
+    terminal_value: str
+    source_constraint: str
+    admission_constraint: str
+    telemetry_projection: str
+    answer_family_kind: str | None = None
+    changes_semantic_geometry: bool = False
+    changes_source_projection: bool = True
+    changes_assessment_scope: bool = False
+    changes_answer_domain: bool = False
+
+    def __post_init__(self) -> None:
+        identifiers = (
+            self.provider_id, self.dimension_id, self.parameter_name,
+            self.telemetry_projection)
+        if (any(not isinstance(value, str) or not value for value in identifiers) or
+                not re.fullmatch(r"[A-Za-z0-9._-]+", self.dimension_id) or
+                not self.progression_values or
+                len(set(self.progression_values)) != len(self.progression_values) or
+                any(not isinstance(value, str) or not value
+                    for value in self.progression_values)):
+            raise ValueError(ProviderDimensionError.POLICY_INVALID.value)
+        if (self.step_mode != "ADJACENT" or
+                self.terminal_value != self.progression_values[-1] or
+                self.source_constraint != "SAME_PROVIDER_BINDING" or
+                self.admission_constraint != "EXISTING_CAPABILITY_PROFILE"):
+            raise ValueError(ProviderDimensionError.POLICY_INVALID.value)
+        if self.selection_mode != "CANONICAL_PREFIX":
+            raise ValueError(ProviderDimensionError.SELECTION_MODE_INVALID.value)
+        if self.advance_trigger not in ("DEVELOPMENTAL_BOUNDARY", "EXPLICIT"):
+            raise ValueError(ProviderDimensionError.TRIGGER_INVALID.value)
+        if (self.answer_family_kind is not None and
+                (not isinstance(self.answer_family_kind, str) or
+                 not self.answer_family_kind)):
+            raise ValueError(ProviderDimensionError.ANSWER_FAMILY_INVALID.value)
+        flags = (
+            self.changes_semantic_geometry, self.changes_source_projection,
+            self.changes_assessment_scope, self.changes_answer_domain)
+        if any(type(value) is not bool for value in flags):
+            raise ValueError(ProviderDimensionError.CHANGE_FLAGS_INVALID.value)
+        if self.changes_answer_domain != (self.answer_family_kind is not None):
+            raise ValueError(ProviderDimensionError.ANSWER_CHANGE_INVALID.value)
 
 
 @dataclass(frozen=True)

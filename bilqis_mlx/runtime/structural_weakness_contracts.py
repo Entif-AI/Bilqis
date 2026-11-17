@@ -5,7 +5,7 @@ import hashlib
 import json
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from bilqis_mlx.factory.weakness import WeaknessClassId
+from bilqis_mlx.factory._model.weakness import WeaknessClassId
 
 
 EVIDENCE_SCHEMA = "bilqis.bamf.structural-weakness/v1"

@@ -9,7 +9,7 @@ from bilqis_mlx.factory.adapters import (
     RegisteredSourceAdapter, SourceAdapterRegistry,
 )
 from bilqis_mlx.factory.model import SourceAdapter
-from bilqis_mlx.factory.weakness import (
+from bilqis_mlx.factory._model.weakness import (
     WeaknessClassId, classify_weakness,
 )
 

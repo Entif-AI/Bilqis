@@ -7,7 +7,7 @@ from bilqis_mlx.factory.adapters import (
     RegisteredSourceAdapter, SourceAdapterRegistry,
 )
 from bilqis_mlx.factory.model import SourceAdapter
-from bilqis_mlx.factory.weakness import classify_weakness
+from bilqis_mlx.factory._model.weakness import classify_weakness
 from bilqis_mlx.runtime.accepted_priority_visit_contracts import (
     _issue_result,
 )

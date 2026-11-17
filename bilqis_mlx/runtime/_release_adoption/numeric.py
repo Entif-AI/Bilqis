@@ -23,11 +23,13 @@ import dataclasses as _dataclasses
 import functools as _functools
 import pathlib as _pathlib
 import uuid as _uuid
+from .dimensions import advance_provider_dimensions as _advance_provider_dimensions
 
-def _advance_numeric_profile(run_dir, receipt, grade_a_course, source_root, graph,
-                             course, release, program, *, numeric_staircase,
-                             adopt_executable_profile):
-    """Rebind a wide historical scope, then advance the admitted staircase."""
+def _reconcile_legacy_numeric_profile(
+        run_dir, receipt, grade_a_course, source_root, graph,
+        course, release, program, *, numeric_staircase,
+        adopt_executable_profile):
+    """Repair only historical numeric admission signatures before generic policy."""
     if receipt.get("qualification") is not None:
         from ..qualification_manifest import require
         require(release.release_sha256 in receipt["qualification"].get("allowed_releases", [receipt["qualification"]["release_sha256"]]), "FROZEN_RELEASE_DRIFT")
@@ -47,18 +49,34 @@ def _advance_numeric_profile(run_dir, receipt, grade_a_course, source_root, grap
             run_dir, {**receipt, "numeric_scope_final_maximum": final_maximum},
             grade_a_course, source_root, graph,
             _profiles_catalog.numeric_scope_profile(current, initial_maximum))
-    final_scope = receipt.get("numeric_scope_final_maximum")
-    if final_scope is not None:
-        current = _runtime_admission._require_executable_factory_admission(
-            run_dir, receipt, graph)
-        active = _factory_schedule.schedule_program_from_executable_release(current)
-        school = _runtime_state._state_from_json(receipt["school"], active)
-        next_profile = _profiles_catalog.next_numeric_scope_profile(
-            current, final_maximum=final_scope)
-        if next_profile is not None and school.stage in ("AWAITING_NEXT_GRADE", "AWAITING_NEXT_GRADE_WITH_DEBT"):
-            receipt, course, release, program = adopt_executable_profile(
-                run_dir, receipt, grade_a_course, source_root, graph, next_profile)
     return receipt, course, release, program
+
+
+def _advance_numeric_profile(run_dir, receipt, grade_a_course, source_root, graph,
+                             course, release, program, *, numeric_staircase,
+                             adopt_executable_profile):
+    """Compatibility entrypoint: legacy repair followed by generic progression."""
+    receipt, course, release, program = _reconcile_legacy_numeric_profile(
+        run_dir, receipt, grade_a_course, source_root, graph,
+        course, release, program, numeric_staircase=numeric_staircase,
+        adopt_executable_profile=adopt_executable_profile)
+    if receipt.get("qualification") is not None:
+        return receipt, course, release, program
+    final_scope = receipt.get("numeric_scope_final_maximum")
+    current = _runtime_admission._require_executable_factory_admission(
+        run_dir, receipt, graph)
+    try:
+        from bilqis_mlx.factory.provider_dimensions import provider_dimension_state
+        dimension = provider_dimension_state(current, "numeric-root")
+    except ValueError:
+        dimension = None
+    if (dimension is not None and final_scope is not None and
+            int(dimension.value) >= final_scope):
+        return receipt, course, release, program
+    return _advance_provider_dimensions(
+        run_dir, receipt, grade_a_course, source_root, graph,
+        course, release, program,
+        adopt_executable_profile=adopt_executable_profile)
 
 
 def _wide_numeric_entry_rebind_due(receipt, release, *, final_maximum: int) -> bool:

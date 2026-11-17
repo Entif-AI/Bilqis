@@ -1,7 +1,7 @@
 """Compile and currentness-check provider-owned R13 weakness classes."""
 from __future__ import annotations
 
-from bilqis_mlx.factory.weakness import WeaknessClassId, classify_weakness
+from bilqis_mlx.factory._model.weakness import WeaknessClassId, classify_weakness
 from .structural_weakness_contracts import (
     EVIDENCE_SCHEMA, SHA256_LENGTH, _digest, _invalid,
     issue_weakness_context, validate_weakness_evidence,

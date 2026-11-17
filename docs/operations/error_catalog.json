@@ -1,6 +1,6 @@
 {
   "legacy_raw_file_count": 294,
-  "legacy_raw_raise_count": 2082,
+  "legacy_raw_raise_count": 2080,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -8862,20 +8862,6 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'FACTORY_NUMERIC_SCOPE_ADVANCE_INVALID'",
-      "path": "bilqis_mlx/profiles/catalog.py"
-    },
-    {
-      "code_hint": "FACTORY_NUMERIC_SCOPE_DOMAIN_INCONSISTENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_NUMERIC_SCOPE_DOMAIN_INCONSISTENT'",
-      "path": "bilqis_mlx/profiles/catalog.py"
-    },
-    {
-      "code_hint": "FACTORY_NUMERIC_SCOPE_DOMAIN_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_NUMERIC_SCOPE_DOMAIN_INVALID'",
       "path": "bilqis_mlx/profiles/catalog.py"
     },
     {

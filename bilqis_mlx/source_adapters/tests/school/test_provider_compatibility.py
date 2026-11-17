@@ -27,9 +27,7 @@ class ProviderCompatibilityTests(unittest.TestCase):
                 "boolean-identification-pre-r15-to-current",
                 "numeric-accepted-to-current",
                 "numeric-modular-to-current",
-                "numeric-pre-r13-adr106-to-current",
-                "numeric-pre-r13-to-current",
-                "numeric-current-adr106-cohort-repair",
+                "numeric-pre-r20-to-current",
             ),
         )
         self.assertEqual(

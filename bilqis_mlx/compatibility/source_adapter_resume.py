@@ -18,10 +18,10 @@ _NUMERIC_IMPLEMENTATION = (
     "2758cf678e9d2a45f3f5a1b5edd85d5ae513e54506c0d98853b9402b91572754")
 _NUMERIC_MODULAR_IMPLEMENTATION = (
     "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d")
-_NUMERIC_PRE_R13_IMPLEMENTATION = (
+_NUMERIC_PRE_R20_IMPLEMENTATION = (
     "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141")
 _NUMERIC_CURRENT_IMPLEMENTATION = (
-    "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca")
+    "788978ebb80d2349f6aa91e994f45d2ce32c154040f5ab5b17d8502a8d6dfa10")
 _GRADE_A_ADAPTER_ID = "source.micro.predicates/v1"
 _GRADE_A_ACCEPTED_IMPLEMENTATION = (
     "c451c3e6bf5ab538450c691d504230036b9a729ddfc67b53163c6a1f106d62a9")
@@ -59,7 +59,7 @@ def _without_weakness_classifier(descriptor):
 
 
 def _weakness_classifier_metadata_pair(admitted, current) -> bool:
-    """Old releases may resume generation but gain no retroactive classifier authority."""
+    """Older releases may resume generation without gaining classifier authority."""
     return (
         admitted is not None
         and admitted.weakness_classifier_id is None
@@ -75,13 +75,11 @@ def _numeric_adr106_pair(admitted, current) -> bool:
     if (admitted is None or
             admitted.adapter_id != current.adapter_id or
             admitted.adapter_id != _NUMERIC_ADAPTER_ID or
+            admitted.implementation_sha256 != current.implementation_sha256 or
             admitted.implementation_sha256 not in (
                 _NUMERIC_IMPLEMENTATION,
                 _NUMERIC_MODULAR_IMPLEMENTATION,
-                _NUMERIC_PRE_R13_IMPLEMENTATION,
                 _NUMERIC_CURRENT_IMPLEMENTATION,
-            ) or current.implementation_sha256 not in (
-                _NUMERIC_PRE_R13_IMPLEMENTATION, _NUMERIC_CURRENT_IMPLEMENTATION,
             )):
         return False
     admitted_releases = dict(admitted.cohort_releases)
@@ -97,44 +95,30 @@ def _numeric_adr106_pair(admitted, current) -> bool:
             for name in admitted_releases
             if name != _NUMERIC_STAIRCASE_RELEASE):
         return False
-    repaired = replace(
-        admitted,
-        implementation_sha256=current.implementation_sha256,
-        cohort_releases=tuple(
-            (name, _ADR106_NUMERIC_STAIRCASE_DIGEST
-             if name == _NUMERIC_STAIRCASE_RELEASE else digest)
-            for name, digest in admitted.cohort_releases),
-    )
-    return repaired == current or repaired == _without_weakness_classifier(current)
+    return (
+        admitted.generator_id == current.generator_id and
+        admitted.accepted_oracle_ids == current.accepted_oracle_ids and
+        admitted.cohort_generator_id == current.cohort_generator_id and
+        admitted.variation_axes == current.variation_axes and
+        admitted.teaching_option_ids == current.teaching_option_ids and
+        admitted.profile_dimensions == current.profile_dimensions)
 
 
 def _numeric_modular_pair(admitted, current) -> bool:
     """Exact behavior-preserving school-owner extraction; no arbitrary drift."""
     if (admitted is None or admitted.adapter_id != _NUMERIC_ADAPTER_ID
             or admitted.implementation_sha256 not in (
-                _NUMERIC_IMPLEMENTATION, _NUMERIC_MODULAR_IMPLEMENTATION)
+                _NUMERIC_IMPLEMENTATION, _NUMERIC_MODULAR_IMPLEMENTATION,
+                _NUMERIC_PRE_R20_IMPLEMENTATION)
             or current.implementation_sha256 not in (
-                _NUMERIC_MODULAR_IMPLEMENTATION, _NUMERIC_PRE_R13_IMPLEMENTATION,
-                _NUMERIC_CURRENT_IMPLEMENTATION)):
+                _NUMERIC_MODULAR_IMPLEMENTATION, _NUMERIC_CURRENT_IMPLEMENTATION)):
         return False
     migrated = replace(admitted, implementation_sha256=current.implementation_sha256)
     return (
         migrated == current
-        or migrated == _without_weakness_classifier(current)
+        or _weakness_classifier_metadata_pair(migrated, current)
         or _numeric_adr106_pair(migrated, current)
     )
-
-
-def _numeric_r13_pair(admitted, current) -> bool:
-    """Classifier-only provider refresh; source draw/check contracts are unchanged."""
-    if (admitted is None or admitted.adapter_id != _NUMERIC_ADAPTER_ID
-            or current.adapter_id != _NUMERIC_ADAPTER_ID
-            or admitted.implementation_sha256 != _NUMERIC_PRE_R13_IMPLEMENTATION
-            or current.implementation_sha256 != _NUMERIC_CURRENT_IMPLEMENTATION):
-        return False
-    migrated = replace(
-        admitted, implementation_sha256=_NUMERIC_CURRENT_IMPLEMENTATION)
-    return migrated == current or migrated == _without_weakness_classifier(current)
 
 
 def _cohort_bound_implementation_pair(
@@ -156,7 +140,7 @@ def _cohort_bound_implementation_pair(
         implementation_sha256=current_sha256,
         cohort_releases=migrated_cohorts,
     )
-    return migrated == current or migrated == _without_weakness_classifier(current)
+    return migrated == current or _weakness_classifier_metadata_pair(migrated, current)
 
 
 def _accepted_school_provider_pair(admitted, current) -> bool:
@@ -240,10 +224,6 @@ def resume_adapter_compatible(admitted, current) -> bool:
         if edge.rule == "numeric-modular" and _numeric_modular_pair(admitted, current):
             return True
         if edge.rule == "numeric-adr106" and _numeric_adr106_pair(admitted, current):
-            return True
-        if edge.rule == "numeric-adr106-r13" and _numeric_adr106_pair(admitted, current):
-            return True
-        if edge.rule == "numeric-r13" and _numeric_r13_pair(admitted, current):
             return True
     return False
 
