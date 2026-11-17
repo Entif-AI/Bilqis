@@ -59,12 +59,15 @@ class FactoryReleaseAdoptionTransition(Mapping):
 
     predecessor_factory_release_sha256: str
     factory_release_sha256: str
-    handoff_sha256: str
-    proposal_sha256: str
-    staged_candidate_sha256: str
-    selection_receipt_sha256: str
     lease_sha256: str
     source_approval_sha256: str
+    handoff_sha256: str | None = None
+    proposal_sha256: str | None = None
+    staged_candidate_sha256: str | None = None
+    selection_receipt_sha256: str | None = None
+    profile_sha256: str | None = None
+    parent_manifest_sha256: str | None = None
+    profile_transition_sha256: str | None = None
     schema: str = FACTORY_RELEASE_ADOPTION_TRANSITION_SCHEMA
     kind: str = FACTORY_RELEASE_ADOPTION_KIND
     invalidate_derived_caches: bool = False

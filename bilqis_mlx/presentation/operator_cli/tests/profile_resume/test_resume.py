@@ -23,7 +23,7 @@ class ProfileResumeTests(unittest.TestCase):
             (root / 'bamf-state.json').write_text('{}')
             artifact = root / 'successor.json'
             artifact.write_text('{}')
-            with patch('bilqis_mlx.presentation.operator_cli.bamf_lifecycle._resume_runtime_context',
+            with patch('bilqis_mlx.runtime.run_authority.bind_native_run_authority'), patch('bilqis_mlx.presentation.operator_cli.bamf_lifecycle._resume_runtime_context',
                        return_value=({'result': 'READY_TO_RESUME'}, None)), patch(
                     'bilqis_mlx.runtime._release_adoption.native_profile.preview_profile_release',
                     return_value={'profile_id': 'fixture/Z/v2'}) as preview, patch(
@@ -40,7 +40,7 @@ class ProfileResumeTests(unittest.TestCase):
             root = Path(directory)
             (root / 'bamf-state.json').write_text('{}')
             artifact = root / 'successor.json'
-            with patch('bilqis_mlx.presentation.operator_cli.bamf_lifecycle._resume_runtime_context',
+            with patch('bilqis_mlx.runtime.run_authority.bind_native_run_authority'), patch('bilqis_mlx.presentation.operator_cli.bamf_lifecycle._resume_runtime_context',
                        return_value=({'result': 'READY_TO_RESUME'}, None)), patch(
                     'bilqis_mlx.runtime._release_adoption.native_profile.preview_profile_release',
                     return_value={'profile_id': 'fixture/Z/v2'}) as preview, patch(

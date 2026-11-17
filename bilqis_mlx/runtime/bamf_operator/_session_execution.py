@@ -32,6 +32,8 @@ def operate(
         source_pool_factory(source_prefetch_workers)
         if source_prefetch_workers else null_context(None))
     with source_pool as source_prefetch_executor, operator_lock(run_dir):
+        if run_authority_binding is not None:
+            run_authority_binding.assert_current()
         if before_visits is not None:
             before_visits(run_dir)
         while monotonic() < deadline and (not max_visits or visits < max_visits):

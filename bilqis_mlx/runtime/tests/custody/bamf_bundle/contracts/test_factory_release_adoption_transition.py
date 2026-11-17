@@ -37,6 +37,17 @@ class FactoryReleaseAdoptionTransitionTests(unittest.TestCase):
         binding = _issue_factory_release_admission_binding(
             candidate, parent, transition=transition)
         parsed = FactoryReleaseAdmissionBinding.from_record(binding.to_record())
+        from dataclasses import asdict
+        self.assertEqual(asdict(binding)['handoff_sha256'], None)
+        self.assertEqual(asdict(transition)['profile_sha256'], '3' * 64)
+        self.assertIn('PROFILE_EXPANSION', repr(transition))
+        self.assertIn('FactoryReleaseAdmissionBinding', repr(binding))
+        other = _issue_profile_expansion_transition(
+            predecessor_factory_release_sha256='1' * 64,
+            factory_release_sha256='2' * 64, profile_sha256='f' * 64,
+            parent_manifest_sha256='a' * 64, lease_sha256='4' * 64,
+            source_approval_sha256='5' * 64, profile_transition_sha256='6' * 64)
+        self.assertNotEqual(transition, other)
         self.assertEqual(parsed.digest, binding.digest)
         self.assertEqual(parsed.accepted_obligation_keys, ())
         self.assertNotIn('handoff_sha256', binding.to_record())

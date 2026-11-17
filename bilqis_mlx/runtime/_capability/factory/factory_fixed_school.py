@@ -60,7 +60,7 @@ def _founding_scope_context(source_context, run_dir, parent):
         while current.release_sha256 != founding_sha:
             predecessor_sha = current.predecessor_release_sha256
             if not predecessor_sha or predecessor_sha in seen:
-                raise ValueError("missing or cyclic release ancestry")
+                raise ValueError
             predecessor = _read_executable_factory_release_artifact(run_dir, {
                 "factory_release_sha256": predecessor_sha,
                 "factory_release_file": f"factory-releases/{predecessor_sha}.json",

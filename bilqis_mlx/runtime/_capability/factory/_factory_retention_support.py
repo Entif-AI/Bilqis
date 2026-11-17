@@ -135,8 +135,10 @@ def _instruments(
         release_prevalidated=False):
     source_cohort_sha256 = None
     if each is None:
+        measured = {row.get("capability") for row in rows}
         capabilities = tuple(
-            item.capability_id for item in source_context.release.execution_plan.capabilities)
+            item.capability_id for item in source_context.release.execution_plan.capabilities
+            if item.capability_id in measured)
         contract = assessment_scope_contract(source_context.release, capabilities)
         source_cohort_sha256 = compiled_source_cohort_digest(
             rows, generator_version=contract.generator_version,
