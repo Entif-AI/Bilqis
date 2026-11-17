@@ -12,6 +12,7 @@ from bilqis_mlx.factory.candidate_frontier import load_candidate_frontier
 from bilqis_mlx.factory.candidate_staging import StagedCandidate
 from bilqis_mlx.factory.live_answers import live_answer_registry
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
+from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.runtime.accepted_priority_visit import (
     accepted_priority_school, execute_accepted_priority_candidate,
 )
@@ -116,6 +117,80 @@ class PreNeuralProductionJourneyTests(PreNeuralJourneySupport, unittest.TestCase
             self.assertEqual(self._staged_bytes(), staged_before)
         finally:
             state_path.write_bytes(pointer_bytes)
+
+    def test_staged_generation_zero_bootstraps_real_active_generated_grade(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            pointer = self.publish_matching_genesis(snapshot, schema, features)
+            before = load_accepted_generation(self.run)
+            with self.journey_mounts(
+                    snapshot, schema, features, atlas_selection,
+                    patch_active_generated_grade=False):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                selected = select_foundation_priority_visit(
+                    self.run, context, atlas_path, program=program, school=school)
+                from bilqis_mlx.runtime.active_generated_grade import (
+                    ensure_active_generated_grade, read_active_generated_grade,
+                )
+                active = read_active_generated_grade(self.run)
+                retried = ensure_active_generated_grade(self.run)
+            after = load_accepted_generation(self.run)
+        self.assertEqual(pointer["generation"], 0)
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+        self.assertEqual(retried, active)
+        self.assertEqual(active.transition_kind, "BOOTSTRAP")
+        self.assertEqual(
+            active.transition_reason, "DATA_DEFINED_INITIAL_GRADE_BOOTSTRAP")
+        self.assertEqual(
+            tuple(dict.fromkeys(active.member_capability_ids)),
+            context.release.execution_plan.grades[0].capabilities)
+        bootstrap_receipts = tuple(
+            (self.run / "generated-grade-proposals" / "initial-bootstrap").glob("*.json"))
+        self.assertEqual(len(bootstrap_receipts), 1)
+        self.assertEqual(before.retained_state.optimizer_step, 0)
+        self.assertEqual(after.retained_state.optimizer_step, 0)
+        self.assertEqual(after.generation, before.generation)
+
+    def test_initial_grade_bootstrap_generation_race_fails_before_pointer_publish(self):
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(
+                    snapshot, schema, features, atlas_selection,
+                    patch_active_generated_grade=False):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                from bilqis_mlx.runtime import initial_grade_bootstrap as bootstrap
+                issue = bootstrap.issue_initial_grade_bootstrap
+
+                def drift_after_issue(run_dir, epoch):
+                    proposal = issue(run_dir, epoch)
+                    pointer_path = self.run / "bamf-state.json"
+                    pointer = json.loads(pointer_path.read_text(encoding="utf-8"))
+                    pointer["generation"] += 1
+                    pointer_path.write_text(
+                        json.dumps(pointer, sort_keys=True, separators=(",", ":")),
+                        encoding="utf-8")
+                    return proposal
+
+                with patch.object(
+                        bootstrap, "issue_initial_grade_bootstrap",
+                        side_effect=drift_after_issue):
+                    with self.assertRaises(BilqisError) as caught:
+                        select_foundation_priority_visit(
+                            self.run, context, atlas_path,
+                            program=program, school=school)
+        self.assertEqual(
+            caught.exception.context.get("reason"),
+            "BAMF_ACTIVE_GENERATED_GRADE_ACCEPTED_GENERATION_DRIFT")
+        self.assertFalse((self.run / "generated-grades" / "current.json").exists())
 
     def test_historical_accepted_run_reaches_real_teacher_offer_without_neural_mutation(self):
         (pointer, before, after, context, selected, rows,

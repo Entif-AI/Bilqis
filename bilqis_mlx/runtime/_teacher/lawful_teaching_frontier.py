@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.errors import BilqisError, ErrorBus, SCHOOL
 from bilqis_mlx.factory.autonomy import evidence_complete_capabilities
 
 from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import (
@@ -71,8 +71,17 @@ def _issue_lawful_teaching_frontier_from_epoch(
     source = _validate_epoch(
         epoch, planning_generation, source_context, parent)
     from bilqis_mlx.runtime.active_generated_grade import ensure_active_generated_grade
-    active_grade = ensure_active_generated_grade(
-        Path(source_context.run_dir))
+    root = Path(source_context.run_dir)
+    try:
+        active_grade = ensure_active_generated_grade(root)
+    except BilqisError as failure:
+        if (failure.context.get("reason")
+                != "BAMF_ACTIVE_GENERATED_GRADE_ADMITTED_PROPOSAL_REQUIRED"):
+            raise
+        from bilqis_mlx.runtime.initial_grade_bootstrap import (
+            activate_initial_grade_bootstrap,
+        )
+        active_grade = activate_initial_grade_bootstrap(root, epoch)
     active_grade_members = tuple(
         (member.capability_id, member.semantic_id)
         for member in active_grade.definition.members
