@@ -1,7 +1,12 @@
 """Pure release metadata/commit contract, no GitHub mutations."""
+import json
+from pathlib import Path
 import unittest
 
 from scripts.maintenance.release_version import changelog_section, conventional, VERSION
+
+
+ROOT = Path(__file__).resolve().parents[2]
 
 
 class ReleaseVersionTests(unittest.TestCase):
@@ -11,6 +16,30 @@ class ReleaseVersionTests(unittest.TestCase):
             self.assertTrue(conventional(subject), subject)
         for subject in ("add some stuff", "Merge pull request #5", "feat: ", "feat(scope): hi"):
             self.assertFalse(conventional(subject), subject)
+
+    def test_release_please_treats_refactors_as_user_facing(self):
+        config = json.loads((ROOT / "release-please-config.json").read_text(encoding="utf-8"))
+        sections = {entry["type"]: entry for entry in config["packages"]["."]["changelog-sections"]}
+        expected_visibility = {
+            "feat": False,
+            "feature": False,
+            "fix": False,
+            "perf": False,
+            "revert": False,
+            "docs": True,
+            "style": True,
+            "chore": True,
+            "refactor": False,
+            "test": True,
+            "build": True,
+            "ci": True,
+        }
+        self.assertEqual(set(expected_visibility), set(sections))
+        self.assertEqual(
+            {kind: section["hidden"] for kind, section in sections.items()},
+            expected_visibility,
+        )
+        self.assertEqual(sections["refactor"]["section"], "Code Refactoring")
 
     def test_semver_and_versioned_changelog(self):
         self.assertTrue(VERSION.fullmatch("0.2.0"))

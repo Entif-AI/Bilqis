@@ -16,6 +16,6 @@ Run `python3 -B -m unittest discover -s tests -q` on Apple Silicon for the full 
 
 ## Release discipline
 
-Tag releases with immutable annotated SemVer tags `vMAJOR.MINOR.PATCH`. Python and npm project versions must agree, and `CHANGELOG.md` must include a dated version section. Run `npm run release:check` before tagging. Verify the release tag points at the same reviewed commit on `main`. `.github/workflows/release.yml` checks the tag and publishes GitHub Release notes derived from the checked-in changelog.
+Tag releases with immutable annotated SemVer tags `vMAJOR.MINOR.PATCH`. Python and npm project versions must agree, and `CHANGELOG.md` must include a dated version section. Run `npm run release:check` before tagging. Verify the release tag points at the same reviewed commit on `main`. Release Please treats `feat`, `fix`, `perf`, `revert`, and `refactor` merge commits as user-facing release-note entries; `refactor` therefore produces a patch release candidate instead of disappearing from the changelog. `.github/workflows/release.yml` checks the tag and publishes GitHub Release notes derived from the checked-in changelog.
 
 Never re-tag a release after publication. Use another patch version to correct an error. Experimental checkpoint scores and best-of-history markers are not claims of qualified neural performance.
