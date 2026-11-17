@@ -26,6 +26,7 @@ class SCHOOL:
     from .school_bamf import BAMF_SOLVER as BAMF_SOLVER
     from .school_bamf import BAMF_AKASHA as BAMF_AKASHA
     from .school_bamf import BAMF_RESOURCES as BAMF_RESOURCES
+    from .school_bamf import BAMF_RUN_AUTHORITY as BAMF_RUN_AUTHORITY
     from .school_bamf import BAMF_REVALIDATION as BAMF_REVALIDATION
     from .school_bamf import BAMF_TEACHER as BAMF_TEACHER
     from .school_bamf import BAMF_TRAINING_ADAPTER as BAMF_TRAINING_ADAPTER

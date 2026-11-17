@@ -24,6 +24,7 @@ class ProviderCompatibilityTests(unittest.TestCase):
                 "grade-a-1324082-to-current",
                 "grade-a-accepted-to-current",
                 "boolean-identification-accepted-to-current",
+                "boolean-identification-pre-r15-to-current",
                 "numeric-accepted-to-current",
                 "numeric-modular-to-current",
                 "numeric-current-adr106-cohort-repair",

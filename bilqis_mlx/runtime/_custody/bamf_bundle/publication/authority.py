@@ -107,7 +107,8 @@ def require_acceptance(
 
 def validate_parent_transition(
         run_dir: Path, pointer: dict | None, candidate: BamfBundleCandidate, *,
-        load_bundle, reconcile, parent: CompleteStudent | None = None) -> CompleteStudent | None:
+        load_bundle, reconcile, parent: CompleteStudent | None = None,
+        factory_release_new_semantic_admission=False) -> CompleteStudent | None:
     if pointer is None:
         if candidate.generation != 0 or candidate.parent_manifest_sha256 is not None:
             invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
@@ -156,7 +157,9 @@ def validate_parent_transition(
             invalid("BAMF_GENERATION_TRANSITION_INVALID")
     elif is_factory_release_adoption_transition(candidate.transition):
         require_issued_factory_release_adoption_transition(candidate.transition)
-        require_factory_release_inert_state(parent, candidate)
+        require_factory_release_inert_state(
+            parent, candidate,
+            new_semantic_admission=factory_release_new_semantic_admission)
         if candidate_step != parent_step:
             invalid("BAMF_GENERATION_TRANSITION_INVALID")
     else:

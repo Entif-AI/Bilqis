@@ -94,6 +94,7 @@ def _adjudicate_group(
                 resolve_cohort=_resolve_current_cohort(match_cohort),
                 settled_matchups=epoch.get("settled_matchups", {}),
                 challenge_group=group,
+                comparison_context_sha256=epoch.get("comparison_context_sha256"),
             )
     _invalid("BAMF_CHAMPIONSHIP_ADJUDICATION_RECURSION")
 

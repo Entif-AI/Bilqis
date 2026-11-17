@@ -59,7 +59,8 @@ def _reject_fresh_external_legacy_fallthrough(args, run_dir: Path) -> None:
         invalid("BAMF_OPERATOR_FRESH_EXTERNAL_RUN_REQUIRES_FOUNDATION_INPUTS")
 
 
-def _dispatch_bamf_resume(args, run_dir: Path, report, parent_graph=None):
+def _dispatch_bamf_resume(
+        args, run_dir: Path, report, parent_graph=None, run_authority=None):
     profile_release = getattr(args, "factory_profile_release", None)
     if profile_release is not None:
         from bilqis_mlx.runtime._release_adoption.native_profile import preview_profile_release
@@ -81,6 +82,7 @@ def _dispatch_bamf_resume(args, run_dir: Path, report, parent_graph=None):
                 source_prefetch_workers=args.source_prefetch_workers,
                 parent_graph=parent_graph,
                 **({"profile_release": profile_release} if profile_release is not None else {}),
+                run_authority=run_authority,
                 progress=progress)
         operator_report = asdict(result)
         used_initial_admission = (
@@ -150,10 +152,20 @@ def _bamf_or_topology(args):
              or args.bamf_v2_foundation_explicit)
     )
     if resume_v2_intent:
+        from bilqis_mlx.runtime.run_authority import bind_native_run_authority
+        from .lifecycle import _bamf_run_authority
+        run_authority = None
+        if args.issue_349_experiment_root is not None:
+            from bilqis_mlx.runtime.bamf_bundle import inspect_accepted_generation
+            inspection = inspect_accepted_generation(run_dir / "bamf-state.json")
+            run_authority = _bamf_run_authority(args, inspection.run_id)
+        bind_native_run_authority(
+            run_dir, run_authority, persist=not args.dry_run)
         from .bamf_lifecycle import _resume_runtime_context
         report, parent_graph = _resume_runtime_context(args, None)
         return _dispatch_bamf_resume(
-            args, run_dir, report, parent_graph=parent_graph)
+            args, run_dir, report, parent_graph=parent_graph,
+            run_authority=run_authority)
 
     _reject_fresh_external_legacy_fallthrough(args, run_dir)
 

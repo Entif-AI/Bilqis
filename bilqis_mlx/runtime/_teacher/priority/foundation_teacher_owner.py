@@ -1,7 +1,7 @@
 """C16.3 production owner for the first BAMF C03 bootstrap and trajectory."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 import random
 
 from bilqis_mlx.compatibility.legacy_trainer_authority import live_authority
@@ -125,6 +125,8 @@ def select_foundation_priority_visit(
     authority = issue_foundation_priority_authority(
         run_dir, source_context, parent, epoch, atlas_artifact_path,
         teacher_state=projection.teacher_state, progress=progress)
+    if authority.cadence.phase.value in {"MAIN", "RECOVERY_1", "RECOVERY_2"}:
+        school = replace(school, stage=authority.cadence.phase.value)
     bootstrap = {"legacy_receipt": None, "adaptation": None, "prior_region": None}
     if "c03_lineage" not in parent.teacher_state:
         owned = foundation_teacher_bootstrap()
@@ -142,6 +144,7 @@ def select_foundation_priority_visit(
         random.Random(parent.teacher_state["next_seed"]), Settings(),
         program=program, now=authority.now,
         lawful_frontier=authority.lawful_frontier,
+        cadence_authorization=authority.cadence,
         total_capabilities=len(source_context.release.execution_plan.capabilities),
         accepted_parent=parent, planning_generation=authority.planning_generation,
         **bootstrap)
@@ -171,36 +174,6 @@ def accepted_teacher_trajectory(visit: BoundTeacherVisit) -> TeacherTrajectoryAd
         object.__setattr__(result, name, value)
     result.__post_init__()
     return result
-
-
-def select_foundation_teacher_visit(
-        run_dir, school, learning_settings, teacher_curriculum_scope,
-        previsit_diagnostics, *, capability_id: str, lesson_grade: str,
-        total_capabilities=None, plasticity_escape=None):
-    """Select one production visit from accepted C03 state, never caller RNG."""
-    from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
-    from bilqis_mlx.runtime.accepted_teacher_custody import (
-        select_accepted_teacher_visit,
-    )
-
-    parent = load_accepted_generation(run_dir)
-    state = parent.teacher_state
-    if type(state.get("next_seed")) is not int or state["next_seed"] < 0:
-        invalid("TEACHER_SUCCESSOR_SELECTION_STATE_INVALID")
-    bootstrap = {}
-    if "c03_lineage" not in state:
-        owned = foundation_teacher_bootstrap()
-        bootstrap = {
-            "legacy_receipt": owned.legacy_receipt,
-            "adaptation": owned.adaptation,
-            "prior_region": owned.prior_region,
-        }
-    return select_accepted_teacher_visit(
-        run_dir, historical_teacher_policy, school,
-        random.Random(state["next_seed"]), learning_settings,
-        teacher_curriculum_scope, previsit_diagnostics, lesson_grade,
-        capability_id=capability_id, total_capabilities=total_capabilities,
-        plasticity_escape=plasticity_escape, **bootstrap)
 
 
 def derive_accepted_teacher_successor(
@@ -233,5 +206,4 @@ __all__ = (
     "TRAJECTORY_SCHEMA", "accepted_teacher_trajectory",
     "current_foundation_teacher_projection", "derive_accepted_teacher_successor",
     "foundation_teacher_bootstrap", "select_foundation_priority_visit",
-    "select_foundation_teacher_visit",
 )

@@ -27,6 +27,7 @@ from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObserva
 from bilqis_mlx.runtime.factory_retention_owner import (
     bind_current_retention_protection_plan, bind_current_retention_source_rows,
     bind_factory_baseline_successor,
+    derive_current_plasticity_escape_state,
     evaluate_factory_retention_candidate,
 )
 from bilqis_mlx.runtime.foundation_teacher_owner import (
@@ -35,6 +36,7 @@ from bilqis_mlx.runtime.foundation_teacher_owner import (
 from bilqis_mlx.runtime.priority_rejection_replay import (
     candidate_step_horizon, rejection_attempt_ordinals,
 )
+from bilqis_mlx.runtime.active_grade_cadence import record_active_grade_cadence_attempt
 from .evidence import CandidateEvidenceCapture as _Capture, prepare_candidate_evidence_root
 from .locking import bamf_operator_lock
 from .performance import measure_observed_phase, observe_completed_step
@@ -48,8 +50,10 @@ from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
 from .source_prefetch import (
     CandidateSourceLane, NATIVE_SOURCE_WORKER_COUNTS, SourcePrefetchMetrics,
 )
-from ._session_execution import candidate_horizon_execution as _candidate_horizon_execution_impl
-from ._session_execution import execute_horizon as _execute_horizon_impl
+from .session_parts.candidate_execution import (
+    candidate_horizon_execution as _candidate_horizon_execution_impl,
+)
+from .session_parts.candidate_execution import execute_horizon as _execute_horizon_impl
 from ._session_execution import operate as _operate_impl
 from ._session_execution import retention_result as _retention_result_impl
 from ._session_visit import visit as _visit_impl
@@ -65,12 +69,13 @@ def _emit_progress(progress, message: str) -> None:
 def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_path,
                      rows, horizon, cache, candidate_attempt_ordinal, progress,
                      source_prefetch_workers,
-                     source_prefetch_executor, source_prefetch_metrics, observer):
+                     source_prefetch_executor, source_prefetch_metrics, observer,
+                     adviser_pool=None):
     return _execute_horizon_impl(
         run_dir, selection, context, parent, atlas_path, feature_path,
         rows, horizon, cache, candidate_attempt_ordinal, progress,
         source_prefetch_workers, source_prefetch_executor,
-        source_prefetch_metrics, observer,
+        source_prefetch_metrics, observer, adviser_pool,
         source_lane_cls=CandidateSourceLane, source_metrics_cls=SourcePrefetchMetrics,
         prepare_evidence_root=prepare_candidate_evidence_root, capture_cls=_Capture,
         delivery_observation_cls=FactoryDeliveryObservation,
@@ -82,11 +87,11 @@ def _execute_horizon(run_dir, selection, context, parent, atlas_path, feature_pa
 def _candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer):
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool):
     return _candidate_horizon_execution_impl(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer,
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
         bind_cache=bind_accepted_execution_cache, horizon_for=candidate_step_horizon,
         rejection_ordinals=rejection_attempt_ordinals,
         execute_horizon_fn=_execute_horizon, currentness_metrics_fn=currentness_metrics,
@@ -108,12 +113,58 @@ def _retention_result(
         resource_observation=_resource_observation,
         derive_successor=derive_accepted_teacher_successor,
         bind_baseline_successor=bind_factory_baseline_successor,
+        derive_plasticity_escape=derive_current_plasticity_escape_state,
         prepared_visit_type=BamfPreparedVisit, emit_progress=_emit_progress,
         measure_observed_phase_fn=measure_observed_phase)
 
 
+def _execute_selected_visit(
+        run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
+        steps_per_visit, reserve_gib, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer):
+    rows = selection.offer.rows()
+    if observer is not None:
+        from .evidence_projection import (
+            selected_visit_evidence, unknown_generated_grade_evidence,
+        )
+        visit_evidence = selected_visit_evidence(selection)
+        observer.update(
+            visit_evidence=visit_evidence,
+            generated_grade_evidence=unknown_generated_grade_evidence(
+                visit_evidence.get("grade_id")),
+        )
+    _emit_progress(
+        progress,
+        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
+    capability = selection.offer.capability_id
+    if host_cache is not None:
+        bind_current_retention_source_rows(context, host_cache, capability)
+    adviser_cache = (
+        host_cache if host_cache is not None
+        else bind_accepted_execution_cache(run_dir))
+    from bilqis_mlx.runtime.championship_advisers import (
+        prepare_championship_adviser_pool,
+    )
+    adviser_pool = prepare_championship_adviser_pool(
+        run_dir, parent, context, atlas_path, adviser_cache,
+        reserve_gib=reserve_gib)
+    horizon_state = _candidate_horizon_execution(
+        run_dir, parent, context, atlas_path, feature_path, selection, rows,
+        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+        source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool)
+    (
+        cache, steps, capture, rejection_journal_ordinal,
+        rejection_attempt_ordinal, identity_before,
+    ) = horizon_state
+    return _retention_result(
+        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
+        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
+        identity_before, progress, observer)
+
+
 def prepare_bamf_visit(
         run_dir: Path, *, steps_per_visit: int = 16,
+        reserve_gib: float = 100.0,
         progress=None, source_prefetch_workers: int = 0,
         source_prefetch_executor=None,
         source_prefetch_metrics: SourcePrefetchMetrics | None = None, observer=None) -> BamfPreparedVisit:
@@ -153,50 +204,37 @@ def prepare_bamf_visit(
                 source_materialization_wall_seconds or None))
     if selection.status != "TEACHER_SELECTED":
         status = "ACTION_REQUIRED" if selection.status == "ACTION_REQUIRED" else "HELD"
+        payload = {
+            "holds": getattr(selection, "holds", ()),
+            "exclusions": [
+                item.to_record() for item in getattr(selection, "exclusions", ())
+            ],
+            **({"cadence": (getattr(selection, "metadata", None) or {}).get("cadence")}
+               if (getattr(selection, "metadata", None) or {}).get("cadence") is not None
+               else {}),
+        }
         _emit_progress(progress, "priority holds: " + json.dumps(
-            getattr(selection, "holds", ()), ensure_ascii=True))
+            payload, sort_keys=True, ensure_ascii=True))
         return BamfPreparedVisit(status, parent, selection=selection)
-    rows = selection.offer.rows()
-    if observer is not None:
-        from .evidence_projection import (
-            selected_visit_evidence, unknown_generated_grade_evidence,
-        )
-        visit_evidence = selected_visit_evidence(selection)
-        observer.update(
-            visit_evidence=visit_evidence,
-            generated_grade_evidence=unknown_generated_grade_evidence(
-                visit_evidence.get("grade_id")),
-        )
-    _emit_progress(
-        progress,
-        f"selected {selection.offer.capability_id} with {len(rows)} source rows")
-    capability = selection.offer.capability_id
-    if host_cache is not None:
-        bind_current_retention_source_rows(context, host_cache, capability)
-    horizon_state = _candidate_horizon_execution(
-        run_dir, parent, context, atlas_path, feature_path, selection, rows,
-        capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
+    return _execute_selected_visit(
+        run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
+        steps_per_visit, reserve_gib, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer)
-    (
-        cache, steps, capture, rejection_journal_ordinal,
-        rejection_attempt_ordinal, identity_before,
-    ) = horizon_state
-    return _retention_result(
-        run_dir, parent, context, atlas_path, selection, capability, cache, steps,
-        capture, rejection_journal_ordinal, rejection_attempt_ordinal,
-        identity_before, progress, observer)
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
-           source_prefetch_executor=None, source_prefetch_metrics=None, observer=None):
+           source_prefetch_executor=None, source_prefetch_metrics=None, observer=None,
+           run_authority_binding=None):
     return _visit_impl(
         run_dir, reserve_gib, steps_per_visit=steps_per_visit, progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics, observer=observer,
+        run_authority_binding=run_authority_binding,
         prepare_visit=prepare_bamf_visit, record_rejection=record_bamf_rejection,
         accept_publish=accept_and_publish, load_generation=load_accepted_generation,
-        measure_phase=measure_observed_phase, emit_progress=_emit_progress)
+        measure_phase=measure_observed_phase, emit_progress=_emit_progress,
+        record_cadence_attempt=record_active_grade_cadence_attempt)
 
 
 def _accepted_admission_reentry(
@@ -264,9 +302,11 @@ def operate_bamf(
     source_prefetch_workers: int = 2,
     parent_graph: dict | None = None,
     profile_release=None,
+    run_authority=None,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
+    from bilqis_mlx.runtime.run_authority import bind_native_run_authority
     from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
     def before_visits(root):
         if profile_release is not None:
@@ -284,6 +324,9 @@ def operate_bamf(
         emit_progress=_emit_progress, monotonic=time.monotonic,
         load_generation=load_accepted_generation, result_type=BamfOperatorResult,
         before_visits=before_visits,
+        bind_run_authority=(
+            lambda current_run_dir:
+            bind_native_run_authority(current_run_dir, run_authority)),
         accepted_reentry=(
             None if parent_graph is None else
             lambda current_run_dir, current_reserve_gib, current_progress:

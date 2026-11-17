@@ -45,7 +45,7 @@ def build_priority_planning_epoch(
         _accepted_checkpoint, _accepted_selection, _candidate_frontier,
         _persist_ready_realizations,
     )
-    from bilqis_mlx.runtime.autonomy_live import (
+    from bilqis_mlx.runtime._autonomy_live.planning import (
         build_live_autonomy_plan, reconcile_live_autonomy_state,
     )
 

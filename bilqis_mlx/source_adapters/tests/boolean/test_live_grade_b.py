@@ -14,7 +14,8 @@ from bilqis_mlx.grade_a_release import accepted_grade_a
 from bilqis_mlx.grade_b_oracle import CONNECTIVES, evaluate as independent_oracle
 from bilqis_mlx.live_grade_a import live_course as live_a_course
 from bilqis_mlx.live_grade_b import (
-    GENERATOR, RELEASE, _encode_logic_record, _logic_source, _u7c_pattern_counts,
+    GENERATOR, MINIMUM_BOOLEAN_SAMPLE_ROWS, RELEASE, _encode_logic_record,
+    _logic_source, _u7c_pattern_counts,
     draw_connectives, live_course, constructor_digest, source_attestation,
 )
 from bilqis_mlx.source_adapters.school import draw_b
@@ -22,6 +23,18 @@ from bilqis_mlx.source_adapters.school import draw_b
 ROOT = Path(__file__).resolve().parents[4]
 LEGACY = ROOT / "vendor" / "legacy-v16"
 MANIFEST = ROOT / "docs/provenance/GRADE_A_CANDIDATE_MANIFEST_V2.json"
+
+
+def test_boolean_minimum_row_policy_covers_every_legal_operand_pattern():
+    unary = {(False,), (True,)}
+    binary = {
+        (False, False), (False, True), (True, False), (True, True),
+    }
+    for operator in CONNECTIVES:
+        counts = _u7c_pattern_counts(operator, MINIMUM_BOOLEAN_SAMPLE_ROWS)
+        assert set(counts) == (unary if operator == "NOT" else binary)
+        assert sum(counts.values()) == MINIMUM_BOOLEAN_SAMPLE_ROWS
+        assert all(count > 0 for count in counts.values())
 
 
 @unittest.skipUnless(

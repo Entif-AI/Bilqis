@@ -44,16 +44,32 @@ def _invalid(reason="BAMF_FACTORY_RELEASE_ADMISSION_BINDING_INVALID") -> None:
     invalid(reason)
 
 
-def _same_inert_state(parent: CompleteStudent, candidate: BamfBundleCandidate) -> bool:
+def _same_inert_state(
+        parent: CompleteStudent, candidate: BamfBundleCandidate, *,
+        new_semantic_admission=False) -> bool:
     parent_state = parent.retained_state
     candidate_state = candidate.retained_state
     championship_state = parent.championship_state
     if championship_state is not None:
-        from bilqis_mlx.learning.capability_championship_state import (
-            clear_active_championship_titles,
-        )
-        championship_state = clear_active_championship_titles(
-            dict(championship_state))
+        if new_semantic_admission:
+            from bilqis_mlx.learning.capability_championship_state import (
+                clear_championship_epoch,
+            )
+            championship_state = clear_championship_epoch(
+                dict(championship_state),
+                source_manifest_sha256=candidate.parent_manifest_sha256,
+                source_generation=parent.generation,
+            )
+        else:
+            from bilqis_mlx.learning.capability_championship_state import (
+                clear_active_championship_titles,
+            )
+            championship_state = clear_active_championship_titles(
+                dict(championship_state),
+                source_manifest_sha256=candidate.parent_manifest_sha256,
+                source_generation=parent.generation,
+                reason="FACTORY_RELEASE_ADOPTION",
+            )
     return (
         parent.run_identity == candidate.run_identity
         and parent.run_id == candidate.run_id
@@ -85,11 +101,14 @@ def _same_inert_state(parent: CompleteStudent, candidate: BamfBundleCandidate) -
 
 def require_factory_release_inert_state(
         parent: CompleteStudent,
-        candidate: BamfBundleCandidate) -> None:
+        candidate: BamfBundleCandidate, *, new_semantic_admission=False) -> None:
     """Require the complete neural-inert B13 parent/child state contract."""
     if (type(parent) is not CompleteStudent
             or type(candidate) is not BamfBundleCandidate
-            or not _same_inert_state(parent, candidate)):
+            or type(new_semantic_admission) is not bool
+            or not _same_inert_state(
+                parent, candidate,
+                new_semantic_admission=new_semantic_admission)):
         _invalid("BAMF_FACTORY_RELEASE_ADOPTION_STATE_DRIFT")
 
 
@@ -119,7 +138,9 @@ def _issue_factory_release_admission_binding(
     provenance = (*PROFILE_DIGEST_FIELDS, "transition_sha256") if profile else _PROVENANCE_FIELDS
     if (type(candidate) is not BamfBundleCandidate
             or type(parent) is not CompleteStudent
-            or not _same_inert_state(parent, candidate)
+            or not _same_inert_state(
+                parent, candidate,
+                new_semantic_admission=generated_grade_proposal_sha256 is not None)
             or dict(candidate.transition) != transition.to_record()
             or candidate.retained_state.optimizer_step
             != parent.retained_state.optimizer_step

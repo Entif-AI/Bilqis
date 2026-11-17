@@ -13,6 +13,9 @@ import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
 from bilqis_mlx.compatibility import historical_teacher_policy
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 from bilqis_mlx.learning.learning_experiment import Settings
+from bilqis_mlx.learning.salience_teacher import (
+    PrioritySchoolContext, PriorityStudentIdentity,
+)
 from bilqis_mlx.runtime.accepted_teacher_custody import select_accepted_teacher_visit
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
 from bilqis_mlx.runtime.foundation_teacher_owner import (
@@ -25,6 +28,12 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
 
 
 class FoundationTeacherOwnerTests(unittest.TestCase):
+    def test_caller_chosen_direct_selector_is_not_a_production_surface(self):
+        owner_module = __import__(
+            select_foundation_priority_visit.__module__, fromlist=["*"])
+        self.assertFalse(hasattr(owner_module, "select_foundation_teacher_visit"))
+        self.assertIn("select_foundation_priority_visit", owner_module.__all__)
+
     def test_priority_authority_uses_bootstrapped_teacher_state_not_raw_genesis_sidecar(self):
         owner_module = __import__(
             select_foundation_priority_visit.__module__, fromlist=["*"])
@@ -45,7 +54,10 @@ class FoundationTeacherOwnerTests(unittest.TestCase):
         authority = SimpleNamespace(
             frontier="frontier", history="history", planning="planning",
             lawful_frontier="lawful-frontier", offers="offers", now=17,
-            planning_generation="planning-generation")
+            planning_generation="planning-generation",
+            cadence=SimpleNamespace(
+                phase=SimpleNamespace(value="BOUNDARY"),
+                authorized_capability_ids=()))
         selected = object()
         with patch(
                 "bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation",
@@ -68,6 +80,38 @@ class FoundationTeacherOwnerTests(unittest.TestCase):
         self.assertIs(result, selected)
         self.assertIs(issue.call_args.kwargs["teacher_state"], projected_state)
         self.assertNotIn("c03_lineage", parent.teacher_state)
+
+    def test_cadence_phase_and_authority_reach_priority_selection_as_how_metadata(self):
+        owner_module = __import__(
+            select_foundation_priority_visit.__module__, fromlist=["*"])
+        parent = SimpleNamespace(teacher_state={
+            "next_seed": 71, "c03_lineage": {"bootstrapped": True}})
+        projection = SimpleNamespace(teacher_state=parent.teacher_state)
+        cadence = SimpleNamespace(
+            phase=SimpleNamespace(value="RECOVERY_1"),
+            authorized_capability_ids=("cap",))
+        authority = SimpleNamespace(
+            frontier="frontier", history="history", planning="planning",
+            lawful_frontier="lawful", offers="offers", now=17,
+            planning_generation="planning-generation", cadence=cadence)
+        school = PrioritySchoolContext(
+            "a" * 64, ("descriptive",), PriorityStudentIdentity("b" * 64))
+        with patch(
+                "bilqis_mlx.runtime.bamf_bundle.admission.load_accepted_generation",
+                return_value=parent), patch.object(
+                owner_module, "current_foundation_teacher_projection",
+                return_value=projection), patch.object(
+                owner_module, "restore_teacher_lineage", return_value=object()), patch(
+                "bilqis_mlx.runtime.priority_authority.issue_foundation_priority_authority",
+                return_value=authority), patch(
+                "bilqis_mlx.runtime.accepted_priority_visit.select_accepted_priority_visit",
+                return_value=object()) as select:
+            select_foundation_priority_visit(
+                Path("/run"), SimpleNamespace(release=SimpleNamespace(
+                    execution_plan=SimpleNamespace(capabilities=()))), "/atlas",
+                program="program", school=school)
+        self.assertEqual(select.call_args.args[7].stage, "RECOVERY_1")
+        self.assertIs(select.call_args.kwargs["cadence_authorization"], cadence)
 
     def test_accepted_visit_owns_next_seed_and_opaque_cursor(self):
         with TemporaryDirectory() as temporary:

@@ -13,7 +13,7 @@ from .capability_retention import (
 )
 
 
-def _retain_candidate(parent, candidate, paired_assessment) -> Decision:
+def _retain_candidate(parent, candidate, paired_assessment, *, plasticity_escape=None) -> Decision:
     evidence = paired_assessment
     if (not isinstance(evidence, PairedRetentionEvidence)
             or parent != evidence.target.parent.generation_digest
@@ -71,6 +71,8 @@ def _retain_candidate(parent, candidate, paired_assessment) -> Decision:
         active_grade_regression=active_block is not None,
         whole_school_regression=bool(measured) and net(fixed, measured) < 0,
         frontier_measured=True, fragile_losses=False, exceeded=bool(exceeded))
+    from .plasticity_escape import relaxed_strict_reason
+    reason = relaxed_strict_reason(reason, evidence, plasticity_escape)
     return Decision(
         DecisionStatus.ELIGIBLE if reason == "PAIRED_SCREEN_WITHIN_BUDGET"
         else DecisionStatus.REJECT,
@@ -93,8 +95,9 @@ def _retain_candidate(parent, candidate, paired_assessment) -> Decision:
                                and exceeded else None))
 
 
-def retain_candidate(parent, candidate, paired_assessment) -> Decision:
-    decision = _retain_candidate(parent, candidate, paired_assessment)
+def retain_candidate(parent, candidate, paired_assessment, *, plasticity_escape=None) -> Decision:
+    decision = _retain_candidate(
+        parent, candidate, paired_assessment, plasticity_escape=plasticity_escape)
     target = paired_assessment.target_capability
     pairs = {cap: paired_assessment.fixed_school
              for cap, _ in paired_assessment.policy.capability_groups}

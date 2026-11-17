@@ -1,16 +1,35 @@
 """Real operator seams retain exact hold and C05 blocker diagnostics."""
 from contextlib import nullcontext
+import json
 from pathlib import Path
 from types import SimpleNamespace as N
 from unittest.mock import patch
+
+import pytest
 
 from bilqis_mlx.runtime.bamf_operator.session import prepare_bamf_visit
 from bilqis_mlx.runtime.bamf_operator._session_execution import retention_result
 
 
-def test_held_priority_reports_escaped_reasons_without_executing_candidate():
+@pytest.mark.parametrize('selection_status', ['HELD', 'ACTION_REQUIRED'])
+def test_held_priority_reports_full_frontier_exclusions_without_execution(
+        selection_status):
     messages = []
-    selection = N(status='HELD', holds=(('cap\"one', 'PREREQUISITE_HELD'),))
+    exclusion = N(to_record=lambda: {
+        'capability_id': 'cap\"one',
+        'semantic_ids': ['sem.future'],
+        'code': 'PREREQUISITE_HELD',
+        'holds': [{
+            'code': 'PREREQUISITE_EVIDENCE_REQUIRED',
+            'owner': 'learner:evidence',
+            'dependency_id': 'cap.parent',
+        }],
+    })
+    selection = N(
+        status=selection_status,
+        holds=(('cap\"one', 'PREREQUISITE_HELD'),),
+        exclusions=(exclusion,),
+    )
     owner = 'bilqis_mlx.runtime.bamf_operator.session.'
     with patch(owner + '_execution_context', return_value=(object(), N(release=object()), None, None)), \
          patch(owner + 'schedule_program_from_executable_release', return_value=object()), \
@@ -18,8 +37,13 @@ def test_held_priority_reports_escaped_reasons_without_executing_candidate():
          patch(owner + 'select_foundation_priority_visit', return_value=selection), \
          patch(owner + '_candidate_horizon_execution') as execute:
         result = prepare_bamf_visit(Path('/unused'), progress=messages.append)
-    assert result.status == 'HELD'
-    assert 'priority holds: [["cap\\\"one", "PREREQUISITE_HELD"]]' in messages
+    assert result.status == selection_status
+    payload = {
+        'holds': selection.holds,
+        'exclusions': [exclusion.to_record()],
+    }
+    assert 'priority holds: ' + json.dumps(
+        payload, sort_keys=True, ensure_ascii=True) in messages
     execute.assert_not_called()
 
 

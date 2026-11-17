@@ -4,10 +4,13 @@ from __future__ import annotations
 def visit(
         run_dir, reserve_gib, *, steps_per_visit, progress,
         source_prefetch_workers, source_prefetch_executor,
-        source_prefetch_metrics, observer, prepare_visit, record_rejection,
-        accept_publish, load_generation, measure_phase, emit_progress):
+        source_prefetch_metrics, observer, run_authority_binding,
+        prepare_visit, record_rejection,
+        accept_publish, load_generation, measure_phase, emit_progress,
+        record_cadence_attempt=None):
     prepared = prepare_visit(
-        run_dir, steps_per_visit=steps_per_visit, progress=progress,
+        run_dir, steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
+        progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics,
@@ -17,6 +20,7 @@ def visit(
     parent, selection = prepared.parent, prepared.selection
     step, decision, retained = prepared.step, prepared.decision, prepared.retained
     if not decision.accepted:
+        cadence = (getattr(selection, "metadata", None) or {}).get("cadence")
         record_rejection(run_dir, parent, {
             "schema": "bilqis.bamf.c16.3-rejection/v2",
             "rejection_attempt_ordinal": prepared.rejection_attempt_ordinal,
@@ -34,12 +38,17 @@ def visit(
             "resource": prepared.resource,
             "candidate_evidence": prepared.candidate_evidence,
             "how_outcome": prepared.how_outcome,
+            **({"cadence": cadence} if cadence is not None else {}),
         })
+        if cadence is not None and record_cadence_attempt is not None:
+            record_cadence_attempt(run_dir, cadence, prepared.capability)
         return "REJECTED"
     successor = prepared.successor
     if observer is not None:
         observer.update(phase="PUBLISHING")
     emit_progress(progress, "publishing accepted successor checkpoint")
+    if run_authority_binding is not None:
+        run_authority_binding.assert_current()
     with measure_phase(observer, "publishing_wall_seconds"):
         accept_publish(
             run_dir, successor, retained, decision=decision,
@@ -51,6 +60,9 @@ def visit(
                     "publication_" + key: value
                     for key, value in metrics.to_record().items()}))
                 if observer is not None else None))
+    cadence = (getattr(selection, "metadata", None) or {}).get("cadence")
+    if cadence is not None and record_cadence_attempt is not None:
+        record_cadence_attempt(run_dir, cadence, prepared.capability)
     health = getattr(prepared, "learning_health", None)
     if observer is not None and isinstance(health, dict):
         observer.learning_health_by_capability[

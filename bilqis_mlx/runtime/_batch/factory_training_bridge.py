@@ -74,10 +74,15 @@ def _validated_training_request(
 
 def _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows, *, capability,
-        source_seed, source_each):
+        source_seed, source_each, delivery=None):
     if prepared_source is None:
-        source_authority = source_context.bind_rows(
-            rows, seed=source_seed, capability=capability, each=source_each)
+        source_authority = (
+            source_context.bind_rows(
+                rows, seed=source_seed, capability=capability, each=source_each)
+            if delivery is None or len(delivery.specimen_ids) == len(rows) else
+            source_context.bind_delivery_rows(
+                rows, seed=source_seed, capability=capability,
+                direct_each=len(delivery.specimen_ids)))
         adapter, manifest, profile, source_rows = _prepare_factory_source_rows(
             source_context, authenticated, rows, capability=capability,
             source_seed=source_seed, source_each=source_each,
@@ -195,7 +200,8 @@ def prepare_factory_training_batch(
      prepared_model_sources, prepared_motif_inputs,
      prepared_b11_sources) = _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows,
-        capability=capability, source_seed=source_seed, source_each=source_each)
+        capability=capability, source_seed=source_seed, source_each=source_each,
+        delivery=delivery)
     training = _compile_factory_training(
         rows, source_context, candidate, delivery, capability, teacher_strategy,
         requested_count, optimizer_step_seed, visit_provenance, source_authority,
