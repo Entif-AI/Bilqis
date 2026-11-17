@@ -18,6 +18,7 @@ PREVIOUS_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v2"
 PREVIOUS_BASELINE_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v3"
 PREVIOUS_SCOPE_DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v4"
 DECISION_SCHEMA = "bilqis.mlx.candidate-retention-decision/v5"
+BLOCKING_SCORE_BUDGET_WIDTH = 5
 ACCEPTED_DECISION = "PROVISIONAL"
 REJECTED_DECISION = "REJECT"
 ACCEPTING_REASON = "PAIRED_SCREEN_WITHIN_BUDGET"
@@ -99,7 +100,8 @@ def _digest(value: object) -> bool:
 def _valid_blocking_score_budget(value) -> bool:
     if value is None:
         return True
-    if not isinstance(value, (list, tuple)) or len(value) != 5:
+    if (not isinstance(value, (list, tuple))
+            or len(value) != BLOCKING_SCORE_BUDGET_WIDTH):
         return False
     capability, before, after, total, allowed = value
     return (isinstance(capability, str) and bool(capability)
