@@ -5,6 +5,8 @@ from hashlib import sha256
 import json
 from pathlib import Path
 
+from bilqis_mlx.data_plane import SHA256_HEX_LENGTH
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime import checkpoints
 from bilqis_mlx.runtime import disk as runtime_disk
 
@@ -12,6 +14,10 @@ from bilqis_mlx.runtime import disk as runtime_disk
 RUN_STOP_SCHEMA = "bilqis.bamf.run-stop/v1"
 RUN_STOP_EVENT = "BAMF_RUN_STOPPED"
 RUN_STOP_RECEIPT_INVALID = "BAMF_RUN_STOP_RECEIPT_INVALID"
+
+
+def _invalid(reason: str) -> None:
+    ErrorBus.Raise(SCHOOL.BAMF_OPERATOR.INVALID, reason=reason)
 
 
 def _canonical(value: dict) -> str:
@@ -30,7 +36,7 @@ def _accepted_pointer(run_dir: Path) -> dict:
     with _pointer_lock(pointer_path.parent):
         pointer = _read_pointer(pointer_path)
     if not isinstance(pointer, dict):
-        raise ValueError("BAMF_RUN_STOP_ACCEPTED_POINTER_MISSING")
+        _invalid("BAMF_RUN_STOP_ACCEPTED_POINTER_MISSING")
     return pointer
 
 
@@ -66,12 +72,13 @@ def record_normal_stop_receipt(
     manifest_sha256 = pointer.get("manifest_sha256")
     if (pointer.get("run_id") != student.run_id
             or pointer.get("generation") != student.generation
-            or not isinstance(manifest_sha256, str) or len(manifest_sha256) != 64):
-        raise ValueError("BAMF_RUN_STOP_ACCEPTED_STATE_DRIFT")
+            or not isinstance(manifest_sha256, str)
+            or len(manifest_sha256) != SHA256_HEX_LENGTH):
+        _invalid("BAMF_RUN_STOP_ACCEPTED_STATE_DRIFT")
     if (not isinstance(status, str) or not status
             or not isinstance(resource_witness, dict)
             or type(resource_witness.get("sufficient")) is not bool):
-        raise ValueError(RUN_STOP_RECEIPT_INVALID)
+        _invalid(RUN_STOP_RECEIPT_INVALID)
     safe_resume, disposition = _resume_state(status)
     body = {
         "schema": RUN_STOP_SCHEMA,
@@ -131,14 +138,14 @@ def read_latest_run_stop_receipt(run_dir: Path) -> dict | None:
             continue
         receipt = event.get("run_stop_receipt")
         if not isinstance(receipt, dict) or receipt.get("schema") != RUN_STOP_SCHEMA:
-            raise ValueError(RUN_STOP_RECEIPT_INVALID)
+            _invalid(RUN_STOP_RECEIPT_INVALID)
         expected = receipt.get("receipt_sha256")
         body = {key: value for key, value in receipt.items()
                 if key != "receipt_sha256"}
         if (not isinstance(expected, str)
                 or sha256(_canonical(body).encode()).hexdigest() != expected
                 or event.get("receipt_sha256") != expected):
-            raise ValueError("BAMF_RUN_STOP_RECEIPT_DRIFT")
+            _invalid("BAMF_RUN_STOP_RECEIPT_DRIFT")
         return receipt
     return None
 
