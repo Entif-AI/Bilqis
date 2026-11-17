@@ -26,6 +26,7 @@ from .grade_b_oracle import evaluate as independent_oracle
 GENERATOR = "bilqis.mlx.grade-b-connectives-constructor/v1"
 RELEASE = "bilqis.mlx.grade-a-b-live/20261015-v1"
 ASSESSMENT_ITEMS_PER_CAPABILITY = 12
+MINIMUM_BOOLEAN_SAMPLE_ROWS = len((False, True)) ** 2
 PREREQUISITES = ()
 PINNED_BOOLEAN_SOURCE = PINNED_SOURCES["bilqis_logic/kernel.py"]
 
@@ -171,28 +172,42 @@ def _truth_expressions(logic, truth: bool, operator: str) -> tuple[tuple[dict, d
 
 def _u7c_pattern_counts(op: str, each: int) -> dict[tuple[bool, ...], int]:
     half = each // 2
-    low, high = half // 2, half - half // 2
+    def split(total, patterns):
+        low, remainder = divmod(total, len(patterns))
+        return {
+            pattern: low + (index < remainder)
+            for index, pattern in enumerate(patterns)
+        }
     if op == "NOT":
         return {(False,): half, (True,): half}
+    if each == MINIMUM_BOOLEAN_SAMPLE_ROWS:
+        return {
+            (False, False): 1, (False, True): 1,
+            (True, False): 1, (True, True): 1,
+        }
     if op == "AND":
-        return {(True, True): half, (True, False): low, (False, True): high}
+        return {(True, True): half, **split(
+            half, ((False, False), (True, False), (False, True)))}
     if op == "OR":
-        return {(False, False): half, (True, False): low, (False, True): high}
+        return {(False, False): half, **split(
+            half, ((True, True), (True, False), (False, True)))}
     if op == "IMPLIES":
-        return {(True, False): half, (True, True): low, (False, False): high}
+        return {(True, False): half, **split(
+            half, ((True, True), (False, False), (False, True)))}
     if op == "XOR":
-        return {(False, True): low, (True, False): high,
-                (False, False): low, (True, True): high}
+        return {**split(half, ((False, True), (True, False))),
+                **split(half, ((False, False), (True, True)))}
     if op == "IFF":
-        return {(False, False): low, (True, True): high,
-                (False, True): low, (True, False): high}
+        return {**split(half, ((False, False), (True, True))),
+                **split(half, ((False, True), (True, False)))}
     raise ErrorBus.legacy_error(SOURCE.BOOLEAN.UNKNOWN_OPERATOR)
 
 
 def draw_connectives(legacy_root: Path, graph: dict, *, seed: int,
                      each: int = ASSESSMENT_ITEMS_PER_CAPABILITY,
                      capability: str | None = None) -> tuple[dict, ...]:
-    if type(seed) is not int or type(each) is not int or each < 4 or each % 2:
+    if (type(seed) is not int or type(each) is not int
+            or each < MINIMUM_BOOLEAN_SAMPLE_ROWS or each % 2):
         raise ValueError("GRADE_B_BALANCED_EVEN_SAMPLE_REQUIRED")
     logic = _logic_source(legacy_root)
     _, _, source_graph, _, _ = read_sources(legacy_root)

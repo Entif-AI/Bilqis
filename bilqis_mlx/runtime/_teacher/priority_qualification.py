@@ -151,23 +151,29 @@ def requalify_priority(run_dir, source_context, parent, frontier, history,
     by_id = dict(offers)
     eligible, holds = [], []
     release = source_context.release
+    exclusions = {
+        item.capability_id: item.code.value
+        for item in lawful_frontier.exclusions
+    }
+    if len(exclusions) != len(lawful_frontier.exclusions):
+        _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
     for option in frontier.options:
-        if option.action_kind not in (ActionKind.TEACHING, ActionKind.EXPLORATION):
-            eligible.append(option)
-            continue
         cap, context = option.context.capability_id, option.context
-        if cap not in lawful_ids:
-            holds.append((option.stable_id, 'LEARNER_FRONTIER_HELD'))
-            continue
         if (cap not in release.execution_plan.capability_map
                 or cap not in release.curriculum.capability_map):
             holds.append((option.stable_id, 'CAPABILITY_NOT_ADMITTED'))
             continue
+        if cap not in lawful_ids:
+            exclusion = exclusions.get(cap)
+            if exclusion is None:
+                _invalid('BAMF_PRIORITY_LAWFUL_FRONTIER_BINDING_DRIFT')
+            holds.append((option.stable_id, exclusion))
+            continue
+        if option.action_kind in (ActionKind.CORRECTION, ActionKind.PROCEDURE_REPAIR):
+            eligible.append(option)
+            continue
         if cap not in release.source_bindings.by_capability:
             holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
-            continue
-        if _grade(program, school, cap) is None:
-            holds.append((option.stable_id, 'CAPABILITY_NOT_TEACHABLE'))
             continue
         offer = by_id.get(option.stable_id)
         if offer is None:

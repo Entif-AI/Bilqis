@@ -11,6 +11,7 @@ import unittest
 from unittest.mock import patch
 
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
+import bilqis_mlx.runtime.accepted_teacher_custody as teacher_custody
 from bilqis_mlx.compatibility import historical_teacher_policy
 from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
@@ -34,6 +35,11 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.teacher_custody_fixtures impor
 
 
 class C03AcceptedTeacherCustodyTests(unittest.TestCase):
+    def test_lower_level_selector_remains_test_only_witness(self):
+        self.assertIs(teacher_custody.select_accepted_teacher_visit,
+                      select_accepted_teacher_visit)
+        self.assertNotIn("select_accepted_teacher_visit", teacher_custody.__all__)
+
     def setUp(self):
         self.temporary = TemporaryDirectory()
         self.root = Path(self.temporary.name)

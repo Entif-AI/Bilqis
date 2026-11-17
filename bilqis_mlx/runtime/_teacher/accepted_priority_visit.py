@@ -84,6 +84,11 @@ class PriorityVisitResult:
     def source_materialization_wall_seconds(self):
         return self._source_materialization_wall_seconds
 
+    @property
+    def exclusions(self):
+        return (() if self._lawful_frontier is None
+                else self._lawful_frontier.exclusions)
+
 
 def _issue_result(status, option_id, offer, visit, policy, metadata, grade, holds,
                   run_dir, lawful_frontier=None, ranking_evidence=None,
@@ -147,11 +152,10 @@ def accepted_priority_school(parent, program, *, candidate_identity_sha256=None)
 def _selected_priority_result(
         run_dir, source_context, parent, cache, projection, epoch, teacher,
         qualified, option, offer, school, engine, rng, learning_settings,
-        program, evidence, holds, lawful_frontier, total_capabilities,
+        program, grade, evidence, holds, lawful_frontier, total_capabilities,
         plasticity_escape, priority_features,
         source_materialization_wall_seconds):
     capability = option.context.capability_id
-    grade = _grade(program, school, capability)
     teacher = replay_rejected_outcomes(run_dir, parent, cache, teacher)
     key, policy, metadata = select_visit_policy(
         engine, teacher, capability, school, rng, learning_settings,
@@ -222,9 +226,12 @@ def select_accepted_priority_visit(
         if (frontier is not None or history is not None
                 or lawful_frontier.ready_capability_ids):
             _invalid('BAMF_PRIORITY_EMPTY_AUTHORITY_DRIFT')
+        holds = sorted(
+            (item.capability_id, item.code.value)
+            for item in lawful_frontier.exclusions)
         return _issue_result(
             'NO_ADMISSIBLE_TEACHING', None, None, None, None, None, None,
-            (), run_dir, lawful_frontier)
+            holds, run_dir, lawful_frontier)
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
     epoch = restore_teacher_lineage(projection.teacher_state)
@@ -236,7 +243,11 @@ def select_accepted_priority_visit(
                                    lawful_frontier=lawful_frontier,
                                    planning_generation=planning_generation)
     by_id, evidence = dict(qualified.offers), dict(frontier.evidence)
-    holds = list(qualified.holds)
+    holds = [
+        (item.capability_id, item.code.value)
+        for item in lawful_frontier.exclusions
+    ]
+    holds.extend(qualified.holds)
     for option in qualified.ranked.ordered:
         priority_features = salience_priority_features(
             evidence[option.stable_id], option.context.capability_id,
@@ -251,12 +262,15 @@ def select_accepted_priority_visit(
         except ValueError:
             holds.append((option.stable_id, 'SOURCE_OFFER_HELD'))
             continue
+        grade = _grade(program, school, option.context.capability_id)
+        if grade is None:
+            _invalid('BAMF_PRIORITY_PROGRAM_INVALID')
         source_materialization_wall_seconds = max(
             0.0, time.perf_counter() - materialization_started)
         return _selected_priority_result(
             run_dir, source_context, parent, cache, projection, epoch, teacher,
             qualified, option, offer, school, engine, rng, learning_settings,
-            program, evidence, holds, lawful_frontier, total_capabilities,
+            program, grade, evidence, holds, lawful_frontier, total_capabilities,
             plasticity_escape, priority_features,
             source_materialization_wall_seconds)
     return _issue_result('NO_ADMISSIBLE_TEACHING', None, None, None, None, None,
@@ -268,7 +282,8 @@ def execute_accepted_priority_candidate(selection, source_context,
         optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
         mentor_supervision=None,
         capture_diagnostics=False, candidate=None, finalize_candidate=True,
-        prepared_source_rows=None, candidate_step_started_at=None,
+        prepared_source_rows=None, prepared_enrichment_rows=(),
+        candidate_step_started_at=None,
         source_prepare_wall_seconds=0.0):
     _require_issued(selection)
     if selection.status != 'TEACHER_SELECTED':
@@ -315,19 +330,23 @@ def execute_accepted_priority_candidate(selection, source_context,
     hparams = replace(teacher_hparams, learning_rate=float(lr))
     offer = selection.offer
     rows = offer.rows() if prepared_source_rows is None else tuple(prepared_source_rows)
+    enrichment = tuple(prepared_enrichment_rows)
+    delivered_rows = (*rows, *enrichment)
     capability = offer.capability_id
     execution = source_context.release.execution_plan.capability_map[capability]
     delivery = describe_delivered_teaching(source_context.release, capability,
                                             execution.teaching_option_ids[0], rows)
     provenance = BamfVisitProvenance.from_c03_record(selection.visit.identity.to_record())
-    observation = replace(observation, option_rows=rows, seed=offer.source_seed)
+    observation = replace(
+        observation, option_rows=rows, seed=offer.source_seed,
+        **({"enrichment": enrichment} if enrichment else {}))
     caller_pre_neural_wall_seconds = (
         float(source_prepare_wall_seconds)
         + time.perf_counter() - caller_pre_neural_started)
     return execute_factory_candidate_step(Path(selection._run_dir), source_context, parent,
-        atlas_artifact_path, feature_artifact_path, rows, capability=capability,
-        delivery=delivery, requested_count=len(rows), source_seed=offer.source_seed,
-        source_each=offer.source_each, optimizer_step_seed=optimizer_step_seed,
+        atlas_artifact_path, feature_artifact_path, delivered_rows, capability=capability,
+        delivery=delivery, requested_count=len(delivered_rows), source_seed=offer.source_seed,
+        source_each=len(delivered_rows), optimizer_step_seed=optimizer_step_seed,
         visit_provenance=provenance, teacher_strategy=policy, teacher_hparams=hparams,
         max_norm=max_norm, observation=observation, memory_budget=memory_budget,
         salience_provider=salience_provider,
@@ -339,4 +358,4 @@ def execute_accepted_priority_candidate(selection, source_context,
         currentness_binding_wall_seconds=currentness_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds=caller_pre_neural_wall_seconds,
         semantic_context=semantic_context,
-        prepared_source=prepared_source)
+        prepared_source=(prepared_source if not enrichment else None))

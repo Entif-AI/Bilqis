@@ -1,10 +1,20 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "A",
-  "observed_unified": "0891128bb330af2de44ef8c0aa0893cb4a16f6e7",
-  "updated_at": "2026-11-16T20:55:31Z",
+  "observed_unified": "749f1f37af958282c545473c67b2fd2acd184352",
+  "updated_at": "2026-11-17T01:25:57Z",
   "exception": null,
   "items": [
+    {
+      "issue": 1315,
+      "pr": 1354,
+      "state": "READY",
+      "head_sha": "d5d0cede83457b5e552735a358918a9c53b0bb6c",
+      "head_sha_role": "exact semantic/test/Goldfish/detached-leaf proof head before final flow-control and PR bookkeeping",
+      "summary": "#1315 lawful-priority semantics are READY for human review at exact proof head d5d0cede on reviewed unified 749f1f37. C03/C06 may rank and teach only exact active generated-grade capability/semantic members after #1314; future-grade and otherwise non-ready members remain observable through typed canonical exclusions but cannot reach teacher policy or candidate execution. Currentness is global, remediation does not bypass lawful membership, A09 remains non-authoritative, the direct production custody selector is retired/test-only, and an already-lawful selected target with missing or ambiguous schedule/roster HOW metadata now fails explicitly before policy/context issuance while preserving recoverable SOURCE_OFFER_HELD precedence. Post-base affected ring: 86 passed + 4 subtests; structure/governance/smell/error-control/diff gates green; fresh Design and Codebase closure reviews are 0 Blockers / 0 Majors / 0 Nits; snapshot-isolated verify:leaf PASS with source_mutated=false after installing the repository-locked Node dependencies inside the ignored snapshot dependency boundary. Human merge remains external authority.",
+      "resume_trigger": "Human review/merge PR #1354 into codex/bamf-unified-base-20261028 after hosted checks are green. Do not self-merge.",
+      "preserved_branch": "codex/1315-lawful-frontier-priority-20261116"
+    },
     {
       "issue": 1314,
       "pr": 1349,

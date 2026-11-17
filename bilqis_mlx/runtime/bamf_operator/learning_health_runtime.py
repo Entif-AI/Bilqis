@@ -23,7 +23,8 @@ def _accepted_state(parent):
 
 
 def accepted_learning_health_state(
-        run_dir, parent, selection, candidate_evidence, decision, retained, capture):
+        run_dir, parent, selection, candidate_evidence, decision, retained, capture, *,
+        plasticity_escape=None):
     """Derive one bounded sidecar before publication so B13 authenticates it."""
     history, coverage, certified_surfaces = _accepted_state(parent)
     visit = complete_visit_evidence(
@@ -50,6 +51,21 @@ def accepted_learning_health_state(
         "by_capability": updated,
         "certified_surfaces": list(certified_surfaces),
     }
+    previous_plasticity = None
+    parent_state = getattr(parent, "learning_health_state", None)
+    if isinstance(parent_state, dict) and isinstance(
+            parent_state.get("plasticity_escape"), dict):
+        from bilqis_mlx.runtime.plasticity_escape import PlasticityEscapeState
+        previous_plasticity = PlasticityEscapeState.from_record(
+            parent_state["plasticity_escape"])
+    settled = previous_plasticity
+    if plasticity_escape is not None:
+        from bilqis_mlx.runtime.plasticity_escape import settle_accepted_escape
+        settled = settle_accepted_escape(
+            plasticity_escape, visit, certified_surfaces,
+            accepted_optimizer_step=retained.optimizer_step)
+    if settled is not None:
+        state["plasticity_escape"] = settled.to_record()
     validate_learning_health_state(state)
     return state, health
 

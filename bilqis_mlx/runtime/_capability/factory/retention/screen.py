@@ -118,7 +118,7 @@ def adaptive_retention_screen(
     source_context, parent, candidate_bundle, candidate_state, artifact_path,
     target_capability, target_group, lesson_capabilities, release, groups, training,
     fixed_instruments, cache, evidence_stage, *, protected_capabilities=None,
-    retention_protection_plan_sha256=None, observer=None,
+    retention_protection_plan_sha256=None, observer=None, plasticity_escape=None,
 ):
     candidate_sha256 = candidate_identity_for_canonical_consumer(candidate_state)
     fresh_seed = _owner_seed(release.release_sha256, cache, target_capability, candidate_sha256)
@@ -155,6 +155,7 @@ def adaptive_retention_screen(
     decision = evaluate_retention_candidate(
         parent_solver, candidate_solver, target_capability, policy, cohorts,
         parent_generation, candidate_generation,
+        plasticity_escape=plasticity_escape,
         **({"observer": observer} if observer is not None else {}))
     if retention_protection_plan_sha256 is not None:
         decision = replace(

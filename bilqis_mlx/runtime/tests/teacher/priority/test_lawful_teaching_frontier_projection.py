@@ -7,9 +7,13 @@ from bilqis_mlx.factory.atlas_frontier_closure import ClosureReason, ClosureStat
 from bilqis_mlx.factory.curriculum_definition import CapabilitySourceBinding
 from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import (
     LawfulTeachingDisposition,
+    LawfulTeachingExclusionCode,
     LawfulTeachingFrontier,
 )
-from bilqis_mlx.runtime.lawful_teaching_frontier_projection import _capabilities
+from bilqis_mlx.runtime.lawful_teaching_frontier_projection import (
+    _capabilities,
+    _exclusions,
+)
 from bilqis_mlx.semantics.atlas_projection import CorpusCoverageRow
 
 
@@ -126,6 +130,67 @@ class LawfulTeachingProjectionTests(unittest.TestCase):
             LawfulTeachingDisposition.HELD_PREREQUISITE_EVIDENCE)
         self.assertIn(
             "A09_WAITING_FOR_EVIDENCE", {item.code for item in by_id["D"].holds})
+
+    def test_exclusions_bind_active_holds_and_admitted_future_grade(self):
+        release = _release()
+        capabilities = _capabilities(
+            release, _snapshot(), _closure(), _plan(), (),
+            active_members=(("D", ("sem.d",)),),
+        )
+        exclusions = _exclusions(release, capabilities)
+        self.assertEqual(
+            tuple((item.capability_id, item.code) for item in exclusions),
+            (
+                ("D", LawfulTeachingExclusionCode.PREREQUISITE_HELD),
+                ("P", LawfulTeachingExclusionCode.FUTURE_GENERATED_GRADE),
+            ),
+        )
+        self.assertEqual(exclusions[0].semantic_ids, ("sem.d",))
+        self.assertTrue(exclusions[0].holds)
+        self.assertEqual(exclusions[1].semantic_ids, ("sem.p",))
+        self.assertEqual(exclusions[1].holds, ())
+
+    def test_each_nonready_active_disposition_has_one_canonical_exclusion(self):
+        release = _release()
+        cases = (
+            (
+                _capabilities(
+                    release, _snapshot(), _closure(), _plan(), (),
+                    active_members=(("D", ("sem.d",)),),
+                ),
+                LawfulTeachingExclusionCode.PREREQUISITE_HELD,
+            ),
+            (
+                _capabilities(
+                    release, _snapshot(held=True), _closure(), _plan(), ("P",),
+                    active_members=(("D", ("sem.d",)),),
+                ),
+                LawfulTeachingExclusionCode.SOURCE_HELD,
+            ),
+            (
+                _capabilities(
+                    release, _snapshot(), _closure(uncovered=True), _plan(), ("P",),
+                    active_members=(("D", ("sem.d",)),),
+                ),
+                LawfulTeachingExclusionCode.IMPLEMENTATION_UNCOVERED,
+            ),
+            (
+                _capabilities(
+                    release, _snapshot(), _closure(), _plan(), ("P",),
+                    active_members=(("P", ("sem.p",)),),
+                ),
+                LawfulTeachingExclusionCode.ALREADY_COMPLETE,
+            ),
+        )
+        for capabilities, expected in cases:
+            with self.subTest(expected=expected.value):
+                active_id = capabilities[0].capability_id
+                exclusion = next(
+                    item for item in _exclusions(release, capabilities)
+                    if item.capability_id == active_id)
+                self.assertIs(exclusion.code, expected)
+                self.assertEqual(
+                    exclusion.to_record()["code"], expected.value)
 
     def test_frontier_cannot_be_constructed_by_a_caller(self):
         with self.assertRaises(BilqisError) as forbidden:
