@@ -69,7 +69,7 @@ def priority():
             _grade=None, requalify_priority=None),
     }
     name = "bilqis_mlx.runtime.priority_selection_failure_boundary_test"
-    path = Path(__file__).resolve().parents[3] / "_teacher/accepted_priority_visit.py"
+    path = Path(__file__).resolve().parents[3] / "_teacher/priority/accepted_priority_visit.py"
     spec = spec_from_file_location(name, path)
     loaded = module_from_spec(spec)
     with patch.dict(sys.modules, {**owners, name: loaded}):

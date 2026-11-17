@@ -127,6 +127,7 @@ def test_lawful_selection_fails_closed_when_how_grade_projection_is_invalid(prio
 
 
 def test_stale_lawful_frontier_rejects_before_visit_or_source_execution(priority):
+    candidate = sys.modules[priority.execute_accepted_priority_candidate.__module__]
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     selected = priority._issue_result(
         'TEACHER_SELECTED', 'o', Offer(), Visit(identity),
@@ -135,8 +136,8 @@ def test_stale_lawful_frontier_rejects_before_visit_or_source_execution(priority
     with patch.object(
             frontier_owner, 'require_bound_lawful_teaching_frontier',
             side_effect=ValueError('frontier stale')), patch.object(
-                priority, '_require_current_visit') as require_visit, patch.object(
-                priority, 'execute_factory_candidate_step') as execute:
+                candidate, '_require_current_visit') as require_visit, patch.object(
+                candidate, 'execute_factory_candidate_step') as execute:
         with pytest.raises(ValueError, match='frontier stale'):
             priority.execute_accepted_priority_candidate(
                 selected, object(), 'a', 'b',
@@ -147,6 +148,7 @@ def test_stale_lawful_frontier_rejects_before_visit_or_source_execution(priority
 
 
 def test_held_capability_cannot_reach_visit_or_candidate_execution(priority):
+    candidate = sys.modules[priority.execute_accepted_priority_candidate.__module__]
     identity = SimpleNamespace(to_record=lambda: {'visit': 1})
     held = SimpleNamespace(
         ready_capability_ids=(), exclusions=(),
@@ -154,8 +156,8 @@ def test_held_capability_cannot_reach_visit_or_candidate_execution(priority):
     selected = priority._issue_result(
         'TEACHER_SELECTED', 'o', Offer(), Visit(identity),
         {'lr': 0.1}, {}, 'g', (), '/run', held)
-    with patch.object(priority, '_require_current_visit') as require_visit, \
-         patch.object(priority, 'execute_factory_candidate_step') as execute:
+    with patch.object(candidate, '_require_current_visit') as require_visit, \
+         patch.object(candidate, 'execute_factory_candidate_step') as execute:
         with pytest.raises(BilqisError) as failure:
             priority.execute_accepted_priority_candidate(
                 selected, object(), 'a', 'b',

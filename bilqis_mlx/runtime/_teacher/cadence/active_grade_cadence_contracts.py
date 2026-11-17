@@ -194,7 +194,8 @@ class ActiveGradeCadenceAuthorization:
         _invalid("BAMF_ACTIVE_GRADE_CADENCE_AUTHORIZATION_CALLER_CONSTRUCTION_FORBIDDEN")
 
     def verify(self) -> None:
-        if (getattr(self.state, "_issuance", None) is not _ISSUER
+        if (getattr(self, "_issuance", None) is not _ISSUER
+                or getattr(self.state, "_issuance", None) is not _ISSUER
                 or not isinstance(self.disposition, ActiveGradeCadenceDisposition)
                 or not isinstance(self.authorized_capability_ids, tuple)
                 or any(not isinstance(item, str) or not item

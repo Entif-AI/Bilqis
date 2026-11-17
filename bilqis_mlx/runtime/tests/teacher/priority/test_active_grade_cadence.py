@@ -187,6 +187,25 @@ def test_cadence_authorization_cannot_be_constructed_by_caller():
         "BAMF_ACTIVE_GRADE_CADENCE_AUTHORIZATION_CALLER_CONSTRUCTION_FORBIDDEN")
 
 
+def test_cadence_authorization_cannot_be_forged_around_issued_state(tmp_path):
+    frontier = _frontier((_capability("A"), _capability("B")))
+    epoch = _epoch({"A": 1, "B": 1})
+    with patch(
+            "bilqis_mlx.runtime.active_grade_cadence_policy.obligations_for_capability",
+            side_effect=_obligations(epoch)):
+        issued = issue_active_grade_cadence(tmp_path, epoch, frontier)
+    forged = object.__new__(ActiveGradeCadenceAuthorization)
+    object.__setattr__(forged, "state", issued.state)
+    object.__setattr__(forged, "authorized_capability_ids", ("B",))
+    object.__setattr__(
+        forged, "disposition", ActiveGradeCadenceDisposition.TEACHING)
+    object.__setattr__(forged, "_issuance", object())
+    with pytest.raises(BilqisError) as failure:
+        forged.verify()
+    assert failure.value.context.get("reason") == (
+        "BAMF_ACTIVE_GRADE_CADENCE_AUTHORIZATION_INVALID")
+
+
 def test_new_active_grade_activation_resets_recovery_exposure(tmp_path):
     rows = tuple(_capability(item) for item in ("A", "B", "C"))
     first = _frontier(rows)
