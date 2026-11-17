@@ -182,13 +182,18 @@ def _publish_capability_only_factory_successor_locked(
         (() if inherited is None else inherited.obligation_keys)
         + tuple(requested_keys((handoff.receipt,)))
     )))
+    generated_grade_digest = _owner_generated_grade_digest(
+        generated_grade_authority, handoff)
+    candidate_args = (
+        {"new_semantic_admission": True}
+        if generated_grade_digest is not None else {})
     candidate = derive_factory_release_adoption_candidate(
-        parent, parent_manifest_sha256=parent_manifest, transition=transition)
+        parent, parent_manifest_sha256=parent_manifest, transition=transition,
+        **candidate_args)
     binding = _issue_factory_release_admission_binding(
         candidate, parent, transition=transition,
         accepted_obligation_keys=accepted_obligation_keys,
-        generated_grade_proposal_sha256=_owner_generated_grade_digest(
-            generated_grade_authority, handoff))
+        generated_grade_proposal_sha256=generated_grade_digest)
     release_file = runtime_admission._persist_executable_factory_release(
         runtime.run_dir, handoff.staged_candidate.successor)
     expected_release_file = (

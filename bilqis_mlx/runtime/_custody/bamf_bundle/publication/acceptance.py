@@ -18,6 +18,7 @@ from bilqis_mlx.learning._atlas_candidate.identity_binding import (
 
 from ..atlas_admission import (
     ATLAS_ADMISSION_SCHEMAS, AtlasAdmissionBinding, ParsedAtlasAdmissionBinding,
+    validate_parsed_atlas_championship_state,
 )
 from ..factory_release.admission import (
     FACTORY_RELEASE_ADMISSION_SCHEMAS,
@@ -144,6 +145,8 @@ def _require_non_genesis_acceptance_identity(acceptance, pointer, student) -> No
                      != student.correction_frontier.get(
                          "source_authority_registry_sha256")))):
         invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
+    if isinstance(acceptance, ParsedAtlasAdmissionBinding):
+        validate_parsed_atlas_championship_state(student, acceptance)
     if is_motif_allocation_transition(student.transition):
         from ..genesis.records import successor_candidate_identity_digest
         if (acceptance.schema_version not in (

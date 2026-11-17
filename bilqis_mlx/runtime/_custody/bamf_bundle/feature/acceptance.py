@@ -14,6 +14,7 @@ from bilqis_mlx.learning.atlas_acceptance import (
 
 from ..atlas_admission import (
     ATLAS_ADMISSION_SCHEMAS, AtlasAdmissionBinding, ParsedAtlasAdmissionBinding,
+    validate_parsed_atlas_championship_state,
 )
 from ..factory_release.admission import (
     FACTORY_RELEASE_ADMISSION_SCHEMAS,
@@ -124,6 +125,8 @@ def accepted_binding_for_manifest(
     if schema in FACTORY_RELEASE_ADMISSION_SCHEMAS:
         validate_parsed_factory_release_admission_binding(
             student, binding, expected_acceptance_sha256)
+    elif isinstance(binding, ParsedAtlasAdmissionBinding):
+        validate_parsed_atlas_championship_state(student, binding)
     if (binding.digest != expected_acceptance_sha256
             or binding.run_id != student.run_id
             or binding.generation != student.generation

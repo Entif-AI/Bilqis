@@ -238,7 +238,10 @@ def _publish_authorized_generation(
             parent = _validate_parent_transition_impl(
                 run_dir, current, candidate,
                 load_bundle=load_bamf_bundle, reconcile=reconcile_bamf_outbox,
-                parent=witnessed_parent)
+                parent=witnessed_parent,
+                factory_release_new_semantic_admission=(
+                    type(authority) is FactoryReleaseAdmissionBinding
+                    and authority.generated_grade_proposal_sha256 is not None))
             if candidate.generation > 0:
                 if parent is None:
                     invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")

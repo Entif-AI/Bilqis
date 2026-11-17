@@ -9,6 +9,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
+from bilqis_mlx.semantics.domains import contract_digest
 from bilqis_mlx.learning.championship_witnesses import (
     battery_from_exam, championship_role_qualified, championship_threshold_met,
     earning_witness, maxed_role, refresh_battery,
@@ -16,9 +17,12 @@ from bilqis_mlx.learning.championship_witnesses import (
 from bilqis_mlx.learning.mentor_epoch import EARNED_ONLY_POLICY, _pointer
 
 
-def _pair_key(capability: str, left_sha256: str, right_sha256: str) -> str:
+def _pair_key(capability: str, left_sha256: str, right_sha256: str,
+              comparison_context_sha256: str | None = None) -> str:
     """Canonical lifetime identity for one capability title matchup."""
     first, second = sorted((left_sha256, right_sha256))
+    if comparison_context_sha256 is not None:
+        return f"{capability}|{comparison_context_sha256}|{first}|{second}"
     return f"{capability}|{first}|{second}"
 
 
@@ -27,7 +31,30 @@ def _settled_match(epoch: dict, capability: str, left_sha256: str,
     ledger = epoch.get("settled_matchups", {})
     if not isinstance(ledger, dict):
         raise ValueError("CHAMPIONSHIP_SETTLED_MATCH_LEDGER_INVALID")
-    return ledger.get(_pair_key(capability, left_sha256, right_sha256))
+    context = epoch.get("comparison_context_sha256")
+    return ledger.get(_pair_key(
+        capability, left_sha256, right_sha256, context))
+
+
+def _settlement_receipt_context(epoch: dict) -> dict:
+    """Stamp native settlements with the comparison surface that authored them."""
+    identity = epoch.get("identity")
+    settlement_epoch = epoch.get("settlement_epoch_sha256")
+    comparison_context = epoch.get("comparison_context_sha256")
+    if identity is None and settlement_epoch is None and comparison_context is None:
+        return {}
+    if (not isinstance(identity, dict) or not isinstance(settlement_epoch, str)
+            or not isinstance(comparison_context, str)
+            or len(settlement_epoch) != len(contract_digest({}))
+            or len(comparison_context) != len(contract_digest({}))):
+        ErrorBus.raise_(
+            SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID,
+            reason="CHAMPIONSHIP_SETTLEMENT_CONTEXT_INVALID")
+    return {
+        "comparison_identity_sha256": contract_digest(identity),
+        "comparison_context_sha256": comparison_context,
+        "settlement_epoch_sha256": settlement_epoch,
+    }
 
 
 def _archive_invalid_role(updated: dict, capability: str, role: dict,
