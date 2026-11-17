@@ -4,6 +4,24 @@ from __future__ import annotations
 import time
 
 
+def _mentor_observation(
+        adviser_pool, source_rows, selection, capture, optimizer_step,
+        delivery_observation_cls):
+    if adviser_pool is None:
+        return delivery_observation_cls(
+            capture, optimizer_step, source_rows, selection.offer.source_seed), None
+    from bilqis_mlx.runtime.championship_advisers import (
+        championship_mentor_supervision,
+    )
+    supervision = championship_mentor_supervision(
+        adviser_pool, source_rows, source_seed=selection.offer.source_seed,
+        teacher_strategy=selection.policy)
+    observation = delivery_observation_cls(
+        capture, optimizer_step, source_rows, selection.offer.source_seed,
+        guidance=supervision.guidance_record(), mentors=supervision.to_record())
+    return observation, supervision
+
+
 def execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path,
         rows, horizon, cache, candidate_attempt_ordinal, progress,
@@ -54,24 +72,10 @@ def execute_horizon(
         source_prepare_started = candidate_step_started_at
         source_rows = rows if source_lane is None else source_lane.rows(ordinal)
         source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
-        from bilqis_mlx.runtime.championship_advisers import (
-            championship_mentor_supervision,
-        )
-        mentor_supervision = (
-            None if adviser_pool is None else championship_mentor_supervision(
-                adviser_pool, source_rows, source_seed=selection.offer.source_seed,
-                teacher_strategy=selection.policy))
-        observation_args = (
-            capture, parent.retained_state.optimizer_step + ordinal,
-            source_rows, selection.offer.source_seed)
-        observation_kwargs = {}
-        if mentor_supervision is not None:
-            mentor_record = mentor_supervision.to_record()
-            observation_kwargs = {
-                "guidance": mentor_supervision.guidance_record(),
-                "mentors": mentor_record,
-            }
-        observation = delivery_observation_cls(*observation_args, **observation_kwargs)
+        observation, mentor_supervision = _mentor_observation(
+            adviser_pool, source_rows, selection, capture,
+            parent.retained_state.optimizer_step + ordinal,
+            delivery_observation_cls)
         emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
         step = execute_candidate(
             selection, context, atlas_path, feature_path,

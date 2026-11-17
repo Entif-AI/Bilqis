@@ -26,18 +26,22 @@ def _row_execution_inputs(
     return bound, authority, targets, mask, plan
 
 
+def _mentor_multiplier(mentor_supervision, compiled):
+    if mentor_supervision is None:
+        return 1.0
+    from bilqis_mlx.learning._championship.adviser_supervision import MentorSupervision
+    if type(mentor_supervision) is not MentorSupervision:
+        raise ValueError("FACTORY_MENTOR_SUPERVISION_TYPE_INVALID")
+    return 1.0 + mentor_supervision.influence_for(compiled)
+
+
 def execute_factory_training_row(
         parameters, compiled, source_context, feature_snapshot, generation, cache, *,
         salience_supervision=None, mentor_supervision=None):
     """Preserve the scalar B11 path as correctness oracle and fallback."""
     bound, authority, targets, mask, plan = _row_execution_inputs(
         source_context, compiled, feature_snapshot, generation)
-    multiplier = 1.0
-    if mentor_supervision is not None:
-        from bilqis_mlx.learning._championship.adviser_supervision import MentorSupervision
-        if type(mentor_supervision) is not MentorSupervision:
-            raise ValueError("FACTORY_MENTOR_SUPERVISION_INVALID")
-        multiplier += mentor_supervision.influence_for(compiled)
+    multiplier = _mentor_multiplier(mentor_supervision, compiled)
     gradient = bamf_value_and_grad(
         parameters, bound, plan, targets, mask, cache,
         salience_supervision=salience_supervision,
@@ -59,12 +63,8 @@ def execute_factory_logical_batch(
     plans = tuple(item[4] for item in rows)
 
     def execute_row(index):
-        multiplier = 1.0
-        if mentor_supervision is not None:
-            from bilqis_mlx.learning._championship.adviser_supervision import MentorSupervision
-            if type(mentor_supervision) is not MentorSupervision:
-                raise ValueError("FACTORY_MENTOR_SUPERVISION_INVALID")
-            multiplier += mentor_supervision.influence_for(prepared.compiled_rows[index])
+        multiplier = _mentor_multiplier(
+            mentor_supervision, prepared.compiled_rows[index])
         return bamf_value_and_grad(
             parameters, bound[index], plans[index], targets[index], masks[index], cache,
             salience_supervision=salience_supervision,

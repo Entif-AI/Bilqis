@@ -231,6 +231,40 @@ def _prepare_candidate_step_inputs(
     )
 
 
+def _require_mentor_supervision_current(
+        mentor_supervision, observation, parent, cache, teacher_strategy,
+        source_seed):
+    if mentor_supervision is None:
+        if (observation.mentors is not None
+                or (isinstance(observation.guidance, dict)
+                    and observation.guidance.get("schema")
+                    == "bilqis.mlx.championship-guidance/v1")):
+            _invalid("FACTORY_MENTOR_EVIDENCE_WITHOUT_SUPERVISION")
+        return
+    from bilqis_mlx.learning._championship.adviser_supervision import (
+        MentorSupervision, mentor_policy_binding,
+    )
+    from bilqis_mlx.learning._championship.cohort_soup import POLICY_ID
+    from bilqis_mlx.semantics.domains import contract_digest
+    if type(mentor_supervision) is not MentorSupervision:
+        _invalid("FACTORY_MENTOR_SUPERVISION_INVALID")
+    championship_state = getattr(parent, "championship_state", None)
+    if not isinstance(championship_state, dict):
+        _invalid("FACTORY_MENTOR_CHAMPIONSHIP_STATE_REQUIRED")
+    try:
+        mentor_supervision.require_current(
+            cache.accepted_manifest_sha256,
+            contract_digest(championship_state["identity"]),
+            POLICY_ID,
+            mentor_policy_binding(POLICY_ID, teacher_strategy),
+            source_seed,
+        )
+        mentor_supervision.require_evidence(
+            observation.mentors, observation.guidance)
+    except ValueError:
+        _invalid("FACTORY_MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+
+
 def execute_factory_candidate_step(
     run_dir: Path,
     source_context,
@@ -286,35 +320,9 @@ def execute_factory_candidate_step(
         candidate_step_started_at, currentness_binding_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds, semantic_context,
         prepared_source)
-    if mentor_supervision is None:
-        if (observation.mentors is not None
-                or (isinstance(observation.guidance, dict)
-                    and observation.guidance.get("schema")
-                    == "bilqis.mlx.championship-guidance/v1")):
-            _invalid("FACTORY_MENTOR_EVIDENCE_WITHOUT_SUPERVISION")
-    else:
-        from bilqis_mlx.learning._championship.adviser_supervision import (
-            MentorSupervision, mentor_policy_binding,
-        )
-        from bilqis_mlx.learning._championship.cohort_soup import POLICY_ID
-        from bilqis_mlx.semantics.domains import contract_digest
-        if type(mentor_supervision) is not MentorSupervision:
-            _invalid("FACTORY_MENTOR_SUPERVISION_INVALID")
-        championship_state = getattr(parent, "championship_state", None)
-        if not isinstance(championship_state, dict):
-            _invalid("FACTORY_MENTOR_CHAMPIONSHIP_STATE_REQUIRED")
-        try:
-            mentor_supervision.require_current(
-                cache.accepted_manifest_sha256,
-                contract_digest(championship_state["identity"]),
-                POLICY_ID,
-                mentor_policy_binding(POLICY_ID, teacher_strategy),
-                source_seed,
-            )
-            mentor_supervision.require_evidence(
-                observation.mentors, observation.guidance)
-        except ValueError:
-            _invalid("FACTORY_MENTOR_SUPERVISION_CURRENTNESS_DRIFT")
+    _require_mentor_supervision_current(
+        mentor_supervision, observation, parent, cache, teacher_strategy,
+        source_seed)
     return _execute_prepared_candidate(
         run_dir, source_context, parent, atlas_artifact_path, delivered_rows,
         capability=capability, teacher_hparams=teacher_hparams,

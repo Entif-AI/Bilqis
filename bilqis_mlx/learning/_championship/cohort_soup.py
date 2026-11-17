@@ -227,7 +227,7 @@ def read_frozen_cohort_soup(run_dir: Path, recipe: dict, *,
                             expected_weights: dict | None = None) -> dict | None:
     """Read the immutable recipe receipt used for cold-resume verification."""
     if recipe.get("schema") != SCHEMA or not recipe.get("recipe_sha256"):
-        raise ValueError("COHORT_SOUP_RECIPE_SCHEMA_INVALID")
+        raise ValueError("COHORT_SOUP_READ_RECIPE_INVALID")
     path = Path(run_dir) / "soups" / f"cohort-{recipe['recipe_sha256']}.json"
     if not path.exists():
         return None
