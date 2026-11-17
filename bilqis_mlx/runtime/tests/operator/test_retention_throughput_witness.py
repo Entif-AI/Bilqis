@@ -18,14 +18,12 @@ def _selection():
     )
 
 
-def _run_fixed_optimizer_steps(horizon: int, *, total_steps: int = 16):
-    assert total_steps % horizon == 0
+def _fixture():
     parent = SimpleNamespace(
         retained_state=SimpleNamespace(optimizer_step=0),
         optimizer_hyperparameters="hparams",
     )
     context = SimpleNamespace(release=object())
-    selection = _selection()
     evaluation = SimpleNamespace(
         candidate_state=object(), parent_state=parent.retained_state)
     decision = SimpleNamespace(
@@ -39,6 +37,13 @@ def _run_fixed_optimizer_steps(horizon: int, *, total_steps: int = 16):
             "persistence_seconds": 0.0,
         },
     })
+    return parent, context, evaluation, decision, cache, capture
+
+
+def _run_fixed_optimizer_steps(horizon: int, *, total_steps: int = 16):
+    assert total_steps % horizon == 0
+    parent, context, evaluation, decision, cache, capture = _fixture()
+    selection = _selection()
     decisions = 0
     optimizer_steps = 0
 
