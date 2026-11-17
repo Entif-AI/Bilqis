@@ -16,6 +16,9 @@ from .active_grade_cadence_contracts import (
 
 
 SCHEMA = "bilqis.bamf.active-grade-cadence-boundary/v1"
+_WRITER_TEMP_SPLITS = 2
+_WRITER_TEMP_PARTS = 3
+_WRITER_NONCE_HEX_LENGTH = 32
 
 
 def _invalid(reason: str):
@@ -40,11 +43,11 @@ def _root(run_dir: Path) -> Path:
 
 
 def _writer_temp(path: Path) -> bool:
-    parts = path.name.rsplit(".", 2)
-    if len(parts) != 3 or parts[2] != "tmp":
+    parts = path.name.rsplit(".", _WRITER_TEMP_SPLITS)
+    if len(parts) != _WRITER_TEMP_PARTS or parts[_WRITER_TEMP_SPLITS] != "tmp":
         return False
     base, nonce, _suffix = parts
-    if (len(nonce) != 32
+    if (len(nonce) != _WRITER_NONCE_HEX_LENGTH
             or any(char not in "0123456789abcdef" for char in nonce)
             or not base.startswith(".")
             or not base.endswith(".json")):

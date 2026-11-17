@@ -15,6 +15,8 @@ CADENCE_AUTHORIZATION_SCHEMA = "bilqis.bamf.active-grade-cadence-authorization/v
 CADENCE_POLICY_EPOCH = 1
 RECOVERY_WIDTH = 3
 MAX_RECOVERY_ROUNDS = 2
+_RECOVERY_2_ROUND = 2
+_PHASE_ROUND_COUNT = MAX_RECOVERY_ROUNDS + 2
 _ISSUER = object()
 
 
@@ -114,10 +116,11 @@ class ActiveGradeCadenceState:
                 or type(self.policy_epoch) is not int or self.policy_epoch < 0
                 or type(self.cadence_epoch) is not int or self.cadence_epoch < 0
                 or not isinstance(self.phase, ActiveGradeCadencePhase)
-                or self.phase_round not in set(range(MAX_RECOVERY_ROUNDS + 2))
+                or self.phase_round not in set(range(_PHASE_ROUND_COUNT))
                 or (self.phase is ActiveGradeCadencePhase.MAIN and self.phase_round != 0)
                 or (self.phase is ActiveGradeCadencePhase.RECOVERY_1 and self.phase_round != 1)
-                or (self.phase is ActiveGradeCadencePhase.RECOVERY_2 and self.phase_round != 2)
+                or (self.phase is ActiveGradeCadencePhase.RECOVERY_2
+                    and self.phase_round != _RECOVERY_2_ROUND)
                 or (self.phase is ActiveGradeCadencePhase.BOUNDARY
                     and self.phase_round != MAX_RECOVERY_ROUNDS + 1)
                 or any(not isinstance(item, str) or not item

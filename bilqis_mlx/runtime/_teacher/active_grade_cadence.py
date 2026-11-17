@@ -32,12 +32,12 @@ _RECOVERY_PHASES = (
     ActiveGradeCadencePhase.RECOVERY_1,
     ActiveGradeCadencePhase.RECOVERY_2,
 )
-if len(_RECOVERY_PHASES) != MAX_RECOVERY_ROUNDS:
-    raise RuntimeError("active-grade cadence recovery policy mismatch")
-
-
 def _invalid(reason: str):
     ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
+
+
+if len(_RECOVERY_PHASES) != MAX_RECOVERY_ROUNDS:
+    _invalid("BAMF_ACTIVE_GRADE_CADENCE_POLICY_MISMATCH")
 
 
 def _terminal_attempts(run_dir: Path):
