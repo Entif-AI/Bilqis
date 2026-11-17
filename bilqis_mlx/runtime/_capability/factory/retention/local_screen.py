@@ -18,12 +18,14 @@ from bilqis_mlx.runtime.baseline.currentness import (
 from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
 from bilqis_mlx.runtime.capability_evaluation import _invalid
 from bilqis_mlx.runtime.capability_retention import (
-    AssessmentPair, EvidenceKind, case_census_digest, evaluate_capabilities,
+    AssessmentPair, DecisionStatus, EvidenceKind, EvidenceStage,
+    case_census_digest, evaluate_capabilities,
 )
 from bilqis_mlx.runtime.capability_retention_foundation import FoundationRetentionPolicy
 from bilqis_mlx.runtime.factory_complete_solver import factory_complete_solver
 from bilqis_mlx.semantics.domains import contract_digest
 
+from .championship_evidence import capability_championship_evidence
 from .local_evaluation import (
     evaluate_target_gate, finalize_target_first_local_candidate,
 )
@@ -229,7 +231,7 @@ def foundation_local_retention_screen(
         source_context, parent, candidate_bundle, candidate_state, artifact_path,
         release, plan, target_plan, training, cached_rows, cache)
     if decision is not None:
-        return decision, parent, candidate_bundle, None, comparison
+        return decision, parent, candidate_bundle, None, comparison, None, None
 
     protected_pair, parent_cache, protected_instruments, coverage = _protected_stage(
         source_context, parent, candidate_bundle, artifact_path,
@@ -251,8 +253,15 @@ def foundation_local_retention_screen(
         retention_protection_plan_sha256=plan.digest,
         evaluated_capability_ids=target_plan.evaluated_capability_ids,
         **({"observer": observer} if observer is not None else {}))
+    championship_cohort = championship_assessment = None
+    if decision.status is DecisionStatus.ELIGIBLE:
+        championship_cohort, championship_assessment = capability_championship_evidence(
+            source_context, candidate_bundle, artifact_path, cache,
+            target_plan.target_capability_id, training,
+            EvidenceStage(plan.evidence_stage))
     return (
         decision, parent, candidate_bundle, parent_cache, comparison,
+        championship_cohort, championship_assessment,
     )
 
 

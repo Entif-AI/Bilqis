@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import dataclasses as _dataclasses
 
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 import bilqis_mlx.curriculum.scheduler as _curriculum_scheduler
 import bilqis_mlx.factory.schedule as _factory_schedule
 import bilqis_mlx.generated_assessment as _bilqis_mlx_generated_assessment
@@ -17,6 +18,10 @@ from .witnesses import (
     _championship_correct_questions, _championship_questions,
     _readable_championship_rows,
 )
+
+
+def _invalid(reason):
+    ErrorBus.raise_(SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID, reason=reason)
 
 
 def _compare_incumbents(mx, run_dir, receipt, cohort, config, answer_ids, graph):
@@ -82,7 +87,7 @@ def _compare_incumbents(mx, run_dir, receipt, cohort, config, answer_ids, graph)
 
 
 def _epoch_exam_context(
-        run_dir, receipt, course, school, cohort, scores, graph, challenge_grade):
+        run_dir, receipt, course, school, cohort, scores, graph, challenge_group):
     epoch = receipt["mentor_epoch"]
     if epoch["source_graph_sha256"] != _runtime_state._fingerprint(graph):
         raise ValueError("CHAMPIONSHIP_EPOCH_SOURCE_GRAPH_DRIFT")
@@ -92,7 +97,7 @@ def _epoch_exam_context(
     executable_release = _runtime_admission._read_executable_factory_release_artifact(
         run_dir, receipt)
     program = _factory_schedule.schedule_program_from_executable_release(executable_release)
-    grades = {
+    capability_groups = {
         grade.id: tuple(capability.id for capability in grade.capabilities)
         for grade in program.grades}
     allowed_scope = _curriculum_scheduler.assessment_capabilities(program, school)
@@ -105,15 +110,12 @@ def _epoch_exam_context(
     rubric = assessment_scope_contract(
         executable_release, scope).rubric_sha256
     cohort_rubric = cohort.rubric_version
-    checkpoint_origin_grade = receipt.get(
+    checkpoint_origin_group = receipt.get(
         "championship_checkpoint_origins", {}).get(school.current_student.sha256)
-    title_grade = challenge_grade or checkpoint_origin_grade or school.grade
-    if title_grade not in grades:
-        raise ValueError("CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID")
-    if checkpoint_origin_grade not in grades:
-        raise ValueError("CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID")
-    if not any(capability in scores for capability in grades[title_grade]):
-        raise ValueError("CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED")
+    if challenge_group not in capability_groups:
+        _invalid("CHAMPIONSHIP_EPOCH_CHALLENGE_GROUP_INVALID")
+    if not any(capability in scores for capability in capability_groups[challenge_group]):
+        _invalid("CHAMPIONSHIP_EPOCH_CHALLENGE_GROUP_UNMEASURED")
     context = {
         "cohort_sha256": cohort.digest,
         "rubric_sha256": rubric,
@@ -121,17 +123,16 @@ def _epoch_exam_context(
         "assessment_scope_sha256": _runtime_state._fingerprint(scope),
         "source_graph_sha256": _runtime_state._fingerprint(graph),
         "source_oracle_sha256": receipt["source_manifest_sha256"],
-        # Title jurisdiction follows the capability grade being adjudicated.
-        # The optimizer visit that produced this intact checkpoint remains
-        # separate provenance and must never suppress valid capability evidence.
-        "challenge_grade": title_grade,
-        "checkpoint_origin_grade": checkpoint_origin_grade,
+        # Capability IDs own titles. Group is explicit Factory/curriculum
+        # grouping context only; the checkpoint's optimizer origin is provenance.
+        "challenge_group": challenge_group,
+        "checkpoint_origin_group": checkpoint_origin_group,
     }
-    return grades, title_grade, context
+    return capability_groups, challenge_group, context
 
 
 def _load_epoch_incumbent_exam(
-        mx, run_dir, receipt, cohort, graph, grades, title_grade, context,
+        mx, run_dir, receipt, cohort, graph, capability_groups, group, context,
         sha, pointer,
 ):
     path = run_dir / pointer["filename"]
@@ -145,13 +146,13 @@ def _load_epoch_incumbent_exam(
             not _learning_student_ops._compatible_graphs(loaded_graph, graph)):
         raise ValueError("CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH")
     del own_adamw
-    challenge_caps = set(grades[title_grade])
-    grade_rows = tuple(
+    challenge_caps = set(capability_groups[group])
+    group_rows = tuple(
         row for row in cohort.rows if row["capability"] in challenge_caps)
-    grade_cohort = _bilqis_mlx_generated_assessment.make_cohort(
-        grade_rows, generator_version=cohort.generator_version,
+    group_cohort = _bilqis_mlx_generated_assessment.make_cohort(
+        group_rows, generator_version=cohort.generator_version,
         seed=cohort.seed, rubric_version=cohort.rubric_version)
-    readable = _readable_championship_rows(grade_cohort, loaded_graph, receipt)
+    readable = _readable_championship_rows(group_cohort, loaded_graph, receipt)
     subset = (
         _bilqis_mlx_generated_assessment.make_cohort(
             readable, generator_version=cohort.generator_version,
@@ -186,23 +187,23 @@ def _load_epoch_incumbent_exam(
 
 def _epoch_paired_examinations(mx, run_dir, receipt, course, school,
                                cohort, scores, predictions, graph, *,
-                               challenge_grade=None):
+                               challenge_group):
     """Re-examine only potentially displaced epoch incumbents on these rows."""
     epoch = receipt["mentor_epoch"]
-    grades, title_grade, context = _epoch_exam_context(
-        run_dir, receipt, course, school, cohort, scores, graph, challenge_grade)
+    capability_groups, group, context = _epoch_exam_context(
+        run_dir, receipt, course, school, cohort, scores, graph, challenge_group)
     challenger = {**context, "checkpoint": _dataclasses.asdict(school.current_student),
                   "scores": scores,
                   "questions": _championship_questions(cohort),
                   "correct_questions": _championship_correct_questions(cohort, predictions)}
     requested = _learning_epoch_championships.needed_incumbents(
-        epoch, grades=grades, challenger_exam=challenger)
+        epoch, capability_groups=capability_groups, challenger_exam=challenger)
     incumbents = {}
     for sha, pointer in sorted(requested.items()):
         if sha == school.current_student.sha256:
             incumbents[sha] = challenger
             continue
         incumbents[sha] = _load_epoch_incumbent_exam(
-            mx, run_dir, receipt, cohort, graph, grades, title_grade, context,
+            mx, run_dir, receipt, cohort, graph, capability_groups, group, context,
             sha, pointer)
-    return grades, challenger, incumbents
+    return capability_groups, challenger, incumbents

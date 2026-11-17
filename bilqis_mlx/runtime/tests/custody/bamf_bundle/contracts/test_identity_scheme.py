@@ -39,6 +39,15 @@ class IdentitySchemeCustodyTests(unittest.TestCase):
         with shape_patch(), patch('bilqis_mlx.runtime.mlx_checkpoint.assert_headroom'):
             return save_bamf_bundle(bundle, path)
 
+    def test_successor_generation_authority_binds_championship_sidecar(self):
+        bundle = candidate(parent_state())
+        left = replace(bundle, championship_state={"fixture": "left"})
+        right = replace(bundle, championship_state={"fixture": "right"})
+        self.assertNotEqual(
+            successor_candidate_identity_digest(left),
+            successor_candidate_identity_digest(right),
+        )
+
     def test_old_and_new_bundles_bind_recorded_scheme_on_readback(self):
         for scheme in (LEGACY_IDENTITY_SCHEME, RAW_IDENTITY_SCHEME):
             with self.subTest(scheme=scheme):

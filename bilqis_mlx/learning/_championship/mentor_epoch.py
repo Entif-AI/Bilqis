@@ -27,11 +27,16 @@ def _sha(value):
 
 
 def _pointer(pointer):
+    filename = pointer.get("filename") if isinstance(pointer, dict) else None
+    parts = filename.split("/") if isinstance(filename, str) else ()
+    legacy = (
+        len(parts) == 2 and parts[0] == "bundles"
+        and parts[1] not in (".", "..", ""))
+    native = (
+        len(parts) == 2 and parts[0] == "bamf-generations"
+        and parts[1].isdigit() and str(int(parts[1])) == parts[1])
     if (not isinstance(pointer, dict) or not _sha(pointer.get("sha256")) or
-            not isinstance(pointer.get("filename"), str) or
-            len(pointer["filename"].split("/")) != 2 or
-            pointer["filename"].split("/")[0] != "bundles" or
-            pointer["filename"].split("/")[1] in (".", "..", "") or
+            not isinstance(filename, str) or not (legacy or native) or
             type(pointer.get("optimizer_step")) is not int or
             pointer["optimizer_step"] < 0 or
             pointer.get("model_and_native_adamw") is not True):

@@ -8,9 +8,9 @@ from bilqis_mlx.learning.tests.championship.epoch_fixtures import (
 
 class EpochResetTests(EpochChampionshipTests):
     def test_experiment_rebase_clears_titles_without_making_baseline_a_champ(self):
-        first = _panel("c", 11, "C.0", 9, grade="C")
+        first = _panel("c", 11, "C.0", 9, group="C")
         earned, _, _ = advance_epoch(
-            _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
+            _epoch(), capability_groups=GRADES, challenger_exam=first, incumbent_exams={})
         earned["active_grade_soups"] = {
             "C": grade_soup_recipe(active_frontier(earned), "C", GRADES["C"])}
         old_student = _exam("d", 210)["checkpoint"]
@@ -25,9 +25,9 @@ class EpochResetTests(EpochChampionshipTests):
         self.assertFalse(rebased["baseline_challenge_required"])
 
     def test_reset_archives_earned_roles_and_soups_without_new_teacher(self):
-        first = _panel("c", 11, "C.0", 9, grade="C")
+        first = _panel("c", 11, "C.0", 9, group="C")
         original, _, _ = advance_epoch(
-            _epoch(), grades=GRADES, challenger_exam=first, incumbent_exams={})
+            _epoch(), capability_groups=GRADES, challenger_exam=first, incumbent_exams={})
         original["active_grade_soups"] = {
             "C": grade_soup_recipe(active_frontier(original), "C", GRADES["C"])}
         original["baseline_roles"] = {"A.0": "b" * 64}
@@ -60,14 +60,14 @@ class EpochResetTests(EpochChampionshipTests):
         current = _exam("c", 209)["checkpoint"]
         cleared, _ = reset_active_championships(
             _epoch(), student=current, generation=400)
-        same_step = _panel("c", 10, "C.0", 12, grade="C")
+        same_step = _panel("c", 10, "C.0", 12, group="C")
         result, changes, _ = advance_epoch(
-            cleared, grades=GRADES, challenger_exam=same_step, incumbent_exams={})
+            cleared, capability_groups=GRADES, challenger_exam=same_step, incumbent_exams={})
         self.assertEqual(changes, ())
         self.assertEqual(result["active_roles"], {})
-        later = _panel("d", 11, "C.0", 12, grade="C")
+        later = _panel("d", 11, "C.0", 12, group="C")
         result, changes, _ = advance_epoch(
-            cleared, grades=GRADES, challenger_exam=later, incumbent_exams={})
+            cleared, capability_groups=GRADES, challenger_exam=later, incumbent_exams={})
         self.assertEqual(changes, ("C.0",))
         self.assertEqual(result["active_roles"]["C.0"]["checkpoint"]["sha256"],
                          "d" * 64)

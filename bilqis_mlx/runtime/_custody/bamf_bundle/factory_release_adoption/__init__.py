@@ -185,6 +185,13 @@ def derive_factory_release_adoption_candidate(
         "source_approval_sha256": transition.source_approval_sha256,
         "transition_sha256": transition.digest,
     }
+    championship_state = parent.championship_state
+    if championship_state is not None:
+        from bilqis_mlx.learning.capability_championship_state import (
+            clear_active_championship_titles,
+        )
+        championship_state = clear_active_championship_titles(
+            dict(championship_state))
     return BamfBundleCandidate(
         parent.run_id,
         parent.generation + 1,
@@ -205,4 +212,5 @@ def derive_factory_release_adoption_candidate(
         parent.run_identity,
         parent.baseline_evidence,
         parent.learning_health_state,
+        championship_state,
     )

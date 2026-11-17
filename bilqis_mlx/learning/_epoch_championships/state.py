@@ -35,53 +35,66 @@ def _archive_invalid_role(updated: dict, capability: str, role: dict,
     archive = updated.setdefault("invalidated_active_roles", [])
     archive.append({
         "capability": capability,
-        "origin_grade": role.get("origin_grade"),
+        "capability_group": _role_group(role),
         "reason": reason,
         "role": deepcopy(role),
     })
 
 
-def _capability_grade(capability: str, grades: dict) -> str:
-    matches = tuple(grade for grade, capabilities in grades.items()
+def _capability_group(capability: str, capability_groups: dict) -> str:
+    matches = tuple(group for group, capabilities in capability_groups.items()
                     if capability in capabilities)
     if len(matches) != 1:
         raise ValueError("CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT")
     return matches[0]
 
 
-def _sanitize_role_origins(updated: dict, grades: dict) -> None:
-    """Keep title jurisdiction distinct from checkpoint-training provenance."""
+def _role_group(role: dict) -> str | None:
+    if not isinstance(role, dict):
+        return None
+    return role.get("capability_group", role.get("origin_grade"))
+
+
+def _checkpoint_origin_group(role: dict) -> str | None:
+    if not isinstance(role, dict):
+        return None
+    return role.get(
+        "checkpoint_origin_group",
+        role.get("checkpoint_origin_grade"),
+    )
+
+
+def _sanitize_role_groups(updated: dict, capability_groups: dict) -> None:
+    """Validate grouping without turning a developmental group into title authority."""
     roles = updated.setdefault("active_roles", {})
     invalid = []
     for capability, role in list(roles.items()):
-        title_grade = _capability_grade(capability, grades)
-        if title_grade not in grades or capability not in _grade_caps(grades, title_grade):
+        if not any(capability in capabilities
+                   for capabilities in capability_groups.values()):
+            continue
+        group = _capability_group(capability, capability_groups)
+        if capability not in _group_caps(capability_groups, group):
             raise ValueError("CHAMPIONSHIP_ACTIVE_ROLE_CAPABILITY_UNKNOWN")
-        origin = role.get("origin_grade") if isinstance(role, dict) else None
+        recorded_group = _role_group(role)
         if not championship_role_qualified(role):
             _archive_invalid_role(
                 updated, capability, role, "CHAMPIONSHIP_THRESHOLD_NOT_MET")
             del roles[capability]
             invalid.append(capability)
             continue
-        if origin != title_grade:
-            reason = ("TITLE_ORIGIN_PROVENANCE_MISSING" if origin is None else
-                      "CROSS_GRADE_TITLE_OWNER")
+        if recorded_group != group:
+            reason = ("CAPABILITY_GROUP_MISSING" if recorded_group is None else
+                      "CAPABILITY_GROUP_DRIFT")
             _archive_invalid_role(updated, capability, role, reason)
             del roles[capability]
             invalid.append(capability)
             continue
-        # Historical receipts predate the explicit separation between the
-        # capability's title grade and the grade whose retained optimizer update
-        # produced the whole-student checkpoint.  At that time they were forced
-        # to be identical, so the legacy field is sufficient migration proof.
-        checkpoint_origin = role.get("checkpoint_origin_grade")
-        if checkpoint_origin is None:
-            role["checkpoint_origin_grade"] = origin
-        elif checkpoint_origin not in grades:
+        checkpoint_origin = _checkpoint_origin_group(role)
+        if (checkpoint_origin is not None
+                and (not isinstance(checkpoint_origin, str)
+                     or not checkpoint_origin)):
             _archive_invalid_role(
-                updated, capability, role,
-                "CHECKPOINT_ORIGIN_PROVENANCE_INVALID")
+                updated, capability, role, "CHECKPOINT_ORIGIN_PROVENANCE_INVALID")
             del roles[capability]
             invalid.append(capability)
     if invalid:
@@ -95,14 +108,19 @@ def _sanitize_role_origins(updated: dict, grades: dict) -> None:
         updated["active_grade_soups"] = {}
 
 
-def sanitize_role_origins(epoch: dict, *, grades: dict) -> tuple[dict, bool]:
-    """Public neural-inert migration gate for active title provenance."""
+def sanitize_role_groups(epoch: dict, *, capability_groups: dict) -> tuple[dict, bool]:
+    """Public neural-inert validation gate for active capability grouping."""
     updated = deepcopy(epoch)
     before_roles = deepcopy(updated.get("active_roles", {}))
     before_soups = deepcopy(updated.get("active_grade_soups", {}))
-    _sanitize_role_origins(updated, grades)
+    _sanitize_role_groups(updated, capability_groups)
     return updated, (before_roles != updated.get("active_roles", {}) or
                      before_soups != updated.get("active_grade_soups", {}))
+
+
+def sanitize_role_origins(epoch: dict, *, grades: dict) -> tuple[dict, bool]:
+    """Legacy receipt reader retained until the mentor-epoch migration owns deletion."""
+    return sanitize_role_groups(epoch, capability_groups=grades)
 
 
 def reset_active_championships(epoch: dict, *, student: dict,
@@ -220,8 +238,17 @@ def active_frontier(epoch: dict) -> dict:
             if championship_role_qualified(item)}
 
 
-def _grade_caps(course_grades, grade):
-    result = tuple(course_grades[grade])
+def _group_caps(capability_groups, group):
+    result = tuple(capability_groups[group])
     if not result or len(result) != len(set(result)):
-        raise ValueError("CHAMPIONSHIP_EPOCH_INVALID_GRADE")
+        ErrorBus.raise_(
+            SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID,
+            reason="CHAMPIONSHIP_EPOCH_INVALID_GROUP")
     return result
+
+
+# Read-only compatibility names for pre-v1.2 mentor-epoch callers. New title
+# code must use the capability-group names above.
+_capability_grade = _capability_group
+_grade_caps = _group_caps
+_sanitize_role_origins = _sanitize_role_groups

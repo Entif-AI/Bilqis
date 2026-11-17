@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+from contextlib import ExitStack
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -23,6 +24,62 @@ def _evidence_receipt(bytes_written, evidence_objects, seconds):
             "persistence_seconds": seconds,
         },
     }
+
+
+def _prepare_native_resource_visit(temporary):
+    parent = SimpleNamespace(
+        retained_state=SimpleNamespace(optimizer_step=11),
+        optimizer_hyperparameters="hparams")
+    context = SimpleNamespace(release=object())
+    identity = SimpleNamespace(visit_id="visit:resource", policy_key="policy:resource")
+    selection = SimpleNamespace(
+        status="TEACHER_SELECTED", option_id="option:resource",
+        visit=SimpleNamespace(identity=identity),
+        offer=SimpleNamespace(
+            capability_id="capability:resource", source_seed=17,
+            rows=lambda: ({"id": "row:resource"},)))
+    cache = SimpleNamespace(generation=1, accepted_manifest_sha256="a" * 64)
+    transaction = SimpleNamespace(
+        parent=SimpleNamespace(optimizer_step=11), update_steps=1,
+        training_authorities=("authority",))
+    step = SimpleNamespace(
+        transaction=transaction,
+        realized_cost={
+            "wall_seconds": 30.0, "optimizer_steps": 1,
+            "c08_memory_budget_bytes": 64 * 1024 ** 3})
+    decision = SimpleNamespace(
+        accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
+    retained = SimpleNamespace(optimizer_step=12)
+    successor = object()
+    evidence = _evidence_receipt(300, 4, 0.005)
+    capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
+    patches = (
+        ("_execution_context", {"return_value": (parent, context, "atlas", "feature")}),
+        ("schedule_program_from_executable_release", {"return_value": "program"}),
+        ("accepted_priority_school", {"return_value": "school"}),
+        ("select_foundation_priority_visit", {"return_value": selection}),
+        ("bind_accepted_execution_cache", {"return_value": cache}),
+        ("candidate_step_horizon", {"return_value": 1}),
+        ("rejection_attempt_ordinals", {"return_value": (1, 1)}),
+        ("_Capture", {"return_value": capture}),
+        ("FactoryDeliveryObservation", {"return_value": "observation"}),
+        ("execute_accepted_priority_candidate", {"return_value": step}),
+        ("evaluate_factory_retention_candidate", {"return_value": SimpleNamespace(
+            candidate_state=retained, parent_state=parent.retained_state)}),
+        ("issue_factory_retention_decision", {"return_value": decision}),
+        ("derive_accepted_teacher_successor", {"return_value": successor}),
+        ("bind_factory_baseline_successor", {"return_value": successor}),
+    )
+    prefix = "bilqis_mlx.runtime.bamf_operator.session."
+    with ExitStack() as stack:
+        handles = {}
+        for name, kwargs in patches:
+            handles[name] = stack.enter_context(patch(prefix + name, **kwargs))
+        stack.enter_context(patch(
+            "bilqis_mlx.runtime.bamf_operator.championship."
+            "bind_accepted_championship_successor", return_value=successor))
+        prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
+    return prepared, successor, handles["derive_accepted_teacher_successor"], evidence
 
 
 def _candidate_executor(transactions, case):
@@ -202,6 +259,9 @@ class BamfOperatorRoutingTests(unittest.TestCase):
                 return_value=successor) as derive, patch(
                 "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
                 return_value=successor), patch(
+                "bilqis_mlx.runtime.bamf_operator.championship."
+                "bind_accepted_championship_successor",
+                return_value=successor), patch(
                 "bilqis_mlx.runtime.bamf_operator.session_support.shutil.disk_usage",
                 return_value=SimpleNamespace(used=123)):
             prepared = prepare_bamf_visit(Path("/run"), steps_per_visit=16)
@@ -237,72 +297,7 @@ class BamfOperatorRoutingTests(unittest.TestCase):
 
     def test_accepted_visit_persists_native_resource_observation(self):
         with TemporaryDirectory() as temporary:
-            parent = SimpleNamespace(
-                retained_state=SimpleNamespace(optimizer_step=11),
-                optimizer_hyperparameters="hparams",
-            )
-            context = SimpleNamespace(release=object())
-            identity = SimpleNamespace(visit_id="visit:resource", policy_key="policy:resource")
-            selection = SimpleNamespace(
-                status="TEACHER_SELECTED",
-                option_id="option:resource",
-                visit=SimpleNamespace(identity=identity),
-                offer=SimpleNamespace(
-                    capability_id="capability:resource", source_seed=17,
-                    rows=lambda: ({"id": "row:resource"},),
-                ),
-            )
-            cache = SimpleNamespace(
-                generation=1, accepted_manifest_sha256="a" * 64)
-            transaction = SimpleNamespace(
-                parent=SimpleNamespace(optimizer_step=11), update_steps=1,
-                training_authorities=("authority",),
-            )
-            step = SimpleNamespace(
-                transaction=transaction,
-                realized_cost={
-                    "wall_seconds": 30.0,
-                    "optimizer_steps": 1,
-                    "c08_memory_budget_bytes": 64 * 1024 ** 3,
-                },
-            )
-            decision = SimpleNamespace(
-                accepted=True, to_record=lambda: {"decision": "ACCEPTED"})
-            retained = SimpleNamespace(optimizer_step=12)
-            successor = object()
-            evidence = _evidence_receipt(300, 4, 0.005)
-            capture = SimpleNamespace(finalize=lambda **_kwargs: evidence)
-            with patch(
-                    "bilqis_mlx.runtime.bamf_operator.session._execution_context",
-                    return_value=(parent, context, "atlas", "feature")), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.schedule_program_from_executable_release",
-                    return_value="program"), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.accepted_priority_school",
-                    return_value="school"), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.select_foundation_priority_visit",
-                    return_value=selection), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.bind_accepted_execution_cache",
-                    return_value=cache), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.candidate_step_horizon",
-                    return_value=1), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.rejection_attempt_ordinals",
-                    return_value=(1, 1)), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session._Capture",
-                    return_value=capture), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.FactoryDeliveryObservation",
-                    return_value="observation"), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.execute_accepted_priority_candidate",
-                    return_value=step), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
-                    return_value=SimpleNamespace(
-                        candidate_state=retained, parent_state=parent.retained_state)), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
-                    return_value=decision), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
-                    return_value=successor) as derive, patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
-                    return_value=successor):
-                prepared = prepare_bamf_visit(Path(temporary), steps_per_visit=16)
+            prepared, successor, derive, evidence = _prepare_native_resource_visit(temporary)
         self.assertIs(prepared.successor, successor)
         event = derive.call_args.kwargs["delivery_events"][0]
         self.assertEqual(event["event"], "BAMF_C16_3_ACCEPTED")
