@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from bilqis_mlx.errors import BilqisError
+from bilqis_mlx.runtime.priority_qualification import _grade as project_grade
 from bilqis_mlx.runtime.tests.teacher.priority.test_priority_execution import (
     HParams,
     HeldOffer,
@@ -87,6 +88,42 @@ def test_accepted_selection_calls_policy_once(priority):
     assert policy.call_args.args[1]['replayed'] is True
     assert context.call_args.args[5]['replayed'] is True
     assert result.metadata['how_context'] == {'diagnostic_context_key': 'selected'}
+
+
+@pytest.mark.parametrize('grades', [
+    (),
+    (SimpleNamespace(id='g1', capabilities=(SimpleNamespace(id='cap'),)),
+     SimpleNamespace(id='g2', capabilities=(SimpleNamespace(id='cap'),))),
+])
+def test_lawful_selection_fails_closed_when_how_grade_projection_is_invalid(priority, grades):
+    option = SimpleNamespace(stable_id='o', action_kind=3, eligible_since=7,
+        downstream_unlocks=2, context=SimpleNamespace(capability_id='cap', scope='scope'))
+    frontier = SimpleNamespace(evidence=(('o', 'evidence'),))
+    parent = SimpleNamespace(retained_state='student')
+    school = SimpleNamespace(stage='MAIN', current_student=SimpleNamespace(sha256='student-id'))
+    program = SimpleNamespace(grades=grades)
+    assert project_grade(program, school, 'cap') is None
+    offer = Offer()
+    qualified = SimpleNamespace(
+        ranked=SimpleNamespace(ordered=(option,), tiers=(('o', 1),)),
+        offers=(('o', offer),), holds=())
+    with patch.object(priority, '_accepted_parent', return_value=(parent, object())), \
+         patch.object(priority, '_c03_projection', return_value=SimpleNamespace(teacher_state={})), \
+         patch.object(priority, 'restore_teacher_lineage', return_value='epoch'), \
+         patch.object(priority, 'candidate_identity_digest', return_value='student-id'), \
+         patch.object(priority, '_teacher', return_value={}), \
+         patch.object(priority, 'contract_digest', return_value='epoch-digest'), \
+         patch.object(priority, 'salience_priority_features', return_value={}), \
+         patch.object(priority, 'requalify_priority', return_value=qualified), \
+         patch.object(priority, '_grade', side_effect=project_grade), \
+         patch.object(priority, 'select_visit_policy') as policy:
+        with pytest.raises(BilqisError) as failure:
+            priority.select_accepted_priority_visit(
+                '/run', SimpleNamespace(release=None), frontier, None, None,
+                (('o', qualified.offers[0][1]),), None, school, None, None,
+                program=program, now=1, lawful_frontier=lawful())
+    assert failure.value.context.get('reason') == 'BAMF_PRIORITY_PROGRAM_INVALID'
+    policy.assert_not_called()
 
 
 def test_stale_lawful_frontier_rejects_before_visit_or_source_execution(priority):

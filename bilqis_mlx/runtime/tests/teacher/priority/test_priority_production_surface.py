@@ -10,12 +10,12 @@ def test_direct_foundation_selector_is_retired():
     assert "select_accepted_teacher_visit" not in custody.__all__
 
 
-def test_production_runtime_does_not_call_lower_level_custody_selector():
-    runtime_root = Path(__file__).resolve().parents[3]
+def test_production_package_does_not_call_lower_level_custody_selector():
+    package_root = Path(__file__).resolve().parents[4]
     violations = []
-    for path in runtime_root.rglob("*.py"):
+    for path in package_root.rglob("*.py"):
         if "tests" in path.parts or path.name == "accepted_teacher_custody.py":
             continue
         if "select_accepted_teacher_visit" in path.read_text(encoding="utf-8"):
-            violations.append(path.relative_to(runtime_root).as_posix())
+            violations.append(path.relative_to(package_root).as_posix())
     assert violations == []

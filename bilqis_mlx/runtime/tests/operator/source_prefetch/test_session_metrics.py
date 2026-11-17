@@ -82,6 +82,8 @@ def test_retention_threads_source_metrics_into_resource_observation():
                             return_value=successor), patch(
                                 "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
                                 return_value=successor), patch(
+                                    "bilqis_mlx.runtime.bamf_operator.championship.bind_accepted_championship_successor",
+                                    return_value=successor), patch(
                                     "bilqis_mlx.runtime.outcomes.issuance.build_outcome",
                                     return_value={}), patch(
                                         "bilqis_mlx.runtime.outcomes.issuance.credited_visit",
