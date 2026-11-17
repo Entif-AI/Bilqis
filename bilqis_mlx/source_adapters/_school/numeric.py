@@ -1,7 +1,9 @@
 """Finite numeric source construction and obligation witnesses."""
 from ...live_grade_c import PLANS
 from ...numeric_curriculum import draw_numeric
-from ..numeric import check_numeric, semantic_footprint
+from ..numeric import (
+    check_numeric, classify_numeric_weakness, semantic_footprint,
+)
 
 def draw_c(*, source_root, graph, course, capability, seed, each,
            profile_parameters=None):

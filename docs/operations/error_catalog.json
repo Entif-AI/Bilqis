@@ -16022,6 +16022,20 @@
       "recovery_key": "errors.factory.profile_expansion.invalid.recovery",
       "self_heal_owner": null,
       "title": "Factory profile expansion invalid"
+    },
+    {
+      "code": "FACTORY.WEAKNESS.INVALID",
+      "disposition": "CORRECT_INPUT_OR_STATE",
+      "legacy_codes": [],
+      "message_key": "errors.factory.weakness.invalid.message",
+      "message_template": "Factory structural weakness contract invalid: {reason}",
+      "next_action": "Restore the provider-declared weakness classifier, exact source context, and fresh-equivalent construction contract before retrying.",
+      "operator_steps": [],
+      "owner": "factory.weakness",
+      "preserve_state": true,
+      "recovery_key": "errors.factory.weakness.invalid.recovery",
+      "self_heal_owner": null,
+      "title": "Factory structural weakness contract invalid"
     }
   ]
 }

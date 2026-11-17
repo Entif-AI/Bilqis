@@ -38,16 +38,26 @@ SUPPORTED_SOURCE_PROVIDER_RESUME_EDGES = (
     SourceProviderResumeEdge(
         "numeric-accepted-to-current", "source.finite-numeric/v2",
         "2758cf678e9d2a45f3f5a1b5edd85d5ae513e54506c0d98853b9402b91572754",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca",
         "numeric-modular"),
     SourceProviderResumeEdge(
         "numeric-modular-to-current", "source.finite-numeric/v2",
         "a52f346478852775053f07a79342e5a9e9266bc64a2df6fe953d6a64881c8b7d",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca",
         "numeric-modular"),
     SourceProviderResumeEdge(
+        "numeric-pre-r13-adr106-to-current", "source.finite-numeric/v2",
+        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca",
+        "numeric-adr106-r13"),
+    SourceProviderResumeEdge(
+        "numeric-pre-r13-to-current", "source.finite-numeric/v2",
+        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca",
+        "numeric-r13"),
+    SourceProviderResumeEdge(
         "numeric-current-adr106-cohort-repair", "source.finite-numeric/v2",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
-        "621257de25895cc5cfcf0b9730c43fbe04260a3aa68732cfcc41a43988cd8141",
+        "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca",
+        "59b8eecb174e70bef7c049b73db1a71c9151e940f6c06a4dec6d22fb3d3be3ca",
         "numeric-adr106"),
 )

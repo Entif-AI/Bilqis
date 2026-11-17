@@ -34,6 +34,15 @@ from .model import SourceAdapter
 SCHEMA = "bilqis.mlx.factory-release/v2"
 
 
+def _source_adapter_record(item: SourceAdapter) -> dict:
+    """Preserve historical v2 bytes while sealing declared R13 classifier metadata."""
+    record = asdict(item)
+    if item.weakness_classifier_id is None:
+        record.pop("weakness_classifier_id")
+        record.pop("weakness_classifier_sha256")
+    return record
+
+
 from ._executable_release.primitives import (
     _ReleaseError,
     _require,

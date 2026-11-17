@@ -85,7 +85,9 @@ def _verify_release_evidence(release: ExecutableFactoryRelease) -> None:
         verification.execution_plan_sha256 == release.execution_plan.digest() and
         verification.source_binding_sha256 == release.source_bindings.digest() and
         verification.provider_descriptors_sha256 ==
-            _api._digest([_api.asdict(item) for item in release.source_adapters]) and
+            _api._digest([
+                _api._source_adapter_record(item)
+                for item in release.source_adapters]) and
         verification.answer_modalities_sha256 ==
             _api._digest([_api.asdict(item) for item in release.answer_modalities]) and
         verification.answer_heads_sha256 ==

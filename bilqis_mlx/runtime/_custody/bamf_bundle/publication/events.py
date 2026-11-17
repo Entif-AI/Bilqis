@@ -39,6 +39,10 @@ def _validated_c03_rejection_evidence(student: CompleteStudent, pointer: dict,
     if evidence.get('how_outcome') is not None:
         from bilqis_mlx.runtime.outcomes.issuance import require_issued_outcome
         require_issued_outcome(evidence['how_outcome'], evidence)
+    from bilqis_mlx.runtime.structural_weakness_replay import (
+        validate_rejection_weaknesses,
+    )
+    validate_rejection_weaknesses(evidence)
     return {**evidence, "teacher_visit": identity.to_record()}
 
 

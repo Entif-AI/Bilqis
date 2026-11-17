@@ -21,6 +21,7 @@ Check = Callable[..., bool]
 Witness = Callable[..., bool]
 Dependencies = Callable[..., tuple[SupplementalEvidenceSpec, ...]]
 SemanticFootprint = Callable[[dict], tuple[str, ...]]
+WeaknessClassifier = Callable[[dict], object]
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,7 @@ class RegisteredSourceAdapter:
     witness: Witness | None = None
     dependencies: Dependencies | None = None
     semantic_footprint: SemanticFootprint | None = None
+    weakness_classifier: WeaknessClassifier | None = None
 
 
 def validate_instructional_constituents(row, *, curriculum, plan,
@@ -74,7 +76,11 @@ class SourceAdapterRegistry:
                 (adapter.dependencies is not None and
                  not callable(adapter.dependencies)) or
                 (adapter.semantic_footprint is not None and
-                 not callable(adapter.semantic_footprint))):
+                 not callable(adapter.semantic_footprint)) or
+                ((adapter.descriptor.weakness_classifier_id is None)
+                 != (adapter.weakness_classifier is None)) or
+                (adapter.weakness_classifier is not None
+                 and not callable(adapter.weakness_classifier))):
             raise ValueError("FACTORY_SOURCE_CONSTRUCTOR_AND_CHECKER_REQUIRED")
         key = adapter.descriptor.generator_id
         if key in self._by_generator:

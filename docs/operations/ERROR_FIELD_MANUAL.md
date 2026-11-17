@@ -2013,6 +2013,18 @@ Message: Factory profile expansion invalid: {reason}
 
 Recovery: Preserve the accepted Factory release and correct the requested profile or its source and semantic authorities before retrying.
 
+### `FACTORY.WEAKNESS.INVALID`
+
+Factory structural weakness contract invalid.
+
+Owner: `factory.weakness`
+Disposition: `CORRECT_INPUT_OR_STATE`
+Self-heal owner: `none`
+
+Message: Factory structural weakness contract invalid: {reason}
+
+Recovery: Restore the provider-declared weakness classifier, exact source context, and fresh-equivalent construction contract before retrying.
+
 ## Operational signals and blockers
 
 These terms are not exceptions. They describe a controlled stop, handoff, or gate.

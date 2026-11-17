@@ -41,4 +41,9 @@ def replay_rejected_outcomes(run_dir, parent, cache, teacher):
                 or observation['retained_steps'] != 0):
             invalid()
         teacher = apply_outcome(teacher, observation)
+        from bilqis_mlx.runtime.structural_weakness_replay import (
+            apply_rejection_weaknesses,
+        )
+        teacher = apply_rejection_weaknesses(
+            teacher, evidence, receipt_sha)
     return teacher

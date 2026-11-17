@@ -63,6 +63,8 @@ class OutcomeRecoveryTests(NativeSourceFixture, unittest.TestCase):
 
     def candidate_after_rejection(self):
         parent, teacher, cache, evidence = self.fixture()
+        evidence['structural_weaknesses'] = [
+            rejection_fixture._structural_weakness_evidence(evidence)]
         record_bamf_rejection(self.run, parent, evidence)
         folded = replay_rejected_outcomes(self.run, parent, cache, teacher)
         initial = selection_teacher()
@@ -90,6 +92,7 @@ class OutcomeRecoveryTests(NativeSourceFixture, unittest.TestCase):
     def assert_credited(self, loaded):
         teacher = restore_teacher_lineage(loaded.teacher_state).teacher()
         self.assertEqual(teacher['causal_experiment']['events'], 2)
+        self.assertEqual(len(teacher['structural_weaknesses']['classes']), 1)
         record = teacher['causal_experiment']['contexts']['A.REJECT|RECOVERY_1|factory/7']
         self.assertEqual(sum(row['retained'] for row in record.values()), 1)
         self.assertEqual(sum(row['unsafe'] for row in record.values()), 1)
