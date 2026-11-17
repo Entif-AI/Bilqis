@@ -105,7 +105,7 @@ class DataPlaneEventMixin:
     def indexed_event_tail(self, run_dir: Path, after_byte: int = 0) -> dict:
         """Return ordered indexed payloads after one durable byte frontier."""
         if type(after_byte) is not int or after_byte < 0:
-            raise ValueError("DATA_PLANE_EVENT_CURSOR_INVALID")
+            raise ValueError(DataPlaneError.EVENT_CURSOR_INVALID.value)
         synced = self.sync_event_ledger(run_dir)
         key = synced["run_dir"]
         with self._lock:
@@ -151,7 +151,7 @@ class DataPlaneEventMixin:
                 (key,)).fetchone()
         expected = (ledger_identity[0], ledger_identity[1], indexed_bytes)
         if current is None or current != expected:
-            raise ValueError("DATA_PLANE_EVENT_PROJECTION_FRONTIER_DRIFT")
+            raise ValueError(DataPlaneError.EVENT_PROJECTION_FRONTIER_DRIFT.value)
         with self.transaction():
             self._db.execute(
                 "INSERT OR REPLACE INTO event_projections("

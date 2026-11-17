@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 SCHEMA = "bilqis.mlx.bamf-priority-rejection-projection/v1"
+REJECTION_ROW_FIELDS = 4
 
 
 def encode(projection) -> dict:
@@ -27,7 +28,8 @@ def restore(projection, record: dict) -> bool:
         if record.get("schema") != SCHEMA:
             return False
         rows = [tuple(row) for row in record["rows"]]
-        if any(len(row) != 4 or any(not isinstance(value, str) for value in row)
+        if any(len(row) != REJECTION_ROW_FIELDS
+               or any(not isinstance(value, str) for value in row)
                for row in rows):
             return False
         seen = set(record["seen_receipts"])
