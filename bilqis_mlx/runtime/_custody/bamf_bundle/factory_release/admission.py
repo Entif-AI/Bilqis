@@ -45,6 +45,13 @@ def _invalid(reason="BAMF_FACTORY_RELEASE_ADMISSION_BINDING_INVALID") -> None:
 def _same_inert_state(parent: CompleteStudent, candidate: BamfBundleCandidate) -> bool:
     parent_state = parent.retained_state
     candidate_state = candidate.retained_state
+    championship_state = parent.championship_state
+    if championship_state is not None:
+        from bilqis_mlx.learning.capability_championship_state import (
+            clear_active_championship_titles,
+        )
+        championship_state = clear_active_championship_titles(
+            dict(championship_state))
     return (
         parent.run_identity == candidate.run_identity
         and parent.run_id == candidate.run_id
@@ -70,6 +77,7 @@ def _same_inert_state(parent: CompleteStudent, candidate: BamfBundleCandidate) -
         and dict(parent.correction_frontier) == dict(candidate.correction_frontier)
         and dict(parent.teacher_state) == dict(candidate.teacher_state)
         and dict(parent.evaluation_contract) == dict(candidate.evaluation_contract)
+        and candidate.championship_state == championship_state
     )
 
 

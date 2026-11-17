@@ -14,8 +14,8 @@ from bilqis_mlx.learning.mentor_epoch import _pointer
 def _role_receipt(challenger_exam: dict, capability: str,
                   mastered: tuple[str, ...], *, prior=None, scope=None,
                   surviving_battery=None, owner_maxed=None,
-                  archive_exams=(), origin_grade=None,
-                  checkpoint_origin_grade=None, qualification_score=None) -> dict:
+                  archive_exams=(), capability_group: str,
+                  checkpoint_origin_group=None, qualification_score=None) -> dict:
     pointer = challenger_exam["checkpoint"]
     score = challenger_exam["scores"][capability]
     scope = tuple(scope or (capability,))
@@ -54,6 +54,19 @@ def _role_receipt(challenger_exam: dict, capability: str,
         ErrorBus.Raise(
             SCHOOL.MODEL_TOPOLOGY.INVALID,
             reason="championship role qualification threshold not met")
+    if not isinstance(capability_group, str) or not capability_group:
+        ErrorBus.raise_(
+            SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID,
+            reason="CHAMPIONSHIP_CAPABILITY_GROUP_REQUIRED")
+    checkpoint_origin_group = (
+        challenger_exam.get("checkpoint_origin_group")
+        if checkpoint_origin_group is None else checkpoint_origin_group)
+    if (checkpoint_origin_group is not None
+            and (not isinstance(checkpoint_origin_group, str)
+                 or not checkpoint_origin_group)):
+        ErrorBus.raise_(
+            SCHOOL.BAMF_CAPABILITY_EVIDENCE.INVALID,
+            reason="CHAMPIONSHIP_CHECKPOINT_ORIGIN_GROUP_INVALID")
     return {
         **({"complete_solver_provenance": deepcopy(challenger_exam["complete_solver_provenance"])}
            if "complete_solver_provenance" in challenger_exam else {}),
@@ -70,14 +83,10 @@ def _role_receipt(challenger_exam: dict, capability: str,
         "championship_qualification_total": qualification_score["total"],
         "breadth": len(mastered), "perfect_capabilities": list(mastered),
         "maxed": bool(owner_maxed),
-        # `origin_grade` remains the stable title-jurisdiction field used by
-        # soups/mentor routing.  The optimizer visit that created the intact
-        # whole-student checkpoint is separate provenance and may differ.
-        "origin_grade": (capability.partition(".")[0]
-                         if origin_grade is None else origin_grade),
-        "checkpoint_origin_grade": (
-            challenger_exam.get("checkpoint_origin_grade")
-            if checkpoint_origin_grade is None else checkpoint_origin_grade),
+        # Capability ID is the title jurisdiction.  The opaque group is only
+        # an accepted-Factory grouping context for sibling/fan-out mechanics.
+        "capability_group": capability_group,
+        "checkpoint_origin_group": checkpoint_origin_group,
         "qualification_witnesses": list(proofs.values()),
         "surviving_battery": list(surviving_battery),
         "checkpoint": dict(pointer),
@@ -169,11 +178,13 @@ def _resolve_title_match(*, capability: str, prior: dict, challenger_exam: dict,
         winner_exam, capability, mastered, prior=prior,
         scope=qualification_scope, surviving_battery=battery,
         owner_maxed=owner_maxed, archive_exams=(gate_exam,),
-        origin_grade=prior["origin_grade"],
-        checkpoint_origin_grade=(
-            challenger_exam.get("checkpoint_origin_grade")
+        capability_group=(
+            prior.get("capability_group") or prior.get("origin_grade")),
+        checkpoint_origin_group=(
+            challenger_exam.get("checkpoint_origin_group")
             if challenger_wins else
-            prior.get("checkpoint_origin_grade", prior.get("origin_grade"))),
+            prior.get("checkpoint_origin_group",
+                      prior.get("checkpoint_origin_grade"))),
         qualification_score=(
             challenger_exam["scores"][capability] if challenger_wins else {
                 "correct": prior.get(

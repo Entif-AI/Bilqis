@@ -85,8 +85,8 @@ def assessment_exam(assessment, binding, *, challenge_group):
     return {
         **_source_context(assessment.cohort),
         "checkpoint": asdict(binding.checkpoint),
-        "checkpoint_origin_grade": binding.checkpoint_origin_group,
-        "challenge_grade": challenge_group,
+        "checkpoint_origin_group": binding.checkpoint_origin_group,
+        "challenge_group": challenge_group,
         "complete_solver_provenance": binding.provenance(),
         "scores": {capability: dict(zip(("correct", "total"), assessment.score(capability)))
                    for capability, _ in assessment.cohort.capability_groups},

@@ -2054,7 +2054,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2094** raw raises across **294** files. The baseline gate permits only reduction.
+Current production scan: **2082** raw raises across **294** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -2350,7 +2350,6 @@ Current production scan: **2094** raw raises across **294** files. The baseline 
 | `CHAMPIONSHIP_BATTERY_RESULT_DRIFT` | 1 | `bilqis_mlx/learning/_championship/championship_witnesses.py` |
 | `CHAMPIONSHIP_CAPABILITY_GROUP_AMBIGUOUS_OR_ABSENT` | 2 | `bilqis_mlx/learning/_epoch_championships/competition.py`, `bilqis_mlx/learning/_epoch_championships/state.py` |
 | `CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_CONFLICT` | 2 | `bilqis_mlx/learning/_championship_runtime/migration.py` |
-| `CHAMPIONSHIP_CHECKPOINT_ORIGIN_PROVENANCE_INVALID` | 2 | `bilqis_mlx/learning/_championship_runtime/exams.py`, `bilqis_mlx/learning/_epoch_championships/competition.py` |
 | `CHAMPIONSHIP_COHORT_RUBRIC_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/_championship/championship_witnesses.py` |
 | `CHAMPIONSHIP_COMPLETE_SOLVER_PROVENANCE_INVALID` | 1 | `bilqis_mlx/learning/_championship/championship_witnesses.py` |
 | `CHAMPIONSHIP_EARNING_CHECKPOINT_UNSAFE` | 1 | `bilqis_mlx/learning/_championship_runtime/witnesses.py` |
@@ -2362,13 +2361,9 @@ Current production scan: **2094** raw raises across **294** files. The baseline 
 | `CHAMPIONSHIP_EARNING_SCORE_DRIFT` | 1 | `bilqis_mlx/learning/_championship_runtime/witnesses.py` |
 | `CHAMPIONSHIP_EPOCH_ACTIVE_ROLES_INVALID` | 1 | `bilqis_mlx/learning/_epoch_championships/state.py` |
 | `CHAMPIONSHIP_EPOCH_ACTIVE_ROLE_DRIFT` | 1 | `bilqis_mlx/learning/_epoch_championships/state.py` |
-| `CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_INVALID` | 2 | `bilqis_mlx/learning/_championship_runtime/exams.py`, `bilqis_mlx/learning/_epoch_championships/qualification.py` |
-| `CHAMPIONSHIP_EPOCH_CHALLENGE_GRADE_UNMEASURED` | 1 | `bilqis_mlx/learning/_championship_runtime/exams.py` |
 | `CHAMPIONSHIP_EPOCH_INCOMPARABLE_INCUMBENT_GRAPH` | 1 | `bilqis_mlx/learning/_championship_runtime/exams.py` |
 | `CHAMPIONSHIP_EPOCH_INCOMPLETE_EXAM` | 1 | `bilqis_mlx/learning/_championship_runtime/exams.py` |
 | `CHAMPIONSHIP_EPOCH_INCUMBENT_EXAM_REQUIRED` | 1 | `bilqis_mlx/learning/_epoch_championships/qualification.py` |
-| `CHAMPIONSHIP_EPOCH_INVALID_GRADE` | 1 | `bilqis_mlx/learning/_epoch_championships/state.py` |
-| `CHAMPIONSHIP_EPOCH_NO_MEASURED_TITLE_GRADE` | 1 | `bilqis_mlx/learning/_championship_runtime/orchestration.py` |
 | `CHAMPIONSHIP_EPOCH_SAME_COHORT_REQUIRED` | 1 | `bilqis_mlx/learning/_epoch_championships/qualification.py` |
 | `CHAMPIONSHIP_EPOCH_SCHOOL_IDENTITY_RESET_REQUIRED` | 1 | `bilqis_mlx/learning/_championship_runtime/exams.py` |
 | `CHAMPIONSHIP_EPOCH_SCORE_TOTAL_DRIFT` | 1 | `bilqis_mlx/learning/_epoch_championships/qualification.py` |
@@ -2382,14 +2377,9 @@ Current production scan: **2094** raw raises across **294** files. The baseline 
 | `CHAMPIONSHIP_FANOUT_SCREEN_SCORE_DRIFT` | 1 | `bilqis_mlx/learning/_epoch_championships/qualification.py` |
 | `CHAMPIONSHIP_FANOUT_UNSAFE_INCUMBENT` | 1 | `bilqis_mlx/learning/_championship_runtime/matches.py` |
 | `CHAMPIONSHIP_HISTORICAL_SETTLEMENT_INVALID` | 1 | `bilqis_mlx/learning/_championship_runtime/governance.py` |
-| `CHAMPIONSHIP_INCOMPARABLE_CUMULATIVE_COHORT` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
-| `CHAMPIONSHIP_INCOMPARABLE_EXAM_CONTEXT` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
-| `CHAMPIONSHIP_INCOMPLETE_CUMULATIVE_SCHOOL` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
-| `CHAMPIONSHIP_INCOMPLETE_TARGET_GRADE_OR_INCUMBENTS` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
 | `CHAMPIONSHIP_INITIAL_EPOCH_IDENTITY_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
 | `CHAMPIONSHIP_INITIAL_EPOCH_ROLE_DRIFT` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
 | `CHAMPIONSHIP_INITIAL_EPOCH_SOUPS_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/mentor_epoch.py` |
-| `CHAMPIONSHIP_INVALID_SOURCE_SCORES` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
 | `CHAMPIONSHIP_LAST_RETAINED_GRADE_INVALID` | 1 | `bilqis_mlx/learning/_championship_runtime/migration.py` |
 | `CHAMPIONSHIP_QUESTION_IDENTITY_DRIFT` | 1 | `bilqis_mlx/learning/_championship/championship_witnesses.py` |
 | `CHAMPIONSHIP_QUESTION_SCORE_DRIFT` | 1 | `bilqis_mlx/learning/_championship/championship_witnesses.py` |
@@ -2407,6 +2397,7 @@ Current production scan: **2094** raw raises across **294** files. The baseline 
 | `CHAMPIONSHIP_SOURCE_CONTEXT_REPAIR_CONTENT_DRIFT` | 1 | `bilqis_mlx/runtime/_custody/championship_source_repair.py` |
 | `CHAMPIONSHIP_SOURCE_CONTEXT_REPAIR_CUSTODY_DRIFT` | 1 | `bilqis_mlx/runtime/_custody/championship_source_repair.py` |
 | `CHAMPIONSHIP_SOURCE_CONTEXT_REPAIR_IDENTITY_DRIFT` | 1 | `bilqis_mlx/runtime/_custody/championship_source_repair.py` |
+| `CHAMPIONSHIP_TEST_SCORE_INVALID` | 1 | `bilqis_mlx/learning/tests/championship/epoch_fixtures.py` |
 | `CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_DRIFT` | 1 | `bilqis_mlx/learning/_epoch_championships/receipts.py` |
 | `CHAMPIONSHIP_TITLE_MATCH_BATTERY_RESULT_MISSING` | 1 | `bilqis_mlx/learning/_epoch_championships/receipts.py` |
 | `CHAMPIONSHIP_TITLE_MATCH_CURRENT_OWNER_DRIFT` | 1 | `bilqis_mlx/learning/_epoch_championships/receipts.py` |
@@ -2420,7 +2411,6 @@ Current production scan: **2094** raw raises across **294** files. The baseline 
 | `CHAMPIONSHIP_TITLE_MATCH_RESULTS_INVALID` | 1 | `bilqis_mlx/learning/_epoch_championships/receipts.py` |
 | `CHAMPIONSHIP_TITLE_MATCH_TOTAL_DRIFT` | 1 | `bilqis_mlx/learning/_epoch_championships/receipts.py` |
 | `CHAMPIONSHIP_TITLE_MATCH_UNSAFE_INCUMBENT` | 1 | `bilqis_mlx/learning/_championship_runtime/matches.py` |
-| `CHAMPIONSHIP_WHOLE_STUDENT_OWN_ADAMW_REQUIRED` | 1 | `bilqis_mlx/learning/_championship/championship_policy.py` |
 | `CHAMPION_CONFIDENCE_ACTIVE_GRADE_ROLE_DRIFT` | 1 | `bilqis_mlx/learning/_championship/champion_confidence.py` |
 | `CHAMPION_CONFIDENCE_ACTIVE_ROLE_ENTITLEMENT_DRIFT` | 1 | `bilqis_mlx/learning/_championship/champion_confidence.py` |
 | `CHAMPION_CONFIDENCE_ACTIVE_ROLE_PROVENANCE_DRIFT` | 1 | `bilqis_mlx/learning/_championship/champion_confidence.py` |

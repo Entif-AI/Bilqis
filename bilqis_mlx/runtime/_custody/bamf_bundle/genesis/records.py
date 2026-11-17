@@ -141,6 +141,8 @@ def _candidate_identity_payload(candidate, *, allow_missing_run_identity: bool) 
         }
         if candidate.baseline_evidence is not None:
             payload["baseline_evidence"] = dict(candidate.baseline_evidence)
+        if candidate.championship_state is not None:
+            payload["championship_state"] = dict(candidate.championship_state)
         return payload
     except (AttributeError, KeyError, TypeError, ValueError):
         invalid("BAMF_INITIAL_GENERATION_BINDING_INVALID")

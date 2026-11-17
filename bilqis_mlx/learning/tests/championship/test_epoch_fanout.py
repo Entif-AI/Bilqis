@@ -16,7 +16,7 @@ class EpochFanoutTests(EpochChampionshipTests):
             incumbent_battery=_battery_answers(and_role, drop=2),
             challenger_battery=_battery_answers(and_role, drop=0))
         _, changes, decisions = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams=incumbents, title_matches={"B.AND": primary})
         self.assertIn("B.AND", changes)
         self.assertTrue(any(d["decision"] == "FANOUT_SCREEN_REQUIRED"
@@ -28,33 +28,33 @@ class EpochFanoutTests(EpochChampionshipTests):
             "challenger_exam": _panel("c", 13, "B.XOR", 8, cohort="6"),
         }}
         _, _, decisions = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams=incumbents, title_matches={"B.AND": primary},
             fanout_screen=screen)
         self.assertTrue(any(d["decision"] == "FANOUT_TITLE_MATCH_REQUIRED" and
                             d["capability"] == "B.XOR" for d in decisions))
 
-    def test_primary_takeover_defers_unmeasured_sibling_fanout(self):
+    def test_primary_takeover_requests_capability_local_screen_for_unmeasured_sibling(self):
         epoch, _, _ = self._fanout_fixture()
         and_role = epoch["active_roles"]["B.AND"]
-        challenger = _panel("c", 13, "B.AND", 12, cohort="6", grade="B")
-        incumbent = _panel("a", 11, "B.AND", 11, cohort="6", grade="B")
+        challenger = _panel("c", 13, "B.AND", 12, cohort="6", group="B")
+        incumbent = _panel("a", 11, "B.AND", 11, cohort="6", group="B")
         primary = _match(
             and_role,
-            _panel("a", 11, "B.AND", 7, cohort="6", grade="B"),
-            _panel("c", 13, "B.AND", 9, cohort="6", grade="B"),
+            _panel("a", 11, "B.AND", 7, cohort="6", group="B"),
+            _panel("c", 13, "B.AND", 9, cohort="6", group="B"),
             incumbent_battery=_battery_answers(and_role, drop=2),
             challenger_battery=_battery_answers(and_role, drop=0))
         result, changes, decisions = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams={"a" * 64: incumbent},
             title_matches={"B.AND": primary})
         self.assertIn("B.AND", changes)
-        self.assertTrue(any(d["decision"] == "FANOUT_DEFERRED_UNMEASURED" and
-                            d["capability"] == "B.XOR" for d in decisions))
-        self.assertFalse(any(d["decision"] in (
-            "FANOUT_SCREEN_REQUIRED", "FANOUT_TITLE_MATCH_REQUIRED")
-            for d in decisions))
+        screen = next(d for d in decisions
+                      if d["decision"] == "FANOUT_SCREEN_REQUIRED")
+        self.assertEqual(screen["capabilities"], ["B.XOR"])
+        self.assertFalse(any(d["decision"] == "FANOUT_TITLE_MATCH_REQUIRED"
+                             for d in decisions))
         self.assertNotIn(
             "B.XOR|" + "b" * 64 + "|" + "c" * 64,
             result["settled_matchups"])
@@ -71,7 +71,7 @@ class EpochFanoutTests(EpochChampionshipTests):
             incumbent_battery=incumbent_battery,
             challenger_battery=challenger_battery)
         _, changes, decisions = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams=incumbents, title_matches={"B.AND": primary})
         self.assertNotIn("B.AND", changes)
         self.assertFalse(any(d["decision"] in (
@@ -92,7 +92,7 @@ class EpochFanoutTests(EpochChampionshipTests):
             incumbent_battery=_battery_answers(and_role, drop=2),
             challenger_battery=_battery_answers(and_role, drop=0))
         _, changes, decisions = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams=incumbents, title_matches={"B.AND": primary})
         self.assertIn("B.AND", changes)
         self.assertFalse(any(d["decision"] in (
@@ -118,7 +118,7 @@ class EpochFanoutTests(EpochChampionshipTests):
                 challenger_battery=_battery_answers(xor_role, drop=0)),
         }
         result, changes, decisions = advance_epoch(
-            epoch, grades=GRADES, challenger_exam=challenger,
+            epoch, capability_groups=GRADES, challenger_exam=challenger,
             incumbent_exams=incumbents, title_matches=matches,
             fanout_screen={"B.XOR": {
                 "incumbent_checkpoint_sha256": "b" * 64,
