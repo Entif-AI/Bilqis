@@ -15,7 +15,9 @@ class FactoryTrainingEnrichmentTests(FactoryTrainingBridgeFixture):
     def test_source_valid_enrichment_joins_base_option_without_relabeling_it(self):
         capability, seed = "A.IDENTITY", 37131
         direct = tuple(self.context.draw_rows(seed=seed, capability=capability, each=2))
-        extra = ({**direct[0], "id": direct[0]["id"] + ":enrichment"},)
+        expanded = tuple(self.context.draw_rows(seed=seed, capability=capability, each=4))
+        self.assertEqual(expanded[:2], direct)
+        extra = (expanded[2],)
         delivered = (*direct, *extra)
         execution = self.context.release.execution_plan.capability_map[capability]
         teaching = describe_delivered_teaching(
