@@ -190,7 +190,8 @@ def _prepare_candidate_step_inputs(
         run_dir, source_context, parent, atlas_artifact_path, feature_artifact_path,
         delivered_rows, capability, delivery, requested_count, source_seed,
         source_each, optimizer_step_seed, visit_provenance, teacher_strategy,
-        rehearsal_by_id, salience_provider, candidate, currentness_transaction,
+        rehearsal_by_id, rehearsal_bindings, rehearsal_authorities,
+        salience_provider, candidate, currentness_transaction,
         candidate_step_started_at, currentness_binding_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds, semantic_context,
         prepared_source):
@@ -214,7 +215,10 @@ def _prepare_candidate_step_inputs(
         requested_count=requested_count, source_seed=source_seed,
         source_each=source_each, optimizer_step_seed=optimizer_step_seed,
         visit_provenance=visit_provenance, teacher_strategy=teacher_strategy,
-        rehearsal_by_id=rehearsal_by_id, semantic_context=semantic_context,
+        rehearsal_by_id=rehearsal_by_id,
+        rehearsal_bindings=rehearsal_bindings,
+        rehearsal_authorities=rehearsal_authorities,
+        semantic_context=semantic_context,
         prepared_source=prepared_source)
     supervision = None
     if salience_provider is not None:
@@ -286,6 +290,8 @@ def execute_factory_candidate_step(
     max_norm: float,
     observation: FactoryDeliveryObservation,
     rehearsal_by_id: dict | None = None,
+    rehearsal_bindings: dict | None = None,
+    rehearsal_authorities: dict | None = None,
     memory_budget: MemoryBudget | None = None,
     capture_diagnostics: bool = False,
     salience_provider=None,
@@ -323,7 +329,8 @@ def execute_factory_candidate_step(
         run_dir, source_context, parent, atlas_artifact_path, feature_artifact_path,
         delivered_rows, capability, delivery, requested_count, source_seed,
         source_each, optimizer_step_seed, visit_provenance, teacher_strategy,
-        rehearsal_by_id, salience_provider, candidate, currentness_transaction,
+        rehearsal_by_id, rehearsal_bindings, rehearsal_authorities,
+        salience_provider, candidate, currentness_transaction,
         candidate_step_started_at, currentness_binding_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds, semantic_context,
         prepared_source)

@@ -42,6 +42,27 @@ from .atlas_training_fixture_support import (
 
 
 class AtlasTrainingAdapterTest(AtlasTrainingAdapterCase):
+    def test_cross_capability_rehearsal_keeps_target_visit_and_row_authorities_distinct(self):
+        target = self.context.draw_rows(seed=17, capability='Z.C2', each=1)
+        support, support_authority = self.context.draw_bound_rows(
+            seed=23, capability='Z.C0', each=1)
+        target_authority = self.context.bind_rows(
+            target, seed=17, capability='Z.C2', each=1)
+        rows = (*target, *support)
+        batch = self.compile(
+            rows, delivery_capability='Z.C2', source_authority=target_authority,
+            rehearsal_by_id={support[0]['id']: 'prior'},
+            rehearsal_authorities={support[0]['id']: support_authority})
+
+        self.assertEqual(batch.delivery_capability, 'Z.C2')
+        self.assertEqual(batch.rows[0].provenance.capability_id, 'Z.C2')
+        self.assertEqual(batch.rows[1].provenance.capability_id, 'Z.C0')
+        self.assertEqual(batch.rows[1].provenance.visit.capability_id, 'Z.C2')
+        self.assertEqual(batch.rows[1].provenance.rehearsal, 'prior')
+        self.assertEqual(
+            batch.rows[1].provenance.source_family_id,
+            support_authority.source_family_id)
+
     def test_prepared_source_prefix_is_reused_while_step_provenance_changes(self):
         first = self.compile(self.rows, optimizer_step_seed=42)
         model = first.rows[0].model_input

@@ -69,10 +69,15 @@ class AtlasTrainingAdapterCase(unittest.TestCase):
                 frames_override=None, source_ast_override=None,
                 delivery_override=None, extra_kwargs=None,
                 source_context=None, source_seed=17, visit=None,
-                optimizer_step_seed=42):
+                optimizer_step_seed=42, delivery_capability='Z.C0',
+                source_authority=None, rehearsal_by_id=None,
+                rehearsal_authorities=None):
         context = source_context or self.context
+        option_rows = tuple(
+            row for row in rows if row.get('capability') == delivery_capability)
         delivery = delivery_override or describe_delivered_teaching(
-            context.release, 'Z.C0', 'source.direct/Z.C0', rows)
+            context.release, delivery_capability,
+            'source.direct/' + delivery_capability, option_rows)
         visible_ends = {rows[0]['id']: 2}
         frames_for_ast, base_task, base_frontier, base_policy = _source_context(
             rows, context.release.release_sha256, visible_ends, policy,
@@ -104,14 +109,16 @@ class AtlasTrainingAdapterCase(unittest.TestCase):
                         inventories[row['id']]):
             return compile_training_batch(
                 rows, context, ModelTopologySpecV2(),
-                delivery=delivery, delivery_capability='Z.C0',
+                delivery=delivery, delivery_capability=delivery_capability,
                 delivery_release_sha256=release_sha or context.release.release_sha256,
                 teacher_strategy={'policy': 'focused'}, requested_count=3,
                 optimizer_step_seed=optimizer_step_seed,
-                visit_provenance=(visit or visit_provenance('Z.C0')),
-                source_authority=context.bind_rows(
-                    rows, seed=source_seed, capability='Z.C0', each=len(rows)),
-                rehearsal_by_id={rows[0]['id']: 'prior'}, visible_ends=visible_ends,
+                visit_provenance=(visit or visit_provenance(delivery_capability)),
+                source_authority=(source_authority or context.bind_rows(
+                    rows, seed=source_seed, capability=delivery_capability, each=len(rows))),
+                rehearsal_by_id=(rehearsal_by_id or {rows[0]['id']: 'prior'}),
+                rehearsal_authorities=(rehearsal_authorities or {}),
+                visible_ends=visible_ends,
                 source_ast_for=source_ast_override or (
                     lambda tokens: source_ast_for(
                         tokens, context.release.release_sha256,

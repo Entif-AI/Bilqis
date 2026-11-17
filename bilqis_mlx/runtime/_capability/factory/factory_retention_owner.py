@@ -146,6 +146,12 @@ def require_current_retention_source_rows(cache, release, capability_id):
     return plan, plan.for_target(capability_id), result
 
 
+def require_current_retention_plan(cache, release, capability_id):
+    """Expose the already-compiled R05 plan to downstream rehearsal consumers."""
+    plan = require_retention_protection_plan(cache, release)
+    return plan, plan.for_target(capability_id)
+
+
 def measure_factory_foundation_progress(
     source_context, artifact_path: str, *, run_dir: Path,
 ):
@@ -314,6 +320,7 @@ def evaluate_factory_package_import(
 __all__ = (
     "FactoryRetentionEvaluation", "bind_current_retention_protection_plan",
     "bind_current_retention_source_rows",
+    "require_current_retention_plan", "require_current_retention_source_rows",
     "bind_factory_baseline_successor",
     "derive_current_plasticity_escape_state",
     "evaluate_factory_package_import",

@@ -5,12 +5,18 @@ import time
 
 
 def _mentor_observation(
-        adviser_pool, source_rows, enrichment_rows, selection, capture, optimizer_step,
+        adviser_pool, source_rows, lesson, selection, capture, optimizer_step,
         delivery_observation_cls):
+    enrichment_rows = lesson.enrichment
+    role_kwargs = {
+        "prior": tuple(getattr(lesson, "prior", ())),
+        "preservation": tuple(getattr(lesson, "preservation", ())),
+        "support": tuple(getattr(lesson, "retention_support", ())),
+    }
     if adviser_pool is None:
         observation = delivery_observation_cls(
             capture, optimizer_step, source_rows, selection.offer.source_seed,
-            enrichment=enrichment_rows)
+            enrichment=enrichment_rows, **role_kwargs)
         return observation, None
     from bilqis_mlx.runtime.championship_advisers import (
         championship_mentor_supervision,
@@ -21,7 +27,7 @@ def _mentor_observation(
     observation = delivery_observation_cls(
         capture, optimizer_step, source_rows, selection.offer.source_seed,
         enrichment=enrichment_rows, guidance=supervision.guidance_record(),
-        mentors=supervision.to_record(), _mentor_supervision=supervision)
+        mentors=supervision.to_record(), _mentor_supervision=supervision, **role_kwargs)
     return observation, supervision
 
 
@@ -32,13 +38,14 @@ def execute_horizon(
         source_prefetch_metrics, observer, adviser_pool=None, *, source_lane_cls,
         source_metrics_cls, prepare_evidence_root, capture_cls,
         delivery_observation_cls, execute_candidate, step_seed,
-        emit_progress, invalid, observe_completed_step_fn):
+        emit_progress, invalid, observe_completed_step_fn, rehearsal_plan=None):
     source_lane = None
     if source_prefetch_metrics is not None or source_prefetch_workers:
         metrics = source_prefetch_metrics or source_metrics_cls()
         source_lane = source_lane_cls(
             selection, context, parent, horizon, workers=source_prefetch_workers,
-            executor=source_prefetch_executor, metrics=metrics)
+            executor=source_prefetch_executor, metrics=metrics,
+            rehearsal_plan=rehearsal_plan)
     prepare_evidence_root(run_dir)
     introductory = None
     try:
@@ -74,11 +81,18 @@ def execute_horizon(
             begin_step(ordinal, parent.retained_state.optimizer_step + ordinal)
         source_prepare_started = candidate_step_started_at
         lesson = None if source_lane is None else source_lane.lesson(ordinal)
-        source_rows = rows if lesson is None else lesson.direct
-        enrichment_rows = () if lesson is None else lesson.enrichment
+        if lesson is None:
+            from bilqis_mlx.runtime.bamf_operator.source_prefetch import CandidateLessonRows
+            lesson = CandidateLessonRows(tuple(rows))
+        source_rows = lesson.direct
+        enrichment_rows = lesson.enrichment
+        prior_rows = tuple(getattr(lesson, "prior", ()))
+        preservation_rows = tuple(getattr(lesson, "preservation", ()))
+        retention_support_rows = tuple(getattr(lesson, "retention_support", ()))
+        rehearsal_rows = (*prior_rows, *preservation_rows, *retention_support_rows)
         source_prepare_wall_seconds = time.perf_counter() - source_prepare_started
         observation, mentor_supervision = _mentor_observation(
-            adviser_pool, source_rows, enrichment_rows, selection, capture,
+            adviser_pool, source_rows, lesson, selection, capture,
             parent.retained_state.optimizer_step + ordinal,
             delivery_observation_cls)
         emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
@@ -91,6 +105,10 @@ def execute_horizon(
             finalize_candidate=(ordinal == horizon),
             prepared_source_rows=(source_rows if source_lane is not None else None),
             prepared_enrichment_rows=enrichment_rows,
+            prepared_rehearsal_rows=rehearsal_rows,
+            rehearsal_by_id=getattr(lesson, "rehearsal_by_id", {}),
+            rehearsal_bindings=getattr(lesson, "rehearsal_bindings_by_id", {}),
+            rehearsal_authorities=getattr(lesson, "rehearsal_authorities_by_id", {}),
             candidate_step_started_at=candidate_step_started_at,
             source_prepare_wall_seconds=source_prepare_wall_seconds)
         candidate = step.transaction

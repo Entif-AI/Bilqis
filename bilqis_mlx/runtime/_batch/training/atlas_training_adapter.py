@@ -118,7 +118,8 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
                            delivery_release_sha256: str, teacher_strategy: dict, requested_count: int,
                            optimizer_step_seed: int, visit_provenance: BamfVisitProvenance,
                            source_authority: SourceBatchAuthority,
-                           rehearsal_by_id: dict, visible_ends: dict, source_ast_for: Callable,
+                           rehearsal_by_id: dict, rehearsal_authorities: dict | None = None,
+                           visible_ends: dict, source_ast_for: Callable,
                            compiler_config, feature_artifact_path, answer_plan_for: Callable,
                            frames_for_ast: Callable, task_scope: TaskScope,
                            source_frontier: SourceFrontier, eligibility_policy: ContextPolicy, generation_binding: str,
@@ -131,18 +132,24 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
     if (type(visit_provenance) is not BamfVisitProvenance
             or visit_provenance.capability_id != delivery_capability):
         _invalid('VISIT_PROVENANCE_CAPABILITY_MISMATCH')
+    rehearsal_authorities = rehearsal_authorities or {}
     release, capabilities, owner = _require_compile_request(delivered_rows, source_context,
         delivery=delivery, delivery_capability=delivery_capability,
         delivery_release_sha256=delivery_release_sha256,
         teacher_strategy=teacher_strategy, requested_count=requested_count,
         optimizer_step_seed=optimizer_step_seed, source_authority=source_authority,
-        rehearsal_by_id=rehearsal_by_id,
+        rehearsal_by_id=rehearsal_by_id, rehearsal_authorities=rehearsal_authorities,
         visible_ends=visible_ends, source_ast_for=source_ast_for, answer_plan_for=answer_plan_for,
         frames_for_ast=frames_for_ast, task_scope=task_scope, source_frontier=source_frontier,
         eligibility_policy=eligibility_policy, generation_binding=generation_binding,
         sealed_holdout_ids=sealed_holdout_ids)
     row_count = len(delivered_rows)
     prepared_model_sources = _prepared_sources(prepared_model_sources, row_count)
+    released_manifests = (
+        released_manifest
+        if (isinstance(released_manifest, tuple)
+            and len(released_manifest) == row_count)
+        else (released_manifest,) * row_count)
     compiler_configs = _row_contexts(
         compiler_config, FrameCompilerConfig, row_count,
         'UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH')
@@ -160,7 +167,9 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
          rehearsal, visible) = _row_source_inputs(
             row, row_index, capabilities=capabilities, owner=owner, delivery=delivery,
             delivery_capability=delivery_capability,
-            source_context=source_context, source_authority=source_authority, rehearsal_by_id=rehearsal_by_id,
+            source_context=source_context, source_authority=source_authority,
+            rehearsal_by_id=rehearsal_by_id,
+            rehearsal_authorities=rehearsal_authorities,
             visible_ends=visible_ends,
             sealed_holdout_ids=sealed_holdout_ids)
         (kind, gold, families, head, plan, model_input,
@@ -174,7 +183,7 @@ def compile_training_batch(delivered_rows, source_context: SourceExecutionContex
             atlas_selection=atlas_selection, feature_artifact_path=feature_artifact_path,
             answer_plan_for=answer_plan_for, generation_binding=generation_binding,
             atlas_features=atlas_features, semantic_context=semantic_context,
-            released_manifest=released_manifest,
+            released_manifest=released_manifests[row_index],
             prepare_source_input=prepare_model_source_input,
             prepared_source=(None if prepared_model_sources is None
                              else prepared_model_sources[row_index]))

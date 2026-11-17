@@ -74,19 +74,35 @@ def _validated_training_request(
 
 def _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows, *, capability,
-        source_seed, source_each, delivery=None):
+        source_seed, source_each, delivery=None, rehearsal_by_id=None,
+        rehearsal_bindings=None, rehearsal_authorities=None):
     if prepared_source is None:
+        rehearsal_by_id = rehearsal_by_id or {}
+        rehearsal_bindings = rehearsal_bindings or {}
+        rehearsal_authorities = rehearsal_authorities or {}
+        target_rows = tuple(row for row in rows if row.get("id") not in rehearsal_by_id)
         source_authority = (
             source_context.bind_rows(
-                rows, seed=source_seed, capability=capability, each=source_each)
-            if delivery is None or len(delivery.specimen_ids) == len(rows) else
+                target_rows, seed=source_seed, capability=capability, each=source_each)
+            if delivery is None or len(delivery.specimen_ids) == len(target_rows) else
             source_context.bind_delivery_rows(
-                rows, seed=source_seed, capability=capability,
+                target_rows, seed=source_seed, capability=capability,
                 direct_each=len(delivery.specimen_ids)))
+        for identity, authority in rehearsal_authorities.items():
+            row = next((item for item in rows if item.get("id") == identity), None)
+            binding = rehearsal_bindings.get(identity)
+            if (row is None or not isinstance(binding, dict)
+                    or authority.capability_id != binding.get("capability")
+                    or authority.seed != binding.get("seed")
+                    or authority.each != binding.get("each")):
+                _invalid("FACTORY_REHEARSAL_SOURCE_AUTHORITY_INVALID")
+            source_context.require_bound_rows((row,), authority)
         adapter, manifest, profile, source_rows = _prepare_factory_source_rows(
             source_context, authenticated, rows, capability=capability,
             source_seed=source_seed, source_each=source_each,
-            source_authority=source_authority)
+            source_authority=source_authority,
+            source_authorities_by_id=rehearsal_authorities,
+            source_bindings_by_id=rehearsal_bindings)
         from bilqis_mlx.runtime.priority_source_materialization import (
             _prepare_model_sources,
         )
@@ -125,7 +141,8 @@ def _prepared_source_inputs(
 def _compile_factory_training(
         rows, source_context, candidate, delivery, capability, teacher_strategy,
         requested_count, optimizer_step_seed, visit_provenance, source_authority,
-        rehearsal_by_id, source_rows, feature_artifact_path, generation_binding,
+        rehearsal_by_id, rehearsal_authorities, source_rows,
+        feature_artifact_path, generation_binding,
         authenticated, manifest, prepared_model_sources):
     by_tokens = {tuple(item.row["tokens"]): item.ast for item in source_rows}
     if len(by_tokens) != len(rows):
@@ -140,6 +157,7 @@ def _compile_factory_training(
         visit_provenance=visit_provenance,
         source_authority=source_authority,
         rehearsal_by_id=(rehearsal_by_id or {}),
+        rehearsal_authorities=(rehearsal_authorities or {}),
         visible_ends={row["id"]: len(row["tokens"]) for row in rows},
         source_ast_for=lambda tokens: by_tokens[tuple(tokens)],
         compiler_config=tuple(item.config for item in source_rows),
@@ -152,7 +170,7 @@ def _compile_factory_training(
         source_frontier=tuple(item.frontier for item in source_rows),
         eligibility_policy=tuple(item.policy for item in source_rows),
         semantic_context=authenticated,
-        released_manifest=manifest,
+        released_manifest=tuple(getattr(item, "manifest", manifest) for item in source_rows),
         generation_binding=generation_binding,
         atlas_selection=authenticated.selection,
         prepared_model_sources=prepared_model_sources)
@@ -175,6 +193,8 @@ def prepare_factory_training_batch(
     visit_provenance: BamfVisitProvenance,
     teacher_strategy: dict,
     rehearsal_by_id: dict | None = None,
+    rehearsal_bindings: dict | None = None,
+    rehearsal_authorities: dict | None = None,
     semantic_context=None,
     prepared_source=None,
 ) -> PreparedFactoryTrainingBatch:
@@ -201,11 +221,14 @@ def prepare_factory_training_batch(
      prepared_b11_sources) = _prepared_source_inputs(
         prepared_source, source_context, authenticated, rows,
         capability=capability, source_seed=source_seed, source_each=source_each,
-        delivery=delivery)
+        delivery=delivery, rehearsal_by_id=rehearsal_by_id,
+        rehearsal_bindings=rehearsal_bindings,
+        rehearsal_authorities=rehearsal_authorities)
     training = _compile_factory_training(
         rows, source_context, candidate, delivery, capability, teacher_strategy,
         requested_count, optimizer_step_seed, visit_provenance, source_authority,
-        rehearsal_by_id, source_rows, feature_artifact_path, generation_binding,
+        rehearsal_by_id, rehearsal_authorities, source_rows,
+        feature_artifact_path, generation_binding,
         authenticated, manifest, prepared_model_sources)
     compiled_rows = _bind_b11_rows(
         source_context, candidate, authenticated, training, source_rows,
@@ -214,8 +237,8 @@ def prepare_factory_training_batch(
     motif_inputs = (
         prepared_motif_inputs if prepared_motif_inputs is not None else
         tuple(_motif_planning_input(
-            source_context, authenticated, item.source_adapter, profile, item,
-            source_seed=source_seed, source_each=source_each)
+            source_context, authenticated, item.source_adapter, item.profile, item,
+            source_seed=item.source_seed, source_each=item.source_each)
             for item in source_rows))
     prepared = PreparedFactoryTrainingBatch(
         training, compiled_rows, motif_inputs, authenticated)
