@@ -2,6 +2,13 @@
 
 All new releases use [Semantic Versioning](https://semver.org/) and Conventional Commit subjects. Dates refer to the tagged source release, not to any claim that a neural student has qualified new capabilities.
 
+## [1.2.4](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.3...v1.2.4) (2026-11-18)
+
+
+### Bug Fixes
+
+* **bamf:** use bootstrapped C03 teacher for genesis rehearsal ([#1397](https://github.com/Entif-AI/Bilqis-MLX/issues/1397)) ([71a00bb](https://github.com/Entif-AI/Bilqis-MLX/commit/71a00bb90bfc261746a5e613e68f791b8ba9ad70))
+
 ## [1.2.3](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.2...v1.2.3) (2026-11-18)
 
 
