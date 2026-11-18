@@ -2,6 +2,15 @@
 
 All new releases use [Semantic Versioning](https://semver.org/) and Conventional Commit subjects. Dates refer to the tagged source release, not to any claim that a neural student has qualified new capabilities.
 
+## [1.2.3](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.2...v1.2.3) (2026-11-18)
+
+
+### Bug Fixes
+
+* **bamf:** allow external operator run custody ([#1386](https://github.com/Entif-AI/Bilqis-MLX/issues/1386)) ([7c074d0](https://github.com/Entif-AI/Bilqis-MLX/commit/7c074d05c042855e6064312d582155e3e14c6430))
+* **bamf:** bootstrap staged generation-zero active grade ([#1384](https://github.com/Entif-AI/Bilqis-MLX/issues/1384)) ([162fb72](https://github.com/Entif-AI/Bilqis-MLX/commit/162fb7212ffc62a67c5e01b46265da861883fb27))
+* **bamf:** bootstrap staged generation-zero grade ([8d9b1ad](https://github.com/Entif-AI/Bilqis-MLX/commit/8d9b1ad99b6acbf57631ba124785ea074aaade0f))
+
 ## [1.2.2](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.1...v1.2.2) (2026-11-17)
 
 
