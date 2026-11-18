@@ -9,10 +9,8 @@ from pathlib import Path
 from typing import Iterator
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
-from bilqis_mlx.paths import storage_root
 from bilqis_mlx.runtime.bamf_bundle import inspect_accepted_generation
 from bilqis_mlx.runtime.disk import atomic_text
-from bilqis_mlx.runtime.experiment_runs import require_training_run
 
 from .authority import RunAuthority
 from .records import RunAuthorityBindingRecord
@@ -79,13 +77,12 @@ def bind_native_run_authority(
         run_dir: Path, authority: RunAuthority | None, *, persist: bool = True,
         local_runs: Path | None = None,
         now: float | None = None) -> NativeRunAuthorityBinding | None:
-    """Bind authority before source/GPU/neural work, or enforce local isolation."""
+    """Bind explicit issue-owned authority before source/GPU/neural work."""
     run_dir = Path(run_dir).expanduser().resolve()
     path = _binding_path(run_dir)
     if authority is None:
         if path.exists() or path.is_symlink():
             _invalid("BAMF_RUN_AUTHORITY_REQUIRED")
-        require_training_run(run_dir, storage_root() if local_runs is None else local_runs)
         return None
     if not isinstance(authority, RunAuthority):
         _invalid("BAMF_RUN_AUTHORITY_INVALID")

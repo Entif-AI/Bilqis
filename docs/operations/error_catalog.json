@@ -1,6 +1,6 @@
 {
   "legacy_raw_file_count": 294,
-  "legacy_raw_raise_count": 2080,
+  "legacy_raw_raise_count": 2079,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -9814,13 +9814,6 @@
       "count": 1,
       "exception": "ValueError",
       "expression": "'INVALID_EXPERIMENT_RUN_NAME'",
-      "path": "bilqis_mlx/runtime/_custody/experiment_runs.py"
-    },
-    {
-      "code_hint": "LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN'",
       "path": "bilqis_mlx/runtime/_custody/experiment_runs.py"
     },
     {

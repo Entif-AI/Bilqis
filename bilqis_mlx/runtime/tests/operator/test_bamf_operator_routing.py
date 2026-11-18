@@ -50,9 +50,7 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
                     "bilqis_mlx.runtime.bamf_operator.session._visit",
                     return_value="HELD") as visit, patch(
                     "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
-                    return_value=current), patch(
-                    "bilqis_mlx.runtime.run_authority.binding.storage_root",
-                    return_value=Path(temporary)):
+                    return_value=current):
                 result = operate_bamf(
                     run_dir, minutes=1, max_visits=3, reserve_gib=0.0,
                     progress=progress.append)
@@ -73,15 +71,15 @@ class BamfOperatorRoutingContinuationTests(unittest.TestCase):
         with self.assertRaises(BilqisError):
             operate_bamf("/run", minutes=1, steps_per_visit=17)
 
-    def test_external_native_run_requires_custody_before_source_pool_start(self):
+    def test_external_native_run_reaches_source_pool_without_issue_custody(self):
         with TemporaryDirectory() as temporary, patch(
                 "bilqis_mlx.runtime.source_prefetch.source_prefetch_pool",
                 side_effect=AssertionError("source pool must not start before run custody")) as pool:
             with self.assertRaisesRegex(
-                    ValueError, "LEARNING_EXPERIMENT_REQUIRES_ISOLATED_WORKTREE_RUN"):
+                    AssertionError, "source pool must not start before run custody"):
                 operate_bamf(
                     temporary, minutes=1, max_visits=1, reserve_gib=0.0)
-        pool.assert_not_called()
+        pool.assert_called_once()
 
     def test_no_admissible_priority_selection_never_executes_candidate(self):
         parent = SimpleNamespace()

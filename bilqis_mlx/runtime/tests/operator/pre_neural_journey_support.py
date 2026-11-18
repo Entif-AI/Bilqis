@@ -214,7 +214,9 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
         ))
         return stack
 
-    def journey_mounts(self, snapshot, schema, features, selection):
+    def journey_mounts(
+            self, snapshot, schema, features, selection, *,
+            patch_active_generated_grade=True):
         stack = ExitStack()
         active_cache = {}
 
@@ -271,14 +273,15 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
             "read_host_system_source_authority_signer",
             side_effect=lambda registry: HostSourceAuthoritySigner(
                 "owner:c06", "44" * 32, registry)))
-        stack.enter_context(patch(
-            "bilqis_mlx.runtime.active_generated_grade."
-            "ensure_active_generated_grade",
-            side_effect=historical_active_grade))
-        stack.enter_context(patch(
-            "bilqis_mlx.runtime.active_generated_grade."
-            "read_active_generated_grade",
-            side_effect=historical_active_grade))
+        if patch_active_generated_grade:
+            stack.enter_context(patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "ensure_active_generated_grade",
+                side_effect=historical_active_grade))
+            stack.enter_context(patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "read_active_generated_grade",
+                side_effect=historical_active_grade))
         return stack
 
     def exercise_journey(self):

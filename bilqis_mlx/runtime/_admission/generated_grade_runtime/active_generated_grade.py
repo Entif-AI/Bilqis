@@ -54,14 +54,18 @@ def read_active_generated_grade(run_dir: Path, *, repair: bool = True) -> Active
     active = _custody._read_stored_active(root)
     if active is None:
         _fail("BAMF_ACTIVE_GENERATED_GRADE_MISSING")
-    proposal = _read_issued_proposal(root, active.proposal_sha256)
     if not _activation_is_accepted_ancestor(root, active):
         _fail("BAMF_ACTIVE_GENERATED_GRADE_ACCEPTED_ANCESTRY_DRIFT")
+    if active.transition_kind == "BOOTSTRAP":
+        from .initial_grade_bootstrap import require_initial_grade_bootstrap
+        require_initial_grade_bootstrap(root, active)
+    else:
+        proposal = _read_issued_proposal(root, active.proposal_sha256)
+        _reconcile_accepted_generated_grade(root, active, proposal)
     if active.transition_kind == "CORRECTION":
         require_correction_transition_authority(root, active)
     if active.transition_kind == "CERTIFICATION":
         require_certification_transition_authority(root, active)
-    _reconcile_accepted_generated_grade(root, active, proposal)
     # Heal only after every accepted-ancestry and transition check succeeds.
     if repair:
         _custody._persist_commit(root, active)
@@ -100,7 +104,7 @@ def _publish_if_current(
     run_dir: Path,
     identity,
     active: ActiveGeneratedGrade,
-    proposal: GeneratedGradeProposal,
+    proposal: GeneratedGradeProposal | None,
     *,
     predecessor: ActiveGeneratedGrade | None,
 ) -> ActiveGeneratedGrade:
@@ -125,7 +129,11 @@ def _publish_if_current(
             or current.activation_sha256 != predecessor.activation_sha256
         ):
             _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
-        _persist_proposal_acceptance(root, active, proposal)
+        if proposal is None:
+            if active.transition_kind != "BOOTSTRAP":
+                _fail("BAMF_ACTIVE_GENERATED_GRADE_PROPOSAL_REQUIRED")
+        else:
+            _persist_proposal_acceptance(root, active, proposal)
         _custody._persist_activation(root, active)
     return read_active_generated_grade(root)
 
