@@ -170,7 +170,9 @@ def current_structural_weaknesses(
     projection = _current_projection(run_dir, parent, cache)
     selected = capability or selection.visit.identity.capability_id
     current = {}
-    teacher = restore_teacher_lineage(parent.teacher_state).teacher()
+    # Generation-zero parent custody intentionally precedes C03 bootstrap.
+    # The issued visit already owns the authenticated current teacher projection.
+    teacher = restore_teacher_lineage(selection.visit.projection.teacher_state).teacher()
     candidates = (
         *carried_structural_weaknesses(teacher),
         *projection.weaknesses_view(),
