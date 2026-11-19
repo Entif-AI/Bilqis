@@ -1,6 +1,6 @@
 {
-  "legacy_raw_file_count": 294,
-  "legacy_raw_raise_count": 2079,
+  "legacy_raw_file_count": 295,
+  "legacy_raw_raise_count": 2080,
   "legacy_raw_raise_groups": [
     {
       "code_hint": "BOOLEAN_ASSOCIATION_B_GRADE_OWNERSHIP_DRIFT",
@@ -11586,6 +11586,13 @@
       "exception": "RuntimeError",
       "expression": "'test synchronization timed out'",
       "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication_recovery.py"
+    },
+    {
+      "code_hint": "simulated crash before metadata publication",
+      "count": 1,
+      "exception": "RuntimeError",
+      "expression": "'simulated crash before metadata publication'",
+      "path": "bilqis_mlx/runtime/tests/custody/data_plane/test_maintenance.py"
     },
     {
       "code_hint": "pointer interrupted",

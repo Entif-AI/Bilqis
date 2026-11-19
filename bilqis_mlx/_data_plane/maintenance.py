@@ -6,10 +6,12 @@ import json
 import zlib
 from pathlib import Path
 
+from .contracts import DataPlaneError, _error
 from .file_retention import file_gc_report, file_inventory
 from .migration import migrate_legacy_payloads, vacuum
 
 _HEAD_SCHEMA = "bilqis.state-head/v1"
+_OBJECT_FRONTIER_BATCH_RECORDS = 400
 
 
 def _valid_digest(value) -> bool:
@@ -49,7 +51,7 @@ def _node_roots(plane, scan_roots) -> tuple[set[str], dict[str, int]]:
                 try:
                     value = json.loads(path.read_text(encoding="utf-8"))
                 except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-                    raise ValueError("BILQIS_DATA_PLANE_BAMF_POINTER_INVALID") from None
+                    raise ValueError(DataPlaneError.BAMF_POINTER_INVALID.value) from None
                 digest = value.get("manifest_sha256")
                 if _valid_digest(digest):
                     stored = plane._db.execute(
@@ -60,12 +62,12 @@ def _node_roots(plane, scan_roots) -> tuple[set[str], dict[str, int]]:
                         roots.add(digest)
                         tiers["bamf"] += 1
                 else:
-                    raise ValueError("BILQIS_DATA_PLANE_BAMF_POINTER_INVALID")
+                    raise ValueError(DataPlaneError.BAMF_POINTER_INVALID.value)
             elif name == "state.json" or (
-                    path.parent.name == "states" and name[:-5].isdigit()):
+                    path.parent.name == "states" and name.removesuffix(".json").isdigit()):
                 digest = _pointer_digest(path)
                 if not digest:
-                    raise ValueError("BILQIS_DATA_PLANE_STATE_POINTER_INVALID:" + str(path))
+                    raise ValueError(_error(DataPlaneError.STATE_POINTER_INVALID, path))
                 roots.add(digest)
                 tiers["current" if name == "state.json" else "history"] += 1
     for kind, digest in plane._db.execute(
@@ -157,7 +159,7 @@ def _object_batch(plane, digests) -> dict[str, bytes]:
     for digest, compressed, raw_bytes in rows:
         raw = zlib.decompress(compressed)
         if len(raw) != raw_bytes or hashlib.sha256(raw).hexdigest() != digest:
-            raise ValueError("BILQIS_DATA_PLANE_OBJECT_CORRUPTED:" + digest)
+            raise ValueError(_error(DataPlaneError.OBJECT_CORRUPTED, digest))
         result[digest] = raw
     for digest in requested:
         if digest in result:
@@ -165,8 +167,7 @@ def _object_batch(plane, digests) -> dict[str, bytes]:
         try:
             result[digest] = plane.get_object(digest)
         except ValueError:
-            raise ValueError(
-                "BILQIS_DATA_PLANE_REACHABLE_OBJECT_MISSING:" + digest) from None
+            raise ValueError(_error(DataPlaneError.OBJECT_MISSING, digest)) from None
     return result
 
 
@@ -208,7 +209,7 @@ def reachability(plane, scan_roots) -> dict:
     while pending_nodes or pending_objects:
         if pending_objects:
             frontier = []
-            while pending_objects and len(frontier) < 400:
+            while pending_objects and len(frontier) < _OBJECT_FRONTIER_BATCH_RECORDS:
                 digest = pending_objects.pop()
                 if digest not in reachable_objects:
                     frontier.append(digest)
@@ -222,7 +223,7 @@ def reachability(plane, scan_roots) -> dict:
         try:
             raw = plane.get_node(digest)
         except ValueError:
-            raise ValueError("BILQIS_DATA_PLANE_REACHABLE_NODE_MISSING:" + digest) from None
+            raise ValueError(_error(DataPlaneError.NODE_MISSING, digest)) from None
         reachable_nodes.add(digest)
         obj, files = _node_refs(raw)
         reachable_files.update(files)
@@ -267,9 +268,9 @@ def gc_report(plane, scan_roots, *, apply: bool = False) -> dict:
 
 def pin(plane, kind: str, digest: str, tier: str, reason: str) -> None:
     if kind not in {"node", "object", "file"} or not _valid_digest(digest):
-        raise ValueError("BILQIS_DATA_PLANE_RETENTION_PIN_INVALID")
+        raise ValueError(DataPlaneError.RETENTION_PIN_INVALID.value)
     if tier not in {"current", "recovery", "champion", "soup", "evidence", "operator"}:
-        raise ValueError("BILQIS_DATA_PLANE_RETENTION_TIER_INVALID")
+        raise ValueError(DataPlaneError.RETENTION_TIER_INVALID.value)
     with plane.transaction():
         plane._db.execute(
             "INSERT OR REPLACE INTO retention_pins(kind,sha256,tier,reason) VALUES(?,?,?,?)",

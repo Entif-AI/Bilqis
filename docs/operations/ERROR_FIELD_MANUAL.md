@@ -2090,7 +2090,7 @@ Aliases/events: `SCHOOL_AUTONOMY_SAFE_HOLD`
 
 ## Legacy raw-string debt
 
-Current production scan: **2079** raw raises across **294** files. The baseline gate permits only reduction.
+Current production scan: **2080** raw raises across **295** files. The baseline gate permits only reduction.
 
 | Legacy code/prefix | Raises | Files |
 | --- | ---: | --- |
@@ -3986,6 +3986,7 @@ Current production scan: **2079** raw raises across **294** files. The baseline 
 | `post-append` | 1 | `bilqis_mlx/runtime/tests/teacher/outcomes/test_outcome_recovery.py` |
 | `post-pointer` | 1 | `bilqis_mlx/runtime/tests/teacher/outcomes/test_outcome_recovery.py` |
 | `signature` | 1 | `bilqis_mlx/runtime/tests/teacher/priority/test_priority_qualification.py` |
+| `simulated crash before metadata publication` | 1 | `bilqis_mlx/runtime/tests/custody/data_plane/test_maintenance.py` |
 | `snapshot must not mutate MLX telemetry` | 1 | `bilqis_mlx/runtime/tests/model/resources/test_memory_retry.py` |
 | `source-owned context was not approved` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/authority/correction_runtime/temporal_support.py` |
 | `steps must be a positive integer` | 1 | `bilqis_mlx/runtime/tests/correction/capability_support_owner_support.py` |

@@ -4,6 +4,8 @@ from __future__ import annotations
 import hashlib
 import zlib
 
+from .contracts import DataPlaneError, _error
+
 
 def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
@@ -12,7 +14,7 @@ def _sha(raw: bytes) -> str:
 def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
     """Move legacy SQLite BLOB rows into append-only archive packs."""
     if type(max_records) is not int or max_records < 0:
-        raise ValueError("BILQIS_DATA_PLANE_MIGRATION_BUDGET_INVALID")
+        raise ValueError(DataPlaneError.MIGRATION_BUDGET_INVALID.value)
     moved_objects = moved_nodes = 0
     remaining = max_records
     while True:
@@ -28,7 +30,7 @@ def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
             for digest, compressed, raw_bytes in rows:
                 raw = zlib.decompress(compressed)
                 if len(raw) != raw_bytes or _sha(raw) != digest:
-                    raise ValueError("BILQIS_DATA_PLANE_OBJECT_CORRUPTED:" + digest)
+                    raise ValueError(_error(DataPlaneError.OBJECT_CORRUPTED, digest))
                 if not plane._db.execute(
                         "SELECT 1 FROM archived_objects WHERE sha256=?", (digest,)).fetchone():
                     pending.append((digest, raw_bytes, compressed))
@@ -57,7 +59,7 @@ def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
             pending = []
             for digest, raw, generation, parent in rows:
                 if _sha(raw) != digest:
-                    raise ValueError("BILQIS_DATA_PLANE_NODE_CORRUPTED:" + digest)
+                    raise ValueError(_error(DataPlaneError.NODE_CORRUPTED, digest))
                 compressed = zlib.compress(raw, level=6)
                 if not plane._db.execute(
                         "SELECT 1 FROM archived_nodes WHERE sha256=?", (digest,)).fetchone():
@@ -86,5 +88,5 @@ def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
 def vacuum(plane) -> None:
     with plane._lock:
         if plane._db.in_transaction:
-            raise ValueError("BILQIS_DATA_PLANE_VACUUM_TRANSACTION_ACTIVE")
+            raise ValueError(DataPlaneError.VACUUM_TRANSACTION_ACTIVE.value)
         plane._db.execute("VACUUM")

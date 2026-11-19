@@ -21,7 +21,7 @@ def verify_file_digest(*args, **kwargs): return _facade().verify_file_digest(*ar
 def _lock_root(root: Path, stack: ExitStack) -> None:
     import fcntl
     if not root.is_dir():
-        raise ValueError("DATA_PLANE_MAINTENANCE_ROOT_INVALID")
+        raise ValueError(DataPlaneError.MAINTENANCE_ROOT_INVALID.value)
     names = set()
     if ((root / "bamf-state.json").exists()
             or (root / "bamf-bundles").exists()
@@ -32,7 +32,7 @@ def _lock_root(root: Path, stack: ExitStack) -> None:
             or (root / ".grade-a-operator.lock").exists()):
         names.add(".grade-a-operator.lock")
     if not names:
-        raise ValueError("DATA_PLANE_MAINTENANCE_ROOT_UNRECOGNIZED")
+        raise ValueError(DataPlaneError.MAINTENANCE_ROOT_UNRECOGNIZED.value)
     for name in sorted(names):
         path = root / name
         if path.is_symlink():
@@ -47,7 +47,7 @@ def _lock_root(root: Path, stack: ExitStack) -> None:
 def _maintenance(args) -> dict:
     roots = tuple(path.expanduser().resolve(strict=True) for path in args.scan_root)
     if not roots:
-        raise ValueError("DATA_PLANE_MAINTENANCE_SCAN_ROOT_REQUIRED")
+        raise ValueError(DataPlaneError.MAINTENANCE_SCAN_ROOT_REQUIRED.value)
     with ExitStack() as stack:
         for root in roots:
             _lock_root(root, stack)

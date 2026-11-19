@@ -10,9 +10,11 @@ import uuid
 import zlib
 from contextlib import contextmanager
 from pathlib import Path
+from .contracts import DataPlaneError
 
 _MAGIC = b"BQPK1"
 _HEADER = struct.Struct(">5s32sQQ")
+_METADATA_UPDATE_BATCH_RECORDS = 1000
 
 
 class DataPlaneArchiveMixin:
@@ -113,23 +115,23 @@ class DataPlaneArchiveMixin:
                 stream.seek(offset)
                 header = stream.read(_HEADER.size)
                 if len(header) != _HEADER.size:
-                    raise ValueError("BILQIS_DATA_PLANE_ARCHIVE_TRUNCATED")
+                    raise ValueError(DataPlaneError.ARCHIVE_TRUNCATED.value)
                 magic, encoded_digest, recorded_raw, recorded_compressed = _HEADER.unpack(header)
                 if (magic != _MAGIC or encoded_digest.hex() != digest or
                         recorded_raw != raw_bytes or recorded_compressed != compressed_bytes):
-                    raise ValueError("BILQIS_DATA_PLANE_ARCHIVE_HEADER_DRIFT")
+                    raise ValueError(DataPlaneError.ARCHIVE_HEADER_DRIFT.value)
                 compressed = stream.read(compressed_bytes)
         if len(compressed) != compressed_bytes:
-            raise ValueError("BILQIS_DATA_PLANE_ARCHIVE_TRUNCATED")
+            raise ValueError(DataPlaneError.ARCHIVE_TRUNCATED.value)
         raw = zlib.decompress(compressed)
         if len(raw) != raw_bytes or hashlib.sha256(raw).hexdigest() != digest:
-            raise ValueError("BILQIS_DATA_PLANE_ARCHIVE_CONTENT_DRIFT")
+            raise ValueError(DataPlaneError.ARCHIVE_CONTENT_DRIFT.value)
         return raw
 
     def compact_archive(self, kind: str) -> dict:
         """Rewrite one pack family to only metadata-reachable records."""
         if kind not in {"objects", "nodes"}:
-            raise ValueError("BILQIS_DATA_PLANE_ARCHIVE_KIND_INVALID")
+            raise ValueError(DataPlaneError.ARCHIVE_KIND_INVALID.value)
         table = "archived_objects" if kind == "objects" else "archived_nodes"
         columns = ("sha256,pack_id,pack_offset,raw_bytes,compressed_bytes" if kind == "objects"
                    else "sha256,pack_id,pack_offset,raw_bytes,compressed_bytes")
@@ -164,12 +166,12 @@ class DataPlaneArchiveMixin:
                             source_stream.seek(old_offset)
                             record = source_stream.read(_HEADER.size + compressed_bytes)
                             if len(record) != _HEADER.size + compressed_bytes:
-                                raise ValueError("BILQIS_DATA_PLANE_ARCHIVE_TRUNCATED")
+                                raise ValueError(DataPlaneError.ARCHIVE_TRUNCATED.value)
                             offset = out.tell()
                             out.write(record)
                             updates.append((pack_id, offset, digest))
                             records += 1
-                            if len(updates) >= 1000:
+                            if len(updates) >= _METADATA_UPDATE_BATCH_RECORDS:
                                 self._db.executemany(
                                     f"UPDATE {table} SET pack_id=?,pack_offset=? WHERE sha256=?",
                                     updates)

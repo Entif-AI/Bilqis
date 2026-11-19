@@ -7,7 +7,7 @@ import zlib
 from contextlib import contextmanager
 from pathlib import Path
 from .contracts import (
-    SCHEMA_VERSION, SQLITE_BUSY_TIMEOUT_MS, SQLITE_MMAP_BYTES, SQLITE_CACHE_KIB,
+    LEGACY_SCHEMA_VERSION, SCHEMA_VERSION, SQLITE_BUSY_TIMEOUT_MS, SQLITE_MMAP_BYTES, SQLITE_CACHE_KIB,
     DataPlaneError, _error,
 )
 from .schema import CORE_SCHEMA_SQL, C05_FIXED_SCHOOL_TRUST_SQL, PLANNER_FRONTIER_TRUST_SQL
@@ -35,7 +35,7 @@ class DataPlaneStoreMixin:
             self._db.execute(
                 "INSERT INTO meta(key,value) VALUES('schema_version',?)",
                 (str(SCHEMA_VERSION),))
-        elif int(row[0]) == 1 and SCHEMA_VERSION == 2:
+        elif int(row[0]) == LEGACY_SCHEMA_VERSION:
             self._db.execute(
                 "UPDATE meta SET value=? WHERE key='schema_version'",
                 (str(SCHEMA_VERSION),))
