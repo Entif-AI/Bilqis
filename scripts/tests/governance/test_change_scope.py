@@ -59,6 +59,22 @@ class ChangeScopeTests(unittest.TestCase):
         _, scoped = change_scope.scoped_name_status(self.root, main_head)
         self.assertIn("feature.py", scoped)
 
+    def test_synthetic_pr_merge_scopes_only_changes_after_requested_base(self):
+        adoption = self.commit_file("governance.txt", "rule\n", "governance")
+        change_scope.GOVERNANCE_ADOPTION_COMMIT = adoption
+        base = self.commit_file("base_only.py", "VALUE = 1\n", "base only")
+        subprocess.run(["git", "switch", "-qc", "feature"], cwd=self.root, check=True)
+        self.commit_file("feature.py", "VALUE = 2\n", "feature")
+        subprocess.run(["git", "switch", "-q", "main"], cwd=self.root, check=True)
+        subprocess.run(["git", "merge", "--no-ff", "-qm", "synthetic pr merge", "feature"],
+                       cwd=self.root, check=True)
+
+        self.assertEqual(change_scope.effective_base(self.root, base), base)
+        boundary, scoped = change_scope.scoped_name_status(self.root, base)
+        self.assertEqual(boundary, base)
+        self.assertIn("feature.py", scoped)
+        self.assertNotIn("base_only.py", scoped)
+
     def test_later_base_merge_does_not_make_imported_file_an_encounter(self):
         subprocess.run(["git", "branch", "feature", self.root_sha], cwd=self.root, check=True)
         adoption = self.commit_file("governance.txt", "rule\n", "governance")
