@@ -3712,3 +3712,48 @@ data-defined; do not restore hard-coded A -> B -> C progression.
 **Durable owner:** GitHub parent #1286 owns the recursive decomposition,
 dependency graph, implementation children, integration proof, and live-trainer
 conformance closure for this decision.
+
+## ADR-147 | 2026-11-19 | Bound the shared data plane with packed archival CAS and reachability retention
+
+**Status:** Accepted by direct owner instruction on 2026-11-19 through issue #1438.
+
+**Problem:** ADR-081 moved immutable School state into a workstation-shared Merkle
+data plane, but its ordinary object and node payloads remained append-only BLOBs in
+SQLite. Repeated training attempts accumulated more than one million immutable
+objects and tens of thousands of nodes without any reachability collector. The
+same workstation store also retained heavyweight tensor CAS objects after their
+runtime custody obligations ended. The result was a control-plane SQLite file tens
+of gigabytes larger than the metadata needed to operate the learner.
+
+**Decision:** SQLite remains the durable index, identity, trust, event, pointer,
+and retention-control surface, but new immutable object and node payload bytes move
+to compressed append-only pack files beside the database. SQLite schema v2 stores
+only each archived digest's pack identity, byte offset, encoded size, raw size,
+generation, and parent linkage as applicable. Reads remain dual-format so legacy
+schema-v1 BLOB rows can migrate incrementally without changing any content digest
+or logical state pointer. Migration verifies every legacy payload before deleting
+its BLOB row and is restart-safe; pack bytes written before an interrupted metadata
+publication are harmless orphans removed by later pack compaction.
+
+Retention is graph-based, not age-based. Roots include durable School current and
+historical generation pointers, the current BAMF generation manifest and its
+accepted manifest ancestry, named data-plane object references, and explicit
+retention pins. Reachability follows node ancestry and content-addressed references
+through state fields, bundle sidecars, tensors, and nested JSON evidence. Explicit
+pins carry a reason and one of the current/recovery/champion/soup/evidence/operator
+tiers. Current learner custody, recovery ancestry, active championship/soup
+references, and pinned witnesses therefore survive cleanup; an unreferenced old
+payload does not survive merely because it was once written.
+
+GC is dry-run-first and reports reachable/unreachable counts plus reclaimable
+bytes. Applied maintenance requires the relevant human-operator locks, deletes only
+proven-unreachable metadata and tensor objects, compacts archive packs after
+deletion, and may VACUUM SQLite only after reachability-safe removal. Exact reads of
+retained historical generations remain valid. This is lifecycle management for
+immutable evidence, not permission to rewrite evidence, synthesize lineage, or run
+optimizer updates.
+
+This refines ADR-081/082 by completing their hot/cold storage boundary. It composes
+with ADR-143: subthreshold or superseded championship custody must not pin a whole
+checkpoint when no independent current, recovery, title, soup, evidence, or
+operator authority still references it.

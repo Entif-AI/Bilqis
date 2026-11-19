@@ -12,11 +12,14 @@ from ._data_plane.contracts import (
 from ._data_plane.store import DataPlaneStoreMixin
 from ._data_plane.events import DataPlaneEventMixin
 from ._data_plane.file_objects import DataPlaneFileObjectMixin
+from ._data_plane.archive import DataPlaneArchiveMixin
+from ._data_plane.cache import DataPlaneCacheMixin
 
 _CONNECTIONS: dict[str, "DataPlane"] = dict()
 _CONNECTIONS_LOCK = threading.Lock()
 
-class DataPlane(DataPlaneStoreMixin, DataPlaneEventMixin, DataPlaneFileObjectMixin):
+class DataPlane(DataPlaneStoreMixin, DataPlaneEventMixin, DataPlaneFileObjectMixin,
+                DataPlaneArchiveMixin, DataPlaneCacheMixin):
     pass
 
 def data_plane() -> DataPlane:

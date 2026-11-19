@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 from enum import Enum
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 SQLITE_BUSY_TIMEOUT_MS = 30_000
 SQLITE_MMAP_BYTES = 256 * 1024 * 1024
 SQLITE_CACHE_KIB = 64 * 1024
