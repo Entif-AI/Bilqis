@@ -156,6 +156,8 @@ class DistributedResourceModeTests(unittest.TestCase):
             self.assertFalse(probe.stdout.strip(), "orphaned rank child survived timeout")
 
     def test_factory_capsule_strips_process_live_owner_state_before_pickle(self):
+        from bilqis_mlx.runtime.training_objective import current_training_objective
+
         compiled_value = SimpleNamespace(
             compiled="rows", compiler_configs=("config",), features="features",
             extents="extents", source_asts=None, partial_forest_receipts=None)
@@ -193,7 +195,8 @@ class DistributedResourceModeTests(unittest.TestCase):
                 parameters={"p": 1}, prepared=prepared,
                 source_context=source_context, feature_snapshot="snapshot",
                 generation="b" * 64, cache=cache, resource_plan="plan",
-                manifest="manifest")
+                manifest=SimpleNamespace(
+                    training_objective_digest=current_training_objective().digest))
         payload = pickle.dumps(capsule, protocol=5)
         restored = pickle.loads(payload)
         self.assertEqual(restored.cache_witness, "portable-witness")

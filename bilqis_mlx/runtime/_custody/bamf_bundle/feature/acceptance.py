@@ -26,7 +26,8 @@ from ..codec import load_bamf_bundle
 from ..publication import ACCEPTANCE_DIR, _pointer_read_lock, _read_pointer
 from ..records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_BUNDLE_SCHEMA,
-    BamfGenerationManifest, invalid, sha,
+    BamfGenerationManifest, OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+    OBJECTIVE_BOUND_BAMF_BUNDLE_SCHEMA, invalid, sha,
 )
 from .receipt import is_digest
 
@@ -166,10 +167,14 @@ def parent_acceptance_anchor_from_manifest(
         manifest = BamfGenerationManifest.from_record(json.loads(raw)).to_record()
     except (UnicodeDecodeError, json.JSONDecodeError, BilqisError):
         invalid("BAMF_GENERATION_ACCEPTANCE_INVALID")
-    if manifest.get("schema") == BAMF_BUNDLE_SCHEMA:
+    schema = manifest.get("schema")
+    if schema in {BAMF_BUNDLE_SCHEMA, OBJECTIVE_BOUND_BAMF_BUNDLE_SCHEMA}:
         return None
     parent_acceptance = manifest.get("parent_acceptance_sha256")
-    if (manifest.get("schema") != ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA
+    if (schema not in {
+            ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+            OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+        }
             or not is_digest(parent_acceptance)):
         invalid("BAMF_GENERATION_ACCEPTANCE_MISSING")
     return parent_acceptance

@@ -1,0 +1,64 @@
+{
+  "attribution": {
+    "accepted_record_reconstruction": "timed separately in cold_attribution",
+    "event_subscription": "blocking wait; refresh cost measured separately",
+    "query_fanout": "measured across 14 native query families",
+    "serialization": "measured separately from catalog query execution",
+    "sqlite": "timed with rejection-ledger authentication in cold_attribution"
+  },
+  "budgets": {
+    "idle_core_fraction": 0.01,
+    "nominal_live_core_fraction": 0.02,
+    "worst_change_core_fraction": 0.05
+  },
+  "cadence": {
+    "control_plane_subscription_seconds": 0.25,
+    "home_recovery_seconds": 2.0,
+    "trainer_heartbeat_seconds": 1.0
+  },
+  "disposable_live_observation": {
+    "accepted_history_reauthentications": 0,
+    "cold_student_loads": 0,
+    "live_cp04_refresh_cpu_ms": 0.147150000000007,
+    "live_cp04_refresh_wall_ms": 0.15112926485016942,
+    "live_run_query_cpu_ms": 0.2660500000001065,
+    "live_run_query_wall_ms": 0.27054998790845275,
+    "observation_updates": 20,
+    "unchanged_cp04_check_cpu_ms": 0.02109999999999168,
+    "unchanged_cp04_check_wall_ms": 0.02115000505000353
+  },
+  "measured": {
+    "idle_core_fraction": 0.0007278200000000101,
+    "nominal_live_core_fraction": 0.0004976000000000802,
+    "worst_change_core_fraction": 0.001652800000000454
+  },
+  "real_accepted_run": {
+    "cached_prime_full_round_cpu_ms": 1110.7610000000002,
+    "cached_prime_full_round_wall_ms": 1121.9647920224816,
+    "cold_attribution": {
+      "accepted_record_projection_cpu_ms": 391.745,
+      "accepted_record_projection_wall_ms": 395.6968749407679,
+      "authenticated_history_cpu_ms": 202.72999999999996,
+      "authenticated_history_wall_ms": 212.55154185928404,
+      "catalog_construction_cpu_ms": 0.07500000000004725,
+      "catalog_construction_wall_ms": 0.0743749551475048,
+      "observation_overlay_cpu_ms": 1.1299999999998533,
+      "observation_overlay_wall_ms": 1.3585828710347414,
+      "rejection_ledger_sqlite_cpu_ms": 556.4839999999999,
+      "rejection_ledger_sqlite_wall_ms": 588.1266251672059
+    },
+    "families_per_full_round": 14,
+    "run_id": "aspirant",
+    "serialization_full_round_cpu_ms": 3.2273500000000066,
+    "serialization_full_round_wall_ms": 3.87078138301149,
+    "sqlite_role": "cold rejection-ledger authentication only; warm cached query path avoids it",
+    "uncached_full_round_cpu_ms": 1162.8436666666664,
+    "uncached_full_round_wall_ms": 1239.0312223384778,
+    "warm_full_round_cpu_ms": 4.728399999999944,
+    "warm_full_round_wall_ms": 4.805312410462648,
+    "warm_run_query_cpu_ms": 1.4556400000000203,
+    "warm_run_query_wall_ms": 1.5535190189257264
+  },
+  "schema": "bilqis.bamf.mission-control.observer-profile/v1",
+  "status": "PASS"
+}

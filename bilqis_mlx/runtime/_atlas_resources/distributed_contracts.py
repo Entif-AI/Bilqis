@@ -1,13 +1,14 @@
 """C08.4 immutable execution-topology and rank-result contracts."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import re
 
 from .contracts import _digest, _invalid
 
 
-DISTRIBUTED_STEP_MANIFEST_SCHEMA = "bilqis.c08.distributed-step-manifest/v1"
+LEGACY_DISTRIBUTED_STEP_MANIFEST_SCHEMA = "bilqis.c08.distributed-step-manifest/v1"
+DISTRIBUTED_STEP_MANIFEST_SCHEMA = "bilqis.c08.distributed-step-manifest/v2"
 DISTRIBUTED_RANK_SCHEMA = "bilqis.c08.distributed-rank/v1"
 DISTRIBUTED_PARTITION_SCHEMA = "bilqis.c08.distributed-partition/v1"
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
@@ -57,6 +58,13 @@ class DistributedExecutionProfile:
             _invalid("BAMF_C08_DISTRIBUTED_PROFILE_INVALID")
 
 
+def _current_objective_digest() -> str:
+    from bilqis_mlx.runtime.training_objective import (
+        current_training_objective,
+    )
+    return current_training_objective().digest
+
+
 @dataclass(frozen=True)
 class DistributedStepManifest:
     retained_generation: int
@@ -71,6 +79,8 @@ class DistributedStepManifest:
     backend: str
     numeric_precision: str
     reduction_policy: str = "fp32_weighted_mean"
+    training_objective_digest: str | None = field(
+        default_factory=_current_objective_digest)
     schema_version: str = DISTRIBUTED_STEP_MANIFEST_SCHEMA
 
     def __post_init__(self) -> None:
@@ -98,12 +108,24 @@ class DistributedStepManifest:
                 or self.backend not in DISTRIBUTED_BACKENDS
                 or self.numeric_precision not in _PRECISIONS
                 or self.reduction_policy not in _REDUCTIONS
-                or self.schema_version != DISTRIBUTED_STEP_MANIFEST_SCHEMA):
+                or self.schema_version not in {
+                    LEGACY_DISTRIBUTED_STEP_MANIFEST_SCHEMA,
+                    DISTRIBUTED_STEP_MANIFEST_SCHEMA}):
             _invalid("BAMF_C08_DISTRIBUTED_MANIFEST_INVALID")
+        if self.schema_version == LEGACY_DISTRIBUTED_STEP_MANIFEST_SCHEMA:
+            if self.training_objective_digest is not None:
+                _invalid("BAMF_C08_DISTRIBUTED_OBJECTIVE_UNBOUND")
+        else:
+            from bilqis_mlx.runtime.training_objective import (
+                require_training_objective_digest,
+            )
+            if not _sha(self.training_objective_digest):
+                _invalid("BAMF_C08_DISTRIBUTED_OBJECTIVE_REQUIRED")
+            require_training_objective_digest(self.training_objective_digest)
 
     @property
     def digest(self) -> str:
-        return _digest({
+        payload = {
             "retained_generation": self.retained_generation,
             "retained_manifest_sha256": self.retained_manifest_sha256,
             "curriculum_release": self.curriculum_release,
@@ -118,7 +140,10 @@ class DistributedStepManifest:
             "numeric_precision": self.numeric_precision,
             "reduction_policy": self.reduction_policy,
             "schema_version": self.schema_version,
-        })
+        }
+        if self.schema_version == DISTRIBUTED_STEP_MANIFEST_SCHEMA:
+            payload["training_objective_digest"] = self.training_objective_digest
+        return _digest(payload)
 
 
 @dataclass(frozen=True)
@@ -145,7 +170,7 @@ class DistributedPartition:
 
 
 __all__ = (
-    "DISTRIBUTED_BACKENDS",
+    "DISTRIBUTED_BACKENDS", "LEGACY_DISTRIBUTED_STEP_MANIFEST_SCHEMA",
     "DistributedExecutionProfile", "DistributedPartition", "DistributedRank",
     "DistributedStepManifest",
 )

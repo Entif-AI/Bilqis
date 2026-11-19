@@ -12,8 +12,9 @@ from .._atlas_candidate.state import (
 )
 from .._atlas_candidate.transaction import (
     CandidateTransaction, _begin_candidate_with_parent_identity,
-    begin_candidate, candidate_step, resolve_candidate,
+    begin_candidate, resolve_candidate,
 )
+from .._atlas_candidate.step import candidate_step
 
 
 def issue_parameter_extension_state(

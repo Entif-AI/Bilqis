@@ -6,7 +6,9 @@ from dataclasses import replace
 import mlx.core as mx
 
 from bilqis_mlx.learning.atlas_readout.decoder.feedback import role_id_vector
-from bilqis_mlx.runtime.atlas_refinement import _refine_frame, refinement_parameter_view
+from bilqis_mlx.runtime.atlas_refinement import (
+    _refine_frame, refinement_parameter_view, routing_logits_from_state,
+)
 from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.refinement_policy import select_prediction_refinements
 from bilqis_mlx.runtime.refinement_request import refinement_request_disposition
@@ -64,18 +66,17 @@ def _selected_frame_index(row, encoded, config, choice, *, row_index=0):
     return index
 
 
-def _prediction_local_refinement(
+def _prediction_local_refinement_with_routing(
     params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
     *, training, producer_row_index=0,
 ):
     selection = _prediction_refinement_selection(
         compiled_batch, answer_plan, generation, training=training)
     if selection is None:
-        return row_hidden, (), False
+        return row_hidden, (), False, ()
     request, choices = selection
     compiled = compiled_batch.compiled
     config = compiled.compiler_configs[0]
-    source_asts = compiled.source_asts
     if (
         type(producer_row_index) is not int
         or not 0 <= producer_row_index < len(producer._encoded.compiled.rows)
@@ -84,17 +85,23 @@ def _prediction_local_refinement(
     ):
         _invalid("B11_REFINEMENT_SOURCE_CUSTODY_REQUIRED")
     if not choices:
-        return row_hidden, (), False
+        return row_hidden, (), False, ()
     role, roles = _refinement_role_vector(request, semantics, params)
     parameters = refinement_parameter_view(
         params, spec=ModelTopologySpecV2(), extents=compiled.extents)
     row = compiled.compiled.rows[0]
     values = [row_hidden[index] for index in range(row_hidden.shape[0])]
     executed = False
+    routing = []
     for choice in choices:
         index = _selected_frame_index(
             row, producer._encoded, config, choice,
             row_index=producer_row_index)
+        if training:
+            routing.append((
+                routing_logits_from_state(values[index], parameters),
+                choice.passes,
+            ))
         if choice.passes == 0:
             continue
         members = producer._encoded.members[producer_row_index][index]
@@ -105,8 +112,19 @@ def _prediction_local_refinement(
             members, role, choice.passes, parameters)
         values[index] = result.hidden
         executed = True
-    return (mx.stack(tuple(values)) if executed else row_hidden), roles, executed
+    return (
+        (mx.stack(tuple(values)) if executed else row_hidden),
+        roles, executed, tuple(routing))
 
+
+def _prediction_local_refinement(
+    params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
+    *, training, producer_row_index=0,
+):
+    hidden, roles, executed, _routing = _prediction_local_refinement_with_routing(
+        params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
+        training=training, producer_row_index=producer_row_index)
+    return hidden, roles, executed
 
 def _prediction_refinement_selection(
     compiled_batch, answer_plan, generation, *, training,
@@ -156,7 +174,8 @@ def _prediction_refinement_selection(
 
 
 __all__ = (
-    "_prediction_local_refinement", "_refinement_role_vector",
+    "_prediction_local_refinement", "_prediction_local_refinement_with_routing",
+    "_refinement_role_vector",
     "_prediction_refinement_selection",
     "_selected_frame_index",
 )

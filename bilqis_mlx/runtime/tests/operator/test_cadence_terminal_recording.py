@@ -36,7 +36,8 @@ def _prepared(*, accepted):
         status="READY", parent=SimpleNamespace(retained_state=SimpleNamespace(optimizer_step=0)),
         selection=selection, step=step, decision=decision, retained=object(),
         successor=successor, rejection_attempt_ordinal=1, rejection_journal_ordinal=1,
-        capability="cap", resource={}, candidate_evidence={}, how_outcome=None)
+        capability="cap", resource={}, candidate_evidence={}, how_outcome=None,
+        structural_weaknesses=())
 
 
 def _run(prepared, order):

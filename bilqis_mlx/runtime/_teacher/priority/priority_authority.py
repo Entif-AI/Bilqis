@@ -200,7 +200,8 @@ def _bind_lawful_priority_epoch(
         _issue_lawful_teaching_frontier_from_epoch,
     )
     planning_epoch = _build_priority_planning_epoch(
-        run_dir, source_context, atlas_artifact_path, progress)
+        run_dir, source_context, atlas_artifact_path, progress,
+        authenticated_features=_authenticated)
     planning = _priority_planning_from_epoch(
         planning_epoch, progress=progress)
     lawful_frontier = _issue_lawful_teaching_frontier_from_epoch(

@@ -32,6 +32,7 @@ from bilqis_mlx.runtime.source_prefetch import (
     SCHEMA as SOURCE_PREFETCH_SCHEMA,
     freeze_source_packet, source_prefetch_pool,
 )
+from bilqis_mlx.runtime.training_objective import current_training_objective
 
 
 GENERATION = "fixture:retained-generation"
@@ -159,13 +160,18 @@ class FactoryRetryRestorationTests(AtlasResourcesFixture):
         import mlx.core as mx
 
         from bilqis_mlx.runtime.candidate import retry
+        from bilqis_mlx.runtime.training_objective import current_training_objective
 
         weights = mx.array([1.0])
         optimizer = SimpleNamespace(
             parameters={"weight": weights}, m={}, v={}, update_counts={})
         parent = SimpleNamespace(
             topology=self.topology,
-            retained_state=SimpleNamespace(optimizer=optimizer, optimizer_step=3))
+            retained_state=SimpleNamespace(
+                optimizer=optimizer,
+                optimizer_step=3,
+                custody=SimpleNamespace(
+                    training_objective_digest=current_training_objective().digest)))
         cache = SimpleNamespace(
             _candidate_identity_sha256="a" * 64, accepted_manifest_sha256="b" * 64)
         rows = _rows(2)

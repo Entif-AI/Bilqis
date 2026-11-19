@@ -39,7 +39,7 @@ def distributed_manifest_record(manifest: DistributedStepManifest) -> dict:
     if type(manifest) is not DistributedStepManifest:
         _invalid("BAMF_C08_DISTRIBUTED_MANIFEST_REQUIRED")
     manifest.__post_init__()
-    return {
+    record = {
         "schema_version": manifest.schema_version,
         "retained_generation": manifest.retained_generation,
         "retained_manifest_sha256": manifest.retained_manifest_sha256,
@@ -59,6 +59,9 @@ def distributed_manifest_record(manifest: DistributedStepManifest) -> dict:
         "reduction_policy": manifest.reduction_policy,
         "manifest_digest": manifest.digest,
     }
+    if manifest.training_objective_digest is not None:
+        record["training_objective_digest"] = manifest.training_objective_digest
+    return record
 
 
 def load_distributed_manifest(record: Mapping) -> DistributedStepManifest:
@@ -79,6 +82,7 @@ def load_distributed_manifest(record: Mapping) -> DistributedStepManifest:
             mlx_version=record["mlx_version"], backend=record["backend"],
             numeric_precision=record["numeric_precision"],
             reduction_policy=record["reduction_policy"],
+            training_objective_digest=record.get("training_objective_digest"),
             schema_version=record["schema_version"])
     except (KeyError, TypeError, ValueError):
         _invalid("BAMF_C08_DISTRIBUTED_RECEIPT_INVALID")

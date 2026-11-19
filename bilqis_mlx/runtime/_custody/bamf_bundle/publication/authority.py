@@ -30,7 +30,7 @@ from ..motif.transition import (
 )
 from ..records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BamfBundleCandidate, CompleteStudent,
-    canonical, invalid, sha,
+    OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, canonical, invalid, sha,
 )
 from .acceptance import (
     load_generation_locked, require_accepted_parent, require_published_acceptance,
@@ -243,7 +243,10 @@ def parent_acceptance_for_publication(
                     or current.get("acceptance_sha256") != accepted.digest):
                 invalid(DataPlaneError.BUNDLE_IDENTITY_CONFLICT)
             manifest = live_manifest(run_dir, current)
-            if manifest.get("schema") != ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA:
+            if manifest.get("schema") not in {
+                    ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+                    OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+                }:
                 return _UNBOUND_RETRY, None
             return manifest.get("parent_acceptance_sha256"), None
         if (current["run_id"] != candidate.run_id

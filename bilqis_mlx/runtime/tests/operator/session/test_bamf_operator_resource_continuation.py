@@ -65,3 +65,21 @@ def test_resource_rejection_returns_to_scheduler_without_learner_feedback(tmp_pa
         assert outcome[:4] == ("RESOURCE_HOLD", 0, 0, 0)
         publish.assert_not_called()
         assert _resume_state("RESOURCE_HOLD") == (True, "RESUME_AFTER_RESOURCE_RECOVERY")
+
+
+def test_visit_progress_is_mirrored_into_observation_activity(tmp_path):
+    observer = SimpleNamespace(finish=Mock(), update=Mock())
+    messages = []
+    def visit_fn(*_args, **kwargs):
+        kwargs['progress']('planner: compiling semantic curriculum')
+        return 'REJECTED'
+    outcome = _run_visits(
+        tmp_path, deadline=100, max_visits=1, steps_per_visit=1, reserve_gib=100,
+        source_prefetch_workers=0, progress=messages.append, source_prefetch_executor=None,
+        metrics=None, run_authority_binding=None, resource_snapshot=None,
+        monotonic=lambda: 0, observer_type=lambda *_: nullcontext(observer),
+        emit_progress=lambda callback, message: callback(message) if callback else None,
+        visit_fn=visit_fn)
+    observer.update.assert_any_call(activity='planner: compiling semantic curriculum')
+    assert 'planner: compiling semantic curriculum' in messages
+    assert outcome[:4] == ('VISIT_LIMIT', 1, 0, 1)

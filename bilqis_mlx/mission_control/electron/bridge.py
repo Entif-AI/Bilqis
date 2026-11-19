@@ -115,10 +115,10 @@ class ElectronBridge:
         if self._local_service is not None and self._local_service_target == target:
             return
         self._stop_local_service()
-        from bilqis_mlx.control_plane.native_source import native_query_catalog
+        from bilqis_mlx.control_plane.native_source import native_query_source
         service = ControlPlaneService(
             run_dir, socket_path,
-            query_source=lambda: native_query_catalog(run_dir))
+            query_source=native_query_source(run_dir))
         stack = ExitStack()
         try:
             stack.enter_context(advertise_active_endpoint(

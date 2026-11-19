@@ -52,6 +52,18 @@ def execute_with_oom_retry(
         return RestorationReceipt(retained_digest, snapshot_sha256, generation, True)
 
     while True:
+        accepted_custody = accepted.custody
+        if candidate is not None:
+            candidate.__post_init__()
+            objective_digest = candidate.training_objective_digest
+        else:
+            objective_digest = (
+                None if accepted_custody is None
+                else accepted_custody.training_objective_digest)
+        from bilqis_mlx.runtime.training_objective import (
+            require_training_objective_digest,
+        )
+        require_training_objective_digest(objective_digest)
         try:
             return execute(plan), plan, state
         except RuntimeError as error:

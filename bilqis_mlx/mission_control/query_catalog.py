@@ -7,6 +7,7 @@ from .contracts.envelopes import (
     PartialEnvelope, StaleEnvelope, UnavailableEnvelope,
 )
 from .contracts.events import LearningEpisode
+from .contracts.trainer import TrainerObservation
 from .contracts.model import WireRecord, require
 from .contracts.observability import GenerationManifest
 from .query_contracts import (
@@ -78,6 +79,20 @@ class MissionControlQueryCatalog:
                 and type(self._by_id[item.stale_record_id])
                 in FAMILY_TYPES.get(request.family, ())
             )
+        if (request.mode is QueryMode.CURRENT and request.generation is None
+                and request.as_of is None):
+            current_generation = {}
+            for item in self._records:
+                run = item.meta.run
+                if run is not None and not isinstance(item, TrainerObservation):
+                    current_generation[run.run_id] = max(
+                        run.generation, current_generation.get(run.run_id, -1))
+            markers = [
+                item for item in markers
+                if item.meta.run is None
+                or item.meta.run.generation == current_generation.get(
+                    item.meta.run.run_id, item.meta.run.generation)
+            ]
         return tuple(sorted(markers, key=record_sort_key))
 
     def _links_for(self, record: WireRecord) -> tuple[QueryLink, ...]:

@@ -4,13 +4,16 @@ from dataclasses import replace
 from unittest.mock import patch
 
 import bilqis_mlx.runtime.mlx_checkpoint as mlx_checkpoint
+from bilqis_mlx.data_plane import data_plane
 from bilqis_mlx.learning.atlas_acceptance import mint_acceptance_binding
 from bilqis_mlx.runtime.bamf_bundle import (
     publish_bamf_generation, read_accepted_generation_feature_lineage,
     save_bamf_bundle,
 )
 from bilqis_mlx.runtime.bamf_bundle import feature_authority
-from bilqis_mlx.runtime.bamf_bundle.records import BAMF_POINTER_SCHEMA, canonical
+from bilqis_mlx.runtime.bamf_bundle.records import (
+    BAMF_BUNDLE_SCHEMA, BAMF_POINTER_SCHEMA, canonical, sha,
+)
 from bilqis_mlx.runtime.tests.custody.bamf_bundle.contracts.feature_authority_lineage_support import (
     FeatureLineageCase, SUCCESSOR_ATLAS_BUNDLE, SUCCESSOR_RELEASE,
     SUCCESSOR_SOURCE_BUNDLE, frozen_snapshot,
@@ -37,10 +40,24 @@ class AcceptedFeatureMigrationTests(FeatureLineageCase):
         stage = self.run / stage_name
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
             manifest = save_bamf_bundle(student, stage)
+        legacy = {
+            key: value for key, value in manifest.items()
+            if key not in {
+                "manifest_sha256", "training_objective_ref",
+                "training_objective_digest", "parent_acceptance_sha256",
+            }
+        }
+        legacy["schema"] = BAMF_BUNDLE_SCHEMA
+        raw = canonical(legacy)
+        legacy_digest = sha(raw)
+        (stage / "manifest.json").write_bytes(raw)
+        data_plane().put_node(
+            legacy_digest, raw, student.generation,
+            student.parent_manifest_sha256)
         bundle_root = self.run / "bamf-bundles"
         bundle_root.mkdir(parents=True, exist_ok=True)
-        stage.rename(bundle_root / manifest["manifest_sha256"])
-        return manifest
+        stage.rename(bundle_root / legacy_digest)
+        return {**legacy, "manifest_sha256": legacy_digest}
 
     def _legacy_changed_tip(self, root):
         genesis = feature_bound(candidate(parent_state()), root)

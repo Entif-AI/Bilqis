@@ -82,9 +82,13 @@ function attentionCopy(item) {
 }
 
 function healthGroup(id, titleKey, rows, state) {
+  const unavailable = t("home.common.unavailable");
+  const available = rows.filter(([_labelKey, value]) => value !== unavailable);
+  const body = available.length
+    ? `<dl>${available.map(([labelKey, value]) => `<div><dt>${esc(t(labelKey))}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>`
+    : `<p class="home-quiet">${esc(t("home.health.noMeasuredValues"))}</p>`;
   return `<section class="home-health-group" data-state="${esc(state)}" ${testIdAttribute("home", "health", id)}>
-    <h3>${esc(t(titleKey))}</h3>
-    <dl>${rows.map(([labelKey, value]) => `<div><dt>${esc(t(labelKey))}</dt><dd>${esc(value)}</dd></div>`).join("")}</dl>
+    <h3>${esc(t(titleKey))}</h3>${body}
   </section>`;
 }
 

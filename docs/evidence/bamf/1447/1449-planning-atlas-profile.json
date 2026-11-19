@@ -1,0 +1,22 @@
+{
+  "abi_entries": 9307,
+  "atlas_bundle_id": "5f8fba20ecc0adebf39c3b663fdffa4f766e780915197f09d116713042a479e7",
+  "authenticated_snapshot_compile_seconds": [
+    12.15743837482296
+  ],
+  "authenticated_snapshot_mean_seconds": 12.15743837482296,
+  "legacy_mean_seconds": 12.442424540873617,
+  "legacy_reload_compile_seconds": [
+    12.442424540873617
+  ],
+  "mean_saved_seconds": 0.28498616605065763,
+  "release_sha256": "58e0c281b5da18b9b7e6c803709b29eeeb0a88f16b06f48de692808e2fb88306",
+  "repeats": 1,
+  "schema": "bilqis.bamf.priority-planning-atlas-profile/v1",
+  "snapshot_load_seconds": 0.3002675829920918,
+  "source_bundle_id": "f1c89c1d1bcd72695c81f8e777d0fbbdf446e92cb27132bebf1cd6873ec689ec",
+  "source_lessons": 9307,
+  "speedup": 1.0234413004832368,
+  "status": "PASS",
+  "structurally_identical": true
+}

@@ -219,7 +219,9 @@ class MicrobatchParticipationProjectionTests(unittest.TestCase):
                 microbatch_impl, "_require_finite_tensor_tree"), patch.object(
                     microbatch_impl, "_gradient_execution_rebinder",
                     return_value=lambda current: object()), patch.object(
-                        microbatch_impl, "microbatch_trace_preflight",
+                        microbatch_impl, "prepare_refinement_selections",
+                        return_value=(None, None)), patch.object(
+                            microbatch_impl, "microbatch_trace_preflight",
                         side_effect=preflight), patch.object(
                             microbatch_impl, "_source_producer", side_effect=producer), patch.object(
                                 microbatch_impl, "_finalize_source_hidden",

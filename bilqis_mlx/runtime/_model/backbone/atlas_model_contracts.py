@@ -48,6 +48,7 @@ class _ForwardRecord:
     salience_hidden: object | None = None
     salience_parameters: object | None = None
     compiled_batch: object | None = None
+    refinement_route_supervision: tuple = ()
 
 
 class _ForwardRegistry:

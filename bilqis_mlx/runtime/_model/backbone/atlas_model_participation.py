@@ -103,7 +103,8 @@ def _execution_dependencies(batch, producer_or_reads, accepted_cache):
 
 def _forward_participation(
     params, batch, plan, output, producer, accepted_cache,
-    refinement_roles=(), refinement_executed=False, producer_row_index=0,
+    refinement_roles=(), refinement_executed=False, refinement_routing=False,
+    producer_row_index=0,
 ):
     source = batch.sources[0]
     snapshot = _bound_snapshot(batch, plan)
@@ -154,6 +155,8 @@ def _forward_participation(
             if item.name.startswith("refine.")
             and item.name not in ("refine.route", "refine.route_bias")
         )
+    if refinement_routing:
+        dense.update(("refine.route", "refine.route_bias"))
     if not dense <= set(params):
         _invalid("B11_EXECUTED_PARAMETER_CENSUS_MISMATCH")
     return _ForwardRecord(

@@ -116,7 +116,8 @@ def test_foundation_priority_issuer_emits_unknown_evidence_and_c06_rotation_only
 
     (registry, signer, source_context, planning, parent,
      planning_generation, offer, cache, lawful) = _foundation_case()
-    with patch(
+    plane = SimpleNamespace(sync_event_ledger=lambda *_args: None)
+    with patch.object(rejection_replay, "data_plane", return_value=plane), patch(
         "bilqis_mlx.runtime.bamf_bundle.accepted_runtime._accepted_correction_registry",
         return_value=(cache, registry),
     ), patch(

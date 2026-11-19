@@ -80,6 +80,32 @@ class PullRequestScopeTests(unittest.TestCase):
             [(second, "fix: second"), (first, "fix: first")],
         )
 
+    def test_ordinary_pr_scope_skips_merge_subjects_but_keeps_authored_commits(self):
+        requested_base = git(self.root, "rev-parse", "HEAD")
+        subprocess.run(["git", "switch", "-qc", "feature"], cwd=self.root, check=True)
+        feature_commit = self.commit("feature.py", "VALUE = 1\n", "fix: feature")
+        subprocess.run(["git", "switch", "-q", "main"], cwd=self.root, check=True)
+        self.commit("base.py", "VALUE = 2\n", "fix: base moved")
+        subprocess.run(["git", "switch", "-q", "feature"], cwd=self.root, check=True)
+        subprocess.run(
+            ["git", "merge", "--no-ff", "-qm", "Merge main into feature", "main"],
+            cwd=self.root,
+            check=True,
+        )
+        current = self.commit("current.py", "VALUE = 3\n", "fix(ci): current repair")
+
+        rows = pr_scope.commit_rows(
+            self.root,
+            base_sha=requested_base,
+            head_sha=current,
+            head_ref="codex/ordinary-feature",
+            unified_baseline=feature_commit,
+        )
+
+        self.assertIn((feature_commit, "fix: feature"), rows)
+        self.assertIn((current, "fix(ci): current repair"), rows)
+        self.assertNotIn("Merge main into feature", [subject for _, subject in rows])
+
     def test_unified_lookalike_branch_gets_no_historical_exemption(self):
         requested_base = git(self.root, "rev-parse", "HEAD")
         historical = self.commit("legacy.py", "VALUE = 1\n", "Fix historical debt")

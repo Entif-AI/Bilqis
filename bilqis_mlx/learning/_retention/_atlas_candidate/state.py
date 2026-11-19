@@ -25,6 +25,20 @@ def _is_genesis_allocations(snapshot: MotifAllocationSnapshot) -> bool:
             and not snapshot.observed_uses and not snapshot.pending_keys
             and not snapshot.aliases)
 
+def _current_objective_ref() -> str:
+    from bilqis_mlx.runtime.training_objective import (
+        current_training_objective,
+    )
+    return current_training_objective().ref
+
+
+def _current_objective_digest() -> str:
+    from bilqis_mlx.runtime.training_objective import (
+        current_training_objective,
+    )
+    return current_training_objective().digest
+
+
 @dataclass(frozen=True)
 class CandidateCustodyIdentity:
     """The published identity of one accepted generation.
@@ -39,6 +53,9 @@ class CandidateCustodyIdentity:
     manifest_sha256: str | None
     topology_digest: str
     extents_digest: str
+    training_objective_ref: str | None = field(default_factory=_current_objective_ref)
+    training_objective_digest: str | None = field(
+        default_factory=_current_objective_digest)
 
     def __post_init__(self) -> None:
         if (not isinstance(self.run_id, str) or not self.run_id
@@ -46,7 +63,13 @@ class CandidateCustodyIdentity:
                 or (self.manifest_sha256 is not None
                     and not is_digest(self.manifest_sha256))
                 or not is_digest(self.topology_digest)
-                or not is_digest(self.extents_digest)):
+                or not is_digest(self.extents_digest)
+                or ((self.training_objective_ref is None)
+                    != (self.training_objective_digest is None))
+                or (self.training_objective_ref is not None
+                    and (not isinstance(self.training_objective_ref, str)
+                         or not self.training_objective_ref
+                         or not is_digest(self.training_objective_digest)))):
             invalid()
 
 
@@ -108,7 +131,9 @@ def _load_retained_candidate_state_with_parts(
             ('custody', CandidateCustodyIdentity(
                 parts.manifest['run_id'], parts.manifest['generation'],
                 expected_manifest_sha256,
-                parts.spec.digest, parts.extents.digest)),
+                parts.spec.digest, parts.extents.digest,
+                parts.manifest.get('training_objective_ref'),
+                parts.manifest.get('training_objective_digest'))),
             ('step_proofs', proofs),
             ('schema_version', STATE_SCHEMA),
             ('_issuance', RETAINED_STATE_ISSUER)):

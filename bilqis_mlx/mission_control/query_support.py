@@ -7,7 +7,7 @@ from types import MappingProxyType
 
 from .contracts.trainer import (
     TrainerObservation, TrainerObservationV2, TrainerObservationV3,
-    TrainerObservationV4, TrainerObservationV5,
+    TrainerObservationV4, TrainerObservationV5, TrainerObservationV6, TrainerObservationV7,
 )
 from .contracts.codec import encode_record
 from .contracts.dossier import CapabilityDossier
@@ -42,7 +42,8 @@ FAMILY_TYPES = MappingProxyType({
     QueryFamily.RECORD: ALL_RECORD_TYPES,
     QueryFamily.RUN: (
         RunContext, OperatorView, TrainerObservation, TrainerObservationV2,
-        TrainerObservationV3, TrainerObservationV4, TrainerObservationV5),
+        TrainerObservationV3, TrainerObservationV4, TrainerObservationV5,
+        TrainerObservationV6, TrainerObservationV7),
     QueryFamily.SCHOOL: (SchoolSnapshot, CurriculumFrontier),
     QueryFamily.CAPABILITY: (CapabilitySnapshot, CapabilityDossier),
     QueryFamily.EPISODE: (LearningEpisode, CandidateDecision),

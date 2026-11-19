@@ -164,8 +164,7 @@ def test_live_screen_short_circuits_before_protected_compilation():
              source_sha256="5" * 64)
     release = N(release_sha256="6" * 64)
     parent = N(baseline_evidence=None)
-    cache = N()
-    target_instrument = N(case=N(capability_id=target))
+    cache, target_instrument = N(), N(case=N(capability_id=target))
     rejection = object()
     protected_compile = Mock(side_effect=AssertionError(
         "protected compilation ran before target rejection"))
@@ -217,6 +216,15 @@ def test_live_screen_short_circuits_before_protected_compilation():
     assert profile["retention_target_case_count"] == 1
     assert profile["retention_target_shared_backbone_launches"] == 0
     assert profile["retention_target_scalar_neural_launches"] == 0
+    progress = [event for event in observed if "retention_completed" in event]
+    assert [(event["retention_completed"], event["retention_total"],
+             event["retention_subject"], event["retention_role"])
+            for event in progress] == [
+                (0, 4, target, "parent"),
+                (1, 4, target, "parent"),
+                (1, 4, target, "candidate"),
+                (2, 4, target, "candidate"),
+            ]
     for field in (
             "retention_target_prepare_wall_seconds",
             "retention_target_solver_wall_seconds",

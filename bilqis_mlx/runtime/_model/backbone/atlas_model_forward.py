@@ -33,7 +33,7 @@ from .atlas_model_contracts import (
     BamfCompiledBatch, _FORWARD_ISSUANCE, _invalid,
 )
 from .atlas_model_participation import _active_banks, _forward_participation
-from .atlas_model_refinement import _prediction_local_refinement
+from .atlas_model_refinement import _prediction_local_refinement_with_routing
 from .atlas_model_forward_validation import (
     validate_decode_row_custody, validate_decode_row_input, validate_task_plan_custody,
 )
@@ -172,7 +172,8 @@ def _decode_bamf_producer_row(
         _active_banks(params, compiled_batch, answer_plan),
         extents,
     )
-    row_hidden, refinement_roles, refinement_executed = _prediction_local_refinement(
+    (row_hidden, refinement_roles, refinement_executed,
+     route_supervision) = _prediction_local_refinement_with_routing(
         params, compiled_batch, answer_plan, generation, producer, row_hidden, semantics,
         training=refinement_training, producer_row_index=row_index)
     memory = DecoderMemory(
@@ -203,9 +204,11 @@ def _decode_bamf_producer_row(
         output, replace(_forward_participation(
             params, compiled_batch, answer_plan, output, producer, accepted_cache,
             refinement_roles, refinement_executed,
+            refinement_routing=bool(route_supervision),
             producer_row_index=row_index),
             salience_hidden=salience_hidden, salience_parameters=params,
-            compiled_batch=compiled_batch))
+            compiled_batch=compiled_batch,
+            refinement_route_supervision=route_supervision))
 
 
 def _forward_bamf_impl(

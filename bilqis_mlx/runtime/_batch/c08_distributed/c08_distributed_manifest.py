@@ -28,6 +28,11 @@ def issue_distributed_step_manifest(
             or tuple(row.provenance.row_id for row in training_batch.rows)
                != plan.logical_row_ids):
         _invalid("C08_DISTRIBUTED_MANIFEST_BATCH_DRIFT")
+    objective_digest = getattr(custody, "training_objective_digest", None)
+    from bilqis_mlx.runtime.training_objective import (
+        require_training_objective_digest,
+    )
+    require_training_objective_digest(objective_digest)
     return DistributedStepManifest(
         retained_generation=custody.generation,
         retained_manifest_sha256=custody.manifest_sha256,
@@ -38,7 +43,8 @@ def issue_distributed_step_manifest(
         world_size=len(profile.workers), workers=profile.workers,
         mlx_version=profile.mlx_version, backend=profile.backend,
         numeric_precision=profile.numeric_precision,
-        reduction_policy=profile.reduction_policy)
+        reduction_policy=profile.reduction_policy,
+        training_objective_digest=objective_digest)
 
 
 __all__ = ("issue_distributed_step_manifest",)

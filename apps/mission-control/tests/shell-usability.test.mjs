@@ -140,6 +140,17 @@ test("temporal primitive localizes relative and full time without inventing miss
   });
   assert.doesNotMatch(unavailable, /<time\b/);
   assert.match(unavailable, /Time unavailable/);
+
+  for (const [index, sentinel] of [0, -1].entries()) {
+    const sentinelMarkup = temporalMarkup({
+      unixSeconds: sentinel,
+      nowMs,
+      locale: "en-US",
+      testId: `resources-time-sentinel-${index}`,
+    });
+    assert.doesNotMatch(sentinelMarkup, /<time\b/);
+    assert.match(sentinelMarkup, /Time unavailable/);
+  }
 });
 
 test("shared shell has no permanent command trigger and exposes a global keyboard palette hint", () => {

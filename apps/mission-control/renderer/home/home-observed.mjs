@@ -8,6 +8,8 @@ const SCHEMAS = new Set([
   "bilqis.bamf.mission-control.trainer-observation/v3",
   "bilqis.bamf.mission-control.trainer-observation/v4",
   "bilqis.bamf.mission-control.trainer-observation/v5",
+  "bilqis.bamf.mission-control.trainer-observation/v6",
+  "bilqis.bamf.mission-control.trainer-observation/v7",
 ]);
 
 export function observedHomeState(records, context, run) {
@@ -48,6 +50,10 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     return formatDurationSeconds(value, { locale });
   };
   const fields = [
+    ...(row.activity ? [["home.observed.activity", row.activity]] : []),
+    ...(Number.isInteger(row.activity_elapsed_ms)
+      ? [["home.observed.activityElapsed", formatDurationSeconds(row.activity_elapsed_ms / 1000, { locale })]]
+      : []),
     ["home.current.targetCapability", row.capability_id],
     ["home.observed.phase", row.phase], ["home.observed.outcome", row.outcome],
     ["home.observed.candidate", candidate], ["home.observed.candidateOptimizer", row.candidate_optimizer_step],
@@ -101,6 +107,13 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     ["home.observed.stepWall", stageDuration(step.candidate_step_wall_seconds)],
     ["home.observed.sourceCompile", stageDuration(step.pre_neural_source_compile_wall_seconds)],
     ["home.observed.currentness", stageDuration(step.currentness_binding_wall_seconds)],
+    ["home.observed.acceptedCurrentnessRefresh", stageDuration(step.accepted_currentness_refresh_wall_seconds)],
+    ["home.observed.acceptedCurrentnessFence", stageDuration(step.accepted_currentness_live_fence_wall_seconds)],
+    ["home.observed.parentCurrentness", stageDuration(step.accepted_parent_currentness_wall_seconds)],
+    ["home.observed.frontierCurrentness", stageDuration(step.lawful_frontier_currentness_wall_seconds)],
+    ["home.observed.teacherCurrentness", stageDuration(step.teacher_visit_currentness_wall_seconds)],
+    ["home.observed.sourceCurrentness", stageDuration(step.source_currentness_wall_seconds)],
+    ["home.observed.candidateBinding", stageDuration(step.candidate_binding_wall_seconds)],
     ["home.observed.b11Preflight", stageDuration(step.b11_preflight_wall_seconds)],
     ["home.observed.b11Autodiff", stageDuration(step.b11_autodiff_wall_seconds)],
     ["home.observed.optimizerAdmission", stageDuration(step.optimizer_admission_wall_seconds)],
@@ -118,10 +131,19 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     ["home.observed.b11AtlasReloads", step.b11_atlas_reload_count],
   ];
   const completedSteps = Array.isArray(row.candidate_steps) ? row.candidate_steps : [];
+  const priorVisitWithSteps = completedSteps.length ? null : observed.history
+    .slice(1)
+    .find((item) => Array.isArray(item.candidate_steps) && item.candidate_steps.length);
+  const priorCompletedStep = priorVisitWithSteps?.candidate_steps?.at(-1) ?? null;
   const activeCompleted = completedSteps.some((step) => step.candidate_step === row.candidate_step);
   const activeStep = row.phase === "TRAINING" && row.candidate_step > 0 && !activeCompleted
     ? { ...row } : null;
   const stepRows = [...completedSteps, ...(activeStep ? [activeStep] : [])];
+  const fallbackPerformance = priorCompletedStep
+    ? stepPerformance(priorCompletedStep)
+    : performance;
+  const availableFallbackPerformance = fallbackPerformance.filter(([_key, value]) =>
+    value !== null && value !== undefined);
   const health = row.learning_health;
   const score = (item) => item && Number.isInteger(item.correct) &&
     Number.isInteger(item.total) ? `${item.correct} / ${item.total}` : unknown;
@@ -167,7 +189,7 @@ export function renderObservedWork(observed, esc, { nowMs = Date.now(), locale }
     <p class="home-observed-accepted">${esc(t("home.observed.acceptedGeneration"))}: ${esc(observed.acceptedGeneration ?? unknown)} · ${esc(t("home.observed.acceptedStep"))}: ${esc(observed.acceptedOptimizerStep ?? unknown)}</p>
     <dl>${fields.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl>
     ${healthMarkup}
-    ${stepRows.length ? `<section data-test-id="home-observed-steps"><h4>${esc(t("home.observed.steps"))}</h4>${stepsMarkup}</section>` : `<details ${testIdAttribute("home", "observed", "performance")}><summary>${esc(t("home.observed.performance"))}</summary><dl>${performance.map(([key, value]) => `<div><dt>${esc(t(key))}</dt><dd>${esc(value ?? unknown)}</dd></div>`).join("")}</dl></details>`}
+    ${stepRows.length ? `<section data-test-id="home-observed-steps"><h4>${esc(t("home.observed.steps"))}</h4>${stepsMarkup}</section>` : availableFallbackPerformance.length ? `<details ${testIdAttribute("home", "observed", "performance")}><summary>${esc(t("home.observed.performance"))}${priorCompletedStep ? ` · ${esc(t("home.observed.stepComplete", { step: priorCompletedStep.candidate_step, duration: stageDuration(priorCompletedStep.candidate_step_wall_seconds) ?? unknown }))}` : ""}</summary><table><thead><tr><th scope="col">${esc(t("home.observed.stage"))}</th><th scope="col">${esc(t("home.observed.value"))}</th></tr></thead><tbody>${availableFallbackPerformance.map(([key, value]) => `<tr><th scope="row">${esc(t(key))}</th><td>${esc(value)}</td></tr>`).join("")}</tbody></table></details>` : ""}
 
     <details ${testIdAttribute("home", "observed", "history")}><summary>${esc(t("home.observed.history"))}</summary><ol>${observed.history.map((item, index) => `<li><span>${esc(historyLine(item))}</span>${temporalMarkup({ unixSeconds: item.meta?.observed_at ?? null, nowMs, locale, testId: `home-observed-history-time-${index}` })}</li>`).join("")}</ol></details>
   </div>`;

@@ -133,6 +133,30 @@ class PreNeuralJourneySemanticReuseTests(PreNeuralJourneySupport, unittest.TestC
         self.assertEqual(len(context.release.execution_plan.capabilities), 21)
         self.assertEqual(selected.status, "TEACHER_SELECTED")
 
+    def test_priority_planning_uses_authenticated_snapshot_without_loader_backed_compile(self):
+        from bilqis_mlx.factory import skos_curriculum
+
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        snapshot_compile = skos_curriculum._compile_semantic_curriculum_snapshot
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                with patch.object(
+                        skos_curriculum, "compile_semantic_curriculum",
+                        side_effect=AssertionError("planning reopened accepted Atlas")), patch.object(
+                            skos_curriculum, "_compile_semantic_curriculum_snapshot",
+                            wraps=snapshot_compile) as direct:
+                    selected = select_foundation_priority_visit(
+                        self.run, context, atlas_path, program=program, school=school)
+
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
+        self.assertGreaterEqual(direct.call_count, 1)
+
     def test_priority_requalification_reuses_planning_generation_authority(self):
         from bilqis_mlx.runtime import priority_qualification
 

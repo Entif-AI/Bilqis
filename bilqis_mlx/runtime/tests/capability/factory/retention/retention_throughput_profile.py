@@ -14,6 +14,7 @@ from pathlib import Path
 import resource
 import tempfile
 import time
+from unittest.mock import patch
 
 import mlx.core as mx
 
@@ -206,55 +207,58 @@ def main() -> int:
     with memory_policy:
         with tempfile.TemporaryDirectory() as directory, host_source_authority_patch():
             stage_root = Path(directory)
-            run_dir, parent, source_context = _prepare_run(
-                stage_root, root, source, artifact)
-            retention_setup_started = time.perf_counter()
-            accepted_cache = bind_accepted_execution_cache(run_dir)
-            protection = bind_current_retention_protection_plan(
-                source_context, parent, accepted_cache)
-            cached_rows = bind_current_retention_source_rows(
-                source_context, accepted_cache, capability)
-            retention_setup_wall = max(
-                0.0, time.perf_counter() - retention_setup_started)
-            feature = authenticate_bamf_execution_feature_context(
-                parent, str(artifact), run_dir)
-            feature_path = persist_feature_manifest(
-                feature.features, stage_root / "features").path
+            with patch.dict(os.environ, {
+                    "BILQIS_DATA_PLANE": str(stage_root / "plane.sqlite3")
+            }):
+                run_dir, parent, source_context = _prepare_run(
+                    stage_root, root, source, artifact)
+                retention_setup_started = time.perf_counter()
+                accepted_cache = bind_accepted_execution_cache(run_dir)
+                protection = bind_current_retention_protection_plan(
+                    source_context, parent, accepted_cache)
+                cached_rows = bind_current_retention_source_rows(
+                    source_context, accepted_cache, capability)
+                retention_setup_wall = max(
+                    0.0, time.perf_counter() - retention_setup_started)
+                feature = authenticate_bamf_execution_feature_context(
+                    parent, str(artifact), run_dir)
+                feature_path = persist_feature_manifest(
+                    feature.features, stage_root / "features").path
 
-            mx.clear_cache()
-            mx.reset_peak_memory()
-            attempt_started = time.perf_counter()
-            training_started = time.perf_counter()
-            bound, rows, step = _train_candidate(
-                run_dir, parent, source_context, feature_path, artifact,
-                capability, source_each)
-            training_wall = max(0.0, time.perf_counter() - training_started)
+                mx.clear_cache()
+                mx.reset_peak_memory()
+                attempt_started = time.perf_counter()
+                training_started = time.perf_counter()
+                bound, rows, step = _train_candidate(
+                    run_dir, parent, source_context, feature_path, artifact,
+                    capability, source_each)
+                training_wall = max(0.0, time.perf_counter() - training_started)
 
-            if os.environ.get("BILQIS_C05_PROFILE_PREFLIGHT_ONLY") == "1":
-                _print_preflight(
-                    capability, source_each, retention_setup_wall, protection,
-                    cached_rows, step, source_context, training_wall)
-                mx.set_default_device(previous_device)
-                return 0
+                if os.environ.get("BILQIS_C05_PROFILE_PREFLIGHT_ONLY") == "1":
+                    _print_preflight(
+                        capability, source_each, retention_setup_wall, protection,
+                        cached_rows, step, source_context, training_wall)
+                    mx.set_default_device(previous_device)
+                    return 0
 
-            observed: list[dict] = []
-            retention_started = time.perf_counter()
-            evaluation = evaluate_factory_retention_candidate(
-                source_context, step.transaction, str(artifact), capability,
-                run_dir=run_dir, observer=observed.append)
-            mx.synchronize()
-            retention_wall = max(0.0, time.perf_counter() - retention_started)
-            from bilqis_mlx.learning.atlas_retention_decision import (
-                issue_factory_retention_decision,
-            )
-            issued = issue_factory_retention_decision(evaluation)
-            attempt_wall = max(0.0, time.perf_counter() - attempt_started)
-            receipt = _profile_receipt(
-                capability, bound, rows, step, cached_rows, evaluation, issued,
-                observed, training_wall, retention_setup_wall, retention_wall,
-                attempt_wall)
-            print("C05_RETENTION_THROUGHPUT_PROFILE " + json.dumps(
-                receipt, sort_keys=True), flush=True)
+                observed: list[dict] = []
+                retention_started = time.perf_counter()
+                evaluation = evaluate_factory_retention_candidate(
+                    source_context, step.transaction, str(artifact), capability,
+                    run_dir=run_dir, observer=observed.append)
+                mx.synchronize()
+                retention_wall = max(0.0, time.perf_counter() - retention_started)
+                from bilqis_mlx.learning.atlas_retention_decision import (
+                    issue_factory_retention_decision,
+                )
+                issued = issue_factory_retention_decision(evaluation)
+                attempt_wall = max(0.0, time.perf_counter() - attempt_started)
+                receipt = _profile_receipt(
+                    capability, bound, rows, step, cached_rows, evaluation, issued,
+                    observed, training_wall, retention_setup_wall, retention_wall,
+                    attempt_wall)
+                print("C05_RETENTION_THROUGHPUT_PROFILE " + json.dumps(
+                    receipt, sort_keys=True), flush=True)
     mx.set_default_device(previous_device)
     return 0
 

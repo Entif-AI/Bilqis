@@ -4,7 +4,8 @@ import math
 
 from bilqis_mlx.mission_control import (
     CandidateDecision, CandidateOutcome, CapabilitySnapshot, CoverageState, DataValue,
-    LearningEpisode, OperatorView, ResourceSample, RunContext, UnavailableEnvelope,
+    LearningEpisode, OperatorView, ResourceSample, RunContext, TeacherSnapshot,
+    UnavailableEnvelope,
     UnavailableReason, ValueOrigin, ValueState,
 )
 
@@ -25,6 +26,28 @@ def _candidate_outcome(retention: dict) -> CandidateOutcome:
         return CandidateOutcome.ACCEPTED
     return CandidateOutcome.ACTION_REQUIRED
 
+
+
+def _accepted_target_score(native: dict, capability: str):
+    outcome = native.get("how_outcome")
+    scores = outcome.get("scores") if isinstance(outcome, dict) else None
+    context = outcome.get("context") if isinstance(outcome, dict) else None
+    grade = context.get("grade") if isinstance(context, dict) else None
+    if not isinstance(scores, list):
+        return None, None, grade if isinstance(grade, str) and grade else None
+    for row in scores:
+        if not isinstance(row, (list, tuple)):
+            continue
+        try:
+            row_capability, _before, correct, total = row
+        except ValueError:
+            continue
+        if (row_capability == capability
+                and type(correct) is int and correct >= 0
+                and type(total) is int and total > 0
+                and correct <= total):
+            return correct, total, grade if isinstance(grade, str) and grade else None
+    return None, None, grade if isinstance(grade, str) and grade else None
 
 def _append_c16_accepted(generation, parent, run, native, records, events):
     capability = native.get("capability")
@@ -82,14 +105,17 @@ def _append_c16_accepted(generation, parent, run, native, records, events):
         generation.acceptance["candidate_identity_sha256"], capability,
         CandidateOutcome.ACCEPTED,
         str(generation.acceptance.get("retention_reason") or "ACCEPTED"))
+    score_correct, score_total, grade = _accepted_target_score(native, capability)
     capability_record = CapabilitySnapshot(
         record_meta(
             f"capability:{run.run_id}:{run.generation}:{capability}",
             run, generation, native=native,
             evidence_refs=(f"native-event:{event_id}",),
             coverage=CoverageState.PARTIAL),
-        capability, "UNKNOWN", "VISIT_ACCEPTED",
-        missing_value(), missing_value(), missing_value())
+        capability, grade or "UNKNOWN", "VISIT_ACCEPTED",
+        data_value(score_correct) if score_correct is not None else missing_value(),
+        data_value(score_total) if score_total is not None else missing_value(),
+        missing_value())
     records.extend((episode, candidate, capability_record))
     events.extend((
         (EventFamily.LESSON_VISIT_COMPLETED, episode,
@@ -200,6 +226,27 @@ def _append_resource_sample(generation, run, native, records, events) -> bool:
     return True
 
 
+def _append_teacher_snapshot(generation, run, records) -> None:
+    """Project only teacher fields proven by accepted teacher custody."""
+    state = generation.teacher_state
+    visit = state.get("last_visit")
+    identity = state.get("teacher_identity")
+    epoch = state.get("teacher_epoch")
+    strategy = visit.get("policy_key") if isinstance(visit, dict) else None
+    if (not isinstance(identity, str) or not identity
+            or type(epoch) is not int or epoch < 0
+            or not isinstance(strategy, str) or not strategy):
+        return
+    records.append(TeacherSnapshot(
+        record_meta(
+            f"teacher:{run.run_id}:{run.generation}:{identity}",
+            run, generation, coverage=CoverageState.PARTIAL,
+        ),
+        identity, epoch, strategy,
+        missing_value(), missing_value(), missing_value(),
+    ))
+
+
 def accepted_records(
     generation: AuthenticatedGeneration,
     parent: AuthenticatedGeneration | None = None,
@@ -225,6 +272,7 @@ def accepted_records(
         f"generation:{run.run_id}", UnavailableReason.UNKNOWN,
         f"bamf-manifest:{generation.manifest_sha256}")
     records = [context, operator_view, generation_unavailable]
+    _append_teacher_snapshot(generation, run, records)
     events = [(EventFamily.RUN_STATE_CHANGED, context,
                f"native-run:{generation.manifest_sha256}")]
     resource_present = False

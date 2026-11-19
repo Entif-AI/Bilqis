@@ -28,7 +28,8 @@ class PriorityPlanningEpoch:
 
 
 def build_priority_planning_epoch(
-        run_dir, source_context, atlas_artifact_path, progress=None):
+        run_dir, source_context, atlas_artifact_path, progress=None, *,
+        authenticated_features=None):
     """Derive the exact accepted A09 epoch once for planning/frontier consumers."""
     from bilqis_mlx.factory.atlas_delta_adapter import (
         AtlasCoverageEpoch, _accepted_requested_keys,
@@ -37,7 +38,8 @@ def build_priority_planning_epoch(
     from bilqis_mlx.factory.atlas_frontier_closure import resolve_frontier_closure
     from bilqis_mlx.factory.atlas_runtime_snapshot import build_accepted_executable_snapshot
     from bilqis_mlx.factory.skos_curriculum import (
-        LearnedFrontier, SOURCE_FAMILY_ADAPTERS, compile_semantic_curriculum,
+        LearnedFrontier, SOURCE_FAMILY_ADAPTERS,
+        _compile_semantic_curriculum_snapshot, compile_semantic_curriculum,
         issue_source_context_transition_authority,
     )
     from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_obligation_credit
@@ -50,15 +52,24 @@ def build_priority_planning_epoch(
     )
 
     _emit_progress(progress, "planner: resolving accepted atlas selection")
-    selection, feature_receipt = _accepted_selection(run_dir)
+    if authenticated_features is None:
+        selection, feature_receipt = _accepted_selection(run_dir)
+        atlas_snapshot = None
+    else:
+        selection = authenticated_features.selection
+        feature_receipt = authenticated_features.receipt
+        atlas_snapshot = authenticated_features.snapshot
     if Path(selection.path).resolve() != Path(atlas_artifact_path).resolve():
         _invalid("BAMF_PRIORITY_ATLAS_SELECTION_DRIFT")
     current = source_context.release
     if selection.release_sha256 != feature_receipt.source_release_sha256:
         _invalid("BAMF_PRIORITY_ATLAS_RELEASE_DRIFT")
-    candidate = compile_semantic_curriculum(
-        selection, SOURCE_FAMILY_ADAPTERS,
-        LearnedFrontier(selection.release_sha256))
+    _emit_progress(progress, "planner: compiling semantic curriculum")
+    frontier_state = LearnedFrontier(selection.release_sha256)
+    candidate = (_compile_semantic_curriculum_snapshot(
+        atlas_snapshot, SOURCE_FAMILY_ADAPTERS, frontier_state)
+        if atlas_snapshot is not None else compile_semantic_curriculum(
+            selection, SOURCE_FAMILY_ADAPTERS, frontier_state))
     source = issue_source_context_transition_authority(selection)
     frontier = _candidate_frontier(
         run_dir, current.release_sha256, progress=progress)

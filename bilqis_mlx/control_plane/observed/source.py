@@ -9,10 +9,10 @@ from bilqis_mlx.mission_control.contracts.model import (
     AuthorityClass, CoverageState, RecordMeta, is_time,
 )
 from bilqis_mlx.mission_control.contracts.trainer import (
-    CandidateStepPerformance, DeferredGradeCandidate, GeneratedGradeEvidence,
+    CandidateStepPerformance, CandidateStepPerformanceV2, DeferredGradeCandidate, GeneratedGradeEvidence,
     GeneratedGradeHold, GeneratedGradeMemberEvidence, GradeSynthesisDimension,
     RetentionStageTiming, TrainerObservation, TrainerObservationV2, TrainerObservationV3,
-    TrainerObservationV4, TrainerObservationV5, VisitCapabilityScore,
+    TrainerObservationV4, TrainerObservationV5, TrainerObservationV6, TrainerObservationV7, VisitCapabilityScore,
     VisitEvidence, VisitRankingEvidence, VisitRoleCount,
 )
 from bilqis_mlx.mission_control.contracts.trainer_evidence import (
@@ -25,6 +25,7 @@ MAX_BYTES = 64 * 1024
 MAX_VISITS = 8
 MAX_HEARTBEAT_AGE_MS = 10_000
 MAX_FUTURE_SKEW_MS = 5_000
+_AUTO_ACCEPTED_HEALTH = object()
 _SCHEMAS = frozenset({
     'bilqis.bamf.trainer-observed/v1',
     'bilqis.bamf.trainer-observed/v2',
@@ -32,6 +33,7 @@ _SCHEMAS = frozenset({
     'bilqis.bamf.trainer-observed/v4',
     'bilqis.bamf.trainer-observed/v5',
     'bilqis.bamf.trainer-observed/v6',
+    'bilqis.bamf.trainer-observed/v7',
 })
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
@@ -48,6 +50,12 @@ _V4_ONLY = _V4_FIELDS - _V3_FIELDS
 _V5_FIELDS = {field.name for field in fields(TrainerObservationV5)} - {
     'meta', 'posture', 'connection_state'}
 _V5_ONLY = _V5_FIELDS - _V4_FIELDS
+_V6_FIELDS = {field.name for field in fields(TrainerObservationV6)} - {
+    'meta', 'posture', 'connection_state'}
+_V6_ONLY = _V6_FIELDS - _V5_FIELDS
+_V7_FIELDS = {field.name for field in fields(TrainerObservationV7)} - {
+    'meta', 'posture', 'connection_state'}
+_V7_ONLY = _V7_FIELDS - _V6_FIELDS
 
 
 def _learning_health(record):
@@ -196,7 +204,63 @@ def _connection(row, now_ms):
     return 'LIVE' if process_exists(pid) else 'DISCONNECTED'
 
 
-def _record(row, runs, now_ms, accepted_health=None):
+def _observation_type(row, raw_schema):
+    if raw_schema == 'bilqis.bamf.trainer-observed/v7':
+        return TrainerObservationV7
+    if raw_schema == 'bilqis.bamf.trainer-observed/v6':
+        return TrainerObservationV6
+    for required, record_type in (
+            (_V5_ONLY, TrainerObservationV5),
+            (_V4_ONLY, TrainerObservationV4),
+            (_V3_ONLY, TrainerObservationV3),
+            (_V2_ONLY, TrainerObservationV2)):
+        if required <= set(row):
+            return record_type
+    return TrainerObservation
+
+
+def _observation_fields(record_type):
+    return {
+        TrainerObservationV7: _V7_FIELDS,
+        TrainerObservationV6: _V6_FIELDS,
+        TrainerObservationV5: _V5_FIELDS,
+        TrainerObservationV4: _V4_FIELDS,
+        TrainerObservationV3: _V3_FIELDS,
+        TrainerObservationV2: _V2_FIELDS,
+        TrainerObservation: _FIELDS,
+    }[record_type]
+
+
+def _hydrate_observation_values(row, record_type):
+    nullable = _OPTIONAL_FIELDS | (
+        _V7_ONLY | _V6_ONLY if record_type is TrainerObservationV7 else
+        _V6_ONLY if record_type is TrainerObservationV6 else frozenset())
+    values = {
+        key: row.get(key) if key in nullable else row[key]
+        for key in _observation_fields(record_type)
+    }
+    if record_type in (TrainerObservationV3, TrainerObservationV4,
+                       TrainerObservationV5, TrainerObservationV6, TrainerObservationV7):
+        step_type = (CandidateStepPerformanceV2
+                     if record_type in (TrainerObservationV6, TrainerObservationV7)
+                     else CandidateStepPerformance)
+        step_fields = {field.name for field in fields(step_type)}
+        values['candidate_steps'] = tuple(
+            step_type(**{key: item.get(key) for key in step_fields})
+            for item in values['candidate_steps'])
+    if record_type in (TrainerObservationV4, TrainerObservationV5,
+                       TrainerObservationV6, TrainerObservationV7):
+        values['visit_evidence'] = _visit_evidence(values['visit_evidence'])
+        values['generated_grade_evidence'] = _grade_evidence(
+            values['generated_grade_evidence'])
+        values['retention_stage_timings'] = tuple(
+            RetentionStageTiming(**item) for item in values['retention_stage_timings'])
+    if record_type in (TrainerObservationV5, TrainerObservationV6, TrainerObservationV7):
+        values['learning_health'] = _learning_health(values['learning_health'])
+    return values
+
+
+def _record(row, runs, now_ms, accepted_health=None, *, raw_schema=None):
     parent = runs.get((row.get('run_id'), row.get('parent_manifest_sha256')))
     if parent is None or not is_time(row.get('observed_at')):
         return None
@@ -219,40 +283,15 @@ def _record(row, runs, now_ms, accepted_health=None):
         authority=AuthorityClass.MEASURED,
         source_refs=(f"trainer-observed:{row['observation_id']}",),
     )
-    record_type = (
-        TrainerObservationV5 if _V5_ONLY <= set(row) else
-        TrainerObservationV4 if _V4_ONLY <= set(row) else
-        TrainerObservationV3 if _V3_ONLY <= set(row) else
-        TrainerObservationV2 if _V2_ONLY <= set(row) else TrainerObservation)
-    record_fields = (
-        _V5_FIELDS if record_type is TrainerObservationV5 else
-        _V4_FIELDS if record_type is TrainerObservationV4 else
-        _V3_FIELDS if record_type is TrainerObservationV3 else
-        _V2_FIELDS if record_type is TrainerObservationV2 else _FIELDS)
-    values = {
-        key: row.get(key) if key in _OPTIONAL_FIELDS else row[key]
-        for key in record_fields
-    }
-    if record_type in (TrainerObservationV3, TrainerObservationV4,
-                       TrainerObservationV5):
-        step_fields = {field.name for field in fields(CandidateStepPerformance)}
-        values['candidate_steps'] = tuple(
-            CandidateStepPerformance(**{
-                key: value for key, value in item.items() if key in step_fields
-            }) for item in values['candidate_steps'])
-    if record_type in (TrainerObservationV4, TrainerObservationV5):
-        values['visit_evidence'] = _visit_evidence(values['visit_evidence'])
-        values['generated_grade_evidence'] = _grade_evidence(
-            values['generated_grade_evidence'])
-        values['retention_stage_timings'] = tuple(
-            RetentionStageTiming(**item) for item in values['retention_stage_timings'])
-    if record_type is TrainerObservationV5:
-        values['learning_health'] = _learning_health(values['learning_health'])
+    record_type = _observation_type(row, raw_schema)
+    values = _hydrate_observation_values(row, record_type)
     return record_type(
         meta=meta, posture='OBSERVED', connection_state=state, **values)
 
 
-def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObservation, ...]:
+def observed_records(
+        run_dir: Path, runs, *, now_ms=None,
+        accepted_health_by_manifest=_AUTO_ACCEPTED_HEALTH) -> tuple[TrainerObservation, ...]:
     """Bound input bytes and rows; malformed observations cannot hide accepted state."""
     now_ms = int(time.time() * 1000) if now_ms is None else now_ms
     try:
@@ -272,8 +311,16 @@ def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObserv
     # reader budget.  Currentness is in the tail, so bound the projection rather
     # than discarding every observation from an otherwise valid snapshot.
     bounded_visits = payload['visits'][-MAX_VISITS:]
+    provided_health = accepted_health_by_manifest is not _AUTO_ACCEPTED_HEALTH
+    health_by_manifest = (
+        accepted_health_by_manifest
+        if isinstance(accepted_health_by_manifest, dict) else {})
     accepted_health = None
-    if bounded_visits:
+    if bounded_visits and provided_health:
+        latest_parent = bounded_visits[-1].get('parent_manifest_sha256')
+        candidate = health_by_manifest.get(latest_parent)
+        accepted_health = candidate if isinstance(candidate, dict) else None
+    if bounded_visits and not provided_health:
         latest = bounded_visits[-1]
         try:
             pointer = json.loads((Path(run_dir) / 'bamf-state.json').read_text())
@@ -291,7 +338,7 @@ def observed_records(run_dir: Path, runs, *, now_ms=None) -> tuple[TrainerObserv
     for index, row in enumerate(bounded_visits):
         try:
             health = accepted_health if index == len(bounded_visits) - 1 else None
-            record = _record(row, parents, now_ms, health)
+            record = _record(row, parents, now_ms, health, raw_schema=payload.get('schema'))
             if record is not None:
                 records[record.observation_id] = record
         except (ValueError, TypeError, KeyError, AttributeError, OverflowError):

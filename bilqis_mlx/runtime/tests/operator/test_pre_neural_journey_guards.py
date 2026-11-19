@@ -38,6 +38,7 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
         self.assertEqual(messages, [
             "teacher: binding accepted planning generation",
             "planner: resolving accepted atlas selection",
+            "planner: compiling semantic curriculum",
             "planner: rebuilding source candidate frontier",
             "planner: staging source-valid candidate realizations",
             "planner: reconciling accepted planning state",
@@ -50,6 +51,27 @@ class PreNeuralJourneyGuardTests(PreNeuralJourneySupport, unittest.TestCase):
             "teacher: selecting current priority visit",
             "teacher: priority selection complete (TEACHER_SELECTED)",
         ])
+
+
+    def test_priority_planning_reuses_authenticated_atlas_snapshot(self):
+        from bilqis_mlx.factory.skos_curriculum import common as curriculum_common
+
+        self.current, self.parent_graph = historical_school_release()
+        snapshot = portable_atlas_snapshot()
+        schema, features, atlas_selection = journey_source(snapshot)
+        with wide_shape_patch(len(snapshot.abi_entries)):
+            self.publish_matching_genesis(snapshot, schema, features)
+            with self.journey_mounts(snapshot, schema, features, atlas_selection):
+                parent, context, atlas_path, _feature_path = _execution_context(self.run)
+                program = schedule_program_from_executable_release(context.release)
+                school = accepted_priority_school(parent, program)
+                with patch.object(
+                        curriculum_common, "_load_pinned",
+                        side_effect=AssertionError("authenticated atlas was reloaded")):
+                    selected = select_foundation_priority_visit(
+                        self.run, context, atlas_path, program=program, school=school)
+
+        self.assertEqual(selected.status, "TEACHER_SELECTED")
 
     def test_candidate_preflight_rejects_pointer_drift_before_neural_boundary(self):
         self.current, self.parent_graph = historical_school_release()

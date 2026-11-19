@@ -148,12 +148,24 @@ def retention_result(
         plasticity_escape = (
             derive_plasticity_escape(parent, selection, release)
             if derive_plasticity_escape is not None and release is not None else None)
+        def retention_observer(fields):
+            if observer is not None:
+                observer.update(**fields)
+            completed = fields.get("retention_completed") if isinstance(fields, dict) else None
+            total = fields.get("retention_total") if isinstance(fields, dict) else None
+            subject = fields.get("retention_subject") if isinstance(fields, dict) else None
+            role = fields.get("retention_role") if isinstance(fields, dict) else None
+            if (type(completed) is int and type(total) is int
+                    and isinstance(subject, str) and isinstance(role, str)):
+                emit_progress(
+                    progress,
+                    f"retention {completed}/{total}: {subject} · {role}")
+
         evaluation = evaluate_candidate(
             context, step.transaction, atlas_path, capability, run_dir=run_dir,
             **({"plasticity_escape": plasticity_escape}
                if plasticity_escape is not None else {}),
-            **({"observer": lambda fields: observer.update(**fields)}
-               if observer is not None else {}))
+            **({"observer": retention_observer} if observer is not None else {}))
         decision = issue_decision(evaluation)
         _observe_retention_scope(observer, decision)
         if not decision.accepted:

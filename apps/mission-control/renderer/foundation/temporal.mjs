@@ -31,7 +31,7 @@ function esc(value) {
 }
 
 function sourceDate(unixSeconds) {
-  if (typeof unixSeconds !== "number" || !Number.isFinite(unixSeconds)) return null;
+  if (typeof unixSeconds !== "number" || !Number.isFinite(unixSeconds) || unixSeconds <= 0) return null;
   const date = new Date(unixSeconds * 1000);
   return Number.isNaN(date.getTime()) ? null : date;
 }

@@ -46,7 +46,9 @@ def attach_auxiliaries(batch, evidence_by_row, *, verify):
             _invalid('AUXILIARY_EVIDENCE_INVALID')
         targets = []
         for name, evidence in sorted(labels.items()):
-            if (name not in {'role', 'epistemic_state', 'impact', 'exigency', 'novelty', 'frame_atomic_consistency'}
+            if name == 'frame_atomic_consistency':
+                _invalid('TRAINING_OBJECTIVE_FRAME_ATOMIC_KERNEL_UNAVAILABLE')
+            if (name not in {'role', 'epistemic_state', 'impact', 'exigency', 'novelty'}
                     or not isinstance(evidence, (tuple, list)) or len(evidence) != AUXILIARY_EVIDENCE_ARITY):
                 _invalid('AUXILIARY_EVIDENCE_INVALID')
             value, regime, receipt = evidence

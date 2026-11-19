@@ -18,7 +18,7 @@
     "bamf:memory:browser-test": "node apps/mission-control/tests/browser/memory-mode-check.cjs",
     "bamf:operate:browser-test": "node apps/mission-control/tests/browser/operate-mode-check.cjs",
     "bamf:production-boundary:test": "node apps/mission-control/scripts/check-production-imports.mjs",
-    "bamf:readiness": "python3 -B scripts/run_required_tests.py bilqis_mlx/source_adapters/tests/school/test_provider_compatibility.py bilqis_mlx/factory/tests/lifecycle/test_executable_consumers.py bilqis_mlx/runtime/tests/admission/test_jit_adoption.py bilqis_mlx/runtime/tests/operator/test_pre_neural_journey.py",
+    "bamf:readiness": "python3 -B scripts/run_required_tests.py bilqis_mlx/source_adapters/tests/school/test_provider_compatibility.py bilqis_mlx/factory/tests/lifecycle/test_executable_consumers.py bilqis_mlx/runtime/tests/admission/test_jit_adoption.py bilqis_mlx/runtime/tests/operator/test_pre_neural_journey.py bilqis_mlx/runtime/tests/model/training_objective/test_contract.py bilqis_mlx/runtime/tests/model/training_objective/test_identity_bindings.py",
     "bamf:resources:browser-test": "node apps/mission-control/tests/browser/resources-check.cjs",
     "bamf:salience:browser-test": "node apps/mission-control/tests/browser/salience-mode-check.cjs",
     "bamf:school:browser-test": "node apps/mission-control/tests/browser/school-mode-check.cjs",

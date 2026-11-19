@@ -29,7 +29,7 @@ from ..factory_release.admission import (
 from ..motif.transition import is_motif_allocation_transition
 from ..records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_POINTER_SCHEMA,
-    CompleteStudent, invalid,
+    CompleteStudent, OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, invalid,
 )
 from .storage import ACCEPTANCE_DIR
 
@@ -196,7 +196,10 @@ def require_published_acceptance(
         return acceptance
     _require_non_genesis_acceptance_identity(acceptance, pointer, student)
     manifest = live_manifest(run_dir, pointer)
-    legacy_student = manifest.get("schema") != ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA
+    legacy_student = manifest.get("schema") not in {
+        ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+        OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+    }
     parent_sha = student.parent_manifest_sha256
     if parent_sha is None:
         invalid("BAMF_RUN_IDENTITY_DRIFT")

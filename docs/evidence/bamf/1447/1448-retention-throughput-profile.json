@@ -1,0 +1,145 @@
+{
+  "accepted": true,
+  "attempt_wall_seconds": 100.7149165419396,
+  "attempted_steps_per_hour": 35.744456964335484,
+  "authorizing": false,
+  "candidate_candidate_sha256": "294eed980c932451a45afe10b2e11ab7dfe0afdcc206f82341bb98c18125140b",
+  "candidate_generation": "a8db6b3a7e984255a99bdab597768492c769053109c41e0486f30ce68bd76924",
+  "candidate_update_steps": 1,
+  "decision_reason": "PAIRED_SCREEN_WITHIN_BUDGET",
+  "decision_status": "ELIGIBLE",
+  "evaluated_capability_ids": [
+    "B.AND"
+  ],
+  "evidence_sha256": "cfac882dcab5988db12524d9284fd7f16e92c2867045eea27248c5e809054b74",
+  "memory": {
+    "host_peak_rss_bytes": 4424679424,
+    "mlx_active_bytes": 1908974632,
+    "mlx_cache_bytes": 0,
+    "mlx_peak_bytes": 3470460192
+  },
+  "mlx_default_device": "Device(gpu, 0)",
+  "outcome_scores": [
+    [
+      "B.AND",
+      3,
+      3,
+      6
+    ]
+  ],
+  "parent_cache_receipt_reused": null,
+  "parent_candidate_sha256": "8aa8e0551a52056b9edb57e5b6d4ed99f3d9345e56fdb364c834d10acd52333a",
+  "parent_generation": "33f537c28ab53befa99e9f503a481e2d33cb93993a627d2c81c0fde464583992",
+  "policy_sha256": "432d8fef3c96065e4cd153ae0e6427a2bd51e35ebbce156dc4e35c0445c4dedf",
+  "profile": {
+    "retention_completed": 2,
+    "retention_decision_finalize_wall_seconds": 0.003108208067715168,
+    "retention_protected_case_count": 0,
+    "retention_protected_prepare_wall_seconds": 0.00025520892813801765,
+    "retention_role": "candidate",
+    "retention_scorecard": {
+      "baseline_coverage": {
+        "epoch_sha256": "60c0748517d69c6314b4523d67ac6d04482259e3fff3f996f7f3e7258b1368cf",
+        "group_denominators": [
+          {
+            "group": "B",
+            "measured": 0,
+            "total": 1
+          }
+        ],
+        "measured_capabilities": [],
+        "measured_denominator": 0,
+        "schema": "bilqis.mlx.c05-baseline-coverage/v1",
+        "total_capabilities": 1,
+        "unmeasured_capabilities": [
+          "B.AND"
+        ]
+      },
+      "evidence_stage": "FOUNDATION_ACQUISITION",
+      "fixed_cohort_sha256": "c813d68d506d65eae3673de4ebebc9ec5b2413d15b0e4a5dbef5addb16cc567c",
+      "learning_signals": [
+        {
+          "evidence_count": 6,
+          "note": "Predictions vary across the source cohort",
+          "signal": "REPETITIVE_ANSWERS",
+          "status": "NOT_OBSERVED"
+        },
+        {
+          "evidence_count": 6,
+          "note": "At or below source gold majority baseline",
+          "signal": "CHANCE_LEVEL_OR_LAGGING",
+          "status": "OBSERVED_IN_COHORT"
+        }
+      ],
+      "learning_target": {
+        "after": 3,
+        "before": 3,
+        "capability_id": "B.AND",
+        "state": "MEASURED",
+        "total": 6
+      },
+      "policy_sha256": "432d8fef3c96065e4cd153ae0e6427a2bd51e35ebbce156dc4e35c0445c4dedf",
+      "probe_each": 6,
+      "protected": [],
+      "rubric_sha256": "3377c21f4899c56b1a3daa4eea04bcf83c88e7b2896a39c816ad69bf9f1c4dde",
+      "schema": "bilqis.bamf.retention-scorecard/v1",
+      "source_sha256": "dc908232d0be19c4c7e0af3d72350945679f1ec8be77c6c1a6e3715c1efd0b5b",
+      "target": {
+        "after": 3,
+        "baseline": 3,
+        "before": 3,
+        "capability_id": "B.AND",
+        "delta": 0,
+        "state": "NOT_MEASURED",
+        "total": 6
+      },
+      "target_capability": "B.AND"
+    },
+    "retention_stage_timing": {
+      "role": "candidate",
+      "subject": "B.AND",
+      "wall_seconds": 12.535797124961391
+    },
+    "retention_subject": "B.AND",
+    "retention_target_candidate_wall_seconds": 12.535802042111754,
+    "retention_target_case_count": 6,
+    "retention_target_parent_wall_seconds": 12.6568299587816,
+    "retention_target_prepare_wall_seconds": 11.285179083934054,
+    "retention_target_scalar_neural_launches": 0,
+    "retention_target_shared_backbone_launches": 2,
+    "retention_target_solver_wall_seconds": 2.035307832993567,
+    "retention_total": 2
+  },
+  "published": false,
+  "retained_steps_per_hour": 35.744456964335484,
+  "retention_cached_capability_ids": [
+    "B.AND"
+  ],
+  "retention_protection_plan_sha256": "44335497ad95af70f244973febccfc233384eb713f7745ed5b298b3189953ddc",
+  "retention_setup_wall_seconds": 0.04262912506237626,
+  "retention_wall_seconds": 39.09304733388126,
+  "schema": "bilqis.mlx.c05-retention-throughput-profile/v1",
+  "selected_visit": {
+    "accepted_manifest_sha256": "d9abb1c3ae5b6fbd1d435f578da5d0acd617aed081184691b08392438b50758b",
+    "capability_id": "B.AND",
+    "cursor": "GENESIS",
+    "generation": 0,
+    "policy_key": "p-other",
+    "run_identity_sha256": "3013ec538eeb865e5de63fba2264a9a2da7b989f29d6e2f2897264f1391e3b3f",
+    "run_seed": 993,
+    "schema": "bilqis.bamf.c03-teacher-visit-identity/v1",
+    "selection_seed": 993,
+    "student_sha256": "8aa8e0551a52056b9edb57e5b6d4ed99f3d9345e56fdb364c834d10acd52333a",
+    "teacher_epoch": 0,
+    "teacher_identity": "ca6d20c969e0e8fcd453da403945fc6d173e99b70616e5a095dcfe73987d7e0a",
+    "visit_id": "b827137a5921950c46d373a6f99f74b7722b4f5d882824edd913deec66a14277"
+  },
+  "target_capability": "B.AND",
+  "training_row_ids": [
+    "cb28a3f460d251a0d10fcfa794197b322c7025eafbfb65523b997cd14bf3d9fd",
+    "0af419a9c19f86d70c352e51ffcf54e69dc807894c414cab1c789cddf4158e05",
+    "946407c654a2cc5358c457428227adb48dfd0818fd56fe559fba7dd08e28cd06",
+    "414588094f436d3dbea0b3ef049375088e689a07fccdc01a5c0c95dac7f93eb2"
+  ],
+  "training_wall_seconds": 61.62170937494375
+}

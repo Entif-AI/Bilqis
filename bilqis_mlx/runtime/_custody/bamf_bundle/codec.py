@@ -13,7 +13,9 @@ from bilqis_mlx.learning._retention._atlas_candidate.identity import (
     IDENTITY_SCHEMES, LEGACY_IDENTITY_SCHEME,
 )
 from .records import (
-    ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_BUNDLE_SCHEMA, SIDECARS,
+    ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_BUNDLE_SCHEMA,
+    OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA,
+    OBJECTIVE_BOUND_BAMF_BUNDLE_SCHEMA, SIDECARS,
     BamfBundleCandidate,
     BamfGenerationManifest, CompleteStudent,
     canonical, invalid, sha, sidecar_records, validate_sidecars,
@@ -96,6 +98,16 @@ def save_bamf_bundle(candidate: BamfBundleCandidate, destination: Path, *,
             "object_sha256": digest,
         }
     hp = candidate.optimizer_hyperparameters
+    from bilqis_mlx.runtime.training_objective import (
+        current_training_objective,
+    )
+    objective = current_training_objective()
+    custody = retained.custody
+    if (custody is not None
+            and custody.training_objective_digest is not None
+            and (custody.training_objective_ref != objective.ref
+                 or custody.training_objective_digest != objective.digest)):
+        invalid("TRAINING_OBJECTIVE_CONTRACT_DRIFT")
     publication_bound = parent_acceptance_sha256 is not _UNBOUND_PARENT_ACCEPTANCE
     manifest = BamfGenerationManifest(
         candidate.run_id, candidate.generation, candidate.parent_manifest_sha256,
@@ -106,9 +118,12 @@ def save_bamf_bundle(candidate: BamfBundleCandidate, destination: Path, *,
          **({"identity_scheme": retained.identity_scheme}
             if retained.identity_scheme != LEGACY_IDENTITY_SCHEME else {})},
         candidate.transition, bindings,
-        parent_acceptance_sha256 if publication_bound else None,
-        ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA if publication_bound
-        else BAMF_BUNDLE_SCHEMA).to_record()
+        training_objective_ref=objective.ref,
+        training_objective_digest=objective.digest,
+        parent_acceptance_sha256=(
+            parent_acceptance_sha256 if publication_bound else None),
+        schema=(OBJECTIVE_ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA
+                if publication_bound else OBJECTIVE_BOUND_BAMF_BUNDLE_SCHEMA)).to_record()
     raw = canonical(manifest)
     digest = _write_file(destination / "manifest.json", raw)
     plane.put_node(digest, raw, candidate.generation, candidate.parent_manifest_sha256)
@@ -163,7 +178,8 @@ def validate_bamf_bundle_custody(
         "run_identity", "baseline_evidence", "learning_health_state",
         "championship_state",
     }
-    if manifest["schema"] == BAMF_BUNDLE_SCHEMA:
+    if manifest["schema"] in {
+            BAMF_BUNDLE_SCHEMA, OBJECTIVE_BOUND_BAMF_BUNDLE_SCHEMA}:
         optional.add("step_proofs")
     required = set(SIDECARS) - optional
     if (not required <= recorded <= set(SIDECARS)

@@ -159,8 +159,13 @@ def _gradient_path(
         backend, params, batch, row_batches, answer_plans, targets, masks,
         generation, cache, rebind_execution, salience_supervision, snapshot,
         salience_labels):
-    route_vectorized = route_microbatch_compatible(
-        row_batches, answer_plans, targets, masks)
+    refinement = prepare_refinement_selections(
+        row_batches, answer_plans, generation)
+    has_routing_supervision = any(
+        item is not None and bool(item[1]) for item in refinement)
+    route_vectorized = (
+        route_microbatch_compatible(row_batches, answer_plans, targets, masks)
+        and not has_routing_supervision)
     if not route_vectorized:
         from bilqis_mlx.runtime.b11_source_execution_authority import (
             b11_source_authority_launch_epoch,
@@ -170,8 +175,6 @@ def _gradient_path(
                 backend, params, batch, row_batches, answer_plans, targets, masks,
                 generation, cache, rebind_execution, salience_supervision, snapshot)
         return False, preflight, None, None
-    refinement = prepare_refinement_selections(
-        row_batches, answer_plans, generation)
     kernel = prepare_route_microbatch_kernel(
         row_batches, answer_plans, targets, masks, None, salience_labels)
     return True, None, refinement, kernel

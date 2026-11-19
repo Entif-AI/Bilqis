@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from bilqis_mlx.factory.live_answers import live_answer_registry
+from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.learning.frame_encoder import CompiledEncoderInput
 from bilqis_mlx.runtime.atlas_model_contracts import (
     _issue_bamf_active_semantic_rows, bind_candidate_active_semantic_rows,
@@ -30,6 +31,10 @@ from bilqis_mlx.runtime.model_topology_v2 import ModelTopologySpecV2
 from bilqis_mlx.runtime.salience_training import portable_salience_supervision
 from bilqis_mlx.runtime.source_execution import SourceExecutionContext
 from bilqis_mlx.source_adapters.school import live_source_registry
+
+
+def _invalid(reason: str) -> None:
+    ErrorBus.raise_(SCHOOL.BAMF_RESOURCES.INVALID, reason=reason)
 
 
 @dataclass(frozen=True)
@@ -157,9 +162,19 @@ class DistributedFactoryStepCapsule:
     resource_plan: object
     manifest: object
     source_loss_multipliers: tuple[float, ...]
+    training_objective_digest: str
     salience_supervision: object | None
 
+    def __post_init__(self):
+        from bilqis_mlx.runtime.training_objective import (
+            require_training_objective_digest,
+        )
+        require_training_objective_digest(self.training_objective_digest)
+        if self.manifest.training_objective_digest != self.training_objective_digest:
+            _invalid("C08_DISTRIBUTED_OBJECTIVE_DRIFT")
+
     def materialize(self):
+        self.__post_init__()
         source_context = self.source_context.materialize()
         training = self.training_batch.materialize()
         compiled = tuple(
@@ -204,7 +219,9 @@ def issue_distributed_factory_step_capsule(
             for index, compiled in enumerate(compiled_rows)),
         feature_snapshot=feature_snapshot, generation=generation,
         cache_witness=witness, resource_plan=resource_plan, manifest=manifest,
-        source_loss_multipliers=multipliers, salience_supervision=salience)
+        source_loss_multipliers=multipliers,
+        training_objective_digest=manifest.training_objective_digest,
+        salience_supervision=salience)
 
 
 __all__ = (

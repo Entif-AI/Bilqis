@@ -21,6 +21,7 @@ class LossParts:
     impact: mx.array | None = None
     exigency: mx.array | None = None
     novelty: mx.array | None = None
+    routing: mx.array | None = None
 
 
 def answer_loss(output,targets,mask):

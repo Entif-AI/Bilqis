@@ -58,9 +58,13 @@ def _run_visits(
         attempts += 1
         emit_progress(progress, f"starting visit {attempts}")
         with observer_type(run_dir, attempts) as observer:
+            def observed_progress(message):
+                observer.update(activity=str(message)[:256])
+                emit_progress(progress, message)
+
             outcome = visit_fn(
                 run_dir, reserve_gib, steps_per_visit=steps_per_visit,
-                progress=progress, source_prefetch_workers=source_prefetch_workers,
+                progress=observed_progress, source_prefetch_workers=source_prefetch_workers,
                 source_prefetch_executor=source_prefetch_executor,
                 source_prefetch_metrics=metrics, observer=observer,
                 run_authority_binding=run_authority_binding,

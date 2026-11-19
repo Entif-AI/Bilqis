@@ -13,7 +13,7 @@ from bilqis_mlx.runtime.governed_ingestion import (
     materialization_event_from_receipt,
     rebuild_immutable_events,
 )
-from bilqis_mlx.runtime.tests.projection.test_akasha_outbox import _event
+from bilqis_mlx.runtime.tests.projection.akasha.test_outbox import _event
 from bilqis_mlx.runtime.tests.projection.test_bamf_projection import _contract
 
 

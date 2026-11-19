@@ -24,7 +24,7 @@ class TrainerObservationTests(unittest.TestCase):
                     obs.update(candidate_step=1)
                     obs.finish('HELD')
             data = json.loads((root / 'trainer-observed.json').read_text())
-            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v6')
+            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v7')
             self.assertEqual(len(data['visits']), 8)
             self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
             self.assertGreater(data['visits'][-1]['revision'], 3)
@@ -46,6 +46,22 @@ class TrainerObservationTests(unittest.TestCase):
             self.assertEqual(failed['outcome'], 'INTERRUPTED')
             self.assertEqual(failed['error_code'], 'SCHOOL.BAMF_B11.SOURCE_EXECUTION_AUTHORITY_INVALID')
             self.assertEqual(failed['error_detail'], 'B11_SOURCE_EXECUTION_AUTHORITY_CALLER_CONSTRUCTION_FORBIDDEN')
+
+
+    def test_activity_tracks_current_progress_and_its_elapsed_clock(self):
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            with TrainerObservation(root, 1, heartbeat_seconds=60) as obs:
+                obs.update(activity='planner: compiling semantic curriculum')
+                time.sleep(0.002)
+                obs.update()
+                current = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
+                self.assertEqual(current['activity'], 'planner: compiling semantic curriculum')
+                self.assertGreater(current['activity_elapsed_ms'], 0)
+                obs.update(activity='planner: ranking next bounded target')
+                changed = json.loads((root / 'trainer-observed.json').read_text())['visits'][-1]
+                self.assertEqual(changed['activity'], 'planner: ranking next bounded target')
+                self.assertLessEqual(changed['activity_elapsed_ms'], 2)
 
     def test_active_step_ticks_live_and_completed_steps_are_retained(self):
         with TemporaryDirectory() as tmp:

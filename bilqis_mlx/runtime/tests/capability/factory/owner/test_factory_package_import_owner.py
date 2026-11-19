@@ -35,7 +35,11 @@ class FactoryPackageImportOwnerTests(unittest.TestCase):
             release=release,
         )
         transaction = object.__new__(PackageImportTransaction)
-        fixed = (SimpleNamespace(case=SimpleNamespace()),)
+        fixed = tuple(
+            SimpleNamespace(case=SimpleNamespace(
+                capability_id=item.capability_id, group_id=item.grade_id))
+            for item in capabilities
+        )
         foundation = Mock(return_value="evaluation")
         with patch.multiple(
                 owner,
@@ -170,7 +174,8 @@ class FactoryPackageImportOwnerTests(unittest.TestCase):
                 frontier_exam=Mock(return_value=fixed_exam),
                 load_frontier_cohort=load_frontier,
                 _bamf_fixed_school_cohort=bamf_school,
-                _instruments=Mock(return_value=(object(),)),
+                _instruments=Mock(return_value=(SimpleNamespace(
+                    case=SimpleNamespace(capability_id=target, group_id="B")),)),
                 _broad_foundation_retention_evaluation=foundation,
         ):
             result = evaluate_factory_package_import(

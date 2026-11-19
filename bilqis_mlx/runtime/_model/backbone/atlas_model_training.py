@@ -19,8 +19,10 @@ from bilqis_mlx.runtime.bamf_bundle.execution_cache import bind_execution_genera
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
 )
+from bilqis_mlx.runtime.atlas_refinement import masked_routing_loss
 
 from .atlas_model_backend import Backend, model_backend
+from bilqis_mlx.runtime.training_objective import REFINEMENT_ROUTING_WEIGHT
 from .atlas_model_contracts import (
     BamfCompiledBatch, BamfGradientExecution, BamfLossExecution,
     _FORWARD_ISSUANCE, _LOSS_EXECUTION_ISSUER, _invalid,
@@ -125,8 +127,6 @@ def loss_bearing_bamf(
             or not 1.0 <= float(source_loss_multiplier) <= 1.0 + MAX_INFLUENCE):
         _invalid("BAMF_MENTOR_SOURCE_LOSS_MULTIPLIER_INVALID")
     loss = answer_loss(output, targets, mask)
-    if float(source_loss_multiplier) != 1.0:
-        loss = replace(loss, total=loss.total * float(source_loss_multiplier))
     heads, dependencies, artifact_nodes = (), (), ()
     if salience_supervision is not None:
         from .salience_training import PortableSalienceSupervision, SalienceSupervision
@@ -149,6 +149,14 @@ def loss_bearing_bamf(
                        novelty=components.novelty)
         heads, dependencies = components.heads, salience_supervision.dependencies
         artifact_nodes = salience_supervision.artifact_nodes
+    route_supervision = record.refinement_route_supervision
+    if route_supervision:
+        routing = mx.mean(mx.stack(tuple(
+            masked_routing_loss(logits, label)
+            for logits, label in route_supervision))) * REFINEMENT_ROUTING_WEIGHT
+        loss = replace(loss, total=loss.total + routing, routing=routing)
+    if float(source_loss_multiplier) != 1.0:
+        loss = replace(loss, total=loss.total * float(source_loss_multiplier))
     if validate_finite and not bool(mx.all(mx.isfinite(loss.total))):
         _invalid("B11_LOSS_NONFINITE")
     return _issue_loss_execution(

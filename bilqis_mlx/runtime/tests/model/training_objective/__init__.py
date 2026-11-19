@@ -1,0 +1,1 @@
+"""Training-objective contract witnesses."""

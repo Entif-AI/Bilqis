@@ -16,7 +16,8 @@ from .performance import (
     PERFORMANCE_FIELDS, RETENTION_PROFILE_FIELDS, VISIT_PERFORMANCE_FIELDS,
 )
 
-SCHEMA = 'bilqis.bamf.trainer-observed/v6'
+SCHEMA = 'bilqis.bamf.trainer-observed/v7'
+LEGACY_SCHEMA_V6 = 'bilqis.bamf.trainer-observed/v6'
 LEGACY_SCHEMA_V5 = 'bilqis.bamf.trainer-observed/v5'
 LEGACY_SCHEMA_V4 = 'bilqis.bamf.trainer-observed/v4'
 LEGACY_SCHEMA = 'bilqis.bamf.trainer-observed/v1'
@@ -56,6 +57,7 @@ class TrainerObservation:
         self.enabled = True
         self.started = time.monotonic()
         self.step_started = None
+        self.activity_started = None
         try:
             pointer = json.loads((self.run_dir / 'bamf-state.json').read_text())
             run_id, manifest = pointer.get('run_id'), pointer.get('manifest_sha256')
@@ -74,7 +76,7 @@ class TrainerObservation:
             peak_rss_bytes=None, disk_free_bytes=None, error_code=None,
             error_detail=None, candidate_steps=[], visit_evidence=None,
             generated_grade_evidence=None, retention_stage_timings=[],
-            learning_health=None,
+            learning_health=None, activity=None, activity_elapsed_ms=None,
             **{name: None for name in PERFORMANCE_FIELDS},
             **{name: None for name in RETENTION_PROFILE_FIELDS})
         self.visits = []
@@ -85,7 +87,7 @@ class TrainerObservation:
             data = json.loads(raw) if len(raw) <= MAX_SNAPSHOT_BYTES else {}
             if (data.get('schema') in {LEGACY_SCHEMA, LEGACY_SCHEMA_V2,
                                        LEGACY_SCHEMA_V3, LEGACY_SCHEMA_V4,
-                                       LEGACY_SCHEMA_V5, SCHEMA}
+                                       LEGACY_SCHEMA_V5, LEGACY_SCHEMA_V6, SCHEMA}
                     and isinstance(data.get('visits'), list)
                     and all(isinstance(item, dict) for item in data['visits'])):
                 self.visits = data['visits'][-7:]
@@ -141,7 +143,14 @@ class TrainerObservation:
                     field = ('target_evaluation_wall_seconds' if target is not None
                              and subject == target else 'protected_retention_wall_seconds')
                     self.record[field] = float(self.record.get(field) or 0.0) + float(seconds)
+            activity = fields.get('activity', self.record.get('activity'))
+            if 'activity' in fields and activity != self.record.get('activity'):
+                self.activity_started = time.monotonic() if activity is not None else None
+                fields['activity_elapsed_ms'] = 0 if activity is not None else None
             self.record.update(fields)
+            if self.record.get('activity') is not None and self.activity_started is not None:
+                self.record['activity_elapsed_ms'] = int(max(
+                    0.0, time.monotonic() - self.activity_started) * 1000)
             health = fields.get('learning_health')
             if isinstance(health, dict) and health.get('state') == 'MEASURED':
                 capability = health.get('capability_id')

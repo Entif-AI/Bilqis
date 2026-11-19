@@ -172,7 +172,7 @@ def test_route_gradient_launch_executes_one_source_backbone_and_no_preflight():
                                         return_value=mx.zeros(
                                             (4, 1, 1), dtype=mx.float32)) as finalize, patch.object(
                                                 microbatch, "prepare_refinement_selections",
-                                                return_value=object()), patch.object(
+                                                return_value=(None,) * 4), patch.object(
                                                     microbatch, "prepare_route_microbatch_kernel",
                                                     return_value=object()), patch.object(
                                                         microbatch, "batched_refine_hidden",
@@ -237,7 +237,7 @@ def test_route_postflight_rebinds_execution_identity_to_original_parameters():
                                 microbatch, "_finalize_source_hidden",
                                 return_value=mx.zeros((4, 1, 1), dtype=mx.float32)), patch.object(
                                     microbatch, "prepare_refinement_selections",
-                                    return_value=object()), patch.object(
+                                    return_value=(None,) * 4), patch.object(
                                         microbatch, "prepare_route_microbatch_kernel",
                                         return_value=object()), patch.object(
                                             microbatch, "batched_refine_hidden",

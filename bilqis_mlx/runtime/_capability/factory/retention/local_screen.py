@@ -23,6 +23,9 @@ from bilqis_mlx.runtime.capability_retention import (
     case_census_digest, evaluate_capabilities,
 )
 from bilqis_mlx.runtime.capability_retention_foundation import FoundationRetentionPolicy
+from bilqis_mlx.runtime.capability_retention_foundation_runtime import (
+    observed_assessment,
+)
 from bilqis_mlx.runtime.factory_complete_solver import factory_complete_solver
 from bilqis_mlx.semantics.domains import contract_digest
 
@@ -208,12 +211,15 @@ def _target_stage(
     _elapsed(observer, "retention_target_solver_wall_seconds", started)
 
     started = time.perf_counter()
-    parent_assessment = evaluate_capabilities(
-        parent_solver, target_cohort, parent_generation)
+    total_assessments = 2 + (2 if target_plan.protected_capability_ids else 0)
+    parent_assessment = observed_assessment(
+        parent_solver, target_cohort, parent_generation, observer, 0,
+        total_assessments, target, "parent", evaluator=evaluate_capabilities)
     _elapsed(observer, "retention_target_parent_wall_seconds", started)
     started = time.perf_counter()
-    candidate_assessment = evaluate_capabilities(
-        candidate_solver, target_cohort, candidate_generation)
+    candidate_assessment = observed_assessment(
+        candidate_solver, target_cohort, candidate_generation, observer, 1,
+        total_assessments, target, "candidate", evaluator=evaluate_capabilities)
     _elapsed(observer, "retention_target_candidate_wall_seconds", started)
     _solver_profile(observer, "retention_target", parent_solver, candidate_solver)
     target_pair = AssessmentPair(parent_assessment, candidate_assessment)
@@ -261,9 +267,19 @@ def _protected_stage(
             protected_parent_solver, protected_parent_generation)
         _elapsed(observer, "retention_protected_parent_solver_wall_seconds", started)
         started = time.perf_counter()
+        _observe(
+            observer, retention_completed=2, retention_total=4,
+            retention_subject="fixed_school", retention_role="parent")
         protected_parent, parent_cache = use_parent_assessment(
             parent_identity, protected_parent_solver, protected_cohort,
             protected_parent_generation, scope=cache)
+        _observe(
+            observer, retention_completed=3, retention_total=4,
+            retention_subject="fixed_school", retention_role="parent",
+            retention_stage_timing={
+                "subject": "fixed_school", "role": "parent",
+                "wall_seconds": max(0.0, time.perf_counter() - started),
+            })
         _elapsed(observer, "retention_protected_parent_wall_seconds", started)
         _observe(observer, retention_parent_cache_reused=parent_cache.reused)
 
@@ -272,8 +288,10 @@ def _protected_stage(
             source_context, candidate_bundle, artifact_path, protected_instruments)
         _elapsed(observer, "retention_protected_candidate_solver_wall_seconds", started)
         started = time.perf_counter()
-        protected_candidate = evaluate_capabilities(
-            protected_candidate_solver, protected_cohort, protected_candidate_generation)
+        protected_candidate = observed_assessment(
+            protected_candidate_solver, protected_cohort, protected_candidate_generation,
+            observer, 3, 4, "fixed_school", "candidate",
+            evaluator=evaluate_capabilities)
         _elapsed(observer, "retention_protected_candidate_wall_seconds", started)
         _solver_profile(
             observer, "retention_protected",

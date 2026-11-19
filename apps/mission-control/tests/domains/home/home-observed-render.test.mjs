@@ -116,11 +116,11 @@ test("v2 observation exposes completed-step stage timing and hidden B11 multipli
   const model = projectionFromPages({ run: runPage(row) }, context);
   const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
   assert.match(html, /Latest completed step performance/);
-  assert.match(html, /Step wall time<\/dt><dd>1.5 s/);
-  assert.match(html, /Source \+ compile<\/dt><dd>200 ms/);
-  assert.match(html, /B11 provider draws<\/dt><dd>32/);
-  assert.match(html, /B11 Atlas reloads<\/dt><dd>8/);
-  assert.match(html, /Terminal candidate step<\/dt><dd>Yes/);
+  assert.match(html, /Step wall time<\/th><td>1.5 s/);
+  assert.match(html, /Source \+ compile<\/th><td>200 ms/);
+  assert.match(html, /B11 provider draws<\/th><td>32/);
+  assert.match(html, /B11 Atlas reloads<\/th><td>8/);
+  assert.match(html, /Terminal candidate step<\/th><td>Yes/);
   assert.equal(model.observed.current.schema_version,
     "bilqis.bamf.mission-control.trainer-observation/v2");
 });
@@ -163,6 +163,47 @@ test("v3 observation renders clickable completed and active step timing", () => 
   assert.match(html, /data-test-id="home-observed-step-2"/);
   assert.match(html, /Step 2 · running · 12 seconds/);
   assert.match(html, /Source \+ compile<\/th><td>200 ms/);
+});
+
+
+test("new visit keeps the latest completed step visible instead of an unavailable wall", () => {
+  const completed = {
+    candidate_step: 4, candidate_optimizer_step: 30,
+    candidate_step_wall_seconds: 26.8,
+    pre_neural_source_compile_wall_seconds: 3.2,
+    currentness_binding_wall_seconds: 1.5,
+    b11_preflight_wall_seconds: 0.05,
+    b11_autodiff_wall_seconds: 7.1,
+    optimizer_admission_wall_seconds: 0.28,
+    motif_staging_wall_seconds: 3.7,
+    evidence_capture_wall_seconds: 0.006,
+    candidate_terminal_step: true,
+    c08_gradient_launches: 2, c08_vectorized_microbatches: 1,
+    c08_materialization_barriers: 1, c08_scalar_fallback_rows: 0,
+    c08_logical_batch_wall_seconds: 12.0, c08_rows_per_gradient_launch: 4,
+    b11_provider_draw_count: 16, b11_atlas_reload_count: 0,
+    logical_rows: 8, compiled_positions: 64,
+  };
+  const previous = observation({
+    observation_id: "previous", revision: 8,
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v3",
+    phase: "COMPLETED", outcome: "REJECTED", connection_state: "FINISHED",
+    candidate_step: 4, candidate_horizon: 4, candidate_steps: [completed],
+    meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: 1200 },
+  });
+  const current = observation({
+    observation_id: "current", revision: 2, phase: "SELECTING",
+    candidate_step: null, candidate_horizon: null, candidate_steps: [],
+    meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: 1300 },
+  });
+  const page = runPage(current);
+  page.records.push(previous);
+  const model = projectionFromPages({ run: page }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Latest completed step performance/);
+  assert.match(html, /Step 4 · 27 seconds/);
+  assert.match(html, /Step wall time<\/th><td>27 seconds/);
+  assert.doesNotMatch(html, /Step wall time<\/dt><dd>Unavailable/);
 });
 
 test("epoch-millisecond trainer heartbeat projected to Unix seconds renders near the real observation time", () => {
@@ -236,4 +277,17 @@ test("disconnected observations preserve last values without claiming current ac
   const model = projectionFromPages({ run: runPage(row) }, context);
   assert.match(renderHomeMarkup(model), /Disconnected · last observed/);
   assert.equal(model.observed.current.retention_completed, 1);
+});
+
+test("v7 renders the exact current activity and its elapsed clock", () => {
+  const current = observation({
+    schema_version: "bilqis.bamf.mission-control.trainer-observation/v7",
+    observation_id: "activity", revision: 3, phase: "SELECTING", outcome: "RUNNING",
+    activity: "planner: compiling semantic curriculum", activity_elapsed_ms: 4200,
+    meta: { run: { run_id: "trainer-run", generation: 0 }, observed_at: 1300 },
+  });
+  const model = projectionFromPages({ run: runPage(current) }, context);
+  const html = renderHomeMarkup(model, { nowMs: 1_300_000, locale: "en-US" });
+  assert.match(html, /Current activity<\/dt><dd>planner: compiling semantic curriculum/);
+  assert.match(html, /Activity elapsed<\/dt><dd>4 seconds/);
 });

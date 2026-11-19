@@ -71,8 +71,27 @@ def _dispatch_bamf_resume(
         from dataclasses import asdict
         from bilqis_mlx.control_plane.active_endpoint import advertise_active_endpoint
         from bilqis_mlx.runtime.bamf_operator import operate_bamf
+        visual = sys.stdout.isatty()
+        board = None
+        if visual:
+            from bilqis_mlx.presentation.dashboard import build
+            board = build(run_dir, reserve_gib=args.reserve_gib)
+            board.mode = "BAMF | RESUMING"
+            board.state["stop"] = "RUNNING"
+            board.draw()
+
         def progress(message):
-            print("BAMF TRAINER: " + message, file=sys.stderr, flush=True)
+            if board is None:
+                print("BAMF TRAINER: " + message, file=sys.stderr, flush=True)
+                return
+            rows = board.rows["SYSTEM & QUALIFICATION"]
+            retained = [row for row in rows if row.get("kind") != "TRAINER"]
+            rows.clear()
+            rows.extend(retained)
+            rows.append({"kind": "TRAINER", "detail": str(message)})
+            board.mode = "BAMF | LIVE"
+            board.state["stop"] = "RUNNING"
+            board.draw()
 
         with advertise_active_endpoint(run_dir):
             result = operate_bamf(
@@ -97,6 +116,22 @@ def _dispatch_bamf_resume(
             from bilqis_mlx.errors.authority import authority_label
             operator_report["admission_label"] = authority_label(
                 operator_report["admission_status"], domain="admission")
+        if board is not None:
+            from bilqis_mlx.presentation.dashboard import build
+            board = build(run_dir, reserve_gib=args.reserve_gib)
+            board.mode = "BAMF | " + str(operator_report.get("status", "STOPPED"))
+            board.state["stop"] = str(operator_report.get("status", "STOPPED"))
+            board.draw()
+            elapsed = operator_report.get("elapsed_seconds")
+            elapsed_text = (f"{elapsed:.1f}s" if isinstance(elapsed, (int, float)) else "unknown")
+            print(
+                "BAMF TRAINER STOPPED: "
+                f"{operator_report.get('status')} | visits {operator_report.get('visits')} | "
+                f"accepted {operator_report.get('accepted')} | rejected {operator_report.get('rejected')} | "
+                f"generation {operator_report.get('generation')} | "
+                f"optimizer {operator_report.get('optimizer_step')} | elapsed {elapsed_text}",
+                flush=True)
+            return True, 0, None
         return True, _print_status(operator_report), None
     return True, _print_status(report), None
 
