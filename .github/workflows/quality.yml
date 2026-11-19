@@ -179,7 +179,11 @@ jobs:
     needs: core
     if: needs.core.result == 'success' && needs.core.outputs.expensive_tests == 'true'
     runs-on: macos-15
-    timeout-minutes: 15
+    # The readiness body normally finishes in about a minute once a runner is
+    # assigned, but GitHub's macOS queue can consume the job timeout before any
+    # step starts. Keep enough queue headroom so runner scarcity cannot turn a
+    # never-executed gate into an "abandoned" portable-verification failure.
+    timeout-minutes: 45
     steps:
       - name: Checkout private source without persisted credentials
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
