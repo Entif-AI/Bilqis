@@ -26,6 +26,13 @@ def _adoption_point(root: Path, head: str) -> str | None:
 def effective_base(root: Path, requested_base: str, head: str = "HEAD") -> str:
     """Return the pre-adoption comparison state for debt/regression measurement."""
     ordinary = _git(root, "merge-base", requested_base, head).stdout.strip()
+    ancestry = _git(root, "rev-list", "--parents", "-n", "1", head).stdout.split()
+    if len(ancestry) > 2 and ancestry[1] == ordinary:
+        # GitHub Actions checks out a synthetic pull-request merge whose first
+        # parent is the requested base. Treat that exact base as the temporal
+        # boundary; walking the merge's first-parent trunk would otherwise make
+        # unrelated mainline work look branch-owned.
+        return ordinary
     adoption = _adoption_point(root, head)
     if not adoption or adoption == GOVERNANCE_ADOPTION_COMMIT:
         return ordinary
