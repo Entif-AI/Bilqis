@@ -3757,3 +3757,41 @@ This refines ADR-081/082 by completing their hot/cold storage boundary. It compo
 with ADR-143: subthreshold or superseded championship custody must not pin a whole
 checkpoint when no independent current, recovery, title, soup, evidence, or
 operator authority still references it.
+
+## ADR-148 | 2026-11-19 | Recovery exhaustion yields; only grade completion certifies
+
+**Status:** Accepted by direct owner confirmation on 2026-11-19 for issue #1459.
+
+**Problem:** The BAMF generated-grade boundary path had conflated two materially
+different conditions: an incomplete active grade that currently has no productive
+MAIN/recovery move, and a grade that has actually completed its governing
+graduation condition. Routing both through certification converted ordinary
+training exhaustion into an operator stop. Replacing a crash with a typed terminal
+status did not restore the pre-BAMF product behavior in which one human Start/Resume
+continued useful training through ordinary internal boundaries.
+
+**Decision:** `RECOVERY_EXHAUSTED` is a scheduler yield condition, not graduation.
+The exhausted grade remains the active, incomplete grade. It may temporarily yield
+to useful teaching work from already-admitted later grades when that work is lawful
+under the accepted executable/source/rights scope. If yielded training changes the
+accepted learner/checkpoint, the exhausted active grade receives a fresh
+MAIN/recovery opportunity. Exhaustion alone MUST NOT mint grade completion,
+certification eligibility, mastery, championship, successor authority, or a
+terminal trainer outcome.
+
+`GRADE_COMPLETE` remains the genuine certification boundary. Only that disposition
+may enter #1334 certification and the receipt-bound #1320/#1314 successor path.
+A failed real certification may still stop that certification boundary under its
+existing authority; this ADR does not weaken certification evidence.
+
+C07/Atlas admission remains an authority boundary for genuine expansion or change
+of accepted executable, source, or rights scope. It MUST NOT be invoked merely
+because the trainer wants to teach capabilities already present in the accepted
+release. If a later grade requires genuinely new scope, that expansion may still
+fail closed without converting already-admitted useful work into an unrelated
+operator stop.
+
+**Product invariant:** After one human-authorized Start/Resume, the persistent
+trainer should continue making useful lawful progress until its requested
+time/visit/resource bound or a genuine external authority/safety boundary is
+reached. Clean termination is not a substitute for continuous training.

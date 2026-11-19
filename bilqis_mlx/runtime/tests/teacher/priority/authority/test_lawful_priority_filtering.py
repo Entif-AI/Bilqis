@@ -45,7 +45,11 @@ def _frontier(*ready, exclusions=()):
 
 
 def _cadence(frontier):
-    return SimpleNamespace(authorized_capability_ids=frontier.ready_capability_ids)
+    return SimpleNamespace(
+        authorized_capability_ids=frontier.ready_capability_ids,
+        phase=SimpleNamespace(value="MAIN"),
+        disposition=SimpleNamespace(value="TEACHING"),
+    )
 
 
 def _offer(_context, _parent, _path, *, capability, source_seed, source_each,
@@ -67,7 +71,7 @@ def test_all_release_enumeration_cannot_construct_offer_for_held_capability():
         frontier = _frontier("cap:alpha")
         capabilities, offers = authority._priority_offers(
             context, object(), "/atlas", 17, planning_generation,
-            frontier, _cadence(frontier))
+            frontier, frontier.ready_capability_ids)
 
     assert tuple(item.capability_id for item in capabilities) == ("cap:alpha",)
     assert tuple(item[0] for item in offers) == ("cap:alpha",)
@@ -85,10 +89,10 @@ def test_frontier_reissue_alone_expands_offer_set_without_grade_logic():
         second_frontier = _frontier("cap:alpha", "cap:beta")
         _first_capabilities, first = authority._priority_offers(
             context, object(), "/atlas", 17, planning_generation,
-            first_frontier, _cadence(first_frontier))
+            first_frontier, first_frontier.ready_capability_ids)
         _second_capabilities, second = authority._priority_offers(
             context, object(), "/atlas", 17, planning_generation,
-            second_frontier, _cadence(second_frontier))
+            second_frontier, second_frontier.ready_capability_ids)
 
     assert tuple(item[0] for item in first) == ("cap:alpha",)
     assert tuple(item[0] for item in second) == ("cap:alpha", "cap:beta")
@@ -104,7 +108,7 @@ def test_a09_planning_generation_cannot_expand_offers_without_frontier_reissue()
             "cap:alpha", exclusions=(("cap:beta", "FUTURE_GENERATED_GRADE"),))
         results = tuple(authority._priority_offers(
             context, object(), "/atlas", 17, generation,
-            frontier, _cadence(frontier))[1]
+            frontier, frontier.ready_capability_ids)[1]
             for generation in generations)
 
     assert tuple(tuple(item[0] for item in offers) for offers in results) == (
@@ -117,7 +121,7 @@ def test_frontier_ready_identity_must_exist_in_current_release():
         frontier = _frontier("cap:unknown")
         authority._priority_offers(
             context, object(), "/atlas", 17, object(),
-            frontier, _cadence(frontier))
+            frontier, frontier.ready_capability_ids)
     assert failure.value.context["reason"] == (
         "BAMF_PRIORITY_LAWFUL_FRONTIER_RELEASE_DRIFT")
 
@@ -125,11 +129,11 @@ def test_frontier_ready_identity_must_exist_in_current_release():
 def test_cadence_can_only_narrow_lawful_ready_offer_set():
     context = _source_context("cap:alpha", "cap:beta")
     frontier = _frontier("cap:alpha", "cap:beta")
-    cadence = SimpleNamespace(authorized_capability_ids=("cap:beta",))
+    authorized = ("cap:beta",)
     with patch.object(
             authority, "prepare_priority_source_offer", side_effect=_offer):
         capabilities, offers = authority._priority_offers(
-            context, object(), "/atlas", 17, object(), frontier, cadence)
+            context, object(), "/atlas", 17, object(), frontier, authorized)
     assert tuple(item.capability_id for item in capabilities) == ("cap:beta",)
     assert tuple(item[0] for item in offers) == ("cap:beta",)
 

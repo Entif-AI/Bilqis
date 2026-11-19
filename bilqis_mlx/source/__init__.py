@@ -4,7 +4,7 @@ Nothing here loads, copies or mutates the historical checkpoint.
 """
 from dataclasses import dataclass
 
-from .semantics.abi import HISTORICAL_ABI
+from ..semantics.abi import HISTORICAL_ABI
 
 
 @dataclass(frozen=True)

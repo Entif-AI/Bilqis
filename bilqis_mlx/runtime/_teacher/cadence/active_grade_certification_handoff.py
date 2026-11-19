@@ -20,7 +20,6 @@ SHA256_HEX_LENGTH = hashlib.sha256().digest_size * 2
 _ISSUER = object()
 _BOUNDARY_DISPOSITIONS = frozenset({
     ActiveGradeCadenceDisposition.GRADE_COMPLETE,
-    ActiveGradeCadenceDisposition.RECOVERY_EXHAUSTED,
 })
 
 

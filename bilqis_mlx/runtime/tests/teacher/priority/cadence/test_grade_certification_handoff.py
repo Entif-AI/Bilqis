@@ -80,7 +80,7 @@ def test_boundary_handoff_cannot_be_constructed_or_reused_after_reauth(tmp_path)
         "BAMF_GRADE_CERTIFICATION_BOUNDARY_STALE")
 
 
-def test_recovery_exhausted_is_same_generic_certification_boundary_path(tmp_path):
+def test_recovery_exhausted_is_not_a_grade_certification_boundary(tmp_path):
     frontier = _frontier((_capability("Z", "READY"),))
     epoch = _epoch({"Z": 1})
     with patch(
@@ -115,6 +115,4 @@ def test_recovery_exhausted_is_same_generic_certification_boundary_path(tmp_path
         lawful_frontier=SimpleNamespace(exclusions=()),
         cadence_authorization=authorization,
     )
-    handoff = certification_boundary_from_priority_result(result)
-    assert handoff.disposition.value == "RECOVERY_EXHAUSTED"
-    assert require_current_certification_boundary(tmp_path, handoff) is handoff
+    assert certification_boundary_from_priority_result(result) is None

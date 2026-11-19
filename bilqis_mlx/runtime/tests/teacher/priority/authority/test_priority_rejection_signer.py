@@ -14,6 +14,9 @@ from bilqis_mlx.errors import BilqisError
 from bilqis_mlx.learning.atlas_salience import rank_attention_options
 from bilqis_mlx.runtime import checkpoint_outbox
 from bilqis_mlx.runtime import priority_rejection_replay as rejection_replay
+from bilqis_mlx.runtime.tests.teacher.priority.rejection_projection_support import (
+    CountingPlane,
+)
 from bilqis_mlx.runtime.atlas_source_authority import (
     SourceAuthorityKey, SourceAuthorityRegistry, SourceAuthorityScope,
 )
@@ -43,10 +46,11 @@ def _lawful_frontier(planning_generation, *ready):
 def _cadence(*ready):
     return SimpleNamespace(
         authorized_capability_ids=tuple(ready),
-        phase=SimpleNamespace(value="MAIN"))
+        phase=SimpleNamespace(value="MAIN"),
+        disposition=SimpleNamespace(value="TEACHING"))
 
 
-def _rejection_custody():
+def _rejection_custody(root):
     evidence = {
         "schema": "bilqis.bamf.c16.3-rejection/v2",
         "visit_id": "visit:beta", "capability": "capability:beta",
@@ -75,9 +79,9 @@ def _rejection_custody():
     }
     receipt_raw = canonical(receipt)
     receipt_sha256 = hashlib.sha256(receipt_raw).hexdigest()
-    objects = {authority_sha256: authority_raw, receipt_sha256: receipt_raw}
-    return evidence, event, receipt_sha256, SimpleNamespace(
-        get_object=lambda digest: objects[digest])
+    plane = CountingPlane(root)
+    plane.objects.update({authority_sha256: authority_raw, receipt_sha256: receipt_raw})
+    return evidence, event, receipt_sha256, plane
 
 
 def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotation():
@@ -113,7 +117,7 @@ def test_rejected_candidate_is_durably_deprioritized_without_advancing_c03_rotat
 
     with TemporaryDirectory() as temporary:
         run_dir = Path(temporary)
-        _evidence, event, _receipt_sha256, plane = _rejection_custody()
+        _evidence, event, _receipt_sha256, plane = _rejection_custody(run_dir)
         (run_dir / "events.jsonl").write_text(json.dumps(event) + "\n")
         with patch(
             "bilqis_mlx.runtime.bamf_bundle.accepted_runtime._accepted_correction_registry",
@@ -168,9 +172,9 @@ def test_raw_rejection_journal_cannot_change_priority_without_b13_authority():
 def test_duplicate_raw_journal_rows_cannot_amplify_one_b13_rejection():
     parent = SimpleNamespace(retained_state=SimpleNamespace(optimizer_step=11))
     cache = SimpleNamespace(generation=2, accepted_manifest_sha256="f" * 64, run_id="run")
-    _evidence, event, receipt_sha256, plane = _rejection_custody()
     with TemporaryDirectory() as temporary:
         run_dir = Path(temporary)
+        _evidence, event, receipt_sha256, plane = _rejection_custody(run_dir)
         raw = json.dumps(event) + "\n"
         (run_dir / "events.jsonl").write_text(raw + raw)
         with patch.object(rejection_replay, "data_plane", return_value=plane):

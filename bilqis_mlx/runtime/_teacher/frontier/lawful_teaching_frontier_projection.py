@@ -157,6 +157,48 @@ def _capabilities(
     return tuple(result)
 
 
+def _recovery_yield_capabilities(
+        release, snapshot, closure, plan, mastered, *, active_capability_ids):
+    """Project the next admitted grade after an exhausted active-grade window."""
+    active = set(active_capability_ids)
+    if not active:
+        return ()
+    grades = tuple(getattr(release.execution_plan, "grades", ()))
+    positions = tuple(
+        index for index, grade in enumerate(grades)
+        if active & set(grade.capabilities)
+    )
+    if not positions:
+        return ()
+    for grade in grades[max(positions) + 1:]:
+        members = tuple(
+            (capability_id, _semantic_ids(release, capability_id))
+            for capability_id in grade.capabilities
+        )
+        capabilities = _capabilities(
+            release, snapshot, closure, plan, mastered,
+            active_members=members,
+        )
+        if any(
+                item.disposition is LawfulTeachingDisposition.READY
+                for item in capabilities):
+            return capabilities
+    return ()
+
+
+def _recovery_yield_exclusions(active_frontier, release, capabilities):
+    yielded = {item.capability_id for item in capabilities}
+    retained = tuple(
+        item for item in active_frontier.exclusions
+        if item.capability_id not in yielded
+    )
+    yielded_holds = tuple(
+        item for item in _exclusions(release, capabilities)
+        if item.capability_id in yielded
+    )
+    return (*retained, *yielded_holds)
+
+
 def _exclusions(release, capabilities) -> tuple[LawfulTeachingExclusion, ...]:
     codes = {
         LawfulTeachingDisposition.EVIDENCE_COMPLETE:

@@ -52,6 +52,7 @@ class AcceptedPriorityAuthority:
     now: int
     planning_generation: object
     cadence: object = field(compare=False, repr=False)
+    selection_cadence: object = field(compare=False, repr=False)
 
 
 def _signed(record, signer, kind, key):
@@ -133,13 +134,13 @@ def _planning_unlocks(capability_id, planning):
 
 
 def _priority_offers(source_context, parent, atlas_artifact_path, next_seed,
-                     planning_generation, lawful_frontier, cadence):
+                     planning_generation, lawful_frontier, authorized):
     by_id = {
         capability.capability_id: capability
         for capability in source_context.release.execution_plan.capabilities
     }
     ready = tuple(lawful_frontier.ready_capability_ids)
-    authorized = tuple(cadence.authorized_capability_ids)
+    authorized = tuple(authorized)
     if (not set(authorized) <= set(ready)
             or any(capability_id not in by_id for capability_id in authorized)):
         _invalid("BAMF_PRIORITY_LAWFUL_FRONTIER_RELEASE_DRIFT")
@@ -249,12 +250,23 @@ def issue_foundation_priority_authority(
             run_dir, source_context, parent, atlas_artifact_path, progress))
     from bilqis_mlx.runtime.active_grade_cadence import issue_active_grade_cadence
     cadence = issue_active_grade_cadence(run_dir, planning_epoch, lawful_frontier)
+    selection_cadence = cadence
     ready_capabilities = cadence.authorized_capability_ids
+    if cadence.disposition.value == "RECOVERY_EXHAUSTED":
+        from bilqis_mlx.runtime.lawful_teaching_frontier import (
+            issue_recovery_yield_teaching_frontier,
+        )
+        yielded = issue_recovery_yield_teaching_frontier(
+            lawful_frontier, planning_epoch, cadence)
+        if yielded is not None and yielded.ready_capability_ids:
+            lawful_frontier = yielded
+            ready_capabilities = yielded.ready_capability_ids
+            selection_cadence = None
     if not ready_capabilities:
         return AcceptedPriorityAuthority(
             None, None, planning, lawful_frontier,
             lawful_frontier.frontier_sha256, (), counter, planning_generation,
-            cadence)
+            cadence, selection_cadence)
     registry = cache._correction_registry
     signer = read_host_system_source_authority_signer(registry)
     capabilities = ready_capabilities
@@ -264,7 +276,7 @@ def issue_foundation_priority_authority(
             f"{len(capabilities)} lawful capabilities")
     capabilities, offers = _priority_offers(
         source_context, parent, atlas_artifact_path, next_seed,
-        planning_generation, lawful_frontier, cadence)
+        planning_generation, lawful_frontier, ready_capabilities)
     if progress is not None:
         progress("teacher: ranking priority options")
     rejections = _ordered_rejections(run_dir, parent, cache)
@@ -287,7 +299,7 @@ def issue_foundation_priority_authority(
         AttentionFrontier(options, evidence_rows, snapshot),
         history, planning,
         lawful_frontier, lawful_frontier.frontier_sha256, offers, now,
-        planning_generation, cadence)
+        planning_generation, cadence, selection_cadence)
 
 
 __all__ = ("AcceptedPriorityAuthority", "issue_foundation_priority_authority")

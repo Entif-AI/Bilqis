@@ -8,6 +8,7 @@ from bilqis_mlx.runtime.lawful_teaching_frontier import (
     _active_member_projection,
     _capabilities,
     _exclusions,
+    _recovery_yield_capabilities,
 )
 from bilqis_mlx.runtime.lawful_teaching_frontier_contracts import (
     LawfulTeachingExclusion,
@@ -23,6 +24,35 @@ from bilqis_mlx.runtime.tests.teacher.priority.authority.test_lawful_teaching_fr
 
 
 class ActiveGeneratedGradeFrontierTests(unittest.TestCase):
+    def test_recovery_yield_opens_next_already_admitted_grade_without_relabeling_active_grade(self):
+        release = _release(relabeled=True)
+        release.execution_plan.grades = (
+            SimpleNamespace(id="first", capabilities=("P",)),
+            SimpleNamespace(id="next", capabilities=("D",)),
+        )
+
+        yielded = _recovery_yield_capabilities(
+            release, _snapshot(), _closure(), _plan(), ("P",),
+            active_capability_ids=("P",),
+        )
+
+        self.assertEqual(tuple(item.capability_id for item in yielded), ("D",))
+        self.assertEqual(yielded[0].disposition.value, "READY")
+
+    def test_recovery_yield_never_reopens_current_or_earlier_declared_grade(self):
+        release = _release(relabeled=True)
+        release.execution_plan.grades = (
+            SimpleNamespace(id="first", capabilities=("P",)),
+            SimpleNamespace(id="next", capabilities=("D",)),
+        )
+
+        yielded = _recovery_yield_capabilities(
+            release, _snapshot(), _closure(), _plan(), ("P", "D"),
+            active_capability_ids=("D",),
+        )
+
+        self.assertEqual(yielded, ())
+
     def test_later_admitted_capability_is_not_teachable_outside_frozen_membership(self):
         capabilities = _capabilities(
             _release(), _snapshot(), _closure(), _plan(), (),

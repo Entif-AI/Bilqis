@@ -90,7 +90,7 @@ def test_projection_rebuild_inside_recovery_preserves_round_and_exposure(tmp_pat
     assert dict(rebuilt.state.recovery_attempt_counts) == expected_exposure
 
 
-def test_new_evidence_epoch_reauthenticates_boundary_without_reopening_cadence(tmp_path):
+def test_new_learner_evidence_reopens_exhausted_grade_main_cadence(tmp_path):
     rows = tuple(_capability(item) for item in ("A", "B", "C", "D"))
     frontier = _frontier(rows)
     first_epoch = _epoch({"A": 3, "B": 2, "C": 1, "D": 1})
@@ -109,8 +109,8 @@ def test_new_evidence_epoch_reauthenticates_boundary_without_reopening_cadence(t
         sha256="8" * 64, optimizer_step=12)
     with _obligation_patch(second_epoch):
         refreshed = issue_active_grade_cadence(tmp_path, second_epoch, frontier)
-        assert refreshed.phase is ActiveGradeCadencePhase.BOUNDARY
-        assert refreshed.disposition.value == "RECOVERY_EXHAUSTED"
+        assert refreshed.phase is ActiveGradeCadencePhase.MAIN
+        assert refreshed.disposition.value == "TEACHING"
         assert refreshed.state.cadence_epoch == exhausted.state.cadence_epoch + 1
         assert refreshed.state.deficit_evidence_sha256 != (
             exhausted.state.deficit_evidence_sha256)
@@ -119,9 +119,9 @@ def test_new_evidence_epoch_reauthenticates_boundary_without_reopening_cadence(t
                 "bilqis_mlx.runtime.active_grade_cadence_replay."
                 "authenticated_cadence_attempts", return_value=tuple(history)):
             rebuilt = issue_active_grade_cadence(tmp_path, second_epoch, frontier)
-    assert rebuilt.phase is ActiveGradeCadencePhase.BOUNDARY
-    assert rebuilt.disposition.value == "RECOVERY_EXHAUSTED"
-    assert rebuilt.authorized_capability_ids == ()
+    assert rebuilt.phase is ActiveGradeCadencePhase.MAIN
+    assert rebuilt.disposition.value == "TEACHING"
+    assert rebuilt.authorized_capability_ids
 
 
 def test_projection_writer_refuses_attempt_without_authenticated_terminal_custody(tmp_path):

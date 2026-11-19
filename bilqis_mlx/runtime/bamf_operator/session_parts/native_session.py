@@ -68,7 +68,7 @@ def priority_hold_result(
         payload, sort_keys=True, ensure_ascii=True))
     boundary_disposition = cadence.get("disposition") if isinstance(cadence, dict) else None
     certification = None
-    if boundary_disposition in {"GRADE_COMPLETE", "RECOVERY_EXHAUSTED"}:
+    if boundary_disposition == "GRADE_COMPLETE":
         from bilqis_mlx.runtime.grade_certification import run_grade_boundary_certification
         try:
             certification = run_grade_boundary_certification(
