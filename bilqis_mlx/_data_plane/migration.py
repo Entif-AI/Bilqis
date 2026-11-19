@@ -6,19 +6,21 @@ import zlib
 
 from .contracts import DataPlaneError, _error
 
+_MIGRATION_BATCH_RECORDS = 1000
+
 
 def _sha(raw: bytes) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
-def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
-    """Move legacy SQLite BLOB rows into append-only archive packs."""
-    if type(max_records) is not int or max_records < 0:
-        raise ValueError(DataPlaneError.MIGRATION_BUDGET_INVALID.value)
-    moved_objects = moved_nodes = 0
-    remaining = max_records
+def _batch_limit(remaining: int, bounded: bool) -> int:
+    return min(_MIGRATION_BATCH_RECORDS, remaining) if bounded else _MIGRATION_BATCH_RECORDS
+
+
+def _migrate_objects(plane, remaining: int, bounded: bool) -> tuple[int, int]:
+    moved = 0
     while True:
-        limit = 1000 if not max_records else min(1000, remaining)
+        limit = _batch_limit(remaining, bounded)
         if limit <= 0:
             break
         rows = list(plane._db.execute(
@@ -42,14 +44,19 @@ def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
                     (digest, pack_id, offset, raw_bytes, compressed_bytes))
             for digest, _compressed, _raw_bytes in rows:
                 plane._db.execute("DELETE FROM objects WHERE sha256=?", (digest,))
-                moved_objects += 1
-        if max_records:
+                moved += 1
+        if bounded:
             remaining -= len(rows)
             if remaining <= 0:
                 break
+    return moved, remaining
+
+
+def _migrate_nodes(plane, remaining: int, bounded: bool) -> tuple[int, int]:
+    moved = 0
     while True:
-        limit = 1000 if not max_records else min(1000, remaining)
-        if max_records and limit <= 0:
+        limit = _batch_limit(remaining, bounded)
+        if bounded and limit <= 0:
             break
         rows = list(plane._db.execute(
             "SELECT sha256,payload,generation,parent_sha256 FROM nodes LIMIT ?", (limit,)))
@@ -77,11 +84,21 @@ def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
                     (digest, pack_id, offset, raw_bytes, compressed_bytes, generation, parent))
             for digest, _raw, _generation, _parent in rows:
                 plane._db.execute("DELETE FROM nodes WHERE sha256=?", (digest,))
-                moved_nodes += 1
-        if max_records:
+                moved += 1
+        if bounded:
             remaining -= len(rows)
             if remaining <= 0:
                 break
+    return moved, remaining
+
+
+def migrate_legacy_payloads(plane, *, max_records: int = 0) -> dict:
+    """Move legacy SQLite BLOB rows into append-only archive packs."""
+    if type(max_records) is not int or max_records < 0:
+        raise ValueError(DataPlaneError.MIGRATION_BUDGET_INVALID.value)
+    bounded = bool(max_records)
+    moved_objects, remaining = _migrate_objects(plane, max_records, bounded)
+    moved_nodes, _remaining = _migrate_nodes(plane, remaining, bounded)
     return {"migrated_objects": moved_objects, "migrated_nodes": moved_nodes}
 
 
