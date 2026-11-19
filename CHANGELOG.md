@@ -2,6 +2,13 @@
 
 All new releases use [Semantic Versioning](https://semver.org/) and Conventional Commit subjects. Dates refer to the tagged source release, not to any claim that a neural student has qualified new capabilities.
 
+## [1.2.6](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.5...v1.2.6) (2026-11-19)
+
+
+### Bug Fixes
+
+* **ci:** tolerate macos runner queue delays ([#1442](https://github.com/Entif-AI/Bilqis-MLX/issues/1442)) ([4514b56](https://github.com/Entif-AI/Bilqis-MLX/commit/4514b565560df49de5a0e194f55e8cdb0a4919c1))
+
 ## [1.2.5](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.4...v1.2.5) (2026-11-19)
 
 
