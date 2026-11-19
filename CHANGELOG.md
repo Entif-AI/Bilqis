@@ -2,6 +2,26 @@
 
 All new releases use [Semantic Versioning](https://semver.org/) and Conventional Commit subjects. Dates refer to the tagged source release, not to any claim that a neural student has qualified new capabilities.
 
+## [1.2.5](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.4...v1.2.5) (2026-11-19)
+
+
+### Bug Fixes
+
+* **ci:** scope synthetic PR merges to their base ([e0d20b9](https://github.com/Entif-AI/Bilqis-MLX/commit/e0d20b9e77194e4b00e8d763b68f92fd7c6cc94d))
+* **data-plane:** bound SQLite growth and add retention GC ([#1440](https://github.com/Entif-AI/Bilqis-MLX/issues/1440)) ([7bee991](https://github.com/Entif-AI/Bilqis-MLX/commit/7bee9911f70175b09023bbf7a10dc69d763992f3))
+* **data-plane:** bound storage with archival retention ([db7021f](https://github.com/Entif-AI/Bilqis-MLX/commit/db7021f5ba033a0c4cffa20cbfcb95ff46c6840a))
+* **data-plane:** register maintenance error contracts ([1fa4c28](https://github.com/Entif-AI/Bilqis-MLX/commit/1fa4c2885d64d1b4e430e153de3e0e6a94cc24ce))
+
+
+### Performance Improvements
+
+* **bamf:** administered foreign-sourced unregulated performance-enhancing drugs ([#1408](https://github.com/Entif-AI/Bilqis-MLX/issues/1408)) ([2e7df7c](https://github.com/Entif-AI/Bilqis-MLX/commit/2e7df7c7cc61c4e3fdf70fb6f73142a2cbc65ab9))
+
+
+### Code Refactoring
+
+* **data-plane:** split maintenance decision paths ([31c3ac7](https://github.com/Entif-AI/Bilqis-MLX/commit/31c3ac73a25dbd6aa52280815d44987766b95333))
+
 ## [1.2.4](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.3...v1.2.4) (2026-11-18)
 
 
