@@ -3795,3 +3795,31 @@ operator stop.
 trainer should continue making useful lawful progress until its requested
 time/visit/resource bound or a genuine external authority/safety boundary is
 reached. Clean termination is not a substitute for continuous training.
+
+## ADR-149 | 2026-11-19 | Pre-selector accepted lineages retain their versioned certification policy
+
+**Status:** Accepted by direct owner instruction on 2026-11-19 to restore the
+existing learner before broader authority/security redesign.
+
+**Problem:** #1334 introduced certification-policy selection through the accepted
+C07 v2 lease. The current accepted learner predates that selector and therefore has
+no accepted v2 lease carrying `progression_policy_sha256`. Treating that historical
+absence as an operator/security failure bricks an otherwise valid retained learner
+at the genuine grade-certification boundary.
+
+**Decision:** If an already accepted lineage has no accepted C07 v2 lease because it
+predates the progression-policy selector, #1334 uses the existing explicitly
+versioned `adr-084-mean-stability/v1` policy: 92% entry, 87% continuation, ADR-111
+retry comparison, ADR-084 debt authority. The selected policy digest remains bound
+into certification requests/receipts. This is a compatibility rule for absence of
+the later selector, not a generic default-selection mechanism.
+
+If an accepted C07 v2 lease exists, its exact signed selector remains authoritative.
+An unknown or unsupported selected digest still fails closed. This ADR does not
+authorize a run-local policy file, change source gold, mint mastery, widen C07/C09
+source authority, or permit the learner/trainer to author a new policy.
+
+**Priority:** Restore stable learning continuity first. The broader single-owner
+alpha threat model, local authority topology, and security-versus-reliability
+tradeoffs are follow-up architecture work and must not block this compatibility
+repair.

@@ -35,7 +35,7 @@ def historical_mean_stability_policy() -> GradeCertificationPolicy:
 
 
 def _selected_progression_policy_sha256(run_dir: Path) -> str:
-    """Read the exact human-approved C07 progression-policy selector."""
+    """Read the C07 selector, preserving pre-selector accepted lineages."""
     from bilqis_mlx.runtime.accepted_corrections import AcceptedRuntimeHost
     from bilqis_mlx.runtime.atlas_admission import read_accepted_atlas_lease_v2
 
@@ -44,7 +44,10 @@ def _selected_progression_policy_sha256(run_dir: Path) -> str:
     lease = read_accepted_atlas_lease_v2(
         root, source_authority=source_authority)
     if lease is None:
-        _invalid("BAMF_GRADE_CERTIFICATION_POLICY_SELECTION_REQUIRED")
+        # Accepted lineages created before #1334 had no C07 v2 policy selector.
+        # They already trained under this explicitly versioned progression law;
+        # absence of the later selector must not brick the retained learner.
+        return historical_mean_stability_policy().policy_sha256
     return lease.source_approval.progression_policy_sha256
 
 

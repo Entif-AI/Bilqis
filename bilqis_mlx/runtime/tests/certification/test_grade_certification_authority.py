@@ -1,4 +1,5 @@
 """Live-vs-cold authority witnesses for #1334 currentness."""
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -36,6 +37,24 @@ def test_c07_progression_digest_selects_exact_implemented_policy():
         return_value=policy.policy_sha256,
     ):
         assert selected_grade_certification_policy("/unused") == policy
+
+
+def test_preselector_accepted_lineage_uses_versioned_compatibility_policy():
+    policy = historical_mean_stability_policy()
+    source_authority = object()
+    with (
+        patch(
+            "bilqis_mlx.runtime.accepted_corrections.AcceptedRuntimeHost",
+        ) as accepted_host,
+        patch(
+            "bilqis_mlx.runtime.atlas_admission.read_accepted_atlas_lease_v2",
+            return_value=None,
+        ) as read_lease,
+    ):
+        accepted_host.return_value.source_authority.return_value = source_authority
+        assert selected_grade_certification_policy("/legacy-run") == policy
+    read_lease.assert_called_once_with(
+        Path("/legacy-run"), source_authority=source_authority)
 
 
 def test_unknown_c07_progression_digest_does_not_default_historical_fixture():
