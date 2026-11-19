@@ -2,6 +2,13 @@
 
 All new releases use [Semantic Versioning](https://semver.org/) and Conventional Commit subjects. Dates refer to the tagged source release, not to any claim that a neural student has qualified new capabilities.
 
+## [1.2.7](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.6...v1.2.7) (2026-11-19)
+
+
+### Bug Fixes
+
+* **bamf:** stop cleanly when grade certification needs C07 policy ([#1456](https://github.com/Entif-AI/Bilqis-MLX/issues/1456)) ([619e5e8](https://github.com/Entif-AI/Bilqis-MLX/commit/619e5e8e5d296c74f11440b79b00c18eb93a7771))
+
 ## [1.2.6](https://github.com/Entif-AI/Bilqis-MLX/compare/v1.2.5...v1.2.6) (2026-11-19)
 
 
