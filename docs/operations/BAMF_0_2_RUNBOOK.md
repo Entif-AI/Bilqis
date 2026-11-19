@@ -160,6 +160,13 @@ scope remains non-authoritative request data; C07 derives the persisted lease fr
 accepted B13/C09 custody. A second unequal request is an explicit-renewal case and
 is rejected by this first-enrollment surface.
 
+A staged lineage may continue retained learning within its current lawful grade, but
+it cannot certify or advance that grade without a signed C07 v2 progression-policy
+selection. If such a lineage reaches a grade boundary first, the trainer terminates
+cleanly as `CERTIFICATION_POLICY_REQUIRED`, preserves the accepted learner unchanged,
+and waits for the explicit enrollment command above. It never substitutes a default
+certification policy.
+
 Existing trainer help can also be inspected without a neural update:
 
 ```sh
