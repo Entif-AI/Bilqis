@@ -13,6 +13,7 @@ __path__.extend(
         "curriculum",
         "curriculum/atlas_frontier",
         "lifecycle",
+        "lifecycle/execution_owners",
         "sources",
     )
 )

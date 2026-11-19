@@ -218,7 +218,7 @@ def record_schema(record_type: type[WireRecord]) -> dict:
     elif record_type.__name__ in {"OperatorActionReceipt", "OperatorActionReceiptV2"}:
         schema["x-bilqis-runtime-invariants"] = [
             "COMPLETED requires postcondition_ref and receipt_refs",
-            "REJECTED/FAILED require error_ref",
+            "REJECTED/FAILED/FAILED_BEFORE_EFFECT require error_ref",
             "non-terminal states carry neither postcondition_ref nor error_ref",
         ]
     return schema

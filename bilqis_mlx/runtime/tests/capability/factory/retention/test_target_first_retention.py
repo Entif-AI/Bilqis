@@ -173,6 +173,7 @@ def test_live_screen_short_circuits_before_protected_compilation():
         seed=13, rows=({"id": "fresh", "capability": target},)))
     target_cohort = object()
     assessments = Mock(side_effect=(object(), object()))
+    observed = []
 
     with patch.multiple(
             local_screen,
@@ -199,13 +200,28 @@ def test_live_screen_short_circuits_before_protected_compilation():
             target_plan, (("trained-family",), ("trained-episode",)),
             ((target, 7, ({"id": "reference", "capability": target},)),
              (protected, 8, ({"id": "protected", "capability": protected},))),
-            cache)
+            cache, observer=observed.append)
 
     assert result[0] is rejection
     protected_compile.assert_not_called()
     fresh_rows.assert_called_once_with(
         ANY,
         (target,), seed=11 + local_screen.C05_FRESH_TARGET_SEED_OFFSET,
-        training=(("trained-family",), ("trained-episode",)))
+        training=(("trained-family",), ("trained-episode",)),
+        require_independent=False)
     assert assessments.call_args_list[0].args[1] is target_cohort
     assert assessments.call_args_list[1].args[1] is target_cohort
+    profile = {}
+    for event in observed:
+        profile.update(event)
+    assert profile["retention_target_case_count"] == 1
+    assert profile["retention_target_shared_backbone_launches"] == 0
+    assert profile["retention_target_scalar_neural_launches"] == 0
+    for field in (
+            "retention_target_prepare_wall_seconds",
+            "retention_target_solver_wall_seconds",
+            "retention_target_parent_wall_seconds",
+            "retention_target_candidate_wall_seconds"):
+        assert isinstance(profile[field], float)
+        assert profile[field] >= 0.0
+    assert "retention_protected_prepare_wall_seconds" not in profile

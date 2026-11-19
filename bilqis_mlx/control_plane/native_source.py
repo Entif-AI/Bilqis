@@ -65,7 +65,15 @@ def native_query_catalog(run_dir: Path) -> MissionControlQueryCatalog:
     pointer = root / "bamf-state.json"
     if not pointer.exists() and not pointer.is_symlink():
         return MissionControlQueryCatalog.unavailable()
-    material = materialize_native_projection(root, include_live_rejections=True)
+    try:
+        material = materialize_native_projection(root, include_live_rejections=True)
+    except BilqisError as error:
+        if error.context.get("reason") in {
+            "BAMF_GENERATION_POINTER_CHANGED_DURING_READ",
+            "CONTROL_PLANE_NATIVE_HISTORY_POINTER_CHANGED",
+        }:
+            return MissionControlQueryCatalog.unavailable()
+        raise
     return MissionControlQueryCatalog(material.records)
 
 

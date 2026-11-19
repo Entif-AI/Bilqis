@@ -17,6 +17,7 @@ class ActionReceiptState(StrEnum):
     COMPLETED = "COMPLETED"
     REJECTED = "REJECTED"
     FAILED = "FAILED"
+    FAILED_BEFORE_EFFECT = "FAILED_BEFORE_EFFECT"
     OUTCOME_UNKNOWN = "OUTCOME_UNKNOWN"
 
 
@@ -83,7 +84,11 @@ class OperatorActionReceipt(WireRecord):
             require(self.postcondition_ref is not None and bool(self.meta.receipt_refs),
                     "ACTION_COMPLETION_PROOF")
             require(self.error_ref is None, "ACTION_COMPLETION_ERROR")
-        elif self.state in (ActionReceiptState.REJECTED, ActionReceiptState.FAILED):
+        elif self.state in (
+            ActionReceiptState.REJECTED,
+            ActionReceiptState.FAILED,
+            ActionReceiptState.FAILED_BEFORE_EFFECT,
+        ):
             require(self.error_ref is not None and self.postcondition_ref is None,
                     "ACTION_FAILURE_PROOF")
         else:
@@ -157,7 +162,11 @@ class OperatorActionReceiptV2(WireRecord):
             require(self.postcondition_ref is not None and bool(self.meta.receipt_refs),
                     "ACTION_COMPLETION_PROOF")
             require(self.error_ref is None, "ACTION_COMPLETION_ERROR")
-        elif self.state in (ActionReceiptState.REJECTED, ActionReceiptState.FAILED):
+        elif self.state in (
+            ActionReceiptState.REJECTED,
+            ActionReceiptState.FAILED,
+            ActionReceiptState.FAILED_BEFORE_EFFECT,
+        ):
             require(self.error_ref is not None and self.postcondition_ref is None,
                     "ACTION_FAILURE_PROOF")
         else:

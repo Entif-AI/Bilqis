@@ -7,8 +7,9 @@ from bilqis_mlx.learning.atlas_execution_provenance import (
 )
 from bilqis_mlx.learning.atlas_participation import (
     ActiveAdmittedRows, RoleReadParticipation, SemanticDenominator,
-    StepParticipationInputs,
+    StepParticipation, StepParticipationInputs,
 )
+from .c08_distributed_evidence import DistributedB11Evidence
 from bilqis_mlx.learning.atlas_participation_census import validate_group_census
 from bilqis_mlx.runtime.atlas_model import require_bamf_loss_execution
 
@@ -140,3 +141,43 @@ def bind_execution_provenance_many(
         parent_optimizer_step=parent_optimizer_step,
         topology_digest=topology_digest,
         candidate_step_ordinal=candidate_step_ordinal)
+
+
+def bind_distributed_execution_provenance(
+        *, evidence: tuple[DistributedB11Evidence, ...], group_eligible,
+        spec, extents, run_id: str, generation: int,
+        parent_manifest_sha256: str, parent_candidate_identity_sha256: str,
+        parent_optimizer_step: int, topology_digest: str,
+        candidate_step_ordinal: int) -> StepExecutionProvenance:
+    """Bind portable rank evidence into the same B09/B12 provenance owner."""
+    if (type(evidence) is not tuple or len(evidence) < _LOGICAL_BATCH_MIN_ROWS
+            or any(type(item) is not DistributedB11Evidence for item in evidence)):
+        _invalid("C08_DISTRIBUTED_EVIDENCE_REQUIRED")
+    validate_group_census(group_eligible, spec, extents)
+    participation = StepParticipation(
+        tuple(sorted({row for item in evidence for row in
+                      item.visible_identity_rows + item.feedback_identity_rows
+                      + item.semantic_denominator_identity_rows})),
+        tuple(sorted({slot for item in evidence for slot in item.motif_slots})),
+        tuple(sorted({row for item in evidence for row in
+                      item.feature_rows + item.semantic_denominator_feature_rows
+                      + item.role_read_feature_rows})),
+        tuple(sorted({row for item in evidence for row in item.local_slot_rows})),
+        tuple(sorted({name for item in evidence for name in item.dense_parameter_names})),
+        True)
+    active_admitted = ActiveAdmittedRows(
+        identity_rows=group_eligible.admitted_identity_rows,
+        motif_slots=participation.motif_slots,
+        feature_rows=tuple(sorted({
+            row for item in evidence for row in item.feature_rows
+        })),
+        local_slot_rows=participation.local_slot_rows)
+    return issue_execution_provenance(
+        None, None, None, None, group_eligible, active_admitted,
+        spec=spec, extents=extents, run_id=run_id, generation=generation,
+        parent_manifest_sha256=parent_manifest_sha256,
+        parent_candidate_identity_sha256=parent_candidate_identity_sha256,
+        parent_optimizer_step=parent_optimizer_step,
+        topology_digest=topology_digest,
+        candidate_step_ordinal=candidate_step_ordinal,
+        precomputed_participation=participation)

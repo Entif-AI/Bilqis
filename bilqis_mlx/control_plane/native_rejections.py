@@ -115,7 +115,8 @@ def _project_verified_rejection(verified, generation):
     refs = (f"rejection-authority:{authority_sha}",)
     receipts = (f"bamf-rejection:{receipt_sha}",)
     episode_id = (
-        visit_id if rejection_attempt_ordinal is None
+        f"{visit_id}:rejection:{event_id}"
+        if rejection_attempt_ordinal is None
         else f"{visit_id}:rejection:{rejection_attempt_ordinal}")
     episode = LearningEpisode(
         record_meta(

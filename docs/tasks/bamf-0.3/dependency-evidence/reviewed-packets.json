@@ -42,12 +42,13 @@
       "parent_number": 386,
       "dependency_evidence": {
         "schema": "bilqis.bamf.dependency-evidence/v1",
-        "resolution": "held",
+        "resolution": "resolved",
         "body_sha256": "495bce9b46cbd862a635699923cdcd92a0a012513a594c3283ebdd11ce8a4a00",
         "clause": "## Direct prerequisites\n\n- [B13 #372](https://github.com/Entif-AI/Bilqis-MLX/issues/372) complete generation persistence/cold resume.\n- [C05 #378](https://github.com/Entif-AI/Bilqis-MLX/issues/378) retention/admission safeguards.\n- [C12 #381](https://github.com/Entif-AI/Bilqis-MLX/issues/381) bounded capability/plastic delta packaging where applicable.\n- Local tightly coupled multi-device execution is owned by C08.4, not this issue.",
         "known_edges": [
           "B13",
-          "C05"
+          "C05",
+          "C12"
         ],
         "external_receipts": [],
         "source_records": [
@@ -60,9 +61,10 @@
           }
         ],
         "obligations": [
-          "C12 dependency is conditional: bounded capability/plastic delta packaging where applicable. C14 is explicitly nonblocking parent context; C08.4 owns tightly coupled execution."
+          "C12 remains conditional: only learned/plastic contribution classes consume the bounded cognitive-package owner chain; non-neural evaluation, curriculum and regression evidence do not acquire a global C12 blocker.",
+          "B13 and C05 remain the canonical generation-custody and retention/admission owners. C14 is nonblocking parent context; C08.4 retains tightly coupled execution ownership."
         ],
-        "unresolved": "C12 is conditional where packaging applies; a global unconditional edge must not replace that condition."
+        "unresolved": null
       }
     }
   ]

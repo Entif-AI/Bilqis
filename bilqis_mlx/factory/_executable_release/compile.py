@@ -64,6 +64,7 @@ def compile_executable_factory_release(
         source_bindings=source_bindings,
         profile=profile,
         execution_plan=plan,
+        foundation_capability_ids=plan.active_capability_inventory,
         semantic_catalog=semantic_catalog,
         semantic_catalog_sha256=verification.semantic_catalog_sha256,
         source_adapters=source_adapters,

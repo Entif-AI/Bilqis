@@ -282,6 +282,11 @@ class PreNeuralJourneySupport(MixedWitnessSupport):
                 "bilqis_mlx.runtime.active_generated_grade."
                 "read_active_generated_grade",
                 side_effect=historical_active_grade))
+            stack.enter_context(patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_read_bound_active_generated_grade",
+                side_effect=lambda *_args, **_kwargs: historical_active_grade(
+                    self.run)))
         return stack
 
     def exercise_journey(self):

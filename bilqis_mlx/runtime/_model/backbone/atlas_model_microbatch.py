@@ -20,7 +20,7 @@ from .atlas_model_forward import (
 )
 from .atlas_model_forward_validation import (
     finalize_microbatch_gradient, microbatch_trace_from_hidden,
-    microbatch_trace_preflight,
+    microbatch_trace_from_route, microbatch_trace_preflight,
 )
 from .atlas_model_training import (
     _gradient_execution_rebinder, _require_finite_tensor_tree, loss_bearing_bamf,
@@ -179,24 +179,25 @@ def _gradient_path(
 
 def _materialize_gradient(
         objective, params, route_vectorized, holder, backend, row_batches,
-        answer_plans, targets, masks, salience_supervision, rebind_execution):
+        answer_plans, targets, masks, salience_supervision, rebind_execution,
+        refinement_selections):
     if not route_vectorized:
         mean_loss, gradients = mx.value_and_grad(objective)(params)
         mx.eval(mean_loss, gradients)
         return mean_loss, gradients, holder.get("executions"), None
-    (mean_loss, route_hidden, route_trajectory), gradients = mx.value_and_grad(
+    (mean_loss, route_hidden, route_trajectory, route_logits), gradients = mx.value_and_grad(
         objective)(params)
-    mx.eval(mean_loss, gradients, route_hidden, route_trajectory)
+    mx.eval(mean_loss, gradients, route_hidden, route_trajectory, route_logits)
     route_context = holder.get("route_context")
     if (type(route_context) is not tuple
             or len(route_context) != _ROUTE_CONTEXT_FIELDS):
         _invalid("B11_MICROBATCH_EXECUTION_MISSING")
     producer, accepted_cache, _trace_binding = route_context
     execution_binding = rebind_execution(params)
-    executions = microbatch_trace_from_hidden(
+    executions = microbatch_trace_from_route(
         backend, params, row_batches, answer_plans, targets, masks,
         producer, route_hidden, accepted_cache, execution_binding,
-        salience_supervision)
+        salience_supervision, refinement_selections, route_trajectory, route_logits)
     return mean_loss, gradients, executions, route_trajectory
 
 
@@ -236,9 +237,10 @@ def _microbatch_objective(
             salience_hidden = hidden
             refined = batched_refine_hidden(
                 current, row_batches, producer, hidden, refinement_selections)
-            mean_loss, trajectory = route_microbatch_loss_and_trajectory(
-                current, refined, route_kernel, salience_hidden=salience_hidden)
-            return mean_loss, hidden, trajectory
+            mean_loss, trajectory, route_logits = route_microbatch_loss_and_trajectory(
+                current, refined, route_kernel, salience_hidden=salience_hidden,
+                return_logits=True)
+            return mean_loss, hidden, trajectory, route_logits
 
     return objective
 
@@ -293,7 +295,8 @@ def _bamf_microbatch_value_and_grad_impl(
         with b11_source_authority_launch_epoch(row_batches):
             mean_loss, gradients, executions, route_trajectory = _materialize_gradient(
                 objective, params, route_vectorized, holder, backend, row_batches,
-                answer_plans, targets, masks, salience_supervision, rebind_execution)
+                answer_plans, targets, masks, salience_supervision, rebind_execution,
+                refinement_selections)
         autodiff_wall_seconds = time.perf_counter() - autodiff_started
     _require_finite_tensor_tree(gradients, "B11_GRADIENT_NONFINITE")
     result = finalize_microbatch_gradient(

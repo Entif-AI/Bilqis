@@ -5,7 +5,7 @@ module never draws new examples, mutates MLX or promotes a checkpoint.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 from enum import Enum
 import re
 from typing import Callable
@@ -22,6 +22,8 @@ MEMORY_TELEMETRY_SCHEMA = "bilqis.c08.memory-telemetry/v1"
 OOM_RECEIPT_SCHEMA = "bilqis.c08.oom-receipt/v1"
 RESTORATION_RECEIPT_SCHEMA = "bilqis.c08.restoration-receipt/v1"
 RETRY_STATE_SCHEMA = "bilqis.c08.retry-state/v1"
+RESOURCE_REJECTION_SCHEMA = "bilqis.c08.candidate-resource-rejection/v1"
+OOM_EXHAUSTED = "BAMF_C08_OOM_EXHAUSTED"
 _SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 
 
@@ -180,6 +182,27 @@ class RetryState:
             retained_candidate_digest=retained_candidate_digest,
             optimizer_snapshot_digest=optimizer_snapshot_digest,
             retries_used=0, status=RetryStatus.PLANNED)
+
+
+class CandidateMemoryExhausted(RuntimeError):
+    """The provisional candidate was discarded after C08 exhaustion."""
+
+    def __init__(self, state: RetryState):
+        if state.status is not RetryStatus.EXHAUSTED:
+            _invalid("BAMF_C08_RETRY_STATE_INVALID")
+        super().__init__(OOM_EXHAUSTED)
+        self.state = state
+
+    def to_record(self) -> dict:
+        return {
+            "schema": RESOURCE_REJECTION_SCHEMA,
+            "reason": OOM_EXHAUSTED,
+            "status": self.state.status.value,
+            "retries_used": self.state.retries_used,
+            "logical_row_ids": list(self.state.original_plan.logical_row_ids),
+            "failures": [asdict(item) for item in self.state.failures],
+            "restorations": [asdict(item) for item in self.state.restorations],
+        }
 
 
 def handle_oom(

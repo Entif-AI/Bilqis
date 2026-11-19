@@ -1,8 +1,8 @@
 {
   "schema": "bilqis.bamf.flow-control-lane/v1",
   "lane": "C",
-  "observed_unified": "20f5836e17cdbc2c1f50b29590d8abcd9f0f615d",
-  "updated_at": "2026-11-16T05:47:33+00:00",
+  "observed_unified": "92299b7ccddb1a1b4155723b4eb4eee1057864cb",
+  "updated_at": "2026-11-19T00:52:52+00:00",
   "exception": null,
   "items": [
     {
@@ -490,6 +490,46 @@
       "resume_trigger": null,
       "preserved_branch": "codex/1337-truth-pattern-enrichment-20261116",
       "head_sha_role": "Exact executable integration head consuming reviewed unified 749f1f37; subsequent flow-control and issue/PR receipt changes are metadata only."
+    },
+    {
+      "issue": 1391,
+      "pr": 1415,
+      "state": "TURNED_IN",
+      "head_sha": "a6544fab8e12bd6d2a1528c146f8f592692f4225",
+      "head_sha_role": "Candidate submitted for review before this ledger update.",
+      "summary": "Native BAMF uses the existing MLX training memory policy under the writer lock. Scoped verification passed. The owner authorized review with 36 matched aggregate failures disclosed in PR #1415.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1391-native-training-memory-20261118"
+    },
+    {
+      "issue": 1389,
+      "pr": 1410,
+      "state": "TURNED_IN",
+      "head_sha": "88d17ca0dc96c3ad2ccfb38f124657ff1e7416a7",
+      "head_sha_role": "exact #1389 semantic, native-witness and durable-evidence head before this flow-control receipt commit",
+      "summary": "Issue #1389 is turned in on codex/1389-retention-throughput-20261118. FOUNDATION C05 keeps a fresh source-oracled target redraw while no longer demanding an impossible independent source family/episode, consistent with ADR-133; target-first/protected/championship authority and B13 custody remain unchanged. The native 16-step source-backed B.AND witness reduced retention from the historical 1,739.8s to 81.583s (21.33x), completed eligible at 67.925 attempted/retained steps/hour with 6 target, 0 protected and 12 championship cases, 0 scalar launches, ~17.1 GB peak MLX memory, ~4.34 GB host peak RSS and no source mutation. Durable evidence: docs/evidence/bamf/1389/. Exact-head focused proof is 37 passed, 1 skipped, 20 subtests; the separately invoked continuation owner fixture remains an inherited UPSTREAM_SEMANTIC_AUTHORITY_MISMATCH outside the #1389 diff. Static/governance/docs/contracts/smell/diff gates are green aside from inherited test_priority_rejection_projection.py module-size debt. Live flow advisory reports stale historical PR inventory, not a #1389 defect. Human review/merge remains required.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1389-retention-throughput-20261118"
+    },
+    {
+      "issue": 1392,
+      "pr": 1412,
+      "state": "TURNED_IN",
+      "head_sha": "53d16c2dc2671830f00853204f6067915729d94f",
+      "head_sha_role": "Verified executable candidate before this turn-in receipt.",
+      "summary": "Native C08 recovery retries the exact delivery at a smaller microbatch. Exhaustion records a B13 resource rejection and holds the capability for the current command. Scoped proof passed with 47 tests and 12 subtests, including source-backed native retry, exact parent cold readback, and operator continuation. PR #1412 is open for human review.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1392-native-oom-retry-20261118"
+    },
+    {
+      "issue": 1395,
+      "pr": 1414,
+      "state": "TURNED_IN",
+      "head_sha": "f4b238e826e1b322f5da20ad042b3317801fa9b9",
+      "head_sha_role": "exact #1395 semantic, telemetry-review-repair and native-witness head before this flow-control receipt commit",
+      "summary": "Issue #1395 is turned in as PR #1414 against reviewed unified 204a5f47. Ordinary FOUNDATION C05 no longer executes championship evidence; championship follows the existing final active-grade cadence teaching boundary after the accepted successor is derived and before B13 publication, preserving #1326-#1328 title, challenge, history/reset, cold ancestry and adviser custody. Zero-distill supervision now means no mentor envelope, and the real-A01 B.AND microbatch witness records one vectorized microbatch with zero scalar fallback rows while the nonzero mentor oracle remains scalar-exact. Fresh 16-step native B.AND evidence: accepted ELIGIBLE; retention 39.982s; 73.16 attempted/retained steps/hour; 6 target / 0 protected cases; 2 shared-backbone launches / 0 scalar neural launches; ~17.11 GB peak MLX / ~4.63 GB host peak RSS; no championship telemetry in the C05 profile. Final semantic head f4b238e8 is quality/governance/error-contract clean; the host's inherited 100 GiB disposable-bundle reserve condition is baseline-reproduced and separately reserve-neutralized for bounded custody/profile witnesses. No persistent learner, adjacent C07/OOM policy, self-merge, or championship policy redesign.",
+      "resume_trigger": null,
+      "preserved_branch": "codex/1395-championship-hotpath-20261118"
     }
   ]
 }

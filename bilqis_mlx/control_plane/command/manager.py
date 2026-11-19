@@ -10,7 +10,10 @@ from bilqis_mlx.mission_control.operator import (
 )
 
 from .launch import launch_command_worker
-from .model import CommandMode, ResolvedCommandTarget, intent_sha256, operation_id_for
+from .model import (
+    CommandAction, CommandMode, ResolvedCommandTarget, intent_sha256,
+    operation_id_for,
+)
 from .receipts import (
     build_receipt, command_time_ms, error_ref, error_ref_from_exception,
     minimal_target,
@@ -79,13 +82,13 @@ class CommandManager(CommandStatusMixin):
                     request.request_id, operation_id, semantic)
             except BilqisError as error:
                 return self._rejection(request, operation_id, error)
-        with self.store.operation_lock(operation_id):
-            existing = self.store.read_submission(operation_id)
-            if existing is not None:
-                return self._retry_locked(
-                    request, operation_id, semantic, existing)
-            return self._admit_new_locked(
-                request, operation_id, semantic, expected_target_ref)
+            with self.store.operation_lock(operation_id):
+                existing = self.store.read_submission(operation_id)
+                if existing is not None:
+                    return self._retry_locked(
+                        request, operation_id, semantic, existing)
+                return self._admit_new_locked(
+                    request, operation_id, semantic, expected_target_ref)
 
     def _retry_locked(
         self, request, operation_id: str, semantic: str, existing,
@@ -116,6 +119,19 @@ class CommandManager(CommandStatusMixin):
                 "CONTROL_PLANE_COMMAND_EXPECTED_TARGET_STALE",
                 target=plan.target,
             )
+        if plan.mode is CommandMode.MUTATING:
+            blockers = self._unresolved_mutation_blockers(operation_id, plan.target)
+            stop_target = plan.argv[0] if plan.action is CommandAction.STOP and plan.argv else None
+            if blockers and (
+                plan.action is not CommandAction.STOP or stop_target not in blockers
+            ):
+                return self._persist_preflight_rejection(
+                    request,
+                    operation_id,
+                    "CONTROL_PLANE_COMMAND_OUTCOME_UNKNOWN_BLOCKS_MUTATION:"
+                    + ",".join(blockers),
+                    target=plan.target,
+                )
         if plan.intent_sha256 != semantic:
             _invalid("CONTROL_PLANE_COMMAND_PLAN_IDENTITY_DRIFT")
         self.store.write_plan(plan)
@@ -133,6 +149,31 @@ class CommandManager(CommandStatusMixin):
                 request, operation_id, plan, preflight)
         return self._dispatch_locked(
             request, operation_id, plan, accepted)
+
+    def _unresolved_mutation_blockers(
+        self, operation_id: str, target: ResolvedCommandTarget,
+    ) -> tuple[str, ...]:
+        """Quarantine same-learner mutation while an older mutation is unresolved."""
+        blockers = []
+        for candidate in self.store.operation_ids():
+            if candidate == operation_id:
+                continue
+            candidate_plan = self.store.read_plan(candidate)
+            if (
+                candidate_plan is None
+                or candidate_plan.mode is not CommandMode.MUTATING
+                or candidate_plan.target.run_dir != target.run_dir
+            ):
+                continue
+            receipt = self.status(candidate)
+            if receipt.state not in {
+                ActionReceiptState.COMPLETED,
+                ActionReceiptState.REJECTED,
+                ActionReceiptState.FAILED,
+                ActionReceiptState.FAILED_BEFORE_EFFECT,
+            }:
+                blockers.append(candidate)
+        return tuple(blockers)
 
     def _persist_preflight_rejection(
         self, request, operation_id: str, error: Exception | str, *,
@@ -197,7 +238,7 @@ class CommandManager(CommandStatusMixin):
                 request,
                 operation_id=operation_id,
                 request_sha256=plan.request_sha256,
-                state=ActionReceiptState.FAILED,
+                state=ActionReceiptState.FAILED_BEFORE_EFFECT,
                 target_ref=plan.target.ref,
                 error_ref_value=error_ref_from_exception(error),
             )

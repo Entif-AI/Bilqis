@@ -140,7 +140,7 @@ test("accepted adapter derives the shell OperatorView from the live CP03 run pro
   assert.deepEqual(broker.calls.slice(3), ["disconnect", "close"]);
 });
 
-test("accepted adapter never substitutes the checked-in fixture when live run telemetry is absent", async () => {
+test("accepted adapter reports live operator-view absence as bounded availability", async () => {
   const broker = brokerFixture();
   broker.query = async (request) => ({
     schema: QUERY_PAGE_SCHEMA, query_id: "b".repeat(64), request,
@@ -150,9 +150,24 @@ test("accepted adapter never substitutes the checked-in fixture when live run te
   });
   const { bridge } = await acceptedBridge(broker);
   await bridge.connect();
+  assert.deepEqual(
+    await bridge.snapshot({ schemaVersion: SNAPSHOT_QUERY_SCHEMA, schema: OPERATOR_VIEW_SCHEMA }),
+    { schemaVersion: "bamf.gui20.operator-view-unavailable/v1", state: "UNAVAILABLE" },
+  );
+});
+
+test("accepted adapter keeps query-source failures fail closed", async () => {
+  const broker = brokerFixture();
+  broker.query = async () => ({
+    schema: "bamf.gui07.query-error/v1",
+    accepted: false,
+    reason: "CONTROL_PLANE_QUERY_SOURCE_INVALID",
+  });
+  const { bridge } = await acceptedBridge(broker);
+  await bridge.connect();
   await assert.rejects(
     bridge.snapshot({ schemaVersion: SNAPSHOT_QUERY_SCHEMA, schema: OPERATOR_VIEW_SCHEMA }),
-    /BAMF_GUI20_OPERATOR_VIEW_UNAVAILABLE:UNAVAILABLE/,
+    /BAMF_GUI20_OPERATOR_VIEW_UNAVAILABLE/,
   );
 });
 

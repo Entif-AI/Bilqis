@@ -33,12 +33,12 @@ def _accepted_materialization(
         accepted_binding_for_manifest, parent_acceptance_anchor_from_manifest,
     )
     from bilqis_mlx.runtime.bamf_bundle.publication import (
-        _live_bundle_manifest, _pointer_lock, _read_pointer,
+        _live_bundle_manifest, _pointer_read_lock, _read_pointer,
     )
     from bilqis_mlx.runtime.accepted_correction_ledger import _manifest_lineage
 
     run_dir = Path(run_dir)
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         pointer = _read_pointer(run_dir / "bamf-state.json")
         if pointer is None:
             _invalid("BAMF_C09_CAPABILITY_SUPPORT_GENERATION_MISSING")
@@ -86,11 +86,11 @@ def _latest_source_qualified_materialization(
 def load_current_support(run_dir: Path, capability_id: str):
     from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
     from bilqis_mlx.runtime.bamf_bundle.publication import (
-        _live_bundle_manifest, _pointer_lock, _read_pointer,
+        _live_bundle_manifest, _pointer_read_lock, _read_pointer,
     )
 
     run_dir = Path(run_dir)
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         pointer = _read_pointer(run_dir / "bamf-state.json")
         if pointer is None:
             _invalid("BAMF_C09_CAPABILITY_SUPPORT_GENERATION_MISSING")

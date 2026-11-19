@@ -220,6 +220,7 @@ def _read_executable_factory_release(
         run_dir: Path, receipt: dict, graph: dict) -> ExecutableFactoryRelease:
     """Cold-read v2 authority and bind it to the actual loaded semantic catalog."""
     release = _read_executable_factory_release_artifact(run_dir, receipt)
+    release.require_foundation_capability_ids()
     release.verify_semantic_catalog(graph)
     return release
 

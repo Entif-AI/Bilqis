@@ -1,0 +1,70 @@
+{
+  "schema": "bilqis.bamf.c05-retention-throughput-benchmark/v1",
+  "issue": 1389,
+  "capability": "B.AND",
+  "candidate_horizon_steps": 16,
+  "historical_control": {
+    "source": "GitHub issue #1389 production symptom recorded 2026-11-17",
+    "candidate_step_median_seconds": 14.7,
+    "retention_wall_seconds": 1739.8,
+    "decision": "REJECTED",
+    "retained_steps_per_hour": 0.0,
+    "approximate_full_attempt_wall_seconds": 1975.0,
+    "approximate_attempted_steps_per_hour": 29.164556962025316,
+    "subphase_profile": null,
+    "subphase_profile_note": "Historical trainer-observed/v5 telemetry did not expose C05 subphases."
+  },
+  "native_after": {
+    "source_head": "ce75c4ef11c59c8cf6d44cb2005bbdedfccb67cc",
+    "source_snapshot_sha256": "f3fe17f06ea5d8940e84699471990c90fb1715765c67a0830f272354f8de4363",
+    "source_mutated": false,
+    "training_wall_seconds": 766.4056410419289,
+    "retention_wall_seconds": 81.58295683283359,
+    "attempt_wall_seconds": 847.988790665986,
+    "attempted_steps_per_hour": 67.92542617781848,
+    "retained_steps_per_hour": 67.92542617781848,
+    "decision_status": "ELIGIBLE",
+    "decision_reason": "PAIRED_SCREEN_WITHIN_BUDGET",
+    "outcome_scores": [
+      ["B.AND", 2, 4, 6]
+    ],
+    "evaluated_capability_ids": ["B.AND"],
+    "evidence_sha256": "4b1380bc0e374e6e372a5537ed2592b7d00cfac669965d8f897fd624b0c0512e",
+    "policy_sha256": "444528ee58be4e17f5cb009c06ae0c943c4efb793fe8f3b3c2de8b0eea2b4cbf",
+    "retention_protection_plan_sha256": "b359e4efdc87f1018431574f9a9c65a72a9bc1b4a1927a9c2bf3e8cf1e7f5e0f",
+    "parent_candidate_sha256": "8aa8e0551a52056b9edb57e5b6d4ed99f3d9345e56fdb364c834d10acd52333a",
+    "candidate_candidate_sha256": "dc0aa4230e84fc208d4f71b9c77790395967645f04cfd4cf16c59fc417e1ff64",
+    "target_case_count": 6,
+    "protected_case_count": 0,
+    "championship_case_count": 12,
+    "target_shared_backbone_launches": 2,
+    "target_scalar_neural_launches": 0,
+    "championship_shared_backbone_launches": 1,
+    "championship_scalar_neural_launches": 0,
+    "subphases_seconds": {
+      "target_prepare": 13.01827104203403,
+      "target_solver": 2.141466250177473,
+      "target_parent_inference": 13.816407583886757,
+      "target_candidate_inference": 13.784973833942786,
+      "protected_prepare": 0.00023224996402859688,
+      "decision_finalize": 0.003420791821554303,
+      "championship_prepare": 11.178386584157124,
+      "championship_solver": 1.0807667500339448,
+      "championship_candidate_inference": 25.880223833955824,
+      "championship_total": 38.14054395793937
+    },
+    "memory": {
+      "mlx_peak_bytes": 17112634212,
+      "mlx_active_bytes": 15535391088,
+      "mlx_cache_bytes": 0,
+      "host_peak_rss_bytes": 4339826688
+    },
+    "device": "Device(gpu, 0)"
+  },
+  "derived": {
+    "retention_speedup_x": 21.325532532057064,
+    "approximate_full_attempt_speedup_x": 2.329040220506797,
+    "attempted_steps_per_hour_gain_x": 2.329040220506797
+  },
+  "runner_note": "The ce75c4ef receipt printed a one-step steps/hour derivation. Raw candidate_update_steps=16 and attempt_wall_seconds=847.988790665986 yield the values recorded here. The disposable witness formula is corrected at e8f1257062b90fa62b4233e11740380d43abb31b."
+}

@@ -1,4 +1,5 @@
 import json
+from contextlib import nullcontext
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace as NS
@@ -6,6 +7,7 @@ import unittest
 from unittest.mock import patch
 
 
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 class SessionPublicationObservationTests(unittest.TestCase):
     def test_operator_publishes_terminal_only_after_publication(self):
         from bilqis_mlx.runtime.bamf_bundle.publication.instrumentation import PublicationMetrics
@@ -22,8 +24,6 @@ class SessionPublicationObservationTests(unittest.TestCase):
                 kwargs['publication_observer'](PublicationMetrics(1, 2, 3, 4, 5))
             prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
             with patch(
-                    'bilqis_mlx.runtime.run_authority.binding.storage_root',
-                    return_value=path.parent), patch(
                     prefix + 'prepare_bamf_visit', return_value=prepared), patch(
                     prefix + 'accept_and_publish', side_effect=publish), patch(
                     prefix + 'load_accepted_generation', return_value=NS(generation=1, retained_state=NS(optimizer_step=1))):

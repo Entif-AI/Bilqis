@@ -113,7 +113,7 @@ def _current_binding(
         source_context, artifact_path, run_dir, release, parent, cache,
         successor, cohort, checkpoint_origin_group,
         expected_generation=assessment.generation_digest,
-        solver_contracts=assessment.solver_contracts,
+        solver_contracts=tuple(sorted(set(assessment.solver_contracts))),
     )
 
 

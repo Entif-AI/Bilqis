@@ -23,7 +23,7 @@ from ..factory_release.admission import (
     validate_parsed_factory_release_admission_binding,
 )
 from ..codec import load_bamf_bundle
-from ..publication import ACCEPTANCE_DIR, _pointer_lock, _read_pointer
+from ..publication import ACCEPTANCE_DIR, _pointer_read_lock, _read_pointer
 from ..records import (
     ACCEPTANCE_BOUND_BAMF_BUNDLE_SCHEMA, BAMF_BUNDLE_SCHEMA,
     BamfGenerationManifest, invalid, sha,
@@ -34,7 +34,7 @@ from .receipt import is_digest
 def accepted_generation(pointer_path: Path):
     """Read the published accepted generation under the custody pointer lock."""
     pointer_path = Path(pointer_path)
-    with _pointer_lock(pointer_path.parent):
+    with _pointer_read_lock(pointer_path.parent):
         pointer = _read_pointer(pointer_path)
         if pointer is None:
             invalid("BAMF_FEATURE_POINTER_MISSING")

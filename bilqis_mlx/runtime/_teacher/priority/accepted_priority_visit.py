@@ -15,14 +15,14 @@ from bilqis_mlx.learning.teacher_visit_identity import (
     derive_teacher_visit_identity, record_teacher_visit_authority,
     record_teacher_visit_identity,
 )
+from bilqis_mlx.runtime.atlas_memory_retry import OOM_EXHAUSTED
 from bilqis_mlx.runtime.teacher_policy_selection import select_visit_policy
 from bilqis_mlx.semantics.domains import contract_digest
 from .accepted_teacher_custody import (
     _accepted_parent, _c03_projection, _issue_bound_visit, _require_current_visit,
-    _selection_projection,
+    _selection_projection, current_teacher_projection,
 )
 from .priority_qualification import _grade, requalify_priority
-from bilqis_mlx.runtime.outcomes.replay import replay_rejected_outcomes
 from bilqis_mlx.runtime.outcomes.issuance import context_for_selection
 from .accepted_priority_candidate import execute_accepted_priority_candidate
 from .accepted_priority_visit_contracts import (
@@ -34,6 +34,12 @@ from .accepted_priority_visit_contracts import (
 def _invalid(reason):
     ErrorBus.Raise(SCHOOL.BAMF_CURRICULUM.INVALID, reason=reason)
 
+
+def _action_required_hold_reason(action_kind):
+    return ('CORRECTION_ACTION_REQUIRED'
+            if action_kind == ActionKind.CORRECTION
+            else 'PROCEDURE_REPAIR_ACTION_REQUIRED')
+
 def _selected_priority_result(
         run_dir, source_context, parent, cache, projection, epoch, teacher,
         qualified, option, offer, school, engine, rng, learning_settings,
@@ -41,7 +47,6 @@ def _selected_priority_result(
         plasticity_escape, priority_features, cadence_authorization,
         source_materialization_wall_seconds):
     capability = option.context.capability_id
-    teacher = replay_rejected_outcomes(run_dir, parent, cache, teacher)
     key, policy, metadata = select_visit_policy(
         engine, teacher, capability, school, rng, learning_settings,
         option.context.scope,
@@ -144,18 +149,19 @@ def select_accepted_priority_visit(
         cadence_authorization=None,
         total_capabilities=None, plasticity_escape=None,
         legacy_receipt=None, adaptation=None, prior_region=None,
-        accepted_parent=None, planning_generation=None):
+        accepted_parent=None, planning_generation=None, resource_holds=frozenset()):
     parent, cache = _accepted_context(
         run_dir, source_context, school, lawful_frontier,
         accepted_parent, planning_generation)
     cadence_ids, cadence_metadata = _cadence_context(
         cadence_authorization, lawful_frontier)
-    if not offers:
+    if not offers and frontier is None:
         return _empty_priority_result(
             run_dir, source_context, parent, frontier, history, lawful_frontier,
             cadence_authorization, cadence_ids, cadence_metadata)
     projection = _c03_projection(parent, legacy_receipt=legacy_receipt,
                                  adaptation=adaptation, prior_region=prior_region)
+    projection = current_teacher_projection(run_dir, parent, cache, projection)
     epoch = restore_teacher_lineage(projection.teacher_state)
     teacher = _teacher(epoch, school)
     if not isinstance(learning_settings, Settings):
@@ -172,15 +178,19 @@ def select_accepted_priority_visit(
         for item in lawful_frontier.exclusions
     ]
     holds.extend(qualified.holds)
+    action_required_option_id = None
     for option in qualified.ranked.ordered:
         priority_features = salience_priority_features(
             evidence[option.stable_id], option.context.capability_id,
             option.context.scope, contract_digest(epoch))
         if option.action_kind in (ActionKind.CORRECTION, ActionKind.PROCEDURE_REPAIR):
-            return _issue_result(
-                'ACTION_REQUIRED', option.stable_id, None, None, None,
-                cadence_metadata, None, sorted(holds), run_dir, lawful_frontier,
-                cadence_authorization=cadence_authorization)
+            holds.append((option.stable_id, _action_required_hold_reason(option.action_kind)))
+            if action_required_option_id is None:
+                action_required_option_id = option.stable_id
+            continue
+        if option.context.capability_id in resource_holds:
+            holds.append((option.stable_id, OOM_EXHAUSTED))
+            continue
         offer = by_id[option.stable_id]
         materialization_started = time.perf_counter()
         try:
@@ -199,6 +209,11 @@ def select_accepted_priority_visit(
             program, grade, evidence, holds, lawful_frontier, total_capabilities,
             plasticity_escape, priority_features, cadence_authorization,
             source_materialization_wall_seconds)
+    if action_required_option_id is not None:
+        return _issue_result(
+            'ACTION_REQUIRED', action_required_option_id, None, None, None,
+            cadence_metadata, None, sorted(holds), run_dir, lawful_frontier,
+            cadence_authorization=cadence_authorization)
     return _issue_result(
         'NO_ADMISSIBLE_TEACHING', None, None, None, None, cadence_metadata,
         None, sorted(holds), run_dir, lawful_frontier,

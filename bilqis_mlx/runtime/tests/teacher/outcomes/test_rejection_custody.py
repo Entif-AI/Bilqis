@@ -179,6 +179,35 @@ destination.write_text(json.dumps(result, sort_keys=True, allow_nan=False))
             restored = load_bamf_generation(self.run / 'bamf-state.json')
         self.assertEqual(retained_digest(restored.retained_state), retained_before)
 
+    def test_committed_rejection_is_current_for_the_next_hot_and_cold_teacher_visit(self):
+        from bilqis_mlx.learning.teacher_lineage import restore_teacher_lineage
+        from bilqis_mlx.learning.teacher_lineage_records import digest
+
+        parent, _teacher, _cache, evidence = self.fixture()
+        pointer = (self.run / 'bamf-state.json').read_bytes()
+        record_bamf_rejection(self.run, parent, evidence)
+        observation = evidence['how_outcome']
+
+        hot = self.bound_native_visit(parent)
+        hot_teacher = restore_teacher_lineage(hot.projection.teacher_state).teacher()
+        self.assertEqual(
+            hot_teacher['how_outcomes']['applied'][observation['attempt_id']],
+            observation['outcome_sha256'])
+        self.assertEqual(len(hot_teacher['how_outcomes']['applied']), 1)
+
+        import bilqis_mlx.runtime.priority_rejection_replay as projection
+        projection._projection.cache_clear()
+        cold = self.bound_native_visit(parent)
+        cold_teacher = restore_teacher_lineage(cold.projection.teacher_state).teacher()
+
+        self.assertEqual(cold_teacher, hot_teacher)
+        self.assertEqual(
+            digest(cold.projection.teacher_state),
+            digest(hot.projection.teacher_state))
+        self.assertEqual(cold.identity.policy_key, hot.identity.policy_key)
+        self.assertEqual(cold.identity.visit_id, hot.identity.visit_id)
+        self.assertEqual((self.run / 'bamf-state.json').read_bytes(), pointer)
+
     def test_mutated_issued_observation_cannot_commit(self):
         parent, _, _, evidence = self.fixture()
         pointer = (self.run / 'bamf-state.json').read_bytes()

@@ -23,9 +23,12 @@ from bilqis_mlx.runtime.atlas_source_authority import SourceAuthorityRegistry
 
 def _motif_node(cache, compiled: CompiledEncoderInput) -> tuple[ArtifactNode, tuple[str, ...]]:
     """Derive one retained-manifest node from authenticated B13 + A05 custody."""
-    from bilqis_mlx.runtime.bamf_bundle.execution_cache import AcceptedExecutionCache
+    from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
+        AcceptedExecutionCache, DistributedExecutionCache,
+    )
 
-    if type(cache) is not AcceptedExecutionCache or type(compiled) is not CompiledEncoderInput:
+    if (type(cache) not in (AcceptedExecutionCache, DistributedExecutionCache)
+            or type(compiled) is not CompiledEncoderInput):
         _invalid("BAMF_C09_MOTIF_OWNER_INVALID")
     manifest = cache.motif_manifest
     if type(manifest) is not MotifManifest or manifest.digest != compiled.extents.motif_key_map_digest:

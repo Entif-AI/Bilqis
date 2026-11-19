@@ -235,6 +235,30 @@ test("accepted owner launch seeds Stop with the exact active operation identity"
   assert.equal(controller.currentState().parametersText, "{}");
 });
 
+test("OUTCOME_UNKNOWN retains the exact training operation for guarded Stop", async () => {
+  let submitted;
+  const api = {
+    async requestDryRun(wrapper) { return previewFor(wrapper); },
+    async requestCommand(wrapper) { submitted = wrapper; return receipt(wrapper.request); },
+    async fetchReceipt() { return inspection(submitted.request, "OUTCOME_UNKNOWN"); },
+    subscribeEvents() { return () => {}; },
+  };
+  const host = fakeHost();
+  const controller = createOperateController(api);
+  await controller.activate(context, { target: host, defense });
+  host.clickAction("resume");
+  host.changeDryRun(false);
+  await controller.preview();
+  host.typeAuthorization("AUTHORIZE RESUME");
+  await controller.submit();
+  assert.equal(controller.currentState().phase, "PENDING");
+  host.clickAction("stop");
+  assert.equal(
+    controller.currentState().parametersText,
+    JSON.stringify({ operation_id: `operation:${"b".repeat(64)}` }, null, 2),
+  );
+});
+
 test("permitted stage navigation preserves request, preview, authorization, and reconciled outcome state", async () => {
   let submitted;
   const api = {

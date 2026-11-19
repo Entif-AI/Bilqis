@@ -1,9 +1,11 @@
 """Native R19 dispatch preserves explicit compiled-profile authority."""
+from contextlib import nullcontext
 from pathlib import Path
 import unittest
 from unittest.mock import patch
 
 
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 class NativeProfileOperatorTests(unittest.TestCase):
     def test_operator_adopts_explicit_profile_inside_lock_before_first_visit(self):
         from bilqis_mlx.runtime.bamf_operator import session
@@ -28,7 +30,7 @@ class NativeProfileOperatorTests(unittest.TestCase):
                 'bilqis_mlx.runtime._release_adoption.native_profile.adopt_profile_release',
                 side_effect=lambda *a, **kw: events.append('adopt')):
             result = session.operate_bamf(Path('/disposable'), max_visits=1,
-                                          source_prefetch_workers=0,
+                                          reserve_gib=0.0, source_prefetch_workers=0,
                                           profile_release=Path('/successor.json'))
         self.assertEqual(events, ['lock', 'adopt', 'visit', 'unlock'])
         self.assertEqual(result.status, 'PRIORITY_HOLD')

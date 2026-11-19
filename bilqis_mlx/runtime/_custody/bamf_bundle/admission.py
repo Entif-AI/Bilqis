@@ -39,7 +39,7 @@ from .accepted_runtime import (
 )
 from .codec import load_bamf_bundle
 from .publication import (
-    _pointer_lock, _read_pointer, _require_published_acceptance,
+    _pointer_read_lock, _read_pointer, _require_published_acceptance,
     publish_bamf_generation,
 )
 from .publication.authority import authenticate_current_successor_retry
@@ -250,7 +250,7 @@ def _require_source_authority_for_acceptance(
     )
 
     run_dir = Path(run_dir)
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         current = _read_pointer(run_dir / "bamf-state.json")
         if current is None:
             invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")
@@ -306,7 +306,7 @@ def _publication_parent_witness(
     from .accepted_execution_cache import _bind_accepted_publication_parent_locked
 
     run_dir = Path(run_dir)
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         current = _read_pointer(run_dir / "bamf-state.json")
         if current is None:
             invalid("BAMF_GENERATION_ACCEPTANCE_DRIFT")

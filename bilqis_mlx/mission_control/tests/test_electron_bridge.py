@@ -176,6 +176,18 @@ class ElectronBridgeTests(unittest.TestCase):
         self.assertNotIn("private socket", repr(status))
         client.close.assert_called_once_with(preserve_state=True)
 
+    def test_query_timeout_discards_poisoned_cp01_client_before_retry(self):
+        client = Mock()
+        client.query.side_effect = TimeoutError("slow query")
+        bridge = ElectronBridge()
+        bridge.client = client
+
+        with self.assertRaises(TimeoutError):
+            bridge.query(QueryRequest(QueryFamily.RUN).to_record())
+
+        self.assertIsNone(bridge.client)
+        client.close.assert_called_once_with()
+
     def test_default_socket_path_matches_accepted_cp01_locator(self):
         with patch.dict(os.environ, {
                 "BILQIS_CONTROL_PLANE_SOCKET": "", "RUN_DIR": "",

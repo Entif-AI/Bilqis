@@ -1,0 +1,138 @@
+"""Resolve pull-request integration boundaries without rewriting shared history."""
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import subprocess
+
+
+ROOT = Path(__file__).resolve().parents[2]
+UNIFIED_HEAD_REF = "codex/bamf-unified-base-20261028"
+
+# Child PRs into the unified trunk were not covered by Conventional Commits
+# before this exact reviewed head. Enforcement is prospective from here while
+# this workflow also begins validating those child PRs directly.
+UNIFIED_CONVENTIONAL_BASELINE = "615e582342004bfb9b54f5f98af45eb16efab95b"
+
+
+def _git(root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(
+        ["git", *args], cwd=root, text=True, capture_output=True, check=check)
+
+
+def _is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    if not ancestor or not descendant:
+        return False
+    return _git(
+        root, "merge-base", "--is-ancestor", ancestor, descendant, check=False
+    ).returncode == 0
+
+
+def _parents(root: Path, commit: str) -> tuple[str, ...]:
+    fields = _git(root, "rev-list", "--parents", "-n", "1", commit).stdout.split()
+    return tuple(fields[1:])
+
+
+def _synthetic_merge_base(
+    root: Path, requested_base: str, pr_head_sha: str, checkout_head: str
+) -> str | None:
+    parents = _parents(root, checkout_head)
+    if len(parents) < 2:
+        return None
+    current_base, merged_head = parents[0], parents[1]
+    if merged_head != pr_head_sha:
+        return None
+    if requested_base and not _is_ancestor(root, requested_base, current_base):
+        return None
+    return current_base
+
+
+def comparison_base(
+    root: Path,
+    *,
+    event_name: str,
+    requested_base: str,
+    pr_head_sha: str,
+    push_base: str,
+    checkout_head: str = "HEAD",
+) -> str:
+    """Return the truthful temporal base for the checked-out CI candidate."""
+    if event_name != "pull_request":
+        return push_base or requested_base
+
+    return (
+        _synthetic_merge_base(root, requested_base, pr_head_sha, checkout_head)
+        or requested_base
+    )
+
+
+def commit_rows(
+    root: Path,
+    *,
+    base_sha: str,
+    head_sha: str,
+    head_ref: str,
+    unified_baseline: str = UNIFIED_CONVENTIONAL_BASELINE,
+) -> list[tuple[str, str]]:
+    """Return commit subjects whose form is governed by this PR boundary."""
+    start = base_sha
+    log_args: list[str] = []
+    if head_ref == UNIFIED_HEAD_REF:
+        # Merge subjects remain integration provenance, but every authored
+        # non-merge commit newly reachable after the prospective baseline is
+        # revalidated. Do not hide second-parent commits behind merge topology.
+        log_args.append("--no-merges")
+        if _is_ancestor(root, unified_baseline, head_sha):
+            start = unified_baseline
+    result = _git(
+        root,
+        "log",
+        *log_args,
+        "--format=%H%x09%s",
+        f"{start}..{head_sha}",
+    ).stdout
+    rows = []
+    for line in result.splitlines():
+        if not line:
+            continue
+        commit, subject = line.split("\t", 1)
+        rows.append((commit, subject))
+    return rows
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    sub = parser.add_subparsers(dest="action", required=True)
+
+    base = sub.add_parser("comparison-base")
+    base.add_argument("--event-name", required=True)
+    base.add_argument("--requested-base", default="")
+    base.add_argument("--pr-head-sha", default="")
+    base.add_argument("--push-base", default="")
+    base.add_argument("--checkout-head", default="HEAD")
+
+    commits = sub.add_parser("commits")
+    commits.add_argument("--base-sha", required=True)
+    commits.add_argument("--head-sha", required=True)
+    commits.add_argument("--head-ref", required=True)
+
+    args = parser.parse_args(argv)
+    if args.action == "comparison-base":
+        print(comparison_base(
+            ROOT,
+            event_name=args.event_name,
+            requested_base=args.requested_base,
+            pr_head_sha=args.pr_head_sha,
+            push_base=args.push_base,
+            checkout_head=args.checkout_head,
+        ))
+        return 0
+    for commit, subject in commit_rows(
+        ROOT, base_sha=args.base_sha, head_sha=args.head_sha, head_ref=args.head_ref
+    ):
+        print(f"{commit}\t{subject}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

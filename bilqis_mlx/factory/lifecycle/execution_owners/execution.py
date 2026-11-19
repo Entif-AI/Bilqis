@@ -126,6 +126,11 @@ class ExecutionPlan:
         return {item.capability_id: item for item in self.capabilities}
 
     @property
+    def active_capability_inventory(self) -> tuple[str, ...]:
+        """Canonical executable capability inventory in plan order."""
+        return tuple(item.capability_id for item in self.capabilities)
+
+    @property
     def grade_map(self) -> dict[str, GradeExecution]:
         return {item.grade_id: item for item in self.grades}
 

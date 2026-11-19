@@ -20,6 +20,7 @@ class ChampionshipEvidenceTests(unittest.TestCase):
         source_context = NS(
             execution_for=lambda capability: NS(grade_id="future")
             if capability == "future:first" else None)
+        observed = []
 
         with patch.object(
                 championship_evidence, "capability_championship_instruments",
@@ -28,11 +29,21 @@ class ChampionshipEvidenceTests(unittest.TestCase):
                 return_value=(solver, "4" * 64)):
             cohort, assessment = championship_evidence.capability_championship_evidence(
                 source_context, object(), "artifact", object(), "future:first",
-                ((), ()), EvidenceStage.FOUNDATION_ACQUISITION)
+                ((), ()), EvidenceStage.FOUNDATION_ACQUISITION,
+                observer=observed.append)
 
         self.assertEqual(cohort.capability_groups, (("future:first", "future"),))
         self.assertEqual({case.capability_id for case in cohort.cases}, {"future:first"})
         self.assertEqual(assessment.score("future:first"), (2, 2))
+        profile = {}
+        for event in observed:
+            profile.update(event)
+        for field in (
+                "championship_prepare_wall_seconds",
+                "championship_solver_wall_seconds",
+                "championship_candidate_wall_seconds"):
+            self.assertIsInstance(profile[field], float)
+            self.assertGreaterEqual(profile[field], 0.0)
 
 
 if __name__ == "__main__":

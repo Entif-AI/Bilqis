@@ -24,7 +24,7 @@ class TrainerObservationTests(unittest.TestCase):
                     obs.update(candidate_step=1)
                     obs.finish('HELD')
             data = json.loads((root / 'trainer-observed.json').read_text())
-            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v5')
+            self.assertEqual(data['schema'], 'bilqis.bamf.trainer-observed/v6')
             self.assertEqual(len(data['visits']), 8)
             self.assertEqual(data['visits'][-1]['outcome'], 'HELD')
             self.assertGreater(data['visits'][-1]['revision'], 3)
@@ -64,6 +64,12 @@ class TrainerObservationTests(unittest.TestCase):
                     candidate_step_wall_seconds=0.5,
                     pre_neural_source_compile_wall_seconds=0.1,
                     currentness_binding_wall_seconds=0.01,
+                    accepted_currentness_refresh_wall_seconds=0.001,
+                    accepted_parent_currentness_wall_seconds=0.001,
+                    lawful_frontier_currentness_wall_seconds=0.002,
+                    teacher_visit_currentness_wall_seconds=0.002,
+                    source_currentness_wall_seconds=0.001,
+                    candidate_binding_wall_seconds=0.003,
                     b11_preflight_wall_seconds=0.1,
                     b11_autodiff_wall_seconds=0.2,
                     optimizer_admission_wall_seconds=0.05,
@@ -81,6 +87,9 @@ class TrainerObservationTests(unittest.TestCase):
                 self.assertEqual(len(final['candidate_steps']), 1)
                 self.assertEqual(final['candidate_steps'][0]['candidate_step'], 1)
                 self.assertEqual(final['candidate_steps'][0]['candidate_step_wall_seconds'], 0.5)
+                self.assertEqual(
+                    final['candidate_steps'][0]['lawful_frontier_currentness_wall_seconds'],
+                    0.002)
                 self.assertEqual(final['candidate_step'], 2)
 
     def test_snapshot_trims_old_step_detail_before_disabling_live_observation(self):

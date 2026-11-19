@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from bilqis_mlx.data_plane import DataPlaneError, data_plane
+from bilqis_mlx.runtime.atlas_memory_retry import RESOURCE_REJECTION_SCHEMA
 
 from ..records import CompleteStudent, canonical, invalid, sha
 from .storage import _live_bundle_manifest, _pointer_lock, _read_pointer
@@ -12,7 +13,8 @@ from .storage import _live_bundle_manifest, _pointer_lock, _read_pointer
 def _validated_c03_rejection_evidence(student: CompleteStudent, pointer: dict,
                                       evidence: dict) -> dict:
     """Bind supported rejection evidence to an actually issued C03 visit."""
-    if evidence.get("schema") != "bilqis.bamf.c16.3-rejection/v2":
+    if evidence.get("schema") not in (
+            "bilqis.bamf.c16.3-rejection/v2", RESOURCE_REJECTION_SCHEMA):
         return dict(evidence)
     from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
     from bilqis_mlx.learning.teacher_visit_identity import (
@@ -85,7 +87,10 @@ def record_bamf_rejection(run_dir: Path, student: CompleteStudent, evidence: dic
         authority_sha256 = sha(authority_raw)
         data_plane().put_object(authority_sha256, authority_raw)
         event = {
-            "event": "BAMF_CANDIDATE_REJECTED",
+            "event": (
+                "BAMF_CANDIDATE_RESOURCE_REJECTED"
+                if evidence.get("schema") == RESOURCE_REJECTION_SCHEMA
+                else "BAMF_CANDIDATE_REJECTED"),
             "generation": pointer["generation"],
             "student_manifest_sha256": pointer["manifest_sha256"],
             "optimizer_step": optimizer_step,

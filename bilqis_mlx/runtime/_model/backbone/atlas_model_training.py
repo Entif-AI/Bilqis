@@ -129,9 +129,10 @@ def loss_bearing_bamf(
         loss = replace(loss, total=loss.total * float(source_loss_multiplier))
     heads, dependencies, artifact_nodes = (), (), ()
     if salience_supervision is not None:
-        from .salience_training import SalienceSupervision
+        from .salience_training import PortableSalienceSupervision, SalienceSupervision
         from .salience_loss import salience_loss_components
-        if type(salience_supervision) is not SalienceSupervision:
+        if type(salience_supervision) not in (
+                SalienceSupervision, PortableSalienceSupervision):
             _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
         primary = {DecisionKind.VALUE, DecisionKind.CONTROL,
                    DecisionKind.OPERATOR, DecisionKind.OPERAND}
@@ -238,8 +239,9 @@ def _bamf_value_and_grad_impl(
 ) -> BamfGradientExecution:
     """Run one exact forward/loss/gradient dispatch with one execution identity."""
     if salience_supervision is not None:
-        from .salience_training import SalienceSupervision
-        if type(salience_supervision) is not SalienceSupervision:
+        from .salience_training import PortableSalienceSupervision, SalienceSupervision
+        if type(salience_supervision) not in (
+                SalienceSupervision, PortableSalienceSupervision):
             _invalid("BAMF_SALIENCE_SUPERVISION_REQUIRED")
         salience_supervision.labels_for(compiled_batch)
     with source_replay_observation() as replay:

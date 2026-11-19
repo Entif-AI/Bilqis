@@ -5575,76 +5575,6 @@
       "path": "bilqis_mlx/factory/adapters.py"
     },
     {
-      "code_hint": "CANDIDATE_FRONTIER_CANDIDATE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_CANDIDATE_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_MANIFEST_INVALID",
-      "count": 2,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_MANIFEST_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_PREREQUISITE_STATUS_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_PREREQUISITE_STATUS_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_PRIORITY_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_PRIORITY_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_PROVENANCE_POOL_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_PROVENANCE_POOL_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_RELEASE_DIGEST_MISMATCH",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_RELEASE_DIGEST_MISMATCH'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_RELEASE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_RELEASE_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_RESERVE_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_RESERVE_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_SELECTED_SENSE_LINK_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_SELECTED_SENSE_LINK_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
-      "code_hint": "CANDIDATE_FRONTIER_SELECTED_TARGET_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'CANDIDATE_FRONTIER_SELECTED_TARGET_INVALID'",
-      "path": "bilqis_mlx/factory/candidate_frontier.py"
-    },
-    {
       "code_hint": "JIT_CANDIDATE_NATIVE_CATALOG_REQUIRED",
       "count": 1,
       "exception": "ValueError",
@@ -6198,62 +6128,6 @@
       "path": "bilqis_mlx/factory/curriculum_definition.py"
     },
     {
-      "code_hint": "FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PLAN_LINEAGE_SEMANTIC_CATALOG_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PLAN_LINEAGE_SEMANTIC_CATALOG_INVALID'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_CAPABILITY_ID_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_CAPABILITY_ID_REQUIRED'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_DUPLICATE_CAPABILITY_OVERRIDE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_DUPLICATE_CAPABILITY_OVERRIDE'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_GRADE_ID_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_GRADE_ID_REQUIRED'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
-      "code_hint": "FACTORY_PROFILE_ID_REQUIRED",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_PROFILE_ID_REQUIRED'",
-      "path": "bilqis_mlx/factory/execution.py"
-    },
-    {
       "code_hint": "FACTORY_EXECUTABLE_GENERATION_REGISTRY_REQUIRED",
       "count": 1,
       "exception": "TypeError",
@@ -6350,76 +6224,6 @@
       "exception": "ValueError",
       "expression": "'FACTORY_EXECUTION_GENERATION_UNKNOWN_CAPABILITY'",
       "path": "bilqis_mlx/factory/generation.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
-      "count": 1,
-      "exception": "TypeError",
-      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_ADAPTER_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_ADAPTER_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_EMPTY_SCOPE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_EMPTY_SCOPE'",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE'",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_INVALID_COUNT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_INVALID_COUNT'",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT:' + cap.id",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "FACTORY_GENERATION_UNKNOWN_CAPABILITY",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "'FACTORY_GENERATION_UNKNOWN_CAPABILITY'",
-      "path": "bilqis_mlx/factory/generation_compat.py"
-    },
-    {
-      "code_hint": "",
-      "count": 1,
-      "exception": "ValueError",
-      "expression": "drift_code + ':' + execution.capability_id",
-      "path": "bilqis_mlx/factory/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_ANSWER_HEAD_COMPILATION_INVALID_INPUT",
@@ -6595,6 +6399,202 @@
       "exception": "ValueError",
       "expression": "'FACTORY_EVIDENCE_WITNESS_EXHAUSTED:' + obligation.obligation_id",
       "path": "bilqis_mlx/factory/lifecycle/evidence.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_CANDIDATE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_CANDIDATE_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_MANIFEST_INVALID",
+      "count": 2,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_MANIFEST_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_PREREQUISITE_STATUS_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_PREREQUISITE_STATUS_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_PRIORITY_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_PRIORITY_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_PROVENANCE_POOL_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_PROVENANCE_POOL_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_RELEASE_DIGEST_MISMATCH",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_RELEASE_DIGEST_MISMATCH'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_RELEASE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_RELEASE_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_RESERVE_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_RESERVE_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_SELECTED_SENSE_LINK_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_SELECTED_SENSE_LINK_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "CANDIDATE_FRONTIER_SELECTED_TARGET_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'CANDIDATE_FRONTIER_SELECTED_TARGET_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py"
+    },
+    {
+      "code_hint": "FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PLAN_LINEAGE_SEMANTIC_CATALOG_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PLAN_LINEAGE_SEMANTIC_CATALOG_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_CAPABILITY_ID_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_CAPABILITY_ID_REQUIRED'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_DUPLICATE_CAPABILITY_OVERRIDE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_DUPLICATE_CAPABILITY_OVERRIDE'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_GRADE_ID_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_GRADE_ID_REQUIRED'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_PROFILE_ID_REQUIRED",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_PROFILE_ID_REQUIRED'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/execution.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_REGISTRY_REQUIRED",
+      "count": 1,
+      "exception": "TypeError",
+      "expression": "'FACTORY_GENERATION_REGISTRY_REQUIRED'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_ADAPTER_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_ADAPTER_DRIFT:' + cap.id",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT:' + cap.id",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT:' + cap.id",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_EMPTY_SCOPE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_EMPTY_SCOPE'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_INVALID_COUNT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_INVALID_COUNT'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT:' + cap.id",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "FACTORY_GENERATION_UNKNOWN_CAPABILITY",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "'FACTORY_GENERATION_UNKNOWN_CAPABILITY'",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
+    },
+    {
+      "code_hint": "",
+      "count": 1,
+      "exception": "ValueError",
+      "expression": "drift_code + ':' + execution.capability_id",
+      "path": "bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py"
     },
     {
       "code_hint": "FACTORY_RELEASE_INVALID_INPUT",
@@ -11571,14 +11571,14 @@
       "count": 1,
       "exception": "OSError",
       "expression": "'durability failure'",
-      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication.py"
+      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_pointer_locking.py"
     },
     {
       "code_hint": "unlock failure",
       "count": 1,
       "exception": "OSError",
       "expression": "'unlock failure'",
-      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication.py"
+      "path": "bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_pointer_locking.py"
     },
     {
       "code_hint": "test synchronization timed out",

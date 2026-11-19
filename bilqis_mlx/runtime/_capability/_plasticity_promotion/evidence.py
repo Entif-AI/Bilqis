@@ -69,10 +69,10 @@ def _school_for_receipt(run_dir: Path, receipt: dict):
 
 def _foundation_capabilities(run_dir: Path, release_sha256: str) -> tuple[str, ...]:
     release = _release_for_sha(run_dir, release_sha256)
-    capabilities = tuple(item.capability_id for item in release.execution_plan.capabilities)
-    if not capabilities or len(set(capabilities)) != len(capabilities):
+    try:
+        return release.require_foundation_capability_ids()
+    except (AttributeError, TypeError, ValueError):
         invalid()
-    return capabilities
 
 
 def _promotion_projection(school) -> tuple:

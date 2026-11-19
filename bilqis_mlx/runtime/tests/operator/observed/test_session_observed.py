@@ -1,4 +1,5 @@
 from pathlib import Path
+from contextlib import nullcontext
 from types import SimpleNamespace as NS
 import unittest
 from unittest.mock import patch
@@ -55,7 +56,8 @@ def _first_baseline_operator_case():
 def _operate_first_baseline_case(case):
     from contextlib import ExitStack
     from tempfile import TemporaryDirectory
-    from bilqis_mlx.runtime.bamf_operator.session import _retention_result, operate_bamf
+    from bilqis_mlx.runtime.bamf_operator.session import _emit_progress, operate_bamf
+    from bilqis_mlx.runtime.bamf_operator.session_parts.native_session import retention_result
 
     evaluation, identity, successor, parent, selection, step, capture, cache = case
     published = []
@@ -63,23 +65,24 @@ def _operate_first_baseline_case(case):
     def prepare(run_dir, *, observer=None, **_kwargs):
         if observer is not None:
             observer.bind_parent(parent)
-        return _retention_result(
+        return retention_result(
             run_dir, parent, NS(), "artifact", selection, identity.capability_id,
-            cache, (step,), capture, 1, 1, {}, None, observer)
+            cache, (step,), capture, 1, 1, {}, None, observer, emit_progress=_emit_progress)
 
     def publish(_run_dir, bound_successor, *_args, **_kwargs):
         published.append(bound_successor)
 
     prefix = "bilqis_mlx.runtime.bamf_operator.session."
+    native_prefix = "bilqis_mlx.runtime.bamf_operator.session_parts.native_session."
     patches = (
         ('bilqis_mlx.runtime.outcomes.issuance.build_outcome', {'return_value': {}}),
         ('bilqis_mlx.runtime.outcomes.issuance.credited_visit', {'side_effect': lambda visit, outcome: visit}),
         ('bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor', {'side_effect': lambda visit, successor, parent: successor}),
         (prefix + "prepare_bamf_visit", {"side_effect": prepare}),
-        (prefix + "evaluate_factory_retention_candidate", {"return_value": evaluation}),
-        (prefix + "derive_accepted_teacher_successor", {"return_value": successor}),
-        (prefix + "_resource_observation", {"return_value": {}}),
-        (prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
+        (native_prefix + "evaluate_factory_retention_candidate", {"return_value": evaluation}),
+        (native_prefix + "derive_accepted_teacher_successor", {"return_value": successor}),
+        (native_prefix + "_resource_observation", {"return_value": {}}),
+        (native_prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
         ("bilqis_mlx.runtime.retention.screen.candidate_identity_for_canonical_consumer",
          {"return_value": "d" * 64}),
         (prefix + "accept_and_publish", {"side_effect": publish}),
@@ -87,9 +90,6 @@ def _operate_first_baseline_case(case):
             generation=1, retained_state=NS(optimizer_step=1))}),
     )
     with TemporaryDirectory() as tmp, ExitStack() as stack:
-        stack.enter_context(patch(
-            "bilqis_mlx.runtime.run_authority.binding.storage_root",
-            return_value=Path(tmp).parent))
         for target, kwargs in patches:
             stack.enter_context(patch(target, **kwargs))
         result = operate_bamf(
@@ -98,6 +98,7 @@ def _operate_first_baseline_case(case):
     return result, published
 
 
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 class SessionObservationTests(unittest.TestCase):
     def setUp(self):
         patched = patch('bilqis_mlx.runtime.outcomes.issuance.build_outcome', return_value={})
@@ -139,6 +140,7 @@ class SessionObservationTests(unittest.TestCase):
                       'retention_subject': 'cap', 'retention_role': 'parent'})
             return NS(candidate_state=object(), parent_state=parent.retained_state)
         prefix = 'bilqis_mlx.runtime.bamf_operator.session.'
+        native_prefix = 'bilqis_mlx.runtime.bamf_operator.session_parts.native_session.'
         patches = {
             '_execution_context': (parent, NS(release='release'), 'atlas', 'feature'),
             'schedule_program_from_executable_release': 'program',
@@ -171,9 +173,16 @@ class SessionObservationTests(unittest.TestCase):
         from contextlib import ExitStack
         with ExitStack() as stack:
             for name, value in patches.items():
-                stack.enter_context(patch(prefix + name, return_value=value))
-            stack.enter_context(patch(prefix + 'execute_accepted_priority_candidate', side_effect=steps))
-            stack.enter_context(patch(prefix + 'evaluate_factory_retention_candidate', side_effect=assess))
+                owner = prefix if name in {
+                    '_execution_context', 'schedule_program_from_executable_release',
+                    'accepted_priority_school', 'select_foundation_priority_visit',
+                } else native_prefix
+                stack.enter_context(patch(owner + name, return_value=value))
+            stack.enter_context(patch(native_prefix + 'execute_accepted_priority_candidate', side_effect=steps))
+            stack.enter_context(patch(native_prefix + 'evaluate_factory_retention_candidate', side_effect=assess))
+            stack.enter_context(patch(
+                'bilqis_mlx.runtime.championship_advisers.prepare_championship_adviser_pool',
+                return_value=None))
             stack.enter_context(patch(
                 'bilqis_mlx.runtime.bamf_operator.evidence_projection.complete_visit_evidence',
                 side_effect=RuntimeError('observation readback failed')))

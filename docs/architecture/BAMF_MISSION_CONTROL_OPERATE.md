@@ -53,6 +53,12 @@ A fresh preflight creates one request identity and one idempotency key. Double-c
 
 If the final command call loses its acknowledgement, GUI17 enters `LOST_ACK`. It does **not** retry `requestCommand`. The only permitted next step is readback by the retained `operation:<sha256>` identity through `fetchReceipt`. If CP05 cannot yet reconcile the operation, the UI says `OUTCOME_UNKNOWN`; another readback may be requested later without creating a second effect.
 
+`OUTCOME_UNKNOWN` is an unresolved evidence state, not a terminal failure and not permission to retry. CP05 may resolve the original operation to `COMPLETED` only from authoritative effect evidence, or to `FAILED_BEFORE_EFFECT` only from authoritative no-effect evidence with exact pre-effect learner identity. An unavailable process-identity probe is itself unresolved evidence and must keep the operation `OUTCOME_UNKNOWN`; only a positively dead or identity-mismatched recorded process permits reconciliation to proceed.
+
+While ambiguity remains, CP05 rejects new effect-producing mutation against the same learner even under a different idempotency key. Admission is serialized one step earlier as well: an older same-learner mutation that is still ACCEPTED or PENDING blocks a later effect-producing mutation, so the later command cannot slip through while the older command crosses into OUTCOME_UNKNOWN. Read-only receipt/status/checkpoint inspection remains available. The only mutating exception is exact guarded Stop for the same unresolved operation, and Stop still requires fresh PID, process-identity, and learner-lineage validation.
+
+There is no command that resets or rewrites an unresolved receipt. If available evidence can never distinguish effect from no-effect, human abandonment preserves the original `OUTCOME_UNKNOWN` operation and its immutable evidence. Any repair is a new explicitly authorized operation after the operator establishes an independently valid replacement target and completes fresh preflight; the old operation remains part of the causal record.
+
 ## Public command projection
 
 GUI17 needed more preflight/readback detail than the ordinary CP03 catalog exposes. CP05 already owns that information in immutable command facts, so the control plane now provides two bounded read-only projections:

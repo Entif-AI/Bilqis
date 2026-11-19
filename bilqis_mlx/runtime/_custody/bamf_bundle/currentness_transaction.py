@@ -20,6 +20,25 @@ from .source_authority_custody import (
 
 
 _ISSUER = object()
+_STEP_ISSUER = object()
+
+
+class _AcceptedCurrentnessStepOwner:
+    """Private revocation clock for same-step accepted-state reuse."""
+
+    def __init__(self):
+        self.lock = Lock()
+        self.epoch = 0
+
+    def advance(self) -> int:
+        with self.lock:
+            self.epoch += 1
+            return self.epoch
+
+    def require(self, epoch: int) -> None:
+        with self.lock:
+            if epoch != self.epoch:
+                invalid("B13_CURRENTNESS_STEP_STALE")
 
 
 class VisitCurrentnessMetrics:
@@ -53,10 +72,10 @@ def _stat_identity(path: Path) -> tuple[int, int, int, int, int]:
 def _pointer_snapshot(
         run_dir: Path, expected_manifest_sha256: str, *,
         expected_run_id: str, expected_generation: int):
-    from .publication import _pointer_lock, _read_pointer
+    from .publication import _pointer_read_lock, _read_pointer
 
     run_dir = Path(run_dir).resolve()
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         pointer = _read_pointer(run_dir / "bamf-state.json")
         if (not isinstance(pointer, dict)
                 or pointer.get("manifest_sha256") != expected_manifest_sha256
@@ -91,6 +110,18 @@ def _retained_object_guard(parent: CompleteStudent) -> tuple:
     )
 
 
+def _retained_root_guard(parent: CompleteStudent) -> tuple:
+    """Cheap structural guard after a full accepted-state refresh paid for leaf custody."""
+    state = parent.retained_state
+    optimizer = state.optimizer
+    return (
+        id(state), id(optimizer), state.optimizer_step,
+        id(state.policy), id(state.allocations),
+        tuple((group, id(getattr(optimizer, group)))
+              for group in ("parameters", "m", "v", "update_counts")),
+    )
+
+
 @dataclass(frozen=True, init=False, eq=False)
 class AcceptedCurrentnessTransaction:
     """One process-live proof reused while the accepted parent cannot change."""
@@ -110,6 +141,8 @@ class AcceptedCurrentnessTransaction:
     _source_currentness: object = field(repr=False, compare=False)
     _correction_frontier_sha256: str = field(repr=False)
     _retained_guard: tuple = field(repr=False, compare=False)
+    _retained_root: tuple = field(repr=False, compare=False)
+    _step_owner: object = field(repr=False, compare=False)
     _metrics: VisitCurrentnessMetrics = field(repr=False, compare=False)
     _issuance: object = field(repr=False, compare=False)
 
@@ -167,6 +200,8 @@ def bind_accepted_currentness_transaction(
         ("_source_currentness", source),
         ("_correction_frontier_sha256", contract_digest(parent.correction_frontier)),
         ("_retained_guard", _retained_object_guard(parent)),
+        ("_retained_root", _retained_root_guard(parent)),
+        ("_step_owner", _AcceptedCurrentnessStepOwner()),
         ("_metrics", metrics),
         ("_issuance", _ISSUER),
     ):
@@ -174,6 +209,89 @@ def bind_accepted_currentness_transaction(
     metrics.increment("deep_authentication_count")
     _activate(transaction)
     return transaction
+
+
+@dataclass(frozen=True, init=False, eq=False)
+class AcceptedCurrentnessStep:
+    """Opaque proof that every mutable accepted edge was checked for this step."""
+
+    _transaction: AcceptedCurrentnessTransaction = field(repr=False, compare=False)
+    _parent: CompleteStudent = field(repr=False, compare=False)
+    _owner: object = field(repr=False, compare=False)
+    _epoch: int = field(repr=False, compare=False)
+    _issuance: object = field(repr=False, compare=False)
+
+    def __init__(self, *args, **kwargs):
+        invalid("B13_CURRENTNESS_STEP_CALLER_CONSTRUCTION_FORBIDDEN")
+
+
+def _issue_currentness_step(
+        transaction: AcceptedCurrentnessTransaction,
+        parent: CompleteStudent) -> AcceptedCurrentnessStep:
+    epoch = transaction._step_owner.advance()
+    step = object.__new__(AcceptedCurrentnessStep)
+    for name, value in (
+        ("_transaction", transaction), ("_parent", parent),
+        ("_owner", transaction._step_owner), ("_epoch", epoch),
+        ("_issuance", _STEP_ISSUER),
+    ):
+        object.__setattr__(step, name, value)
+    return step
+
+
+def _require_live_mutable_edges(
+        transaction: AcceptedCurrentnessTransaction,
+        parent: CompleteStudent) -> None:
+    """Recheck cheap mutable B13/C09 edges without repeating deep authentication."""
+    pointer_sha256, acceptance_sha256, acceptance_identity = _pointer_snapshot(
+        transaction._run_dir, transaction.accepted_manifest_sha256,
+        expected_run_id=transaction._cache.run_id,
+        expected_generation=transaction._cache.generation)
+    if (pointer_sha256 != transaction._pointer_sha256
+            or acceptance_sha256 != transaction._acceptance_sha256
+            or acceptance_identity != transaction._acceptance_identity
+            or contract_digest(parent.correction_frontier)
+               != transaction._correction_frontier_sha256):
+        invalid("B13_CURRENTNESS_TRANSACTION_DRIFT")
+    require_bamf_bundle_currentness(transaction._bundle_currentness)
+    require_source_authority_currentness(
+        transaction._source_currentness, transaction._run_dir,
+        parent.correction_frontier, transaction._cache._correction_registry)
+
+
+def require_accepted_currentness_step(
+        step, transaction: AcceptedCurrentnessTransaction,
+        parent: CompleteStudent) -> AcceptedCurrentnessStep:
+    """Require the latest process-local step proof without repeating owner I/O."""
+    if (type(step) is not AcceptedCurrentnessStep
+            or getattr(step, "_issuance", None) is not _STEP_ISSUER
+            or step._transaction is not transaction
+            or step._parent is not parent
+            or step._owner is not transaction._step_owner
+            or transaction._parent is not parent
+            or getattr(transaction._cache, "_currentness_transaction", None)
+               is not transaction
+            or transaction._cache.accepted_manifest_sha256
+               != transaction.accepted_manifest_sha256
+            or transaction._cache.generation_binding != transaction.generation_binding
+            or getattr(transaction._cache, "_candidate_identity_sha256", None)
+               != transaction.candidate_identity_sha256
+            or parent.topology.digest != transaction.topology_digest
+            or parent.extents.digest != transaction.extents_digest
+            or _retained_root_guard(parent) != transaction._retained_root):
+        invalid("B13_CURRENTNESS_STEP_DRIFT")
+    step._owner.require(step._epoch)
+    return step
+
+
+def require_live_accepted_currentness_step(
+        step, transaction: AcceptedCurrentnessTransaction,
+        parent: CompleteStudent) -> AcceptedCurrentnessStep:
+    """Fence the final pre-neural boundary against live B13/C09 drift."""
+    require_accepted_currentness_step(step, transaction, parent)
+    _require_live_mutable_edges(transaction, parent)
+    step._owner.require(step._epoch)
+    return step
 
 
 def require_accepted_currentness(transaction, cache=None, parent=None):
@@ -197,23 +315,10 @@ def require_accepted_currentness(transaction, cache=None, parent=None):
 def refresh_accepted_currentness(transaction, parent: CompleteStudent):
     """Check all mutable accepted-state edges once before the next neural step."""
     require_accepted_currentness(transaction, transaction._cache, parent)
-    pointer_sha256, acceptance_sha256, acceptance_identity = _pointer_snapshot(
-        transaction._run_dir, transaction.accepted_manifest_sha256,
-        expected_run_id=transaction._cache.run_id,
-        expected_generation=transaction._cache.generation)
-    if (pointer_sha256 != transaction._pointer_sha256
-            or acceptance_sha256 != transaction._acceptance_sha256
-            or acceptance_identity != transaction._acceptance_identity
-            or contract_digest(parent.correction_frontier)
-            != transaction._correction_frontier_sha256):
-        invalid("B13_CURRENTNESS_TRANSACTION_DRIFT")
-    require_bamf_bundle_currentness(transaction._bundle_currentness)
-    require_source_authority_currentness(
-        transaction._source_currentness, transaction._run_dir,
-        parent.correction_frontier, transaction._cache._correction_registry)
+    _require_live_mutable_edges(transaction, parent)
     transaction._metrics.increment("accepted_cache_currentness_count")
     _activate(transaction)
-    return transaction
+    return _issue_currentness_step(transaction, parent)
 
 
 def accepted_currentness_identity(transaction, parent: CompleteStudent):
@@ -237,6 +342,7 @@ def currentness_metrics(transaction) -> dict:
 
 
 __all__ = (
+    "AcceptedCurrentnessStep",
     "AcceptedCurrentnessTransaction",
     "VisitCurrentnessMetrics",
     "accepted_currentness_identity",
@@ -244,4 +350,6 @@ __all__ = (
     "currentness_metrics",
     "refresh_accepted_currentness",
     "require_accepted_currentness",
+    "require_accepted_currentness_step",
+    "require_live_accepted_currentness_step",
 )

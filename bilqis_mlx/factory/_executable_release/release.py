@@ -20,6 +20,7 @@ class ExecutableFactoryRelease:
     source_bindings: SourceBindingSet
     profile: CurriculumProfile
     execution_plan: ExecutionPlan
+    foundation_capability_ids: tuple[str, ...] | None
     semantic_catalog: tuple[str, ...]
     semantic_catalog_sha256: str
     source_adapters: tuple[SourceAdapter, ...]
@@ -32,6 +33,8 @@ class ExecutableFactoryRelease:
     semantic_graph_sha256: str | None = None
     provider_dimension_policies: tuple[ProviderDimensionPolicy, ...] = ()
     _provider_dimension_policy_wire: bool = field(
+        default=True, compare=False, repr=False)
+    _foundation_capability_wire: bool = field(
         default=True, compare=False, repr=False)
 
     def __post_init__(self) -> None:
@@ -74,6 +77,8 @@ class ExecutableFactoryRelease:
                 None if self.transition is None else _api.asdict(self.transition)),
         }
 
+        if self._foundation_capability_wire:
+            payload["foundation_capability_ids"] = self.foundation_capability_ids
         if self.semantic_graph_sha256 is not None:
             payload["semantic_graph_sha256"] = self.semantic_graph_sha256
         if self._provider_dimension_policy_wire:
@@ -83,6 +88,15 @@ class ExecutableFactoryRelease:
 
     def expected_digest(self) -> str:
         return _api._digest(self.manifest())
+
+    def require_foundation_capability_ids(self) -> tuple[str, ...]:
+        """Return signed foundation authority; historical releases cannot fabricate it."""
+        if (not self._foundation_capability_wire
+                or self.foundation_capability_ids is None):
+            raise ValueError(
+                _api._ReleaseError.FOUNDATION_CAPABILITY_IDS_REQUIRED)
+        self.verify()
+        return self.foundation_capability_ids
 
     def verify(self) -> None:
         answer_kinds = _api._verify_release_structure(self)
@@ -155,6 +169,7 @@ class ExecutableFactoryRelease:
             profile = _api._decode_profile(payload["profile"])
             plan = _api._decode_plan(payload["execution_plan"])
             verification = _api._decode_verification(payload["verification"])
+            foundation_wire = "foundation_capability_ids" in payload
             policy_wire = "provider_dimension_policies" in payload
             policies = tuple(
                 _api.ProviderDimensionPolicy(**_api._tuples(item))
@@ -168,6 +183,9 @@ class ExecutableFactoryRelease:
                 source_bindings=bindings,
                 profile=profile,
                 execution_plan=plan,
+                foundation_capability_ids=(
+                    _api._tuples(payload["foundation_capability_ids"])
+                    if foundation_wire else None),
                 semantic_catalog=_api._tuples(payload["semantic_catalog"]),
                 semantic_catalog_sha256=payload["semantic_catalog_sha256"],
                 source_adapters=tuple(
@@ -185,6 +203,7 @@ class ExecutableFactoryRelease:
                 semantic_graph_sha256=payload.get("semantic_graph_sha256"),
                 provider_dimension_policies=policies,
                 _provider_dimension_policy_wire=policy_wire,
+                _foundation_capability_wire=foundation_wire,
             )
         except (KeyError, TypeError, AttributeError) as exc:
             raise ValueError("FACTORY_EXECUTABLE_RELEASE_MANIFEST_INVALID") from exc

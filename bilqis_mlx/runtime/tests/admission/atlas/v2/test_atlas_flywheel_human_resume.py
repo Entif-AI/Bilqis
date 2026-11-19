@@ -1,5 +1,5 @@
 """Human-resume production-parameter coverage for the accepted Atlas flywheel."""
-from contextlib import ExitStack, redirect_stderr, redirect_stdout
+from contextlib import ExitStack, nullcontext, redirect_stderr, redirect_stdout
 import io
 import hashlib
 import json
@@ -31,6 +31,7 @@ from bilqis_mlx.factory.tests.curriculum.frontier.test_atlas_frontier import _ri
 
 from bilqis_mlx.runtime.tests.admission.atlas.v2.atlas_flywheel_human_resume_support import AcceptedAtlasFlywheelHumanResumeSupport
 
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 class AcceptedAtlasFlywheelHumanResumeTests(AcceptedAtlasFlywheelHumanResumeSupport):
     def test_human_resume_runs_real_parameter_flywheel_from_accepted_custody(self):
         with patch(
@@ -68,15 +69,13 @@ class AcceptedAtlasFlywheelHumanResumeTests(AcceptedAtlasFlywheelHumanResumeSupp
                 parent_release)
             self.assertEqual(binding.lease_sha256, fixture.lease.digest())
 
-    def test_persistent_operator_reenters_real_flywheel_and_cold_refreshes(self):
+    def test_persistent_operator_keeps_fixed_release_after_accepted_visit(self):
         with patch(
                 "bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers.DECLARED",
                 _COMPACT_DECLARED), patch(
                     "bilqis_mlx.runtime.topology_v2.serialization.expected_bamf_shapes",
                     return_value=_COMPACT_DECLARED), shape_patch():
             fixture = self._production_parameter_fixture()
-            supervisor = AcceptedAtlasFlywheelSupervisor(
-                self.run, self.parent_graph, reserve_gib=100.)
             with self._production_parameter_context(fixture):
                 parent, _manifest = load_bamf_generation_authority(
                     self.run / "bamf-state.json")
@@ -89,17 +88,12 @@ class AcceptedAtlasFlywheelHumanResumeTests(AcceptedAtlasFlywheelHumanResumeSupp
                     _student, context, _atlas, _features = _execution_context(run_dir)
                     seen_releases.append(context.release.release_sha256)
                     if len(seen_releases) == 1:
-                        self._credit_identity_prerequisites(supervisor)
                         return "ACCEPTED"
                     return "HELD"
 
                 with patch(
                         "bilqis_mlx.runtime.bamf_operator.session._visit",
-                        side_effect=fake_visit), patch(
-                        "bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence."
-                        "refresh_accepted_learning_evidence",
-                        return_value=SimpleNamespace(
-                            measured=0, passed=0, final_action="QUALIFICATION")):
+                        side_effect=fake_visit):
                     result = operate_bamf(
                         self.run, minutes=1, max_visits=0, reserve_gib=100.,
                         source_prefetch_workers=0, parent_graph=self.parent_graph)
@@ -111,11 +105,11 @@ class AcceptedAtlasFlywheelHumanResumeTests(AcceptedAtlasFlywheelHumanResumeSupp
 
             self.assertEqual(result.status, "PRIORITY_HOLD")
             self.assertEqual((result.visits, result.accepted, result.rejected), (1, 1, 0))
-            self.assertGreater(result.admission_advances, 0)
-            self.assertIsNotNone(result.admission_status)
+            self.assertEqual(result.admission_advances, 0)
+            self.assertIsNone(result.admission_status)
             self.assertEqual(seen_releases[0], parent_release)
-            self.assertEqual(seen_releases[1], successor_release)
-            self.assertNotEqual(successor_release, parent_release)
+            self.assertEqual(seen_releases[1], parent_release)
+            self.assertEqual(successor_release, parent_release)
             self.assertEqual(
                 accepted.retained_state.optimizer_step,
                 parent.retained_state.optimizer_step)

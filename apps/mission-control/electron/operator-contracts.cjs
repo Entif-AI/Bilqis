@@ -13,7 +13,8 @@ const ACTIONS = new Set([
   "admission-lease", "pause", "stop",
 ]);
 const STATES = new Set([
-  "ACCEPTED", "PENDING", "COMPLETED", "REJECTED", "FAILED", "OUTCOME_UNKNOWN",
+  "ACCEPTED", "PENDING", "COMPLETED", "REJECTED", "FAILED",
+  "FAILED_BEFORE_EFFECT", "OUTCOME_UNKNOWN",
 ]);
 const MODES = new Set(["read-only", "dry-run", "mutating"]);
 const COVERAGE = new Set(["COMPLETE", "PARTIAL", "UNKNOWN", "NOT_APPLICABLE"]);

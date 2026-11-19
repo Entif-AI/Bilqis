@@ -11,6 +11,9 @@ from bilqis_mlx.runtime.teacher_observation_capture import read_sidecar
 from .evidence import (
     EVIDENCE_SCHEMA, PERSISTENCE_SCHEMA, REFERENCE_SCHEMA, candidate_attempt_id,
 )
+from .session_parts.distributed_receipt_validation import (
+    validate_distributed_step_receipts,
+)
 
 
 _HORIZON_ENVELOPE_RECORDS = 2
@@ -213,6 +216,7 @@ def validate_candidate_horizon_event(run_dir, event: dict, release) -> dict:
     for step in steps:
         selected_rows = _event_selected_rows(step, payload, capability_map)
         _validate_released_delivery(step, selected_rows, release, capability_map)
+    validate_distributed_step_receipts(run_dir, proposal, steps)
     last_step = steps[-1]["step"]
     if (outcome["accepted"] is not accepted
             or outer.get("capability") != proposal.get("capability")

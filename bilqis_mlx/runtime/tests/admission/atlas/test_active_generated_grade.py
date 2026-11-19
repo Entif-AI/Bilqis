@@ -44,8 +44,31 @@ class ActiveGeneratedGradeTests(unittest.TestCase):
         )
         return replace(draft, definition_sha256=draft.expected_digest())
 
+    def _bootstrap_active_grade(self, proposal, definition):
+        from bilqis_mlx.runtime.active_generated_grade_contracts import (
+            issue_active_generated_grade,
+        )
+        return issue_active_generated_grade(
+            run_id="fixture-run",
+            activation_generation=0,
+            activation_manifest_sha256="1" * 64,
+            activation_acceptance_sha256="2" * 64,
+            generated_grade_id=definition.definition_sha256,
+            definition=definition,
+            proposal_sha256=proposal.proposal_sha256,
+            a09_snapshot_sha256="3" * 64,
+            a09_closure_sha256="4" * 64,
+            a09_proposal_sha256=None,
+            predecessor_activation_sha256=None,
+            predecessor_definition_sha256=None,
+            transition_kind="BOOTSTRAP",
+            transition_receipt_sha256=proposal.proposal_sha256,
+            transition_reason="DATA_DEFINED_INITIAL_GRADE_BOOTSTRAP",
+        )
+
     def test_initial_activation_round_trips_exact_definition_from_durable_custody(self):
         from bilqis_mlx.runtime.active_generated_grade import (
+            _read_bound_active_generated_grade,
             activate_accepted_generated_grade,
             read_active_generated_grade,
         )
@@ -85,12 +108,102 @@ class ActiveGeneratedGradeTests(unittest.TestCase):
                 activated = activate_accepted_generated_grade(root, proposal)
                 cold = read_active_generated_grade(root)
                 self.assertIsInstance(cold, ActiveGeneratedGrade)
+                with patch(
+                    "bilqis_mlx.runtime.bamf_bundle.currentness_transaction."
+                    "require_accepted_currentness_step",
+                    return_value=object(),
+                ), patch(
+                    "bilqis_mlx.runtime.active_generated_grade."
+                    "_activation_is_accepted_ancestor",
+                    side_effect=AssertionError("hot active-grade read rescanned B13 ancestry"),
+                ):
+                    bound = _read_bound_active_generated_grade(
+                        root,
+                        expected_activation_sha256=activated.activation_sha256,
+                        expected_definition_sha256=(
+                            activated.definition.definition_sha256),
+                        currentness_step=object(), currentness_transaction=object(),
+                        parent=object(),
+                    )
 
         self.assertEqual(cold, activated)
+        self.assertEqual(bound, activated)
         self.assertEqual(cold.definition, definition)
         self.assertEqual(cold.transition_kind, "INITIAL")
         self.assertIsNone(cold.predecessor_activation_sha256)
         self.assertIsNone(cold.transition_receipt_sha256)
+
+    def test_bootstrap_hot_currentness_reuses_frozen_grade_and_rejects_file_drift(self):
+        from bilqis_mlx.runtime.active_generated_grade import (
+            _bind_active_generated_grade_currentness,
+            _read_bound_active_generated_grade,
+        )
+        proposal, definition = self._fixture()
+        active = self._bootstrap_active_grade(proposal, definition)
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths = (
+                root / "generated-grades/current.json",
+                root / "generated-grades/definitions"
+                    / f"{definition.definition_sha256}.json",
+                root / "generated-grades/activations"
+                    / f"{active.activation_sha256}.json",
+                root / "generated-grade-proposals/initial-bootstrap"
+                    / f"{proposal.proposal_sha256}.json",
+                root / "factory-releases"
+                    / f"{definition.adopted_release_sha256}.json",
+            )
+            for index, path in enumerate(paths):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(f"fixture-{index}\n", encoding="utf-8")
+
+            with patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "read_active_generated_grade",
+                return_value=active,
+            ):
+                witness = _bind_active_generated_grade_currentness(root, active)
+            with patch(
+                "bilqis_mlx.runtime.bamf_bundle.currentness_transaction."
+                "require_accepted_currentness_step",
+                return_value=object(),
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade._custody._read_stored_active",
+                side_effect=AssertionError("hot bootstrap reparsed active custody"),
+            ), patch(
+                "bilqis_mlx.runtime.active_generated_grade._require_active_transition_current",
+                side_effect=AssertionError("hot bootstrap repeated deep transition proof"),
+            ):
+                current = _read_bound_active_generated_grade(
+                    root,
+                    expected_activation_sha256=active.activation_sha256,
+                    expected_definition_sha256=definition.definition_sha256,
+                    currentness_step=object(),
+                    currentness_transaction=object(),
+                    parent=object(),
+                    active_currentness=witness,
+                )
+            self.assertIs(current, active)
+
+            paths[3].write_text("tampered\n", encoding="utf-8")
+            with patch(
+                "bilqis_mlx.runtime.bamf_bundle.currentness_transaction."
+                "require_accepted_currentness_step",
+                return_value=object(),
+            ), self.assertRaises(BilqisError) as raised:
+                _read_bound_active_generated_grade(
+                    root,
+                    expected_activation_sha256=active.activation_sha256,
+                    expected_definition_sha256=definition.definition_sha256,
+                    currentness_step=object(),
+                    currentness_transaction=object(),
+                    parent=object(),
+                    active_currentness=witness,
+                )
+            self.assertEqual(
+                raised.exception.context.get("reason"),
+                "BAMF_ACTIVE_GENERATED_GRADE_CURRENTNESS_DRIFT",
+            )
 
     def test_distinct_definition_cannot_replace_active_grade_without_transition_authority(self):
         from bilqis_mlx.runtime.active_generated_grade import (

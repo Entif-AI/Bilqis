@@ -1,6 +1,6 @@
 """#1174 native operator source-prefetch contracts."""
 from concurrent.futures import ThreadPoolExecutor
-from contextlib import contextmanager
+from contextlib import contextmanager, nullcontext
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace
@@ -221,6 +221,7 @@ def test_prefetch_overlap_reduces_sovereign_lane_source_wait():
 
 
 @pytest.mark.parametrize("workers", [0, 1, 2])
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 def test_native_operator_preserves_zero_one_two_worker_configuration(workers):
     current = SimpleNamespace(
         generation=3, retained_state=SimpleNamespace(optimizer_step=7))
@@ -235,8 +236,6 @@ def test_native_operator_preserves_zero_one_two_worker_configuration(workers):
         yield executor
 
     with TemporaryDirectory() as temporary, patch(
-            "bilqis_mlx.runtime.run_authority.binding.storage_root",
-            return_value=Path(temporary).parent), patch(
             "bilqis_mlx.runtime.source_prefetch.source_prefetch_pool",
             side_effect=pool), patch(
             "bilqis_mlx.runtime.bamf_operator.session._visit",

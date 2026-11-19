@@ -62,6 +62,24 @@ class C11ExecutionRuntime:
             _invalid("CONTROL_PLANE_COMMAND_STOP_TARGET_NOT_ACTIVE")
         return target_plan, process
 
+    def trainer_process_state(self, operation_id: str) -> str:
+        """Return current, inactive, or unknown after process-identity revalidation."""
+        if self.store is None:
+            return "inactive"
+        process = self.store.read_trainer_process(operation_id)
+        if process is None or not self._pid_live(process["pid"]):
+            return "inactive"
+        observed = self._process_identity_sha256(process["pid"])
+        if observed is None:
+            return "unknown"
+        if observed == process["identity_sha256"]:
+            return "current"
+        return "inactive"
+
+    def trainer_process_current(self, operation_id: str) -> bool:
+        """Return true only when current process identity is positively revalidated."""
+        return self.trainer_process_state(operation_id) == "current"
+
     def inert_postcondition(self, plan: CommandPlan, preflight: dict) -> dict:
         if plan.mode is CommandMode.MUTATING:
             _invalid("CONTROL_PLANE_COMMAND_MUTATION_REQUIRED")
@@ -209,3 +227,41 @@ class C11ExecutionRuntime:
                 "after": current.to_record(),
             }
         return None
+
+    def reconcile_no_effect(
+        self, plan: CommandPlan, worker_result: dict | None,
+    ) -> dict | None:
+        """Prove no durable learner effect; absence of proof remains ambiguous."""
+        if (
+            worker_result is None
+            or worker_result.get("returncode") is not None
+            or not worker_result.get("error_ref")
+            or self.trainer_process_state(plan.operation_id) != "inactive"
+        ):
+            return None
+        if plan.action is CommandAction.CREATE:
+            if (self.run_dir / "bamf-state.json").exists():
+                return None
+            dry_argv = tuple(
+                "--dry-run" if item == "--human-run" else item
+                for item in plan.argv
+            )
+            try:
+                report = self._run_cli_json(dry_argv)
+                current = report_target(self.run_dir, report, existing=False)
+            except (BilqisError, OSError):
+                return None
+        else:
+            current = self._current_target()
+        if current != plan.target:
+            return None
+        return {
+            "kind": "reconciled-no-effect",
+            "before": plan.target.to_record(),
+            "after": current.to_record(),
+            "worker_result": {
+                "returncode": worker_result.get("returncode"),
+                "error_ref": worker_result.get("error_ref"),
+                "finished_at": worker_result.get("finished_at"),
+            },
+        }

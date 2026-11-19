@@ -39,18 +39,16 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
-          PR_HEAD_REF: ${{ github.head_ref }}
           PUSH_BASE_SHA: ${{ github.event.before }}
         shell: bash
         run: |
           set -euo pipefail
-          BASE_REF="${PR_BASE_SHA:-$PUSH_BASE_SHA}"
-          if [[ "$EVENT_NAME" == "pull_request" && "$PR_HEAD_REF" == codex/bamf-main-bridge-* ]]; then
-            JOIN_COMMIT=$(git rev-list --first-parent --merges --max-count=1 "$PR_BASE_SHA..$PR_HEAD_SHA")
-            test -n "$JOIN_COMMIT"
-            BASE_REF=$(git rev-parse "$JOIN_COMMIT^2")
-            echo "Bridge cutover: comparing against joined unified baseline $BASE_REF"
-          fi
+          BASE_REF=$(python3 -B scripts/quality/pr_scope.py comparison-base \
+            --event-name "$EVENT_NAME" \
+            --requested-base "${PR_BASE_SHA:-$PUSH_BASE_SHA}" \
+            --pr-head-sha "$PR_HEAD_SHA" \
+            --push-base "$PUSH_BASE_SHA")
+          echo "Comparison base: $BASE_REF"
           echo "base_ref=$BASE_REF" >> "$GITHUB_OUTPUT"
       - name: Require fresh expensive verification
         id: test-impact
@@ -166,6 +164,7 @@ jobs:
           bilqis_mlx/factory/tests/lifecycle/test_generation.py
           bilqis_mlx/factory/tests/curriculum/test_historical_generalization.py
           bilqis_mlx/runtime/tests/operator/test_admission.py
+          bilqis_mlx/runtime/tests/operator/test_admission_cold_readback.py
       - name: Plan semantic profile verification
         id: skos
         if: steps.test-impact.outputs.expensive_tests == 'true'

@@ -1,26 +1,47 @@
 """One terminal BAMF visit, separated from the session coordinator."""
 from __future__ import annotations
 
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ResourceRejectedVisit:
+    capability: str
+
+
 def visit(
         run_dir, reserve_gib, *, steps_per_visit, progress,
         source_prefetch_workers, source_prefetch_executor,
         source_prefetch_metrics, observer, run_authority_binding,
         prepare_visit, record_rejection,
         accept_publish, load_generation, measure_phase, emit_progress,
-        record_cadence_attempt=None):
+        record_cadence_attempt=None, resource_holds=frozenset()):
     prepared = prepare_visit(
         run_dir, steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
         progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics,
-        **({"observer": observer} if observer is not None else {}))
+        **({"observer": observer} if observer is not None else {}),
+        **({"resource_holds": resource_holds} if resource_holds else {}))
     if prepared.status in {
-        "HELD", "ACTION_REQUIRED", "GRADE_TRANSITIONED",
+        "HELD", "RESOURCE_HOLD", "ACTION_REQUIRED", "GRADE_TRANSITIONED",
         "CERTIFICATION_FAILED", "CERTIFICATION_SUPERSEDED",
     }:
         return prepared.status
     parent, selection = prepared.parent, prepared.selection
+    if prepared.status == "RESOURCE_REJECTED":
+        if run_authority_binding is not None:
+            run_authority_binding.assert_current()
+        identity = selection.visit.identity
+        record_rejection(run_dir, parent, {
+            **prepared.resource,
+            "capability": prepared.capability,
+            "visit_id": identity.visit_id,
+            "teacher_visit": identity.to_record(),
+            "selected_policy_key": identity.policy_key,
+        })
+        return ResourceRejectedVisit(prepared.capability)
     step, decision, retained = prepared.step, prepared.decision, prepared.retained
     if not decision.accepted:
         cadence = (getattr(selection, "metadata", None) or {}).get("cadence")

@@ -51,11 +51,14 @@ def priority():
         "bilqis_mlx.runtime.atlas_training_contracts": _module(
             BamfVisitProvenance=SimpleNamespace(from_c03_record=None)),
         "bilqis_mlx.runtime.bamf_bundle.currentness_transaction": _module(
-            refresh_accepted_currentness=lambda transaction, parent: transaction),
+            refresh_accepted_currentness=lambda transaction, parent: transaction,
+            require_live_accepted_currentness_step=(
+                lambda step, transaction, parent: step)),
         "bilqis_mlx.runtime.factory_candidate_training": _module(
             execute_factory_candidate_step=None),
         "bilqis_mlx.runtime.lawful_teaching_frontier": _module(
-            require_bound_lawful_teaching_frontier=lambda frontier, context, parent: frontier,
+            require_bound_lawful_teaching_frontier=(
+                lambda frontier, context, parent, **_kwargs: frontier),
             require_current_lawful_teaching_frontier=lambda frontier, context, parent: frontier),
         "bilqis_mlx.runtime.teacher_policy_selection": _module(select_visit_policy=None),
         "bilqis_mlx.runtime.outcomes.replay": _module(
@@ -64,7 +67,8 @@ def priority():
         "bilqis_mlx.semantics.domains": _module(contract_digest=None),
         "bilqis_mlx.runtime.accepted_teacher_custody": _module(
             _accepted_parent=None, _c03_projection=None, _issue_bound_visit=None,
-            _require_current_visit=None, _selection_projection=None),
+                _require_current_visit=None, _selection_projection=None,
+                current_teacher_projection=lambda run, parent, cache, projection: projection),
         "bilqis_mlx.runtime.priority_qualification": _module(
             _grade=None, requalify_priority=None),
     }

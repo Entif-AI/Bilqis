@@ -4,6 +4,10 @@ const { Cp01PythonBroker } = require("./cp01-python-broker.cjs");
 
 const OPERATOR_VIEW_SCHEMA = "bilqis.bamf.mission-control.operator-view/v1";
 const SNAPSHOT_QUERY_SCHEMA = "bamf.gui20.operator-view-query/v1";
+const SNAPSHOT_UNAVAILABLE_SCHEMA = "bamf.gui20.operator-view-unavailable/v1";
+const TRANSIENT_VIEW_STATES = new Set([
+  "EMPTY", "MISSING", "PARTIAL", "STALE", "UNAVAILABLE", "UNKNOWN",
+]);
 
 function runQuery() {
   return {
@@ -26,6 +30,11 @@ function operatorViewUnavailable(state = "UNKNOWN") {
   const error = new Error(`BAMF_GUI20_OPERATOR_VIEW_UNAVAILABLE:${state}`);
   error.code = "BAMF_GUI20_OPERATOR_VIEW_UNAVAILABLE";
   return error;
+}
+
+function operatorViewAvailability(state = "UNAVAILABLE") {
+  const safeState = TRANSIENT_VIEW_STATES.has(state) ? state : "UNAVAILABLE";
+  return Object.freeze({ schemaVersion: SNAPSHOT_UNAVAILABLE_SCHEMA, state: safeState });
 }
 
 function disconnectedStatus() {
@@ -91,13 +100,17 @@ class AcceptedControlPlaneAdapter {
     }
     if (request?.schemaVersion === SNAPSHOT_QUERY_SCHEMA && request?.schema === OPERATOR_VIEW_SCHEMA) {
       const page = await this.broker.query(runQuery());
-      if (page?.accepted !== true || !Array.isArray(page.records)) {
+      if (page?.accepted !== true) {
         throw operatorViewUnavailable(page?.state);
       }
+      if (!Array.isArray(page.records)) throw operatorViewUnavailable(page?.state);
       const operatorView = [...page.records].reverse().find(
         (record) => record?.schema_version === OPERATOR_VIEW_SCHEMA,
       );
-      if (!operatorView) throw operatorViewUnavailable(page.state);
+      if (!operatorView) {
+        if (TRANSIENT_VIEW_STATES.has(page.state)) return operatorViewAvailability(page.state);
+        throw operatorViewUnavailable(page.state);
+      }
       return structuredClone(operatorView);
     }
     throw operatorViewUnavailable();

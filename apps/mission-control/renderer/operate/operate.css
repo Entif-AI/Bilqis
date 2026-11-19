@@ -46,7 +46,7 @@
 .operate-stage-summary { max-width: 800px; margin: 0; color: var(--text-muted); }
 .operate-state { display: inline-flex; align-items: center; min-height: 24px; padding: 2px 7px; border: 1px solid var(--border-strong); font-size: var(--type-label); font-weight: 750; letter-spacing: .045em; white-space: nowrap; }
 .operate-state[data-operate-state="completed"], .operate-state[data-operate-state="read-only"], .operate-state[data-operate-state="dry-run"] { color: var(--healthy); }
-.operate-state[data-operate-state="rejected"], .operate-state[data-operate-state="failed"], .operate-state[data-operate-state="outcome-unknown"], .operate-state[data-operate-state="stale-context"] { border-style: double; color: var(--invalid); }
+.operate-state[data-operate-state="rejected"], .operate-state[data-operate-state="failed"], .operate-state[data-operate-state="failed-before-effect"], .operate-state[data-operate-state="outcome-unknown"], .operate-state[data-operate-state="stale-context"] { border-style: double; color: var(--invalid); }
 .operate-state[data-operate-state="pending"], .operate-state[data-operate-state="submitting"], .operate-state[data-operate-state="reconciling"], .operate-state[data-operate-state="human-gate"] { border-style: dashed; color: var(--attention); }
 
 .operate-json, .operate-authorize-label { display: grid; gap: 6px; max-width: 840px; color: var(--text-muted); }

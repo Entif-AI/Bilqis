@@ -77,6 +77,12 @@ class ExecutableFactoryReleaseTests(ReleaseTestSupport):
             tuple(item.capability_id for item in release.verification.capabilities),
             tuple(item.capability_id for item in release.execution_plan.capabilities))
         self.assertEqual(
+            release.foundation_capability_ids,
+            release.execution_plan.active_capability_inventory)
+        self.assertEqual(
+            tuple(release.manifest()["foundation_capability_ids"]),
+            release.execution_plan.active_capability_inventory)
+        self.assertEqual(
             tuple(item.grade_id for item in release.verification.assessments),
             ("Z",))
 
@@ -85,6 +91,61 @@ class ExecutableFactoryReleaseTests(ReleaseTestSupport):
             payload, release.release_sha256)
         self.assertEqual(restored, release)
         restored.verify_semantic_catalog(self.graph)
+        self.assertEqual(
+            restored.foundation_capability_ids,
+            release.foundation_capability_ids)
+
+    def test_foundation_capability_identity_is_signed_release_authority(self):
+        release = self.compile()
+        foundation = release.execution_plan.active_capability_inventory
+        self.assertTrue(foundation)
+        self.assertEqual(release.foundation_capability_ids, foundation)
+
+        altered = (*foundation[:-1], "FOREIGN.CAPABILITY")
+        candidate = replace(
+            release, foundation_capability_ids=altered,
+            release_sha256="0" * 64)
+        candidate = replace(
+            candidate, release_sha256=candidate.expected_digest())
+        self.assertNotEqual(candidate.release_sha256, release.release_sha256)
+        with self.assertRaisesRegex(
+                ValueError,
+                "FACTORY_EXECUTABLE_RELEASE_FOUNDATION_CAPABILITY_DRIFT"):
+            candidate.verify()
+
+    def test_foundation_capability_identity_rejects_noncanonical_variants(self):
+        release = self.compile()
+        foundation = release.execution_plan.active_capability_inventory
+        variants = (
+            (),
+            (foundation[0], *foundation),
+            tuple(reversed(foundation)),
+            foundation[:-1],
+            (*foundation[:-1], "FOREIGN.CAPABILITY"),
+        )
+        for variant in variants:
+            with self.subTest(variant=variant):
+                candidate = replace(
+                    release, foundation_capability_ids=variant,
+                    release_sha256="0" * 64)
+                candidate = replace(
+                    candidate, release_sha256=candidate.expected_digest())
+                with self.assertRaisesRegex(
+                        ValueError,
+                        "FACTORY_EXECUTABLE_RELEASE_FOUNDATION_CAPABILITY_DRIFT"):
+                    candidate.verify()
+
+    def test_grade_label_changes_do_not_change_active_capability_inventory(self):
+        release = self.compile()
+        renamed = replace(
+            release.execution_plan,
+            grades=tuple(
+                replace(grade, grade_id=f"RENAMED-{index}")
+                for index, grade in enumerate(release.execution_plan.grades)),
+        )
+        self.assertEqual(
+            renamed.active_capability_inventory,
+            release.foundation_capability_ids)
 
     def test_twelve_capability_release_roundtrips_without_legacy_course(self):
         names = tuple(f"Z.C{i}" for i in range(12))

@@ -18,8 +18,10 @@ from bilqis_mlx.runtime.backbone_identity import (
     issue_execution_generation_binding, require_execution_generation_binding,
 )
 from bilqis_mlx.runtime.bamf_bundle.execution_cache import (
-    CandidateExecutionCache, bind_execution_generation, bind_motif_artifact_owner,
+    CandidateExecutionCache, DistributedExecutionCache,
+    bind_execution_generation, bind_motif_artifact_owner,
     require_accepted_execution_cache, require_candidate_execution_cache,
+    require_distributed_execution_cache,
 )
 from bilqis_mlx.runtime.model_topology_v2 import (
     ModelTopologySpecV2, validate_bamf_parameters,
@@ -54,12 +56,14 @@ def _source_execution_authorities(compiled_batch):
 def _source_producer(
         params, compiled_batch, generation, cache, execution_binding=None, *,
         trace=False, snapshot=None):
-    speculative = type(cache) is CandidateExecutionCache
+    candidate = type(cache) is CandidateExecutionCache
+    distributed = type(cache) is DistributedExecutionCache
+    speculative = candidate or distributed
     execution_cache = (
-        require_candidate_execution_cache(cache) if speculative
-        else (None if cache is None else require_accepted_execution_cache(cache)))
-    accepted_cache = (
-        execution_cache._accepted_cache if speculative else execution_cache)
+        require_candidate_execution_cache(cache) if candidate
+        else (require_distributed_execution_cache(cache) if distributed
+              else (None if cache is None else require_accepted_execution_cache(cache))))
+    accepted_cache = execution_cache._accepted_cache if candidate else execution_cache
     banks = semantic_bank_views(
         params, compiled_batch.compiled.extents,
         compiled_batch.compiled.features.semantic_release,

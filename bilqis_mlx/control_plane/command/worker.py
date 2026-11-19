@@ -73,7 +73,7 @@ def _prepare_worker(store, executor, operation_id):
                 request,
                 operation_id=operation_id,
                 request_sha256=request_digest,
-                state=ActionReceiptState.FAILED,
+                state=ActionReceiptState.FAILED_BEFORE_EFFECT,
                 target_ref=plan.target.ref,
                 error_ref_value=error_ref_from_exception(error),
             )
@@ -111,34 +111,47 @@ def _readback_after_execution(executor, plan, returncode, execution_error):
 
 
 def _finalize_worker(
-    store, operation_id, request, request_digest, plan,
+    store, executor, operation_id, request, request_digest, plan,
     returncode, execution_error, postcondition,
 ) -> int:
     with store.operation_lock(operation_id):
         if store.read_terminal(operation_id) is not None:
             return 0
-        if postcondition is not None:
-            _complete_from_postcondition(
-                store, operation_id, request, plan, postcondition)
-        elif returncode is None:
-            failure = build_receipt(
-                request,
-                operation_id=operation_id,
-                request_sha256=request_digest,
-                state=ActionReceiptState.FAILED,
-                target_ref=plan.target.ref,
-                error_ref_value=execution_error
-                or error_ref_from_exception(
-                    RuntimeError("COMMAND_WORKER_SPAWN_FAILED")),
-            )
-            store.write_terminal(operation_id, failure)
         store.write_worker_result(
             operation_id,
             returncode=returncode,
             error_ref=execution_error,
             finished_at=_now(),
         )
-    return 0 if postcondition is not None else 2
+        if postcondition is not None:
+            _complete_from_postcondition(
+                store, operation_id, request, plan, postcondition)
+        elif returncode is None:
+            worker_result = store.read_worker_result(operation_id)
+            try:
+                no_effect = executor.reconcile_no_effect(plan, worker_result)
+            except (BilqisError, MissionControlContractError, OSError):
+                no_effect = None
+            if no_effect is not None:
+                reconciliation_ref = store.write_reconciliation(
+                    operation_id, no_effect)
+                failure = build_receipt(
+                    request,
+                    operation_id=operation_id,
+                    request_sha256=request_digest,
+                    state=ActionReceiptState.FAILED_BEFORE_EFFECT,
+                    target_ref=plan.target.ref,
+                    error_ref_value=execution_error
+                    or error_ref_from_exception(
+                        RuntimeError("COMMAND_WORKER_SPAWN_FAILED")),
+                    receipt_refs=(f"command-plan:{plan.digest}", reconciliation_ref),
+                )
+                store.write_terminal(operation_id, failure)
+    if postcondition is not None:
+        return 0
+    if store.read_terminal(operation_id) is not None:
+        return 1
+    return 2
 
 
 def run_worker(
@@ -161,6 +174,7 @@ def run_worker(
             executor, plan, returncode, execution_error)
         return _finalize_worker(
             store,
+            executor,
             operation_id,
             request,
             request_digest,

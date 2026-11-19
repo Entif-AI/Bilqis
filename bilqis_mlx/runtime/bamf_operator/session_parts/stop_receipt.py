@@ -31,9 +31,9 @@ def _checkpoint_identity(student) -> str:
 
 def _accepted_pointer(run_dir: Path) -> dict:
     from bilqis_mlx.runtime.bamf_bundle.publication.pointer_storage import _read_pointer
-    from bilqis_mlx.runtime.bamf_bundle.publication.storage import _pointer_lock
+    from bilqis_mlx.runtime.bamf_bundle.publication.storage import _pointer_read_lock
     pointer_path = Path(run_dir) / "bamf-state.json"
-    with _pointer_lock(pointer_path.parent):
+    with _pointer_read_lock(pointer_path.parent):
         pointer = _read_pointer(pointer_path)
     if not isinstance(pointer, dict):
         _invalid("BAMF_RUN_STOP_ACCEPTED_POINTER_MISSING")
@@ -45,6 +45,8 @@ def _resume_state(status: str) -> tuple[bool, str]:
         return False, "ACTION_REQUIRED"
     if status == "DISK_RESERVE_REACHED":
         return False, "RESUME_AFTER_RESOURCE_RECOVERY"
+    if status == "RESOURCE_HOLD":
+        return True, "RESUME_AFTER_RESOURCE_RECOVERY"
     if status in {"PRIORITY_HOLD", "ADMISSION_HOLD", "FIXED_POINT"}:
         return True, "RESUME_WHEN_WORK_AVAILABLE"
     return True, "RESUME_ALLOWED"

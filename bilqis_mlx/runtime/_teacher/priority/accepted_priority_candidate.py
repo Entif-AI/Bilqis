@@ -51,28 +51,22 @@ def _candidate_delivery_inputs(
             source_authorities, capability, delivery, observation)
 
 
-def execute_accepted_priority_candidate(selection, source_context,
-        atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
-        optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
-        capture_diagnostics=False, candidate=None, finalize_candidate=True,
-        prepared_source_rows=None, prepared_enrichment_rows=(),
-        prepared_rehearsal_rows=(), rehearsal_by_id=None,
-        rehearsal_bindings=None, rehearsal_authorities=None,
-        candidate_step_started_at=None,
-        source_prepare_wall_seconds=0.0):
-    _require_issued(selection)
-    if selection.status != 'TEACHER_SELECTED':
-        return selection
+def _candidate_currentness(selection, source_context, prepared_source_rows):
     planning_generation = selection.offer._planning_generation
     from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
         refresh_accepted_currentness,
     )
-    if candidate_step_started_at is None:
-        candidate_step_started_at = time.perf_counter()
-    currentness_started = time.perf_counter()
-    refresh_accepted_currentness(
+    stage_started = time.perf_counter()
+    currentness_step = refresh_accepted_currentness(
         planning_generation._accepted_currentness, planning_generation._parent)
+    timings = {
+        "accepted_currentness_refresh_wall_seconds": (
+            time.perf_counter() - stage_started),
+    }
+    stage_started = time.perf_counter()
     parent, cache = selection.offer.require_current_parent(source_context)
+    timings["accepted_parent_currentness_wall_seconds"] = (
+        time.perf_counter() - stage_started)
     lawful_frontier = selection._lawful_frontier
     if (lawful_frontier is None
             or getattr(lawful_frontier, '_planning_generation', None)
@@ -81,19 +75,53 @@ def execute_accepted_priority_candidate(selection, source_context,
     from bilqis_mlx.runtime.lawful_teaching_frontier import (
         require_bound_lawful_teaching_frontier,
     )
-    require_bound_lawful_teaching_frontier(lawful_frontier, source_context, parent)
+    stage_started = time.perf_counter()
+    require_bound_lawful_teaching_frontier(
+        lawful_frontier, source_context, parent, currentness_step=currentness_step)
+    timings["lawful_frontier_currentness_wall_seconds"] = (
+        time.perf_counter() - stage_started)
     if selection.offer.capability_id not in set(lawful_frontier.ready_capability_ids):
         _invalid('BAMF_PRIORITY_SELECTION_OUTSIDE_LAWFUL_FRONTIER')
-    semantic_context = planning_generation._authenticated_features
+    stage_started = time.perf_counter()
     _require_current_visit(
         parent, cache, selection.visit,
-        candidate_identity_sha256=planning_generation.parent_candidate_identity_sha256)
+        candidate_identity_sha256=planning_generation.parent_candidate_identity_sha256,
+        currentness_step=currentness_step,
+        currentness_transaction=planning_generation._accepted_currentness)
+    timings["teacher_visit_currentness_wall_seconds"] = (
+        time.perf_counter() - stage_started)
+    stage_started = time.perf_counter()
     prepared_source = (
         selection.offer.require_current(source_context, parent)
         if prepared_source_rows is None else
         selection.offer.require_current(
             source_context, parent, prepared_rows=prepared_source_rows))
-    currentness_wall_seconds = time.perf_counter() - currentness_started
+    timings["source_currentness_wall_seconds"] = (
+        time.perf_counter() - stage_started)
+    return (
+        planning_generation, parent, currentness_step,
+        planning_generation._authenticated_features, prepared_source, timings,
+    )
+
+
+def execute_accepted_priority_candidate(selection, source_context,
+        atlas_artifact_path, feature_artifact_path, *, teacher_hparams, observation,
+        optimizer_step_seed, max_norm, memory_budget=None, salience_provider=None,
+        capture_diagnostics=False, candidate=None, finalize_candidate=True,
+        prepared_source_rows=None, prepared_enrichment_rows=(),
+        prepared_rehearsal_rows=(), rehearsal_by_id=None,
+        rehearsal_bindings=None, rehearsal_authorities=None,
+        candidate_step_started_at=None,
+        source_prepare_wall_seconds=0.0,
+        distributed_profile=None, distributed_executor=None):
+    _require_issued(selection)
+    if selection.status != 'TEACHER_SELECTED':
+        return selection
+    if candidate_step_started_at is None:
+        candidate_step_started_at = time.perf_counter()
+    (planning_generation, parent, currentness_step, semantic_context,
+     prepared_source, currentness_timings) = _candidate_currentness(
+        selection, source_context, prepared_source_rows)
     caller_pre_neural_started = time.perf_counter()
     policy = selection.policy
     lr = policy.get('lr') if isinstance(policy, dict) else None
@@ -111,7 +139,16 @@ def execute_accepted_priority_candidate(selection, source_context,
     caller_pre_neural_wall_seconds = (
         float(source_prepare_wall_seconds)
         + time.perf_counter() - caller_pre_neural_started)
-    return execute_factory_candidate_step(
+    from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+        require_live_accepted_currentness_step,
+    )
+    stage_started = time.perf_counter()
+    require_live_accepted_currentness_step(
+        currentness_step, planning_generation._accepted_currentness, parent)
+    currentness_timings["accepted_currentness_live_fence_wall_seconds"] = (
+        time.perf_counter() - stage_started)
+    currentness_wall_seconds = sum(currentness_timings.values())
+    result = execute_factory_candidate_step(
         Path(selection._run_dir), source_context, parent,
         atlas_artifact_path, feature_artifact_path, delivered_rows,
         capability=capability, delivery=delivery, requested_count=len(delivered_rows),
@@ -129,7 +166,17 @@ def execute_accepted_priority_candidate(selection, source_context,
         currentness_binding_wall_seconds=currentness_wall_seconds,
         upstream_pre_neural_source_compile_wall_seconds=caller_pre_neural_wall_seconds,
         semantic_context=semantic_context,
-        prepared_source=(prepared_source if not enrichment and not rehearsal else None))
+        prepared_source=(prepared_source if not enrichment and not rehearsal else None),
+        distributed_profile=distributed_profile,
+        distributed_executor=distributed_executor)
+    if not hasattr(result, "realized_cost"):
+        return result
+    cost = dict(result.realized_cost)
+    cost.update(currentness_timings)
+    cost["candidate_binding_wall_seconds"] = max(
+        0.0, float(cost.get("currentness_binding_wall_seconds", 0.0))
+        - currentness_wall_seconds)
+    return replace(result, realized_cost=cost)
 
 
 __all__ = ("execute_accepted_priority_candidate",)

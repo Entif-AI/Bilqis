@@ -12,7 +12,7 @@ from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.runtime.atlas_model import (
     BamfGradientExecution, BamfMicrobatchGradientExecution,
 )
-from bilqis_mlx.runtime.atlas_resources import BatchPlan
+from bilqis_mlx.runtime.atlas_resources import BatchPlan, DistributedStepManifest
 
 
 _ISSUER = object()
@@ -22,6 +22,32 @@ _SHA256_HEX_LENGTH = 64
 
 def _invalid(reason: str) -> None:
     ErrorBus.Raise(SCHOOL.MODEL_TOPOLOGY.INVALID, reason=reason)
+
+
+@dataclass(frozen=True)
+class DistributedLogicalBatchMetadata:
+    """Execution-only distributed facts; excluded from logical/model identity."""
+    manifest: DistributedStepManifest
+    compute_seconds_per_worker: tuple[float, ...]
+    communication_seconds: float
+    peak_memory_per_worker: tuple[int, ...]
+    training_authorities: tuple = ()
+
+    def __post_init__(self) -> None:
+        if (type(self.manifest) is not DistributedStepManifest
+                or type(self.compute_seconds_per_worker) is not tuple
+                or len(self.compute_seconds_per_worker) != self.manifest.world_size
+                or any(type(value) is not float or value < 0.0
+                       for value in self.compute_seconds_per_worker)
+                or type(self.communication_seconds) is not float
+                or self.communication_seconds < 0.0
+                or type(self.peak_memory_per_worker) is not tuple
+                or len(self.peak_memory_per_worker) != self.manifest.world_size
+                or any(type(value) is not int or value < 0
+                       for value in self.peak_memory_per_worker)
+                or type(self.training_authorities) is not tuple):
+            _invalid("C08_DISTRIBUTED_LOGICAL_METADATA_INVALID")
+        self.manifest.__post_init__()
 
 
 @dataclass(frozen=True, init=False)
@@ -39,6 +65,8 @@ class LogicalBatchGradientExecution:
     materialization_barriers: int
     scalar_fallback_rows: int
     wall_seconds: float
+    distributed_metadata: DistributedLogicalBatchMetadata | None = field(
+        default=None, repr=False, compare=False)
     _issuance: object = field(init=False, repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):
@@ -71,8 +99,15 @@ class LogicalBatchGradientExecution:
                 or type(self.scalar_fallback_rows) is not int
                 or not 0 <= self.scalar_fallback_rows <= len(self.loss_executions)
                 or type(self.wall_seconds) is not float
-                or self.wall_seconds < 0.0):
+                or self.wall_seconds < 0.0
+                or (self.distributed_metadata is not None
+                    and type(self.distributed_metadata)
+                    is not DistributedLogicalBatchMetadata)):
             _invalid("C08_LOGICAL_BATCH_GRADIENT_INVALID")
+        if self.distributed_metadata is not None:
+            self.distributed_metadata.__post_init__()
+            if self.distributed_metadata.manifest.logical_batch_digest != self.plan_digest:
+                _invalid("C08_DISTRIBUTED_LOGICAL_METADATA_PLAN_DRIFT")
 
 
 def require_logical_batch_gradient_execution(value):
@@ -165,6 +200,7 @@ def _logical_batch_result(
         ("materialization_barriers", 1),
         ("scalar_fallback_rows", scalar_fallback_rows),
         ("wall_seconds", wall_seconds),
+        ("distributed_metadata", None),
         ("_issuance", _ISSUER),
     ):
         object.__setattr__(result, name, value)

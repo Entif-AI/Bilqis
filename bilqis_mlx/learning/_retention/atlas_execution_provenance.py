@@ -133,15 +133,24 @@ def issue_execution_provenance(
         *, spec, extents, run_id: str, generation: int,
         parent_manifest_sha256: str, parent_candidate_identity_sha256: str,
         parent_optimizer_step: int, topology_digest: str,
-        candidate_step_ordinal: int) -> StepExecutionProvenance:
+        candidate_step_ordinal: int,
+        precomputed_participation: StepParticipation | None = None,
+) -> StepExecutionProvenance:
     """Derive the executed participation and mask, then seal them as provenance.
 
     The caller supplies what the execution path observed. The owner derives
     every participation and mask decision from that observation, so the
     returned proof cannot restate a different mask.
     """
-    participation = step_participation(
-        inputs, semantic_denominator, motif_reads, role_reads)
+    if precomputed_participation is None:
+        participation = step_participation(
+            inputs, semantic_denominator, motif_reads, role_reads)
+    else:
+        if any(value is not None for value in (
+                inputs, semantic_denominator, motif_reads, role_reads)):
+            _invalid()
+        participation = precomputed_participation
+        participation.__post_init__()
     mask = parameter_update_mask(
         group_eligible, participation, active_admitted, spec=spec, extents=extents)
     provenance = object.__new__(StepExecutionProvenance)

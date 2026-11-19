@@ -180,13 +180,13 @@ def test_route_gradient_launch_executes_one_source_backbone_and_no_preflight():
                                                             microbatch, "route_microbatch_loss_and_trajectory",
                                                             side_effect=lambda current, *_args, **_kwargs: (
                                                                 current["x"] * 2,
-                                                                (mx.zeros((4,), dtype=mx.uint32),))), patch.object(
-                                                                    microbatch, "microbatch_trace_from_hidden",
-                                                                    wraps=microbatch.microbatch_trace_from_hidden) as postflight, patch.object(
-                                                                        forward, "_decode_bamf_producer_row",
-                                                                        return_value=object()) as decode, patch.object(
-                                                                            training, "loss_bearing_bamf",
-                                                                            return_value=object()) as row_loss, patch.object(
+                                                                (mx.zeros((4,), dtype=mx.uint32),),
+                                                                (mx.zeros((4, 1), dtype=mx.float32),))), patch.object(
+                                                                    microbatch, "microbatch_trace_from_route",
+                                                                    return_value=(object(),) * 4) as postflight, patch.object(
+                                                                        microbatch, "microbatch_trace_from_hidden",
+                                                                        side_effect=AssertionError(
+                                                                            "vector route replayed scalar postflight")) as legacy_postflight, patch.object(
                                                                         microbatch, "finalize_microbatch_gradient",
                                                                         return_value="done"), patch.object(
                                                                             mx, "value_and_grad",
@@ -199,8 +199,7 @@ def test_route_gradient_launch_executes_one_source_backbone_and_no_preflight():
     assert source_producer.call_count == 1
     assert finalize.call_count == 1
     assert postflight.call_count == 1
-    assert decode.call_count == 4
-    assert row_loss.call_count == 4
+    assert legacy_postflight.call_count == 0
 
 
 def test_route_postflight_rebinds_execution_identity_to_original_parameters():
@@ -222,7 +221,7 @@ def test_route_postflight_rebinds_execution_identity_to_original_parameters():
         return tuple(id(current[name]) for name in params)
 
     def postflight(*args):
-        execution_binding = args[-2]
+        execution_binding = args[-5]
         assert execution_binding == original_binding
         return (object(),) * 4
 
@@ -246,8 +245,9 @@ def test_route_postflight_rebinds_execution_identity_to_original_parameters():
                                                 microbatch, "route_microbatch_loss_and_trajectory",
                                                 side_effect=lambda current, *_args, **_kwargs: (
                                                     current["x"] * 2,
-                                                    (mx.zeros((4,), dtype=mx.uint32),))), patch.object(
-                                                        microbatch, "microbatch_trace_from_hidden",
+                                                    (mx.zeros((4,), dtype=mx.uint32),),
+                                                    (mx.zeros((4, 1), dtype=mx.float32),))), patch.object(
+                                                        microbatch, "microbatch_trace_from_route",
                                                         side_effect=postflight), patch.object(
                                                             microbatch, "finalize_microbatch_gradient",
                                                             return_value="done"):

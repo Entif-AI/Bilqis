@@ -11,6 +11,7 @@ import time
 
 from bilqis_mlx.errors import ErrorBus, SCHOOL
 from bilqis_mlx.factory.schedule import schedule_program_from_executable_release
+from bilqis_mlx.runtime.atlas_memory_retry import CandidateMemoryExhausted, OOM_EXHAUSTED
 from bilqis_mlx.runtime.accepted_priority_visit import (
     accepted_priority_school,
 )
@@ -58,12 +59,15 @@ def _emit_progress(progress, message: str) -> None:
 def _execute_selected_visit(
         run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
         steps_per_visit, reserve_gib, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer):
+        source_prefetch_executor, source_prefetch_metrics, observer,
+        distributed_profile=None, distributed_executor=None):
     return _execute_selected_visit_impl(
         run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
         steps_per_visit, reserve_gib, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer,
-        emit_progress=_emit_progress, invalid=_invalid)
+        emit_progress=_emit_progress, invalid=_invalid,
+        distributed_profile=distributed_profile,
+        distributed_executor=distributed_executor)
 
 
 def _accepted_admission_reentry(
@@ -75,6 +79,7 @@ def _accepted_admission_reentry(
 
 def _accepted_learning_reentry(
         run_dir: Path, parent_graph: dict, reserve_gib: float, progress=None):
+    """Compose evidence refresh and C07 only for an explicit admission boundary."""
     from .accepted_learning_evidence import refresh_accepted_learning_evidence
     evidence = refresh_accepted_learning_evidence(Path(run_dir), progress=progress)
     _emit_progress(progress, "accepted learner evidence refresh: "
@@ -88,7 +93,9 @@ def prepare_bamf_visit(
         reserve_gib: float = 100.0,
         progress=None, source_prefetch_workers: int = 0,
         source_prefetch_executor=None,
-        source_prefetch_metrics: SourcePrefetchMetrics | None = None, observer=None) -> BamfPreparedVisit:
+        source_prefetch_metrics: SourcePrefetchMetrics | None = None, observer=None,
+        resource_holds=frozenset(), distributed_profile=None,
+        distributed_executor=None) -> BamfPreparedVisit:
     """Compose the production visit through retention without publishing it."""
     if (type(steps_per_visit) is not int
             or not 1 <= steps_per_visit <= _MAX_CANDIDATE_HORIZON):
@@ -113,7 +120,7 @@ def prepare_bamf_visit(
     planning_started = time.perf_counter()
     selection = select_foundation_priority_visit(
         run_dir, context, atlas_path, program=program, school=school,
-        progress=progress)
+        progress=progress, resource_holds=resource_holds)
     planning_total = max(0.0, time.perf_counter() - planning_started)
     source_materialization_wall_seconds = float(
         getattr(selection, "source_materialization_wall_seconds", None) or 0.0)
@@ -124,28 +131,49 @@ def prepare_bamf_visit(
             source_materialization_wall_seconds=(
                 source_materialization_wall_seconds or None))
     if selection.status != "TEACHER_SELECTED":
+        if (selection.status == "NO_ADMISSIBLE_TEACHING"
+                and any(reason == OOM_EXHAUSTED for _, reason in selection.holds)):
+            return BamfPreparedVisit("RESOURCE_HOLD", parent, selection=selection)
         return _priority_hold_result(
             run_dir, selection, context, parent, atlas_path, reserve_gib, progress,
             emit_progress=_emit_progress)
-    return _execute_selected_visit(
-        run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
-        steps_per_visit, reserve_gib, progress, source_prefetch_workers,
-        source_prefetch_executor, source_prefetch_metrics, observer)
+    try:
+        return _execute_selected_visit(
+            run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
+            steps_per_visit, reserve_gib, progress, source_prefetch_workers,
+            source_prefetch_executor, source_prefetch_metrics, observer,
+            distributed_profile, distributed_executor)
+    except CandidateMemoryExhausted as error:
+        return BamfPreparedVisit(
+            "RESOURCE_REJECTED", parent, selection=selection,
+            capability=selection.offer.capability_id, resource=error.to_record())
+
 
 def _visit(run_dir: Path, reserve_gib: float, *, steps_per_visit=16,
            progress=None, source_prefetch_workers=0,
            source_prefetch_executor=None, source_prefetch_metrics=None, observer=None,
-           run_authority_binding=None):
+           run_authority_binding=None, resource_holds=frozenset(),
+           distributed_profile=None, distributed_executor=None):
+    def prepare_visit(*args, **kwargs):
+        return prepare_bamf_visit(
+            *args, **kwargs, distributed_profile=distributed_profile,
+            distributed_executor=distributed_executor)
     return _visit_impl(
         run_dir, reserve_gib, steps_per_visit=steps_per_visit, progress=progress,
         source_prefetch_workers=source_prefetch_workers,
         source_prefetch_executor=source_prefetch_executor,
         source_prefetch_metrics=source_prefetch_metrics, observer=observer,
-        run_authority_binding=run_authority_binding,
-        prepare_visit=prepare_bamf_visit, record_rejection=record_bamf_rejection,
+        run_authority_binding=run_authority_binding, resource_holds=resource_holds,
+        prepare_visit=prepare_visit, record_rejection=record_bamf_rejection,
         accept_publish=accept_and_publish, load_generation=load_accepted_generation,
         measure_phase=measure_observed_phase, emit_progress=_emit_progress,
         record_cadence_attempt=record_active_grade_cadence_attempt)
+
+
+def _training_memory_context():
+    import mlx.core as mx
+    from bilqis_mlx.runtime.mlx_memory import training_memory_policy
+    return training_memory_policy(mx)
 
 
 def operate_bamf(
@@ -156,15 +184,27 @@ def operate_bamf(
     parent_graph: dict | None = None,
     profile_release=None,
     run_authority=None,
+    distributed_profile=None,
+    distributed_executor=None,
     progress=None,
 ) -> BamfOperatorResult:
     """Run the human-authorized BAMF lineage until a bounded stop condition."""
+    from bilqis_mlx.runtime.c08_distributed_executor import DistributedExecutorBinding
     from bilqis_mlx.runtime.run_authority import bind_native_run_authority
     from bilqis_mlx.runtime.source_prefetch import source_prefetch_pool
+    if (distributed_profile is None
+            and type(distributed_executor) is DistributedExecutorBinding):
+        distributed_profile = distributed_executor.profile
     def before_visits(root):
         if profile_release is not None:
             from bilqis_mlx.runtime._release_adoption.native_profile import adopt_profile_release
             adopt_profile_release(root, profile_release, reserve_gib=reserve_gib)
+    def visit_fn(*args, **kwargs):
+        if distributed_profile is None and distributed_executor is None:
+            return _visit(*args, **kwargs)
+        return _visit(
+            *args, **kwargs, distributed_profile=distributed_profile,
+            distributed_executor=distributed_executor)
     return _operate_impl(
         Path(run_dir), minutes=minutes, max_visits=max_visits,
         steps_per_visit=steps_per_visit, reserve_gib=reserve_gib,
@@ -173,17 +213,13 @@ def operate_bamf(
         worker_counts=NATIVE_SOURCE_WORKER_COUNTS, invalid=_invalid,
         metrics_type=SourcePrefetchMetrics, source_pool_factory=source_prefetch_pool,
         null_context=nullcontext, operator_lock=bamf_operator_lock,
-        visit_fn=_visit, observer_type=TrainerObservation,
+        visit_fn=visit_fn, observer_type=TrainerObservation,
         emit_progress=_emit_progress, monotonic=time.monotonic,
         load_generation=load_accepted_generation, result_type=BamfOperatorResult,
         resource_snapshot=stop_resource_witness,
         record_stop=record_normal_stop_receipt, elapsed_clock=time.perf_counter,
         before_visits=before_visits,
+        training_memory_context=_training_memory_context,
         bind_run_authority=(
             lambda current_run_dir:
-            bind_native_run_authority(current_run_dir, run_authority)),
-        accepted_reentry=(
-            None if parent_graph is None else
-            lambda current_run_dir, current_reserve_gib, current_progress:
-            _accepted_learning_reentry(
-                current_run_dir, parent_graph, current_reserve_gib, current_progress)))
+            bind_native_run_authority(current_run_dir, run_authority)))

@@ -13,8 +13,10 @@ from bilqis_mlx.learning.atlas_engram_reads import MotifReadResult
 from bilqis_mlx.learning.atlas_execution_provenance import StepExecutionProvenance
 from bilqis_mlx.learning.atlas_plasticity import GroupEligibility
 from bilqis_mlx.runtime.atlas_execution_binder import (
-    bind_execution_provenance, bind_execution_provenance_many,
+    bind_distributed_execution_provenance, bind_execution_provenance,
+    bind_execution_provenance_many,
 )
+from bilqis_mlx.runtime.c08_distributed_evidence import DistributedB11Evidence
 from bilqis_mlx.runtime.model_topology_v2 import (
     GenerationExtents, Initializer, ModelTopologySpecV2, ParameterGroup,
     ParameterSpec,
@@ -152,6 +154,35 @@ class ExecutionBinderProductionTests(unittest.TestCase):
         self.assertEqual(provenance.mask.parameter(MOTIF).row_indices, (1, 2))
         self.assertEqual(
             provenance.mask.participating_identity_rows, ((0, 0), (0, 1)))
+
+    def test_distributed_active_feature_rows_match_visible_b11_rows_only(self):
+        evidence = (
+            DistributedB11Evidence(
+                "a" * 64, 0, 0, "row:0", "b" * 64, "fixture-run", 1, "c" * 64,
+                ((0, 0),), (), (), (("type", 1),),
+                (("schema", 3),), (("role", 5),), (), (), (), "d" * 64,
+                (("SOURCE", "fixture-source:0"),), "[]"),
+            DistributedB11Evidence(
+                "a" * 64, 1, 1, "row:1", "b" * 64, "fixture-run", 1, "c" * 64,
+                ((0, 1),), (), (), (("role", 2),),
+                (("type", 4),), (("schema", 6),), (), (), (), "e" * 64,
+                (("SOURCE", "fixture-source:1"),), "[]"),
+        )
+        with patch(
+                "bilqis_mlx.runtime.atlas_execution_binder.validate_group_census"), \
+                patch(
+                    "bilqis_mlx.runtime.atlas_execution_binder.issue_execution_provenance",
+                    side_effect=lambda _inputs, _denominator, _motif, _roles,
+                    _eligible, active, **_kwargs: active):
+            active = bind_distributed_execution_provenance(
+                evidence=evidence, group_eligible=eligibility(),
+                spec=ModelTopologySpecV2(), extents=EXTENTS,
+                run_id="fixture-run", generation=1,
+                parent_manifest_sha256="6" * 64,
+                parent_candidate_identity_sha256="7" * 64,
+                parent_optimizer_step=11, topology_digest="8" * 64,
+                candidate_step_ordinal=1)
+        self.assertEqual(active.feature_rows, (("role", 2), ("type", 1)))
 
     def test_forged_fast_reclassification_of_slow_parameter_is_refused(self):
         forged = eligibility(mode="FAST", admitted=((0, 0),), eligible=(BANK, MOTIF))

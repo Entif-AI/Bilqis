@@ -27,6 +27,16 @@ def _verify_release_structure(release: ExecutableFactoryRelease) -> tuple[str, .
         release.source_bindings.digest() == release.execution_plan.source_binding_sha256,
         "FACTORY_EXECUTABLE_RELEASE_PLAN_BINDING_DRIFT",
     )
+    if release._foundation_capability_wire:
+        foundation = release.foundation_capability_ids
+        inventory = release.execution_plan.active_capability_inventory
+        _api._require(
+            type(foundation) is tuple and bool(foundation) and
+            all(isinstance(item, str) and item for item in foundation) and
+            len(set(foundation)) == len(foundation) and
+            foundation == inventory,
+            _api._ReleaseError.FOUNDATION_CAPABILITY_DRIFT,
+        )
     return answer_kinds
 
 

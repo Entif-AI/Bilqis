@@ -11,7 +11,7 @@ from .delta import (
     receiver_parameter_schema_digest, receiver_weight_digest,
 )
 from .adoption import publish_screened_delta_import
-from .operator import receive_screen_and_publish_package
+from .operator import receive_screen_and_publish_package, screen_received_package
 from .receiver import current_receiver_binding
 
 __all__ = [
@@ -20,7 +20,8 @@ __all__ = [
     'CognitivePackage', 'ExportSnapshot', 'ImportPlan', 'authorize_public_export',
     'export_capability', 'stage_import',
     'publish_screened_delta_import',
-    'receive_screen_and_publish_package', 'current_receiver_binding',
+    'receive_screen_and_publish_package', 'screen_received_package',
+    'current_receiver_binding',
     'DeltaSlice', 'DisposableDeltaCandidate', 'ReceiverTensor', 'ScreenedDeltaCandidate',
     'apply_plastic_delta', 'encode_plastic_delta', 'screen_delta_candidate',
     'receiver_parameter_schema_digest', 'receiver_weight_digest',

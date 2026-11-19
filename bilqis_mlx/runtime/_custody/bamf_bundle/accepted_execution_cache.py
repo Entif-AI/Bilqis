@@ -17,8 +17,17 @@ from .bundle_currentness import (
     bind_bamf_bundle_currentness, require_bamf_bundle_currentness,
 )
 from .execution_cache import _new_execution_cache
-from .publication import _pointer_lock, _read_pointer
+from .publication import _pointer_read_lock, _read_pointer
 from .records import CompleteStudent, canonical, invalid, sha
+
+
+def _require_initial_foundation_authority(
+        run_dir: Path, student: CompleteStudent) -> None:
+    """Cold-bind a current BAMF lineage to its signed generation-zero release."""
+    if student.run_identity is None:
+        return
+    from .publication.factory_release import require_initial_factory_release
+    require_initial_factory_release(run_dir, student)
 
 
 @dataclass(frozen=True)
@@ -85,6 +94,7 @@ def _require_current_hydration(run_dir: Path, pointer: dict | None, hydration):
     validate_bamf_bundle_custody(
         Path(run_dir) / "bamf-bundles" / hydration.manifest_sha256,
         expected_manifest_sha256=hydration.manifest_sha256)
+    _require_initial_foundation_authority(run_dir, student)
     return hydration
 
 
@@ -200,6 +210,7 @@ def _current_hydration_locked(
         if retained is not None else None)
     pointer, student = _read_accepted_locked(
         run_dir, accepted_parent=accepted_parent)
+    _require_initial_foundation_authority(run_dir, student)
     identity = _published_in_memory_identity_locked(
         run_dir, student, pointer, accepted_parent=accepted_parent,
         acceptance_verified=True)
@@ -220,7 +231,7 @@ def _make_execution_cache_runtime():
     def current_hydration(run_dir: Path, *, metrics=None):
         run_dir = Path(run_dir).resolve()
         key = str(run_dir)
-        with _pointer_lock(run_dir):
+        with _pointer_read_lock(run_dir):
             pointer = _read_pointer(run_dir / "bamf-state.json")
             return _current_hydration_locked(
                 lock, hydrations, executions, run_dir, key, pointer,
@@ -229,7 +240,7 @@ def _make_execution_cache_runtime():
     def bind(run_dir: Path, *, metrics=None):
         run_dir = Path(run_dir).resolve()
         key = str(run_dir)
-        with _pointer_lock(run_dir):
+        with _pointer_read_lock(run_dir):
             pointer = _read_pointer(run_dir / "bamf-state.json")
             hydration = _current_hydration_locked(
                 lock, hydrations, executions, run_dir, key, pointer,
@@ -279,7 +290,7 @@ def _make_execution_cache_runtime():
 
     def bind_publication_parent(run_dir: Path):
         run_dir = Path(run_dir).resolve()
-        with _pointer_lock(run_dir):
+        with _pointer_read_lock(run_dir):
             pointer = _read_pointer(run_dir / "bamf-state.json")
             return bind_publication_parent_locked(run_dir, pointer)
 

@@ -3,7 +3,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from bilqis_mlx.runtime.bamf_operator.session import _retention_result
+from bilqis_mlx.runtime.bamf_operator.session_parts.native_session import retention_result
+from bilqis_mlx.runtime.bamf_operator.session import _emit_progress
 from bilqis_mlx.runtime.bamf_operator.session_support import _resource_observation
 from bilqis_mlx.runtime.source_execution import SourcePreparationMetrics
 
@@ -76,17 +77,17 @@ def test_retention_threads_source_metrics_into_resource_observation():
             side_effect=lambda visit, _outcome: visit), patch(
             "bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor",
             side_effect=lambda _visit, successor, _parent: successor), patch(
-            "bilqis_mlx.runtime.bamf_operator.session.evaluate_factory_retention_candidate",
+            "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.evaluate_factory_retention_candidate",
             return_value=evaluation), patch(
-                "bilqis_mlx.runtime.bamf_operator.session.issue_factory_retention_decision",
+                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.issue_factory_retention_decision",
                 return_value=decision), patch(
-                    "bilqis_mlx.runtime.bamf_operator.session.candidate_identity_metrics_delta",
+                    "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.candidate_identity_metrics_delta",
                     return_value={}), patch(
-                        "bilqis_mlx.runtime.bamf_operator.session._resource_observation",
+                        "bilqis_mlx.runtime.bamf_operator.session_parts.native_session._resource_observation",
                         return_value=resource) as observe, patch(
-                            "bilqis_mlx.runtime.bamf_operator.session.derive_accepted_teacher_successor",
+                            "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.derive_accepted_teacher_successor",
                             return_value=successor), patch(
-                                "bilqis_mlx.runtime.bamf_operator.session.bind_factory_baseline_successor",
+                                "bilqis_mlx.runtime.bamf_operator.session_parts.native_session.bind_factory_baseline_successor",
                                 return_value=successor), patch(
                                     "bilqis_mlx.runtime.bamf_operator.championship.bind_accepted_championship_successor",
                                     return_value=successor), patch(
@@ -96,9 +97,10 @@ def test_retention_threads_source_metrics_into_resource_observation():
                                         side_effect=lambda visit, outcome: visit), patch(
                                             "bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor",
                                             side_effect=lambda visit, next_successor, parent: next_successor):
-        prepared = _retention_result(
+        prepared = retention_result(
             Path("/run"), object(), context, "atlas", selection, "capability:metrics",
-            cache, (step,), capture, 1, 1, {}, None, None)
+            cache, (step,), capture, 1, 1, {}, None, None,
+            emit_progress=_emit_progress)
     observe.assert_called_once_with(
         Path("/run"), (step,), source_metrics, identity_metrics={})
     assert prepared.status == "ACCEPTED"

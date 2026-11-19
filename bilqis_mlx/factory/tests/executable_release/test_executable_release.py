@@ -182,12 +182,19 @@ class ExecutableFactoryReleaseTests(ReleaseTestSupport):
         from bilqis_mlx.factory.executable_release import _digest
 
         payload = json.loads(json.dumps(self.compile().manifest()))
+        payload.pop("foundation_capability_ids", None)
         payload.pop("semantic_graph_sha256", None)
         payload.pop("provider_dimension_policies", None)
         historical_sha = "c37d62403c00e87b0cdd648764f5967eee9a58860941ddca694371f2544cf956"
         self.assertEqual(_digest(payload), historical_sha)
         restored = ExecutableFactoryRelease.from_manifest(payload, historical_sha)
         self.assertIsNone(restored.semantic_graph_sha256)
+        self.assertIsNone(restored.foundation_capability_ids)
+        with self.assertRaisesRegex(
+                ValueError,
+                "FACTORY_EXECUTABLE_RELEASE_FOUNDATION_CAPABILITY_IDS_REQUIRED"):
+            restored.require_foundation_capability_ids()
+        self.assertNotIn("foundation_capability_ids", restored.manifest())
         self.assertNotIn("semantic_graph_sha256", restored.manifest())
         self.assertNotIn("provider_dimension_policies", restored.manifest())
         self.assertEqual(json.loads(json.dumps(restored.manifest())), payload)

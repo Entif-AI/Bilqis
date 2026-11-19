@@ -172,7 +172,8 @@ class AcceptedAtlasFlywheelHumanResumeSupport(MixedWitnessSupport, unittest.Test
 
         def cold_operator_probe(
                 run_dir, *, minutes, max_visits, steps_per_visit, reserve_gib,
-                source_prefetch_workers, parent_graph=None, progress=None):
+                source_prefetch_workers, parent_graph=None, progress=None,
+                run_authority=None):
             from bilqis_mlx.runtime.bamf_operator import BamfOperatorResult
             from bilqis_mlx.runtime.bamf_operator.session import _execution_context
 
@@ -181,6 +182,7 @@ class AcceptedAtlasFlywheelHumanResumeSupport(MixedWitnessSupport, unittest.Test
             accepted_release = read_accepted_atlas_factory_release(Path(run_dir).resolve())
             self.assertEqual(context.release.release_sha256, accepted_release.release_sha256)
             self.assertIs(parent_graph, self.parent_graph)
+            self.assertIsNone(run_authority)
             return BamfOperatorResult(
                 "VISIT_LIMIT", 0, 0, 0,
                 parent.generation, parent.retained_state.optimizer_step)
@@ -200,5 +202,6 @@ class AcceptedAtlasFlywheelHumanResumeSupport(MixedWitnessSupport, unittest.Test
         self.assertEqual((code, errors.getvalue()), (0, ""))
         operate.assert_called_once_with(
             self.run, minutes=90, max_visits=1, steps_per_visit=16, reserve_gib=100.0,
-            source_prefetch_workers=2, parent_graph=self.parent_graph, progress=ANY)
+            source_prefetch_workers=2, parent_graph=self.parent_graph, progress=ANY,
+            run_authority=None)
         return self._json_records(output.getvalue())[-1]

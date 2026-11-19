@@ -40,7 +40,7 @@ from .retry import (
 from .storage import (
     ACCEPTANCE_DIR, _acceptance_path, _atomic_pointer, _live_bundle_manifest,
     _fsync_directory, _initial_generation_pointer_lock, _pointer_lock,
-    _publication_pointer_lock, _read_pointer,
+    _pointer_read_lock, _publication_pointer_lock, _read_pointer,
     _remove_stage, _require_bundle_root, _require_run_root, _stage, _write_acceptance,
 )
 
@@ -293,7 +293,7 @@ def load_bamf_generation_authority(
         pointer_path: Path) -> tuple[CompleteStudent, str]:
     """Read current accepted B13 authority without mutating delivery state."""
     pointer_path = Path(pointer_path)
-    with _pointer_lock(pointer_path.parent):
+    with _pointer_read_lock(pointer_path.parent):
         student, pointer = _load_generation_locked(pointer_path)
         _require_published_acceptance(pointer_path.parent, pointer, student)
         return student, pointer["manifest_sha256"]

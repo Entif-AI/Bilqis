@@ -11,6 +11,7 @@ from bilqis_mlx.runtime.source_execution import SourceExecutionContext, source_c
 from bilqis_mlx.runtime.atlas_training_contracts import _canonical_digest
 
 SALIENCE_REQUEST_RECORD_WIDTH = 2
+PORTABLE_SALIENCE_ROW_WIDTH = 3
 
 
 @dataclass(frozen=True)
@@ -112,6 +113,58 @@ class SalienceSupervision:
         self._owner.require()
         return {name: value for name, value, _, _ in row.auxiliaries
                 if name in ('impact', 'exigency', 'novelty')}
+
+
+@dataclass(frozen=True)
+class PortableSalienceSupervision:
+    """Coordinator-validated salience evidence safe for C08 rank transport."""
+
+    rows: tuple
+    dependencies: tuple
+    artifact_nodes: tuple
+
+    def __post_init__(self) -> None:
+        if (type(self.rows) is not tuple
+                or any(
+                    type(item) is not tuple
+                    or len(item) != PORTABLE_SALIENCE_ROW_WIDTH
+                    for item in self.rows)
+                or type(self.dependencies) is not tuple
+                or type(self.artifact_nodes) is not tuple):
+            _invalid('BAMF_SALIENCE_PORTABLE_SUPERVISION_INVALID')
+
+    def labels_for(self, compiled):
+        sources = getattr(compiled, "sources", ())
+        if type(sources) is not tuple or len(sources) != 1:
+            _invalid('BAMF_SALIENCE_COMPILED_ROW_MISMATCH')
+        row = sources[0].source_row
+        identity = row.get("id") if isinstance(row, dict) else None
+        digest = source_content_digest((row,)) if isinstance(row, dict) else None
+        labels = next((
+            labels for row_id, row_sha256, labels in self.rows
+            if row_id == identity and row_sha256 == digest), None)
+        if labels is None:
+            _invalid('BAMF_SALIENCE_COMPILED_ROW_MISMATCH')
+        return dict(labels)
+
+
+def portable_salience_supervision(supervision, compiled_rows):
+    """Freeze owner-validated labels and evidence before entering rank workers."""
+    if supervision is None:
+        return None
+    if type(supervision) is not SalienceSupervision or type(compiled_rows) is not tuple:
+        _invalid('BAMF_SALIENCE_PORTABLE_SUPERVISION_INVALID')
+    rows = []
+    for compiled in compiled_rows:
+        source = compiled.sources[0].source_row
+        rows.append((
+            source["id"], source_content_digest((source,)),
+            tuple(sorted(supervision.labels_for(compiled).items())),
+        ))
+    result = PortableSalienceSupervision(
+        tuple(rows), tuple(supervision.dependencies), tuple(supervision.artifact_nodes))
+    result.__post_init__()
+    return result
 
 
 def prepare_salience_training(prepared, source_context, request):

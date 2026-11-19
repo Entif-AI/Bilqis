@@ -60,8 +60,81 @@ def _require_bundle_root(run_dir: Path, *, create: bool) -> Path:
     return root
 
 
+def _open_pointer_lock(lock: Path, *, create: bool) -> int:
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    if not create:
+        try:
+            return os.open(lock, os.O_RDWR | nofollow)
+        except OSError:
+            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+    try:
+        return os.open(lock, os.O_RDWR | os.O_CREAT | os.O_EXCL | nofollow, 0o600)
+    except FileExistsError:
+        try:
+            return os.open(lock, os.O_RDWR | nofollow)
+        except OSError:
+            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+    except OSError:
+        invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+
+
+def _validate_pointer_lock(lock: Path, fd: int) -> None:
+    opened = os.fstat(fd)
+    try:
+        named = os.stat(lock, follow_symlinks=False)
+    except OSError:
+        invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+    same_file = (opened.st_dev, opened.st_ino) == (named.st_dev, named.st_ino)
+    if not stat.S_ISREG(opened.st_mode) or not stat.S_ISREG(named.st_mode) or not same_file:
+        invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+
+
+def _acquire_pointer_lock(
+        fd: int, operation: int) -> None:
+    try:
+        fcntl.flock(fd, operation | fcntl.LOCK_NB)
+    except BlockingIOError:
+        invalid("BAMF_POINTER_WRITER_ACTIVE")
+
+
+def _synchronize_pointer_lock(fd: int, run_dir: Path, *, synchronize: bool) -> None:
+    if synchronize:
+        os.fsync(fd)
+        _fsync_directory(run_dir)
+
+
+def _unlock_pointer_lock(fd: int):
+    try:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+    except OSError as error:
+        return error
+    return None
+
+
+def _close_pointer_lock(fd: int):
+    try:
+        os.close(fd)
+    except OSError as error:
+        return error
+    return None
+
+
+def _release_pointer_lock(fd: int, *, locked: bool, primary_error) -> None:
+    cleanup_error = _unlock_pointer_lock(fd) if locked else None
+    close_error = _close_pointer_lock(fd)
+    if cleanup_error is None:
+        cleanup_error = close_error
+    if cleanup_error is None:
+        return
+    if primary_error is None:
+        raise cleanup_error
+    primary_error.add_note(
+        "BAMF_POINTER_LOCK_RELEASE_FAILED:" + cleanup_error.__class__.__name__)
+
+
 @contextlib.contextmanager
-def _pointer_lock(run_dir: Path, *, create: bool = False):
+def _pointer_file_lock(
+        run_dir: Path, *, create: bool, operation: int, synchronize: bool):
     run_dir = Path(run_dir)
     if create:
         _require_run_root(run_dir)
@@ -70,41 +143,14 @@ def _pointer_lock(run_dir: Path, *, create: bool = False):
     lock = run_dir / ".bamf-pointer.lock"
     if lock.is_symlink():
         invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
-    nofollow = getattr(os, "O_NOFOLLOW", 0)
-    if create:
-        try:
-            fd = os.open(
-                lock, os.O_RDWR | os.O_CREAT | os.O_EXCL | nofollow, 0o600)
-        except FileExistsError:
-            try:
-                fd = os.open(lock, os.O_RDWR | nofollow)
-            except OSError:
-                invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
-        except OSError:
-            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
-    else:
-        try:
-            fd = os.open(lock, os.O_RDWR | nofollow)
-        except OSError:
-            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
+    fd = _open_pointer_lock(lock, create=create)
     locked = False
     primary_error = None
     try:
-        opened = os.fstat(fd)
-        try:
-            named = os.stat(lock, follow_symlinks=False)
-        except OSError:
-            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
-        if (not stat.S_ISREG(opened.st_mode) or not stat.S_ISREG(named.st_mode)
-                or (opened.st_dev, opened.st_ino) != (named.st_dev, named.st_ino)):
-            invalid(DataPlaneError.BUNDLE_ENTRY_UNSAFE)
-        try:
-            fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            invalid("BAMF_POINTER_WRITER_ACTIVE")
+        _validate_pointer_lock(lock, fd)
+        _acquire_pointer_lock(fd, operation)
         locked = True
-        os.fsync(fd)
-        _fsync_directory(run_dir)
+        _synchronize_pointer_lock(fd, run_dir, synchronize=synchronize)
         try:
             yield
         except BaseException as error:
@@ -115,23 +161,19 @@ def _pointer_lock(run_dir: Path, *, create: bool = False):
             primary_error = error
         raise
     finally:
-        cleanup_error = None
-        if locked:
-            try:
-                fcntl.flock(fd, fcntl.LOCK_UN)
-            except OSError as error:
-                cleanup_error = error
-        try:
-            os.close(fd)
-        except OSError as error:
-            if cleanup_error is None:
-                cleanup_error = error
-        if cleanup_error is not None:
-            if primary_error is not None:
-                primary_error.add_note(
-                    "BAMF_POINTER_LOCK_RELEASE_FAILED:" + cleanup_error.__class__.__name__)
-            else:
-                raise cleanup_error
+        _release_pointer_lock(fd, locked=locked, primary_error=primary_error)
+
+
+def _pointer_lock(run_dir: Path, *, create: bool = False):
+    """Exclusive nonblocking lock for pointer mutation and mutation-bound work."""
+    return _pointer_file_lock(
+        run_dir, create=create, operation=fcntl.LOCK_EX, synchronize=True)
+
+
+def _pointer_read_lock(run_dir: Path):
+    """Shared nonblocking lock for read-only accepted-state custody."""
+    return _pointer_file_lock(
+        run_dir, create=False, operation=fcntl.LOCK_SH, synchronize=False)
 
 
 def _initial_generation_pointer_lock(run_dir: Path):

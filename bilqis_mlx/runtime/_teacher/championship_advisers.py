@@ -193,6 +193,8 @@ def championship_mentor_supervision(
     distill = teacher_strategy.get("distill", 0.0) if isinstance(teacher_strategy, dict) else None
     if type(distill) not in (int, float) or not math.isfinite(distill) or not 0 <= distill <= 1:
         _invalid("BAMF_ADVISER_DISTILL_INVALID")
+    if distill == 0:
+        return None
     rows = tuple(rows)
     instruments = factory_evaluation_instruments(
         pool.source_context, pool.parent, pool.atlas_artifact_path, rows,

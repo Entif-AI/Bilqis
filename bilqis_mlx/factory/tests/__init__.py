@@ -7,3 +7,8 @@ __path__.extend(
     for compartment in ("curriculum", "lifecycle", "sources")
 )
 del _TEST_ROOT, _Path
+
+from pathlib import Path
+
+# Keep the executable-release fixture import used by other test suites.
+__path__.append(str(Path(__file__).parent / "executable_release"))

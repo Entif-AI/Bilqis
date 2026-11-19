@@ -75,6 +75,7 @@ def _event_times(kind, payload: dict, values) -> bool:
 
 
 class AkashaEventKind(str, Enum):
+    MATERIALIZATION = "MATERIALIZATION"
     BANK_ALLOCATION = "BANK_ALLOCATION"
     PLASTICITY_EPOCH = "PLASTICITY_EPOCH"
     PACKAGE_EXPORT = "PACKAGE_EXPORT"
@@ -161,6 +162,12 @@ _REQUIRED_FIELDS = MappingProxyType({
         "remediation_id", "derived_path"}),
     AkashaEventKind.CHECKPOINT_PUBLICATION: frozenset({
         "checkpoint_digest", "generation_sha256", "manifest_digest"}),
+    AkashaEventKind.MATERIALIZATION: frozenset({
+        "graph", "owner", "canonical_rdf_sha256",
+        "materialization_receipt_sha256", "projection_version",
+        "coverage_status", "semantic_coverage_sha256",
+        "importer_implementation_sha256", "smoke_suite_sha256",
+    }),
 })
 _DIGEST_FIELDS = frozenset({
     "native_event_digest", "artifact_sha256",
@@ -171,6 +178,9 @@ _DIGEST_FIELDS = frozenset({
     "parent_policy_sha256", "policy_sha256", "parent_acceptance_receipt_sha256",
     "package_digest",
     "semantic_release", "clearance_sha256",
+    "canonical_rdf_sha256", "materialization_receipt_sha256",
+    "semantic_coverage_sha256", "importer_implementation_sha256",
+    "smoke_suite_sha256",
     "predecessor_factory_release_sha256", "transition_sha256",
     "motif_candidate_sha256", "approved_context_sha256",
     "candidate_allocation_sha256",

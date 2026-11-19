@@ -1,5 +1,5 @@
 """Visit-currentness guards for the neural-inert production journey."""
-from types import MappingProxyType
+from types import MappingProxyType, SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -68,6 +68,130 @@ class PreNeuralJourneyCurrentnessTests(PreNeuralJourneySupport, unittest.TestCas
             "full_candidate_identity_hashes": 1,
             "bundle_tree_scans": 2,
         })
+
+    def test_step_currentness_witness_skips_full_checkpoint_rehash_in_bound_frontier(self):
+        from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+            refresh_accepted_currentness,
+        )
+        from bilqis_mlx.runtime.lawful_teaching_frontier import (
+            require_bound_lawful_teaching_frontier,
+        )
+
+        (_pointer, _before, _after, context, selected, _rows,
+         _pointer_bytes, _event_bytes) = self.exercise_journey()
+        planning = selected.offer._planning_generation
+        parent = planning._parent
+        transaction = planning._accepted_currentness
+        from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import currentness
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=transaction._source_currentness._trust_root):
+            step_currentness = refresh_accepted_currentness(transaction, parent)
+        frontier = selected._lawful_frontier
+        active_grade = SimpleNamespace(
+            activation_sha256=frontier.active_grade_activation_sha256,
+            definition=SimpleNamespace(
+                definition_sha256=frontier.active_grade_definition_sha256,
+                members=tuple(SimpleNamespace(capability_id=capability_id,
+                                              semantic_id=semantic_id)
+                              for capability_id, semantic_id
+                              in frontier.active_grade_members),
+            ),
+        )
+
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=transaction._source_currentness._trust_root), patch(
+                "bilqis_mlx.runtime.active_generated_grade.read_active_generated_grade",
+                return_value=active_grade), patch(
+                "bilqis_mlx.runtime.active_generated_grade."
+                "_read_bound_active_generated_grade",
+                return_value=active_grade), patch(
+                "bilqis_mlx.runtime.atlas_flywheel_runtime._accepted_checkpoint",
+                side_effect=AssertionError("accepted checkpoint rehashed in hot step")):
+            current = require_bound_lawful_teaching_frontier(
+                frontier, context, parent,
+                currentness_step=step_currentness)
+        self.assertIs(current, frontier)
+
+    def test_step_currentness_witness_is_revoked_by_next_refresh(self):
+        from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+            refresh_accepted_currentness,
+            require_accepted_currentness_step,
+        )
+
+        (_pointer, _before, _after, _context, selected, _rows,
+         _pointer_bytes, _event_bytes) = self.exercise_journey()
+        planning = selected.offer._planning_generation
+        parent = planning._parent
+        transaction = planning._accepted_currentness
+        from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import currentness
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=transaction._source_currentness._trust_root):
+            first = refresh_accepted_currentness(transaction, parent)
+            second = refresh_accepted_currentness(transaction, parent)
+
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=transaction._source_currentness._trust_root):
+            with self.assertRaises(ValueError):
+                require_accepted_currentness_step(first, transaction, parent)
+            self.assertIs(
+                require_accepted_currentness_step(second, transaction, parent),
+                second,
+            )
+
+    def test_step_currentness_live_fence_rechecks_mutable_authority_edges(self):
+        from bilqis_mlx.runtime.bamf_bundle import bundle_currentness
+        from bilqis_mlx.runtime.bamf_bundle import currentness_transaction
+        from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+            refresh_accepted_currentness,
+            require_live_accepted_currentness_step,
+        )
+        from bilqis_mlx.runtime.bamf_bundle.source_authority_custody import currentness
+
+        (_pointer, _before, _after, _context, selected, _rows,
+         _pointer_bytes, _event_bytes) = self.exercise_journey()
+        planning = selected.offer._planning_generation
+        parent = planning._parent
+        transaction = planning._accepted_currentness
+        stable_trust_root = transaction._source_currentness._trust_root
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=stable_trust_root):
+            step = refresh_accepted_currentness(transaction, parent)
+
+        with patch.object(
+                currentness_transaction, "_pointer_snapshot",
+                return_value=("9" * 64, transaction._acceptance_sha256,
+                              transaction._acceptance_identity)), patch.object(
+                    currentness, "_trust_root_snapshot",
+                    return_value=stable_trust_root):
+            with self.assertRaises(ValueError):
+                require_live_accepted_currentness_step(step, transaction, parent)
+
+        with patch.object(
+                bundle_currentness, "_stat_identity",
+                return_value=(9, 9, 9, 9, 9)), patch.object(
+                    currentness, "_trust_root_snapshot",
+                    return_value=stable_trust_root):
+            with self.assertRaises(ValueError):
+                require_live_accepted_currentness_step(step, transaction, parent)
+
+        with patch.object(
+                currentness, "_trust_root_snapshot",
+                return_value=("HOST_SYSTEM_V1", 9, 9, 9, 9, 9)):
+            with self.assertRaises(ValueError):
+                require_live_accepted_currentness_step(step, transaction, parent)
+
+        with patch.object(
+                currentness_transaction, "contract_digest",
+                return_value="9" * 64), patch.object(
+                    currentness, "_trust_root_snapshot",
+                    return_value=stable_trust_root):
+            with self.assertRaises(ValueError):
+                require_live_accepted_currentness_step(step, transaction, parent)
 
     def test_priority_planning_reuses_generation_binding_after_context_authentication(self):
         from bilqis_mlx.runtime import backbone_identity

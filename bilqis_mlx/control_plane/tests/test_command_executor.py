@@ -1,4 +1,5 @@
 """C11 command adapter and owner-stop boundary."""
+from dataclasses import replace
 from pathlib import Path
 import signal
 from tempfile import TemporaryDirectory
@@ -18,6 +19,76 @@ from .command_support import DIGESTS, request, target
 
 
 class C11CommandAdapterTests(unittest.TestCase):
+    def test_trainer_process_current_revalidates_pid_identity(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            store = CommandStore(root / "commands")
+            operation_id = operation_id_for("stale-pid")
+            store.write_trainer_process(
+                operation_id, pid=43210, identity_sha256="9" * 64)
+            executor = C11CommandExecutor(root / "run", store=store)
+            with (
+                patch.object(executor, "_pid_live", return_value=True),
+                patch.object(
+                    executor, "_process_identity_sha256", return_value="8" * 64),
+            ):
+                self.assertFalse(executor.trainer_process_current(operation_id))
+                self.assertEqual(
+                    executor.trainer_process_state(operation_id), "inactive")
+            with (
+                patch.object(executor, "_pid_live", return_value=True),
+                patch.object(
+                    executor, "_process_identity_sha256", return_value="9" * 64),
+            ):
+                self.assertTrue(executor.trainer_process_current(operation_id))
+                self.assertEqual(
+                    executor.trainer_process_state(operation_id), "current")
+            with (
+                patch.object(executor, "_pid_live", return_value=True),
+                patch.object(
+                    executor, "_process_identity_sha256", return_value=None),
+            ):
+                self.assertFalse(executor.trainer_process_current(operation_id))
+                self.assertEqual(
+                    executor.trainer_process_state(operation_id), "unknown")
+
+    def test_no_effect_reconciliation_requires_exact_generation_identity(self):
+        with TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run_dir = root / "run"
+            store = CommandStore(root / "commands")
+            operation_id = operation_id_for("no-effect-generation")
+            before = target(run_dir)
+            plan = CommandPlan(
+                operation_id=operation_id,
+                request_sha256="1" * 64,
+                intent_sha256="2" * 64,
+                action=CommandAction.RESUME,
+                mode=CommandMode.MUTATING,
+                target=before,
+                argv=("train", "--human-run", "--resume"),
+                postcondition_kind="operator-run-completed",
+            )
+            worker_result = {
+                "returncode": None,
+                "error_ref": "command-error:custody:" + "3" * 64,
+                "finished_at": 101,
+            }
+            executor = C11CommandExecutor(run_dir, store=store)
+            with patch.object(executor, "_current_target", return_value=before):
+                proof = executor.reconcile_no_effect(plan, worker_result)
+            self.assertEqual(proof["kind"], "reconciled-no-effect")
+
+            drifted = replace(
+                before,
+                generation=1,
+                generation_manifest_sha256="4" * 64,
+                optimizer_step=1,
+            )
+            with patch.object(executor, "_current_target", return_value=drifted):
+                self.assertIsNone(
+                    executor.reconcile_no_effect(plan, worker_result))
+
     def test_trainer_is_interrupted_if_durable_process_custody_fails(self):
         class Process:
             pid = 43210

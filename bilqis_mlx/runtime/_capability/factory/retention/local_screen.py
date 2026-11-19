@@ -1,4 +1,5 @@
 """Ordinary C05 screen over one target's generation-bound protection plan."""
+import time
 from bilqis_mlx.learning._atlas_candidate.identity_binding import (
     candidate_identity_for_canonical_consumer,
 )
@@ -18,17 +19,51 @@ from bilqis_mlx.runtime.baseline.currentness import (
 from bilqis_mlx.runtime.baseline.lifecycle import BaselineLedger
 from bilqis_mlx.runtime.capability_evaluation import _invalid
 from bilqis_mlx.runtime.capability_retention import (
-    AssessmentPair, DecisionStatus, EvidenceKind, EvidenceStage,
+    AssessmentPair, EvidenceKind,
     case_census_digest, evaluate_capabilities,
 )
 from bilqis_mlx.runtime.capability_retention_foundation import FoundationRetentionPolicy
 from bilqis_mlx.runtime.factory_complete_solver import factory_complete_solver
 from bilqis_mlx.semantics.domains import contract_digest
 
-from .championship_evidence import capability_championship_evidence
 from .local_evaluation import (
     evaluate_target_gate, finalize_target_first_local_candidate,
 )
+
+
+def _observe(observer, **fields):
+    if observer is None:
+        return
+    try:
+        observer(fields)
+    except Exception:
+        # Retention profiling is observational and cannot gate C05 authority.
+        pass
+
+
+def _elapsed(observer, field, started):
+    _observe(observer, **{field: max(0.0, time.perf_counter() - started)})
+
+
+def _solver_profile(observer, prefix, *solvers):
+    shared = scalar = 0
+    for solver in solvers:
+        telemetry_for = getattr(solver, "telemetry_for", None)
+        if not callable(telemetry_for):
+            continue
+        try:
+            telemetry = telemetry_for()
+        except Exception:
+            continue
+        if not isinstance(telemetry, dict):
+            continue
+        shared += int(telemetry.get("shared_backbone_launches", 0) or 0)
+        scalar += int(telemetry.get("scalar_neural_launches", 0) or 0)
+    _observe(
+        observer,
+        **{f"{prefix}_shared_backbone_launches": shared,
+           f"{prefix}_scalar_neural_launches": scalar},
+    )
 
 
 def _comparison_epoch(release, plan, target_plan, instruments, parent, cache):
@@ -132,7 +167,8 @@ def _local_coverage(target_coverage, target_plan, plan_sha256):
 
 def _target_stage(
         source_context, parent, candidate_bundle, candidate_state, artifact_path,
-        release, plan, target_plan, training, cached_rows, cache):
+        release, plan, target_plan, training, cached_rows, cache, observer=None):
+    started = time.perf_counter()
     target = target_plan.target_capability_id
     (reference_seed, reference_rows), protected_rows = _split_cached_rows(
         cached_rows, target_plan)
@@ -149,7 +185,7 @@ def _target_stage(
         release.release_sha256, cache, target, candidate_sha256)
     target_draw = _fresh_rows(
         source_context, (target,), seed=fresh_seed + C05_FRESH_TARGET_SEED_OFFSET,
-        training=training)
+        training=training, require_independent=False)
     target_instruments = tuple(_instruments(
         source_context, candidate_bundle, artifact_path, target_draw.rows,
         seed=target_draw.seed, each=C05_PROBE_EACH))
@@ -161,13 +197,26 @@ def _target_stage(
         rubric_sha256=plan.rubric_sha256,
         scope_sha256=target_plan.comparison_scope_sha256,
         source_sha256=plan.source_sha256)
+    _observe(observer, retention_target_case_count=len(target_cases))
+    _elapsed(observer, "retention_target_prepare_wall_seconds", started)
+
+    started = time.perf_counter()
     parent_solver, parent_generation = factory_complete_solver(
         source_context, parent, artifact_path, target_instruments)
     candidate_solver, candidate_generation = factory_complete_solver(
         source_context, candidate_bundle, artifact_path, target_instruments)
-    target_pair = AssessmentPair(
-        evaluate_capabilities(parent_solver, target_cohort, parent_generation),
-        evaluate_capabilities(candidate_solver, target_cohort, candidate_generation))
+    _elapsed(observer, "retention_target_solver_wall_seconds", started)
+
+    started = time.perf_counter()
+    parent_assessment = evaluate_capabilities(
+        parent_solver, target_cohort, parent_generation)
+    _elapsed(observer, "retention_target_parent_wall_seconds", started)
+    started = time.perf_counter()
+    candidate_assessment = evaluate_capabilities(
+        candidate_solver, target_cohort, candidate_generation)
+    _elapsed(observer, "retention_target_candidate_wall_seconds", started)
+    _solver_profile(observer, "retention_target", parent_solver, candidate_solver)
+    target_pair = AssessmentPair(parent_assessment, candidate_assessment)
     decision = evaluate_target_gate(
         target, target_policy, target_pair,
         retention_protection_plan_sha256=plan.digest)
@@ -181,11 +230,14 @@ def _target_stage(
 def _protected_stage(
         source_context, parent, candidate_bundle, artifact_path,
         release, plan, target_plan, training, protected_rows, cache,
-        target_coverage):
+        target_coverage, observer=None):
+    started = time.perf_counter()
     protected_instruments = _cached_instruments(
         source_context, candidate_bundle, artifact_path, protected_rows)
     protected_pair = parent_cache = None
     coverage = _local_coverage(target_coverage, target_plan, plan.digest)
+    _observe(observer, retention_protected_case_count=len(protected_instruments))
+    _elapsed(observer, "retention_protected_prepare_wall_seconds", started)
     if protected_instruments:
         groups = target_plan.evaluated_capability_groups
         protected_groups = tuple(
@@ -201,21 +253,32 @@ def _protected_stage(
             rubric_sha256=plan.rubric_sha256,
             scope_sha256=target_plan.evaluation_scope_sha256,
             source_sha256=plan.source_sha256)
+        started = time.perf_counter()
         protected_parent_solver, protected_parent_generation = factory_complete_solver(
             source_context, parent, artifact_path, protected_instruments)
         parent_identity = factory_parent_assessment_identity(
             source_context, parent, cache, protected_cohort,
             protected_parent_solver, protected_parent_generation)
+        _elapsed(observer, "retention_protected_parent_solver_wall_seconds", started)
+        started = time.perf_counter()
         protected_parent, parent_cache = use_parent_assessment(
             parent_identity, protected_parent_solver, protected_cohort,
             protected_parent_generation, scope=cache)
+        _elapsed(observer, "retention_protected_parent_wall_seconds", started)
+        _observe(observer, retention_parent_cache_reused=parent_cache.reused)
+
+        started = time.perf_counter()
         protected_candidate_solver, protected_candidate_generation = factory_complete_solver(
             source_context, candidate_bundle, artifact_path, protected_instruments)
-        protected_pair = AssessmentPair(
-            protected_parent,
-            evaluate_capabilities(
-                protected_candidate_solver, protected_cohort,
-                protected_candidate_generation))
+        _elapsed(observer, "retention_protected_candidate_solver_wall_seconds", started)
+        started = time.perf_counter()
+        protected_candidate = evaluate_capabilities(
+            protected_candidate_solver, protected_cohort, protected_candidate_generation)
+        _elapsed(observer, "retention_protected_candidate_wall_seconds", started)
+        _solver_profile(
+            observer, "retention_protected",
+            protected_parent_solver, protected_candidate_solver)
+        protected_pair = AssessmentPair(protected_parent, protected_candidate)
     return protected_pair, parent_cache, protected_instruments, coverage
 
 
@@ -229,14 +292,14 @@ def foundation_local_retention_screen(
         target_coverage, comparison, decision,
     ) = _target_stage(
         source_context, parent, candidate_bundle, candidate_state, artifact_path,
-        release, plan, target_plan, training, cached_rows, cache)
+        release, plan, target_plan, training, cached_rows, cache, observer)
     if decision is not None:
         return decision, parent, candidate_bundle, None, comparison, None, None
 
     protected_pair, parent_cache, protected_instruments, coverage = _protected_stage(
         source_context, parent, candidate_bundle, artifact_path,
         release, plan, target_plan, training, protected_rows, cache,
-        target_coverage)
+        target_coverage, observer)
     groups = target_plan.evaluated_capability_groups
 
     all_instruments = (*target_instruments, *protected_instruments)
@@ -248,20 +311,16 @@ def foundation_local_retention_screen(
         rubric_sha256=plan.rubric_sha256,
         scope_sha256=target_plan.evaluation_scope_sha256,
         source_sha256=plan.source_sha256)
+    started = time.perf_counter()
     decision = finalize_target_first_local_candidate(
         target, policy, cohort, target_pair, protected_pair,
         retention_protection_plan_sha256=plan.digest,
         evaluated_capability_ids=target_plan.evaluated_capability_ids,
         **({"observer": observer} if observer is not None else {}))
-    championship_cohort = championship_assessment = None
-    if decision.status is DecisionStatus.ELIGIBLE:
-        championship_cohort, championship_assessment = capability_championship_evidence(
-            source_context, candidate_bundle, artifact_path, cache,
-            target_plan.target_capability_id, training,
-            EvidenceStage(plan.evidence_stage))
+    _elapsed(observer, "retention_decision_finalize_wall_seconds", started)
     return (
         decision, parent, candidate_bundle, parent_cache, comparison,
-        championship_cohort, championship_assessment,
+        None, None,
     )
 
 

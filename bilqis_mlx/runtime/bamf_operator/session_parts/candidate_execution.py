@@ -6,7 +6,7 @@ import time
 
 def _mentor_observation(
         adviser_pool, source_rows, lesson, selection, capture, optimizer_step,
-        delivery_observation_cls):
+        delivery_observation_cls, observer=None):
     enrichment_rows = lesson.enrichment
     role_kwargs = {
         "prior": tuple(getattr(lesson, "prior", ())),
@@ -21,9 +21,26 @@ def _mentor_observation(
     from bilqis_mlx.runtime.championship_advisers import (
         championship_mentor_supervision,
     )
+    started = time.perf_counter()
     supervision = championship_mentor_supervision(
         adviser_pool, source_rows, source_seed=selection.offer.source_seed,
         teacher_strategy=selection.policy)
+    if observer is not None:
+        try:
+            record = getattr(observer, "record", {})
+            current = (
+                record.get("adviser_wall_seconds", 0.0)
+                if isinstance(record, dict) else 0.0)
+            observer.update(
+                adviser_wall_seconds=float(current or 0.0)
+                + max(0.0, time.perf_counter() - started))
+        except Exception:
+            pass
+    if supervision is None:
+        observation = delivery_observation_cls(
+            capture, optimizer_step, source_rows, selection.offer.source_seed,
+            enrichment=enrichment_rows, **role_kwargs)
+        return observation, None
     observation = delivery_observation_cls(
         capture, optimizer_step, source_rows, selection.offer.source_seed,
         enrichment=enrichment_rows, guidance=supervision.guidance_record(),
@@ -99,7 +116,7 @@ def execute_horizon(
         observation, mentor_supervision = _mentor_observation(
             adviser_pool, source_rows, lesson, selection, capture,
             parent.retained_state.optimizer_step + ordinal,
-            delivery_observation_cls)
+            delivery_observation_cls, observer)
         emit_progress(progress, f"executing candidate step {ordinal}/{horizon}")
         step = execute_candidate(
             selection, context, atlas_path, feature_path,

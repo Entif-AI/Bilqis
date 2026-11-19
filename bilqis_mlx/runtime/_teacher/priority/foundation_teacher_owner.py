@@ -92,10 +92,11 @@ def foundation_teacher_bootstrap() -> FoundationTeacherBootstrap:
 
 def current_foundation_teacher_projection(run_dir):
     """Project the current accepted C03 teacher without selecting a capability."""
-    from bilqis_mlx.runtime.accepted_teacher_custody import _c03_projection
-    from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
+    from bilqis_mlx.runtime.accepted_teacher_custody import (
+        _accepted_parent, _c03_projection, current_teacher_projection,
+    )
 
-    parent = load_accepted_generation(run_dir)
+    parent, cache = _accepted_parent(run_dir)
     state = parent.teacher_state
     bootstrap = {"legacy_receipt": None, "adaptation": None, "prior_region": None}
     if "c03_lineage" not in state:
@@ -106,13 +107,14 @@ def current_foundation_teacher_projection(run_dir):
             "prior_region": owned.prior_region,
         }
     projection = _c03_projection(parent, **bootstrap)
+    projection = current_teacher_projection(run_dir, parent, cache, projection)
     restore_teacher_lineage(projection.teacher_state)
     return projection
 
 
 def select_foundation_priority_visit(
         run_dir, source_context, atlas_artifact_path, *, program, school,
-        progress=None):
+        progress=None, resource_holds=frozenset()):
     """Compose C16.3 bootstrap with the production C03.4 priority owner."""
     from bilqis_mlx.learning.learning_experiment import Settings
     from bilqis_mlx.runtime.accepted_priority_visit import select_accepted_priority_visit
@@ -147,7 +149,7 @@ def select_foundation_priority_visit(
         cadence_authorization=authority.cadence,
         total_capabilities=len(source_context.release.execution_plan.capabilities),
         accepted_parent=parent, planning_generation=authority.planning_generation,
-        **bootstrap)
+        resource_holds=resource_holds, **bootstrap)
     if progress is not None:
         progress(f"teacher: priority selection complete ({result.status})")
     return result
@@ -178,7 +180,7 @@ def accepted_teacher_trajectory(visit: BoundTeacherVisit) -> TeacherTrajectoryAd
 
 def derive_accepted_teacher_successor(
         run_dir, retained_state, visit: BoundTeacherVisit, *,
-        delivery_events: tuple):
+        delivery_events: tuple, candidate_transaction=None):
     """Build an accepted B13 successor with C16.3-owned trajectory state."""
     from bilqis_mlx.runtime.accepted_teacher_custody import (
         derive_c03_successor_bundle,
@@ -187,7 +189,8 @@ def derive_accepted_teacher_successor(
     candidate = derive_c03_successor_bundle(
         run_dir, retained_state, visit,
         next_seed=trajectory.next_seed, cursor=trajectory.cursor,
-        delivery_events=delivery_events)
+        delivery_events=delivery_events,
+        candidate_transaction=candidate_transaction)
     from dataclasses import replace
     teacher_state = advance_priority_rotation(
         candidate.teacher_state, visit.identity.capability_id)

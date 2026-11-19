@@ -2325,19 +2325,19 @@ Current production scan: **2080** raw raises across **295** files. The baseline 
 | `C16_2C_WITNESS_STAGE_INVALID` | 2 | `bilqis_mlx/runtime/tests/capability/factory/owner/bamf_c16_2c_witness_support.py` |
 | `CANDIDATE_FRONTIER_ARTIFACT_UNREADABLE` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
 | `CANDIDATE_FRONTIER_BUILDER_STALE` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
-| `CANDIDATE_FRONTIER_CANDIDATE_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_CANDIDATE_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
 | `CANDIDATE_FRONTIER_CANDIDATE_SOURCE_MISMATCH` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
 | `CANDIDATE_FRONTIER_EVIDENCE_REFERENCE_INVALID` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
-| `CANDIDATE_FRONTIER_MANIFEST_INVALID` | 2 | `bilqis_mlx/factory/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_MANIFEST_INVALID` | 2 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
 | `CANDIDATE_FRONTIER_MANIFEST_UNREADABLE` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
-| `CANDIDATE_FRONTIER_PREREQUISITE_STATUS_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_PRIORITY_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_PROVENANCE_POOL_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_RELEASE_DIGEST_MISMATCH` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_RELEASE_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_RESERVE_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_SELECTED_SENSE_LINK_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
-| `CANDIDATE_FRONTIER_SELECTED_TARGET_INVALID` | 1 | `bilqis_mlx/factory/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_PREREQUISITE_STATUS_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_PRIORITY_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_PROVENANCE_POOL_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_RELEASE_DIGEST_MISMATCH` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_RELEASE_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_RESERVE_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_SELECTED_SENSE_LINK_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
+| `CANDIDATE_FRONTIER_SELECTED_TARGET_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/candidate_frontier.py` |
 | `CANDIDATE_FRONTIER_SENSE_INVENTORY_MISMATCH` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
 | `CANDIDATE_FRONTIER_SENSE_SOURCE_MISMATCH` | 1 | `bilqis_mlx/factory/curriculum/candidate_frontier_io.py` |
 | `CANDIDATE_STAGING_AMBIGUOUS_SUCCESSOR` | 1 | `bilqis_mlx/runtime/_capability/candidate_staging.py` |
@@ -2871,15 +2871,15 @@ Current production scan: **2080** raw raises across **295** files. The baseline 
 | `FACTORY_EXECUTION_PLAN_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/_execution/compilation.py` |
 | `FACTORY_EXECUTION_PLAN_SOURCE_BINDINGS_REQUIRED` | 1 | `bilqis_mlx/factory/_execution/compilation.py` |
 | `FACTORY_GENERALIZATION_MUST_USE_DISTINCT_COHORT` | 1 | `bilqis_mlx/factory/lifecycle/assessment.py` |
-| `FACTORY_GENERATION_ADAPTER_DRIFT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_EMPTY_SCOPE` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_INVALID_COUNT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT` | 1 | `bilqis_mlx/factory/generation_compat.py` |
-| `FACTORY_GENERATION_UNKNOWN_CAPABILITY` | 1 | `bilqis_mlx/factory/generation_compat.py` |
+| `FACTORY_GENERATION_ADAPTER_DRIFT` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_ADAPTER_SCOPE_DRIFT` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_ANSWER_CONTRACT_DRIFT` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_EMPTY_SCOPE` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_INCOMPLETE_RELEASE_SCOPE` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_INVALID_COUNT` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_REGISTRY_REQUIRED` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_SOURCE_ORACLE_DISAGREEMENT` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
+| `FACTORY_GENERATION_UNKNOWN_CAPABILITY` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/generation_compat.py` |
 | `FACTORY_INVALID_REGISTERED_ANSWER_MODALITY` | 1 | `bilqis_mlx/factory/lifecycle/answers.py` |
 | `FACTORY_INVALID_REGISTERED_SOURCE_ADAPTER` | 1 | `bilqis_mlx/factory/adapters.py` |
 | `FACTORY_LEARNING_EVIDENCE_CLASS_INVALID` | 1 | `bilqis_mlx/factory/_model/evidence.py` |
@@ -2907,24 +2907,24 @@ Current production scan: **2080** raw raises across **295** files. The baseline 
 | `FACTORY_NUMERIC_PROFILE_PARAMETER_UNKNOWN` | 1 | `bilqis_mlx/source_adapters/_school/numeric.py` |
 | `FACTORY_NUMERIC_SCOPE_ADVANCE_INVALID` | 1 | `bilqis_mlx/profiles/catalog.py` |
 | `FACTORY_NUMERIC_SCOPE_MAXIMUM_INVALID` | 1 | `bilqis_mlx/profiles/catalog.py` |
-| `FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID` | 1 | `bilqis_mlx/factory/execution.py` |
+| `FACTORY_PLAN_LINEAGE_CURRICULUM_DIGEST_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
 | `FACTORY_PLAN_LINEAGE_CURRICULUM_DRIFT` | 1 | `bilqis_mlx/factory/_execution/lineage.py` |
-| `FACTORY_PLAN_LINEAGE_SEMANTIC_CATALOG_INVALID` | 1 | `bilqis_mlx/factory/execution.py` |
+| `FACTORY_PLAN_LINEAGE_SEMANTIC_CATALOG_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
 | `FACTORY_PRIOR_BOOLEAN_OPERATOR_HEAD_INVALID` | 1 | `bilqis_mlx/compatibility/live_release_parts/providers.py` |
 | `FACTORY_PROFILE_ANSWER_VALUES_NOT_CANONICAL_SUBSET` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
-| `FACTORY_PROFILE_CAPABILITY_ID_REQUIRED` | 1 | `bilqis_mlx/factory/execution.py` |
+| `FACTORY_PROFILE_CAPABILITY_ID_REQUIRED` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
 | `FACTORY_PROFILE_CAPABILITY_OUTSIDE_GRADE` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
 | `FACTORY_PROFILE_DIMENSION_INVALID` | 1 | `bilqis_mlx/factory/_execution/common.py` |
 | `FACTORY_PROFILE_DISABLED_CONSTITUENT` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
 | `FACTORY_PROFILE_DISABLED_PREREQUISITE` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
-| `FACTORY_PROFILE_DUPLICATE_CAPABILITY_OVERRIDE` | 1 | `bilqis_mlx/factory/execution.py` |
-| `FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE` | 1 | `bilqis_mlx/factory/execution.py` |
+| `FACTORY_PROFILE_DUPLICATE_CAPABILITY_OVERRIDE` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
+| `FACTORY_PROFILE_DUPLICATE_GRADE_OVERRIDE` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
 | `FACTORY_PROFILE_EMPTY_EXECUTION` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
-| `FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID` | 1 | `bilqis_mlx/factory/execution.py` |
+| `FACTORY_PROFILE_ENABLED_CAPABILITIES_INVALID` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
 | `FACTORY_PROFILE_EXPANSION_NOT_AT_GRADE_BOUNDARY` | 1 | `bilqis_mlx/runtime/_release_adoption/catalog.py` |
 | `FACTORY_PROFILE_EXPANSION_REQUIRES_COMPLETE_PERFECT_PREFIX` | 1 | `bilqis_mlx/runtime/_release_adoption/catalog.py` |
-| `FACTORY_PROFILE_GRADE_ID_REQUIRED` | 1 | `bilqis_mlx/factory/execution.py` |
-| `FACTORY_PROFILE_ID_REQUIRED` | 1 | `bilqis_mlx/factory/execution.py` |
+| `FACTORY_PROFILE_GRADE_ID_REQUIRED` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
+| `FACTORY_PROFILE_ID_REQUIRED` | 1 | `bilqis_mlx/factory/lifecycle/execution_owners/execution.py` |
 | `FACTORY_PROFILE_OVERRIDE_FOR_DISABLED_CAPABILITY` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
 | `FACTORY_PROFILE_OVERRIDE_FOR_DISABLED_GRADE` | 1 | `bilqis_mlx/factory/_execution/profiling.py` |
 | `FACTORY_PROFILE_PROVIDER_DIMENSION_UNDECLARED` | 1 | `bilqis_mlx/factory/_model/contracts.py` |
@@ -3969,7 +3969,7 @@ Current production scan: **2080** raw raises across **295** files. The baseline 
 | `bamf_operator must not inspect Factory capability order` | 1 | `bilqis_mlx/runtime/tests/operator/test_bamf_operator_routing.py` |
 | `boom` | 1 | `bilqis_mlx/runtime/tests/model/parity/test_mlx_memory.py` |
 | `disposable interruption before pointer publication` | 1 | `bilqis_mlx/runtime/tests/admission/atlas/lease/test_renewal.py` |
-| `durability failure` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication.py` |
+| `durability failure` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_pointer_locking.py` |
 | `evaluator-owned cache reached by solver` | 1 | `bilqis_mlx/semantics/tests/operators/test_cognitive_operator_native.py` |
 | `exact cached route must preempt neural` | 1 | `bilqis_mlx/runtime/tests/capability/factory/test_cognitive_solver_retention.py` |
 | `fixture capability is not in one active admitted grade` | 1 | `bilqis_mlx/runtime/tests/model/salience/priority_witness_support.py` |
@@ -3993,7 +3993,7 @@ Current production scan: **2080** raw raises across **295** files. The baseline 
 | `test synchronization timed out` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication_recovery.py` |
 | `undefined` | 1 | `bilqis_mlx/semantics/tests/foundation/test_source_memo.py` |
 | `unlock failed` | 4 | `bilqis_mlx/runtime/_coordination/tests/test_run_root_claim.py`, `bilqis_mlx/runtime/tests/admission/atlas/lease/test_storage.py` |
-| `unlock failure` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_publication.py` |
+| `unlock failure` | 1 | `bilqis_mlx/runtime/tests/custody/bamf_bundle/publication/test_pointer_locking.py` |
 | `unreachable` | 2 | `bilqis_mlx/factory/curriculum/formal_lesson_types.py`, `bilqis_mlx/learning/_championship_runtime/orchestration.py` |
 | `unsupported fixture operator` | 1 | `bilqis_mlx/verification/tests/test_verification_laws.py` |
 

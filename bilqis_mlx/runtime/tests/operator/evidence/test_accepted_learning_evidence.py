@@ -98,7 +98,7 @@ def test_accepted_evidence_refresh_fails_closed_at_bound():
         "BAMF_OPERATOR_ACCEPTED_EVIDENCE_BOUND_EXHAUSTED")
 
 
-def test_post_accept_reentry_refreshes_evidence_before_c07():
+def test_boundary_reentry_refreshes_evidence_before_c07():
     from bilqis_mlx.runtime.bamf_operator import session as operator
     from bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence import (
         AcceptedLearningEvidenceRefresh,

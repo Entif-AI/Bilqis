@@ -192,6 +192,12 @@ def require_candidate_execution_cache(cache) -> CandidateExecutionCache:
 
 def bind_execution_generation(cache, parameters, *, spec, extents):
     """Return the one process-local generation proof for this immutable state."""
+    from .distributed_execution_cache import (
+        DistributedExecutionCache, require_distributed_execution_binding,
+    )
+    if type(cache) is DistributedExecutionCache:
+        return require_distributed_execution_binding(
+            cache, parameters, spec=spec, extents=extents)
     if type(cache) is CandidateExecutionCache:
         candidate = require_candidate_execution_cache(cache)
         try:
@@ -235,7 +241,12 @@ def require_accepted_execution_cache(cache) -> AcceptedExecutionCache:
 
 def bind_motif_artifact_owner(cache, compiled):
     """Bind mutable C09 hold state to one immutable compiled-frame identity."""
-    cache = require_accepted_execution_cache(cache)
+    from .distributed_execution_cache import (
+        DistributedExecutionCache, require_distributed_execution_cache,
+    )
+    distributed = type(cache) is DistributedExecutionCache
+    cache = (require_distributed_execution_cache(cache) if distributed
+             else require_accepted_execution_cache(cache))
     from bilqis_mlx.runtime.atlas_motif_owner import MotifArtifactOwner
     packed_owner = compiled.packed_frame_artifact_owner
     key = packed_owner.cache_identity
@@ -245,7 +256,7 @@ def bind_motif_artifact_owner(cache, compiled):
     if owner is None:
         owner = MotifArtifactOwner(cache, compiled)
         cache._motif_artifact_owners[key] = owner
-    if cache._run_dir is not None:
+    if not distributed and cache._run_dir is not None:
         from bilqis_mlx.runtime.accepted_corrections import (
             register_accepted_target,
         )
@@ -257,9 +268,19 @@ def bind_motif_artifact_owner(cache, compiled):
     return owner
 
 
+from .distributed_execution_cache import (
+    DistributedExecutionCache, DistributedExecutionCacheWitness,
+    bind_distributed_execution_cache, issue_distributed_execution_cache_witness,
+    require_distributed_execution_cache,
+)
+
+
 __all__ = (
     "AcceptedExecutionCache", "CandidateExecutionCache",
+    "DistributedExecutionCache", "DistributedExecutionCacheWitness",
+    "bind_distributed_execution_cache",
     "bind_candidate_execution_cache", "bind_execution_generation",
-    "bind_motif_artifact_owner",
+    "bind_motif_artifact_owner", "issue_distributed_execution_cache_witness",
     "require_accepted_execution_cache", "require_candidate_execution_cache",
+    "require_distributed_execution_cache",
 )

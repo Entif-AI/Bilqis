@@ -167,6 +167,10 @@ export function createOperateController(api) {
     setState({ ...state, activeStage: "outcome", phase: "RECONCILING", error: null }, { focusStage: "outcome" });
     try {
       const inspection = await api.fetchReceipt(operationId);
+      if (["create", "owner-launch", "resume"].includes(state.action) &&
+          terminalReceipt(inspection.receipt?.state)) {
+        activeTrainingOperationId = null;
+      }
       setState({ ...state, inspection, phase: terminalReceipt(inspection.receipt?.state) ? "TERMINAL" : "PENDING", error: null });
       onAnnounce?.(operateT("operate.announce.readback", { state: inspection.receipt?.state ?? operateT("operate.value.unknown") }));
     } catch (_error) {

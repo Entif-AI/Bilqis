@@ -15,6 +15,7 @@ from bilqis_mlx.runtime.bamf_bundle import (
 )
 from bilqis_mlx.runtime.bamf_bundle.admission import load_accepted_generation
 from bilqis_mlx.semantics.atlas.feature_io import persist_feature_manifest
+from .evidence_validation import validate_candidate_horizon_event
 
 
 def _invalid(reason: str):
@@ -67,6 +68,9 @@ def _execution_context(run_dir: Path, *, currentness_metrics=None):
     host = AcceptedRuntimeHost(run_dir, currentness_metrics=currentness_metrics)
     parent = load_accepted_generation(run_dir)
     context = host.source_context(source_root=LEGACY_SOURCE.resolve())
+    for event in getattr(parent, "outbox", ()):
+        if isinstance(event, dict) and event.get("event") == "BAMF_C16_3_ACCEPTED":
+            validate_candidate_horizon_event(run_dir, event, context.release)
     authenticated = authenticate_bamf_execution_feature_context(
         parent, None, run_dir)
     object.__setattr__(context, "_accepted_feature_context", authenticated)

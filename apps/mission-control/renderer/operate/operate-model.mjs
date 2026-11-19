@@ -131,7 +131,9 @@ export function contextConflicts(context, preview) {
 }
 
 export function terminalReceipt(state) {
-  return new Set(["COMPLETED", "REJECTED", "FAILED", "OUTCOME_UNKNOWN"]).has(state);
+  return new Set([
+    "COMPLETED", "REJECTED", "FAILED", "FAILED_BEFORE_EFFECT",
+  ]).has(state);
 }
 
 export function operateStageAvailable(state, stage) {

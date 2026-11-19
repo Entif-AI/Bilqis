@@ -22,6 +22,7 @@ SPAWNED_SCHEMA = "bilqis.bamf.control-plane.command-worker-spawned/v1"
 WORKER_RESULT_SCHEMA = "bilqis.bamf.control-plane.command-worker-result/v1"
 TRAINER_PROCESS_SCHEMA = "bilqis.bamf.control-plane.command-trainer-process/v1"
 POSTCONDITION_SCHEMA = "bilqis.bamf.control-plane.command-postcondition/v1"
+RECONCILIATION_SCHEMA = "bilqis.bamf.control-plane.command-reconciliation/v1"
 SHA256_HEX_LENGTH = 64
 
 
@@ -247,6 +248,34 @@ class CommandStore(CommandStorage):
         record = {key: value for key, value in payload.items() if key != "sha256"}
         if (
             record.get("schema") != POSTCONDITION_SCHEMA
+            or record.get("operation_id") != operation_id
+            or not isinstance(record.get("value"), dict)
+            or digest != hashlib.sha256(canonical_fact(record)).hexdigest()
+        ):
+            _invalid("CONTROL_PLANE_COMMAND_RECORD_INVALID")
+        return record["value"]
+
+    def write_reconciliation(self, operation_id: str, value: dict) -> str:
+        record = {
+            "schema": RECONCILIATION_SCHEMA,
+            "operation_id": operation_id,
+            "value": value,
+        }
+        digest = hashlib.sha256(canonical_fact(record)).hexdigest()
+        self.write_fact(
+            operation_id, "reconciliation.json",
+            {**record, "sha256": digest},
+        )
+        return f"command-reconciliation:{digest}"
+
+    def read_reconciliation(self, operation_id: str) -> dict | None:
+        payload = self.read_fact(operation_id, "reconciliation.json")
+        if payload is None:
+            return None
+        digest = payload.get("sha256")
+        record = {key: value for key, value in payload.items() if key != "sha256"}
+        if (
+            record.get("schema") != RECONCILIATION_SCHEMA
             or record.get("operation_id") != operation_id
             or not isinstance(record.get("value"), dict)
             or digest != hashlib.sha256(canonical_fact(record)).hexdigest()

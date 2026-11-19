@@ -31,6 +31,7 @@ _SCHEMAS = frozenset({
     'bilqis.bamf.trainer-observed/v3',
     'bilqis.bamf.trainer-observed/v4',
     'bilqis.bamf.trainer-observed/v5',
+    'bilqis.bamf.trainer-observed/v6',
 })
 _FIELDS = {field.name for field in fields(TrainerObservation)} - {
     'meta', 'posture', 'connection_state'}
@@ -234,8 +235,11 @@ def _record(row, runs, now_ms, accepted_health=None):
     }
     if record_type in (TrainerObservationV3, TrainerObservationV4,
                        TrainerObservationV5):
+        step_fields = {field.name for field in fields(CandidateStepPerformance)}
         values['candidate_steps'] = tuple(
-            CandidateStepPerformance(**item) for item in values['candidate_steps'])
+            CandidateStepPerformance(**{
+                key: value for key, value in item.items() if key in step_fields
+            }) for item in values['candidate_steps'])
     if record_type in (TrainerObservationV4, TrainerObservationV5):
         values['visit_evidence'] = _visit_evidence(values['visit_evidence'])
         values['generated_grade_evidence'] = _grade_evidence(

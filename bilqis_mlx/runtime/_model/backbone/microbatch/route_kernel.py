@@ -204,11 +204,13 @@ def _model_feedback(previous, dependency_mask, rows):
 
 
 def route_microbatch_loss_and_trajectory(
-        params, hidden, kernel: RouteMicrobatchKernel, *, salience_hidden=None):
+        params, hidden, kernel: RouteMicrobatchKernel, *, salience_hidden=None,
+        return_logits=False):
     """Compute supervised loss while deriving causal route choices on device."""
     if not kernel.dependency_masks:
-        return route_microbatch_mean_loss(
-            params, hidden, kernel, salience_hidden=salience_hidden), ()
+        result = (route_microbatch_mean_loss(
+            params, hidden, kernel, salience_hidden=salience_hidden), ())
+        return (*result, ()) if return_logits else result
     position_mask = mx.arange(hidden.shape[1])[None, :] < kernel.lengths[:, None]
     rows = mx.arange(hidden.shape[0])
     anchors = hidden[rows, kernel.lengths - 1]
@@ -217,7 +219,7 @@ def route_microbatch_loss_and_trajectory(
     role = role_id_vector("NONE", SimpleNamespace(features=kernel.features), params)
     operator = mx.zeros((hidden.shape[0],), dtype=mx.float32)
     operand = mx.zeros((hidden.shape[0],), dtype=mx.float32)
-    model_values, trajectory = [], []
+    model_values, trajectory, route_logits = [], [], []
     for operator_mask, operand_mask, occurrence, dependency_mask, candidates, \
             candidate_mask, targets in zip(
                 kernel.operator_masks, kernel.operand_masks,
@@ -234,6 +236,7 @@ def route_microbatch_loss_and_trajectory(
             axis=1)
         model_values.append(mx.stop_gradient(selected))
         trajectory.append(mx.stop_gradient(model_indices))
+        route_logits.append(logits)
         loss = _decision_loss(logits, targets)
         operator = operator + mx.where(
             operator_mask, loss, mx.zeros_like(loss))
@@ -251,7 +254,8 @@ def route_microbatch_loss_and_trajectory(
         if salience_hidden is None:
             _invalid("B11_MICROBATCH_SALIENCE_HIDDEN_REQUIRED")
         row_loss = row_loss + _salience_loss(params, salience_hidden, kernel)
-    return mx.mean(row_loss), tuple(trajectory)
+    result = (mx.mean(row_loss), tuple(trajectory))
+    return (*result, tuple(route_logits)) if return_logits else result
 
 
 def _salience_loss(params, hidden, kernel):

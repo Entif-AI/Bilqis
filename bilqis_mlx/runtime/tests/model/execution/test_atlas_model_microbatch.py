@@ -297,6 +297,9 @@ class AtlasModelMicrobatchTests(SourceBackboneTestBase):
         self.assertEqual(value_and_grad.call_count, 1)
         self.assertEqual(tree_digest.call_count, 1)
         self.assertEqual(len(vector.executions), 4)
+        self.assertEqual(
+            tuple(item.output.committed for item in vector.executions),
+            tuple(item.execution.output.committed for item in scalar))
         np.testing.assert_allclose(
             np.asarray(vector.mean_loss), np.asarray(expected_loss),
             atol=FP32_ATOL, rtol=FP32_RTOL)

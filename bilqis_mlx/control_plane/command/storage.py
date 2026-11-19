@@ -15,6 +15,7 @@ from ..transport import _invalid
 
 
 REQUEST_BINDING_SCHEMA = "bilqis.bamf.control-plane.command-request-binding/v1"
+SHA256_HEX_LENGTH = len(hashlib.sha256(b"").hexdigest())
 
 
 def canonical_fact(payload: dict) -> bytes:
@@ -139,6 +140,21 @@ class CommandStorage:
         path = self.root / operation_directory_name(operation_id)
         _require_safe_directory(path)
         return path
+
+    def operation_ids(self) -> tuple[str, ...]:
+        """Return durable operation identities without creating new directories."""
+        result = []
+        for path in self.root.iterdir():
+            if path.is_symlink() or not path.is_dir() or path.name == "request-index":
+                continue
+            if len(path.name) != SHA256_HEX_LENGTH:
+                continue
+            try:
+                int(path.name, 16)
+            except ValueError:
+                continue
+            result.append(f"operation:{path.name}")
+        return tuple(sorted(result))
 
     def submission_lock(self):
         return _file_lock(self.root / ".submission.lock")

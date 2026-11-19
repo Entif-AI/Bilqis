@@ -6,6 +6,7 @@ const CP01_STATUS_SCHEMA = "bamf.gui20.cp01-status/v1";
 const CP01_PROTOCOL_VERSION = "bilqis.bamf.control-plane/v1";
 const OPERATOR_VIEW_SCHEMA = "bilqis.bamf.mission-control.operator-view/v1";
 const SNAPSHOT_QUERY_SCHEMA = "bamf.gui20.operator-view-query/v1";
+const SNAPSHOT_UNAVAILABLE_SCHEMA = "bamf.gui20.operator-view-unavailable/v1";
 const QUERY_REQUEST_SCHEMA = "bilqis.bamf.control-plane.query/v1";
 const QUERY_PAGE_SCHEMA = "bilqis.bamf.control-plane.query-page/v1";
 const QUERY_ERROR_SCHEMA = "bamf.gui07.query-error/v1";
@@ -128,6 +129,15 @@ function validateQueryResponse(value) {
   return value;
 }
 
+function validateSnapshotUnavailable(value) {
+  if (!exactKeys(value, ["schemaVersion", "state"]) ||
+      value.schemaVersion !== SNAPSHOT_UNAVAILABLE_SCHEMA ||
+      !QUERY_STATES.has(value.state) || value.state === "PRESENT" || value.state === "DENIED") {
+    invalid("SNAPSHOT_RESPONSE");
+  }
+  return value;
+}
+
 function isSha256(value) {
   return typeof value === "string" && /^[0-9a-f]{64}$/.test(value);
 }
@@ -190,6 +200,9 @@ function createAcceptedValidators(assertOperatorView, frameContracts) {
           if (!frameContracts.sameFrameRequest(request, page.request)) invalid("FRAME_REQUEST_MISMATCH");
           return page;
         }
+        if (value?.schemaVersion === SNAPSHOT_UNAVAILABLE_SCHEMA) {
+          return validateSnapshotUnavailable(value);
+        }
         return assertOperatorView(value);
       }
       if (method === "query") return validateQueryResponse(value);
@@ -206,6 +219,7 @@ module.exports = {
   CP01_STATUS_SCHEMA,
   OPERATOR_VIEW_SCHEMA,
   SNAPSHOT_QUERY_SCHEMA,
+  SNAPSHOT_UNAVAILABLE_SCHEMA,
   QUERY_REQUEST_SCHEMA,
   QUERY_PAGE_SCHEMA,
   QUERY_ERROR_SCHEMA,

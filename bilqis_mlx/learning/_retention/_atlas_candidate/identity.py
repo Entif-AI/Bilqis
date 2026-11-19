@@ -47,12 +47,13 @@ def _bytes(array):
     return memoryview(contiguous).cast("B") if array.nbytes else b""
 
 
-def _raw_digest(state):
+def optimizer_snapshot_digest(optimizer, optimizer_step):
+    """Stream the exact model, native AdamW moments and update counts."""
     import numpy as np
     digest = hashlib.sha256(RAW_IDENTITY_SCHEME.encode("ascii") + b"\0")
-    digest.update(_u64(state.optimizer_step))
+    digest.update(_u64(optimizer_step))
     for group in _GROUPS:
-        values = getattr(state.optimizer, group)
+        values = getattr(optimizer, group)
         _text(digest, group)
         digest.update(_u64(len(values)))
         for name in sorted(values):
@@ -100,7 +101,8 @@ def candidate_identity_digest(state) -> str:
     """
     scheme = require_identity_scheme(state.identity_scheme)
     started = perf_counter()
-    result = _raw_digest(state) if scheme == RAW_IDENTITY_SCHEME else _legacy_digest(state)
+    result = (optimizer_snapshot_digest(state.optimizer, state.optimizer_step)
+              if scheme == RAW_IDENTITY_SCHEME else _legacy_digest(state))
     elapsed = perf_counter() - started
     try:
         from .identity_binding import _record_full_identity_computation

@@ -86,7 +86,7 @@ class CommandWorkerTests(unittest.TestCase):
         self.assertEqual(result, 1)
         self.assertEqual(
             self.manager.status(accepted.operation_id).state,
-            ActionReceiptState.FAILED,
+            ActionReceiptState.FAILED_BEFORE_EFFECT,
         )
         self.assertEqual(self.executor.execute_calls, 0)
 

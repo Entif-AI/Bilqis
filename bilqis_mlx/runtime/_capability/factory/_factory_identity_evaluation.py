@@ -121,6 +121,70 @@ _require_factory_evaluation, _raw_issue_owner_evaluation = (
     _new_factory_evaluation_owner())
 
 
+def _finalize_factory_generation_authority(
+        evaluation, decision, parent, candidate_transaction, successor):
+    """Finalize exact motif generation authority after accepted owner projections."""
+    _require_factory_evaluation(evaluation)
+    evaluation.__post_init__()
+    screened_authority = evaluation.candidate_generation_authority_sha256
+    if screened_authority is None:
+        return decision
+
+    from bilqis_mlx.learning.atlas_candidate import CandidateTransaction
+    from bilqis_mlx.learning.atlas_retention_decision import (
+        CandidateRetentionDecision, _finalize_issued_decision_generation_authority,
+    )
+    from bilqis_mlx.learning._atlas_candidate.identity_binding import (
+        candidate_identity_for_canonical_consumer,
+    )
+    from bilqis_mlx.runtime.bamf_bundle.admission import derive_motif_successor_bundle
+    from bilqis_mlx.runtime.bamf_bundle.genesis.records import (
+        successor_candidate_identity_digest,
+    )
+    from bilqis_mlx.runtime.bamf_bundle.motif.transition import (
+        is_motif_allocation_transition,
+    )
+    from bilqis_mlx.runtime.bamf_bundle.records import BamfBundleCandidate, CompleteStudent
+    from bilqis_mlx.runtime.bamf_bundle.records import sidecar_records
+
+    if (type(decision) is not CandidateRetentionDecision or not decision.accepted
+            or type(parent) is not CompleteStudent
+            or type(candidate_transaction) is not CandidateTransaction
+            or candidate_transaction.motif_transition is None
+            or type(successor) is not BamfBundleCandidate
+            or not is_motif_allocation_transition(successor.transition)
+            or successor.retained_state is not evaluation.candidate_state
+            or decision.parent_generation != evaluation.parent_candidate_sha256
+            or decision.candidate_generation != evaluation.candidate_candidate_sha256
+            or candidate_identity_for_canonical_consumer(successor.retained_state)
+            != evaluation.candidate_candidate_sha256):
+        _invalid("BAMF_C05_FACTORY_EVALUATION_INVALID")
+
+    screened = derive_motif_successor_bundle(
+        parent, candidate_transaction, retained_state=evaluation.candidate_state,
+        parent_manifest_sha256=successor.parent_manifest_sha256,
+        delivery_events=())
+    def protected(item):
+        return (
+            item.run_id, item.generation, item.parent_manifest_sha256,
+            item.implementation_sha256, item.topology, item.extents,
+            item.optimizer_hyperparameters, dict(item.semantic_abi),
+            dict(item.compiler_features), dict(item.correction_frontier),
+            dict(item.evaluation_contract), dict(item.transition), item.run_identity,
+            item.provenance.source_identity, item.provenance.release_digest,
+        )
+    if (screened.retained_state is not evaluation.candidate_state
+            or successor_candidate_identity_digest(screened) != screened_authority
+            or protected(screened) != protected(successor)):
+        _invalid("BAMF_C05_FACTORY_EVALUATION_INVALID")
+
+    sidecar_records(successor)
+    final_authority = successor_candidate_identity_digest(successor)
+    _finalize_issued_decision_generation_authority(
+        decision, screened_authority, final_authority)
+    return decision
+
+
 __all__ = (
     "FactoryRetentionEvaluation", "_raw_issue_owner_evaluation",
     "_require_factory_evaluation",

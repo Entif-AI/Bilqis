@@ -100,7 +100,7 @@ class AtlasAdmissionPublicationTests(GenerationAcceptanceFixture, unittest.TestC
         historical = replace(historical, correction_frontier=frontier)
         stage = self.run / "historical-unanchored-stage"
         with shape_patch(), patch.object(mlx_checkpoint, "assert_headroom"):
-            manifest = save_bamf_bundle(historical, stage)
+            manifest = save_bamf_bundle(historical, stage, reserve_gib=0.0)
         target = self.run / "bamf-bundles" / manifest["manifest_sha256"]
         stage.rename(target)
         accepted = acceptance(historical, parent=parent.retained_state)

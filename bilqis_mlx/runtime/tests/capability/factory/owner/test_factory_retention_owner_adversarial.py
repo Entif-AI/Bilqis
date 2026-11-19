@@ -131,7 +131,11 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 read_current=Mock(return_value={"factory_release_sha256": release_sha}),
                 frontier_exam=Mock(return_value={"factory_release_sha256": release_sha}),
                 load_frontier_cohort=Mock(return_value=fixed),
-            ), patch.multiple(
+            ), patch.object(
+                local_screen, "capability_championship_evidence", create=True,
+                side_effect=AssertionError(
+                    "ordinary C05 must not execute championship evidence")), \
+            patch.multiple(
                 local_screen,
                 case_census_digest=Mock(return_value="e" * 64),
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),
@@ -149,8 +153,6 @@ def _evaluate_foundation_owner(source, candidate, target, fixed, fresh,
                 AssessmentPair=Mock(return_value=object()),
                 evaluate_target_gate=Mock(return_value=target_gate_decision),
                 finalize_target_first_local_candidate=Mock(return_value=decision),
-                capability_championship_evidence=Mock(return_value=(
-                    championship_cohort, championship_assessment)),
             ), patch.multiple(
                 owner_screen,
                 candidate_identity_for_canonical_consumer=Mock(return_value="d" * 64),

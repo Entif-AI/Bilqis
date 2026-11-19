@@ -35,7 +35,6 @@ def _fail(reason: str):
         reason=reason,
     )
 
-
 def _accepted_generation_identity(
     run_dir: Path,
 ) -> tuple[str, int, str, str]:
@@ -49,13 +48,8 @@ def _activation_is_accepted_ancestor(
     return _custody._activation_is_accepted_ancestor(run_dir, active)
 
 
-def read_active_generated_grade(run_dir: Path, *, repair: bool = True) -> ActiveGeneratedGrade:
-    root = Path(run_dir)
-    active = _custody._read_stored_active(root)
-    if active is None:
-        _fail("BAMF_ACTIVE_GENERATED_GRADE_MISSING")
-    if not _activation_is_accepted_ancestor(root, active):
-        _fail("BAMF_ACTIVE_GENERATED_GRADE_ACCEPTED_ANCESTRY_DRIFT")
+def _require_active_transition_current(
+        root: Path, active: ActiveGeneratedGrade) -> None:
     if active.transition_kind == "BOOTSTRAP":
         from .initial_grade_bootstrap import require_initial_grade_bootstrap
         require_initial_grade_bootstrap(root, active)
@@ -66,9 +60,55 @@ def read_active_generated_grade(run_dir: Path, *, repair: bool = True) -> Active
         require_correction_transition_authority(root, active)
     if active.transition_kind == "CERTIFICATION":
         require_certification_transition_authority(root, active)
+
+
+def read_active_generated_grade(run_dir: Path, *, repair: bool = True) -> ActiveGeneratedGrade:
+    root = Path(run_dir)
+    active = _custody._read_stored_active(root)
+    if active is None:
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_MISSING")
+    if not _activation_is_accepted_ancestor(root, active):
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_ACCEPTED_ANCESTRY_DRIFT")
+    _require_active_transition_current(root, active)
     # Heal only after every accepted-ancestry and transition check succeeds.
     if repair:
         _custody._persist_commit(root, active)
+    return active
+
+
+def _read_bound_active_generated_grade(
+        run_dir: Path, *, expected_activation_sha256: str,
+        expected_definition_sha256: str, currentness_step,
+        currentness_transaction, parent,
+        active_currentness=None) -> ActiveGeneratedGrade:
+    """Revalidate the exact frozen grade after B13 currentness was paid this step.
+
+    The cold reader proves accepted ancestry.  A hot caller may reuse that proof
+    only while the accepted parent is covered by the latest revocable B13 step
+    witness and the content-addressed active-grade custody still names the exact
+    activation/definition that was fully validated when the frontier was issued.
+    """
+    from bilqis_mlx.runtime.bamf_bundle.currentness_transaction import (
+        require_accepted_currentness_step,
+    )
+    require_accepted_currentness_step(
+        currentness_step, currentness_transaction, parent)
+    if active_currentness is not None:
+        from .active_generated_grade_currentness import (
+            require_active_generated_grade_currentness,
+        )
+        return require_active_generated_grade_currentness(
+            active_currentness, run_dir,
+            expected_activation_sha256=expected_activation_sha256,
+            expected_definition_sha256=expected_definition_sha256,
+        )
+    root = Path(run_dir)
+    active = _custody._read_stored_active(root)
+    if (active is None
+            or active.activation_sha256 != expected_activation_sha256
+            or active.definition.definition_sha256 != expected_definition_sha256):
+        _fail("BAMF_ACTIVE_GENERATED_GRADE_CURRENTNESS_DRIFT")
+    _require_active_transition_current(root, active)
     return active
 
 
@@ -154,96 +194,6 @@ def activate_accepted_generated_grade(
         root, identity, active, proposal, predecessor=None)
 
 
-def activate_corrected_generated_grade(
-    run_dir: Path,
-    proposal: GeneratedGradeProposal,
-    *,
-    correction_event_id: str,
-) -> ActiveGeneratedGrade:
-    root = Path(run_dir)
-    predecessor = read_active_generated_grade(root)
-    if (predecessor.transition_kind == "CORRECTION"
-            and predecessor.proposal_sha256 == proposal.proposal_sha256):
-        prior_authority = require_correction_transition_authority(root, predecessor)
-        if prior_authority.correction_record_sha256 == correction_event_id:
-            return predecessor
-    identity = _accepted_generation_identity(root)
-    definition = seal_accepted_generated_grade(root, proposal)
-    from bilqis_mlx.runtime.bamf_bundle.publication import _pointer_lock
-    with _pointer_lock(root, create=True):
-        _require_identity_still_current(root, identity)
-        current = _custody._read_stored_active(root)
-        if current is None:
-            _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
-        if current.activation_sha256 != predecessor.activation_sha256:
-            if (current.transition_kind == "CORRECTION"
-                    and current.proposal_sha256 == proposal.proposal_sha256):
-                prior_authority = require_correction_transition_authority(
-                    root, current)
-                if prior_authority.correction_record_sha256 == correction_event_id:
-                    return current
-            _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
-        authority = _issue_correction_transition_authority(
-            root,
-            accepted_manifest_sha256=identity[2],
-            correction_record_sha256=correction_event_id,
-            predecessor=predecessor,
-            proposal=proposal,
-            definition=definition,
-        )
-        active = _active_from_proposal(
-            identity, proposal, definition,
-            predecessor=predecessor,
-            transition_kind="CORRECTION",
-            transition_receipt_sha256=authority.authority_sha256,
-            transition_reason=authority.reason_code,
-        )
-        _persist_proposal_acceptance(root, active, proposal)
-        _custody._persist_activation(root, active)
-    return read_active_generated_grade(root)
-
-
-def activate_certified_generated_grade(
-    run_dir: Path,
-    *,
-    certification_receipt_sha256: str,
-) -> ActiveGeneratedGrade:
-    """Let #1314 transition only from accepted C07/B13 successor ancestry."""
-    root = Path(run_dir)
-    predecessor = read_active_generated_grade(root)
-    proposal = _custody._accepted_bound_generated_grade_proposal(root)
-    if proposal.predecessor_certification_sha256 != certification_receipt_sha256:
-        _fail("BAMF_ACTIVE_GENERATED_GRADE_CERTIFICATION_ANCESTRY_DRIFT")
-    identity = _accepted_generation_identity(root)
-    definition = seal_accepted_generated_grade(root, proposal)
-    from bilqis_mlx.runtime.bamf_bundle.publication import _pointer_lock
-    with _pointer_lock(root, create=True):
-        _require_identity_still_current(root, identity)
-        current = _custody._read_stored_active(root)
-        if (
-            current is None
-            or current.activation_sha256 != predecessor.activation_sha256
-        ):
-            _fail("BAMF_ACTIVE_GENERATED_GRADE_PREDECESSOR_DRIFT")
-        authority = _issue_certification_transition_authority(
-            root,
-            accepted_manifest_sha256=identity[2],
-            certification_receipt_sha256=certification_receipt_sha256,
-            predecessor=predecessor,
-            proposal=proposal,
-            definition=definition,
-        )
-        active = _active_from_proposal(
-            identity, proposal, definition, predecessor=predecessor,
-            transition_kind="CERTIFICATION",
-            transition_receipt_sha256=authority.authority_sha256,
-            transition_reason=authority.reason_code,
-        )
-        _persist_proposal_acceptance(root, active, proposal)
-        _custody._persist_activation(root, active)
-    return read_active_generated_grade(root)
-
-
 def ensure_active_generated_grade(run_dir: Path) -> ActiveGeneratedGrade:
     """Return the frozen active grade, activating only accepted C07/B13 custody."""
     root = Path(run_dir)
@@ -253,6 +203,15 @@ def ensure_active_generated_grade(run_dir: Path) -> ActiveGeneratedGrade:
     proposal = _custody._accepted_bound_generated_grade_proposal(root)
     return activate_accepted_generated_grade(root, proposal)
 
+
+from .active_generated_grade_currentness import (  # noqa: E402
+    _bind_active_generated_grade_currentness,
+    _require_active_generated_grade_currentness,
+)
+from .active_generated_grade_transitions import (  # noqa: E402
+    activate_certified_generated_grade,
+    activate_corrected_generated_grade,
+)
 
 __all__ = (
     "ActiveGeneratedGrade",

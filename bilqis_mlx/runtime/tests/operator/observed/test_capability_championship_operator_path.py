@@ -1,5 +1,5 @@
-"""Accepted C16.3 operator path carries C05 championship evidence into B13 state."""
-from contextlib import ExitStack
+"""Accepted C16.3 operator path runs championship at the B13 successor boundary."""
+from contextlib import ExitStack, nullcontext
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from types import SimpleNamespace as NS
@@ -60,71 +60,151 @@ def _accepted_championship_successor(evaluation, solver, assessment, group):
     return parent, retained, successor, binding
 
 
+def _boundary_selection(target, group):
+    return NS(
+        option_id="fixture-option",
+        lesson_grade=group,
+        metadata={"cadence": {
+            "schema": "bilqis.bamf.active-grade-cadence-authorization/v1",
+            "disposition": "TEACHING",
+            "phase_capability_ids": [target],
+            "authorized_capability_ids": [target],
+        }},
+        visit=NS(identity=NS(
+            visit_id="fixture-visit", policy_key="fixture-policy")))
+
+
+def _first_title_operator_fixture():
+    fixture, target, group, solver, assessment, evaluation = (
+        _championship_evaluation_fixture())
+    parent, _retained, successor, binding = _accepted_championship_successor(
+        evaluation, solver, assessment, group)
+    selection = _boundary_selection(target, group)
+    step = NS(transaction=NS(training_authorities=()))
+    capture = NS(finalize=lambda **_kwargs: {
+        "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
+        "persistence": {
+            "bytes_written": 0, "file_fsyncs": 0,
+            "directory_fsyncs": 0, "evidence_objects": 0,
+            "persistence_seconds": 0.0,
+        },
+    })
+    cache = NS(generation=0, accepted_manifest_sha256="0" * 64)
+    return (
+        fixture, target, group, assessment, evaluation, parent, successor,
+        binding, selection, step, capture, cache,
+    )
+
+
+def _run_first_title_operator():
+    (fixture, target, group, assessment, evaluation, parent, successor,
+     binding, selection, step, capture, cache) = _first_title_operator_fixture()
+    published = []
+
+    def prepare(run_dir, *, observer=None, **_kwargs):
+        from bilqis_mlx.runtime.bamf_operator.session_parts.native_session import (
+            retention_result,
+        )
+        if observer is not None:
+            observer.bind_parent(parent)
+        return retention_result(
+            run_dir, parent, fixture[0], "artifact", selection, target,
+            cache, (step,), capture, 1, 1, {}, None, observer,
+            emit_progress=lambda *_args: None)
+
+    prefix = "bilqis_mlx.runtime.bamf_operator.session."
+    native = "bilqis_mlx.runtime.bamf_operator.session_parts.native_session."
+    patches = (
+        (prefix + "prepare_bamf_visit", {"side_effect": prepare}),
+        (native + "evaluate_factory_retention_candidate", {"return_value": evaluation}),
+        (native + "derive_accepted_teacher_successor", {"return_value": successor}),
+        (native + "bind_factory_baseline_successor",
+         {"side_effect": lambda _evaluation, value: value}),
+        (native + "derive_current_plasticity_escape_state", {"return_value": None}),
+        ("bilqis_mlx.runtime.outcomes.issuance.build_outcome",
+         {"return_value": {"schema": "fixture-outcome"}}),
+        ("bilqis_mlx.runtime.outcomes.issuance.credited_visit",
+         {"side_effect": lambda visit, _outcome: visit}),
+        ("bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor",
+         {"side_effect": lambda _visit, value, _parent: value}),
+        (native + "_resource_observation", {"return_value": {}}),
+        (native + "candidate_identity_metrics_delta", {"return_value": {}}),
+        (prefix + "accept_and_publish",
+         {"side_effect": lambda _root, value, *_args, **_kwargs: published.append(value)}),
+        (prefix + "load_accepted_generation", {"return_value": successor}),
+        (prefix + "record_normal_stop_receipt", {"return_value": None}),
+        (prefix + "record_active_grade_cadence_attempt", {"return_value": None}),
+        ("bilqis_mlx.runtime.bamf_operator._championship_adjudication._current_binding",
+         {"return_value": binding}),
+        ("bilqis_mlx.runtime.bamf_operator.championship.capability_championship_evidence",
+         {"return_value": (assessment.cohort, assessment)}),
+        ("bilqis_mlx.runtime._factory_retention_support._training_exclusions",
+         {"return_value": ((), ())}),
+    )
+    with TemporaryDirectory() as tmp, ExitStack() as stack:
+        for target_name, kwargs in patches:
+            stack.enter_context(patch(target_name, **kwargs))
+        from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
+        result = operate_bamf(
+            Path(tmp), minutes=1, max_visits=1, reserve_gib=0,
+            source_prefetch_workers=0)
+    return fixture, group, result, published
+
+
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 class CapabilityChampionshipOperatorPathTests(unittest.TestCase):
-    def test_operate_bamf_publishes_first_title_from_issued_c05_evidence(self):
-        fixture, target, group, solver, assessment, evaluation = (
+    def test_current_binding_canonicalizes_per_case_solver_contracts_for_replay(self):
+        from bilqis_mlx.runtime.bamf_operator._championship_replay import _current_binding
+
+        fixture, target, group, _solver_instance, assessment, _evaluation = (
             _championship_evaluation_fixture())
-        parent, retained, successor, binding = _accepted_championship_successor(
-            evaluation, solver, assessment, group)
-        selection = NS(
-            option_id="fixture-option",
-            lesson_grade=group,
-            visit=NS(identity=NS(
-                visit_id="fixture-visit", policy_key="fixture-policy")))
-        step = NS(transaction=NS(training_authorities=()))
-        capture = NS(finalize=lambda **_kwargs: {
-            "schema": "bilqis.bamf.c16.3-candidate-evidence-reference/v1",
-            "persistence": {
-                "bytes_written": 0, "file_fsyncs": 0,
-                "directory_fsyncs": 0, "evidence_objects": 0,
-                "persistence_seconds": 0.0,
-            },
-        })
-        cache = NS(generation=0, accepted_manifest_sha256="0" * 64)
-        published = []
+        self.assertGreater(len(assessment.solver_contracts), 1)
+        self.assertEqual(len(set(assessment.solver_contracts)), 1)
 
-        def prepare(run_dir, *, observer=None, **_kwargs):
-            from bilqis_mlx.runtime.bamf_operator.session import _retention_result
-            if observer is not None:
-                observer.bind_parent(parent)
-            return _retention_result(
-                run_dir, parent, fixture[0], "artifact", selection, target,
-                cache, (step,), capture, 1, 1, {}, None, observer)
+        with patch(
+                "bilqis_mlx.runtime.bamf_operator._championship_replay._solver_binding",
+                return_value="binding") as solver_binding:
+            result = _current_binding(
+                fixture[0], "artifact", "run", "release", "parent", "cache",
+                "successor", assessment.cohort, assessment, group)
 
-        def publish(_run_dir, bound_successor, *_args, **_kwargs):
-            published.append(bound_successor)
+        self.assertEqual(result, "binding")
+        self.assertEqual(
+            solver_binding.call_args.kwargs["solver_contracts"],
+            tuple(sorted(set(assessment.solver_contracts))),
+        )
 
-        prefix = "bilqis_mlx.runtime.bamf_operator.session."
-        with TemporaryDirectory() as tmp, ExitStack() as stack:
-            for target_name, kwargs in (
-                (prefix + "prepare_bamf_visit", {"side_effect": prepare}),
-                (prefix + "evaluate_factory_retention_candidate",
-                 {"return_value": evaluation}),
-                (prefix + "derive_accepted_teacher_successor",
-                 {"return_value": successor}),
-                (prefix + "bind_factory_baseline_successor",
-                 {"side_effect": lambda _evaluation, value: value}),
-                ("bilqis_mlx.runtime.outcomes.issuance.build_outcome",
-                 {"return_value": {"schema": "fixture-outcome"}}),
-                ("bilqis_mlx.runtime.outcomes.issuance.credited_visit",
-                 {"side_effect": lambda visit, _outcome: visit}),
-                ("bilqis_mlx.runtime.outcomes.issuance.carry_credit_to_successor",
-                 {"side_effect": lambda _visit, value, _parent: value}),
-                (prefix + "_resource_observation", {"return_value": {}}),
-                (prefix + "candidate_identity_metrics_delta", {"return_value": {}}),
-                (prefix + "accept_and_publish", {"side_effect": publish}),
-                (prefix + "load_accepted_generation", {"return_value": successor}),
-                (prefix + "record_normal_stop_receipt", {"return_value": None}),
-                ("bilqis_mlx.runtime.run_authority.binding.storage_root",
-                 {"return_value": Path(tmp).parent}),
-                ("bilqis_mlx.runtime.bamf_operator._championship_adjudication._current_binding",
-                 {"return_value": binding}),
-            ):
-                stack.enter_context(patch(target_name, **kwargs))
-            from bilqis_mlx.runtime.bamf_operator.session import operate_bamf
-            result = operate_bamf(
-                Path(tmp), minutes=1, max_visits=1, reserve_gib=0,
-                source_prefetch_workers=0)
+    def test_ordinary_candidate_with_remaining_cadence_work_skips_championship_boundary(self):
+        from bilqis_mlx.runtime.bamf_operator.championship import (
+            championship_boundary_capabilities,
+        )
+        selection = NS(metadata={"cadence": {
+            "schema": "bilqis.bamf.active-grade-cadence-authorization/v1",
+            "disposition": "TEACHING",
+            "phase_capability_ids": ["cap:a", "cap:b"],
+            "authorized_capability_ids": ["cap:a", "cap:b"],
+        }})
+
+        self.assertEqual(
+            championship_boundary_capabilities(selection, "cap:a"), ())
+
+    def test_last_authorized_candidate_opens_existing_cadence_phase_boundary(self):
+        from bilqis_mlx.runtime.bamf_operator.championship import (
+            championship_boundary_capabilities,
+        )
+        selection = NS(metadata={"cadence": {
+            "schema": "bilqis.bamf.active-grade-cadence-authorization/v1",
+            "disposition": "TEACHING",
+            "phase_capability_ids": ["cap:a", "cap:b"],
+            "authorized_capability_ids": ["cap:b"],
+        }})
+
+        self.assertEqual(
+            championship_boundary_capabilities(selection, "cap:b"),
+            ("cap:a", "cap:b"))
+
+    def test_operate_bamf_publishes_first_title_from_accepted_boundary_evidence(self):
+        fixture, group, result, published = _run_first_title_operator()
 
         self.assertEqual((result.accepted, result.rejected), (1, 0))
         self.assertEqual(len(published), 1)

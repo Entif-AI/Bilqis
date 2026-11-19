@@ -138,6 +138,8 @@ class LawfulTeachingFrontier:
     _source_context: object = field(repr=False, compare=False)
     _parent: object = field(repr=False, compare=False)
     _planning_generation: object = field(repr=False, compare=False)
+    _autonomy_currentness: object = field(repr=False, compare=False)
+    _active_grade_currentness: object = field(repr=False, compare=False)
     _issuance: object = field(repr=False, compare=False)
 
     def __init__(self, *args, **kwargs):

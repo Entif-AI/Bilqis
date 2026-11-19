@@ -73,7 +73,7 @@ class _JournalAppendState:
 
 
 def _path_key(path: Path) -> str:
-    return str(Path(path).absolute())
+    return str(Path(path).resolve(strict=False))
 
 
 @lru_cache(maxsize=32)

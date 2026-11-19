@@ -3,7 +3,7 @@ from contextlib import nullcontext
 from dataclasses import replace
 import json
 from pathlib import Path
-from tempfile import TemporaryDirectory, gettempdir
+from tempfile import TemporaryDirectory
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
@@ -24,11 +24,44 @@ from bilqis_mlx.runtime.tests.custody.bamf_bundle.helpers import (
 )
 
 
+def test_fixed_release_accept_reject_accept_skips_admission_reentry(tmp_path):
+    current = SimpleNamespace(
+        generation=2,
+        retained_state=SimpleNamespace(optimizer_step=8),
+    )
+    observer = SimpleNamespace(finish=lambda _outcome: None)
+    reentry = patch(
+        "bilqis_mlx.runtime.bamf_operator.session._accepted_learning_reentry",
+        return_value=("FIXED_POINT", 0, "FIXED_POINT"),
+    )
+    with patch(
+            "bilqis_mlx.runtime.run_authority.bind_native_run_authority",
+            return_value=None), patch(
+            "bilqis_mlx.runtime.bamf_operator.session._visit",
+            side_effect=("ACCEPTED", "REJECTED", "ACCEPTED", "HELD")) as visit, \
+            reentry as admission_reentry, patch(
+            "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
+            return_value=current), patch(
+            "bilqis_mlx.runtime.bamf_operator.session.stop_resource_witness",
+            return_value={"sufficient": True}), patch(
+            "bilqis_mlx.runtime.bamf_operator.session.record_normal_stop_receipt",
+            return_value=None), patch(
+            "bilqis_mlx.runtime.bamf_operator.session.TrainerObservation",
+            return_value=nullcontext(observer)):
+        result = operate_bamf(
+            tmp_path, minutes=1, max_visits=0, reserve_gib=0.0,
+            source_prefetch_workers=0, parent_graph={"tokens": ["fixture"]})
+
+    assert result.status == "PRIORITY_HOLD"
+    assert (result.visits, result.accepted, result.rejected) == (3, 2, 1)
+    assert result.admission_status is None
+    assert result.admission_advances == 0
+    assert visit.call_count == 4
+    admission_reentry.assert_not_called()
+
+
+@patch("bilqis_mlx.runtime.bamf_operator.session._training_memory_context", nullcontext)
 class BamfOperatorRejectionContinuationTests(unittest.TestCase):
-    def setUp(self):
-        self.run_storage = patch("bilqis_mlx.runtime.run_authority.binding.storage_root", return_value=Path(gettempdir()))
-        self.run_storage.start()
-        self.addCleanup(self.run_storage.stop)
     @staticmethod
     def _current():
         return SimpleNamespace(
@@ -166,34 +199,3 @@ class BamfOperatorRejectionContinuationTests(unittest.TestCase):
         self.assertEqual(result.generation, 1)
         self.assertEqual(result.optimizer_step, 4)
         self.assertEqual(visit.call_count, 3)
-
-    def test_accepted_visit_reenters_admission_before_next_neural_visit(self):
-        current = SimpleNamespace(
-            generation=2,
-            retained_state=SimpleNamespace(optimizer_step=8),
-        )
-        parent_graph = {"tokens": ["fixture"]}
-        progress = []
-        with TemporaryDirectory() as temporary, patch(
-                "bilqis_mlx.runtime.bamf_operator.session._visit",
-                side_effect=("ACCEPTED", "HELD")) as visit, patch(
-                "bilqis_mlx.runtime.bamf_operator.accepted_learning_evidence."
-                "refresh_accepted_learning_evidence",
-                return_value=SimpleNamespace(
-                    measured=0, passed=0, final_action="QUALIFICATION")), patch(
-                "bilqis_mlx.runtime.bamf_operator.session._accepted_admission_reentry",
-                return_value=("WAITING_FOR_EVIDENCE", 1, None)) as reentry, patch(
-                "bilqis_mlx.runtime.bamf_operator.session.load_accepted_generation",
-                return_value=current):
-            result = operate_bamf(
-                temporary, minutes=1, max_visits=0, reserve_gib=0.0,
-                source_prefetch_workers=0, parent_graph=parent_graph,
-                progress=progress.append)
-
-        self.assertEqual(result.status, "PRIORITY_HOLD")
-        self.assertEqual((result.visits, result.accepted, result.rejected), (1, 1, 0))
-        self.assertEqual(result.admission_status, "WAITING_FOR_EVIDENCE")
-        self.assertEqual(result.admission_advances, 1)
-        reentry.assert_called_once_with(
-            Path(temporary).resolve(), parent_graph, 0.0, progress.append)
-        self.assertEqual(visit.call_count, 2)

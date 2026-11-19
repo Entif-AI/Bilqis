@@ -189,6 +189,14 @@ class ExecutableFactoryReleaseTests(ReleaseTestSupport):
             successor.predecessor_release_sha256,
             predecessor.release_sha256)
         self.assertIn("Z.C6", successor.transition.added_capabilities)
+        self.assertNotIn("Z.C6", predecessor.foundation_capability_ids)
+        self.assertIn("Z.C6", successor.foundation_capability_ids)
+        self.assertEqual(
+            predecessor.foundation_capability_ids,
+            predecessor.execution_plan.active_capability_inventory)
+        self.assertEqual(
+            successor.foundation_capability_ids,
+            successor.execution_plan.active_capability_inventory)
 
     def test_rehashed_modality_descriptor_drift_is_rejected(self):
         release = self.compile()

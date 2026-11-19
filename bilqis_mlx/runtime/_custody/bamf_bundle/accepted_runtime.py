@@ -9,7 +9,7 @@ from bilqis_mlx.learning.atlas_acceptance import candidate_identity_digest
 
 from .codec import load_bamf_bundle
 from .publication import (
-    _live_bundle_manifest, _pointer_lock, _read_pointer,
+    _live_bundle_manifest, _pointer_read_lock, _read_pointer,
     _require_published_acceptance,
 )
 from .records import (
@@ -56,7 +56,7 @@ def _read_accepted_locked(
 
 def _read_accepted(run_dir: Path):
     run_dir = Path(run_dir)
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         return _read_accepted_locked(run_dir)
 
 
@@ -119,7 +119,7 @@ def _published_in_memory_identity_locked(
 def _published_in_memory_identity(
         run_dir: Path, student: CompleteStudent) -> AcceptedGenerationIdentity:
     run_dir = Path(run_dir)
-    with _pointer_lock(run_dir):
+    with _pointer_read_lock(run_dir):
         pointer = _read_pointer(run_dir / "bamf-state.json")
         if pointer is None:
             invalid("BAMF_GENERATION_POINTER_MISSING")

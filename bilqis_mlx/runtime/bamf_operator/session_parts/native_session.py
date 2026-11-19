@@ -1,6 +1,7 @@
 """Native BAMF session bindings kept outside the top-level coordinator."""
 from __future__ import annotations
 
+from functools import partial
 from pathlib import Path
 import json
 
@@ -15,6 +16,9 @@ from bilqis_mlx.runtime.factory_candidate_training import FactoryDeliveryObserva
 from bilqis_mlx.runtime.factory_retention_owner import (
     bind_current_retention_source_rows, bind_factory_baseline_successor,
     derive_current_plasticity_escape_state, evaluate_factory_retention_candidate,
+)
+from bilqis_mlx.runtime._factory_identity_evaluation import (
+    _finalize_factory_generation_authority,
 )
 from bilqis_mlx.runtime.foundation_teacher_owner import derive_accepted_teacher_successor
 from bilqis_mlx.runtime.priority_rejection_replay import (
@@ -94,7 +98,8 @@ def execute_horizon(
         run_dir, selection, context, parent, atlas_path, feature_path, rows, horizon,
         cache, candidate_attempt_ordinal, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
-        *, emit_progress, invalid, rehearsal_plan=None):
+        *, emit_progress, invalid, rehearsal_plan=None,
+        distributed_profile=None, distributed_executor=None):
     return _execute_horizon_impl(
         run_dir, selection, context, parent, atlas_path, feature_path,
         rows, horizon, cache, candidate_attempt_ordinal, progress,
@@ -103,7 +108,11 @@ def execute_horizon(
         source_lane_cls=CandidateSourceLane, source_metrics_cls=SourcePrefetchMetrics,
         prepare_evidence_root=prepare_candidate_evidence_root, capture_cls=_Capture,
         delivery_observation_cls=FactoryDeliveryObservation,
-        execute_candidate=execute_accepted_priority_candidate, step_seed=_step_seed,
+        execute_candidate=partial(
+            execute_accepted_priority_candidate,
+            distributed_profile=distributed_profile,
+            distributed_executor=distributed_executor),
+        step_seed=_step_seed,
         emit_progress=emit_progress, invalid=invalid,
         observe_completed_step_fn=observe_completed_step,
         rehearsal_plan=rehearsal_plan)
@@ -113,7 +122,8 @@ def candidate_horizon_execution(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, host_cache, steps_per_visit, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
-        *, emit_progress, invalid):
+        *, emit_progress, invalid,
+        distributed_profile=None, distributed_executor=None):
     cache = host_cache if host_cache is not None else bind_accepted_execution_cache(run_dir)
     from bilqis_mlx.runtime.bamf_bundle.execution_cache import AcceptedExecutionCache
     rehearsal_plan = (
@@ -127,7 +137,8 @@ def candidate_horizon_execution(
         rejection_ordinals=rejection_attempt_ordinals,
         execute_horizon_fn=lambda *args, **kwargs: execute_horizon(
             *args, **kwargs, emit_progress=emit_progress, invalid=invalid,
-            rehearsal_plan=rehearsal_plan),
+            rehearsal_plan=rehearsal_plan, distributed_profile=distributed_profile,
+            distributed_executor=distributed_executor),
         currentness_metrics_fn=currentness_metrics, emit_progress=emit_progress,
         identity_snapshot=candidate_identity_metrics_snapshot)
 
@@ -147,6 +158,7 @@ def retention_result(
         resource_observation=_resource_observation,
         derive_successor=derive_accepted_teacher_successor,
         bind_baseline_successor=bind_factory_baseline_successor,
+        finalize_generation_authority=_finalize_factory_generation_authority,
         derive_plasticity_escape=derive_current_plasticity_escape_state,
         prepared_visit_type=BamfPreparedVisit, emit_progress=emit_progress,
         measure_observed_phase_fn=measure_observed_phase)
@@ -156,7 +168,8 @@ def execute_selected_visit(
         run_dir, parent, context, atlas_path, feature_path, selection, host_cache,
         steps_per_visit, reserve_gib, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer,
-        *, emit_progress, invalid):
+        *, emit_progress, invalid,
+        distributed_profile=None, distributed_executor=None):
     rows = selection.offer.rows()
     if observer is not None:
         from ..evidence_projection import selected_visit_evidence, unknown_generated_grade_evidence
@@ -178,7 +191,9 @@ def execute_selected_visit(
         run_dir, parent, context, atlas_path, feature_path, selection, rows,
         capability, adviser_cache, steps_per_visit, progress, source_prefetch_workers,
         source_prefetch_executor, source_prefetch_metrics, observer, adviser_pool,
-        emit_progress=emit_progress, invalid=invalid)
+        emit_progress=emit_progress, invalid=invalid,
+        distributed_profile=distributed_profile,
+        distributed_executor=distributed_executor)
     cache, steps, capture, journal_ordinal, attempt_ordinal, identity_before = horizon_state
     return retention_result(
         run_dir, parent, context, atlas_path, selection, capability, cache, steps,
@@ -225,6 +240,7 @@ def accepted_admission_reentry(
 def accepted_learning_reentry(
         run_dir: Path, parent_graph: dict, reserve_gib: float, progress=None,
         *, emit_progress, invalid):
+    """Compose evidence refresh and C07 only for an explicit admission boundary."""
     from ..accepted_learning_evidence import refresh_accepted_learning_evidence
     evidence = refresh_accepted_learning_evidence(Path(run_dir), progress=progress)
     emit_progress(

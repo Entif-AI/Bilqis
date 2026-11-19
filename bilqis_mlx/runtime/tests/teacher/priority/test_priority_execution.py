@@ -69,10 +69,13 @@ def priority():
         'bilqis_mlx.runtime.atlas_optimizer': module(AdamWHyperparameters=HParams),
         'bilqis_mlx.runtime.atlas_training_contracts': module(BamfVisitProvenance=SimpleNamespace(from_c03_record=None)),
         'bilqis_mlx.runtime.bamf_bundle.currentness_transaction': module(
-            refresh_accepted_currentness=lambda transaction, parent: transaction),
+            refresh_accepted_currentness=lambda transaction, parent: transaction,
+            require_live_accepted_currentness_step=(
+                lambda step, transaction, parent: step)),
         'bilqis_mlx.runtime.factory_candidate_training': module(execute_factory_candidate_step=None),
         'bilqis_mlx.runtime.lawful_teaching_frontier': module(
-            require_bound_lawful_teaching_frontier=lambda frontier, context, parent: frontier,
+            require_bound_lawful_teaching_frontier=(
+                lambda frontier, context, parent, **_kwargs: frontier),
             require_current_lawful_teaching_frontier=lambda frontier, context, parent: frontier),
         'bilqis_mlx.runtime.teacher_policy_selection': module(select_visit_policy=None),
         'bilqis_mlx.runtime.outcomes.replay': module(
@@ -80,7 +83,8 @@ def priority():
         'bilqis_mlx.runtime.outcomes.issuance': module(context_for_selection=lambda *args: {}),
         'bilqis_mlx.semantics.domains': module(contract_digest=None),
         'bilqis_mlx.runtime.accepted_teacher_custody': module(_accepted_parent=None, _c03_projection=None,
-            _issue_bound_visit=None, _require_current_visit=None, _selection_projection=None),
+            _issue_bound_visit=None, _require_current_visit=None, _selection_projection=None,
+            current_teacher_projection=lambda run, parent, cache, projection: projection),
         'bilqis_mlx.runtime.priority_qualification': module(_grade=None, requalify_priority=None),
     }
     name = 'bilqis_mlx.runtime.priority_execution_portable_test'
@@ -180,7 +184,9 @@ def test_execution_reuses_authenticated_planning_parent(priority):
             source_prepare_wall_seconds=0.75) == 'step'
     require_visit.assert_called_once_with(
         'planned-parent', 'planned-cache', selected.visit,
-        candidate_identity_sha256='planned-id')
+        candidate_identity_sha256='planned-id',
+        currentness_step='currentness',
+        currentness_transaction='currentness')
     assert execute.call_args.args[2] == 'planned-parent'
     assert execute.call_args.kwargs['semantic_context'] == 'semantic-context'
     assert execute.call_args.kwargs['currentness_transaction'] == 'currentness'
@@ -188,6 +194,44 @@ def test_execution_reuses_authenticated_planning_parent(priority):
     assert execute.call_args.kwargs['candidate_step_started_at'] == 123.0
     assert execute.call_args.kwargs[
         'upstream_pre_neural_source_compile_wall_seconds'] >= 0.75
+
+
+def test_final_live_currentness_fence_is_immediately_before_candidate_execution(priority):
+    candidate = _candidate_owner(priority)
+    currentness_owner = sys.modules[
+        'bilqis_mlx.runtime.bamf_bundle.currentness_transaction']
+    identity = SimpleNamespace(to_record=lambda: {'visit': 1})
+    selected = priority._issue_result('TEACHER_SELECTED', 'o', Offer(), Visit(identity),
+        {'lr': 0.25}, {}, 'g', (), '/run', lawful())
+    release = SimpleNamespace(execution_plan=SimpleNamespace(capability_map={
+        'cap': SimpleNamespace(teaching_option_ids=('instruction',))}))
+    events = []
+
+    def fence(step, transaction, parent):
+        events.append('fence')
+        return step
+
+    def execute(*args, **kwargs):
+        events.append('execute')
+        return 'step'
+
+    def delivery(*args, **kwargs):
+        events.append('delivery')
+        return 'delivery'
+
+    with patch.object(candidate, 'AdamWHyperparameters', HParams), \
+         patch.object(candidate, '_require_current_visit'), \
+         patch.object(candidate.BamfVisitProvenance, 'from_c03_record', return_value='provenance'), \
+         patch.object(candidate, 'describe_delivered_teaching', side_effect=delivery), \
+         patch.object(currentness_owner, 'require_live_accepted_currentness_step', side_effect=fence), \
+         patch.object(candidate, 'execute_factory_candidate_step', side_effect=execute):
+        assert priority.execute_accepted_priority_candidate(
+            selected, SimpleNamespace(release=release), 'atlas', 'features',
+            teacher_hparams=HParams(0.01, (0.8, 0.9), 1e-8, 0.2),
+            observation=Observation(({'id': 'old'},), 0), optimizer_step_seed=3,
+            max_norm=1) == 'step'
+
+    assert events[-2:] == ['fence', 'execute']
 
 
 def test_accepted_priority_school_derives_all_admitted_grades_and_student(priority):

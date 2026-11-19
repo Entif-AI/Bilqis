@@ -3,6 +3,48 @@ from __future__ import annotations
 
 import time
 
+from bilqis_mlx.runtime.atlas_resources import DistributedStepTelemetry
+
+
+def _distributed_cost(prepared, gradient, logical_batch_wall_seconds) -> dict:
+    metadata = getattr(gradient, "distributed_metadata", None)
+    if metadata is None:
+        return {}
+    manifest = metadata.manifest
+    communication = metadata.communication_seconds
+    compute = metadata.compute_seconds_per_worker
+    peaks = metadata.peak_memory_per_worker
+    step_seconds = max(float(logical_batch_wall_seconds or 0.0), 1e-12)
+    logical_positions = sum(
+        len(item.compiled.compiled.rows[0].positions)
+        for item in prepared.compiled_rows)
+    telemetry = DistributedStepTelemetry(
+        manifest.digest, len(prepared.compiled_rows), logical_positions,
+        compute, communication, step_seconds, 1, peaks, manifest.world_size)
+    return {
+        "c08_distributed_manifest_digest": manifest.digest,
+        "c08_distributed_retained_generation": manifest.retained_generation,
+        "c08_distributed_retained_manifest_sha256":
+            manifest.retained_manifest_sha256,
+        "c08_distributed_logical_batch_digest": manifest.logical_batch_digest,
+        "c08_distributed_source_release": manifest.source_release,
+        "c08_distributed_curriculum_release": manifest.curriculum_release,
+        "c08_distributed_world_size": manifest.world_size,
+        "c08_distributed_backend": manifest.backend,
+        "c08_distributed_device_families": tuple(
+            worker.device_family for worker in manifest.workers),
+        "c08_distributed_mlx_version": manifest.mlx_version,
+        "c08_distributed_numeric_precision": manifest.numeric_precision,
+        "c08_distributed_reduction_policy": manifest.reduction_policy,
+        "c08_distributed_compute_seconds_per_worker": compute,
+        "c08_distributed_communication_seconds": communication,
+        "c08_distributed_peak_memory_bytes_per_worker": peaks,
+        "c08_distributed_examples_per_second": telemetry.examples_per_second,
+        "c08_distributed_positions_per_second": telemetry.positions_per_second,
+        "c08_distributed_attempted_steps_per_hour":
+            telemetry.attempted_steps_per_hour,
+    }
+
 
 def realized_candidate_cost(
         start, candidate_step_started_at, loss_total, prepared,
@@ -27,7 +69,7 @@ def realized_candidate_cost(
     if cold_requalification_rows:
         invalid("FACTORY_CANDIDATE_SOURCE_EXECUTION_AUTHORITY_MISSING")
     elapsed = time.perf_counter() - start
-    return {
+    cost = {
         "wall_seconds": elapsed,
         "candidate_step_wall_seconds": time.perf_counter() - candidate_step_started_at,
         "pre_neural_source_compile_wall_seconds": stage_metrics[
@@ -63,6 +105,9 @@ def realized_candidate_cost(
         "b11_source_authority_bound_rows": bound_source_authorities,
         "b11_source_cold_requalification_rows": cold_requalification_rows,
     }
+    cost.update(_distributed_cost(
+        prepared, gradient, logical_batch_wall_seconds))
+    return cost
 
 
 __all__ = ("realized_candidate_cost",)

@@ -5486,6 +5486,7 @@
             "COMPLETED",
             "REJECTED",
             "FAILED",
+            "FAILED_BEFORE_EFFECT",
             "OUTCOME_UNKNOWN"
           ],
           "type": "string"
@@ -5505,7 +5506,7 @@
       "type": "object",
       "x-bilqis-runtime-invariants": [
         "COMPLETED requires postcondition_ref and receipt_refs",
-        "REJECTED/FAILED require error_ref",
+        "REJECTED/FAILED/FAILED_BEFORE_EFFECT require error_ref",
         "non-terminal states carry neither postcondition_ref nor error_ref"
       ],
       "x-bilqis-runtime-validator": "bilqis_mlx.mission_control.codec.decode_record"
@@ -5766,6 +5767,7 @@
             "COMPLETED",
             "REJECTED",
             "FAILED",
+            "FAILED_BEFORE_EFFECT",
             "OUTCOME_UNKNOWN"
           ],
           "type": "string"
@@ -5796,7 +5798,7 @@
       "type": "object",
       "x-bilqis-runtime-invariants": [
         "COMPLETED requires postcondition_ref and receipt_refs",
-        "REJECTED/FAILED require error_ref",
+        "REJECTED/FAILED/FAILED_BEFORE_EFFECT require error_ref",
         "non-terminal states carry neither postcondition_ref nor error_ref"
       ],
       "x-bilqis-runtime-validator": "bilqis_mlx.mission_control.codec.decode_record"

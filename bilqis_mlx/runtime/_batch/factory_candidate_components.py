@@ -13,7 +13,7 @@ from bilqis_mlx.runtime.atlas_model import (
     bamf_value_and_grad,
 )
 from bilqis_mlx.runtime.atlas_resources import (
-    FrameStats, MemoryBudget, ResourceRow, plan_microbatches,
+    FrameStats, MemoryBudget, MICROBATCH_SIZES, ResourceRow, plan_microbatches,
 )
 from bilqis_mlx.runtime.backbone_identity import execution_generation_digest
 from bilqis_mlx.runtime.bamf_bundle import (
@@ -145,13 +145,8 @@ def _frame_stats(compiled_batch) -> FrameStats:
     )
 
 
-def _resource_plan(prepared, parent, memory_budget):
-    if memory_budget is None:
-        memory_budget = MemoryBudget(
-            bamf_parameter_census(parent.topology, parent.extents))
-    elif not isinstance(memory_budget, MemoryBudget):
-        _invalid("FACTORY_TRAINING_MEMORY_BUDGET_INVALID")
-    rows = tuple(
+def _resource_rows(prepared):
+    return tuple(
         ResourceRow.from_training_row(
             training_row, _frame_stats(compiled),
             generation_binding=prepared.training_batch.generation_binding,
@@ -159,7 +154,24 @@ def _resource_plan(prepared, parent, memory_budget):
         )
         for training_row, compiled in zip(
             prepared.training_batch.rows, prepared.compiled_rows))
-    return plan_microbatches(rows, parent.topology, memory_budget), memory_budget
+
+
+def _resource_plan(prepared, parent, memory_budget):
+    if memory_budget is None:
+        memory_budget = MemoryBudget(
+            bamf_parameter_census(parent.topology, parent.extents))
+    elif not isinstance(memory_budget, MemoryBudget):
+        _invalid("FACTORY_TRAINING_MEMORY_BUDGET_INVALID")
+    rows = _resource_rows(prepared)
+    # Choose the smallest supported cap that covers the full delivery so a
+    # retry at the next smaller cap always reduces the actual group size.
+    size_cap = next(
+        (size for size in reversed(MICROBATCH_SIZES) if size >= len(rows)),
+        MICROBATCH_SIZES[0],
+    )
+    return plan_microbatches(
+        rows, parent.topology, memory_budget, max_microbatch_size=size_cap,
+    ), memory_budget
 
 
 def _stage_retained_motifs(run_dir, parent, cache, transaction, prepared,
