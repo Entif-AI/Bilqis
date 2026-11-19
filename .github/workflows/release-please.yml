@@ -15,8 +15,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Maintain release PR and publish merged release
+        id: release
         uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
         with:
           token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+      - name: Resolve maintained release PR
+        if: steps.release.outputs.prs_created == 'true'
+        id: release-pr
+        env:
+          RELEASE_PRS: ${{ steps.release.outputs.prs }}
+        run: |
+          python3 - <<'INNER' >> "$GITHUB_OUTPUT"
+          import json
+          import os
+
+          prs = json.loads(os.environ["RELEASE_PRS"])
+          if len(prs) != 1:
+              raise SystemExit(f"RELEASE_HISTORY_EXPECTED_ONE_PR:{len(prs)}")
+          pr = prs[0]
+          print(f"number={pr['number']}")
+          print(f"head={pr['headBranchName']}")
+          INNER
+      - name: Checkout maintained release PR
+        if: steps.release.outputs.prs_created == 'true'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ steps.release-pr.outputs.head }}
+          fetch-depth: 0
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+      - name: Preserve constituent PR history
+        if: steps.release.outputs.prs_created == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          RELEASE_PR_NUMBER: ${{ steps.release-pr.outputs.number }}
+        run: |
+          python3 -B scripts/maintenance/release_history.py reconcile-pr --repository "$GITHUB_REPOSITORY"
+          git add CHANGELOG.md
+          if ! git diff --cached --quiet; then
+            git config user.name github-actions[bot]
+            git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+            git commit -m "docs(release): preserve constituent PR history"
+            git push origin "HEAD:${{ steps.release-pr.outputs.head }}"
+          fi
+          python3 -B scripts/maintenance/release_history.py reconcile-body --repository "$GITHUB_REPOSITORY" --release-pr "$RELEASE_PR_NUMBER"
